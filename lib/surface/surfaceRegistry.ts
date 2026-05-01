@@ -15,7 +15,7 @@ export type PaneType =
     | 'settings' | 'finder' | 'document' | 'chat' | 'team' | 'notes' | 'meine-dateien'
     | 'scanner' | 'users' | 'company-detail' | 'grid' | 'search' | 'space'
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
-    | 'actions' | 'action-center' | 'work-session' | 'apps'
+    | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
     | 'timeline' | 'tasks' | 'canvas';
 
 /**
@@ -44,6 +44,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     space:            'app',
     calendar:         'app',
     browser:          'app',
+    'website-dossier': 'app',
     'mora-hub':       'app',
     apps:             'app',       // AppLibrary — promoted (16 apps registered)
 

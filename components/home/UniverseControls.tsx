@@ -23,6 +23,9 @@ interface UniverseControlsProps {
     scopeLabel?: string;
     disableContextSwitch?: boolean;
     companyCountLabel?: string;
+    isWebsiteEntryContext?: boolean;
+    contextLabelOverride?: string;
+    contextSubtitleOverride?: string;
 }
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
@@ -35,6 +38,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     workspaceLabel = 'Organisation',
     disableContextSwitch = false,
     companyCountLabel,
+    isWebsiteEntryContext = false,
+    contextLabelOverride,
+    contextSubtitleOverride,
 }) => {
     const user = useSessionStore((state) => state.user);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
@@ -79,7 +85,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent: activeDepartment?.color || '#10B981',
-        isPublicDemoSurface: disableContextSwitch,
+        isPublicDemoSurface: disableContextSwitch && !isWebsiteEntryContext,
         isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
@@ -94,6 +100,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         safeDepartments,
         user?.active_company_name,
         disableContextSwitch,
+        isWebsiteEntryContext,
         surfaceProfile.isLocalTruthSurface,
     ]);
     const surfaceLabel = useMemo(() => {
@@ -185,11 +192,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
                     <span>Layer {surfaceLabel}</span>
                     <span className="text-white/18">/</span>
-                    <span style={{ color: shellContext.accent }}>{shellContext.contextLabel}</span>
+                    <span style={{ color: shellContext.accent }}>{contextLabelOverride || shellContext.contextLabel}</span>
                 </div>
                 <div className="mt-1 truncate text-sm text-white/86">{shellContext.title}</div>
                 <div className="mt-1 truncate text-[11px] text-white/44">
-                    {shellContext.subtitle}
+                    {contextSubtitleOverride || shellContext.subtitle}
                 </div>
             </button>
 

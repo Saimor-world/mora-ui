@@ -17,6 +17,8 @@ import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
+import { loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -142,6 +144,7 @@ export const HomeSurface: React.FC = () => {
     const [teamActivities, setTeamActivities] = useState<TeamActivitySurface[]>([]);
     const [teamMessages, setTeamMessages] = useState<TeamMessageSurface[]>([]);
     const [teamPresence, setTeamPresence] = useState<TeamPresenceSurface | null>(null);
+    const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
     const {
         overview: integrationsOverview,
         summary: communicationSummary,
@@ -156,7 +159,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -198,6 +201,16 @@ export const HomeSurface: React.FC = () => {
     const openMora = useCallback(() => {
         revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
     }, [revealPane]);
+
+    const openWebsiteDossier = useCallback(() => {
+        if (!websiteEntryContext) return;
+        revealPane('website-dossier-current', {
+            type: 'website-dossier',
+            title: `${websiteEntryContext.companyName} Dossier`,
+            size: { width: 1040, height: 720 },
+            data: { context: websiteEntryContext },
+        });
+    }, [revealPane, websiteEntryContext]);
 
     const openTeam = useCallback(() => {
         revealPane('team-main', {
@@ -357,6 +370,32 @@ export const HomeSurface: React.FC = () => {
     }, []);
 
     useEffect(() => {
+        setWebsiteEntryContext(loadWebsiteEntryContext());
+    }, []);
+
+    useEffect(() => {
+        if (!websiteEntryContext || process.env.NODE_ENV === 'test') return;
+        const autoOpenKey = `saimor_website_entry_auto_opened_${websiteEntryContext.id || websiteEntryContext.companyName}`;
+        try {
+            if (window.localStorage.getItem(autoOpenKey)) return;
+            window.localStorage.setItem(autoOpenKey, '1');
+        } catch {
+            // If storage is unavailable, still open once for this mounted session.
+        }
+
+        const timer = window.setTimeout(() => {
+            revealPane('website-dossier-current', {
+                type: 'website-dossier',
+                title: `${websiteEntryContext.companyName} Dossier`,
+                size: { width: 1040, height: 720 },
+                data: { context: websiteEntryContext },
+            });
+        }, 900);
+
+        return () => window.clearTimeout(timer);
+    }, [revealPane, websiteEntryContext]);
+
+    useEffect(() => {
         let cancelled = false;
 
         Promise.all([
@@ -366,15 +405,16 @@ export const HomeSurface: React.FC = () => {
         ])
             .then(([activityRes, presenceRes, messagesRes]) => {
                 if (cancelled) return;
-                setTeamActivities(Array.isArray(activityRes) ? activityRes : []);
-                setTeamPresence(presenceRes && typeof presenceRes === 'object' ? presenceRes as TeamPresenceSurface : null);
-                setTeamMessages(Array.isArray(messagesRes) ? messagesRes : []);
+                const nextActivities = Array.isArray(activityRes) ? activityRes : [];
+                const nextPresence = presenceRes && typeof presenceRes === 'object' ? presenceRes as TeamPresenceSurface : null;
+                const nextMessages = Array.isArray(messagesRes) ? messagesRes : [];
+
+                if (nextActivities.length > 0) setTeamActivities(nextActivities);
+                if (nextPresence) setTeamPresence(nextPresence);
+                if (nextMessages.length > 0) setTeamMessages(nextMessages);
             })
             .catch(() => {
-                if (cancelled) return;
-                setTeamActivities([]);
-                setTeamPresence(null);
-                setTeamMessages([]);
+                // Initial empty state already represents an unavailable team surface.
             });
 
         return () => {
@@ -436,6 +476,7 @@ export const HomeSurface: React.FC = () => {
     const hasCommunicationSignal = Boolean(latestMail || nextCalendarEvent || latestFeed);
     const hasTeamSignal = Boolean(latestTeamMessage || latestTeamActivity || onlineTeamCount > 1 || unreadTeamCount > 0);
     const homeSignalCount = [
+        Boolean(websiteEntryContext),
         Boolean(latestMail),
         Boolean(nextCalendarEvent),
         Boolean(latestFeed),
@@ -447,28 +488,36 @@ export const HomeSurface: React.FC = () => {
             { label: 'Bereiche', value: activeDepartmentCount },
             { label: 'Signale', value: homeSignalCount },
             { label: 'Privat', value: privateContentCount },
+            { label: 'Website', value: websiteEntryContext ? 1 : 0 },
         ].filter((item) => item.value > 0),
-        [activeDepartmentCount, homeSignalCount, privateContentCount]
+        [activeDepartmentCount, homeSignalCount, privateContentCount, websiteEntryContext]
     );
     const absenceFocusLabel = recentActivityItems.length > 0
         ? `${recentActivityItems.length} OS-Spuren`
         : hasCommunicationSignal || hasTeamSignal
             ? 'Eingang aktiv'
             : 'Ruhiger Start';
-    const focusTitle = latestTeamMessage
-        ? 'Team-Signal wartet.'
-        : overlayRecentActivityItems[0]
-            ? `Weiter in ${overlayRecentActivityItems[0].label}.`
-            : hasCommunicationSignal
-                ? 'Eingang bereit.'
-                : 'Bereit wenn du es bist.';
-    const focusDetail = latestTeamMessage
-        ? `${latestTeamMessage.sender_name || 'Team'}: ${latestTeamMessage.content}`
-        : overlayRecentActivityItems[0]
-            ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
-            : hasCommunicationSignal
-                ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
-                : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
+    const focusTitle = websiteEntryContext
+        ? `${websiteEntryContext.companyName}: Dossier im HQ.`
+        : latestTeamMessage
+            ? 'Team-Signal wartet.'
+            : overlayRecentActivityItems[0]
+                ? `Weiter in ${overlayRecentActivityItems[0].label}.`
+                : hasCommunicationSignal
+                    ? 'Eingang bereit.'
+                    : 'Bereit wenn du es bist.';
+    const focusDetail = websiteEntryContext
+        ? websiteEntryContext.score !== undefined
+            ? `Board-Signal ${websiteEntryContext.score}. Dossier, Aufgaben und Arbeitsraeume sind aus dem Website-Check geladen.`
+            : 'Dossier, Aufgaben und Arbeitsraeume sind aus dem Website-Check geladen.'
+        : latestTeamMessage
+            ? `${latestTeamMessage.sender_name || 'Team'}: ${latestTeamMessage.content}`
+            : overlayRecentActivityItems[0]
+                ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
+                : hasCommunicationSignal
+                    ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
+                    : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
+    const displayCompanyName = websiteEntryContext?.companyName || currentCompany?.name || user?.active_company_name || 'Organisation';
 
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
@@ -601,6 +650,41 @@ export const HomeSurface: React.FC = () => {
                                 <p className="mt-4 max-w-[29rem] text-[13px] leading-relaxed text-white/58">
                                     {focusDetail}
                                 </p>
+                                {websiteEntryContext ? (
+                                    <div
+                                        className="mt-5 max-w-[29rem] rounded-[22px] border border-cyan-300/12 bg-cyan-400/[0.045] p-3"
+                                        data-testid="website-entry-home-card"
+                                    >
+                                        <div className="flex items-start justify-between gap-4">
+                                            <div className="min-w-0">
+                                                <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/48">Website-Einstieg</div>
+                                                <div className="mt-1 truncate text-[13px] font-medium text-white/78">
+                                                    {websiteEntryContext.domain || websiteEntryContext.title}
+                                                </div>
+                                            </div>
+                                            {websiteEntryContext.score !== undefined ? (
+                                                <div className="shrink-0 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] text-cyan-100/78">
+                                                    {websiteEntryContext.score}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                        <div className="mt-3 grid gap-1.5">
+                                            {websiteEntryContext.tasks.slice(0, 2).map((task) => (
+                                                <div key={task.title} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.045] bg-black/[0.14] px-3 py-2">
+                                                    <span className="min-w-0 truncate text-[12px] text-white/64">{task.title}</span>
+                                                    <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-white/32">{task.priority}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={openWebsiteDossier}
+                                            className="mt-3 rounded-full border border-cyan-200/16 bg-cyan-300/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-cyan-50/70 transition-colors hover:border-cyan-100/26 hover:bg-cyan-300/[0.12]"
+                                        >
+                                            Dossier öffnen
+                                        </button>
+                                    </div>
+                                ) : null}
                             </div>
 
                             <div
@@ -621,7 +705,7 @@ export const HomeSurface: React.FC = () => {
                                 <div className="absolute inset-[-1.1rem] rounded-full border border-cyan-200/[0.08] bg-cyan-300/[0.035]" />
                                 <CompanyLogo
                                     src={currentCompany?.logo_url}
-                                    companyName={currentCompany?.name || user?.active_company_name || 'Organisation'}
+                                    companyName={displayCompanyName}
                                     size="lg"
                                     animated
                                 />

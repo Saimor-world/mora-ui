@@ -105,8 +105,8 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
     const inFlightRef = useRef<Promise<void> | null>(null);
     const lastRefreshAtRef = useRef<number>(0);
 
-    const uiCandidates = useMemo(() => withDefaultUiCandidates(overview), [overview?.runtime?.local_truth?.ui_candidates]);
-    const coreCandidates = useMemo(() => withDefaultCoreCandidates(overview), [overview?.runtime?.local_truth?.core_candidates]);
+    const uiCandidates = useMemo(() => withDefaultUiCandidates(overview), [overview]);
+    const coreCandidates = useMemo(() => withDefaultCoreCandidates(overview), [overview]);
 
     const refresh = useCallback(async (options?: { force?: boolean; announce?: boolean }) => {
         if (typeof window === 'undefined') return;

@@ -52,6 +52,16 @@ function RootPageContent() {
     const [showLockScreen, setShowLockScreen] = useState(false);
     const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
 
+    const buildEntryTarget = () => {
+        const entryParams = new URLSearchParams();
+        for (const key of ['surface', 'entity', 'id', 'company', 'domain', 'score', 'level']) {
+            const value = searchParams.get(key);
+            if (value) entryParams.set(key, value);
+        }
+        const query = entryParams.toString();
+        return query ? `/entry?${query}` : '/entry';
+    };
+
     useEffect(() => {
         if (status !== 'loading') {
             setAllowWelcomeFallback(false);
@@ -91,7 +101,7 @@ function RootPageContent() {
             if (result?.token) {
                 // Store as CORE session cookie (same as normal login)
                 writeCookie('mora_session', result.token);
-                router.push('/home');
+                router.push(buildEntryTarget());
             }
         });
     }, []); // eslint-disable-line react-hooks/exhaustive-deps

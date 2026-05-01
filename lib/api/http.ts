@@ -14,11 +14,8 @@ export type { OperationalState };
  */
 export function getCoreBaseUrl(): string {
     if (typeof window !== 'undefined') {
-        const host = window.location.hostname;
-        if (host === '127.0.0.1' || host === 'localhost') {
-            const localCoreHost = host === 'localhost' ? 'localhost' : '127.0.0.1';
-            return `http://${localCoreHost}:8081`;
-        }
+        // Browser requests go through the Next.js proxy so auth cookies and CORS
+        // behave the same locally and on hq.saimor.world.
         return '/api/core';
     }
     const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim();

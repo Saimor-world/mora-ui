@@ -46,6 +46,7 @@ import {
     useRealtime,
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
+import { WebsiteContextBanner } from '@/components/entry/WebsiteContextBanner';
 import { realtime } from '@/lib/api/realtimeClient';
 
 // Layout Components
@@ -81,6 +82,7 @@ import { UserCursor } from '@/components/layout/UserCursor';
 // import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
 import { IdentityMedallion } from '@/components/os/shell/IdentityMedallion';
@@ -260,6 +262,15 @@ export const MoraShell: React.FC = () => {
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
+    // Boot timeout: if the shell hasn't bootstrapped within 12 s, the backend is likely
+    // unreachable. Surface a clear error instead of spinning indefinitely.
+    const [bootTimedOut, setBootTimedOut] = useState(false);
+    useEffect(() => {
+        if (isBootstrapped) return;
+        const timer = window.setTimeout(() => setBootTimedOut(true), 12_000);
+        return () => window.clearTimeout(timer);
+    }, [isBootstrapped]);
+
     // Store — migrated to new stores
     const user = useSessionStore((s) => s.user);
     const resetStore = useSessionStore((s) => s.resetStore);
@@ -282,7 +293,9 @@ export const MoraShell: React.FC = () => {
     const role = user?.role || 'demo';
     const tenantId = user?.tenant_id;
     const surfaceProfile = useSurfaceProfile();
-    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
+    const websiteEntryContext = useWebsiteEntryContext();
+    const isWebsiteEntrySurface = Boolean(websiteEntryContext);
+    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !isWebsiteEntrySurface;
 
     const preferredLocalCompany = React.useMemo(() => {
         if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return null;
@@ -323,7 +336,41 @@ export const MoraShell: React.FC = () => {
         return filteredCompanies.find((c) => c.id === activeCompanyId) || filteredCompanies[0];
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
-    const displayCompany = activeCompanyForView || activeCompany;
+    const displayCompany = React.useMemo(() => {
+        const baseCompany = activeCompanyForView || activeCompany;
+        if (!websiteEntryContext?.companyName) return baseCompany;
+        if (baseCompany) {
+            return {
+                ...baseCompany,
+                name: websiteEntryContext.companyName,
+                description: websiteEntryContext.summary || baseCompany.description,
+                tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
+                    ? user.tenant_id
+                    : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+                is_demo: false,
+            };
+        }
+        return {
+            id: `website-entry-${websiteEntryContext.id || 'current'}`,
+            tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
+                ? user.tenant_id
+                : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+            owner_id: 'website-entry',
+            name: websiteEntryContext.companyName,
+            slug: `website-entry-${websiteEntryContext.id || 'current'}`,
+            description: websiteEntryContext.summary || null,
+            logo_url: null,
+            settings: null,
+            is_demo: false,
+        };
+    }, [activeCompany, activeCompanyForView, user?.tenant_id, websiteEntryContext]);
+    const displayCompanies = React.useMemo(() => {
+        if (!displayCompany || !websiteEntryContext?.companyName) return filteredCompanies;
+        return [
+            displayCompany,
+            ...filteredCompanies.filter((company) => company.id !== displayCompany.id),
+        ];
+    }, [displayCompany, filteredCompanies, websiteEntryContext?.companyName]);
     const hasDemoCompany = safeCompanies.some((c) => c.is_demo);
     const visibleModes = React.useMemo<UniverseViewMode[]>(() => {
         if (isPublicDemoSurface) {
@@ -674,6 +721,11 @@ export const MoraShell: React.FC = () => {
     }
 
     if (!isBootstrapped) {
+        if (bootTimedOut) {
+            return (
+                <ErrorScreen message="CORE-Backend antwortet nicht. Starte den Server neu (bash scripts/start-local-truth.sh) oder prüfe deine Netzwerkverbindung." />
+            );
+        }
         return <LoadingScreen />;
     }
 
@@ -738,13 +790,16 @@ export const MoraShell: React.FC = () => {
                         useNavStore.getState().setViewMode(mode);
                     }}
                     activeCompany={displayCompany}
-                    companies={filteredCompanies}
+                    companies={displayCompanies}
                     onSwitchCompany={(id) => useNavStore.getState().setActiveCompany(id)}
                     visibleModes={visibleModes}
-                    workspaceLabel={workspaceTabLabel}
+                    workspaceLabel={websiteEntryContext ? 'Dossier' : workspaceTabLabel}
                     scopeLabel={scopeLabel}
-                    disableContextSwitch={isPublicDemoSurface}
-                    companyCountLabel={surfaceProfile.isPublicDemoSurface ? 'Demo' : undefined}
+                    disableContextSwitch={isPublicDemoSurface || Boolean(websiteEntryContext)}
+                    companyCountLabel={websiteEntryContext ? 'Dossier' : surfaceProfile.isPublicDemoSurface ? 'Demo' : undefined}
+                    isWebsiteEntryContext={Boolean(websiteEntryContext)}
+                    contextLabelOverride={websiteEntryContext ? 'Dossier' : undefined}
+                    contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
 
                 {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
@@ -1203,6 +1258,9 @@ export const MoraShell: React.FC = () => {
                     })()}
                 </div>
             )} */}
+
+            {/* Website context banner (surfaced from landing page check) */}
+            <WebsiteContextBanner />
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />

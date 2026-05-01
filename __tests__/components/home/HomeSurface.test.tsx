@@ -11,6 +11,7 @@ import { renderWithProviders, resetAllStores, createTestQueryClient, testFixture
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
+import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
 
 // ── mocks ──────────────────────────────────────────────────────────────────
 
@@ -170,6 +171,32 @@ describe('HomeSurface — rendering', () => {
     it('renders the logout button', () => {
         renderWithDepts();
         expect(screen.getByTestId('home-logout')).toBeInTheDocument();
+    });
+
+    it('surfaces stored website entry context as the current OS focus', async () => {
+        localStorage.setItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY, JSON.stringify({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-123',
+            companyName: 'Acme GmbH',
+            domain: 'acme.de',
+            score: 61,
+            title: 'Digital Risk Check aus der Website',
+            rooms: [],
+            documents: [],
+            tasks: [
+                { title: 'Audit-Ergebnis validieren', priority: 'mittel' },
+                { title: 'Echte Tools verbinden', priority: 'niedrig' },
+            ],
+        }));
+
+        renderWithDepts();
+
+        await waitFor(() => {
+            expect(screen.getByTestId('website-entry-home-card')).toBeInTheDocument();
+            expect(screen.getByText('Acme GmbH: Dossier im HQ.')).toBeInTheDocument();
+            expect(screen.getByText('acme.de')).toBeInTheDocument();
+        });
     });
 });
 

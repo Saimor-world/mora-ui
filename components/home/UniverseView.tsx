@@ -11,13 +11,15 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { Activity, ShieldCheck, Database, Cpu, X, Zap } from 'lucide-react';
+import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles } from 'lucide-react';
+import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import {
     buildSemanticEdgeKey,
     resolveDepartmentSimilarityProfile,
@@ -158,8 +160,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const { data: treeData = [] }    = useTree(activeCompanyId);
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
+    const openPane = usePaneStore((s) => s.openPane);
     const surfaceProfile = useSurfaceProfile();
-    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
+    const websiteEntryContext = useWebsiteEntryContext();
+    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !websiteEntryContext;
 
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
@@ -642,6 +646,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, []);
 
     const displayCompanyName = useMemo(() => {
+        if (websiteEntryContext?.companyName) return websiteEntryContext.companyName;
         const raw = currentCompany?.name?.trim();
         const tenantId = currentCompany?.tenant_id;
         const isDemo = currentCompany?.is_demo;
@@ -654,7 +659,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             return 'Organisation nicht verfügbar';
         }
         return raw;
-    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo, user?.active_company_name, isPublicDemoSurface]);
+    }, [currentCompany?.name, currentCompany?.tenant_id, currentCompany?.is_demo, user?.active_company_name, isPublicDemoSurface, websiteEntryContext?.companyName]);
     const titleStyle = useMemo(() => {
         const length = displayCompanyName.length;
         const max = length > 22 ? 44 : length > 18 ? 50 : 56;
@@ -894,7 +899,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <div className="absolute inset-0 bg-cyan-500/20 blur-[80px] rounded-full scale-150 group-hover:bg-cyan-400/40 transition-all duration-700" />
 
                         <CompanyLogo
-                            src={currentCompany?.logo_url}
+                            src={websiteEntryContext ? undefined : currentCompany?.logo_url}
                             companyName={displayCompanyName}
                             size="lg"
                             animated
@@ -1352,6 +1357,42 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 })}
             </div>
 
+            {/* 3b. EMPTY STATE - shown when no departments exist (setup_required or no company) */}
+            <AnimatePresence>
+                {membershipsLoaded && visiblePlanets.length === 0 && !isHomeUniversePreview && (
+                    <motion.div
+                        className="absolute inset-0 z-[50] flex items-center justify-center pointer-events-none"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.4, delay: 0.6 }}
+                    >
+                        <div className="pointer-events-auto flex flex-col items-center gap-4 text-center px-8 py-10 max-w-sm rounded-[32px] border border-amber-400/18 bg-black/55 backdrop-blur-xl shadow-[0_24px_80px_rgba(0,0,0,0.4)]">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-amber-400/25 bg-amber-500/10">
+                                <Sparkles className="h-7 w-7 text-amber-300/80" />
+                            </div>
+                            <div>
+                                <div className="text-[10px] uppercase tracking-[0.3em] text-amber-200/55">Einrichtung erforderlich</div>
+                                <h2 className="mt-2 text-lg font-light tracking-[-0.02em] text-white/88">
+                                    Noch keine Abteilungen
+                                </h2>
+                                <p className="mt-3 text-sm leading-relaxed text-white/52">
+                                    Das Universe wird lebendig, sobald dein Unternehmen Abteilungen hat.
+                                    Erstelle oder verknüpfe dein Unternehmen in den Einstellungen.
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } })}
+                                className="mt-1 inline-flex items-center gap-2 rounded-full border border-amber-400/22 bg-amber-500/12 px-5 py-2.5 text-xs uppercase tracking-[0.16em] text-amber-100/80 transition-all hover:border-amber-300/36 hover:bg-amber-500/20"
+                            >
+                                Einstellungen öffnen
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* 4. SYSTEM INSIGHT (V10.6 OVERLAY) */}
             <AnimatePresence>
                 {showSystemStatus && (
@@ -1387,7 +1428,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         <Activity className="w-5 h-5 text-cyan-400" />
                                         <h2 className="text-2xl font-light tracking-[0.2em] uppercase text-white/90">Systemstatus</h2>
                                     </div>
-                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{isPublicDemoSurface ? 'Kuratiertes Beispielsystem' : 'Aktive Organisation'}</p>
+                                    <p className="text-[10px] text-white/40 tracking-[0.3em] uppercase">{websiteEntryContext ? 'Website-Dossier' : isPublicDemoSurface ? 'Kuratiertes Beispielsystem' : 'Aktive Organisation'}</p>
                                 </div>
                                 <button
                                     onClick={() => setShowSystemStatus(false)}
@@ -1408,8 +1449,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
                                     label="Kontext"
-                                    value={currentCompany?.is_demo ? 'Beispielsystem' : 'Geschuetzt'}
-                                    status={currentCompany?.is_demo ? 'neutral' : 'secure'}
+                                    value={websiteEntryContext ? 'Dossier' : currentCompany?.is_demo ? 'Beispielsystem' : 'Geschuetzt'}
+                                    status={websiteEntryContext ? 'stable' : currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard
                                     icon={<Database className="w-4 h-4" />}
@@ -1433,7 +1474,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     <span>Universe v2</span>
                                 </div>
                                 <div className="text-[9px] tracking-[0.2em] text-white/30 truncate max-w-[240px]">
-                                    {currentCompany?.name || displayCompanyName}
+                                    {displayCompanyName}
                                 </div>
                             </div>
                         </motion.div>

@@ -48,6 +48,7 @@ import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/com
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
@@ -505,6 +506,7 @@ export const Dock = () => {
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
     const surfaceProfile = useSurfaceProfile();
+    const websiteEntryContext = useWebsiteEntryContext();
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -523,13 +525,45 @@ export const Dock = () => {
         () => safeCompanies.find(c => c.id === activeCompanyId),
         [safeCompanies, activeCompanyId]
     );
+    const displayCompany = useMemo(() => {
+        if (!websiteEntryContext?.companyName) return activeCompany;
+        if (activeCompany) {
+            return {
+                ...activeCompany,
+                name: websiteEntryContext.companyName,
+                tenant_id: user?.tenant_id && user.tenant_id !== 'tenant-demo'
+                    ? user.tenant_id
+                    : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+                is_demo: false,
+            };
+        }
+        return {
+            id: `website-entry-${websiteEntryContext.id || 'current'}`,
+            tenant_id: user?.tenant_id && user.tenant_id !== 'tenant-demo'
+                ? user.tenant_id
+                : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+            owner_id: 'website-entry',
+            name: websiteEntryContext.companyName,
+            slug: `website-entry-${websiteEntryContext.id || 'current'}`,
+            description: websiteEntryContext.summary || null,
+            logo_url: null,
+            settings: null,
+            is_demo: false,
+        };
+    }, [activeCompany, user?.tenant_id, websiteEntryContext]);
+    const isClaimedWebsiteEntry = useMemo(() => {
+        if (!websiteEntryContext) return false;
+        const contextEmail = websiteEntryContext.email?.trim().toLowerCase();
+        const userEmail = user?.email?.trim().toLowerCase();
+        return Boolean(contextEmail && userEmail && contextEmail === userEmail);
+    }, [user?.email, websiteEntryContext]);
     const activeTrack = useMemo(
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
     );
     const operationalCompanyCount = useMemo(
-        () => (surfaceProfile.isLocalTruthSurface ? 1 : (activeCompany ? 1 : safeCompanies.length)),
-        [activeCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface]
+        () => (surfaceProfile.isLocalTruthSurface || websiteEntryContext ? 1 : (displayCompany ? 1 : safeCompanies.length)),
+        [displayCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface, websiteEntryContext]
     );
     const companyContextLabel = useMemo(
         () => formatCompanyContextLabel(surfaceProfile, operationalCompanyCount),
@@ -648,7 +682,7 @@ export const Dock = () => {
 
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
-        activeCompany,
+        activeCompany: displayCompany,
         activeDepartment,
         activeSpace,
         activeFolder,
@@ -659,11 +693,11 @@ export const Dock = () => {
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent,
-        isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
+        isPublicDemoSurface: websiteEntryContext ? false : surfaceProfile.isPublicDemoSurface,
         isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
-        activeCompany,
+        displayCompany,
         activeDepartment,
         activeSpace,
         activeFolder,
@@ -676,6 +710,7 @@ export const Dock = () => {
         accent,
         surfaceProfile.isPublicDemoSurface,
         surfaceProfile.isLocalTruthSurface,
+        websiteEntryContext,
     ]);
 
     const scopeLabel = shellContext.scopeLabel;
@@ -708,11 +743,11 @@ export const Dock = () => {
             return;
         }
 
-        openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
+        openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
             companyId: activeCompanyId || undefined,
         });
     }, [
-        activeCompany?.name,
+        displayCompany?.name,
         activeCompanyId,
         activeDepartment,
         activeDepartmentId,
@@ -780,22 +815,24 @@ export const Dock = () => {
 
         return {
             label: 'Universe',
-            title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
-            description: surfaceProfile.isPublicDemoSurface
+            title: displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
+            description: websiteEntryContext
+                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus oeffnest du Dossier, Aufgaben und Arbeitsraeume.'
+                : surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
                 : surfaceProfile.isLocalTruthSurface
                     ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
+            actionLabel: websiteEntryContext ? 'Dossier oeffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
-            onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
+            onOpen: () => openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
             }),
         };
     }, [
-        activeCompany,
+        displayCompany,
         activeCompanyId,
         activeDepartment,
         activeDepartmentId,
@@ -812,6 +849,7 @@ export const Dock = () => {
         surfaceProfile.isPublicDemoSurface,
         surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
+        websiteEntryContext,
     ]);
 
     const handleShellNextMove = useCallback(() => {
@@ -1205,7 +1243,7 @@ export const Dock = () => {
                                     isPinned={isCommandDeckPinned}
                                     orbStateLabel={orbStateLabel}
                                     scopeLabel={scopeLabel}
-                                    workspaceName={activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}
+                                    workspaceName={displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}
                                     contextLabel={shellContext.contextLabel}
                                     contextTitle={shellContext.title}
                                     contextSubtitle={shellContext.subtitle}
@@ -1268,16 +1306,16 @@ export const Dock = () => {
                     {/* LEFT: IDENTITY POD */}
                     <DockPod className="flex shrink-0 items-center gap-2 px-2 py-2" isStandardMode={isStandardMode}>
                         <AccountIdentityPod
-                            name={user?.name || 'Benutzer'}
+                            name={websiteEntryContext?.companyName || user?.name || 'Benutzer'}
                             role={user?.role}
-                            roleLabel={viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
-                            subtitle="Konto, Privatbereich und Dateien"
+                            roleLabel={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Kundenaccount' : 'Preview') : viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
+                            subtitle={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Verbundenes Website-Dossier' : 'Website-Dossier und HQ-Workspace') : 'Konto, Privatbereich und Dateien'}
                             preferInitials
                             compact
                             embedded
                             variant="dock"
-                            className="min-w-[272px] px-0 py-0"
-                            actionSlot={(
+                            className={websiteEntryContext ? 'min-w-[248px] max-w-[340px] px-0 py-0' : 'min-w-[272px] px-0 py-0'}
+                            actionSlot={websiteEntryContext ? undefined : (
                                 <button
                                     onClick={() => openPane({
                                         id: 'meine-dateien',
@@ -1295,7 +1333,7 @@ export const Dock = () => {
                                 </button>
                             )}
                         />
-                        <AdminModeSwitcher />
+                        {!websiteEntryContext && <AdminModeSwitcher />}
                         <button
                             onClick={() => openPane({
                                 id: 'meine-dateien',
@@ -1314,7 +1352,7 @@ export const Dock = () => {
                     </DockPod>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
+                        {!websiteEntryContext && <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
                             <DockSearchLauncher
                                 isStandardMode={isStandardMode}
                                 shortcutLabel={`${mod}+K`}
@@ -1382,7 +1420,7 @@ export const Dock = () => {
                                     </div>
                                 </button>
                             </div>
-                        </DockPod>
+                        </DockPod>}
 
                         <DockPod className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
                             <div className="flex min-w-0 items-center gap-1 xl:gap-2">
@@ -1397,21 +1435,21 @@ export const Dock = () => {
                             </div>
                         </DockPod>
 
-                        <DockPod className="flex shrink-0 items-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
+                        <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'flex shrink-0 items-center gap-3 px-3 py-2.5'} isStandardMode={isStandardMode}>
                     {/* RIGHT SECTION: Status + Context */}
-                    <div className="flex items-center gap-2">
+                    {!websiteEntryContext && <div className="flex items-center gap-2">
                         <NotificationCenter />
-                    </div>
+                    </div>}
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
-                    <div className="relative">
+                    {!websiteEntryContext && <div className="relative">
                         <button
                             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all group ${isStandardMode
                                 ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                 : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
                             onClick={() => {
-                                if (!surfaceProfile.companySwitcherEnabled) return;
+                                if (!surfaceProfile.companySwitcherEnabled || websiteEntryContext) return;
                                 setShowCompanySwitcher(!showCompanySwitcher);
                             }}
                             type="button"
@@ -1423,9 +1461,9 @@ export const Dock = () => {
                             <div className="hidden 2xl:flex flex-col items-start">
                                 <span className={`text-xs font-medium max-w-[90px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
                                     }`}>
-                                    {activeCompany?.name || surfaceProfile.fallbackCompanyName}
+                                    {displayCompany?.name || surfaceProfile.fallbackCompanyName}
                                 </span>
-                                {companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                {!websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                     <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
                                         }`}>
                                         {companyContextLabel}
@@ -1434,13 +1472,13 @@ export const Dock = () => {
                             </div>
                             <ChevronUp
                                 size={14}
-                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled ? '' : 'rotate-180'}`}
+                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled && !websiteEntryContext ? '' : 'rotate-180'}`}
                             />
                         </button>
 
                         {/* COMPANY SWITCHER POPUP */}
                         <AnimatePresence>
-                            {showCompanySwitcher && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                            {showCompanySwitcher && !websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -1482,11 +1520,12 @@ export const Dock = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
+                    </div>}
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    {!websiteEntryContext && <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
+                    }
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
                     <div className="flex items-center gap-3 pl-1">

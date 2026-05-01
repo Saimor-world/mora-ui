@@ -28,6 +28,7 @@ import { TasksPane }       from '@/components/panes/TasksPane';
 import { TimelinePane }    from '@/components/panes/TimelinePane';
 import { CanvasPane }      from '@/components/panes/CanvasPane';
 import { AppLibraryPane }  from '@/components/panes/AppLibraryPane';
+import { WebsiteDossierPane } from '@/components/panes/WebsiteDossierPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -68,6 +69,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <IntegrationsPane id={pane.id} />;
         case 'browser':
             return <BrowserPane id={pane.id} />;
+        case 'website-dossier':
+            return <WebsiteDossierPane id={pane.id} data={pane.data} />;
         case 'terminal':
             return <TerminalPane id={pane.id} />;
         case 'company-detail':

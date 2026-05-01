@@ -66,5 +66,6 @@ export const queryKeys = {
 
   userProfile: () => ['userProfile'] as const,
 
+  perceptionRoot: () => ['perception'] as const,
   perception: (key: string) => ['perception', key] as const,
 };
