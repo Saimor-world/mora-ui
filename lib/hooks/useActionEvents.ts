@@ -3,6 +3,8 @@ import { create } from 'zustand';
 import { realtime } from '@/lib/api/realtimeClient';
 import { coreGet } from '@/lib/api/coreClient';
 import { NAVIGATION_ACTION_INTENT, NAVIGATION_RESULT_EVENT, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import { getQueryClient } from '@/lib/queryClient';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 export type ActionStatus =
     | 'proposed'
@@ -54,6 +56,13 @@ function navigationOutcomeToActionEvent(detail: NavigationOutcome): ActionEvent 
         },
         timestamp: now,
     };
+}
+
+const PERCEPTION_INVALIDATING_STATUSES: ActionStatus[] = ['done', 'failed', 'rejected', 'expired'];
+
+function invalidatePerceptionForAction(status: ActionStatus) {
+    if (!PERCEPTION_INVALIDATING_STATUSES.includes(status)) return;
+    getQueryClient().invalidateQueries({ queryKey: queryKeys.perceptionRoot() });
 }
 
 export const useActionEventStore = create<ActionEventState>((set, get) => ({
@@ -155,6 +164,7 @@ export function useActionEvents(enabled: boolean = true) {
         // 2. Listen to websocket events
         const handleActionStatus = (data: ActionEvent) => {
             addEvent(data);
+            invalidatePerceptionForAction(data.status);
         };
 
         realtime.on('action_status', handleActionStatus);
@@ -162,7 +172,9 @@ export function useActionEvents(enabled: boolean = true) {
         const handleNavigationResult = (event: Event) => {
             const detail = (event as CustomEvent<NavigationOutcome>).detail;
             if (!detail) return;
-            addEvent(navigationOutcomeToActionEvent(detail));
+            const actionEvent = navigationOutcomeToActionEvent(detail);
+            addEvent(actionEvent);
+            invalidatePerceptionForAction(actionEvent.status);
         };
         window.addEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
 
