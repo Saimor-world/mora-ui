@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CheckCircle, CheckCircle2, ChevronDown, Clock3, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
+import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
@@ -521,10 +521,211 @@ function renderActionResultDetails(evt: ActionEvent): React.ReactNode {
     );
 }
 
+// ─── Verlauf (P5b) ───────────────────────────────────────────────────────────
+
+interface JournalRun {
+    event_id: string;
+    tool_name: string | null;
+    intent: string | null;
+    change_summary: string | null;
+    actor_id: string | null;
+    ok: number | null;
+    started_at: string | null;
+    finished_at: string | null;
+    input_json: string | null;
+    output_json: string | null;
+    affected_entities: unknown[];
+    plan_id: string | null;
+    message_id: string | null;
+}
+
+function formatDuration(started?: string | null, finished?: string | null): string {
+    if (!started || !finished) return '';
+    const ms = new Date(finished).getTime() - new Date(started).getTime();
+    if (ms < 0) return '';
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+}
+
+function VerlaufTab() {
+    const [runs, setRuns] = useState<JournalRun[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [promoting, setPromoting] = useState<string | null>(null);
+    const [promoted, setPromoted] = useState<Set<string>>(new Set());
+    const [okFilter, setOkFilter] = useState<'all' | 'ok' | 'failed'>('all');
+
+    const load = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = new URLSearchParams({ limit: '80' });
+            if (okFilter === 'ok') params.set('ok', 'true');
+            if (okFilter === 'failed') params.set('ok', 'false');
+            const res = await coreGet(`/v3/mora/journal?${params}`);
+            setRuns(Array.isArray(res?.runs) ? (res.runs as JournalRun[]) : []);
+        } catch {
+            setRuns([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [okFilter]);
+
+    useEffect(() => { void load(); }, [load]);
+
+    const handlePromote = useCallback(async (journalId: string) => {
+        setPromoting(journalId);
+        try {
+            await corePost('/v3/mora/journal/promote', { journal_id: journalId });
+            setPromoted((prev) => new Set([...prev, journalId]));
+            toast.success('In Mora-Gedächtnis gespeichert');
+        } catch {
+            toast.error('Merken fehlgeschlagen');
+        } finally {
+            setPromoting(null);
+        }
+    }, []);
+
+    return (
+        <div className="flex h-full flex-col gap-3">
+            {/* Filter bar */}
+            <div className="flex items-center gap-2">
+                {(['all', 'ok', 'failed'] as const).map((f) => (
+                    <button
+                        key={f}
+                        type="button"
+                        onClick={() => setOkFilter(f)}
+                        className={`rounded-full border px-3 py-1.5 text-[11px] transition-colors ${okFilter === f
+                            ? 'border-cyan-400/40 bg-cyan-500/15 text-cyan-300'
+                            : 'border-white/10 text-white/55 hover:border-white/20 hover:text-white/75'
+                        }`}
+                    >
+                        {f === 'all' ? 'Alle' : f === 'ok' ? 'Erfolgreich' : 'Fehler'}
+                    </button>
+                ))}
+                <button
+                    type="button"
+                    onClick={() => void load()}
+                    className="ml-auto rounded-xl border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-cyan-300 hover:border-cyan-400/40"
+                >
+                    Aktualisieren
+                </button>
+            </div>
+
+            {/* Run list */}
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                {loading ? (
+                    <div className="flex h-full items-center justify-center text-white/50">
+                        <Loader2 size={18} className="mr-2 animate-spin text-cyan-300" />
+                        Lade Verlauf…
+                    </div>
+                ) : runs.length === 0 ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-3 text-white/45">
+                        <History size={26} className="text-white/20" />
+                        <div className="text-sm">Noch keine Werkzeug-Ausführungen</div>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {runs.map((run) => {
+                            const isOk = run.ok === 1;
+                            const expanded = expandedId === run.event_id;
+                            const duration = formatDuration(run.started_at, run.finished_at);
+                            const alreadyMerked = promoted.has(run.event_id);
+                            return (
+                                <div key={run.event_id} className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="mt-0.5 shrink-0">
+                                            {isOk
+                                                ? <CheckCircle2 size={14} className="text-emerald-500" />
+                                                : <XCircle size={14} className="text-red-400" />}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-sm font-medium text-white/90">
+                                                        {run.change_summary || run.intent || run.tool_name || '—'}
+                                                    </div>
+                                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/40">
+                                                        {run.tool_name && <span className="font-mono">{run.tool_name}</span>}
+                                                        {duration && <span>{duration}</span>}
+                                                        {run.started_at && (
+                                                            <span>{formatTime(run.started_at)}</span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                                <div className="flex shrink-0 items-center gap-1">
+                                                    {isOk && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => void handlePromote(run.event_id)}
+                                                            disabled={!!promoting || alreadyMerked}
+                                                            title={alreadyMerked ? 'Bereits gemerkt' : 'In Gedächtnis speichern'}
+                                                            className={`rounded-lg p-1 transition-colors ${alreadyMerked
+                                                                ? 'text-violet-400'
+                                                                : 'text-white/30 hover:bg-white/[0.05] hover:text-violet-300'
+                                                            } disabled:cursor-not-allowed disabled:opacity-50`}
+                                                        >
+                                                            {promoting === run.event_id
+                                                                ? <Loader2 size={13} className="animate-spin" />
+                                                                : <BookMarked size={13} />}
+                                                        </button>
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setExpandedId(expanded ? null : run.event_id)}
+                                                        className="rounded-lg p-1 text-white/40 hover:bg-white/[0.05] hover:text-white/70"
+                                                    >
+                                                        <ChevronDown size={14} className={`transition-transform ${expanded ? 'rotate-180' : ''}`} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            {expanded && (
+                                                <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-[11px]">
+                                                    {run.input_json && (
+                                                        <div>
+                                                            <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Eingabe</div>
+                                                            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-white/60">
+                                                                {run.input_json}
+                                                            </pre>
+                                                        </div>
+                                                    )}
+                                                    {run.output_json && (
+                                                        <div>
+                                                            <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Ausgabe</div>
+                                                            <pre className="overflow-x-auto whitespace-pre-wrap break-all font-mono text-white/60">
+                                                                {run.output_json}
+                                                            </pre>
+                                                        </div>
+                                                    )}
+                                                    {run.affected_entities.length > 0 && (
+                                                        <div>
+                                                            <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Betroffene Entitäten</div>
+                                                            <div className="text-white/60">{JSON.stringify(run.affected_entities)}</div>
+                                                        </div>
+                                                    )}
+                                                    <div className="flex flex-wrap gap-4 text-white/40">
+                                                        <span>ID: <span className="font-mono">{run.event_id}</span></span>
+                                                        {run.plan_id && <span>Plan: <span className="font-mono">{run.plan_id}</span></span>}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
 export default function ActionCenterApp({ paneId }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(paneId);
     const isActive = usePaneStore((state) => state.activePaneId === paneId);
+
+    const [tab, setTab] = useState<'aktionen' | 'verlauf'>('aktionen');
 
     const [events, setEvents] = useState<ActionEvent[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -684,6 +885,30 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             paneId={paneId}
         >
             <div className="flex h-full flex-col gap-4">
+                {/* Tab bar */}
+                <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+                    {([['aktionen', 'Aktionen'], ['verlauf', 'Verlauf']] as const).map(([key, label]) => (
+                        <button
+                            key={key}
+                            type="button"
+                            onClick={() => setTab(key)}
+                            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-medium transition-colors ${tab === key
+                                ? 'bg-white/10 text-white/90'
+                                : 'text-white/45 hover:text-white/65'
+                            }`}
+                        >
+                            {key === 'aktionen' ? <Activity size={12} /> : <History size={12} />}
+                            {label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Verlauf tab */}
+                {tab === 'verlauf' && <VerlaufTab />}
+
+                {/* Aktionen tab content (hidden when verlauf active) */}
+                {tab === 'aktionen' && <>
+
                 {/* Summary tiles */}
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
                     {[
@@ -1033,6 +1258,8 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                         </div>
                     )}
                 </div>
+
+                </> /* end aktionen tab */}
             </div>
         </GlassPanel>
     );
