@@ -64,6 +64,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
 import type { AppProps } from '@/lib/apps/types';
+import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -239,6 +240,15 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const { data: companyNodesData = [] } = useCompanyNodes(activeCompanyId, { limit: 200 });
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
+
+    // P4: invalidate tree + node queries when Mora executes something affecting this company
+    useExecutionSubscription({
+        on_done: () => {
+            if (!activeCompanyId) return;
+            void queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(activeCompanyId), exact: false });
+        },
+    });
 
     // UNIFIED FINDER: Can start at any level
     // Quick Access: Filter by department if provided

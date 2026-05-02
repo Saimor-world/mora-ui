@@ -46,6 +46,8 @@ import {
     useRealtime,
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
+import { useMoraExecutions } from '@/lib/hooks/useMoraExecutions';
+import { ExecutionToast } from '@/components/mora/ExecutionToast';
 import { WebsiteContextBanner } from '@/components/entry/WebsiteContextBanner';
 import { realtime } from '@/lib/api/realtimeClient';
 
@@ -565,6 +567,7 @@ export const MoraShell: React.FC = () => {
     useShellEvents({});
 
     useRealtime(isBootstrapped);
+    useMoraExecutions(isBootstrapped); // P4: realtime execution events → window bus + orb
     useOperationalFlip();
 
     useKeyboardShortcuts({
@@ -1305,6 +1308,8 @@ export const MoraShell: React.FC = () => {
                     </div>
                 )
             }
+            {/* P4: Execution toast for off-screen pane actions */}
+            <ExecutionToast />
         </div>
     );
 };
