@@ -8,3 +8,4 @@ export { ProgressFrame } from './ProgressFrame';
 export { ResultCard } from './ResultCard';
 export { ErrorCard } from './ErrorCard';
 export { CapabilityGapCard } from './CapabilityGapCard';
+export { FramedMessage } from './FramedMessage';
