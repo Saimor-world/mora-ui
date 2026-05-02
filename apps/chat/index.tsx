@@ -27,6 +27,10 @@ import { useMoraPerception } from '@/lib/queries/useMoraPerception';
 import { isMoraPerceiveV1Enabled } from '@/lib/featureFlags';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
+import { useMoraFrameStream } from '@/lib/hooks/useMoraFrameStream';
+import { FramedMessage } from '@/components/mora/dialogue/FramedMessage';
+import { isMoraDialogueV1Enabled } from '@/lib/featureFlags';
+import type { MoraFrame } from '@/lib/types/moraFrame';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList, WifiOff, RefreshCw } from 'lucide-react';
@@ -65,6 +69,8 @@ interface Message {
     pendingAction?: PendingAction;
     /** set when the agent produced a work-session plan; used to open WorkSessionPane */
     planId?: string;
+    /** typed frames from mora.dialogue.v1 path — rendered via FramedMessage */
+    frames?: MoraFrame[];
 }
 
 function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
@@ -575,7 +581,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         return { scope: 'shared' };
     }, [activeDepartment]);
 
-    // Streaming hook — real AI, token-by-token
+    // Streaming hook — real AI, token-by-token (legacy free-text path)
     const {
         sendMessage: streamSend,
         streamingText,
@@ -584,6 +590,18 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         messages: streamHistory,
         clearHistory,
     } = useMoraStream();
+
+    // Typed-frame stream — mora.dialogue.v1 path (spec §4).
+    // Always called (hooks must not be conditional); only used when flag is on.
+    const {
+        send: frameSend,
+        frames: liveFrames,
+        isStreaming: isFrameStreaming,
+        error: frameError,
+        reset: frameReset,
+    } = useMoraFrameStream();
+
+    const useFramePath = isMoraDialogueV1Enabled();
     const { mailPreview, calendarPreview, feedPreview, cloudPreview } = useCommunicationLiveData();
     const { overview: communicationOverview, summary: communicationSummary } = useCommunicationSurface();
 
@@ -1170,13 +1188,44 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ? [{ role: 'assistant' as const, content: communicationContextMessage }, ...historyForStream]
                     : historyForStream;
 
+                const chatContext = buildChatContext({
+                    session_id: "chat_pane",
+                    pane_id: paneId,
+                    ...(isMoraPerceiveV1Enabled() && perceptionBundle ? { perception: perceptionBundle } : {}),
+                }) as Record<string, unknown> | undefined;
+
+                if (useFramePath) {
+                    // mora.dialogue.v1: typed frames via /v3/chat/stream
+                    frameReset();
+                    await frameSend(content, {
+                        history: streamHistoryWithCommunication,
+                        context: chatContext,
+                    });
+                    // After stream done — commit frames as a message
+                    const captured = [...liveFrames];
+                    if (captured.length > 0) {
+                        setMessages(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            role: 'assistant',
+                            content: '',
+                            frames: captured,
+                            timestamp: new Date(),
+                        }]);
+                    } else if (frameError) {
+                        setMessages(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            role: 'assistant',
+                            content: `Mora konnte nicht antworten – ${frameError}`,
+                            timestamp: new Date(),
+                        }]);
+                    }
+                    return;
+                }
+
+                // Legacy free-text stream via /v1/chat/stream
                 const fullReply = await streamSend(content, {
                     history: streamHistoryWithCommunication,
-                    context: buildChatContext({
-                        session_id: "chat_pane",
-                        pane_id: paneId,
-                        ...(isMoraPerceiveV1Enabled() && perceptionBundle ? { perception: perceptionBundle } : {}),
-                    }) as Record<string, unknown> | undefined
+                    context: chatContext,
                 });
 
                 // After stream done — add finalized message to local list
@@ -1234,6 +1283,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         streamSend,
         viewLevel,
         perceptionBundle,
+        useFramePath,
+        frameSend,
+        frameReset,
+        frameError,
+        liveFrames,
     ]);
 
     // Handle initial message from Dock/Spotlight chat input
@@ -1344,10 +1398,18 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                                             }`} />
                                     )}
-                                    <div
-                                        className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
-                                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                                    />
+                                    {msg.frames && msg.frames.length > 0 ? (
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                            {msg.frames.map((frame, i) => (
+                                                <FramedMessage key={i} frame={frame} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
+                                            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                        />
+                                    )}
                                     {msg.role === 'user' && (
                                         <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                                             }`} />
@@ -1458,9 +1520,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ))}
                 </AnimatePresence>
 
-                {/* Live streaming bubble — shown while Mora is generating */}
+                {/* Live streaming bubble — legacy free-text path */}
                 <AnimatePresence>
-                    {isStreaming && streamingText && (
+                    {!useFramePath && isStreaming && streamingText && (
                         <motion.div
                             key="stream-bubble"
                             initial={{ opacity: 0, y: 10 }}
@@ -1478,6 +1540,34 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                                 '<span style="display:inline-block;width:2px;height:1em;background:#34d399;vertical-align:middle;margin-left:2px" class="animate-pulse"></span>'
                                         }}
                                     />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Live frame stream — mora.dialogue.v1 path */}
+                <AnimatePresence>
+                    {useFramePath && isFrameStreaming && liveFrames.length > 0 && (
+                        <motion.div
+                            key="frame-stream-bubble"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex justify-start"
+                        >
+                            <div className="max-w-[80%] w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                                <div className="flex items-start gap-2">
+                                    <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        {liveFrames.map((frame, i) => (
+                                            <FramedMessage key={i} frame={frame} />
+                                        ))}
+                                        <span
+                                            style={{ display: 'inline-block', width: 2, height: '1em', background: '#34d399', verticalAlign: 'middle', marginLeft: 2 }}
+                                            className="animate-pulse"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
