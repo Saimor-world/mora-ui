@@ -5,63 +5,82 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import {
+    Activity, Bot, Calendar, Clock, Folder, FileText, Globe, Grid, Inbox,
+    MessageCircle, PenTool, Plug, ScanLine, Search, Settings, ShieldCheck,
+    SquareCheckBig, StickyNote, Terminal, Timer, UserCog, Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { APP_REGISTRY } from '@/lib/apps/appRegistry';
+import type { AppCategory, AppColor } from '@/lib/apps/types';
+import type { PaneType } from '@/lib/surface/surfaceRegistry';
+import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
+import type { AppProps } from '@/lib/apps/types';
+
+// ─── Icon map ─────────────────────────────────────────────────────────────────
+// Maps Lucide icon names (stored in APP_REGISTRY) to their component references.
+// Add entries here when new icons are needed by new apps.
+
+const ICON_MAP: Record<string, LucideIcon> = {
     Activity,
+    Bot,
     Calendar,
+    Clock,
+    FileText,
     Folder,
+    Globe,
     Grid,
+    Inbox,
+    MessageCircle,
     PenTool,
+    Plug,
     ScanLine,
     Search,
     Settings,
+    ShieldCheck,
     SquareCheckBig,
     StickyNote,
+    Terminal,
+    Timer,
+    UserCog,
     Users,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { PaneType } from '@/lib/surface/surfaceRegistry';
-import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
-import { getAppManifest } from '@/lib/apps/appRegistry';
-import type { AppProps } from '@/lib/apps/types';
-
-// ─── App catalogue ────────────────────────────────────────────────────────────
-
-type AppCategory = 'core' | 'workspace' | 'collaboration' | 'system';
-
-const CATEGORY_ORDER: AppCategory[] = ['core', 'workspace', 'collaboration', 'system'];
-
-const CATEGORY_LABELS: Record<AppCategory, string> = {
-    core:          'Kern',
-    workspace:     'Arbeitsbereich',
-    collaboration: 'Zusammenarbeit',
-    system:        'System',
 };
 
-interface AppEntry {
-    name: string;
-    type: PaneType;
-    icon: LucideIcon;
-    color: string;
-    category: AppCategory;
-}
+// ─── Apps excluded from the launcher ─────────────────────────────────────────
+// These apps are opened programmatically, not by the user from the library.
 
-const ALL_APPS: AppEntry[] = [
-    // Core
-    { name: 'Finder',          type: 'finder',       icon: Folder,         color: 'text-emerald-400',  category: 'core' },
-    { name: 'Alle Inhalte',    type: 'grid',         icon: Grid,           color: 'text-emerald-300',  category: 'core' },
-    { name: 'Suche',           type: 'search',       icon: Search,         color: 'text-emerald-400',  category: 'core' },
-    { name: 'Notizen',         type: 'notes',        icon: StickyNote,     color: 'text-yellow-400',   category: 'core' },
-    { name: 'Scanner',         type: 'scanner',      icon: ScanLine,       color: 'text-purple-400',   category: 'core' },
-    // Workspace
-    { name: 'Aufgaben',        type: 'tasks',        icon: SquareCheckBig, color: 'text-orange-400',   category: 'workspace' },
-    { name: 'Zeitverlauf',     type: 'timeline',     icon: Activity,       color: 'text-rose-400',     category: 'workspace' },
-    { name: 'Canvas',          type: 'canvas',       icon: PenTool,        color: 'text-violet-400',   category: 'workspace' },
-    { name: 'Kalender',        type: 'calendar',     icon: Calendar,       color: 'text-orange-400',   category: 'workspace' },
-    // Collaboration
-    { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration' },
-    { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration' },
-    // System
-    { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system' },
-];
+const LAUNCHER_EXCLUDE = new Set<string>([
+    'document',       // opened from Finder by clicking a node
+    'website-dossier', // opened from saimor.world security-check
+    'action-center',  // has its own dedicated HUD button
+    'meine-dateien',  // accessible via sidebar / profile
+]);
+
+// ─── Category display order + labels ─────────────────────────────────────────
+
+const CATEGORY_ORDER: AppCategory[] = ['core', 'intelligence', 'workspace', 'people', 'creative', 'system'];
+
+const CATEGORY_LABELS: Record<AppCategory, string> = {
+    core:         'Kern',
+    intelligence: 'Intelligenz',
+    workspace:    'Arbeitsbereich',
+    people:       'Team',
+    creative:     'Kreativ',
+    system:       'System',
+};
+
+// ─── Color → Tailwind class ───────────────────────────────────────────────────
+
+const COLOR_CLASS: Record<AppColor, string> = {
+    blue:    'text-blue-400',
+    purple:  'text-purple-400',
+    green:   'text-emerald-400',
+    orange:  'text-orange-400',
+    rose:    'text-rose-400',
+    teal:    'text-teal-400',
+    amber:   'text-amber-400',
+    indigo:  'text-indigo-400',
+    slate:   'text-slate-400',
+};
 
 // ─── AppLibraryApp ────────────────────────────────────────────────────────────
 
@@ -73,21 +92,20 @@ export default function AppLibraryApp({ paneId }: AppProps) {
 
     if (!pane) return null;
 
-    // Filter: surface tier (not future-gated) + requiresRole from APP_REGISTRY
-    const visibleApps = ALL_APPS.filter(app => {
-        if (!isPaneEnabled(app.type)) return false;
-        const manifest = getAppManifest(app.type);
-        if (manifest?.requiresRole && userRole && !manifest.requiresRole.includes(userRole as any)) return false;
+    // Build the list from APP_REGISTRY, applying all filters.
+    const visibleApps = APP_REGISTRY.filter(manifest => {
+        if (LAUNCHER_EXCLUDE.has(manifest.id)) return false;
+        if (!isPaneEnabled(manifest.id as PaneType)) return false;
+        if (manifest.requiresRole && userRole && !manifest.requiresRole.includes(userRole as 'owner' | 'admin' | 'member')) return false;
         return true;
     });
 
-    const handleAppClick = (app: AppEntry) => {
-        const manifest = getAppManifest(app.type);
+    const handleAppClick = (id: string, name: string, size: { width: number; height: number }) => {
         openPane({
-            id: `${app.type}-main`,
-            type: app.type,
-            title: app.name,
-            size: manifest?.defaultSize ?? { width: 800, height: 600 },
+            id: `${id}-main`,
+            type: id as PaneType,
+            title: name,
+            size,
         });
         removePane(paneId);
     };
@@ -123,21 +141,21 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                             </p>
                             <div className="grid grid-cols-4 gap-3">
                                 {section.map(app => {
-                                    const manifest = getAppManifest(app.type);
-                                    const isNew = manifest?.isNew ?? false;
+                                    const IconComp = ICON_MAP[app.icon] ?? Grid;
+                                    const colorClass = COLOR_CLASS[app.color] ?? 'text-white/70';
                                     return (
                                         <div
-                                            key={app.type}
-                                            onClick={() => handleAppClick(app)}
+                                            key={app.id}
+                                            onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
                                             className="relative aspect-square rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center gap-3 group cursor-pointer"
                                         >
-                                            {isNew && (
+                                            {app.isNew && (
                                                 <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
                                                     Neu
                                                 </span>
                                             )}
-                                            <div className={`p-3 rounded-xl bg-black/20 ${app.color}`}>
-                                                <app.icon size={28} />
+                                            <div className={`p-3 rounded-xl bg-black/20 ${colorClass}`}>
+                                                <IconComp size={28} />
                                             </div>
                                             <span className="text-sm text-white/60 group-hover:text-white transition-colors text-center leading-tight px-1">
                                                 {app.name}
