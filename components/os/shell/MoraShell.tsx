@@ -378,14 +378,15 @@ export const MoraShell: React.FC = () => {
         if (isPublicDemoSurface) {
             return hasDemoCompany ? ['demo'] : ['workspace'];
         }
-        if (surfaceProfile.isLocalTruthSurface) {
+        if (surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface) {
+            // Single-deployment surfaces: workspace only — no demo mode clutter.
             return ['workspace'];
         }
         if (role === 'system_owner') {
             return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];
         }
         return hasDemoCompany ? ['workspace', 'demo'] : ['workspace'];
-    }, [role, hasDemoCompany, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface]);
+    }, [role, hasDemoCompany, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface, surfaceProfile.isHqSurface]);
     const scopeLabel = React.useMemo(() => {
         if (viewLevel === 'company') return 'Portfolio';
         if (viewLevel === 'core') return 'Universe';
