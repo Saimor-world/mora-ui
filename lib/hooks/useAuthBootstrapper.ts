@@ -12,6 +12,7 @@ import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
 import { isLocalRuntimeHost, useRuntimeSession } from '@/lib/auth/runtimeSession';
+import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
 import type { UserProfile } from '@/lib/api/authClient';
 import type { User, UserRole } from '@/lib/types/mora';
 
@@ -122,7 +123,10 @@ export function useAuthBootstrapper() {
             const hasCoreSession = !!readCookie('mora_session');
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
-            if (!hasCoreSession && !hasLegacyToken) {
+            // Website entry preview: when a scan context is stored, allow unauthenticated
+            // access. The OS renders in isolated preview mode — no real CORE data is loaded.
+            const hasWebsiteEntry = !!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+            if (!hasCoreSession && !hasLegacyToken && !hasWebsiteEntry) {
                 deleteCookie('mora_session');
                 deleteCookie('mora_auth_token');
                 router.push('/');
@@ -165,6 +169,19 @@ export function useAuthBootstrapper() {
 
         setHasBooted(true);
     }, [profile, setUser, setHasBooted, setViewMode, sessionTenantId]);
+
+    // ---------------------------------------------------------------------------
+    // Website entry preview boot
+    // When there is no profile (unauthenticated preview), boot the OS so it does
+    // not stay in the loading state indefinitely.
+    // ---------------------------------------------------------------------------
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (status === 'loading') return;
+        if (profile) return; // Normal boot path handles this
+        if (!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY)) return;
+        setHasBooted(true);
+    }, [status, profile, setHasBooted]);
 
     // ---------------------------------------------------------------------------
     // Company selection effect
