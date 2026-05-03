@@ -90,7 +90,11 @@ export function useAuthBootstrapper() {
         // --- Stale session check (neustart tier → 72h+) ---
         if (!staleTeardownRan.current) {
             const lastActivity = localStorage.getItem('last_activity');
-            if (getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
+            // Website entry preview: no last_activity exists for unauthenticated scan visitors.
+            // getSessionTier(null) returns 'neustart', which would fire clearClientSessionArtifacts()
+            // and wipe saimor_website_entry_context — skip teardown for these visitors entirely.
+            const hasWebsiteEntryForTeardown = !!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+            if (!hasWebsiteEntryForTeardown && getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
                 staleTeardownRan.current = true;
                 const teardown: Promise<unknown>[] = [authLogout()];
                 const shouldSignOutNextAuth =
