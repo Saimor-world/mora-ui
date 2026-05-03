@@ -78,13 +78,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Beispielinstanz erkunden oder mit Zugangsdaten weiter'
-        : surfaceProfile.isLocalTruthSurface
-            ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
-            : 'Zugriff auf deine Organisation';
+        : surfaceProfile.isHqSurface
+            ? 'HQ-Zugang mit deinen Anmeldedaten öffnen'
+            : surfaceProfile.isLocalTruthSurface
+                ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
+                : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Private Instanz ausserhalb der Demo vorbereiten'
         : websiteEntryContext
             ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
+            : surfaceProfile.isHqSurface
+            ? 'HQ-Zugang einrichten'
             : surfaceProfile.isLocalTruthSurface
             ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
             : 'Neue Organisation einrichten';
@@ -1093,7 +1097,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {websiteEntryContext ? 'Dossier mit Account verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
+                                            {websiteEntryContext ? 'Dossier mit Account verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isHqSurface ? 'HQ-Zugang einrichten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
                                         </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
                                     </div>
@@ -1231,7 +1235,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-8 text-center uppercase drop-shadow-[0_0_15px_rgba(206,182,118,0.2)]">
-                                        {websiteEntryContext ? 'Dossier verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
+                                        {websiteEntryContext ? 'Dossier verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isHqSurface ? 'HQ-Zugang einrichten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
                                     </h2>
 
                                     <div className="space-y-4">
