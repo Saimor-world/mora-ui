@@ -1520,6 +1520,36 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ))}
                 </AnimatePresence>
 
+                {/* Thinking indicator — shown when stream started but no content yet */}
+                <AnimatePresence>
+                    {((useFramePath && isFrameStreaming && liveFrames.length === 0) ||
+                      (!useFramePath && isStreaming && !streamingText)) && (
+                        <motion.div
+                            key="thinking-indicator"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+                            className="flex justify-start"
+                        >
+                            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
+                                {/* Animated dots */}
+                                <div className="flex items-center gap-1">
+                                    {[0, 1, 2].map(i => (
+                                        <span
+                                            key={i}
+                                            className="block w-1.5 h-1.5 rounded-full bg-emerald-400/70"
+                                            style={{
+                                                animation: `mora-thinking-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                <span className="text-xs text-white/45">Môra denkt nach…</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* Live streaming bubble — legacy free-text path */}
                 <AnimatePresence>
                     {!useFramePath && isStreaming && streamingText && (
