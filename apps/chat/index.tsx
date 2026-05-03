@@ -1376,6 +1376,47 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
 
             {/* Messages */}
             <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                {/* Empty state — shown when no messages yet */}
+                {messages.length === 0 && !isStreaming && !isFrameStreaming && (
+                    <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                            isStandardMode
+                                ? 'bg-[#0078D4]/15 border border-[#0078D4]/25'
+                                : 'bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
+                        }`}>
+                            <Sparkles size={22} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
+                        </div>
+                        <div>
+                            <p className={`text-sm font-medium mb-1 ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white/75'}`}>
+                                Hallo, ich bin Môra
+                            </p>
+                            <p className={`text-xs leading-relaxed max-w-[260px] ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>
+                                Frag mich etwas, oder lass mich dir beim Durchsuchen, Erstellen und Verstehen deiner Inhalte helfen.
+                            </p>
+                        </div>
+                        {/* Quick prompt suggestions */}
+                        <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
+                            {[
+                                'Was ist mein letzter Stand?',
+                                'Suche nach…',
+                                'Erstelle eine Notiz',
+                            ].map((prompt) => (
+                                <button
+                                    key={prompt}
+                                    onClick={() => setInput(prompt)}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors ${
+                                        isStandardMode
+                                            ? 'border-[#E1E1E1] text-[#605E5C] hover:border-[#0078D4]/40 hover:text-[#0078D4]'
+                                            : 'border-white/[0.08] text-white/40 hover:border-emerald-400/30 hover:text-white/70 hover:bg-white/[0.03]'
+                                    }`}
+                                >
+                                    {prompt}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <AnimatePresence>
                     {messages.map((msg) => (
                         <motion.div
