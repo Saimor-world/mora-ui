@@ -57,9 +57,10 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   grid:            dynamic(() => import('@/apps/grid'),          { ssr: false, loading: () => <AppSkeleton /> }),
   apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),
   'meine-dateien': dynamic(() => import('@/apps/meine-dateien'), { ssr: false, loading: () => <AppSkeleton /> }),
-  'action-center': dynamic(() => import('@/apps/action-center'), { ssr: false, loading: () => <AppSkeleton /> }),
-  'integrations':  dynamic(() => import('@/apps/integrations'),  { ssr: false, loading: () => <AppSkeleton /> }),
-  'mail':          dynamic(() => import('@/apps/mail'),          { ssr: false, loading: () => <AppSkeleton /> }),
+  'action-center':    dynamic(() => import('@/apps/action-center'),    { ssr: false, loading: () => <AppSkeleton /> }),
+  'integrations':     dynamic(() => import('@/apps/integrations'),     { ssr: false, loading: () => <AppSkeleton /> }),
+  'mail':             dynamic(() => import('@/apps/mail'),             { ssr: false, loading: () => <AppSkeleton /> }),
+  'website-dossier':  dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 /** Sorted list of all app ids registered in APP_MAP. Used by tests to guard registry consistency. */
