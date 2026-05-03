@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { ArrowRight, Bot, Building2, ClipboardList, FileText, Gauge, Home, ShieldCheck } from 'lucide-react';
 import { buildWebsiteEntryContext, firstQueryValue, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { WebsiteEntryPersistence } from '@/components/entry/WebsiteEntryPersistence';
@@ -28,9 +27,8 @@ const priorityClasses: Record<WebsiteEntryContext['tasks'][number]['priority'], 
 };
 
 export default async function EntryPage({ searchParams }: EntryPageProps) {
-    if (process.env.NEXT_PUBLIC_SURFACE_MODE !== 'hq') {
-        redirect('/home');
-    }
+    // SURFACE_MODE guard removed: /entry is always reachable for demo + HQ flows.
+    // Previously gated on NEXT_PUBLIC_SURFACE_MODE === 'hq', which blocked all demo links.
 
     const resolved = (await searchParams) ?? {};
     const surface = firstQueryValue(resolved.surface);
