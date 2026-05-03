@@ -574,19 +574,24 @@ export const HomeSurface: React.FC = () => {
                         <div>
                             <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/56">Home</div>
                             <h1 className="mt-2 text-[21px] font-light leading-tight tracking-[-0.02em] text-white/90">
-                                {firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                                {websiteEntryContext
+                                    ? `${websiteEntryContext.companyName} · Preview`
+                                    : firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
                             </h1>
                             <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/30">{todayLabel}</div>
                         </div>
-                        <button
-                            type="button"
-                            data-testid="home-logout"
-                            onClick={() => void handleLogout()}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/46 transition-all hover:border-white/14 hover:bg-white/[0.055] hover:text-white/74"
-                        >
-                            <LogOut size={13} />
-                            Abmelden
-                        </button>
+                        {/* Hide logout in unauthenticated website preview — no real session to end */}
+                        {(!websiteEntryContext || user) && (
+                            <button
+                                type="button"
+                                data-testid="home-logout"
+                                onClick={() => void handleLogout()}
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/46 transition-all hover:border-white/14 hover:bg-white/[0.055] hover:text-white/74"
+                            >
+                                <LogOut size={13} />
+                                Abmelden
+                            </button>
+                        )}
                     </div>
 
                     <p data-testid="briefing-text" className="mt-4 text-[12px] font-light leading-relaxed text-white/58">
