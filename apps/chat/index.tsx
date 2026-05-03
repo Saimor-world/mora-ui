@@ -1802,24 +1802,35 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             );
                         })()}
 
-                        <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
-                            <input
-                                type="text"
+                        <div className={`flex items-end gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                            <textarea
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
+                                rows={1}
+                                onChange={(e) => {
+                                    setInput(e.target.value);
+                                    // Auto-resize: reset to 1 row, then grow to fit content
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+                                }}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !isStreaming) sendMessage();
+                                    if (e.key === 'Enter' && !e.shiftKey && !isStreaming) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                        // Reset height after send
+                                        (e.target as HTMLTextAreaElement).style.height = 'auto';
+                                    }
                                     if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
                                 }}
-                                placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                                placeholder="Schreib Mora… (Shift+↵ für Zeilenumbruch)"
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
+                                style={{ resize: 'none', overflowY: 'hidden' }}
                                 className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                             />
                             <button
                                 onClick={sendMessage}
                                 disabled={!input.trim() || isLoading || isStreaming}
-                                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                                className="shrink-0 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                             >
                                 {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                                 {isFullscreen && <span>Senden</span>}
