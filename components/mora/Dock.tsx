@@ -1056,7 +1056,7 @@ export const Dock = () => {
             {
                 id: 'universe-home',
                 label: 'Home',
-                description: 'Zurueck auf die zentrale Core-Oberfläche.',
+                description: 'Zurück auf die zentrale Core-Oberfläche.',
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },

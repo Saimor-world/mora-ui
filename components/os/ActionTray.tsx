@@ -18,7 +18,7 @@ const statusIconMap: Record<ActionStatus, React.ReactNode> = {
 
 const statusLabelMap: Record<ActionStatus, string> = {
     proposed: 'Vorgeschlagen',
-    running: 'Laeuft',
+    running: 'Läuft',
     pending_confirmation: 'Wartet auf Bestätigung',
     done: 'Abgeschlossen',
     failed: 'Fehlgeschlagen',

@@ -1130,7 +1130,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className={`text-[11px] uppercase tracking-[0.24em] font-semibold ${isRunning ? 'text-blue-200/70' : isWaiting ? 'text-amber-200/70' : isDone ? 'text-white/30' : 'text-violet-200/70'}`}>
-                                            {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
+                                            {isRunning ? 'Läuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
                                         </div>
                                         {isRunning && (
                                             <div className="mb-2 mt-1">

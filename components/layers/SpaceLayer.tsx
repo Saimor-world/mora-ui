@@ -502,7 +502,7 @@ export const SpaceLayer: React.FC = () => {
                 </button>
                 <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-emerald-500/70">
-                        Zurueck
+                        Zurück
                     </span>
                     <span className="flex items-center gap-2 text-sm font-light tracking-widest">
                         <button

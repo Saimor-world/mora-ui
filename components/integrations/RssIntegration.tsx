@@ -118,7 +118,7 @@ export const RssIntegration: React.FC = () => {
                         className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-4 py-2 text-sm text-emerald-100 transition-colors hover:bg-emerald-500/18 disabled:opacity-45"
                     >
                         {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Plus size={14} />}
-                        Hinzufuegen
+                        Hinzufügen
                     </button>
                 </div>
             </div>
@@ -161,7 +161,7 @@ export const RssIntegration: React.FC = () => {
                     <div className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-white/40">Aktuelle Signale</div>
                     {items.length === 0 ? (
                         <p className="text-xs leading-relaxed text-white/42">
-                            Nach dem Verbinden erscheinen hier die neuesten Eintraege. Fehlerhafte Feeds werden isoliert, damit der Rest weiterlaeuft.
+                            Nach dem Verbinden erscheinen hier die neuesten Einträge. Fehlerhafte Feeds werden isoliert, damit der Rest weiterläuft.
                         </p>
                     ) : (
                         <div className="space-y-2">

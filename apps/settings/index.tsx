@@ -1099,14 +1099,14 @@ useEffect(() => {
                                                                     if (activeCompanyId) loadTree();
                                                                     toast.success('Department gelöscht');
                                                                 } catch (err) {
-                                                                    toast.error('Loeschen fehlgeschlagen');
+                                                                    toast.error('Löschen fehlgeschlagen');
                                                                 } finally {
                                                                     setIsDeleting(null);
                                                                 }
                                                             }}
                                                             disabled={isDeleting === dept.id}
                                                             className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors duration-200 disabled:opacity-30"
-                                                            title="Loeschen"
+                                                            title="Löschen"
                                                         >
                                                             {isDeleting === dept.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                                         </button>
@@ -1267,9 +1267,9 @@ useEffect(() => {
                                                                                     await deleteDepartment(child.id);
                                                                                 }
                                                                                 if (activeCompanyId) loadTree();
-                                                                                toast.success('Geloescht');
+                                                                                toast.success('Gelöscht');
                                                                             } catch (err) {
-                                                                                toast.error('Loeschen fehlgeschlagen');
+                                                                                toast.error('Löschen fehlgeschlagen');
                                                                             } finally {
                                                                                 setIsDeleting(null);
                                                                             }
@@ -1442,7 +1442,7 @@ useEffect(() => {
                                             window.location.reload();
                                         } catch (e) {
                                             console.error(e);
-                                            toast.error('Fehler beim Zuruecksetzen.');
+                                            toast.error('Fehler beim Zurücksetzen.');
                                         }
                                     }}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"

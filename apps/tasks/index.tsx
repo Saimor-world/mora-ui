@@ -54,7 +54,7 @@ function TaskCard({ task, onMove, onDelete }: { task: Task; onMove: (id: string,
                     <button
                         onClick={() => onMove(task.id, prevStatus(task.status))}
                         className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors text-[10px]"
-                        title="Zurueck"
+                        title="Zurück"
                     >←</button>
                     <button
                         onClick={() => onMove(task.id, nextStatus(task.status))}
@@ -64,7 +64,7 @@ function TaskCard({ task, onMove, onDelete }: { task: Task; onMove: (id: string,
                     <button
                         onClick={() => onDelete(task.id)}
                         className="p-1 rounded hover:bg-red-500/20 text-white/20 hover:text-red-400 transition-colors"
-                        title="Loeschen"
+                        title="Löschen"
                     >
                         <Trash2 size={10} />
                     </button>
@@ -221,7 +221,7 @@ export default function TasksApp({ paneId }: AppProps) {
                                                 disabled={!newTitle.trim() || isSubmitting}
                                                 className="px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-[11px] disabled:opacity-50 transition-colors hover:bg-emerald-500/30"
                                             >
-                                                {isSubmitting ? <Loader2 size={10} className="animate-spin" /> : 'Hinzufuegen'}
+                                                {isSubmitting ? <Loader2 size={10} className="animate-spin" /> : 'Hinzufügen'}
                                             </button>
                                             <button onClick={() => { setAddingColumn(null); setNewTitle(''); }} className="px-2 py-1 text-[11px] text-white/30 hover:text-white/60 transition-colors">
                                                 Abbrechen

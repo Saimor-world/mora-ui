@@ -1208,7 +1208,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurueck zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1358,7 +1358,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurueck zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>

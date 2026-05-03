@@ -1284,8 +1284,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             }
             await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             void loadContent();
-            toast.success('Geloescht');
-        } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
+            toast.success('Gelöscht');
+        } catch (e: any) { toast.error(e.message || 'Löschen fehlgeschlagen'); }
         setContextMenu(null);
     }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgDeleteSpace, orgDeleteFolder, orgDeleteNode, deleteCompanyFile]);
 
@@ -2003,7 +2003,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             <button
                                 onClick={navigateBack}
                                 disabled={backStack.length === 0}
-                                aria-label="Zurueck"
+                                aria-label="Zurück"
                                 className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Zurück (Alt+Links)"
                             >
@@ -3068,7 +3068,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     </button>
                                     <div className="h-px bg-white/5 my-1" />
                                     <button onClick={handleDelete} className="w-full text-left px-3 py-1.5 hover:bg-red-500/20 hover:text-red-400 flex items-center gap-2 transition-colors text-red-300">
-                                        <Trash2 size={14} /> Loeschen
+                                        <Trash2 size={14} /> Löschen
                                     </button>
                                 </>
                             ) : (

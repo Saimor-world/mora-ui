@@ -68,18 +68,18 @@ const CATEGORY_LABELS: Record<AppCategory, string> = {
     system:       'System',
 };
 
-// ─── Color → Tailwind class ───────────────────────────────────────────────────
+// ─── Color → icon text + background class ────────────────────────────────────
 
-const COLOR_CLASS: Record<AppColor, string> = {
-    blue:    'text-blue-400',
-    purple:  'text-purple-400',
-    green:   'text-emerald-400',
-    orange:  'text-orange-400',
-    rose:    'text-rose-400',
-    teal:    'text-teal-400',
-    amber:   'text-amber-400',
-    indigo:  'text-indigo-400',
-    slate:   'text-slate-400',
+const COLOR_CLASS: Record<AppColor, { icon: string; bg: string; border: string }> = {
+    blue:   { icon: 'text-blue-300',    bg: 'bg-blue-500/15',    border: 'border-blue-400/20' },
+    purple: { icon: 'text-purple-300',  bg: 'bg-purple-500/15',  border: 'border-purple-400/20' },
+    green:  { icon: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/20' },
+    orange: { icon: 'text-orange-300',  bg: 'bg-orange-500/15',  border: 'border-orange-400/20' },
+    rose:   { icon: 'text-rose-300',    bg: 'bg-rose-500/15',    border: 'border-rose-400/20' },
+    teal:   { icon: 'text-teal-300',    bg: 'bg-teal-500/15',    border: 'border-teal-400/20' },
+    amber:  { icon: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-400/20' },
+    indigo: { icon: 'text-indigo-300',  bg: 'bg-indigo-500/15',  border: 'border-indigo-400/20' },
+    slate:  { icon: 'text-slate-300',   bg: 'bg-slate-500/15',   border: 'border-slate-400/15' },
 };
 
 // ─── AppLibraryApp ────────────────────────────────────────────────────────────
@@ -142,25 +142,29 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                             <div className="grid grid-cols-4 gap-3">
                                 {section.map(app => {
                                     const IconComp = ICON_MAP[app.icon] ?? Grid;
-                                    const colorClass = COLOR_CLASS[app.color] ?? 'text-white/70';
+                                    const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
                                     return (
-                                        <div
+                                        <button
                                             key={app.id}
+                                            type="button"
                                             onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
-                                            className="relative aspect-square rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                                            title={app.description}
+                                            className="relative flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 pt-4 pb-3 hover:bg-white/[0.07] hover:border-white/15 transition-all group cursor-pointer text-left"
                                         >
                                             {app.isNew && (
-                                                <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
+                                                <span className="absolute top-2 right-2 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none uppercase tracking-wide">
                                                     Neu
                                                 </span>
                                             )}
-                                            <div className={`p-3 rounded-xl bg-black/20 ${colorClass}`}>
-                                                <IconComp size={28} />
+                                            {/* Icon */}
+                                            <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${colors.bg} ${colors.border}`}>
+                                                <IconComp size={22} className={colors.icon} />
                                             </div>
-                                            <span className="text-sm text-white/60 group-hover:text-white transition-colors text-center leading-tight px-1">
+                                            {/* Label */}
+                                            <span className="text-[11px] font-medium text-white/65 group-hover:text-white/90 transition-colors text-center leading-tight">
                                                 {app.name}
                                             </span>
-                                        </div>
+                                        </button>
                                     );
                                 })}
                             </div>

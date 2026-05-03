@@ -554,7 +554,7 @@ export const DepartmentLayer: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-start gap-0.5 pointer-events-none">
                     <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
-                        Zurueck
+                        Zurück
                     </span>
                     <span className="text-sm tracking-widest font-light flex items-center gap-2">
                         <span className="text-emerald-100/90">UNIVERSE</span>
