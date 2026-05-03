@@ -5,8 +5,9 @@ import { Activity, Bell, MessageSquare, Send, User, Users, Search, Filter, Mail,
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost, corePatch } from '@/lib/api/coreClient';
-import { useSessionStore } from '@/lib/store/sessionStore';       
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
+import { getUserColorHex } from '@/lib/utils/userColors';
 import { PlasmaOrb } from '@/components/mora/PlasmaOrb';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -61,13 +62,19 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             ]);
             
             const membersRes = Array.isArray(membersV3Res) ? membersV3Res : [];
-            const realMembers: TeamMember[] = membersRes.map((u: any) => ({
-                id: u.id,
-                name: u.name || u.full_name || (u.email ? u.email.split("@")[0] : "User"),
-                email: u.email,
-                role: u.role,
-                status: u.status || (u.is_online ? "online" : "offline")
-            }));
+            const realMembers: TeamMember[] = membersRes.map((u: any) => {
+                const email: string = u.email || '';
+                const name: string = u.name || u.full_name || (email ? email.split('@')[0] : 'User');
+                return {
+                    id: u.id,
+                    name,
+                    email,
+                    role: u.role,
+                    status: u.status || (u.is_online ? 'online' : 'offline'),
+                    // Deterministic per-user color — falls back to API value if server ever sends one
+                    aura_color: u.aura_color || getUserColorHex(email || name),
+                };
+            });
 
             setMembers(realMembers);
             if (activityRes) setActivities(activityRes);
