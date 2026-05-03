@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useCallback } from 'react';
-import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Building2, Users, Sparkles } from 'lucide-react';
+import { Home, Search, Activity, Settings, MessageSquare, Hexagon, User, LogOut, Zap, Users, Sparkles, Grid } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
@@ -100,8 +100,34 @@ export const ContextRail: React.FC = () => {
             label: 'Start',
             action: handleHomeClick
         },
-        { id: 'search', icon: Search, label: 'Suche', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
-        { id: 'activity', icon: Activity, label: 'Aktivitaet', action: () => { closeOverlays(); navigateToCore(); void queryClient.invalidateQueries({ queryKey: queryKeys.tree(useNavStore.getState().activeCompanyId) }); openChatDock(); } },
+        {
+            id: 'search',
+            icon: Search,
+            label: 'Suche',
+            action: () => {
+                closeOverlays();
+                usePaneStore.getState().openPane({
+                    id: 'search-main',
+                    type: 'search',
+                    title: 'Suche',
+                    size: { width: 640, height: 560 },
+                });
+            },
+        },
+        {
+            id: 'activity',
+            icon: Activity,
+            label: 'Aktivität',
+            action: () => {
+                closeOverlays();
+                usePaneStore.getState().openPane({
+                    id: 'timeline-main',
+                    type: 'timeline',
+                    title: 'Zeitverlauf',
+                    size: { width: 520, height: 660 },
+                });
+            },
+        },
         { id: 'chat', icon: MessageSquare, label: "Mora", action: () => { closeOverlays(); openChatDock(); } },
     ];
 
@@ -144,9 +170,8 @@ export const ContextRail: React.FC = () => {
         router.replace('/');
     };
 
-    // SECURITY: Explicitly exclude demo users from owner features
     const currentRole = getCurrentRole();
-    const isOwner = ((currentRole as string) === 'owner' || (currentRole as string) === 'admin') && (currentRole as string) !== 'demo';
+    const isOwner = currentRole === 'owner' || currentRole === 'admin';
 
     return (
         <>
@@ -238,7 +263,7 @@ export const ContextRail: React.FC = () => {
                         <Zap size={20} className={`transition-colors ${viewMode === 'demo' ? 'text-blue-400' : 'text-blue-400/60 group-hover:text-blue-400'
                             }`} />
                         <div className="absolute left-full ml-4 px-3 py-1.5 rounded-lg bg-black/80 border border-white/10 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap backdrop-blur-md">
-                            {surfaceProfile.isPublicDemoSurface ? 'Demo-Start' : 'Instanz-Einstieg'}
+                            {surfaceProfile.isPublicDemoSurface ? 'Demo-Start' : surfaceProfile.isHqSurface ? 'HQ-Einstieg' : 'Instanz-Einstieg'}
                         </div>
                         {viewMode === 'demo' && (
                             <motion.div
@@ -325,39 +350,46 @@ export const ContextRail: React.FC = () => {
                     >
                         <h3 className="text-sm text-white/90 font-medium mb-3">Schnellzugriff</h3>
 
-                        <div className="space-y-2">
+                        <div className="space-y-1">
                             <button
                                 onClick={() => {
-                                    const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                                    usePaneStore.getState().openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 480, height: 620 } });
+                                    setShowSettings(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
+                            >
+                                <Grid size={15} />
+                                App-Bibliothek
+                            </button>
+                            <button
+                                onClick={() => {
+                                    usePaneStore.getState().openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Settings size={15} />
-                                Alle Einstellungen
+                                Einstellungen
                             </button>
                             <button
                                 onClick={() => {
-                                    const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } });
+                                    usePaneStore.getState().openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Users size={15} />
-                                Team verwalten
+                                Team
                             </button>
                             <button
                                 onClick={() => {
-                                    const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora', size: { width: 680, height: 560 } });
+                                    usePaneStore.getState().openPane({ id: 'mora-hub', type: 'mora-hub', title: 'Mora', size: { width: 680, height: 560 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
                             >
                                 <Sparkles size={15} />
-                                Mora
+                                Mora Hub
                             </button>
                         </div>
                     </motion.div>

@@ -22,6 +22,7 @@ import {
 import { requestCommandDeckOpen, SAIMOR_COMMAND_DECK_STATE_EVENT } from '@/lib/os/commandDeck';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
@@ -69,6 +70,7 @@ export const MoraPulsePanel: React.FC = () => {
     const [isDeckOpen, setIsDeckOpen] = useState(false);
     const assistantRuntime = useAssistantRuntime();
     const surfaceProfile = useSurfaceProfile();
+    const websiteEntryContext = useWebsiteEntryContext();
 
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualScene = useMemo(
@@ -82,6 +84,13 @@ export const MoraPulsePanel: React.FC = () => {
         () => safeCompanies.find((company) => company.id === activeCompanyId) ?? null,
         [safeCompanies, activeCompanyId]
     );
+    const displayCompany = useMemo(() => {
+        if (!websiteEntryContext?.companyName) return activeCompany;
+        return {
+            id: activeCompany?.id || `website-entry-${websiteEntryContext.id || 'current'}`,
+            name: websiteEntryContext.companyName,
+        };
+    }, [activeCompany, websiteEntryContext]);
     const activeDepartment = useMemo(
         () => safeDepartments.find((department) => department.id === activeDepartmentId) ?? null,
         [safeDepartments, activeDepartmentId]
@@ -118,7 +127,7 @@ export const MoraPulsePanel: React.FC = () => {
 
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
-        activeCompany,
+        activeCompany: displayCompany,
         activeDepartment,
         activeFolder,
         activeFolders,
@@ -128,16 +137,16 @@ export const MoraPulsePanel: React.FC = () => {
         companyCount:
             surfaceProfile.isLocalTruthSurface ||
             !!activeCompanyId ||
-            !!activeCompany ||
+            !!displayCompany ||
             !!user?.active_company_name
                 ? 1
                 : safeCompanies.length,
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
-        isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
+        isPublicDemoSurface: websiteEntryContext ? false : surfaceProfile.isPublicDemoSurface,
         isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
-        activeCompany,
+        displayCompany,
         activeCompanyId,
         activeDepartment,
         activeFolder,
@@ -151,6 +160,7 @@ export const MoraPulsePanel: React.FC = () => {
         surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
         viewLevel,
+        websiteEntryContext,
     ]);
 
     return (
@@ -199,7 +209,7 @@ export const MoraPulsePanel: React.FC = () => {
                             <button
                                 onClick={() => requestCommandDeckOpen({ pinned: true })}
                                 className="flex h-10 w-10 items-center justify-center rounded-full border border-emerald-400/20 bg-emerald-500/10 text-emerald-200 transition-colors hover:bg-emerald-500/16"
-                                title="Control Center oeffnen"
+                                title="Control Center öffnen"
                             >
                                 <PanelTopOpen size={14} />
                             </button>
@@ -229,7 +239,7 @@ export const MoraPulsePanel: React.FC = () => {
 
                     {!isDeckOpen && (
                         <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-[11px] text-white/42">
-                            <span className="truncate">{activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}</span>
+                            <span className="truncate">{displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}</span>
                             <span>{ritualSettings.autoTime ? 'Auto' : 'Manuell'}</span>
                         </div>
                     )}

@@ -4,11 +4,14 @@ import { fetchPersonalHomeNote, savePersonalHomeNote } from '@/lib/api/coreClien
 type LoadState = 'loading' | 'ready' | 'no-server';
 type SaveState = 'idle' | 'saving' | 'saved' | 'error';
 
+const AUTOSAVE_DELAY_MS = 1500;
+
 export function useNotesSync() {
   const [content, setContent] = useState('');
   const [loadState, setLoadState] = useState<LoadState>('loading');
   const [saveState, setSaveState] = useState<SaveState>('idle');
   const lastSavedRef = useRef('');
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,20 +29,43 @@ export function useNotesSync() {
     return () => { cancelled = true; };
   }, []);
 
-  const handleBlur = useCallback(async () => {
-    if (loadState !== 'ready') return;
-    if (content === lastSavedRef.current) return;
-
+  const persist = useCallback(async (text: string) => {
+    if (text === lastSavedRef.current) return;
     setSaveState('saving');
-    const result = await savePersonalHomeNote(content);
+    const result = await savePersonalHomeNote(text);
     if (result) {
-      lastSavedRef.current = content;
+      lastSavedRef.current = text;
       setSaveState('saved');
-      setTimeout(() => setSaveState('idle'), 2000);
+      setTimeout(() => setSaveState(s => s === 'saved' ? 'idle' : s), 2000);
     } else {
       setSaveState('error');
     }
-  }, [content, loadState]);
+  }, []);
 
-  return { content, setContent, loadState, saveState, handleBlur };
+  // Debounced auto-save on content change
+  const handleChange = useCallback((text: string) => {
+    setContent(text);
+    if (loadState !== 'ready') return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => { void persist(text); }, AUTOSAVE_DELAY_MS);
+  }, [loadState, persist]);
+
+  // Immediate save on blur (catches any pending debounce)
+  const handleBlur = useCallback(() => {
+    if (loadState !== 'ready') return;
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+    void persist(content);
+  }, [content, loadState, persist]);
+
+  // Clean up debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  return { content, setContent: handleChange, loadState, saveState, handleBlur };
 }

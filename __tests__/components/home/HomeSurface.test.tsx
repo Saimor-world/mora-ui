@@ -11,6 +11,7 @@ import { renderWithProviders, resetAllStores, createTestQueryClient, testFixture
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
+import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
 
 // ── mocks ──────────────────────────────────────────────────────────────────
 
@@ -25,13 +26,55 @@ jest.mock('@/lib/auth/sessionLifecycle', () => ({
     clearClientSessionArtifacts: jest.fn(),
 }));
 
+jest.mock('@/lib/hooks/useCommunicationLiveData', () => ({
+    useCommunicationLiveData: () => ({
+        mailPreview: [],
+        calendarPreview: [],
+        isLoading: false,
+        refresh: jest.fn(),
+    }),
+}));
+
+jest.mock('@/lib/hooks/useIntegrationsOverview', () => ({
+    useIntegrationsOverview: () => ({
+        overview: null,
+        isLoading: false,
+        error: null,
+        browserBridge: { supported: false, permission: 'unsupported' },
+        loadOverview: jest.fn(),
+        refreshBrowserBridge: jest.fn(),
+    }),
+}));
+
+jest.mock('@/lib/hooks/useLocalTruthBridge', () => ({
+    useLocalTruthBridge: () => ({
+        state: 'offline',
+        isLocalSurface: true,
+        uiReachable: false,
+        coreReachable: false,
+        selectedUiUrl: null,
+        selectedCoreUrl: null,
+        lastCheckedAt: null,
+        error: null,
+        refresh: jest.fn(),
+    }),
+}));
+
 jest.mock('@/lib/home/briefing', () => ({
     buildBriefing: jest.fn((_depts: any, _tree: any) => 'R&D ist aktiv — 3 Inhalte.'),
 }));
 
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
-    motion: { div: ({ children, ...p }: any) => <div {...p}>{children}</div> },
+    motion: {
+        div: ({ children, ...props }: any) => {
+            const motionProps = new Set(['animate', 'exit', 'initial', 'transition', 'variants', 'whileHover', 'whileTap']);
+            const domProps = Object.fromEntries(
+                Object.entries(props).filter(([key]) => !motionProps.has(key))
+            );
+            return <div {...domProps}>{children}</div>;
+        },
+    },
     useReducedMotion: () => false,
 }));
 
@@ -112,7 +155,8 @@ describe('HomeSurface — rendering', () => {
     it('renders a personalised greeting with first name', async () => {
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getByText(/Anna/)).toBeInTheDocument();
+            // Overlay renders greeting in two spots (portal + left card) — use getAllByText
+            expect(screen.getAllByText(/Anna/).length).toBeGreaterThan(0);
         });
     });
 
@@ -127,6 +171,32 @@ describe('HomeSurface — rendering', () => {
     it('renders the logout button', () => {
         renderWithDepts();
         expect(screen.getByTestId('home-logout')).toBeInTheDocument();
+    });
+
+    it('surfaces stored website entry context as the current OS focus', async () => {
+        localStorage.setItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY, JSON.stringify({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-123',
+            companyName: 'Acme GmbH',
+            domain: 'acme.de',
+            score: 61,
+            title: 'Digital Risk Check aus der Website',
+            rooms: [],
+            documents: [],
+            tasks: [
+                { title: 'Audit-Ergebnis validieren', priority: 'mittel' },
+                { title: 'Echte Tools verbinden', priority: 'niedrig' },
+            ],
+        }));
+
+        renderWithDepts();
+
+        await waitFor(() => {
+            expect(screen.getByTestId('website-entry-home-card')).toBeInTheDocument();
+            expect(screen.getByText('Acme GmbH: Dossier im HQ.')).toBeInTheDocument();
+            expect(screen.getByText('acme.de')).toBeInTheDocument();
+        });
     });
 });
 
@@ -223,7 +293,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
         });
     });
 
-    it('shows at most 5 recent items', async () => {
+    it('shows at most 3 recent items (overlay cap)', async () => {
         const manyItems = Array.from({ length: 8 }, (_, i) => ({
             id: `item-${i}`,
             label: `Item ${i}`,
@@ -235,7 +305,8 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getAllByTestId('recent-item')).toHaveLength(5);
+            // Overlay caps recent items at 3 (compact panel design)
+            expect(screen.getAllByTestId('recent-item')).toHaveLength(3);
         });
     });
 

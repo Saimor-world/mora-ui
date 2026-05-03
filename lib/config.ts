@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Centralized configuration with validation and fallbacks
  * All environment variables should be accessed through this file
  */
@@ -54,7 +54,7 @@ class ConfigManager {
 
     // DEV LOGGING
     if (isDevelopment && typeof window !== 'undefined') {
-      console.log('[ConfigManager] Configuration loaded:', coreApiUrl);
+
     }
 
     return {

@@ -15,12 +15,6 @@ const nextConfig = {
     "http://172.20.10.*",
     "https://*.trycloudflare.com",
   ],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   webpack: (config) => {
     // Ensure TS path alias "@/*" works reliably in production builds (Linux case-sensitivity).
     config.resolve = config.resolve || {};

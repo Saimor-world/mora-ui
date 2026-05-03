@@ -207,12 +207,15 @@ export function MindLoopTimeline({
     if (loading) {
         return (
             <div className={`flex items-center justify-center py-8 ${className}`}>
-                <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                >
-                    <Brain className="w-6 h-6 text-emerald-400/60" />
-                </motion.div>
+                <div className="text-center">
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    >
+                        <Brain className="mx-auto w-6 h-6 text-emerald-400/60" />
+                    </motion.div>
+                    <p className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/25">MindLoop lauscht</p>
+                </div>
             </div>
         );
     }
@@ -225,7 +228,7 @@ export function MindLoopTimeline({
                     <Brain size={10} />
                     <span>Mind Loop</span>
                     {error && (
-                        <span className="text-red-400/60 ml-1">· {error}</span>
+                        <span className="text-red-400/60 ml-1">- {error}</span>
                     )}
                 </div>
                 <button
@@ -246,7 +249,12 @@ export function MindLoopTimeline({
                         animate={{ opacity: 1 }}
                         className="text-center py-6 text-white/20 text-xs"
                     >
-                        Keine Events — Mora beobachtet...
+                        <div className="mx-auto max-w-[220px] rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-4 py-5">
+                            <div className="text-emerald-50/70">Noch keine Ereignisse</div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-white/30">
+                                Mora beobachtet Aktionen, Uploads und Kontextwechsel und baut daraus die Timeline.
+                            </div>
+                        </div>
                     </motion.div>
                 ) : (
                     events.map((event, i) => {

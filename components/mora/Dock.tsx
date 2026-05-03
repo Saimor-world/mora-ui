@@ -1,15 +1,16 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles, Brain
+    Music2, Pause, Play, SkipForward, Sparkles, Brain, X
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
+import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -18,6 +19,7 @@ import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
 
 // Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
+type DockPane = ReturnType<typeof usePaneStore.getState>['panes'][number];
 import { SearchPopup } from './SearchPopup';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
@@ -46,6 +48,7 @@ import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/com
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
@@ -161,7 +164,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isSt
         <button
             type="button"
             onClick={handleClick}
-            title="Aktiven Arbeitsplan oeffnen"
+            title="Aktiven Arbeitsplan öffnen"
             data-testid="session-chip"
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all ${
                 isStandardMode
@@ -200,7 +203,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     onNext,
     onOpen,
 }) => {
-    if (isDeckOpen || trackCount === 0) {
+    if (isDeckOpen) {
         return null;
     }
 
@@ -215,7 +218,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
                     }`}
-                title="Audio-Einstellungen oeffnen"
+                title="Audio-Einstellungen öffnen"
             >
                 <Music2 size={16} />
             </button>
@@ -225,10 +228,10 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     Audio
                 </div>
                 <div className={`mt-1 max-w-[132px] truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/82'}`}>
-                    {trackName || 'Track auswaehlen'}
+                    {trackName || 'Mora Ambient'}
                 </div>
                 <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                    {trackCount} Tracks
+                    {trackCount > 0 ? `${trackCount} Tracks` : 'Eingebauter Pad'}
                 </div>
             </button>
 
@@ -334,6 +337,95 @@ const DockPod: React.FC<DockPodProps> = ({
     </div>
 );
 
+interface RunningWindowsBarProps {
+    panes: DockPane[];
+    activePaneId: string | null;
+    isStandardMode: boolean;
+    onActivate: (pane: DockPane) => void;
+    onClose: (id: string) => void;
+}
+
+const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
+    panes,
+    activePaneId,
+    isStandardMode,
+    onActivate,
+    onClose,
+}) => {
+    const shouldShow = panes.length > 1 || panes.some((pane) => pane.minimized);
+    if (!shouldShow) return null;
+
+    return (
+        <div className="mb-3 flex w-[calc(100vw-20px)] justify-center px-2 pointer-events-auto">
+            <div className={`flex max-w-[min(1180px,calc(100vw-36px))] items-center gap-2 overflow-x-auto rounded-[22px] border px-2.5 py-2 shadow-2xl ${isStandardMode
+                ? 'border-gray-200 bg-white/92'
+                : 'border-white/10 bg-black/48 backdrop-blur-2xl'
+                }`}>
+                <div className={`hidden shrink-0 px-2 text-[10px] uppercase tracking-[0.22em] lg:block ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                    Fenster
+                </div>
+                {panes.map((pane) => {
+                    const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
+                    const isActive = pane.id === activePaneId && !pane.minimized;
+                    return (
+                        <div
+                            key={pane.id}
+                            className={`group flex min-w-[150px] max-w-[230px] items-center gap-2 rounded-2xl border px-2 py-1.5 transition-all ${isStandardMode
+                                ? isActive
+                                    ? 'border-[#0078D4]/40 bg-[#0078D4]/10 text-[#005A9E]'
+                                    : pane.minimized
+                                        ? 'border-gray-200 bg-gray-50 text-gray-500 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
+                                : isActive
+                                    ? 'border-emerald-400/35 bg-emerald-500/14 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
+                                    : pane.minimized
+                                        ? 'border-white/8 bg-white/[0.025] text-white/42 hover:border-emerald-400/20 hover:text-emerald-200'
+                                        : 'border-white/10 bg-white/[0.055] text-white/72 hover:border-emerald-400/20 hover:text-emerald-200'
+                                }`}
+                        >
+                            <button
+                                type="button"
+                                aria-pressed={isActive}
+                                title={pane.minimized ? `${pane.title} wiederherstellen` : `${pane.title} fokussieren`}
+                                onClick={() => onActivate(pane)}
+                                className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                            >
+                                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border ${isStandardMode
+                                    ? 'border-gray-200 bg-white'
+                                    : 'border-white/10 bg-black/20'
+                                    }`}>
+                                    <Icon size={15} />
+                                </span>
+                                <span className="min-w-0 flex-1">
+                                    <span className="block truncate text-xs font-medium">{pane.title}</span>
+                                    <span className={`mt-0.5 block text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
+                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geoeffnet'}
+                                    </span>
+                                </span>
+                            </button>
+                            <button
+                                type="button"
+                                aria-label={`${pane.title} schliessen`}
+                                title="Fenster schliessen"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    onClose(pane.id);
+                                }}
+                                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg opacity-0 transition-all group-hover:opacity-100 ${isStandardMode
+                                    ? 'text-gray-400 hover:bg-red-50 hover:text-red-600'
+                                    : 'text-white/35 hover:bg-red-500/15 hover:text-red-200'
+                                    }`}
+                            >
+                                <X size={13} />
+                            </button>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 type DockDerivedSpace = {
     id: string;
     name: string;
@@ -385,11 +477,12 @@ export const Dock = () => {
     const { data: companies = [] } = useCompanies();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
-    const { data: departmentsData = [] } = useDepartments(activeCompanyId);
-    const { data: treeData = [] } = useTree(activeCompanyId);
-    const departments = departmentsData;
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
     const activeFolderId = useNavStore((s) => s.activeFolderId);
+    const { data: departmentsData = [] } = useDepartments(activeCompanyId);
+    const { data: treeData = [] } = useTree(activeCompanyId);
+    const { data: foldersData = [] } = useFolders(activeSpaceId);
+    const departments = departmentsData;
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
     const viewMode = useNavStore((s) => s.viewMode);
     const viewLevel = useNavStore((s) => s.viewLevel);
@@ -397,9 +490,13 @@ export const Dock = () => {
     const updateUserSettings = useSessionStore((s) => s.updateUserSettings);
 
     const panes = usePaneStore((s) => s.panes);
+    const activePaneId = usePaneStore((s) => s.activePaneId);
     const restorePane = usePaneStore((s) => s.restorePane);
+    const focusPane = usePaneStore((s) => s.focusPane);
+    const minimizePane = usePaneStore((s) => s.minimizePane);
+    const removePane = usePaneStore((s) => s.removePane);
     const openPane = usePaneStore((s) => s.openPane);
-    const minimizedPanes = useMemo(() => panes.filter(p => p.minimized), [panes]);
+    const runningPanes = useMemo(() => panes.filter((pane) => pane.type !== 'search'), [panes]);
     const mod = usePlatformModifier();
 
     const [chatInput, setChatInput] = useState('');
@@ -409,10 +506,12 @@ export const Dock = () => {
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
     const surfaceProfile = useSurfaceProfile();
+    const websiteEntryContext = useWebsiteEntryContext();
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTree = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+    const safeFolders = useMemo(() => (Array.isArray(foldersData) ? foldersData : []), [foldersData]);
     const { spacesByDepartment, foldersBySpace } = useMemo(
         () => deriveDockStructure(safeTree),
         [safeTree]
@@ -426,13 +525,45 @@ export const Dock = () => {
         () => safeCompanies.find(c => c.id === activeCompanyId),
         [safeCompanies, activeCompanyId]
     );
+    const displayCompany = useMemo(() => {
+        if (!websiteEntryContext?.companyName) return activeCompany;
+        if (activeCompany) {
+            return {
+                ...activeCompany,
+                name: websiteEntryContext.companyName,
+                tenant_id: user?.tenant_id && user.tenant_id !== 'tenant-demo'
+                    ? user.tenant_id
+                    : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+                is_demo: false,
+            };
+        }
+        return {
+            id: `website-entry-${websiteEntryContext.id || 'current'}`,
+            tenant_id: user?.tenant_id && user.tenant_id !== 'tenant-demo'
+                ? user.tenant_id
+                : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+            owner_id: 'website-entry',
+            name: websiteEntryContext.companyName,
+            slug: `website-entry-${websiteEntryContext.id || 'current'}`,
+            description: websiteEntryContext.summary || null,
+            logo_url: null,
+            settings: null,
+            is_demo: false,
+        };
+    }, [activeCompany, user?.tenant_id, websiteEntryContext]);
+    const isClaimedWebsiteEntry = useMemo(() => {
+        if (!websiteEntryContext) return false;
+        const contextEmail = websiteEntryContext.email?.trim().toLowerCase();
+        const userEmail = user?.email?.trim().toLowerCase();
+        return Boolean(contextEmail && userEmail && contextEmail === userEmail);
+    }, [user?.email, websiteEntryContext]);
     const activeTrack = useMemo(
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
     );
     const operationalCompanyCount = useMemo(
-        () => (surfaceProfile.isLocalTruthSurface ? 1 : (activeCompany ? 1 : safeCompanies.length)),
-        [activeCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface]
+        () => (surfaceProfile.isLocalTruthSurface || websiteEntryContext ? 1 : (displayCompany ? 1 : safeCompanies.length)),
+        [displayCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface, websiteEntryContext]
     );
     const companyContextLabel = useMemo(
         () => formatCompanyContextLabel(surfaceProfile, operationalCompanyCount),
@@ -451,8 +582,21 @@ export const Dock = () => {
         [activeSpaces, activeSpaceId]
     );
     const activeFolders = useMemo(
-        () => activeSpaceId ? (foldersBySpace[activeSpaceId] || []) : [],
-        [activeSpaceId, foldersBySpace]
+        () => {
+            if (!activeSpaceId) return [];
+            if (safeFolders.length > 0) {
+                return safeFolders.map((folder) => ({
+                    id: folder.id,
+                    name: folder.name,
+                    color: folder.color,
+                    node_count: folder.node_count,
+                    updated_at: folder.updated_at,
+                    created_at: folder.created_at,
+                }));
+            }
+            return foldersBySpace[activeSpaceId] || [];
+        },
+        [activeSpaceId, foldersBySpace, safeFolders]
     );
     const activeFolder = useMemo(
         () => activeFolders.find((folder) => folder.id === activeFolderId) ?? null,
@@ -481,6 +625,18 @@ export const Dock = () => {
             default: break;
         }
     }, [navigateToCore, openPane]);
+
+    const handleTaskbarActivate = useCallback((pane: DockPane) => {
+        if (pane.minimized) {
+            restorePane(pane.id);
+            return;
+        }
+        if (pane.id === activePaneId) {
+            minimizePane(pane.id);
+            return;
+        }
+        focusPane(pane.id);
+    }, [activePaneId, focusPane, minimizePane, restorePane]);
 
     // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
     const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
@@ -526,7 +682,7 @@ export const Dock = () => {
 
     const shellContext = useMemo(() => buildShellContextSnapshot({
         viewLevel,
-        activeCompany,
+        activeCompany: displayCompany,
         activeDepartment,
         activeSpace,
         activeFolder,
@@ -537,11 +693,11 @@ export const Dock = () => {
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent,
-        isPublicDemoSurface: surfaceProfile.isPublicDemoSurface,
+        isPublicDemoSurface: websiteEntryContext ? false : surfaceProfile.isPublicDemoSurface,
         isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
-        activeCompany,
+        displayCompany,
         activeDepartment,
         activeSpace,
         activeFolder,
@@ -554,14 +710,15 @@ export const Dock = () => {
         accent,
         surfaceProfile.isPublicDemoSurface,
         surfaceProfile.isLocalTruthSurface,
+        websiteEntryContext,
     ]);
 
     const scopeLabel = shellContext.scopeLabel;
 
     const handleOpenContext = useCallback(() => {
-        if (activeFolder && activeSpace) {
-            openFinderContext(activeFolder.name, {
-                folderId: activeFolder.id,
+        if (activeFolderId && activeSpace) {
+            openFinderContext(activeFolder?.name || 'Aktiver Ordner', {
+                folderId: activeFolderId,
                 spaceId: activeSpace.id,
                 departmentId: activeDepartmentId || undefined,
                 companyId: activeCompanyId || activeDepartment?.company_id || undefined,
@@ -586,15 +743,16 @@ export const Dock = () => {
             return;
         }
 
-        openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
+        openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
             companyId: activeCompanyId || undefined,
         });
     }, [
-        activeCompany?.name,
+        displayCompany?.name,
         activeCompanyId,
         activeDepartment,
         activeDepartmentId,
         activeFolder,
+        activeFolderId,
         activeSpace,
         openFinderContext,
         surfaceProfile.fallbackCompanyName,
@@ -605,10 +763,10 @@ export const Dock = () => {
             return {
                 label: 'Ordner',
                 title: activeFolder.name,
-                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente oeffnen, teilen oder zurueck in den Bereich springen.',
+                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente öffnen, teilen oder zurück in den Bereich springen.',
                 signalA: `${activeFolder.node_count || 0} Dokumente`,
                 signalB: `${activeSpace.name} · ${activeFolders.length} Ordner`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeFolder.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeFolder.name, {
                     folderId: activeFolder.id,
@@ -627,7 +785,7 @@ export const Dock = () => {
                 description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeSpace.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeSpace.name, {
                     spaceId: activeSpace.id,
@@ -646,7 +804,7 @@ export const Dock = () => {
                 description: 'Die Abteilung zeigt ihre Bereiche, Ordner und Dokumente. Von hier aus solltest du in den passenden Bereich hineinzoomen.',
                 signalA: `${activeSpaces.length} Bereiche`,
                 signalB: `${folderCount} Ordner · ${docCount} Dokumente`,
-                actionLabel: 'Im Finder oeffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeDepartment.color || accent,
                 onOpen: () => openFinderContext(activeDepartment.name, {
                     departmentId: activeDepartment.id,
@@ -657,22 +815,24 @@ export const Dock = () => {
 
         return {
             label: 'Universe',
-            title: activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
-            description: surfaceProfile.isPublicDemoSurface
+            title: displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
+            description: websiteEntryContext
+                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus oeffnest du Dossier, Aufgaben und Arbeitsraeume.'
+                : surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
                 : surfaceProfile.isLocalTruthSurface
                     ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
                 : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: surfaceProfile.isPublicDemoSurface ? 'Struktur oeffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz oeffnen' : 'Organisation oeffnen',
+            actionLabel: websiteEntryContext ? 'Dossier oeffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
-            onOpen: () => openFinderContext(activeCompany?.name || surfaceProfile.fallbackCompanyName, {
+            onOpen: () => openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
             }),
         };
     }, [
-        activeCompany,
+        displayCompany,
         activeCompanyId,
         activeDepartment,
         activeDepartmentId,
@@ -689,6 +849,7 @@ export const Dock = () => {
         surfaceProfile.isPublicDemoSurface,
         surfaceProfile.isLocalTruthSurface,
         user?.active_company_name,
+        websiteEntryContext,
     ]);
 
     const handleShellNextMove = useCallback(() => {
@@ -727,7 +888,7 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Organisation oeffnen',
+                label: 'Organisation öffnen',
                 hint: 'Direkt in Dateien und Strukturen dieser Organisation springen.',
             };
         }
@@ -775,7 +936,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'folder-open',
-                    label: 'Finder oeffnen',
+                    label: 'Finder öffnen',
                     description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -797,7 +958,7 @@ export const Dock = () => {
                 {
                     id: 'folder-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs oeffnen.',
+                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -815,7 +976,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'space-open',
-                    label: 'Im Finder oeffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Gehe direkt in den Finder mit diesem Bereich als Root.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -837,7 +998,7 @@ export const Dock = () => {
                 {
                     id: 'space-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs oeffnen.',
+                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -855,7 +1016,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'department-open',
-                    label: 'Im Finder oeffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Oeffne die Abteilungsstruktur direkt im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -870,7 +1031,7 @@ export const Dock = () => {
                 {
                     id: 'department-team',
                     label: 'Teamflaeche',
-                    description: 'Wechsle direkt zur Team-Oberflaeche fuer diesen Bereich.',
+                    description: 'Wechsle direkt zur Team-Oberfläche für diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
@@ -883,7 +1044,7 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-chat',
-                    label: 'Mora fuer die Abteilung',
+                    label: 'Mora für die Abteilung',
                     description: 'Starte Mora mit Abteilungsfokus statt globalem Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
@@ -895,13 +1056,13 @@ export const Dock = () => {
             {
                 id: 'universe-home',
                 label: 'Home',
-                description: 'Zurueck auf die zentrale Core-Oberflaeche.',
+                description: 'Zurück auf die zentrale Core-Oberfläche.',
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },
                 {
                     id: 'universe-finder',
-                    label: 'Finder oeffnen',
+                    label: 'Finder öffnen',
                     description: 'Direkt in Dateien und Strukturen einsteigen.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -916,7 +1077,7 @@ export const Dock = () => {
             {
                 id: 'universe-mora-center',
                 label: 'Mora Center',
-                description: 'Erinnerungen, Signale und Kontext des Beispielsystems oeffnen.',
+                description: 'Erinnerungen, Signale und Kontext des Beispielsystems öffnen.',
                 icon: Brain,
                 onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
             },
@@ -1009,7 +1170,9 @@ export const Dock = () => {
         if (!ambientAudio.trackId) {
             const firstTrack = ambientTracks[0];
             if (!firstTrack) {
-                openAudioSettings();
+                persistAmbientAudioSettings(updateUserSettings, {
+                    ambientAudioEnabled: !ambientAudio.enabled,
+                });
                 return;
             }
 
@@ -1023,7 +1186,7 @@ export const Dock = () => {
         persistAmbientAudioSettings(updateUserSettings, {
             ambientAudioEnabled: !ambientAudio.enabled,
         });
-    }, [ambientAudio.enabled, ambientAudio.trackId, ambientTracks, openAudioSettings, updateUserSettings]);
+    }, [ambientAudio.enabled, ambientAudio.trackId, ambientTracks, updateUserSettings]);
 
     const handleAmbientNext = useCallback(() => {
         if (ambientTracks.length === 0) {
@@ -1057,28 +1220,14 @@ export const Dock = () => {
     }, [ritualSettings.autoTime, updateUserSettings]);
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[100] flex flex-col items-center pointer-events-none">
-            {/* MINIMIZED PANES - Floating above dock */}
-            {minimizedPanes.length > 0 && (
-                <div className="flex gap-2 mb-3 pointer-events-auto transition-all duration-100 ease-out">
-                    {minimizedPanes.map(pane => {
-                        const Icon = MINIMIZED_ICON_MAP[pane.type] || Minus;
-                        return (
-                            <button
-                                key={pane.id}
-                                onClick={() => restorePane(pane.id)}
-                                title={pane.title}
-                                className={`w-12 h-12 flex items-center justify-center transition-all duration-75 ease-out active:scale-[0.98] shadow-lg ${isStandardMode
-                                    ? 'rounded bg-white border border-gray-200 text-[#0078D4] hover:bg-gray-50 hover:border-[#0078D4]'
-                                    : 'rounded-xl bg-black/60 border border-white/10 text-emerald-400/80 hover:text-emerald-300 hover:bg-black/80 hover:border-emerald-500/30 backdrop-blur-xl'
-                                    }`}
-                            >
-                                <Icon size={18} />
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
+        <div className="fixed bottom-0 left-0 right-0 z-[740] flex flex-col items-center pointer-events-none">
+            <RunningWindowsBar
+                panes={runningPanes}
+                activePaneId={activePaneId}
+                isStandardMode={isStandardMode}
+                onActivate={handleTaskbarActivate}
+                onClose={removePane}
+            />
 
             {/* MAIN DOCK BAR */}
             <div className="w-[calc(100vw-20px)] max-w-none mx-auto mb-3 px-2 pointer-events-auto">
@@ -1094,7 +1243,7 @@ export const Dock = () => {
                                     isPinned={isCommandDeckPinned}
                                     orbStateLabel={orbStateLabel}
                                     scopeLabel={scopeLabel}
-                                    workspaceName={activeCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}
+                                    workspaceName={displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName}
                                     contextLabel={shellContext.contextLabel}
                                     contextTitle={shellContext.title}
                                     contextSubtitle={shellContext.subtitle}
@@ -1157,16 +1306,16 @@ export const Dock = () => {
                     {/* LEFT: IDENTITY POD */}
                     <DockPod className="flex shrink-0 items-center gap-2 px-2 py-2" isStandardMode={isStandardMode}>
                         <AccountIdentityPod
-                            name={user?.name || 'Benutzer'}
+                            name={websiteEntryContext?.companyName || user?.name || 'Benutzer'}
                             role={user?.role}
-                            roleLabel={viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
-                            subtitle="Konto, Privatbereich und Dateien"
+                            roleLabel={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Kundenaccount' : 'Preview') : viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
+                            subtitle={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Verbundenes Website-Dossier' : 'Website-Dossier und HQ-Workspace') : 'Konto, Privatbereich und Dateien'}
                             preferInitials
                             compact
                             embedded
                             variant="dock"
-                            className="min-w-[272px] px-0 py-0"
-                            actionSlot={(
+                            className={websiteEntryContext ? 'min-w-[248px] max-w-[340px] px-0 py-0' : 'min-w-[272px] px-0 py-0'}
+                            actionSlot={websiteEntryContext ? undefined : (
                                 <button
                                     onClick={() => openPane({
                                         id: 'meine-dateien',
@@ -1175,7 +1324,7 @@ export const Dock = () => {
                                         size: { width: 920, height: 720 },
                                     })}
                                     title="Privater Bereich"
-                                    aria-label="Privaten Bereich oeffnen"
+                                    aria-label="Privaten Bereich öffnen"
                                     data-interaction-sound="soft"
                                     className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-white/62 transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08] hover:text-white/88"
                                 >
@@ -1184,7 +1333,7 @@ export const Dock = () => {
                                 </button>
                             )}
                         />
-                        <AdminModeSwitcher />
+                        {!websiteEntryContext && <AdminModeSwitcher />}
                         <button
                             onClick={() => openPane({
                                 id: 'meine-dateien',
@@ -1203,7 +1352,7 @@ export const Dock = () => {
                     </DockPod>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
+                        {!websiteEntryContext && <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
                             <DockSearchLauncher
                                 isStandardMode={isStandardMode}
                                 shortcutLabel={`${mod}+K`}
@@ -1211,7 +1360,7 @@ export const Dock = () => {
                                 onOpen={() => setSearchPopupOpen(true)}
                             />
 
-                            {ambientTracks.length > 0 && !isCommandDeckOpen && (
+                            {!isCommandDeckOpen && (
                                 <>
                                     <div className={`hidden xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
                                     <DockNowPlaying
@@ -1237,7 +1386,7 @@ export const Dock = () => {
                                     type="button"
                                     aria-expanded={isCommandDeckOpen}
                                     aria-pressed={isCommandDeckOpen}
-                                    title={isCommandDeckOpen ? 'Control Center schliessen' : 'Control Center oeffnen'}
+                                    title={isCommandDeckOpen ? 'Control Center schließen' : 'Control Center öffnen'}
                                     onClick={toggleCommandDeck}
                                     className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${isStandardMode
                                         ? isCommandDeckOpen
@@ -1271,7 +1420,7 @@ export const Dock = () => {
                                     </div>
                                 </button>
                             </div>
-                        </DockPod>
+                        </DockPod>}
 
                         <DockPod className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
                             <div className="flex min-w-0 items-center gap-1 xl:gap-2">
@@ -1286,21 +1435,21 @@ export const Dock = () => {
                             </div>
                         </DockPod>
 
-                        <DockPod className="flex shrink-0 items-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
+                        <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'flex shrink-0 items-center gap-3 px-3 py-2.5'} isStandardMode={isStandardMode}>
                     {/* RIGHT SECTION: Status + Context */}
-                    <div className="flex items-center gap-2">
+                    {!websiteEntryContext && <div className="flex items-center gap-2">
                         <NotificationCenter />
-                    </div>
+                    </div>}
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
-                    <div className="relative">
+                    {!websiteEntryContext && <div className="relative">
                         <button
                             className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all group ${isStandardMode
                                 ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                 : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
                             onClick={() => {
-                                if (!surfaceProfile.companySwitcherEnabled) return;
+                                if (!surfaceProfile.companySwitcherEnabled || websiteEntryContext) return;
                                 setShowCompanySwitcher(!showCompanySwitcher);
                             }}
                             type="button"
@@ -1312,9 +1461,9 @@ export const Dock = () => {
                             <div className="hidden 2xl:flex flex-col items-start">
                                 <span className={`text-xs font-medium max-w-[90px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
                                     }`}>
-                                    {activeCompany?.name || surfaceProfile.fallbackCompanyName}
+                                    {displayCompany?.name || surfaceProfile.fallbackCompanyName}
                                 </span>
-                                {companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                {!websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                     <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
                                         }`}>
                                         {companyContextLabel}
@@ -1323,13 +1472,13 @@ export const Dock = () => {
                             </div>
                             <ChevronUp
                                 size={14}
-                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled ? '' : 'rotate-180'}`}
+                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled && !websiteEntryContext ? '' : 'rotate-180'}`}
                             />
                         </button>
 
                         {/* COMPANY SWITCHER POPUP */}
                         <AnimatePresence>
-                            {showCompanySwitcher && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                            {showCompanySwitcher && !websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
@@ -1371,11 +1520,12 @@ export const Dock = () => {
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                    </div>
+                    </div>}
 
                     {/* DIVIDER - Glowing */}
-                    <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    {!websiteEntryContext && <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
+                    }
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
                     <div className="flex items-center gap-3 pl-1">
@@ -1386,7 +1536,7 @@ export const Dock = () => {
                                 ? 'bg-white shadow-lg'
                                 : 'bg-transparent'
                                 }`}
-                            title="Mora oeffnen"
+                            title="Mora öffnen"
                             style={!isStandardMode ? {
                                 filter: `drop-shadow(0 0 30px ${accent}40)`
                             } : {}}

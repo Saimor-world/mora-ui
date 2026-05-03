@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ConfirmationCard — route explainability / Trust V3
  *
  * Tests that the intake variant correctly surfaces:
@@ -151,7 +151,7 @@ describe('ConfirmationCard — route_learning copy', () => {
                 variant="intake"
             />
         );
-        expect(document.body).toHaveTextContent('Dieser Pfad wurde bereits 6-mal bestaetigt oder korrigiert.');
+        expect(document.body).toHaveTextContent('Dieser Pfad wurde bereits 6-mal bestätigt oder korrigiert.');
     });
 
     it('renders correction line when corrected_count > 0', () => {
@@ -166,7 +166,7 @@ describe('ConfirmationCard — route_learning copy', () => {
                 variant="intake"
             />
         );
-        expect(document.body).toHaveTextContent('Davon wurden 2-mal manuelle Korrekturen uebernommen.');
+        expect(document.body).toHaveTextContent('Davon wurden 2-mal manuelle Korrekturen übernommen.');
     });
 
     it('does not render correction line when corrected_count is 0', () => {

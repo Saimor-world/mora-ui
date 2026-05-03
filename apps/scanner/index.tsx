@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import React, { useState, useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -921,7 +921,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
             <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
                     <span className={`rounded-full border px-2.5 py-1 text-[11px] ${activeCompanyName ? 'border-purple-400/15 bg-purple-500/10 text-purple-100/85' : 'border-amber-500/30 bg-amber-500/10 text-amber-200/90'}`}>
-                        {activeCompanyName ? `Einordnung fuer ${activeCompanyName}` : 'Keine Organisation – Upload nicht möglich'}
+                        {activeCompanyName ? `Einordnung für ${activeCompanyName}` : 'Keine Organisation – Upload nicht möglich'}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[11px] text-white/55">
                         Globaler Drop landet in Mycelium, lokale Dropzonen bleiben im aktuellen Finder-Kontext.
@@ -1278,9 +1278,16 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </AnimatePresence>
 
                     {files.length === 0 && (
-                        <div className="flex flex-col items-center justify-center h-48 gap-3">
-                            <Zap size={32} className="text-purple-400/50" />
-                            <p className="text-sm text-white/30">Noch keine Dateien</p>
+                        <div className="mx-auto mt-2 flex h-56 max-w-md flex-col items-center justify-center gap-3 rounded-3xl border border-emerald-300/10 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.12),transparent_55%)] px-8 text-center">
+                            <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
+                                <Upload size={28} className="text-emerald-200/80" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-emerald-50/85">Bereit fuer den ersten Intake</p>
+                                <p className="mt-2 text-xs leading-relaxed text-white/42">
+                                    Ziehe Dateien in den Scanner oder waehle Upload. Mora prueft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
+                                </p>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -1339,7 +1346,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         {activePendingAction.next && (
                             <CommandReceipt
                                 tone={activePendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
-                                label={activePendingAction.next.label || 'Naechster Schritt'}
+                                label={activePendingAction.next.label || 'Nächster Schritt'}
                                 title={activePendingAction.route_summary || buildRoutePath(activePendingAction.intake_context)}
                                 body={activePendingAction.next.message || 'Prüfe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                 className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"

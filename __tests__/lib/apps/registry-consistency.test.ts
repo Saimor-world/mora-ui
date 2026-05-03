@@ -11,7 +11,7 @@
  *   1. apps/{id}/index.tsx        — create the app module
  *   2. lib/apps/AppLoader.tsx     — add to APP_MAP
  *   3. lib/apps/appRegistry.ts    — add manifest (these tests will fail if you forget)
- *   4. apps/apps/index.tsx        — add to ALL_APPS only if user-launchable
+ *   4. apps/apps/index.tsx        — add id to LAUNCHER_EXCLUDE if NOT user-launchable
  *   5. lib/surface/surfaceRegistry.ts — assign tier
  */
 

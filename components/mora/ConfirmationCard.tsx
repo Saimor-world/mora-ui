@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
@@ -188,9 +188,9 @@ const signalLabelMap: Record<string, string> = {
     standard_space:                 'Standard-Bereich',
     keine_explizite_feinzuteilung:  'Kein spezifisches Ziel',
     abteilungskontext:              'Abteilungskontext',
-    kein_zielordner_verfuegbar:     'Kein Zielordner verfügbar',
+    kein_zielordner_verfügbar:     'Kein Zielordner verfügbar',
     firmenkontext:                  'Organisationskontext',
-    struktur_noch_nicht_verfuegbar: 'Struktur noch nicht verfügbar',
+    struktur_noch_nicht_verfügbar: 'Struktur noch nicht verfügbar',
     manuell_gesetzt:                'Manuell festgelegt',
 };
 
@@ -342,8 +342,8 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 message: isIntake
                     ? 'Bitte Einordnung pruefen'
                     : isFileOp
-                        ? 'Aktionsausfuehrung bestaetigen'
-                        : 'Bestaetigung erforderlich',
+                        ? 'Aktionsausführung bestätigen'
+                        : 'Bestätigung erforderlich',
                 duration: 2600,
                 source: 'system',
             });
@@ -689,9 +689,9 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     <div className="text-xs text-white/55 italic leading-relaxed">
                         {isContentOnlyOp
                             ? isContentUpdateOnlyOp
-                                ? 'MORA aendert diesen Inhalt erst nach Ihrer Bestaetigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
-                                : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestaetigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
-                            : 'MORA fuehrt diese Aenderung erst nach Ihrer Bestaetigung aus. Der aktuelle Organisationskontext bleibt dabei verbindlich.'}
+                                ? 'MORA aendert diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
+                                : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
+                            : 'MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Organisationskontext bleibt dabei verbindlich.'}
                     </div>
                 </div>
 
@@ -854,12 +854,12 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             </div>
 
                             <div className="rounded-lg border border-white/8 bg-black/15 p-3">
-                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Naechster Schritt</div>
+                                <div className="text-[10px] uppercase tracking-[0.18em] text-white/40">Nächster Schritt</div>
                                 <div className="mt-1 text-sm text-white/88 leading-relaxed">
-                                    {routeNext?.label || 'Einordnung bestaetigen'}
+                                    {routeNext?.label || 'Einordnung bestätigen'}
                                 </div>
                                 <div className="mt-1 text-[11px] text-white/46 leading-relaxed">
-                                    {routeNext?.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                    {routeNext?.message || 'Prüfe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                 </div>
                             </div>
                         </div>
@@ -889,7 +889,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
 
                         {intake.route_confidence_label === 'niedrig' && (
                             <div className="mt-3 rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
-                                Niedrige Sicherheit: Ziel und Begruendung vor der Freigabe nochmal pruefen.
+                                Niedrige Sicherheit: Ziel und Begründung vor der Freigabe nochmal pruefen.
                             </div>
                         )}
 
@@ -899,11 +899,11 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                             return (
                                 <div className="mt-3 space-y-0.5 text-[11px] leading-relaxed text-white/45">
                                     <div>
-                                        Dieser Pfad wurde bereits {confirmed_count}-mal bestaetigt oder korrigiert.
+                                        Dieser Pfad wurde bereits {confirmed_count}-mal bestätigt oder korrigiert.
                                     </div>
                                     {corrected_count > 0 && (
                                         <div>
-                                            Davon wurden {corrected_count}-mal manuelle Korrekturen uebernommen.
+                                            Davon wurden {corrected_count}-mal manuelle Korrekturen übernommen.
                                         </div>
                                     )}
                                     {isThin && (

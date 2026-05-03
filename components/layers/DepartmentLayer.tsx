@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavStore } from '@/lib/store/navStore';
@@ -554,7 +554,7 @@ export const DepartmentLayer: React.FC = () => {
                 </div>
                 <div className="flex flex-col items-start gap-0.5 pointer-events-none">
                     <span className="text-[9px] text-emerald-500/70 tracking-[0.2em] font-medium uppercase">
-                        Zurueck
+                        Zurück
                     </span>
                     <span className="text-sm tracking-widest font-light flex items-center gap-2">
                         <span className="text-emerald-100/90">UNIVERSE</span>
@@ -589,12 +589,12 @@ export const DepartmentLayer: React.FC = () => {
                 className="left-8 top-32 z-40"
                 eyebrow={deptTitle || 'Abteilung'}
                 title={hoveredSpaceDetails?.displayName || deptTitle || 'Abteilung'}
-                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsuebersicht'}
+                badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsübersicht'}
                 accent={hoveredSpaceDetails?.color || deptColor}
-                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren fuer Details.'}
+                collapsedHint={hoveredSpaceDetails ? 'Bereich bleibt gehalten.' : 'Bereich fokussieren für Details.'}
                 summary={hoveredSpaceDetails
-                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die staerksten Ordner.`
-                    : 'Hover ueber einen Bereich, um seine staerksten Ordner und die echte Struktur zu sehen.'}
+                    ? `${hoveredSpaceDetails.folderTotal} Ordner und ${hoveredSpaceDetails.docTotal} Dokumente stammen aus dem echten Bereich. Die kleinen Preview-Orbits zeigen nur die stärksten Ordner.`
+                    : 'Hover über einen Bereich, um seine stärksten Ordner und die echte Struktur zu sehen.'}
                 forceExpanded={Boolean(hoveredSpaceDetails)}
                 onPointerEnter={() => {
                     if (hoveredSpaceId) {
@@ -658,12 +658,12 @@ export const DepartmentLayer: React.FC = () => {
                         )}
 
                         <p className="text-[11px] leading-relaxed text-white/45">
-                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die staerksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
+                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
                         </p>
                     </div>
                 ) : (
                     <p className="text-[11px] leading-relaxed text-white/40">
-                        Hover ueber einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
+                        Hover über einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
                     </p>
                 )}
             </LayerInsightRail>
@@ -763,6 +763,24 @@ export const DepartmentLayer: React.FC = () => {
                         </motion.div>
 
                         {moonPositions.map(({ space, displayName, color, x, y, delay }) => {
+                            const openSpaceSurface = (shiftOpenPane: boolean) => {
+                                setActiveSpace(space.id);
+                                if (!shiftOpenPane) {
+                                    navigateToSpace(space.id);
+                                    return;
+                                }
+                                openPane({
+                                    id: `space-${space.id}`,
+                                    type: 'space',
+                                    title: displayName,
+                                    data: {
+                                        spaceId: space.id,
+                                        departmentId: activeDepartmentId
+                                    },
+                                    size: { width: 1280, height: 820 },
+                                    position: { x: 100, y: 100 }
+                                });
+                            };
                             return (
                                 <motion.div
                                     key={space.id}
@@ -781,22 +799,7 @@ export const DepartmentLayer: React.FC = () => {
                                     onMouseEnter={() => setHoverSpace(space.id, { id: space.id, x, y })}
                                     onMouseLeave={() => scheduleHoverClear()}
                                     onClick={(event) => {
-                                        setActiveSpace(space.id);
-                                        if (!event.shiftKey) {
-                                            navigateToSpace(space.id);
-                                            return;
-                                        }
-                                        openPane({
-                                            id: `space-${space.id}`,
-                                            type: 'space',
-                                            title: displayName,
-                                            data: {
-                                                spaceId: space.id,
-                                                departmentId: activeDepartmentId
-                                            },
-                                            size: { width: 1280, height: 820 },
-                                            position: { x: 100, y: 100 }
-                                        });
+                                        openSpaceSurface(event.shiftKey);
                                     }}
                                 >
                                     <Star
@@ -825,11 +828,20 @@ export const DepartmentLayer: React.FC = () => {
                                     {(() => {
                                         const isRightHalf = x > 0;
                                         return (
-                                            <div className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-none ${isRightHalf ? 'right-full mr-2 text-right' : 'left-full ml-2 text-left'}`}>
-                                                <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[120px] truncate block">
+                                            <button
+                                                type="button"
+                                                data-testid={`space-label-${space.id}`}
+                                                className={`absolute top-1/2 -translate-y-1/2 whitespace-nowrap pointer-events-auto rounded-full px-2 py-1 transition-colors hover:bg-white/10 ${isRightHalf ? 'right-full mr-2 text-right' : 'left-full ml-2 text-left'}`}
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openSpaceSurface(event.shiftKey);
+                                                }}
+                                                title={`${displayName} öffnen`}
+                                            >
+                                                <span className="text-[10px] text-white/50 font-light tracking-wide max-w-[120px] truncate block hover:text-white/80">
                                                     {displayName}
                                                 </span>
-                                            </div>
+                                            </button>
                                         );
                                     })()}
                                 </motion.div>
@@ -999,7 +1011,7 @@ export const DepartmentLayer: React.FC = () => {
                                                 </span>
                                             </div>
                                             <div className="absolute bottom-3 right-3 text-[9px] text-emerald-300/50 uppercase tracking-[0.2em]">
-                                                oeffnen
+                                                öffnen
                                             </div>
                                         </motion.div>
                                     ))}

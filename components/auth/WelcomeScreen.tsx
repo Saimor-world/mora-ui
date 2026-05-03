@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -18,6 +18,8 @@ import { isAdmin, roleLabel } from '@/lib/auth/roles';
 import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
+import { loadWebsiteEntryContext, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -40,7 +42,7 @@ const getCoreUrl = () => getCoreBaseUrl();
  * MASTERBIBEL compliant:
  * - Single entry point for all auth flows
  * - Owner sees only company metadata (no customer data!)
- * - Demo is treated as a "customer" (Simple Coffee Group)
+ * - Website entries create isolated preview workspaces instead of shared demo access
  * - Real backend authentication
  */
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated }) => {
@@ -58,6 +60,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [reAuthPassword, setReAuthPassword] = useState('');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
+    const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
     // Default true so the button is visible while the policy loads (no CLS/flash)
     const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     const prefersReducedMotion = useReducedMotion();
@@ -74,15 +77,31 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const ambientMotionEnabled = mode === 'welcome' && !prefersReducedMotion && isDocumentVisible;
     const contextLabel = 'Organisation';
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Simple Coffee Group erkunden oder mit Zugangsdaten weiter'
-        : surfaceProfile.isLocalTruthSurface
-            ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
-            : 'Zugriff auf deine Organisation';
+        ? 'Beispielinstanz erkunden oder mit Zugangsdaten weiter'
+        : surfaceProfile.isHqSurface
+            ? 'HQ-Zugang mit deinen Anmeldedaten öffnen'
+            : surfaceProfile.isLocalTruthSurface
+                ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
+                : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Private Instanz ausserhalb der Demo vorbereiten'
-        : surfaceProfile.isLocalTruthSurface
-            ? 'Lokale oder interne Instanz fuer echte Produktionsregeln vorbereiten'
+        : websiteEntryContext
+            ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
+            : surfaceProfile.isHqSurface
+            ? 'HQ-Zugang einrichten'
+            : surfaceProfile.isLocalTruthSurface
+            ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
             : 'Neue Organisation einrichten';
+    const demoEntryTitle = websiteEntryContext
+        ? `${websiteEntryContext.companyName} als HQ-Workspace öffnen`
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Mit Zugangsdaten öffnen'
+            : 'Zugang prüfen';
+    const demoEntrySubtitle = websiteEntryContext
+        ? 'Isolierten Preview-Tenant aus dem Website-Check erzeugen'
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Kein öffentlicher Demo-Account: bitte bewusst anmelden.'
+            : 'Kein geteilter Demo-Account: Zugriff nur mit Kontext oder Login.';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
@@ -99,6 +118,43 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             toast.info("Sitzung wurde vollständig bereinigt");
         }
     }, []);
+
+    useEffect(() => {
+        try {
+            const params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
+            const context = buildWebsiteEntryContext(params);
+            if (context) {
+                saveWebsiteEntryContext(context);
+                setWebsiteEntryContext(context);
+                return;
+            }
+        } catch {
+            // Fall through to the stored context below.
+        }
+
+        const storedContext = loadWebsiteEntryContext();
+        const storedAt = storedContext?.storedAt ? Date.parse(storedContext.storedAt) : 0;
+        const isFreshStoredContext = Boolean(
+            storedContext?.entryToken &&
+            Number.isFinite(storedAt) &&
+            Date.now() - storedAt < 30 * 60 * 1000
+        );
+        if (storedContext && isFreshStoredContext) {
+            setWebsiteEntryContext(storedContext);
+            return;
+        }
+
+        setWebsiteEntryContext(null);
+    }, []);
+
+    useEffect(() => {
+        if (mode !== 'register' || !websiteEntryContext) return;
+        setSelectedRole('owner');
+        setCompanyName((current) => current || websiteEntryContext.companyName);
+        if (websiteEntryContext.email) {
+            setEmail((current) => current || websiteEntryContext.email || '');
+        }
+    }, [mode, websiteEntryContext]);
 
     // Mora Erwachen — consciousness-gradient session check
     useEffect(() => {
@@ -263,14 +319,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 useNavStore.getState().setActiveCompany(targetCompany.id);
                 void queryClient.invalidateQueries({ queryKey: queryKeys.departments(targetCompany.id) });
             } else {
-                console.warn('Keine Firma für Benutzer gefunden.');
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('Keine Firma für Benutzer gefunden.');
+                }
             }
 
             toast.success("Willkommen zurück!");
             touchSessionActivity();
             onAuthenticated();
         } catch (error) {
-            console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
+            }
             if (sessionTier === 'sofort') {
                 // Auto-resume failed silently — degrade to erwachen
                 setSessionTier('erwachen');
@@ -376,7 +436,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 });
 
                 if (result?.error) {
-                    console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn('[WelcomeScreen] NextAuth sync failed after core-login, continuing with core session', result.error);
+                    }
                 }
             }
 
@@ -392,8 +454,42 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
         } catch (error: any) {
-            console.error('[WelcomeScreen] Login Fehler:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('[WelcomeScreen] Login Fehler:', error);
+            }
             toast.error(error?.message || "Login fehlgeschlagen");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleWebsiteEntryLogin = async () => {
+        if (!websiteEntryContext?.entryToken) {
+            toast.error('Dieser Website-Einstieg hat keinen sicheren Workspace-Token. Bitte starte den Security Check neu.');
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const response = await fetch('/api/auth/website-entry-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entryToken: websiteEntryContext.entryToken }),
+            });
+            const data = await response.json().catch(() => null);
+            if (!response.ok || !data?.success) {
+                throw new Error(data?.detail || 'Preview-Workspace konnte nicht erzeugt werden');
+            }
+
+            saveAuthState(data.role || 'owner', data.email, data.tenant_id, null);
+            if (data.active_company_name) {
+                localStorage.setItem('last_workspace', data.active_company_name);
+            }
+            toast.success(`${websiteEntryContext.companyName} ist als isolierter HQ-Workspace bereit.`);
+            setViewMode('workspace');
+            window.location.assign('/home');
+        } catch (error: any) {
+            toast.error(error?.message || 'Preview-Workspace konnte nicht geöffnet werden');
         } finally {
             setIsLoading(false);
         }
@@ -403,6 +499,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     const handleRegister = async () => {
         const usingInvite = inviteCode.trim().length > 0;
+        const claimingWebsitePreview = Boolean(websiteEntryContext?.entryToken && !usingInvite && selectedRole === 'owner');
         const isLocalhost =
             typeof window !== 'undefined' &&
             ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
@@ -422,26 +519,38 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             return;
         }
 
-        if (!usingInvite && selectedRole === 'owner' && (!companyName || !companyName.trim())) {
-            toast.error('Organisationsname ist fuer Owner-Accounts erforderlich');
+        if (!usingInvite && selectedRole === 'owner' && !claimingWebsitePreview && (!companyName || !companyName.trim())) {
+            toast.error('Organisationsname ist für Owner-Accounts erforderlich');
+            return;
+        }
+
+        if (claimingWebsitePreview && websiteEntryContext?.email && email.trim().toLowerCase() !== websiteEntryContext.email.trim().toLowerCase()) {
+            toast.error(`Bitte nutze die E-Mail aus dem Security Check: ${websiteEntryContext.email}`);
             return;
         }
 
         setIsLoading(true);
-        const toastId = toast.loading("Account wird erstellt...");
+        const toastId = toast.loading(claimingWebsitePreview ? "Kundenaccount wird mit Dossier verbunden..." : "Account wird erstellt...");
 
         try {
-            const response = await fetch('/api/auth/core-register', {
+            const response = await fetch(claimingWebsitePreview ? '/api/auth/website-entry-claim' : '/api/auth/core-register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    email,
-                    password,
-                    role: usingInvite ? undefined : selectedRole,
-                    company_name: !usingInvite && selectedRole === 'owner' ? companyName.trim() : undefined,
-                    logo_url: !usingInvite && selectedRole === 'owner' ? logoUrl : undefined,
-                    invite_code: usingInvite ? inviteCode.trim() : undefined
-                })
+                body: JSON.stringify(claimingWebsitePreview
+                    ? {
+                        entryToken: websiteEntryContext?.entryToken,
+                        email,
+                        password,
+                        fullName: companyName.trim() || websiteEntryContext?.companyName,
+                    }
+                    : {
+                        email,
+                        password,
+                        role: usingInvite ? undefined : selectedRole,
+                        company_name: !usingInvite && selectedRole === 'owner' ? companyName.trim() : undefined,
+                        logo_url: !usingInvite && selectedRole === 'owner' ? logoUrl : undefined,
+                        invite_code: usingInvite ? inviteCode.trim() : undefined
+                    })
             });
 
             if (!response.ok) {
@@ -460,11 +569,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     password: password
                 });
                 if (syncResult?.error) {
-                    console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn('[WelcomeScreen] NextAuth sync failed after register, continuing with core session', syncResult.error);
+                    }
                 }
             }
 
             saveAuthState(role, email, data.tenant_id, null);
+            if (data.active_company_name) {
+                localStorage.setItem('last_workspace', data.active_company_name);
+            }
 
             // Fix: Clear onboarding and session flags
             localStorage.setItem('mora_session', 'active');
@@ -496,6 +610,13 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 }
             }
 
+            if (claimingWebsitePreview) {
+                setViewMode('workspace');
+                toast.success('Kundenaccount ist mit dem HQ-Dossier verbunden.', { id: toastId });
+                window.location.assign('/home');
+                return;
+            }
+
             // Routing
             if (isAdmin(role)) {
                 // Determine if we need onboarding (for new owner it is mandatory)
@@ -512,7 +633,9 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             onAuthenticated();
         } catch (error: any) {
-            console.error('[WelcomeScreen] Registrierung Fehler:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('[WelcomeScreen] Registrierung Fehler:', error);
+            }
             toast.error(error?.message || "Registrierung fehlgeschlagen", { id: toastId });
         } finally {
             setIsLoading(false);
@@ -825,7 +948,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         transition={{ duration: 1.5, repeat: Infinity }}
                                                         className="text-xs text-emerald-500/50 tracking-widest"
                                                     >
-                                                        Identitaet wird geprueft...
+                                                        Identität wird geprueft...
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -845,7 +968,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] disabled:opacity-50"
                                                     >
                                                         <Sparkles className="w-4 h-4 text-emerald-400" />
-                                                        <span className="font-medium tracking-wide">Identitaet bestaetigt - Fortsetzen</span>
+                                                        <span className="font-medium tracking-wide">Identität bestätigt - Fortsetzen</span>
                                                     </motion.button>
                                                     <button
                                                         onClick={() => void handleLogout()}
@@ -929,7 +1052,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             Interne Instanz
                                         </div>
                                         <div className="mt-2 text-xs leading-relaxed text-emerald-100/75">
-                                            Hier gelten die echten lokalen Regeln. Diese Oberflaeche ist fuer reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
+                                            Hier gelten die echten lokalen Regeln. Diese Oberfläche ist für reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
                                         </div>
                                     </div>
                                 )}
@@ -947,7 +1070,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz oeffnen' : 'Anmelden'}
+                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz öffnen' : 'Anmelden'}
                                         </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">{loginSubtitle}</div>
                                     </div>
@@ -956,7 +1079,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 {/* Account Erstellen Button — hidden when instance policy disables public registration */}
                                 {allowPublicRegistration && <motion.button
-                                    onClick={() => setMode('register')}
+                                    onClick={() => {
+                                        if (websiteEntryContext) {
+                                            setSelectedRole('owner');
+                                            setCompanyName(websiteEntryContext.companyName);
+                                            if (websiteEntryContext.email) setEmail(websiteEntryContext.email);
+                                        }
+                                        setMode('register');
+                                    }}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
@@ -967,17 +1097,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
+                                            {websiteEntryContext ? 'Dossier mit Account verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isHqSurface ? 'HQ-Zugang einrichten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
                                         </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
                                 </motion.button>}
 
-                                {/* Curated public demo entry */}
+                                {/* Website entry or explicit login. Never falls back to a shared demo account. */}
                                 <motion.button
                                     onClick={() => {
-                                        void handleLogin({ email: 'demo', password: 'demo123' });
+                                        if (websiteEntryContext) {
+                                            void handleWebsiteEntryLogin();
+                                        } else {
+                                            setMode('login');
+                                        }
                                     }}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
@@ -989,12 +1123,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface ? 'Demo-Spiegel oeffnen' : 'Simple Coffee Group oeffnen'}
+                                            {demoEntryTitle}
                                         </div>
                                         <div className="text-xs text-blue-500/60 font-light tracking-wider group-hover:text-blue-400/80 transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface
-                                                ? 'Spiegele den aktuellen stabilen Demo-Flow, ohne die Wahrheitsinstanz zu verlassen.'
-                                                : 'Kuratierten Demo-Flow mit echter Struktur, Signalen und Finder starten'}
+                                            {demoEntrySubtitle}
                                         </div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
@@ -1076,7 +1208,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurueck zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1103,7 +1235,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                 <div className="relative z-10">
                                     <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-8 text-center uppercase drop-shadow-[0_0_15px_rgba(206,182,118,0.2)]">
-                                        {surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
+                                        {websiteEntryContext ? 'Dossier verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isHqSurface ? 'HQ-Zugang einrichten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
                                     </h2>
 
                                     <div className="space-y-4">
@@ -1133,7 +1265,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             />
                                         </div>
 
-                                        <div>
+                                        {!websiteEntryContext && <div>
                                             <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
                                                 Einladungscode (optional)
                                             </label>
@@ -1144,18 +1276,18 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-mora-gold/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
                                                 placeholder="INVITE-XXXX"
                                             />
-                                        </div>
+                                        </div>}
 
                                         {/* Company Name - Only for Owners */}
                                         {!hasInvite && selectedRole === 'owner' && (
                                             <div className="space-y-4 pt-4 border-t border-white/5">
-                                                <div className="flex justify-center mb-4">
+                                                {!websiteEntryContext && <div className="flex justify-center mb-4">
                                                     <CompanyLogoUpload
                                                         value={logoUrl}
                                                         onChange={setLogoUrl}
                                                         companyName={companyName || 'Organisation'}
                                                     />
-                                                </div>
+                                                </div>}
 
                                                 <div>
                                                     <label className="block text-[10px] text-mora-gold/70 mb-2.5 uppercase tracking-widest font-medium">
@@ -1170,14 +1302,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     />
                                                     <p className="text-[10px] text-mora-gold/50 mt-1.5 flex items-center gap-1">
                                                         <Sparkles size={10} />
-                                                        Dies wird der Name Ihrer Organisation sein
+                                                        {websiteEntryContext ? 'Dieses Dossier wird mit deinem Kundenaccount verbunden' : 'Dies wird der Name Ihrer Organisation sein'}
                                                     </p>
                                                 </div>
                                             </div>
                                         )}
 
                                         {/* Role Selection */}
-                                        {!hasInvite && (
+                                        {!hasInvite && !websiteEntryContext && (
                                             <div className="pt-2">
                                                 <label className="block text-[10px] text-emerald-500/60 mb-3 uppercase tracking-widest font-medium">
                                                     Account-Typ
@@ -1193,7 +1325,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">Eigentuemer</span>
+                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button
@@ -1219,14 +1351,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             whileTap={{ scale: isLoading ? 1 : 0.98 }}
                                             className="w-full mt-6 py-3.5 bg-gradient-to-r from-mora-gold/15 to-mora-gold/5 hover:from-mora-gold/25 hover:to-mora-gold/15 border border-mora-gold/30 hover:border-mora-gold/50 rounded-xl text-emerald-100 font-medium tracking-wide transition-all duration-300 disabled:opacity-50 shadow-[0_0_20px_0_rgba(206,182,118,0.1)] hover:shadow-[0_0_30px_0_rgba(206,182,118,0.2)]"
                                         >
-                                            {isLoading ? 'Erstelle...' : 'Account Erstellen'}
+                                            {isLoading ? 'Erstelle...' : websiteEntryContext ? 'Kundenaccount verbinden' : 'Account Erstellen'}
                                         </motion.button>
 
                                         <button
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'<- Zurueck zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>

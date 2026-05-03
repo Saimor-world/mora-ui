@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * MoraShell - Main OS Shell Component
@@ -46,6 +46,9 @@ import {
     useRealtime,
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
+import { useMoraExecutions } from '@/lib/hooks/useMoraExecutions';
+import { ExecutionToast } from '@/components/mora/ExecutionToast';
+import { WebsiteContextBanner } from '@/components/entry/WebsiteContextBanner';
 import { realtime } from '@/lib/api/realtimeClient';
 
 // Layout Components
@@ -81,6 +84,7 @@ import { UserCursor } from '@/components/layout/UserCursor';
 // import { CursorTrailEffect } from '@/components/effects/CursorTrailEffect';
 import { UniverseControls, type ViewMode as UniverseViewMode } from '@/components/home/UniverseControls';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { MyceliumDropfield } from '@/components/mora/MyceliumDropfield';
 import { ShellBreadcrumb } from '@/components/os/shell/ShellBreadcrumb';
 import { IdentityMedallion } from '@/components/os/shell/IdentityMedallion';
@@ -260,6 +264,15 @@ export const MoraShell: React.FC = () => {
     // Auth
     const { isBootstrapped, authError } = useAuthBootstrapper();
 
+    // Boot timeout: if the shell hasn't bootstrapped within 12 s, the backend is likely
+    // unreachable. Surface a clear error instead of spinning indefinitely.
+    const [bootTimedOut, setBootTimedOut] = useState(false);
+    useEffect(() => {
+        if (isBootstrapped) return;
+        const timer = window.setTimeout(() => setBootTimedOut(true), 12_000);
+        return () => window.clearTimeout(timer);
+    }, [isBootstrapped]);
+
     // Store — migrated to new stores
     const user = useSessionStore((s) => s.user);
     const resetStore = useSessionStore((s) => s.resetStore);
@@ -282,7 +295,9 @@ export const MoraShell: React.FC = () => {
     const role = user?.role || 'demo';
     const tenantId = user?.tenant_id;
     const surfaceProfile = useSurfaceProfile();
-    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface;
+    const websiteEntryContext = useWebsiteEntryContext();
+    const isWebsiteEntrySurface = Boolean(websiteEntryContext);
+    const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !isWebsiteEntrySurface;
 
     const preferredLocalCompany = React.useMemo(() => {
         if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return null;
@@ -323,20 +338,55 @@ export const MoraShell: React.FC = () => {
         return filteredCompanies.find((c) => c.id === activeCompanyId) || filteredCompanies[0];
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
-    const displayCompany = activeCompanyForView || activeCompany;
+    const displayCompany = React.useMemo(() => {
+        const baseCompany = activeCompanyForView || activeCompany;
+        if (!websiteEntryContext?.companyName) return baseCompany;
+        if (baseCompany) {
+            return {
+                ...baseCompany,
+                name: websiteEntryContext.companyName,
+                description: websiteEntryContext.summary || baseCompany.description,
+                tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
+                    ? user.tenant_id
+                    : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+                is_demo: false,
+            };
+        }
+        return {
+            id: `website-entry-${websiteEntryContext.id || 'current'}`,
+            tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
+                ? user.tenant_id
+                : `tenant-preview-${websiteEntryContext.id || 'current'}`,
+            owner_id: 'website-entry',
+            name: websiteEntryContext.companyName,
+            slug: `website-entry-${websiteEntryContext.id || 'current'}`,
+            description: websiteEntryContext.summary || null,
+            logo_url: null,
+            settings: null,
+            is_demo: false,
+        };
+    }, [activeCompany, activeCompanyForView, user?.tenant_id, websiteEntryContext]);
+    const displayCompanies = React.useMemo(() => {
+        if (!displayCompany || !websiteEntryContext?.companyName) return filteredCompanies;
+        return [
+            displayCompany,
+            ...filteredCompanies.filter((company) => company.id !== displayCompany.id),
+        ];
+    }, [displayCompany, filteredCompanies, websiteEntryContext?.companyName]);
     const hasDemoCompany = safeCompanies.some((c) => c.is_demo);
     const visibleModes = React.useMemo<UniverseViewMode[]>(() => {
         if (isPublicDemoSurface) {
             return hasDemoCompany ? ['demo'] : ['workspace'];
         }
-        if (surfaceProfile.isLocalTruthSurface) {
+        if (surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface) {
+            // Single-deployment surfaces: workspace only — no demo mode clutter.
             return ['workspace'];
         }
         if (role === 'system_owner') {
             return hasDemoCompany ? ['owner', 'workspace', 'demo'] : ['owner', 'workspace'];
         }
         return hasDemoCompany ? ['workspace', 'demo'] : ['workspace'];
-    }, [role, hasDemoCompany, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface]);
+    }, [role, hasDemoCompany, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface, surfaceProfile.isHqSurface]);
     const scopeLabel = React.useMemo(() => {
         if (viewLevel === 'company') return 'Portfolio';
         if (viewLevel === 'core') return 'Universe';
@@ -394,6 +444,7 @@ export const MoraShell: React.FC = () => {
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
+    const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
 
@@ -411,6 +462,7 @@ export const MoraShell: React.FC = () => {
         const handlePaneDragStart = () => {
             mouseMoveHandler = (e: MouseEvent) => {
                 const zone = detectSnapZone(e.clientX, e.clientY);
+                activeSnapZoneRef.current = zone;
                 setActiveSnapZone(zone);
             };
             window.addEventListener('mousemove', mouseMoveHandler);
@@ -423,9 +475,11 @@ export const MoraShell: React.FC = () => {
             }
             const customEvent = e as CustomEvent;
             const { paneId } = customEvent.detail || {};
-            if (paneId && activeSnapZone) {
-                applySnap(paneId, activeSnapZone);
+            const snapZone = activeSnapZoneRef.current;
+            if (paneId && snapZone) {
+                applySnap(paneId, snapZone);
             }
+            activeSnapZoneRef.current = null;
             setActiveSnapZone(null);
         };
 
@@ -439,7 +493,7 @@ export const MoraShell: React.FC = () => {
                 window.removeEventListener('mousemove', mouseMoveHandler);
             }
         };
-    }, [detectSnapZone, applySnap, activeSnapZone]);
+    }, [detectSnapZone, applySnap]);
 
     // EFFECT: Clear panes when ViewMode changes
     useEffect(() => {
@@ -514,6 +568,7 @@ export const MoraShell: React.FC = () => {
     useShellEvents({});
 
     useRealtime(isBootstrapped);
+    useMoraExecutions(isBootstrapped); // P4: realtime execution events → window bus + orb
     useOperationalFlip();
 
     useKeyboardShortcuts({
@@ -670,6 +725,11 @@ export const MoraShell: React.FC = () => {
     }
 
     if (!isBootstrapped) {
+        if (bootTimedOut) {
+            return (
+                <ErrorScreen message="CORE-Backend antwortet nicht. Starte den Server neu (bash scripts/start-local-truth.sh) oder prüfe deine Netzwerkverbindung." />
+            );
+        }
         return <LoadingScreen />;
     }
 
@@ -734,13 +794,16 @@ export const MoraShell: React.FC = () => {
                         useNavStore.getState().setViewMode(mode);
                     }}
                     activeCompany={displayCompany}
-                    companies={filteredCompanies}
+                    companies={displayCompanies}
                     onSwitchCompany={(id) => useNavStore.getState().setActiveCompany(id)}
                     visibleModes={visibleModes}
-                    workspaceLabel={workspaceTabLabel}
+                    workspaceLabel={websiteEntryContext ? 'Dossier' : workspaceTabLabel}
                     scopeLabel={scopeLabel}
-                    disableContextSwitch={isPublicDemoSurface}
-                    companyCountLabel={surfaceProfile.isPublicDemoSurface ? 'Demo' : undefined}
+                    disableContextSwitch={isPublicDemoSurface || Boolean(websiteEntryContext)}
+                    companyCountLabel={websiteEntryContext ? 'Dossier' : surfaceProfile.isPublicDemoSurface ? 'Demo' : undefined}
+                    isWebsiteEntryContext={Boolean(websiteEntryContext)}
+                    contextLabelOverride={websiteEntryContext ? 'Dossier' : undefined}
+                    contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
 
                 {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
@@ -841,7 +904,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setNavigationOutcome(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Navigationshinweis schliessen"
+                                        aria-label="Navigationshinweis schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -870,10 +933,10 @@ export const MoraShell: React.FC = () => {
                                     >
                                         {navigationOutcome.targetType === 'search' ? <Search size={13} /> : navigationOutcome.targetType === 'node' ? <FileText size={13} /> : <FolderOpen size={13} />}
                                         {navigationOutcome.targetType === 'search'
-                                            ? 'Suche oeffnen'
+                                            ? 'Suche öffnen'
                                             : navigationOutcome.targetType === 'node'
-                                                ? 'Datei oeffnen'
-                                                : 'Im Finder oeffnen'}
+                                                ? 'Datei öffnen'
+                                                : 'Im Finder öffnen'}
                                     </button>
                                     {navigationOutcome.targetType === 'node' && navigationOutcome.folderId && (
                                         <button
@@ -881,15 +944,15 @@ export const MoraShell: React.FC = () => {
                                             onClick={() => openNavigationOutcome({
                                                 ...navigationOutcome,
                                                 targetType: 'folder',
-                                                title: 'Ordner geoeffnet',
-                                                message: `Ich habe ${navigationOutcome.label || 'den Zielordner'} im Finder geoeffnet.`,
+                                                title: 'Ordner geöffnet',
+                                                message: `Ich habe ${navigationOutcome.label || 'den Zielordner'} im Finder geöffnet.`,
                                                 nodeId: undefined,
                                                 folderId: navigationOutcome.folderId,
                                             }, openPane)}
                                             className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3.5 py-2 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08]"
                                         >
                                             <FolderOpen size={13} />
-                                            Im Zielordner oeffnen
+                                            Im Zielordner öffnen
                                         </button>
                                     )}
                                 </div>
@@ -928,7 +991,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setMyceliumSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Mycelium summary schliessen"
+                                        aria-label="Mycelium summary schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -990,15 +1053,15 @@ export const MoraShell: React.FC = () => {
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <FolderOpen size={13} />
-                                            Im Zielordner oeffnen
+                                            Im Zielordner öffnen
                                         </button>
                                     )}
                                     {myceliumSummary.phase === 'complete' && myceliumSummary.primaryFile?.nodeId && (
                                         <button
                                             type="button"
                                             onClick={() => openNavigationOutcome({
-                                                title: 'Datei geoeffnet',
-                                                message: `Ich habe ${myceliumSummary.primaryFile?.name || 'das Dokument'} geoeffnet.`,
+                                                title: 'Datei geöffnet',
+                                                message: `Ich habe ${myceliumSummary.primaryFile?.name || 'das Dokument'} geöffnet.`,
                                                 targetType: 'node',
                                                 label: myceliumSummary.primaryFile?.name || 'Dokument',
                                                 companyId: myceliumSummary.companyId || undefined,
@@ -1009,7 +1072,7 @@ export const MoraShell: React.FC = () => {
                                             className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3.5 py-2 text-[11px] font-medium text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
                                         >
                                             <FileText size={13} />
-                                            Datei oeffnen
+                                            Datei öffnen
                                         </button>
                                     )}
                                     <button
@@ -1067,7 +1130,7 @@ export const MoraShell: React.FC = () => {
                                 <div className="flex items-start justify-between gap-3">
                                     <div>
                                         <div className={`text-[11px] uppercase tracking-[0.24em] font-semibold ${isRunning ? 'text-blue-200/70' : isWaiting ? 'text-amber-200/70' : isDone ? 'text-white/30' : 'text-violet-200/70'}`}>
-                                            {isRunning ? 'Laeuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
+                                            {isRunning ? 'Läuft gerade' : isWaiting ? 'Freigabe erforderlich' : isDone ? 'Abgeschlossen' : 'Mora zeigt dir'}
                                         </div>
                                         {isRunning && (
                                             <div className="mb-2 mt-1">
@@ -1111,7 +1174,7 @@ export const MoraShell: React.FC = () => {
                                         type="button"
                                         onClick={() => setWorkSessionSummary(null)}
                                         className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/[0.05] hover:text-white/70"
-                                        aria-label="Arbeitsplan-Hinweis schliessen"
+                                        aria-label="Arbeitsplan-Hinweis schließen"
                                     >
                                         <X size={15} />
                                     </button>
@@ -1176,7 +1239,7 @@ export const MoraShell: React.FC = () => {
                                         className="inline-flex items-center gap-2 rounded-full border border-violet-400/20 bg-violet-500/14 px-3.5 py-2 text-[11px] font-medium text-violet-50 transition-colors hover:border-violet-300/35 hover:bg-violet-500/22"
                                     >
                                         <LayoutList size={13} />
-                                        Arbeitsplan oeffnen
+                                        Arbeitsplan öffnen
                                     </button>
                                     <button
                                         type="button"
@@ -1199,6 +1262,9 @@ export const MoraShell: React.FC = () => {
                     })()}
                 </div>
             )} */}
+
+            {/* Website context banner (surfaced from landing page check) */}
+            <WebsiteContextBanner />
 
             {/* Name Conflict Modal (409 UX) */}
             <NameConflictModal />
@@ -1223,7 +1289,7 @@ export const MoraShell: React.FC = () => {
                             </h2>
                             <p className="mt-2 text-sm leading-relaxed text-white/65">
                                 Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschlaege vor
-                                und fuehrt die bestaetigte Ablage spaeter im Dateibaum aus.
+                                und führt die bestätigte Ablage später im Dateibaum aus.
                             </p>
                         </div>
                     </div>
@@ -1243,6 +1309,8 @@ export const MoraShell: React.FC = () => {
                     </div>
                 )
             }
+            {/* P4: Execution toast for off-screen pane actions */}
+            <ExecutionToast />
         </div>
     );
 };

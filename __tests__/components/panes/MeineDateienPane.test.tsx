@@ -1,38 +1,58 @@
-// __tests__/components/panes/MeineDateienPane.test.tsx
+﻿// __tests__/components/panes/MeineDateienPane.test.tsx
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
-import { fetchMyContent, shareNode, shareFile } from '@/lib/api/coreClient';
-import type { UserContentResponse } from '@/lib/api/coreClient';
+import { fetchMyContent, shareNode, shareFile, fetchCloudConnectorItems } from '@/lib/api/contentClient';
+import type { UserContentResponse } from '@/lib/api/contentClient';
 
-jest.mock('@/lib/api/coreClient', () => ({
+jest.mock('@/lib/api/contentClient', () => ({
     fetchMyContent: jest.fn(),
     shareNode: jest.fn(),
     shareFile: jest.fn(),
+    fetchCloudConnectorItems: jest.fn(),
+}));
+
+// Framer-motion renders as plain elements so GlassPanel (which uses it internally)
+// can mount without animation engine in JSDOM. No GlassPanel mock needed.
+jest.mock('framer-motion', () => ({
+    motion: { div: ({ children, ...props }: any) => <div {...props}>{children}</div> },
+    AnimatePresence: ({ children }: any) => <>{children}</>,
+    useDragControls: () => ({ start: jest.fn() }),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: () => ({
-        getPane: (id: string) => ({
-            id,
-            type: 'meine-dateien',
-            title: 'Meine Dateien',
-            position: { x: 100, y: 100 },
-            size: { width: 800, height: 600 },
-            minimized: false,
-            zIndex: 500,
-        }),
-        openPane: jest.fn(),
-        removePane: jest.fn(),
-        minimizePane: jest.fn(),
-        focusPane: jest.fn(),
-        updatePanePosition: jest.fn(),
-        updatePaneSize: jest.fn(),
-    }),
+    usePaneStore: (selector?: any) => {
+        const store = {
+            getPane: (id: string) => ({
+                id,
+                type: 'meine-dateien',
+                title: 'Meine Dateien',
+                position: { x: 100, y: 100 },
+                size: { width: 800, height: 600 },
+                minimized: false,
+                zIndex: 500,
+            }),
+            openPane: jest.fn(),
+            removePane: jest.fn(),
+            minimizePane: jest.fn(),
+            focusPane: jest.fn(),
+            updatePanePosition: jest.fn(),
+            updatePaneSize: jest.fn(),
+            activePaneId: 'meine-dateien',
+            // GlassPanel reads panes array to compute visiblePaneCount
+            panes: [],
+        };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/store/navStore', () => ({
+    useNavStore: (selector?: any) => selector ? selector({ isStandardMode: false }) : { isStandardMode: false },
 }));
 
 const mockShareNode = shareNode as jest.MockedFunction<typeof shareNode>;
 const mockShareFile = shareFile as jest.MockedFunction<typeof shareFile>;
+const mockFetchCloudConnectorItems = fetchCloudConnectorItems as jest.MockedFunction<typeof fetchCloudConnectorItems>;
 
 const mockFetch = fetchMyContent as jest.MockedFunction<typeof fetchMyContent>;
 
@@ -72,7 +92,10 @@ const mockResponse: UserContentResponse = {
 };
 
 describe('MeineDateienPane', () => {
-    beforeEach(() => jest.clearAllMocks());
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockFetchCloudConnectorItems.mockResolvedValue(null);
+    });
 
     it('shows loading state initially', async () => {
         mockFetch.mockImplementation(() => new Promise(() => {}));
@@ -121,7 +144,7 @@ describe('MeineDateienPane', () => {
         mockFetch.mockResolvedValue(null);
         render(<MeineDateienPane />);
         await waitFor(() => {
-            expect(screen.getByText(/nicht verfuegbar/i)).toBeInTheDocument();
+            expect(screen.getByText(/nicht verfügbar/i)).toBeInTheDocument();
         });
     });
 

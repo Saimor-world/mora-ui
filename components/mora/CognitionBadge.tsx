@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
@@ -111,7 +111,7 @@ export const CognitionBadge: React.FC<CognitionBadgeProps> = ({ onClick }) => {
                 hover:brightness-110 transition-all
                 ${getBadgeColor()}
             `}
-            title={`${getTooltip()} Klicken fuer Details.`}
+            title={`${getTooltip()} Klicken für Details.`}
         >
             <motion.div
                 animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}

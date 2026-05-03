@@ -49,8 +49,13 @@ export const MoraGreeting: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const user = useSessionStore((s) => s.user);
     const viewMode = useNavStore((s) => s.viewMode);
+    const viewLevel = useNavStore((s) => s.viewLevel);
+    const suppressOnShellSurface = viewLevel === 'core' || viewLevel === 'company' || viewLevel === 'department' || viewLevel === 'space' || viewLevel === 'folder';
 
     useEffect(() => {
+        if (suppressOnShellSurface) {
+            return;
+        }
         // Check if we should show greeting
         const lastGreeting = sessionStorage.getItem('saimor_last_greeting');
         const now = Date.now();
@@ -67,7 +72,13 @@ export const MoraGreeting: React.FC = () => {
 
             return () => clearTimeout(timer);
         }
-    }, []);
+    }, [suppressOnShellSurface]);
+
+    useEffect(() => {
+        if (suppressOnShellSurface) {
+            setIsVisible(false);
+        }
+    }, [suppressOnShellSurface]);
 
     const { greeting, subtitle } = getGreeting(user?.name);
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -38,24 +38,24 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
     const company = safeCompanies.find(c => c.id === companyId);
 
     const tabs = [
-        { id: 'overview', label: 'Ueberblick', icon: Building2 },
+        { id: 'overview', label: 'Überblick', icon: Building2 },
         { id: 'danger', label: 'Gefahrenzone', icon: AlertCircle },
     ];
 
     const handleDeleteCompany = async () => {
         if (confirmDelete != company?.name) {
-            toast.error('Bitte gib den Organisationsnamen zur Bestaetigung ein');
+            toast.error('Bitte gib den Organisationsnamen zur Bestätigung ein');
             return;
         }
 
         setIsDeleting(true);
         try {
             await coreDelete(`/v3/companies/${companyId}`);
-            toast.success(`"${company?.name}" wurde geloescht`);
+            toast.success(`"${company?.name}" wurde gelöscht`);
             await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
             removePane(id);
         } catch (error: any) {
-            toast.error(error.message || 'Organisation konnte nicht geloescht werden');
+            toast.error(error.message || 'Organisation konnte nicht gelöscht werden');
         } finally {
             setIsDeleting(false);
         }

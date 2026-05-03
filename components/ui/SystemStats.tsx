@@ -9,6 +9,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useNodes } from '@/lib/queries/useNodes';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 
 /**
  * V12: System Stats
@@ -28,6 +29,7 @@ export const SystemStats: React.FC = () => {
     // Use active folder's nodes for the count (best approximation without full cache scan)
     const { data: nodes = [] } = useNodes(activeFolderId);
     const surfaceProfile = useSurfaceProfile();
+    const websiteEntryContext = useWebsiteEntryContext();
 
     const [uptime, setUptime] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
@@ -93,7 +95,9 @@ export const SystemStats: React.FC = () => {
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />
                     <span>
-                        {surfaceProfile.isPublicDemoSurface
+                        {websiteEntryContext?.companyName
+                            ? websiteEntryContext.companyName
+                            : surfaceProfile.isPublicDemoSurface
                             ? 'Beispielsystem'
                             : surfaceProfile.isLocalTruthSurface
                                 ? (activeCompany?.name || 'Aktive Instanz')

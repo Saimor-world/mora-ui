@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+﻿import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
@@ -49,6 +49,8 @@ import {
 import {
     createFolder as orgCreateFolder,
     createNode as orgCreateNode,
+    fetchNodeChildren,
+    fetchFoldersByCompany,
     updateNode as orgUpdateNode,
     deleteNode as orgDeleteNode,
     updateFolder as orgUpdateFolder,
@@ -56,12 +58,13 @@ import {
     updateSpace as orgUpdateSpace,
     deleteSpace as orgDeleteSpace,
 } from '@/lib/api/orgClient';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { useTree } from '@/lib/queries/useTree';
 import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
 import type { AppProps } from '@/lib/apps/types';
+import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -238,6 +241,15 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const pane = getPane(id);
     const surfaceProfile = useSurfaceProfile();
 
+    // P4: invalidate tree + node queries when Mora executes something affecting this company
+    useExecutionSubscription({
+        on_done: () => {
+            if (!activeCompanyId) return;
+            void queryClient.invalidateQueries({ queryKey: queryKeys.tree(activeCompanyId) });
+            void queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(activeCompanyId), exact: false });
+        },
+    });
+
     // UNIFIED FINDER: Can start at any level
     // Quick Access: Filter by department if provided
     const departmentId = initialData?.departmentId as string | undefined;
@@ -292,7 +304,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         try {
             await downloadCompanyFile(fileId, item?.metadata?.original_filename || getContentDisplayName(item));
         } catch (error: any) {
-            toast.error(error?.message || 'Quelle konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Quelle konnte nicht geöffnet werden');
         }
     }, []);
 
@@ -313,7 +325,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     timestamp: Date.now(),
                 } satisfies DocumentNavigationContext : undefined,
             }).catch((error: any) => {
-                toast.error(error?.message || 'Datei konnte nicht geoeffnet werden');
+                toast.error(error?.message || 'Datei konnte nicht geöffnet werden');
             });
             return;
         }
@@ -335,7 +347,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             } satisfies DocumentNavigationContext : undefined,
         });
         if (result.mode === 'external-link') {
-            toast.success('Link im Browser geoeffnet');
+            toast.success('Link im Browser geöffnet');
         }
     }, [activeCompanyId, navigationContext, openPane, paneCompanyId]);
 
@@ -398,7 +410,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (itemType === 'department') {
             const departmentId = item.id ?? resolvedDepartmentId;
             if (!departmentId) {
-                toast.error('Department konnte nicht im Universe geoeffnet werden');
+                toast.error('Department konnte nicht im Universe geöffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -406,7 +418,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             setActiveSpace(null);
             setActiveFolder(null);
             setViewLevel('department');
-            toast.success('Department im Universe geoeffnet');
+            toast.success('Department im Universe geöffnet');
             setContextMenu(null);
             return;
         }
@@ -414,7 +426,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (itemType === 'space') {
             const spaceId = item.id ?? resolvedSpaceId;
             if (!spaceId) {
-                toast.error('Bereich konnte nicht im Universe geoeffnet werden');
+                toast.error('Bereich konnte nicht im Universe geöffnet werden');
                 setContextMenu(null);
                 return;
             }
@@ -422,14 +434,14 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             setActiveSpace(spaceId);
             setActiveFolder(null);
             setViewLevel('space');
-            toast.success('Bereich im Universe geoeffnet');
+            toast.success('Bereich im Universe geöffnet');
             setContextMenu(null);
             return;
         }
 
         const folderId = resolvedFolderId ?? currentFolderIdRef.current;
         if (!folderId) {
-            toast.error('Kein Ordnerkontext fuer Universe-Navigation verfuegbar');
+            toast.error('Kein Ordnerkontext für Universe-Navigation verfügbar');
             setContextMenu(null);
             return;
         }
@@ -453,7 +465,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             }
         });
 
-        toast.success(itemType === 'folder' ? 'Ordner im Universe geoeffnet' : 'Dateikontext im Universe geoeffnet');
+        toast.success(itemType === 'folder' ? 'Ordner im Universe geöffnet' : 'Dateikontext im Universe geöffnet');
         setContextMenu(null);
     }, [
         contextMenu,
@@ -467,7 +479,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     ]);
 
     const [viewMode, setViewMode] = useState<'grid' | 'list' | 'graph'>('grid');
-    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('compact');
+    const [cardDensity, setCardDensity] = useState<'compact' | 'cozy' | 'showcase'>('cozy');
     const [showContextlessZone, setShowContextlessZone] = useState(true);
     const nextDensity = useCallback(() => {
         setCardDensity(d => d === 'compact' ? 'cozy' : d === 'cozy' ? 'showcase' : 'compact');
@@ -623,37 +635,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         return () => window.removeEventListener('keydown', onKeyDown);
     }, [navigateBack, navigateForward, navigateUp]);
 
-    /**
-     * Click-race guard for folder navigation.
-     * Framer Motion's gesture system can absorb native `dblclick` on animated elements.
-     * Instead we track two rapid clicks ourselves: first click selects, second click
-     * within DOUBLE_CLICK_MS navigates forward -- deterministic in all view modes.
-     */
-    const DOUBLE_CLICK_MS = 300;
-    const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const lastClickedFolderRef = useRef<string | null>(null);
-
     const handleFolderClick = useCallback((e: React.MouseEvent, folderId: string) => {
         e.stopPropagation();
-        if (
-            lastClickedFolderRef.current === folderId &&
-            clickTimerRef.current !== null
-        ) {
-            // Second click within window -> navigate forward
-            clearTimeout(clickTimerRef.current);
-            clickTimerRef.current = null;
-            lastClickedFolderRef.current = null;
-            navigateToFolder(folderId);
-        } else {
-            // First click -> select only; arm timer
-            if (clickTimerRef.current) clearTimeout(clickTimerRef.current);
-            setSelectedNodeId(folderId);
-            lastClickedFolderRef.current = folderId;
-            clickTimerRef.current = setTimeout(() => {
-                clickTimerRef.current = null;
-                lastClickedFolderRef.current = null;
-            }, DOUBLE_CLICK_MS);
-        }
+        navigateToFolder(folderId);
     }, [navigateToFolder]);
 
     // DEEP VIEW STATE
@@ -665,6 +649,13 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (safeCompanies.length === 1) return safeCompanies[0].id;
         return null;
     }, [activeCompanyId, paneCompanyId, safeCompanies]);
+    const { data: companyFoldersData = [] } = useQuery({
+        queryKey: ['companyFolders', resolvedCompanyId],
+        queryFn: () => fetchFoldersByCompany(resolvedCompanyId!),
+        enabled: !!resolvedCompanyId,
+        staleTime: 5 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
     const resolvedCompanyName = useMemo(() => {
         if (!resolvedCompanyId) return null;
         return safeCompanies.find((company) => company.id === resolvedCompanyId)?.name || null;
@@ -753,17 +744,17 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     const navigationSourceLabel = useMemo(() => {
         switch (navigationContext?.source) {
             case 'chat':
-                return 'Aus Mora-Chat geoeffnet';
+                return 'Aus Mora-Chat geöffnet';
             case 'mycelium':
-                return 'Aus Einordnung geoeffnet';
+                return 'Aus Einordnung geöffnet';
             case 'work-session':
-                return 'Aus Arbeitsplan geoeffnet';
+                return 'Aus Arbeitsplan geöffnet';
             case 'search-popup':
             case 'search-pane':
             case 'search':
-                return 'Aus Suche geoeffnet';
+                return 'Aus Suche geöffnet';
             default:
-                return 'Von Mora geoeffnet';
+                return 'Von Mora geöffnet';
         }
     }, [navigationContext?.source]);
 
@@ -856,6 +847,88 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             mime: file.mime,
         },
     }), []);
+
+    const { rootFoldersBySpace, subfoldersByParent } = useMemo(() => {
+        const rootBySpace: Record<string, any[]> = {};
+        const subfoldersByFolder: Record<string, any[]> = {};
+
+        companyFoldersData.forEach((folder: any) => {
+            const mappedFolder = {
+                ...folder,
+                id: folder.id,
+                type: 'folder',
+                name: folder.name,
+                color: folder.color,
+                space_id: folder.space_id,
+                parent_folder_id: folder.parent_folder_id ?? null,
+            };
+
+            if (folder.parent_folder_id) {
+                if (!subfoldersByFolder[folder.parent_folder_id]) {
+                    subfoldersByFolder[folder.parent_folder_id] = [];
+                }
+                subfoldersByFolder[folder.parent_folder_id].push(mappedFolder);
+                return;
+            }
+
+            if (!rootBySpace[folder.space_id]) {
+                rootBySpace[folder.space_id] = [];
+            }
+            rootBySpace[folder.space_id].push(mappedFolder);
+        });
+
+        return {
+            rootFoldersBySpace: rootBySpace,
+            subfoldersByParent: subfoldersByFolder,
+        };
+    }, [companyFoldersData]);
+
+    const nodesByFolderFromCompany = useMemo(() => {
+        const byFolder: Record<string, any[]> = {};
+
+        companyNodesData.forEach((node) => {
+            const folderId = node.folder_id;
+            if (!folderId) return;
+            if (!byFolder[folderId]) {
+                byFolder[folderId] = [];
+            }
+            byFolder[folderId].push({
+                ...node,
+                name: node.title || node.name,
+            });
+        });
+
+        return byFolder;
+    }, [companyNodesData]);
+
+    const currentNodeTypeForChildren = useMemo(() => {
+        if (!currentFolderId) return null;
+        const currentNode = findNodeInTree(rawTree, currentFolderId);
+        if (currentNode?.type === 'department' || currentNode?.type === 'space' || currentNode?.type === 'folder') {
+            return currentNode.type;
+        }
+        if (spacesByDepartment[currentFolderId]) return 'department';
+        if (foldersBySpace[currentFolderId] || rootFoldersBySpace[currentFolderId]) return 'space';
+        if (subfoldersByParent[currentFolderId] || nodesByFolderFromCompany[currentFolderId]) return 'folder';
+        return null;
+    }, [
+        currentFolderId,
+        findNodeInTree,
+        rawTree,
+        spacesByDepartment,
+        foldersBySpace,
+        rootFoldersBySpace,
+        subfoldersByParent,
+        nodesByFolderFromCompany,
+    ]);
+
+    const { data: lazyChildrenData = [] } = useQuery({
+        queryKey: ['treeChildren', currentFolderId, currentNodeTypeForChildren],
+        queryFn: () => fetchNodeChildren(currentFolderId!, currentNodeTypeForChildren as 'department' | 'space' | 'folder'),
+        enabled: !!currentFolderId && !!currentNodeTypeForChildren,
+        staleTime: 2 * 60 * 1000,
+        refetchOnWindowFocus: false,
+    });
 
     // Recursively extract content for current view
     const getCurrentContent = useCallback(() => {
@@ -969,6 +1042,16 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             });
         }
 
+        if (lazyChildrenData.length > 0) {
+            lazyChildrenData.forEach((n: any) => {
+                if (['space', 'department', 'folder'].includes(n.type)) {
+                    folders.push(n);
+                } else {
+                    files.push({ ...n, name: n.title || n.name });
+                }
+            });
+        }
+
         // 2. Get from Flat Stores (The "Source of Truth" for loaded content)
         // Check if current ID is a Department -> Show its Spaces
         const spaces = flatSpaces[currentFolderId];
@@ -981,11 +1064,23 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         if (sFolders) {
             sFolders.forEach(f => folders.push(f));
         }
+        const fallbackRootFolders = rootFoldersBySpace[currentFolderId];
+        if (fallbackRootFolders) {
+            fallbackRootFolders.forEach((f) => folders.push(f));
+        }
+        const fallbackSubfolders = subfoldersByParent[currentFolderId];
+        if (fallbackSubfolders) {
+            fallbackSubfolders.forEach((f) => folders.push(f));
+        }
 
         // Check if current ID is a Folder -> Show its Nodes
         const nodes = nodesByFolder[currentFolderId];
         if (nodes) {
             nodes.forEach(n => files.push({ ...n, name: n.title || n.name }));
+        }
+        const fallbackNodes = nodesByFolderFromCompany[currentFolderId];
+        if (fallbackNodes) {
+            fallbackNodes.forEach((n) => files.push(n));
         }
 
         standaloneCompanyFiles
@@ -1002,7 +1097,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             folders: Array.from(folderMap.values()),
             files: Array.from(fileMap.values())
         };
-    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem, companyNodesData, activeCompanyId, queryClient]);
+    }, [currentFolderId, rawTree, findNodeInTree, spacesByDepartment, foldersBySpace, nodesByFolder, rootFoldersBySpace, subfoldersByParent, nodesByFolderFromCompany, lazyChildrenData, isDeepView, resolvedCompanyId, globalSearch, searchQuery, companyFiles, toFinderFileItem, companyNodesData, activeCompanyId, queryClient]);
 
     // Effect to update breadcrumbs only when necessary
     useEffect(() => {
@@ -1059,11 +1154,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             fetchFolderContext(currentFolderId)
                 .then((ctx) => {
                     if (cancelled) return;
-                    storeCache(ctx, ctx ? null : 'Ordnerkontext aktuell nicht verfuegbar.');
+                    storeCache(ctx, ctx ? null : 'Ordnerkontext aktuell nicht verfügbar.');
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        storeCache(null, 'Ordnerkontext aktuell nicht verfuegbar.');
+                        storeCache(null, 'Ordnerkontext aktuell nicht verfügbar.');
                     }
                 });
         } else {
@@ -1081,7 +1176,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         }, null);
                     } else if (ec && (!ec.resolved || (ec.context_lookup && !ec.context_lookup.resolved))) {
                         const hintReason = ec.reason || ec.context_lookup?.reason || 'Kontext-ID nicht aufloesbar';
-                        storeCache(null, `${hintReason}, Inhalte bleiben verfuegbar.`);
+                        storeCache(null, `${hintReason}, Inhalte bleiben verfügbar.`);
                     } else {
                         storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
                     }
@@ -1118,7 +1213,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             const shouldReuseTree = opts?.preferCache === true && Array.isArray(existingTree) && existingTree.length > 0;
             if (resolvedCompanyId) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.companyNodes(resolvedCompanyId), exact: false });
+                await queryClient.invalidateQueries({ queryKey: ['companyFolders', resolvedCompanyId], exact: false });
             }
+            await queryClient.invalidateQueries({ queryKey: ['treeChildren'], exact: false });
             if (!shouldReuseTree) {
                 await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             }
@@ -1187,8 +1284,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             }
             await queryClient.invalidateQueries({ queryKey: queryKeys.tree(companyId) });
             void loadContent();
-            toast.success('Geloescht');
-        } catch (e: any) { toast.error(e.message || 'Loeschen fehlgeschlagen'); }
+            toast.success('Gelöscht');
+        } catch (e: any) { toast.error(e.message || 'Löschen fehlgeschlagen'); }
         setContextMenu(null);
     }, [contextMenu, resolvedCompanyId, queryClient, loadContent, orgDeleteSpace, orgDeleteFolder, orgDeleteNode, deleteCompanyFile]);
 
@@ -1225,7 +1322,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     toast.info("Ordner koennen hier noch nicht dupliziert werden");
                 } else {
                     if (!resolvedCompanyId) {
-                        toast.error('Bitte zuerst eine Organisation waehlen.');
+                        toast.error('Bitte zuerst eine Organisation wählen.');
                         return;
                     }
                     await orgCreateNode({
@@ -1287,7 +1384,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     // UNIFIED FINDER: Navigate to starting point based on pane data
     const appliedStartKeyRef = useRef<string>('');
     useEffect(() => {
-        if (!treeData?.length) return;
+        if (!treeData?.length && !startFolderId && !startSpaceId && !departmentId) return;
+        const treeNodes = treeData ?? [];
         const startKey = `${resolvedCompanyId || ''}|${startFolderId || ''}|${startSpaceId || ''}|${departmentId || ''}`;
         if (appliedStartKeyRef.current === startKey) return;
 
@@ -1296,7 +1394,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             resetNavigationRoot(startFolderId);
         } else if (startSpaceId) {
             // Find the space in tree and navigate to it
-            const spaceNode = findNodeInTree(treeData, startSpaceId);
+            const spaceNode = findNodeInTree(treeNodes, startSpaceId);
             if (spaceNode) {
                 resetNavigationRoot(startSpaceId);
             }
@@ -1365,7 +1463,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const handleUpload = useCallback(async (fileList: File[]) => {
         if (!resolvedCompanyId) {
-            toast.error('Bitte zuerst eine Organisation waehlen.');
+            toast.error('Bitte zuerst eine Organisation wählen.');
             setShowUpload(false);
             return;
         }
@@ -1734,11 +1832,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     };
 
     const getContextOpenLabel = (item: any, type: 'folder' | 'file' | 'background') => {
-        if (type === 'background') return 'Oeffnen';
+        if (type === 'background') return 'Öffnen';
         if (type === 'folder' || ['folder', 'space', 'department'].includes(item?.type)) {
-            if (item?.type === 'department') return 'Bereich oeffnen';
-            if (item?.type === 'space') return 'Bereich oeffnen';
-            return 'Ordner oeffnen';
+            if (item?.type === 'department') return 'Bereich öffnen';
+            if (item?.type === 'space') return 'Bereich öffnen';
+            return 'Ordner öffnen';
         }
         if (item?.type === 'file') {
             return getSourceFileOpenActionLabel(item);
@@ -1807,9 +1905,12 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
-                    <div className="border-b border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.018),rgba(255,255,255,0.008))] px-3 py-2 backdrop-blur-md md:px-6">
-                        <div className="flex flex-col gap-3 rounded-[18px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(5,20,16,0.78),rgba(3,14,11,0.7))] px-4 py-3 shadow-[0_10px_32px_rgba(0,0,0,0.16)] lg:flex-row lg:items-center lg:justify-between">
-                            <div className="min-w-0">
+                    <div className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
+                        <div className="relative flex flex-col gap-3 overflow-hidden rounded-[22px] border border-emerald-300/[0.12] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.18),transparent_34%),radial-gradient(circle_at_88%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(135deg,rgba(5,28,23,0.92),rgba(1,13,12,0.80)_58%,rgba(0,5,5,0.88))] px-4 py-3 shadow-[0_18px_56px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.05)] lg:flex-row lg:items-center lg:justify-between">
+                            <div className="pointer-events-none absolute -left-20 -top-24 h-48 w-48 rounded-full bg-emerald-300/16 blur-3xl" />
+                            <div className="pointer-events-none absolute right-12 top-1/2 h-px w-64 bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
+                            <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-72 bg-[radial-gradient(circle_at_bottom_right,rgba(20,184,166,0.14),transparent_65%)]" />
+                            <div className="relative z-10 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] ${surfaceBadgeTone}`}>
                                         {surfaceBadgeLabel}
@@ -1835,27 +1936,27 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         </span>
                                     ) : null}
                                 </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                                    <h2 className="truncate text-[15px] font-semibold tracking-tight text-white/92 md:text-[16px]">
+                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <h2 className="truncate text-[20px] font-semibold tracking-[-0.03em] text-white md:text-[24px]">
                                         {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                     </h2>
-                                    <p className="text-[12px] leading-relaxed text-white/42">
+                                    <p className="max-w-2xl text-[12px] leading-relaxed text-emerald-50/54">
                                         {currentFolderId
                                             ? 'Dateien, Dokumente und Ordner im aktuellen Pfad.'
                                             : 'Der Einstieg in die aktive Instanz: Struktur, Eingang und aktuelle Inhalte.'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="grid grid-cols-3 gap-2 lg:min-w-[276px]">
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                            <div className="relative z-10 grid grid-cols-3 gap-2 lg:min-w-[290px]">
+                                <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                    <div className="mt-1 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
+                                    <div className="mt-0.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                    <div className="mt-1 text-lg font-semibold text-white/88">{displayFiles.length}</div>
+                                    <div className="mt-0.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                                <div className="rounded-2xl border border-white/[0.1] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
                                     <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
                                     <div className="mt-1 text-sm font-semibold text-white/82">{densityLabel}</div>
                                 </div>
@@ -1896,13 +1997,13 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
-                    <div className="flex flex-col gap-2 border-b border-white/5 bg-white/[0.02] px-3 py-2 backdrop-blur-md md:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
                         {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
                                 onClick={navigateBack}
                                 disabled={backStack.length === 0}
-                                aria-label="Zurueck"
+                                aria-label="Zurück"
                                 className={`p-1.5 rounded-lg border transition-colors ${backStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Zurück (Alt+Links)"
                             >
@@ -2013,7 +2114,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             <button
                                 onClick={() => setIsDeepView(!isDeepView)}
                                 className={`hidden md:flex items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-all ${isDeepView ? 'border-emerald-500/30 bg-emerald-500/20 text-emerald-300' : 'border-white/8 bg-black/30 text-white/46 hover:text-white/76'}`}
-                                title={isDeepView ? "Gesamtsicht verlassen und nur den aktuellen Pfad zeigen" : "Gesamtsicht ueber die sichtbaren Inhalte dieser Instanz"}
+                                title={isDeepView ? "Gesamtsicht verlassen und nur den aktuellen Pfad zeigen" : "Gesamtsicht über die sichtbaren Inhalte dieser Instanz"}
                             >
                                 <Sparkles size={14} />
                                 <span className="hidden lg:inline text-[10px] font-medium uppercase tracking-[0.18em]">
@@ -2130,7 +2231,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* Content Container with Animation */}
-                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,rgba(10,45,34,0.34),transparent_38%),linear-gradient(180deg,rgba(1,10,8,0.78),rgba(1,7,6,0.92))] px-3 pb-4 pt-3 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
+                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_16%_0%,rgba(16,185,129,0.2),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(180deg,rgba(1,13,11,0.82),rgba(1,7,7,0.95))] px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <AnimatePresence mode="popLayout">
                             {/* Loading State */}
                             {(isLoading || isLoadingTree) && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
@@ -2144,7 +2245,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     <CommandReceipt
                                         tone="cyan"
                                         icon={Loader2}
-                                        label="Finder laeuft"
+                                        label="Finder läuft"
                                         title="Inhalte werden synchronisiert."
                                         body="Mora zieht Pfad, Baum und Suchkontext zusammen. Das kann kurz dauern, wenn der aktuelle Ordner gerade neu geladen wird."
                                         chips={[
@@ -2226,19 +2327,21 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-4 xl:grid-cols-[156px_minmax(0,1fr)_260px]">
+                                        <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
                                             <aside className="space-y-4">
-                                                <div className="rounded-[22px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.026),rgba(255,255,255,0.012))] px-3 py-3 shadow-[0_14px_34px_rgba(0,0,0,0.14)]">
-                                                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Explorer</p>
-                                                    <h3 className="mt-2 text-[14px] font-semibold text-white/88">Blick</h3>
-                                                    <div className="mt-4 grid gap-2">
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{filteredFolders.length}</div>
+                                                <div className="sticky top-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.048),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_52px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)]">
+                                                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-300/12 blur-2xl" />
+                                                    <p className="relative text-[10px] uppercase tracking-[0.22em] text-emerald-100/38">Explorer</p>
+                                                    <h3 className="relative mt-2 text-[18px] font-semibold tracking-[-0.03em] text-white">Navigator</h3>
+                                                    <p className="relative mt-1 text-[11px] leading-relaxed text-white/38">Pfad, Inhalt und Routing in einer kompakten Arbeitskarte.</p>
+                                                    <div className="relative mt-5 grid gap-2">
+                                                        <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/20 px-3 py-3">
+                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-emerald-100/34">Ordner</div>
+                                                            <div className="mt-1.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
                                                         </div>
-                                                        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                                            <div className="mt-1.5 text-lg font-semibold text-white/88">{displayFiles.length}</div>
+                                                        <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/20 px-3 py-3">
+                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-cyan-100/34">Inhalte</div>
+                                                            <div className="mt-1.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
                                                         </div>
                                                         {contextlessFiles.length > 0 && (
                                                             <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-2.5">
@@ -2247,7 +2350,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             </div>
                                                         )}
                                                     </div>
-                                                    <div className="mt-4 border-t border-white/[0.06] pt-4">
+                                                    <div className="relative mt-4 border-t border-white/[0.06] pt-4">
                                                         <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
                                                         <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/58">
                                                             <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</span>
@@ -2261,7 +2364,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
-                                                <div className="mb-5 rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
+                                                <div className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Ordner und Bereiche</p>
@@ -2276,11 +2379,12 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
-                                                        className={`${folderCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 ${isSelected
-                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
-                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
+                                                        className={`${folderCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.24),rgba(6,95,70,0.12)_52%,rgba(1,14,12,0.8))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.14)]'
+                                                            : 'bg-[radial-gradient(circle_at_20%_0%,rgba(59,130,246,0.1),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.065),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.12))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.16),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.028))] hover:border-emerald-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
                                                             }`}
                                                     >
+                                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                                                         <div className="flex justify-between items-start">
                                                             {folder.type === 'department' ? (
                                                                 <div className="relative w-10 h-10 flex items-center justify-center">
@@ -2324,11 +2428,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             )}
 
                                             {displayFiles.length > 0 && (
-                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.028),rgba(255,255,255,0.012))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)] md:px-[18px]">
+                                                <div className="rounded-[30px] border border-cyan-300/[0.08] bg-[radial-gradient(circle_at_100%_0%,rgba(34,211,238,0.1),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Inhalte und Dateien</p>
-                                                            <p className="mt-1 text-[12px] text-white/34">{currentFolderId ? 'Direkt oeffnen, lesen oder weiterverarbeiten.' : 'Aktuelle Inhalte dieser Instanz, auch wenn sie in Bereichen liegen.'}</p>
+                                                            <p className="mt-1 text-[12px] text-white/34">{currentFolderId ? 'Direkt öffnen, lesen oder weiterverarbeiten.' : 'Aktuelle Inhalte dieser Instanz, auch wenn sie in Bereichen liegen.'}</p>
                                                         </div>
                                                     </div>
                                                     <div className={fileGridClass}>
@@ -2347,25 +2451,21 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     <motion.div
                                                         key={file.id}
                                                         id={`file-node-${file.id}`}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
+                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); checkResonance(file.id); openFinderNode(file); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            checkResonance(file.id);
-                                                            openFinderNode(file);
-                                                        }}
-                                                        className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-0.5 active:scale-[0.985] ${isSelected
-                                                            ? 'bg-[linear-gradient(180deg,rgba(16,185,129,0.16),rgba(16,185,129,0.08))] border-emerald-500/50 shadow-[0_24px_60px_rgba(0,0,0,0.28),0_0_24px_rgba(16,185,129,0.08)]'
-                                                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(255,255,255,0.02))] border-white/[0.06] hover:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] hover:border-white/12'
+                                                        className={`${fileCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-4 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
+                                                            ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.2),rgba(6,95,70,0.1)_52%,rgba(1,14,12,0.82))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.12)]'
+                                                            : 'bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.12),transparent_38%),linear-gradient(160deg,rgba(255,255,255,0.06),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.14))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_18%_0%,rgba(34,211,238,0.18),transparent_38%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.026))] hover:border-cyan-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
                                                             }`}
                                                     >
+                                                        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/30 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
                                                         {/* Resonance Glow (Background) */}
                                                         {isResonant && (
                                                             <div className="absolute inset-0 rounded-2xl bg-amber-500/5 shadow-[inset_0_0_20px_rgba(245,158,11,0.1)] pointer-events-none animate-pulse" />
                                                         )}
 
                                                         <div className="flex justify-between items-start">
-                                                            <div className={`${iconTileClass} flex items-center justify-center border border-white/8 bg-black/15`}>
+                                                            <div className={`${iconTileClass} flex items-center justify-center border border-cyan-100/10 bg-[radial-gradient(circle_at_30%_20%,rgba(34,211,238,0.18),rgba(0,0,0,0.18))] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]`}>
                                                                 <Icon size={cardDensity === 'compact' ? 18 : cardDensity === 'showcase' ? 26 : 22} className={isSelected ? 'text-emerald-300' : 'text-emerald-300/90 group-hover:text-emerald-200'} />
                                                             </div>
                                                             <div className="flex flex-col items-end gap-2">
@@ -2386,7 +2486,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             </span>
                                                             <p className="min-h-[34px] text-[12px] leading-relaxed text-white/38">
                                                                 {file.type === 'file'
-                                                                    ? 'Reale Datei im aktiven Kontext. Kann direkt geoeffnet oder weiterverarbeitet werden.'
+                                                                    ? 'Reale Datei im aktiven Kontext. Kann direkt geöffnet oder weiterverarbeitet werden.'
                                                                     : getContextOpenLabel(file, 'file')}
                                                             </p>
                                                             <div className="mt-auto flex flex-wrap items-center gap-2">
@@ -2471,8 +2571,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             return (
                                                                 <motion.div
                                                                     key={file.id}
-                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
-                                                                    onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); openFinderNode(file); }}
+                                                                    onClick={(e: React.MouseEvent) => { e.stopPropagation(); openFinderNode(file); }}
                                                                     onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
                                                                     className={`${fileCardClass} border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-0.5 opacity-70 hover:opacity-90 ${isSelected
                                                                         ? 'bg-[linear-gradient(180deg,rgba(245,158,11,0.12),rgba(245,158,11,0.06))] border-amber-500/35'
@@ -2512,113 +2611,6 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             )}
                                             </div>
 
-                                            <aside className="space-y-4">
-                                                <div className="rounded-[24px] border border-white/[0.05] bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_44px_rgba(0,0,0,0.16)]">
-                                                    <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Fokus</p>
-                                                    {selectedEntry ? (
-                                                        <>
-                                                            <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/32">
-                                                                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-0.5 text-[9px] text-white/55">
-                                                                    Auswahl
-                                                                </span>
-                                                                <span>{selectedEntry.kind === 'folder' ? getContainerTypeLabel(selectedEntry.item.type) : getContentTypeLabel(selectedEntry.item.type)}</span>
-                                                            </div>
-                                                            <div className="mt-3 text-[15px] font-medium leading-snug text-white/90">
-                                                                {selectedEntry.kind === 'folder' ? selectedEntry.item.name : getContentDisplayName(selectedEntry.item)}
-                                                            </div>
-                                                            <div className="mt-3 space-y-1.5 text-[11px] leading-relaxed text-white/42">
-                                                                <p>
-                                                                    {selectedEntry.kind === 'folder'
-                                                                        ? `Oeffnet ${selectedEntry.item.type === 'department' || selectedEntry.item.type === 'space' ? 'den Bereich' : 'den Ordner'} im aktuellen Explorer.`
-                                                                        : getContextOpenLabel(selectedEntry.item, 'file')}
-                                                                </p>
-                                                                {selectedEntry.kind === 'file' && selectedEntry.item?.created_at && (
-                                                                    <p>{new Date(selectedEntry.item.created_at).toLocaleDateString()}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && (selectedEntry.item?.metadata?.size || selectedEntry.item?.size) && (
-                                                                    <p>{`${(((selectedEntry.item.metadata?.size ?? selectedEntry.item.size) as number) / 1024).toFixed(0)} KB`}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && (
-                                                                    <p>{getSourceFileSecondaryLabel(selectedEntry.item)}</p>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && !selectedEntry.item?.folder_id && (
-                                                                    <p className="text-amber-200/58">Noch nicht in einen Ordner eingeordnet.</p>
-                                                                )}
-                                                            </div>
-                                                            <div className="mt-4 flex flex-wrap items-center gap-2">
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (selectedEntry.kind === 'folder') {
-                                                                            navigateToFolder(selectedEntry.item.id);
-                                                                        } else {
-                                                                            openFinderNode(selectedEntry.item);
-                                                                        }
-                                                                    }}
-                                                                    className="inline-flex items-center gap-2 rounded-full border border-emerald-400/20 bg-emerald-500/14 px-3 py-1.5 text-[11px] font-medium text-emerald-50 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/22"
-                                                                >
-                                                                    <ExternalLink size={13} />
-                                                                    {selectedEntry.kind === 'folder' ? getContextOpenLabel(selectedEntry.item, 'folder') : getContextOpenLabel(selectedEntry.item, 'file')}
-                                                                </button>
-                                                                {selectedEntry.kind === 'file' && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleAutoRouteFile(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-500/14 px-3 py-1.5 text-[11px] font-medium text-amber-50 transition-colors hover:border-amber-300/35 hover:bg-amber-500/22"
-                                                                    >
-                                                                        <Sparkles size={13} />
-                                                                        Automatisch einordnen
-                                                                    </button>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && resolveUploadFolderId() && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleMoveFileToCurrentFolder(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                                                    >
-                                                                        <CornerUpLeft size={13} />
-                                                                        In aktuellen Ordner
-                                                                    </button>
-                                                                )}
-                                                                {selectedEntry.kind === 'file' && canOpenSourceFile(selectedEntry.item) && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => void handleOpenSourceFile(selectedEntry.item)}
-                                                                        className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3 py-1.5 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22"
-                                                                    >
-                                                                        <Paperclip size={13} />
-                                                                        Quelle
-                                                                    </button>
-                                                                )}
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => setSelectedNodeId(null)}
-                                                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] font-medium text-white/72 transition-colors hover:border-white/20 hover:bg-white/[0.08] hover:text-white"
-                                                                >
-                                                                    Auswahl aufheben
-                                                                </button>
-                                                            </div>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className="mt-3 text-sm font-medium text-white/78">Noch nichts ausgewaehlt</div>
-                                                            <p className="mt-2 text-[12px] leading-relaxed text-white/42">
-                                                                Waehle links Struktur oder Inhalte aus. Doppelklick oeffnet direkt, ein Klick legt den Fokus hier ab.
-                                                            </p>
-                                                            <div className="mt-4 space-y-2">
-                                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
-                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Startlogik</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Struktur zuerst, Inhalte daneben. Dateien ohne Bereich erscheinen getrennt, damit der aktive Arbeitsfluss klar bleibt.</p>
-                                                                </div>
-                                                                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
-                                                                    <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
-                                                                    <p className="mt-2 text-[12px] text-white/44">Mit Klein, Mittel und Gross steuerst du, wie dicht oder wie galeristisch der Explorer wirken soll.</p>
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </aside>
                                         </div>
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
@@ -2847,13 +2839,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     <div
                                                         key={file.id}
                                                         id={`file-node-${file.id}`}
-                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setSelectedNodeId(file.id); }}
+                                                        onClick={(e: React.MouseEvent) => { e.stopPropagation(); checkResonance(file.id); openFinderNode(file); }}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, file, 'file')}
-                                                        onDoubleClick={(e: React.MouseEvent) => {
-                                                            e.stopPropagation();
-                                                            checkResonance(file.id);
-                                                            openFinderNode(file);
-                                                        }}
                                                         className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${isSelected
                                                             ? 'bg-emerald-500/20 border-emerald-500/50'
                                                             : isResonant
@@ -2899,7 +2886,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         query={pendingAction.params?.filename}
                                         results={(pendingAction.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index))}
                                         title={pendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
-                                        body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Waehle den richtigen Zielordner vor der Freigabe.'}
+                                        body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Wähle den richtigen Zielordner vor der Freigabe.'}
                                         onPick={(result) => {
                                             const folderId = result.folderId;
                                             if (!folderId) return;
@@ -2917,9 +2904,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 {pendingAction.next && (
                                     <CommandReceipt
                                         tone={pendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
-                                        label={pendingAction.next.label || 'Naechster Schritt'}
+                                        label={pendingAction.next.label || 'Nächster Schritt'}
                                         title={pendingAction.route_summary || buildRoutePath(pendingAction.intake_context)}
-                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestaetige oder korrigiere das Ziel.'}
+                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                         className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
                                     />
                                 )}
@@ -3048,7 +3035,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Paperclip size={14} /> Quelle oeffnen
+                                            <Paperclip size={14} /> Quelle öffnen
                                         </button>
                                     )}
                                     {contextMenu.type === 'file' && (
@@ -3068,7 +3055,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         </button>
                                     )}
                                     <button onClick={handleOpenInUniverse} className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors">
-                                        <Globe size={14} /> Im Universe oeffnen
+                                        <Globe size={14} /> Im Universe öffnen
                                     </button>
                                     <button onClick={handleRename} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2 transition-colors">
                                         <Edit size={14} /> Umbenennen
@@ -3081,7 +3068,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     </button>
                                     <div className="h-px bg-white/5 my-1" />
                                     <button onClick={handleDelete} className="w-full text-left px-3 py-1.5 hover:bg-red-500/20 hover:text-red-400 flex items-center gap-2 transition-colors text-red-300">
-                                        <Trash2 size={14} /> Loeschen
+                                        <Trash2 size={14} /> Löschen
                                     </button>
                                 </>
                             ) : (

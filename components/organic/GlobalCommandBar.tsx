@@ -37,7 +37,6 @@ export function GlobalCommandBar({ isOpen, onClose, onNavigate, onSearch, search
                 else if (selectedIndex === 2) onNavigate('settings');
                 else if (searchResults[selectedIndex - 3]) {
                     // Handle node selection (would need a prop for this)
-                    console.log('Selected node:', searchResults[selectedIndex - 3]);
                 }
                 onClose();
             } else if (e.key === 'Escape') {

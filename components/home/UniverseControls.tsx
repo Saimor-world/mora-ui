@@ -23,6 +23,9 @@ interface UniverseControlsProps {
     scopeLabel?: string;
     disableContextSwitch?: boolean;
     companyCountLabel?: string;
+    isWebsiteEntryContext?: boolean;
+    contextLabelOverride?: string;
+    contextSubtitleOverride?: string;
 }
 
 export const UniverseControls: React.FC<UniverseControlsProps> = ({
@@ -35,6 +38,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     workspaceLabel = 'Organisation',
     disableContextSwitch = false,
     companyCountLabel,
+    isWebsiteEntryContext = false,
+    contextLabelOverride,
+    contextSubtitleOverride,
 }) => {
     const user = useSessionStore((state) => state.user);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
@@ -79,7 +85,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         departmentCount: safeDepartments.length,
         userCompanyName: user?.active_company_name,
         accent: activeDepartment?.color || '#10B981',
-        isPublicDemoSurface: disableContextSwitch,
+        isPublicDemoSurface: disableContextSwitch && !isWebsiteEntryContext,
         isLocalTruthSurface: surfaceProfile.isLocalTruthSurface,
     }), [
         viewLevel,
@@ -94,6 +100,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         safeDepartments,
         user?.active_company_name,
         disableContextSwitch,
+        isWebsiteEntryContext,
         surfaceProfile.isLocalTruthSurface,
     ]);
     const surfaceLabel = useMemo(() => {
@@ -116,15 +123,18 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     const showCoreSurfaceSwitch = viewLevel === 'core';
-    const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface;
-    const contextModeLabel = surfaceProfile.isLocalTruthSurface
-        ? 'Lokale Instanz'
-        : workspaceLabel || 'Kontext';
+    const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface && !surfaceProfile.isHqSurface;
+    const contextModeLabel = surfaceProfile.isHqSurface
+        ? 'HQ'
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Lokale Instanz'
+            : workspaceLabel || 'Kontext';
     const showCompanySwitcher = Boolean(
         activeCompany &&
         companies.length > 1 &&
         !disableContextSwitch &&
         !surfaceProfile.isLocalTruthSurface &&
+        !surfaceProfile.isHqSurface &&
         !activeCompanyId
     );
 
@@ -185,11 +195,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
                     <span>Layer {surfaceLabel}</span>
                     <span className="text-white/18">/</span>
-                    <span style={{ color: shellContext.accent }}>{shellContext.contextLabel}</span>
+                    <span style={{ color: shellContext.accent }}>{contextLabelOverride || shellContext.contextLabel}</span>
                 </div>
                 <div className="mt-1 truncate text-sm text-white/86">{shellContext.title}</div>
                 <div className="mt-1 truncate text-[11px] text-white/44">
-                    {shellContext.subtitle}
+                    {contextSubtitleOverride || shellContext.subtitle}
                 </div>
             </button>
 
@@ -231,7 +241,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 type="button"
                 onClick={handleOpenContextBridge}
                 className="flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white/58 transition-colors hover:border-emerald-400/20 hover:bg-emerald-500/[0.08] hover:text-emerald-200 xl:hidden"
-                title="Control Center oeffnen"
+                title="Control Center öffnen"
             >
                 <PanelTopOpen size={16} />
             </button>

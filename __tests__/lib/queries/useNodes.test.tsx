@@ -1,5 +1,5 @@
 import React from 'react';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useNodes, useCreateNode, useUpdateNode, useDeleteNode } from '@/lib/queries/useNodes';
 import * as orgClient from '@/lib/api/orgClient';
@@ -86,10 +86,14 @@ describe('useCreateNode — optimistic update', () => {
     const { result } = renderHook(() => useCreateNode('f1'), { wrapper });
 
     // Fire mutation without awaiting
-    result.current.mutate({ title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+    act(() => {
+      result.current.mutate({ title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+    });
 
     // Give onMutate a tick to run
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
 
     // Optimistic entry should appear in cache immediately
     const cache = qc.getQueryData<typeof mockNode[]>(['nodes', 'f1']);
@@ -97,7 +101,9 @@ describe('useCreateNode — optimistic update', () => {
     expect(cache![1].title).toBe('Optimistic Doc');
 
     // Resolve the server call
-    resolveCreate({ id: 'n2', title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+    await act(async () => {
+      resolveCreate({ id: 'n2', title: 'Optimistic Doc', folder_id: 'f1', type: 'document' });
+    });
   });
 
   it('rolls back optimistic update when server returns an error', async () => {

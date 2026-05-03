@@ -11,6 +11,7 @@ import {
 } from '@/lib/api/coreClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { toast } from 'sonner';
+import { logger } from '@/lib/utils/logger';
 
 interface ReviewItem {
     id: string;
@@ -27,6 +28,14 @@ interface MemoryMetrics {
     pending_reviews: number;
     recent_learns_7d: number;
     memory_ttl_days: number;
+}
+
+function toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+}
+
+function errorMessage(error: unknown): string {
+    return error instanceof Error ? error.message : String(error);
 }
 
 export function useMemory(manualCompanyId?: string | null) {
@@ -54,7 +63,7 @@ export function useMemory(manualCompanyId?: string | null) {
                 setPendingItems(data);
             }
         } catch (err) {
-            console.error('[useMemory] Load pending error:', err);
+            logger.error('[useMemory] Load pending error:', toError(err));
         }
     }, [scopedCompanyId]);
 
@@ -72,7 +81,7 @@ export function useMemory(manualCompanyId?: string | null) {
                 setMetrics(null);
             }
         } catch (err) {
-            console.error('[useMemory] Load metrics error:', err);
+            logger.error('[useMemory] Load metrics error:', toError(err));
         }
     }, [scopedCompanyId]);
 
@@ -88,7 +97,7 @@ export function useMemory(manualCompanyId?: string | null) {
             const data = await getMemoryDebugScope(scopedCompanyId, 5);
             if (data) setDebugScope(data);
         } catch (err) {
-            console.warn('[useMemory] Debug scope load failed:', err);
+            logger.warn('[useMemory] Debug scope load failed:', { error: errorMessage(err) });
         }
     }, [scopedCompanyId]);
 

@@ -32,6 +32,7 @@ import {
     type AmbientAudioTrackMeta,
 } from '@/lib/audio/ambientAudio';
 import { RITUAL_SCENES, RITUAL_SCENE_ORDER } from '@/lib/os/ritualMode';
+import { isMoraPerceiveV1Enabled, isMoraDialogueV1Enabled, isMoraLiveV1Enabled } from '@/lib/featureFlags';
 import type { AppProps } from '@/lib/apps/types';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
@@ -84,6 +85,9 @@ export default function SettingsApp({ paneId }: AppProps) {
         () => ambientTracks.find((track) => track.id === ambientAudioTrackId) ?? null,
         [ambientTracks, ambientAudioTrackId]
     );
+    const activeAmbientLabel = selectedAmbientTrack
+        ? `${selectedAmbientTrack.name} - ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
+        : 'Mora Ambient - eingebauter prozeduraler Pad';
 
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
@@ -120,20 +124,16 @@ export default function SettingsApp({ paneId }: AppProps) {
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
-        { id: 'about', label: 'Ueber Mora', icon: Info }
+        { id: 'about', label: 'Über Mora', icon: Info }
     ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
 
-    const resolvedTabs = useMemo(
-        () => tabs.map((tab) => (tab.id === 'about' ? { ...tab, label: 'Ueber Mora' } : tab)),
-        [tabs]
-    );
 
     // Ensure active tab is valid for current role
     useEffect(() => {
-        if (!resolvedTabs.find(t => t.id === activeTab)) {
+        if (!tabs.find(t => t.id === activeTab)) {
             setActiveTab('profile');
         }
-    }, [resolvedTabs, activeTab]);
+    }, [tabs, activeTab]);
 
     useEffect(() => {
         if (!activeCompany) return;
@@ -262,7 +262,9 @@ useEffect(() => {
         if (!ambientAudioTrackId) {
             const fallbackTrack = ambientTracks[0];
             if (!fallbackTrack) {
-                toast.error('Lade zuerst mindestens einen Song hoch');
+                const nextEnabled = !ambientAudioEnabled;
+                saveSetting({ ambientAudioEnabled: nextEnabled });
+                toast.info(nextEnabled ? 'Mora Ambient aktiviert' : 'Mora Ambient pausiert');
                 return;
             }
             saveSetting({
@@ -355,7 +357,7 @@ useEffect(() => {
             }
 
             if (audioFiles.length !== selectedFiles.length) {
-                toast.info('Nur Audiodateien wurden uebernommen');
+                toast.info('Nur Audiodateien wurden übernommen');
             }
 
             toast.success(
@@ -396,7 +398,7 @@ useEffect(() => {
             <div className="flex h-full">
                 {/* Sidebar */}
                 <div className="w-1/3 border-r border-white/10 p-4 space-y-1">
-                    {resolvedTabs.map(tab => (
+                    {tabs.map(tab => (
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
@@ -589,10 +591,10 @@ useEffect(() => {
                         <div className="space-y-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <h3 className="text-lg text-white font-light">Hintergrundmusik</h3>
+                                    <h3 className="text-lg text-white font-light">Klangraum</h3>
                                     <p className="mt-2 text-sm text-white/45 max-w-xl">
-                                        Lege dir eine kleine lokale Song-Auswahl an. Die Musik laeuft weiter,
-                                        solange SAIMOR OS geoeffnet ist, auch wenn du in andere Panes wechselst.
+                                        SAIMOR hat jetzt immer einen eingebauten Ambient-Pad. Eigene Songs kannst du
+                                        lokal hinzufügen, wenn du einen konkreten Soundtrack willst.
                                     </p>
                                 </div>
 
@@ -609,18 +611,16 @@ useEffect(() => {
                             </div>
 
                             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
+                                <div className="overflow-hidden rounded-[26px] border border-emerald-300/[0.1] bg-[radial-gradient(circle_at_18%_0%,rgba(16,185,129,0.16),transparent_34%),linear-gradient(160deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.22)] space-y-4">
                                     <div className="flex items-center justify-between gap-4">
                                         <div>
-                                            <div className="text-sm text-white/80 font-medium">Aktiver Song</div>
+                                            <div className="text-sm text-white/80 font-medium">Aktiver Klang</div>
                                             <div className="text-xs text-white/40 mt-1">
-                                                {selectedAmbientTrack
-                                                    ? `${selectedAmbientTrack.name} - ${formatAmbientTrackSize(selectedAmbientTrack.size)}`
-                                                    : 'Noch kein Song ausgewaehlt'}
+                                                {activeAmbientLabel}
                                             </div>
                                         </div>
-                                        <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[11px] uppercase tracking-[0.18em] text-white/45">
-                                            Loop
+                                        <div className={`inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[11px] uppercase tracking-[0.18em] ${ambientAudioEnabled ? 'border-emerald-300/20 bg-emerald-500/10 text-emerald-100/72' : 'border-white/10 bg-white/5 text-white/45'}`}>
+                                            {ambientAudioEnabled ? 'Live' : 'Still'}
                                         </div>
                                     </div>
 
@@ -643,8 +643,8 @@ useEffect(() => {
                                         />
                                     </div>
 
-                                    <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
-                                        Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
+                                    <div className="rounded-xl border border-cyan-300/10 bg-black/20 px-4 py-3 text-xs text-white/45 leading-relaxed">
+                                        Ohne eigene Songs nutzt SAIMOR einen lokalen Web-Audio-Pad. Eigene Songs bleiben lokal in diesem Browser gespeichert. Kein Upload zum Server.
                                     </div>
 
                                     <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
@@ -684,7 +684,7 @@ useEffect(() => {
                                     </div>
                                 </div>
 
-                                <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-3">
+                                <div className="rounded-[26px] border border-cyan-300/[0.1] bg-[radial-gradient(circle_at_90%_0%,rgba(34,211,238,0.14),transparent_34%),linear-gradient(160deg,rgba(255,255,255,0.05),rgba(255,255,255,0.016))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.18)] space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div>
                                             <div className="text-sm text-white/80 font-medium">Bibliothek</div>
@@ -717,14 +717,22 @@ useEffect(() => {
                                             Audio-Bibliothek wird geladen...
                                         </div>
                                     ) : ambientTracks.length === 0 ? (
-                                        <div className="rounded-xl border border-dashed border-white/15 bg-black/20 px-4 py-6 text-center">
-                                            <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                                                <Music size={18} className="text-white/55" />
+                                        <div className="rounded-[22px] border border-dashed border-emerald-300/16 bg-black/20 px-4 py-6 text-center">
+                                            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-emerald-300/14 bg-emerald-500/10 shadow-[0_0_34px_rgba(16,185,129,0.12)]">
+                                                <Music size={18} className="text-emerald-100/72" />
                                             </div>
-                                            <div className="text-sm text-white/75">Noch keine Songs in deiner Library</div>
+                                            <div className="text-sm text-white/80">Mora Ambient ist sofort bereit</div>
                                             <div className="mt-1 text-xs text-white/40">
-                                                Lade MP3, WAV, M4A, OGG, AAC oder FLAC hoch.
+                                                Du kannst direkt abspielen oder MP3, WAV, M4A, OGG, AAC oder FLAC hochladen.
                                             </div>
+                                            <button
+                                                type="button"
+                                                onClick={handleAmbientAudioToggle}
+                                                className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-3 py-2 text-sm text-emerald-100/78 transition-colors hover:bg-emerald-500/18"
+                                            >
+                                                {ambientAudioEnabled ? <Pause size={14} /> : <Play size={14} />}
+                                                {ambientAudioEnabled ? 'Ambient pausieren' : 'Ambient starten'}
+                                            </button>
                                         </div>
                                     ) : (
                                         <div className="space-y-2">
@@ -803,8 +811,8 @@ useEffect(() => {
                                         <div className="flex-1">
                                             <div className="text-sm text-white/80 font-medium">Aktionen direkt ausfuehren</div>
                                             <div className="text-xs text-white/40 mt-1">
-                                                Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestaetigung.
-                                                Das betrifft zum Beispiel Dateierstellung und inhaltliche Aenderungen.
+                                                Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestätigung.
+                                                Das betrifft zum Beispiel Dateierstellung und inhaltliche Änderungen.
                                             </div>
                                         </div>
                                         <button
@@ -836,12 +844,12 @@ useEffect(() => {
                                         {(user?.settings?.autoExecuteActions ?? true) ? (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                                                <span>MORA fuehrt Aktionen automatisch aus</span>
+                                                <span>MORA führt Aktionen automatisch aus</span>
                                             </>
                                         ) : (
                                             <>
                                                 <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                                                <span>Datenhoheit aktiv: Bestaetigung vor jeder Aktion</span>
+                                                <span>Datenhoheit aktiv: Bestätigung vor jeder Aktion</span>
                                             </>
                                         )}
                                     </div>
@@ -885,7 +893,7 @@ useEffect(() => {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="text-sm text-white/80">Sound Effects</div>
-                                            <div className="text-xs text-white/40">UI-Sounds fuer Aktionen</div>
+                                            <div className="text-xs text-white/40">UI-Sounds für Aktionen</div>
                                         </div>
                                         <button
                                             onClick={() => {
@@ -1083,22 +1091,22 @@ useEffect(() => {
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden geloescht.`)) return;
+                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
                                                                 setIsDeleting(dept.id);
                                                                 try {
                                                                     await deleteDepartment(dept.id);
                                                                     await loadDepartments(activeCompanyId || undefined);
                                                                     if (activeCompanyId) loadTree();
-                                                                    toast.success('Department geloescht');
+                                                                    toast.success('Department gelöscht');
                                                                 } catch (err) {
-                                                                    toast.error('Loeschen fehlgeschlagen');
+                                                                    toast.error('Löschen fehlgeschlagen');
                                                                 } finally {
                                                                     setIsDeleting(null);
                                                                 }
                                                             }}
                                                             disabled={isDeleting === dept.id}
                                                             className="p-1.5 rounded hover:bg-red-500/20 text-white/40 hover:text-red-400 transition-colors duration-200 disabled:opacity-30"
-                                                            title="Loeschen"
+                                                            title="Löschen"
                                                         >
                                                             {isDeleting === dept.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
                                                         </button>
@@ -1259,9 +1267,9 @@ useEffect(() => {
                                                                                     await deleteDepartment(child.id);
                                                                                 }
                                                                                 if (activeCompanyId) loadTree();
-                                                                                toast.success('Geloescht');
+                                                                                toast.success('Gelöscht');
                                                                             } catch (err) {
-                                                                                toast.error('Loeschen fehlgeschlagen');
+                                                                                toast.error('Löschen fehlgeschlagen');
                                                                             } finally {
                                                                                 setIsDeleting(null);
                                                                             }
@@ -1292,14 +1300,13 @@ useEffect(() => {
                                 )}
                             </div>
 
-                            {/* Future: Color & Icon Picker */}
-                            <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
-                                <h4 className="text-sm text-white/60 font-medium mb-2">Zukuenftige Features</h4>
-                                <ul className="text-xs text-white/40 space-y-1">
-                                    <li>- Farben fuer Departments anpassen</li>
-                                    <li>- Custom Icons zuweisen</li>
-                                    <li>- Drag & Drop Sortierung</li>
-                                    <li>- Team Manager: Sichtbarkeit pro Rolle</li>
+                            <div className="mt-6 rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] p-4">
+                                <h4 className="text-sm font-medium text-emerald-50/80 mb-2">Aktive Strukturregeln</h4>
+                                <ul className="space-y-1 text-xs text-white/45">
+                                    <li>- Departments und Spaces werden direkt im Core gespeichert.</li>
+                                    <li>- Rollen und Sichtbarkeit bleiben an die aktive Instanz gebunden.</li>
+                                    <li>- Aenderungen wirken auf Finder, Scanner und Team-Kontext.</li>
+                                    <li>- Sortierung und visuelle Details folgen in einem eigenen, getesteten Struktur-Editor.</li>
                                 </ul>
                             </div>
                         </div>
@@ -1329,7 +1336,7 @@ useEffect(() => {
                                     className="mt-4 px-5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-sm hover:bg-emerald-500/25 transition-colors duration-200 flex items-center gap-2"
                                 >
                                     <Users size={14} />
-                                    Team Manager oeffnen
+                                    Team Manager öffnen
                                     <ChevronRight size={14} />
                                 </button>
                             </div>
@@ -1363,29 +1370,53 @@ useEffect(() => {
                                 </div>
                             </div>
 
+                            {/* Real Mora feature flags */}
+                            <div className="pt-4 border-t border-white/5 space-y-3">
+                                <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Real Mora Flags</h4>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { label: 'Perceive v1', active: isMoraPerceiveV1Enabled() },
+                                        { label: 'Dialogue v1', active: isMoraDialogueV1Enabled() },
+                                        { label: 'Live v1',     active: isMoraLiveV1Enabled() },
+                                    ].map(({ label, active }) => (
+                                        <div
+                                            key={label}
+                                            className={`p-2.5 rounded-lg border text-center ${
+                                                active
+                                                    ? 'border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400'
+                                                    : 'border-white/[0.06] bg-white/[0.02] text-white/30'
+                                            }`}
+                                        >
+                                            <div className="text-[10px] font-mono">{label}</div>
+                                            <div className="text-[9px] mt-0.5 uppercase tracking-wide opacity-60">
+                                                {active ? 'aktiv' : 'aus'}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
                             {/* DEMO / RESET ACTIONS */}
                             {showDemoReset && (
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <h4 className="text-sm font-medium text-white/80">Datenverwaltung</h4>
                                 <p className="hidden text-xs text-white/40">
-                                    Hier kannst du die komplette Demo-Struktur zuruecksetzen. Alle Daten werden geloescht und mit den Standard-Demo-Daten ueberschrieben.
+                                    Hier kannst du die komplette Demo-Struktur zurücksetzen. Alle Daten werden gelöscht und mit den Standard-Demo-Daten überschrieben.
                                 </p>
                                 <p className="text-xs text-white/40">
-                                    Hier kannst du die oeffentliche Demo-Instanz auf den kuratierten Ausgangszustand zuruecksetzen.
+                                    Hier kannst du die öffentliche Demo-Instanz auf den kuratierten Ausgangszustand zurücksetzen.
                                 </p>
 
                                 <button
                                     onClick={async () => {
-                                        if (!confirm('Bist du sicher? Alle Aenderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurueckgesetzt.')) return;
+                                        if (!confirm('Bist du sicher? Alle Änderungen gehen verloren und die Demo-Instanz wird auf den kuratierten Ausgangszustand zurückgesetzt.')) return;
 
                                         try {
-                                            toast.loading('Demo-Instanz wird zurueckgesetzt...');
+                                            toast.loading('Demo-Instanz wird zurückgesetzt...');
 
                                             // Get token from Session (Production Auth)
                                             const token = session?.user?.accessToken; // || localStorage fallback removed
                                             const userId = session?.user?.id || user?.id || 'demo_user';
-
-                                            console.log('[Reset Debug] Token present:', !!token, 'User ID:', userId);
 
                                             // Call correct endpoint from demo.py: /reset-instance
                                             const headers: Record<string, string> = {
@@ -1406,20 +1437,20 @@ useEffect(() => {
                                                 throw new Error(err.detail || 'Reset failed');
                                             }
 
-                                            toast.success('Demo-Instanz erfolgreich zurueckgesetzt!');
+                                            toast.success('Demo-Instanz erfolgreich zurückgesetzt!');
                                             // Force reload window to clear all local state nuances
                                             window.location.reload();
                                         } catch (e) {
                                             console.error(e);
-                                            toast.error('Fehler beim Zuruecksetzen.');
+                                            toast.error('Fehler beim Zurücksetzen.');
                                         }
                                     }}
                                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 transition-all group [&>span:last-child]:hidden"
                                 >
                                     <Trash2 size={16} className="group-hover:animate-pulse" />
-                                    <span className="hidden">Demo-Instanz zuruecksetzen</span>
-                                    <span>Demo-Daten zuruecksetzen</span>
-                                    <span>Demo-Instanz zuruecksetzen</span>
+                                    <span className="hidden">Demo-Instanz zurücksetzen</span>
+                                    <span>Demo-Daten zurücksetzen</span>
+                                    <span>Demo-Instanz zurücksetzen</span>
                                 </button>
                             </div>
                             )}
@@ -1442,10 +1473,10 @@ useEffect(() => {
 
                     {activeTab === 'about' && (
                         <div className="space-y-6">
-                            <h3 className="text-lg text-white font-light">Ueber SAIMOR</h3>
+                            <h3 className="text-lg text-white font-light">Über SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">
                                 <p className="mb-4">
-                                    SAIMOR ist das semantische Betriebssystem fuer Klarheit, Struktur und belastbare Erinnerung in Organisationen.
+                                    SAIMOR ist das semantische Betriebssystem für Klarheit, Struktur und belastbare Erinnerung in Organisationen.
                                 </p>
                                 <div className="flex items-center gap-2 text-xs text-white/30 mt-8">
                                     <span>v2.0.0-beta</span>

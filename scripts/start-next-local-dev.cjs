@@ -1,20 +1,37 @@
-const { startServer } = require("../node_modules/next/dist/server/lib/start-server");
+const { spawn } = require("child_process");
+const path = require("path");
 
-async function main() {
-  await startServer({
-    dir: process.cwd(),
-    port: 3000,
-    isDev: true,
-    hostname: "127.0.0.1",
-    allowRetry: false,
-    minimalMode: false,
-    keepAliveTimeout: undefined,
+const uiRoot = path.resolve(__dirname, "..");
+const nextBin = path.join(uiRoot, "node_modules", "next", "dist", "bin", "next");
+
+const child = spawn(
+  process.execPath,
+  [nextBin, "dev", "-H", "127.0.0.1", "-p", "3000"],
+  {
+    cwd: uiRoot,
+    env: process.env,
+    stdio: "inherit",
+  }
+);
+
+const forwardSignals = ["SIGINT", "SIGTERM", "SIGHUP"];
+forwardSignals.forEach((signal) => {
+  process.on(signal, () => {
+    if (!child.killed) {
+      child.kill(signal);
+    }
   });
+});
 
-  setInterval(() => {}, 1 << 30);
-}
-
-main().catch((error) => {
-  console.error(error);
+child.on("error", (error) => {
+  console.error("[start-next-local-dev] failed to spawn next dev:", error);
   process.exit(1);
+});
+
+child.on("exit", (code, signal) => {
+  if (signal) {
+    process.exit(0);
+    return;
+  }
+  process.exit(typeof code === "number" ? code : 1);
 });

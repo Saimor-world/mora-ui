@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { fireEvent, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
@@ -41,6 +41,8 @@ const communicationEvents = jest.requireMock('@/lib/integrations/communicationEv
     broadcastCommunicationSync: jest.Mock;
 };
 
+const GOOGLE_CALENDAR_CALLBACK = 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
+
 function mockCoreGetRoutes({
     overview,
     calendarStatus,
@@ -71,7 +73,7 @@ describe('CalendarIntegration', () => {
                 setup: {
                     calendar: {
                         source: 'tenant',
-                        redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                        redirect_url: GOOGLE_CALENDAR_CALLBACK,
                         required_env: [
                             'GOOGLE_CALENDAR_CLIENT_ID',
                             'GOOGLE_CALENDAR_CLIENT_SECRET',
@@ -89,7 +91,7 @@ describe('CalendarIntegration', () => {
                 configured: true,
                 source: 'tenant',
                 client_id_preview: 'tenant-c...6789',
-                redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                redirect_url: GOOGLE_CALENDAR_CALLBACK,
                 required_fields: [],
                 missing_fields: [],
             },
@@ -101,12 +103,12 @@ describe('CalendarIntegration', () => {
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText('Google Calendar')).toBeInTheDocument();
+        expect(await screen.findByText('Google Calendar persoenlich')).toBeInTheDocument();
         expect(screen.getByText(/Tenant-Konfiguration/i)).toBeInTheDocument();
         expect(screen.getByText(/tenant-c\.\.\.6789/i)).toBeInTheDocument();
-        expect(screen.getByText(/http:\/\/127\.0\.0\.1:8081\/v1\/auth\/google\/callback/i)).toBeInTheDocument();
+        expect(screen.getByText(/http:\/\/127\.0\.0\.1:8081\/v3\/integrations\/calendar\/callback/i)).toBeInTheDocument();
 
-        fireEvent.click(screen.getByRole('button', { name: 'Verbinden' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Mein Google-Konto verbinden' }));
 
         await waitFor(() => {
             expect(coreClient.corePost).toHaveBeenCalledWith('/v3/integrations/calendar/connect', {
@@ -128,7 +130,7 @@ describe('CalendarIntegration', () => {
                 setup: {
                     calendar: {
                         source: 'env',
-                        redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                        redirect_url: GOOGLE_CALENDAR_CALLBACK,
                         required_env: [
                             'GOOGLE_CALENDAR_CLIENT_ID',
                             'GOOGLE_CALENDAR_CLIENT_SECRET',
@@ -148,7 +150,7 @@ describe('CalendarIntegration', () => {
             providerConfig: {
                 configured: false,
                 source: 'env',
-                redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                redirect_url: GOOGLE_CALENDAR_CALLBACK,
                 required_fields: [
                     'GOOGLE_CALENDAR_CLIENT_ID',
                     'GOOGLE_CALENDAR_CLIENT_SECRET',
@@ -163,28 +165,28 @@ describe('CalendarIntegration', () => {
         coreClient.corePost.mockResolvedValue({
             configured: true,
             source: 'tenant',
-            redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+            redirect_url: GOOGLE_CALENDAR_CALLBACK,
         });
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText(/Google OAuth fuer diesen Tenant/i)).toBeInTheDocument();
+        expect(await screen.findByText(/Google OAuth für diesen Tenant/i)).toBeInTheDocument();
 
         const clientIdInput = screen.getByPlaceholderText('Google OAuth Client ID');
         const clientSecretInput = screen.getByPlaceholderText('Google OAuth Client Secret');
-        const redirectInput = screen.getByDisplayValue('http://127.0.0.1:8081/v1/auth/google/callback');
+        const redirectInput = screen.getByDisplayValue(GOOGLE_CALENDAR_CALLBACK);
 
         fireEvent.change(clientIdInput, { target: { value: 'tenant-client-456789' } });
         fireEvent.change(clientSecretInput, { target: { value: 'tenant-secret-456789' } });
-        fireEvent.change(redirectInput, { target: { value: 'http://127.0.0.1:8081/v1/auth/google/callback' } });
+        fireEvent.change(redirectInput, { target: { value: GOOGLE_CALENDAR_CALLBACK } });
 
-        fireEvent.click(screen.getByRole('button', { name: 'OAuth fuer Tenant speichern' }));
+        fireEvent.click(screen.getByRole('button', { name: 'OAuth für Tenant speichern' }));
 
         await waitFor(() => {
             expect(coreClient.corePost).toHaveBeenCalledWith('/v3/integrations/calendar/provider-config', {
                 client_id: 'tenant-client-456789',
                 client_secret: 'tenant-secret-456789',
-                redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                redirect_url: GOOGLE_CALENDAR_CALLBACK,
             });
         });
         await waitFor(() => {
@@ -199,7 +201,7 @@ describe('CalendarIntegration', () => {
                 setup: {
                     calendar: {
                         source: 'env',
-                        redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                        redirect_url: GOOGLE_CALENDAR_CALLBACK,
                         required_env: [
                             'GOOGLE_CALENDAR_CLIENT_ID',
                             'GOOGLE_CALENDAR_CLIENT_SECRET',
@@ -219,7 +221,7 @@ describe('CalendarIntegration', () => {
             providerConfig: {
                 configured: false,
                 source: 'env',
-                redirect_url: 'http://127.0.0.1:8081/v1/auth/google/callback',
+                redirect_url: GOOGLE_CALENDAR_CALLBACK,
                 required_fields: [],
                 missing_fields: ['GOOGLE_CALENDAR_CLIENT_ID'],
             },
@@ -227,8 +229,8 @@ describe('CalendarIntegration', () => {
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText(/muss zuerst von einem Eigentuemer eingerichtet werden/i)).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'OAuth fuer Tenant speichern' })).not.toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Eigentuemer muss OAuth freischalten' })).toBeDisabled();
+        expect(await screen.findByText(/muss zuerst von einem Eigentümer eingerichtet werden/i)).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'OAuth für Tenant speichern' })).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Eigentümer muss OAuth freischalten' })).toBeDisabled();
     });
 });

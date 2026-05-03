@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Development Token Manager
  * Automatically fetches and manages JWT tokens for local development
  */
@@ -49,7 +49,7 @@ async function fetchDevToken(): Promise<string | null> {
             localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTime.toString());
         }
 
-        console.log('✅ Dev token fetched successfully');
+
         return data.token;
     } catch (error) {
         console.error('Error fetching dev token:', error);
@@ -88,7 +88,7 @@ export async function getDevToken(): Promise<string | null> {
     }
 
     // Token is missing or expired - fetch a new one
-    console.log('🔄 Fetching new dev token...');
+
     return await fetchDevToken();
 }
 
@@ -99,7 +99,7 @@ export function clearDevToken(): void {
     if (typeof window !== 'undefined') {
         localStorage.removeItem(TOKEN_STORAGE_KEY);
         localStorage.removeItem(TOKEN_EXPIRY_KEY);
-        console.log('🗑️ Dev token cleared');
+    
     }
 }
 

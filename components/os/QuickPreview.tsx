@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * QUICK PREVIEW / QUICK LOOK
@@ -152,8 +152,16 @@ const getItemColor = (type: string) => {
     }
 };
 
+const PREVIEW_COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
+    blue: { bg: 'bg-blue-500/20', text: 'text-blue-400' },
+    yellow: { bg: 'bg-yellow-500/20', text: 'text-yellow-300' },
+    emerald: { bg: 'bg-emerald-500/20', text: 'text-emerald-400' },
+    pink: { bg: 'bg-pink-500/20', text: 'text-pink-300' },
+    white: { bg: 'bg-white/10', text: 'text-white/60' },
+};
+
 const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'Unknown size';
+    if (!bytes) return 'Groesse unbekannt';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -187,9 +195,12 @@ const DocumentPreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
                         </pre>
                     </div>
                 ) : (
-                    <div className="text-center py-12 text-white/30">
-                        <FileText size={48} className="mx-auto mb-4 opacity-30" />
-                        <p>Keine Vorschau verfuegbar</p>
+                    <div className="mx-auto max-w-sm rounded-2xl border border-white/8 bg-white/[0.03] px-6 py-10 text-center text-white/35">
+                        <FileText size={46} className="mx-auto mb-4 text-blue-300/35" />
+                        <p className="text-sm text-white/70">Keine Dokumentvorschau vorhanden</p>
+                        <p className="mt-2 text-xs leading-relaxed text-white/35">
+                            Oeffne das Element vollstaendig, um Metadaten, Quelle oder verknuepfte Datei zu pruefen.
+                        </p>
                     </div>
                 )}
             </div>
@@ -278,7 +289,10 @@ const ImagePreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
             ) : (
                 <div className="text-center text-white/30">
                     <ImageIcon size={48} className="mx-auto mb-4 opacity-30" />
-                    <p>Bild nicht verfuegbar</p>
+                    <p>Bildquelle nicht verfuegbar</p>
+                    <p className="mt-2 max-w-xs text-xs leading-relaxed text-white/35">
+                        Die Vorschau hat keine lokale oder serverseitige Bild-URL erhalten.
+                    </p>
                 </div>
             )}
         </div>
@@ -380,6 +394,7 @@ export const QuickPreview: React.FC = () => {
 
     const Icon = currentItem ? getItemIcon(currentItem.type) : FileText;
     const color = currentItem ? getItemColor(currentItem.type) : 'white';
+    const colorClasses = PREVIEW_COLOR_CLASSES[color] || PREVIEW_COLOR_CLASSES.white;
 
     return (
         <AnimatePresence>
@@ -405,8 +420,8 @@ export const QuickPreview: React.FC = () => {
                         {/* Header */}
                         <div className="flex items-center justify-between p-4 border-b border-white/5">
                             <div className="flex items-center gap-3">
-                                <div className={`w-10 h-10 rounded-xl bg-${color}-500/20 flex items-center justify-center`}>
-                                    <Icon size={20} className={`text-${color}-400`} />
+                                <div className={`w-10 h-10 rounded-xl ${colorClasses.bg} flex items-center justify-center`}>
+                                    <Icon size={20} className={colorClasses.text} />
                                 </div>
                                 <div>
                                     <h3 className="text-sm font-medium text-white">{currentItem.name}</h3>
@@ -433,7 +448,7 @@ export const QuickPreview: React.FC = () => {
                                 <button
                                     onClick={openFullPane}
                                     className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
-                                    title="Vollstaendig oeffnen"
+                                    title="Vollständig öffnen"
                                 >
                                     <Maximize2 size={16} />
                                 </button>

@@ -46,9 +46,6 @@ export function triggerSignal(
 
     signalQueue.push(signal);
 
-    // Dummy log (replace with canvas animation later)
-    console.log(`[Signal Flow] ${fromId} → ${toId} (intensity: ${intensity})`);
-
     return signal.id;
 }
 

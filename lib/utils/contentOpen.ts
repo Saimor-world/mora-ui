@@ -106,12 +106,12 @@ export function getContentSecondaryLabel(item: Pick<OpenableNodeLike, 'type' | '
 
 export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'url'>): string {
     if ((item.type || '').toLowerCase() === 'file') {
-        return 'Datei oeffnen';
+        return 'Datei öffnen';
     }
     if (isExternalLinkNode(item)) {
-        return 'Im Browser oeffnen';
+        return 'Im Browser öffnen';
     }
-    return 'Dokument oeffnen';
+    return 'Dokument öffnen';
 }
 
 export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'id'>): string {
@@ -142,7 +142,7 @@ export function isSourceFileAvailable(item: Pick<OpenableSourceFileLike, 'source
 }
 
 export function getSourceFileOpenActionLabel(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): string {
-    return hasLinkedDocument(item) ? 'Dokument oeffnen' : 'Datei oeffnen';
+    return hasLinkedDocument(item) ? 'Dokument öffnen' : 'Datei öffnen';
 }
 
 export function openDocumentNode(

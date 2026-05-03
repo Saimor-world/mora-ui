@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -70,7 +70,7 @@ describe('ConfirmationCard presence trigger', () => {
     expect(mockDispatchMoraPresence).toHaveBeenCalledWith({
       action: 'point',
       targetId: 'confirmation-card-action-1',
-      message: 'Aktionsausfuehrung bestaetigen',
+      message: 'Aktionsausführung bestätigen',
       duration: 2600,
       source: 'system',
     });

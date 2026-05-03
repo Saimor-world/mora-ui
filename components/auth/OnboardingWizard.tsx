@@ -134,9 +134,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
             if (myCompany) {
                 setActiveCompany(myCompany.id);
-                console.log('[Onboarding] Active company set:', myCompany.name);
             } else {
-                console.warn('[Onboarding] Could not find created company - departments will be orphan');
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[Onboarding] Could not find created company - departments will be orphan');
+                }
             }
 
             // 2. Create Departments
@@ -150,9 +151,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                         description: dept.description || `${dept.name} department`,
                         company_id: myCompany?.id // BIND TO COMPANY
                     });
-                    console.log(`[Onboarding] Created department: ${dept.name}`);
                 } catch (err) {
-                    console.warn(`Could not create department ${dept.name}:`, err);
+                    if (process.env.NODE_ENV === 'development') {
+                        console.warn(`Could not create department ${dept.name}:`, err);
+                    }
                     // Continue with other departments
                 }
             }
@@ -161,9 +163,10 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             if (myCompany) {
                 setActiveCompany(myCompany.id);
                 void queryClient.invalidateQueries({ queryKey: queryKeys.departments(myCompany.id) });
-                console.log('[Onboarding] Active company set:', myCompany.name);
             } else {
-                console.warn('[Onboarding] Could not find created company - proceeding anyway');
+                if (process.env.NODE_ENV === 'development') {
+                    console.warn('[Onboarding] Could not find created company - proceeding anyway');
+                }
             }
 
             // 4. Mark onboarding as complete
@@ -173,7 +176,9 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             toast.success('Môra ist bereit! Willkommen in Ihrer Organisation.', { id: toastId });
 
         } catch (error: any) {
-            console.error('Onboarding Fehler:', error);
+            if (process.env.NODE_ENV === 'development') {
+                console.error('Onboarding Fehler:', error);
+            }
             toast.error('Setup hatte Probleme, aber wir fahren fort. Bitte laden Sie die Seite ggf. neu.', { id: toastId });
             // Mark as complete anyway so user isn't stuck
             localStorage.setItem('onboarding_complete', 'true');

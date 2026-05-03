@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -628,8 +628,8 @@ export const MemorySidebar: React.FC = () => {
         : 'Hier siehst du nur deine eigenen Eintraege. Weitere Hinweise erscheinen, sobald ein Kontext aktiv ist.';
     const memoryContextFooter = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface
-            ? 'Mora zeigt hier, was im aktuellen Beispielkontext fuer dich gerade relevant ist.'
-            : 'Mora zeigt hier, was fuer dich im aktuellen Organisationskontext gerade relevant ist.')
+            ? 'Mora zeigt hier, was im aktuellen Beispielkontext für dich gerade relevant ist.'
+            : 'Mora zeigt hier, was für dich im aktuellen Organisationskontext gerade relevant ist.')
         : 'Waehle einen Kontext, damit zusaetzlich Hinweise und Freigaben erscheinen.';
 
     // Load recent memories on mount
@@ -819,7 +819,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geoeffnet hast.
+                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geöffnet hast.
                                                     </div>
                                                 )}
 
@@ -913,13 +913,13 @@ export const MemorySidebar: React.FC = () => {
                                             </>
                                         ) : (
                                             <p className="text-xs text-muted-foreground px-4 py-6 text-center leading-relaxed">
-                                                Dein Bereich ist verfuegbar. Weitere Hinweise erscheinen, sobald ein aktiver Beispiel- oder Organisationskontext vorliegt.
+                                                Dein Bereich ist verfügbar. Weitere Hinweise erscheinen, sobald ein aktiver Beispiel- oder Organisationskontext vorliegt.
                                             </p>
                                         )}
 
                                         {/* Footer */}
                                         <div className="p-3 border-t border-white/5 text-[9px] text-white/20 text-center">
-                                            {mod}+Shift+M zum Oeffnen
+                                            {mod}+Shift+M zum Öffnen
                                         </div>
                                     </>)}
                                 </div>

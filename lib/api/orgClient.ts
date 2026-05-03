@@ -22,13 +22,51 @@ export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]
     try {
         const query = includeDemo ? '?include_demo=true' : '';
         const result = await coreGet(`/v3/companies${query}`);
+        if (!result && hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
         return normalizeList<CoreCompany>(result, ['companies']);
     } catch (error: any) {
         // Silent fallback for auth errors - return empty array
         if (error instanceof CoreError && (error.status === 401 || error.status === 403)) {
             return [];
         }
+        if (hasLocalDemoFallbackSession()) return [localDemoFallbackCompany()];
         throw error;
+    }
+}
+
+function hasLocalDemoFallbackSession() {
+    return isLocalhost() && readCookie('mora_session') === 'local_demo_fallback';
+}
+
+function localDemoFallbackCompany(): CoreCompany {
+    const websiteEntryName = localWebsiteEntryCompanyName();
+    const name = websiteEntryName || 'Local Preview Workspace';
+    const isWebsiteEntryFallback = Boolean(websiteEntryName);
+    return {
+        id: isWebsiteEntryFallback ? 'company-website-entry-local' : 'company-local-demo',
+        tenant_id: isWebsiteEntryFallback ? 'tenant-preview-local' : 'tenant-demo',
+        owner_id: 'local-demo-user',
+        name,
+        slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'local-preview-workspace',
+        description: isWebsiteEntryFallback
+            ? 'Aus dem Website-Check erzeugter lokaler HQ-Workspace.'
+            : 'Lokaler Demo-Fallback, wenn Mora Core nicht erreichbar ist.',
+        logo_url: null,
+        settings: null,
+        is_demo: !isWebsiteEntryFallback,
+    };
+}
+
+function localWebsiteEntryCompanyName() {
+    if (typeof window === 'undefined') return null;
+    try {
+        const raw = window.localStorage.getItem('saimor_website_entry_context');
+        const parsed = raw ? JSON.parse(raw) : null;
+        return typeof parsed?.companyName === 'string' && parsed.companyName.trim()
+            ? parsed.companyName.trim()
+            : null;
+    } catch {
+        return null;
     }
 }
 

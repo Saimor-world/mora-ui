@@ -36,6 +36,16 @@ const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; label:
 };
 
 const DEFAULT_ROLE_CONFIG = { icon: User, color: 'text-white/60', bg: 'bg-white/10', label: 'User' };
+const FILTER_LABELS: Record<'all' | 'active' | 'invited', string> = {
+    all: 'Alle',
+    active: 'Aktiv',
+    invited: 'Eingeladen',
+};
+
+const INVITE_ROLE_LABELS: Record<'member' | 'manager', string> = {
+    member: 'Mitglied',
+    manager: 'Manager',
+};
 
 export default function UsersApp({ paneId }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -148,7 +158,7 @@ export default function UsersApp({ paneId }: AppProps) {
         const updated = await patchAdminUser(memberId, { role: newRole });
         if (updated) {
             setMembers(prev => prev.map(m => m.id === memberId ? { ...m, role: updated.role } : m));
-            toast.success('Role updated');
+            toast.success('Rolle aktualisiert');
         }
     };
 
@@ -158,7 +168,7 @@ export default function UsersApp({ paneId }: AppProps) {
             setMembers(prev => prev.map(m =>
                 m.id === memberId ? { ...m, status: updated.is_active ? 'active' : 'inactive' } : m
             ));
-            toast.success(updated.is_active ? 'User activated' : 'User deactivated');
+            toast.success(updated.is_active ? 'Benutzer aktiviert' : 'Benutzer deaktiviert');
         }
     };
 
@@ -216,9 +226,9 @@ export default function UsersApp({ paneId }: AppProps) {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <Users className="text-emerald-400" size={20} />
-                            <h2 className="text-lg font-medium">Team Members</h2>
+                            <h2 className="text-lg font-medium">Benutzer und Team</h2>
                             <span className="text-xs text-white/40 bg-white/10 px-2 py-0.5 rounded-full">
-                                {combinedMembers.length} members
+                                {combinedMembers.length} Mitglieder
                             </span>
                         </div>
                         {isAdmin && (
@@ -228,7 +238,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                 className="flex items-center gap-2 px-3 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-emerald-400 text-sm transition-all"
                             >
                                 <UserPlus size={16} />
-                                Invite
+                                Einladen
                             </button>
                         )}
                     </div>
@@ -240,7 +250,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search members..."
+                                placeholder="Benutzer suchen..."
                                 className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
                             />
                         </div>
@@ -253,7 +263,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                         ? 'bg-emerald-500/20 text-emerald-400'
                                         : 'text-white/40 hover:text-white/60'}`}
                                 >
-                                    {f.charAt(0).toUpperCase() + f.slice(1)}
+                                    {FILTER_LABELS[f]}
                                 </button>
                             ))}
                         </div>
@@ -267,9 +277,21 @@ export default function UsersApp({ paneId }: AppProps) {
                             <RefreshCw className="text-emerald-400 animate-spin" size={24} />
                         </div>
                     ) : filteredMembers.length === 0 ? (
-                        <div className="text-center py-8 text-white/40">
-                            <Users size={32} className="mx-auto mb-2 opacity-50" />
-                            <p>No members found</p>
+                        <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-6 py-8 text-center text-white/50">
+                            <Users size={34} className="mb-3 text-emerald-300/45" />
+                            <p className="text-sm text-emerald-50/85">Keine passenden Benutzer</p>
+                            <p className="mt-2 text-xs leading-relaxed text-white/40">
+                                Passe Suche oder Filter an. Admins koennen neue Mitglieder direkt in diese Instanz einladen.
+                            </p>
+                            {isAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => setShowInviteModal(true)}
+                                    className="mt-4 rounded-xl border border-emerald-300/25 bg-emerald-300/10 px-4 py-2 text-xs text-emerald-200 transition-colors hover:bg-emerald-300/15"
+                                >
+                                    Einladung erstellen
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -301,7 +323,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-medium text-white/90 truncate">{member.name}</span>
                                                     {member.status === 'invited' && (
-                                                        <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">Pending</span>
+                                                        <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded">Ausstehend</span>
                                                     )}
                                                 </div>
                                                 <div className="flex items-center gap-2 text-xs text-white/40">
@@ -336,7 +358,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                                     onClick={(e) => e.stopPropagation()}
                                                     title="Standard-Firma"
                                                 >
-                                                    <option value="">No default company</option>
+                                                    <option value="">Keine Standard-Firma</option>
                                                     {member.companyOptions.map(company => (
                                                         <option key={company.id} value={company.id}>{company.name}</option>
                                                     ))}
@@ -347,7 +369,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                                 <button
                                                     onClick={() => handleActiveToggle(member.id, member.status === 'active')}
                                                     className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
-                                                    title={member.status === 'active' ? 'Deactivate user' : 'Activate user'}
+                                                    title={member.status === 'active' ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
                                                 >
                                                     <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${member.status === 'active' ? 'left-4' : 'left-0.5'}`} />
                                                 </button>
@@ -369,11 +391,11 @@ export default function UsersApp({ paneId }: AppProps) {
                 {/* Footer */}
                 <div className="p-3 border-t border-white/10 flex items-center justify-between">
                     <div className="text-xs text-white/30">
-                        {viewMode === 'demo' ? 'Demo mode: limited integrations' : 'Invites are tenant-scoped'}
+                        {viewMode === 'demo' ? 'Demo-Modus: Integrationen sind begrenzt' : 'Einladungen gelten nur fuer diese Instanz'}
                     </div>
                     <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
                         <Settings size={12} />
-                        Roles &amp; Permissions
+                        Rollen und Rechte
                     </button>
                 </div>
 
@@ -427,20 +449,20 @@ export default function UsersApp({ paneId }: AppProps) {
                                     </>
                                 ) : (
                                     <>
-                                        <h3 className="text-lg font-medium mb-4">Invite Team Member</h3>
+                                        <h3 className="text-lg font-medium mb-4">Teammitglied einladen</h3>
                                         <div className="space-y-4">
                                             <div>
-                                                <label className="text-xs text-white/40 mb-1 block">Email Address</label>
+                                                <label className="text-xs text-white/40 mb-1 block">E-Mail-Adresse</label>
                                                 <input
                                                     type="email"
                                                     value={inviteEmail}
                                                     onChange={(e) => setInviteEmail(e.target.value)}
-                                                    placeholder="colleague@company.com"
+                                                    placeholder="kollege@firma.de"
                                                     className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-emerald-500/50"
                                                 />
                                             </div>
                                             <div>
-                                                <label className="text-xs text-white/40 mb-1 block">Role</label>
+                                                <label className="text-xs text-white/40 mb-1 block">Rolle</label>
                                                 <div className="flex gap-2">
                                                     {(['member', 'manager'] as const).map(role => (
                                                         <button
@@ -450,7 +472,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                                                 ? 'bg-emerald-500/20 border border-emerald-500/30 text-emerald-400'
                                                                 : 'bg-white/5 border border-white/10 text-white/60 hover:text-white/80'}`}
                                                         >
-                                                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                                                            {INVITE_ROLE_LABELS[role]}
                                                         </button>
                                                     ))}
                                                 </div>
@@ -478,14 +500,14 @@ export default function UsersApp({ paneId }: AppProps) {
                                                 onClick={closeInviteModal}
                                                 className="flex-1 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white/80 transition-all"
                                             >
-                                                Cancel
+                                                Abbrechen
                                             </button>
                                             <button
                                                 onClick={handleInviteSubmit}
                                                 disabled={!inviteEmail || isSubmitting}
                                                 className="flex-1 py-2 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                                             >
-                                                {isSubmitting ? 'Sending...' : 'Send Invite'}
+                                                {isSubmitting ? 'Sende...' : 'Einladung senden'}
                                             </button>
                                         </div>
                                     </>

@@ -56,12 +56,22 @@ const normalizeFrontmost = (panes: PaneConfig[], activePaneId: string | null) =>
 const getCenteredPosition = (size: { width: number; height: number }, offset: number = 0) => {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
+    const leftInset = windowWidth >= 1440 ? 300 : 20;
+    const rightInset = windowWidth >= 1440 ? 320 : 20;
+    const topInset = windowHeight >= 760 ? 86 : 48;
+    const bottomInset = windowHeight >= 760 ? 150 : 96;
+    const workspaceWidth = Math.max(360, windowWidth - leftInset - rightInset);
+    const workspaceHeight = Math.max(360, windowHeight - topInset - bottomInset);
 
     // Apply cascade offset for multiple windows (20px per open window)
     const cascadeOffset = offset * 25;
 
-    let x = Math.floor((windowWidth - size.width) / 2) + cascadeOffset;
-    let y = Math.floor((windowHeight - size.height) / 2) - 40 + cascadeOffset;
+    let x = size.width <= workspaceWidth
+        ? leftInset + Math.floor((workspaceWidth - size.width) / 2) + cascadeOffset
+        : Math.floor((windowWidth - size.width) / 2) + cascadeOffset;
+    let y = size.height <= workspaceHeight
+        ? topInset + Math.floor((workspaceHeight - size.height) / 2) + cascadeOffset
+        : Math.max(48, topInset - 34) + cascadeOffset;
 
     // Ensure window stays on screen
     x = Math.max(20, Math.min(x, windowWidth - size.width - 20));

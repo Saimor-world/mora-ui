@@ -1,4 +1,4 @@
-export type ShellViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder' | string;
+﻿export type ShellViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder' | string;
 
 export interface ShellCompanyLike {
     id: string;
@@ -139,7 +139,7 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Ordner',
             title: activeFolder.name,
             subtitle: activeSpace.name,
-            description: 'Du bist in einem konkreten Ordner. Von hier aus oeffnest du Inhalte, gehst in den Bereich zurueck oder springst in den Finder.',
+            description: 'Du bist in einem konkreten Ordner. Von hier aus öffnest du Inhalte, gehst in den Bereich zurück oder springst in den Finder.',
             signalA: formatCount(activeFolder.node_count || 0, 'Dokument', 'Dokumente'),
             signalB: `${activeFolders.length} Ordner im Bereich`,
             accent: activeFolder.color || activeSpace.color || activeDepartment?.color || accent,
@@ -160,7 +160,7 @@ export const buildShellContextSnapshot = ({
             signalA: formatCount(activeFolders.length, 'Ordner'),
             signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
-            nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder fuer diesen Space',
+            nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder für diesen Space',
             nextMoveHint: leadingFolder
                 ? 'Der sichtbar staerkste Ordner ist hier der sinnvollste naechste Schritt.'
                 : 'Wenn noch kein klarer Lead-Ordner sichtbar ist, oeffne die Struktur im Finder.',
@@ -182,7 +182,7 @@ export const buildShellContextSnapshot = ({
             signalA: formatCount(activeSpaces.length, 'Bereich', 'Bereiche'),
             signalB: `${formatCount(folderCount, 'Ordner')} / ${formatCount(docCount, 'Dokument', 'Dokumente')}`,
             accent: activeDepartment.color || accent,
-            nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Abteilung im Finder oeffnen',
+            nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Abteilung im Finder öffnen',
             nextMoveHint: leadingSpace
                 ? 'Der staerkste Bereich ist der beste naechste Einstieg.'
                 : 'Wenn noch kein klarer Bereich vorne liegt, oeffne die Struktur im Finder.',
@@ -219,7 +219,7 @@ export const buildShellContextSnapshot = ({
                 ? `${companyCount} Organisationen`
                 : '1 Organisation',
         accent,
-        nextMoveLabel: isPublicDemoSurface ? 'Abteilung oeffnen' : isLocalTruthSurface ? 'Abteilung waehlen' : companyCount > 1 ? 'Organisation waehlen' : 'Abteilung waehlen',
+        nextMoveLabel: isPublicDemoSurface ? 'Abteilung öffnen' : isLocalTruthSurface ? 'Abteilung wählen' : companyCount > 1 ? 'Organisation wählen' : 'Abteilung wählen',
         nextMoveHint: isPublicDemoSurface
             ? 'Öffne die passende Abteilung und gehe von dort in die sichtbare Beispielstruktur.'
             : isLocalTruthSurface

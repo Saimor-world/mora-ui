@@ -10,6 +10,7 @@ tsconfig.verify.tsbuildinfo
 next-env.d.ts
 .worktrees/
 .superpowers/
+tmp/
 
 # Playwright
 playwright-report/

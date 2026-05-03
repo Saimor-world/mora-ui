@@ -1,5 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { logger } from "@/lib/utils/logger";
+
+function toError(error: unknown): Error {
+    return error instanceof Error ? error : new Error(String(error));
+}
 
 function extractCookieHeader(req: any): string {
     const headers = req?.headers;
@@ -61,7 +66,7 @@ export const authOptions: NextAuthOptions = {
                             };
                         }
                     } catch (error) {
-                        console.error("Session Sync Exception:", error);
+                        logger.error("Session Sync Exception:", toError(error));
                     }
                 }
                 // Session-first auth: browser must establish mora_session via /api/auth/core-login

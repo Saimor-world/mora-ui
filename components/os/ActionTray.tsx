@@ -18,8 +18,8 @@ const statusIconMap: Record<ActionStatus, React.ReactNode> = {
 
 const statusLabelMap: Record<ActionStatus, string> = {
     proposed: 'Vorgeschlagen',
-    running: 'Laeuft',
-    pending_confirmation: 'Wartet auf Bestaetigung',
+    running: 'Läuft',
+    pending_confirmation: 'Wartet auf Bestätigung',
     done: 'Abgeschlossen',
     failed: 'Fehlgeschlagen',
     rejected: 'Verworfen',
@@ -429,7 +429,7 @@ export const ActionTray: React.FC = () => {
                                                                     }`}
                                                                 >
                                                                     {navigationOutcome.targetType === 'search' ? <Search size={11} /> : <FolderOpen size={11} />}
-                                                                    {navigationOutcome.targetType === 'search' ? 'Suche oeffnen' : 'Erneut oeffnen'}
+                                                                    {navigationOutcome.targetType === 'search' ? 'Suche öffnen' : 'Erneut öffnen'}
                                                                 </button>
                                                             )}
                                                         </div>

@@ -39,6 +39,32 @@ jest.mock('@/components/mora/SearchPopup', () => ({
     SearchPopup: () => null,
 }));
 
+jest.mock('@/lib/audio/ambientAudio', () => ({
+    AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT: 'saimor-ambient-audio-library-updated',
+    listAmbientAudioTracks: jest.fn(() => new Promise(() => {})),
+    persistAmbientAudioSettings: jest.fn(),
+    resolveAmbientAudioSettings: () => ({
+        enabled: false,
+        volume: 0.14,
+        trackId: null,
+    }),
+}));
+
+jest.mock('@/lib/hooks/useAssistantRuntime', () => ({
+    useAssistantRuntime: () => ({
+        status: 'offline',
+        source: 'unknown',
+        provider: null,
+        model: null,
+        routingProfile: null,
+        healthyProviderCount: 0,
+        configuredProviderCount: 0,
+        title: 'Kein AI-Pfad',
+        subtitle: 'Keine gesunden Provider',
+        badge: 'Offline',
+    }),
+}));
+
 jest.mock('@/components/os/NotificationCenter', () => ({
     NotificationCenter: () => null,
 }));

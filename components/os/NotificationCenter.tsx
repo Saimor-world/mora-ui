@@ -524,7 +524,7 @@ export const NotificationCenter: React.FC = () => {
 
                             {/* Footer */}
                             <div className="p-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/30">
-                                <span>Strg+Shift+N zum Oeffnen</span>
+                                <span>Strg+Shift+N zum Öffnen</span>
                                 <span>{notifications.length} Benachrichtigungen</span>
                             </div>
                         </motion.div>

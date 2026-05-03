@@ -92,7 +92,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
                 {searchHint}
               </span>
             )}
-            {isSearching && <span className="text-white/35">Semantic Suche laeuft...</span>}
+            {isSearching && <span className="text-white/35">Semantische Suche läuft…</span>}
           </div>
         )}
       </div>
@@ -124,20 +124,46 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
               </div>
             )}
           </AnimatePresence>
-        ) : (
-          recentSearches.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 px-3 py-2 text-xs text-white/40 uppercase tracking-wider"><Clock size={12} />Zuletzt gesucht</div>
-              <div className="space-y-1">
-                {recentSearches.map((s, i) => (
-                  <button key={i} onClick={() => setQuery(s)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all">
-                    <Clock size={14} className="text-white/30" />
-                    <span className="text-sm text-white/70">{s}</span>
-                  </button>
-                ))}
-              </div>
+        ) : recentSearches.length > 0 ? (
+          <div>
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-white/40 uppercase tracking-wider"><Clock size={12} />Zuletzt gesucht</div>
+            <div className="space-y-1">
+              {recentSearches.map((s, i) => (
+                <button key={i} onClick={() => setQuery(s)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-all">
+                  <Clock size={14} className="text-white/30" />
+                  <span className="text-sm text-white/70">{s}</span>
+                </button>
+              ))}
             </div>
-          )
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="flex flex-col items-center justify-center h-full gap-5 px-6 text-center pb-6"
+          >
+            <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-400/15 flex items-center justify-center">
+              <Search size={24} className="text-indigo-300/60" />
+            </div>
+            <div>
+              <p className="text-sm text-white/55 font-medium mb-1">Suche überall in Saimor</p>
+              <p className="text-[11px] text-white/28 leading-relaxed">
+                Dokumente, Ordner, Bereiche und mehr — Mora findet es semantisch.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {(['Bericht', 'Ordner', 'Protokoll', 'Strategie'] as const).map((hint) => (
+                <button
+                  key={hint}
+                  onClick={() => setQuery(hint)}
+                  className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.04] text-xs text-white/45 hover:border-indigo-400/30 hover:bg-indigo-500/10 hover:text-indigo-200/80 transition-all"
+                >
+                  {hint}
+                </button>
+              ))}
+            </div>
+          </motion.div>
         )}
       </div>
 

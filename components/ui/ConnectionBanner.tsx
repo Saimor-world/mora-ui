@@ -1,14 +1,16 @@
-"use client";
+﻿"use client";
 
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 import { useConnectionStatus } from '@/lib/hooks/useConnectionStatus';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 
 export const ConnectionBanner: React.FC = () => {
     const { status, retry, lastConnected } = useConnectionStatus();
     const surfaceProfile = useSurfaceProfile();
+    const websiteEntryContext = useWebsiteEntryContext();
 
     if (status === 'connected' || status === 'connecting') {
         return null;
@@ -29,14 +31,18 @@ export const ConnectionBanner: React.FC = () => {
             ? 'Keine Verbindung'
             : 'Verbindungsfehler';
 
-    const surfaceLabel = surfaceProfile.isPublicDemoSurface
+    const surfaceLabel = websiteEntryContext
+        ? 'Website-Preview-Workspace'
+        : surfaceProfile.isPublicDemoSurface
         ? 'Oeffentliche Demo-Instanz'
         : surfaceProfile.isLocalTruthSurface
             ? 'Interne Instanz'
             : 'Verbindung eingeschraenkt';
 
-    const helperText = surfaceProfile.isLocalTruthSurface
-        ? 'Pruefe Core, lokale Integrationen und Modelle. Diese Oberflaeche ist fuer die echte Arbeitslogik gedacht.'
+    const helperText = websiteEntryContext
+        ? 'Dieser Workspace stammt aus einem Website-Check. Echte Integrationen werden erst nach bewusster Verbindung genutzt.'
+        : surfaceProfile.isLocalTruthSurface
+        ? 'Prüfe Core, lokale Integrationen und Modelle. Diese Oberfläche ist für die echte Arbeitslogik gedacht.'
         : surfaceProfile.isPublicDemoSurface
             ? 'Die Demo spiegelt nur den stabilen Stand. Lokale Regeln und Integrationen liegen ausserhalb dieser Instanz.'
             : 'Die Organisation ist erreichbar, aber der aktuelle Datenpfad ist gestoert.';

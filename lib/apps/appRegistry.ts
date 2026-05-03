@@ -21,6 +21,15 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 720, height: 560 },
   },
   {
+    id: 'website-dossier',
+    name: 'Website Dossier',
+    description: 'Security-Check aus WORLD als HQ-Arbeitsobjekt',
+    icon: 'ShieldCheck',
+    color: 'teal',
+    category: 'core',
+    defaultSize: { width: 1040, height: 720 },
+  },
+  {
     id: 'notes',
     name: 'Notizen',
     description: 'Persönliche Notizen',
@@ -128,6 +137,35 @@ export const APP_REGISTRY: AppManifest[] = [
     category: 'people',
     defaultSize: { width: 760, height: 600 },
     requiresRole: ['owner', 'admin'],
+  },
+
+  // ── Productivity ─────────────────────────────────────────────────────────
+  {
+    id: 'action-center',
+    name: 'Action Center',
+    description: 'Aktionen, Vorschläge und operative Aufgaben',
+    icon: 'Activity',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 900, height: 720 },
+  },
+  {
+    id: 'integrations',
+    name: 'Integrationen',
+    description: 'Verbindungen zu externen Diensten und Plattformen',
+    icon: 'Plug',
+    color: 'blue',
+    category: 'core',
+    defaultSize: { width: 860, height: 680 },
+  },
+  {
+    id: 'mail',
+    name: 'Mail',
+    description: 'E-Mail-Postfach und Kommunikation',
+    icon: 'Mail',
+    color: 'slate',
+    category: 'core',
+    defaultSize: { width: 960, height: 680 },
   },
 
   // ── System ────────────────────────────────────────────────────────────────

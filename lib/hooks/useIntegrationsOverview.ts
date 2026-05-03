@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { coreGet } from '@/lib/api/coreClient';
 import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from '@/lib/integrations/communicationEvents';
 
@@ -17,6 +17,44 @@ export interface CalendarOverview {
     provider?: string;
     email?: string;
     status?: string;
+}
+
+export interface RssFeedOverview {
+    id?: string;
+    url: string;
+    title?: string;
+    enabled?: boolean;
+}
+
+export interface RssOverview {
+    configured?: boolean;
+    enabled?: boolean;
+    status?: string;
+    feeds?: RssFeedOverview[];
+    count?: number;
+}
+
+export interface CloudConnectorOverview {
+    id: string;
+    provider: string;
+    label: string;
+    enabled?: boolean;
+    status?: string;
+    auth_type?: string;
+    base_url?: string | null;
+    webdav_url?: string | null;
+    account_hint?: string | null;
+    root_path?: string | null;
+    setup_required?: string | null;
+}
+
+export interface CloudStorageOverview {
+    configured?: boolean;
+    enabled?: boolean;
+    status?: string;
+    connectors?: CloudConnectorOverview[];
+    count?: number;
+    providers?: string[];
 }
 
 export interface AssistantProviderMeta {
@@ -41,6 +79,8 @@ export interface AssistantOverview {
 export interface IntegrationsOverview {
     mail?: MailOverview;
     calendar?: CalendarOverview;
+    rss?: RssOverview;
+    cloud_storage?: CloudStorageOverview;
     assistant?: AssistantOverview;
     runtime?: {
         local_truth?: {
@@ -139,6 +179,8 @@ export interface IntegrationsOverview {
         real_email_enabled?: boolean;
         mail_local_mode?: boolean;
         calendar_oauth_enabled?: boolean;
+        rss_enabled?: boolean;
+        cloud_storage_enabled?: boolean;
         owner_manageable?: boolean;
         assistant_available?: boolean;
     };
@@ -161,6 +203,19 @@ export interface IntegrationsOverview {
             provider?: string;
             source?: string;
         };
+        rss?: {
+            mode?: string;
+            requires_owner?: boolean;
+            required_fields?: string[];
+            detail?: string;
+        };
+        cloud_storage?: {
+            mode?: string;
+            requires_owner?: boolean;
+            required_fields?: string[];
+            providers?: Record<string, unknown>;
+            detail?: string;
+        };
     };
 }
 
@@ -169,10 +224,14 @@ export interface BrowserBridgeState {
     permission: NotificationPermission | 'unsupported';
 }
 
-export function useIntegrationsOverview(autoLoad: boolean = true) {
+export function useIntegrationsOverview(autoLoad: boolean = true, enableSync: boolean = true) {
     const [overview, setOverview] = useState<IntegrationsOverview | null>(null);
     const [isLoading, setIsLoading] = useState(autoLoad);
     const [error, setError] = useState<string | null>(null);
+    const hasLoadedRef = useRef(false);
+    const inFlightRef = useRef<Promise<void> | null>(null);
+    const lastBackgroundRefreshRef = useRef<number>(0);
+    const lastVisibilitySyncRef = useRef<number>(0);
     const [browserBridge, setBrowserBridge] = useState<BrowserBridgeState>({
         supported: false,
         permission: 'unsupported',
@@ -189,17 +248,42 @@ export function useIntegrationsOverview(autoLoad: boolean = true) {
         });
     }, []);
 
-    const loadOverview = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const data = await coreGet('/v3/integrations/overview', { isOptional: true });
-            setOverview(data || null);
-        } catch (err: any) {
-            setError(err?.message || 'Integrationen konnten nicht geladen werden.');
-        } finally {
-            setIsLoading(false);
+    const loadOverview = useCallback(async (options?: { background?: boolean }) => {
+        const background = Boolean(options?.background);
+        const now = Date.now();
+
+        if (background && hasLoadedRef.current && now - lastBackgroundRefreshRef.current < 1200) {
+            return;
         }
+
+        if (inFlightRef.current) {
+            return inFlightRef.current;
+        }
+
+        const shouldShowLoading = !background || !hasLoadedRef.current;
+        if (shouldShowLoading) setIsLoading(true);
+        if (!background) setError(null);
+
+        const request = (async () => {
+            try {
+                const data = await coreGet('/v3/integrations/overview', { isOptional: true });
+                setOverview(data || null);
+                hasLoadedRef.current = true;
+                if (background) {
+                    lastBackgroundRefreshRef.current = now;
+                }
+            } catch (err: any) {
+                if (!background) {
+                    setError(err?.message || 'Integrationen konnten nicht geladen werden.');
+                }
+            } finally {
+                inFlightRef.current = null;
+                if (shouldShowLoading) setIsLoading(false);
+            }
+        })();
+
+        inFlightRef.current = request;
+        await request;
     }, []);
 
     useEffect(() => {
@@ -212,29 +296,39 @@ export function useIntegrationsOverview(autoLoad: boolean = true) {
     }, [refreshBrowserBridge]);
 
     useEffect(() => {
+        if (!enableSync) return;
         if (typeof window === 'undefined') return;
 
         const handleSync = () => {
-            void loadOverview();
+            void loadOverview({ background: true });
+            refreshBrowserBridge();
+        };
+
+        const handleVisibility = () => {
+            if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+            const now = Date.now();
+            if (now - lastVisibilitySyncRef.current < 15000) return;
+            lastVisibilitySyncRef.current = now;
+            void loadOverview({ background: true });
             refreshBrowserBridge();
         };
 
         const handleStorage = (event: StorageEvent) => {
             if (event.key === getCommunicationSyncStorageKey()) {
-                void loadOverview();
+                void loadOverview({ background: true });
             }
         };
 
         window.addEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
         window.addEventListener('storage', handleStorage);
-        window.addEventListener('focus', handleSync);
+        document.addEventListener('visibilitychange', handleVisibility);
 
         return () => {
             window.removeEventListener(COMMUNICATION_SYNC_EVENT, handleSync as EventListener);
             window.removeEventListener('storage', handleStorage);
-            window.removeEventListener('focus', handleSync);
+            document.removeEventListener('visibilitychange', handleVisibility);
         };
-    }, [loadOverview, refreshBrowserBridge]);
+    }, [enableSync, loadOverview, refreshBrowserBridge]);
 
     return {
         overview,

@@ -24,11 +24,19 @@ jest.mock('@/lib/store/paneStore', () => ({
     }
 }));
 
+const orbStoreState = { orbState: 'idle' };
 jest.mock('@/lib/store/orbStore', () => ({
-    useOrbStore: (sel?: (s: any) => unknown) => {
-        const s = { orbState: 'idle' };
-        return sel ? sel(s) : s;
-    },
+    useOrbStore: Object.assign(
+        (sel?: (s: any) => unknown) => {
+            return sel ? sel(orbStoreState) : orbStoreState;
+        },
+        {
+            setState: (partial: any) => {
+                Object.assign(orbStoreState, partial);
+            },
+            getState: () => orbStoreState,
+        }
+    ),
 }));
 
 jest.mock('@/lib/api/coreClient', () => ({

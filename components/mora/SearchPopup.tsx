@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * WINDOWS 11-STYLE SEARCH POPUP
@@ -49,6 +49,10 @@ interface SearchResult {
     nodeId?: string;
 }
 
+// Stable empty array — avoids recreating a new reference on every render when
+// useDepartments has not yet resolved, which would cause an infinite useEffect loop.
+const EMPTY_DEPARTMENTS: never[] = [];
+
 interface SearchPopupProps {
     isOpen: boolean;
     onClose: () => void;
@@ -74,7 +78,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     const setOrbState = useOrbStore((s) => s.setOrbState);
     const isStandardMode = useNavStore((s) => s.isStandardMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
-    const { data: departments = [] } = useDepartments(activeCompanyId);
+    const { data: departments = EMPTY_DEPARTMENTS } = useDepartments(activeCompanyId);
     const { openPane } = usePaneStore();
 
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -416,7 +420,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     tone={searchResults.length > 1 ? 'amber' : 'cyan'}
                                     body={searchResults.length > 1
                                         ? 'Mehrere plausible Treffer. Waehle einen Eintrag.'
-                                        : 'Ein klarer Treffer. Du kannst ihn direkt oeffnen.'}
+                                        : 'Ein klarer Treffer. Du kannst ihn direkt öffnen.'}
                                 />
                             </div>
                         )}
@@ -540,7 +544,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 isStandardMode ? 'text-gray-400' : 'text-white/40'
                             }`}>
                                 <Search size={32} className="mx-auto mb-3 opacity-50" />
-                                <p>Kein klarer Treffer fuer &quot;{searchQuery}&quot;</p>
+                                <p>Kein klarer Treffer für &quot;{searchQuery}&quot;</p>
                                 <button
                                     onClick={() => {
                                         onClose();

@@ -9,7 +9,7 @@
  *   - the step with that ID exists in plan.steps
  *   - that step's status is 'done' OR 'skipped'
  *
- * The ghost text ("Bestaetigt" / "Uebersprungen") is passed as the `label`
+ * The ghost label ("Bestätigt" / "Übersprungen") is passed as the `label`
  * prop to CommandReceipt inside TransitionGhostCard.
  */
 
@@ -146,7 +146,7 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         jest.clearAllMocks();
     });
 
-    it('renders "Bestaetigt" ghost when last_transition_step_id is set and step status is done', async () => {
+    it('renders "Bestätigt" ghost when last_transition_step_id is set and step status is done', async () => {
         const plan = makePlan({
             steps: [
                 makeStep('step-confirmed', 0, 'done'),
@@ -164,11 +164,11 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
-            expect(screen.getByText('Bestaetigt')).toBeInTheDocument();
+            expect(screen.getByText('Bestätigt')).toBeInTheDocument();
         });
     });
 
-    it('renders "Uebersprungen" ghost when last_transition_step_id is set and step status is skipped', async () => {
+    it('renders "Übersprungen" ghost when last_transition_step_id is set and step status is skipped', async () => {
         const plan = makePlan({
             steps: [
                 makeStep('step-skipped', 0, 'skipped'),
@@ -185,13 +185,13 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
 
         render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
-        // StepRow also renders stepStatusLabels['skipped'] = 'Uebersprungen' for each skipped
+        // StepRow also renders stepStatusLabels['skipped'] = 'Übersprungen' for each skipped
         // timeline step, so we confirm the ghost CommandReceipt label is present by checking
         // that at least one [data-testid="command-receipt"] element contains the label text.
         await waitFor(() => {
             const receipts = document.querySelectorAll('[data-testid="command-receipt"]');
             const ghostReceipt = Array.from(receipts).find((r) =>
-                r.textContent?.includes('Uebersprungen')
+                r.textContent?.includes('Übersprungen')
             );
             expect(ghostReceipt).toBeDefined();
         });
@@ -216,8 +216,8 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
 
         // Allow any async effects to flush
         await waitFor(() => {
-            expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
-            expect(screen.queryByText('Uebersprungen')).not.toBeInTheDocument();
+            expect(screen.queryByText('Bestätigt')).not.toBeInTheDocument();
+            expect(screen.queryByText('Übersprungen')).not.toBeInTheDocument();
         });
     });
 
@@ -239,8 +239,8 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
-            expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
-            expect(screen.queryByText('Uebersprungen')).not.toBeInTheDocument();
+            expect(screen.queryByText('Bestätigt')).not.toBeInTheDocument();
+            expect(screen.queryByText('Übersprungen')).not.toBeInTheDocument();
         });
     });
 
@@ -262,8 +262,8 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
-            expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
-            expect(screen.queryByText('Uebersprungen')).not.toBeInTheDocument();
+            expect(screen.queryByText('Bestätigt')).not.toBeInTheDocument();
+            expect(screen.queryByText('Übersprungen')).not.toBeInTheDocument();
         });
     });
 
@@ -284,8 +284,8 @@ describe('WorkSessionPane — TransitionGhostCard visibility', () => {
         render(<WorkSessionPane id="ws-test" data={{ plan }} />);
 
         await waitFor(() => {
-            expect(screen.queryByText('Bestaetigt')).not.toBeInTheDocument();
-            expect(screen.queryByText('Uebersprungen')).not.toBeInTheDocument();
+            expect(screen.queryByText('Bestätigt')).not.toBeInTheDocument();
+            expect(screen.queryByText('Übersprungen')).not.toBeInTheDocument();
         });
     });
 });

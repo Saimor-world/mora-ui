@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -62,7 +62,7 @@ const getConnectSurface = (url: string): ConnectSurface | null => {
             kind: 'mail',
             title: 'Postfach sicher verbinden',
             eyebrow: 'Mail Connect',
-            description: 'Gmail und Outlook blockieren eingebettete Logins im Browser-OS. Auf localhost oeffnest du den echten Auth-Flow extern und kommst danach mit verbundenem Konto zurueck.',
+            description: 'Gmail und Outlook blockieren eingebettete Logins im Browser-OS. Auf localhost oeffnest du den echten Auth-Flow extern und kommst danach mit verbundenem Konto zurück.',
             tone: 'emerald',
             actionLabel: 'Postfach extern autorisieren',
         };
@@ -80,9 +80,9 @@ const getConnectSurface = (url: string): ConnectSurface | null => {
     if (lower.includes('accounts.google.com') || lower.includes('login.microsoftonline.com')) {
         return {
             kind: 'account',
-            title: 'Konto ueber Browser Bridge verbinden',
+            title: 'Konto über Browser Bridge verbinden',
             eyebrow: 'Account Connect',
-            description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurueck.',
+            description: 'Die eigentliche Anmeldung laeuft ausserhalb des eingebetteten Frames. SAIMOR nutzt diese Seite als Connect-Maske und springt danach in die lokale Wahrheitsinstanz zurück.',
             tone: 'cyan',
             actionLabel: 'Extern weiter',
         };
@@ -207,7 +207,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                 await loadOverview();
                 openCalendarPane();
             } else if (result.reason === 'blocked') {
-                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster für SAIMOR.');
             } else if (result.reason !== 'closed') {
                 toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
             }
@@ -237,10 +237,12 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
     }, [navigate]);
 
     const openLocalTruth = useCallback(() => {
-        if (typeof window === 'undefined') return;
-        const url = summary.localTruthUrl;
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }, [summary.localTruthUrl]);
+        if (summary.localTruthUiOpenable && typeof window !== 'undefined') {
+            window.open(summary.localTruthUrl, '_blank', 'noopener,noreferrer');
+            return;
+        }
+        navigate(summary.connectSurfaceUrl);
+    }, [navigate, summary.connectSurfaceUrl, summary.localTruthUiOpenable, summary.localTruthUrl]);
 
     if (!pane) return null;
 
@@ -309,7 +311,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                             onClick={() => navigate(address)}
                             className="rounded-xl border border-cyan-400/18 bg-cyan-500/[0.12] px-3 py-2 text-xs uppercase tracking-[0.18em] text-cyan-50 transition-colors hover:bg-cyan-500/[0.18]"
                         >
-                            Oeffnen
+                            Öffnen
                         </button>
                         <button
                             type="button"
@@ -329,7 +331,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                 <div className="text-[10px] uppercase tracking-[0.26em] text-cyan-200/52">Browser Connect</div>
                                 <h2 className="mt-3 text-[28px] font-light text-white">Lokale Konten und Kommunikation</h2>
                                 <p className="mt-3 max-w-xl text-sm leading-relaxed text-white/58">
-                                    Dieser Browser ist die lokale Bruecke fuer Mail, Kalender, Browser-Benachrichtigungen und spaetere OAuth- oder Passkey-Flows.
+                                    Dieser Browser ist die lokale Brücke für Mail, Kalender, Browser-Benachrichtigungen und spätere OAuth- oder Passkey-Flows.
                                     Auf HQ bleibt das die Demo-Schale, auf localhost wird daraus die echte Wahrheitsflaeche.
                                 </p>
 
@@ -345,7 +347,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
                                             {summary.mailConfigured
-                                                ? (overview?.mail?.email || 'Postfach im Browser oeffnen')
+                                                ? (overview?.mail?.email || 'Postfach im Browser öffnen')
                                                 : summary.mailStatusDetail}
                                         </div>
                                     </button>
@@ -370,7 +372,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         </div>
                                         <div className="mt-2 text-xs text-white/56">
                                             {summary.calendarConfigured
-                                                ? (overview?.calendar?.email || 'Kalender im OS oeffnen')
+                                                ? (overview?.calendar?.email || 'Kalender im OS öffnen')
                                                 : !summary.calendarOauthEnabled
                                                     ? summary.calendarStatusDetail
                                                 : isConnectingCalendar
@@ -388,7 +390,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                             <span className="text-sm font-medium">Post im OS</span>
                                         </div>
                                         <div className="mt-2 text-xs text-white/52">
-                                            Mail-App direkt in SAIMOR oeffnen.
+                                            Mail-App direkt in SAIMOR öffnen.
                                         </div>
                                     </button>
                                     <button
@@ -436,7 +438,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
                                         {overview?.runtime?.local_truth?.available
                                             ? 'Lokale Runtime ist vorbereitet. Browser, Mail und Kalender koennen an dieselbe Wahrheitsinstanz haengen.'
-                                            : 'Die lokale Runtime wird vorbereitet und ueber localhost zur eigentlichen Produktionswahrheit.'}
+                                            : 'Die lokale Runtime wird vorbereitet und über localhost zur eigentlichen Produktionswahrheit.'}
                                     </div>
                                     <div className="mt-3 rounded-2xl border border-white/8 bg-black/18 px-3.5 py-3">
                                         <div className="flex items-center justify-between gap-3">
@@ -461,7 +463,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
                                             >
                                                 <Globe size={14} />
-                                                Lokal oeffnen
+                                                Lokal öffnen
                                             </button>
                                             <button
                                                 type="button"
@@ -491,7 +493,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Warum kein eingebetteter Login?</div>
                                     <p className="mt-2 text-sm leading-relaxed text-white/58">
                                         Provider wie Google und Microsoft setzen Sicherheitsheader, die eingebettete Logins in fremden Frames bewusst blockieren.
-                                        Die echte Verbindung laeuft deshalb ueber den Browser selbst, waehrend SAIMOR hier nur die lokale Connect-Oberflaeche zeigt.
+                                        Die echte Verbindung laeuft deshalb über den Browser selbst, waehrend SAIMOR hier nur die lokale Connect-Oberfläche zeigt.
                                     </p>
                                 </div>
 
@@ -546,7 +548,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                         {summary.browserPermissionSummary}
                                     </div>
                                     <div className="mt-2 text-xs leading-relaxed text-white/56">
-                                        Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurueck.
+                                        Die Browser Bridge meldet dir Benachrichtigungen, Mail- und Kalenderstatus direkt im OS zurück.
                                     </div>
                                 </div>
 
@@ -601,7 +603,7 @@ export const BrowserPane: React.FC<BrowserPaneProps> = ({ id }) => {
                                                 className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/18 bg-cyan-500/[0.10] px-3 py-2 text-xs text-cyan-100 transition-colors hover:bg-cyan-500/[0.18]"
                                             >
                                                 <Globe size={14} />
-                                                Lokal oeffnen
+                                                Lokal öffnen
                                             </button>
                                             <button
                                                 type="button"

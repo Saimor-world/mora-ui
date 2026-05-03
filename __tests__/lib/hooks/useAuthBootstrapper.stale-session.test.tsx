@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
@@ -86,7 +86,9 @@ describe('useAuthBootstrapper stale session handling', () => {
         localStorage.setItem('last_activity', new Date(Date.now() - 13 * 60 * 60 * 1000).toISOString());
         render(<Probe />, { wrapper: makeWrapper() });
 
-        await new Promise((resolve) => setTimeout(resolve, 200));
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 200));
+        });
         expect(coreClient.authLogout).not.toHaveBeenCalled();
     });
 });

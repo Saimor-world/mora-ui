@@ -12,10 +12,8 @@
 
 import { test, expect, Page, Request } from '@playwright/test';
 
-const BASE = process.env.BASE_URL || 'https://hq.saimor.world';
-
 async function goToApp(page: Page) {
-    await page.goto(BASE + '/home', { waitUntil: 'networkidle' });
+    await page.goto('/home', { waitUntil: 'networkidle' });
 }
 
 async function isAuthWall(page: Page): Promise<boolean> {

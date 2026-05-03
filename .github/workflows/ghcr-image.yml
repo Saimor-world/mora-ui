@@ -20,9 +20,39 @@ env:
 jobs:
   ui:
     runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run verify:types
+
+      - name: Critical flow gate
+        run: npm run verify:critical-flow
+
+      - name: OS smoke
+        run: npm run verify:os:smoke
+
+      - name: Unit tests
+        run: npm test -- --runInBand
+
+      - name: Production build
+        run: npm run build
 
       - name: Setup Buildx
         uses: docker/setup-buildx-action@v3

@@ -1,4 +1,4 @@
-// lib/api/memoryClient.ts
+﻿// lib/api/memoryClient.ts
 // Memory / Learning Brain API.
 // Extracted from remainingClient.ts.
 
@@ -44,7 +44,7 @@ export async function getMemoryPending(companyId: string): Promise<any[]> {
     return normalizeList<any>(result, ['pending', 'items', 'queue', 'data']);
 }
 
-// POST /v3/memory/approve/{id} - Review Item bestaetigen
+// POST /v3/memory/approve/{id} - Review Item bestätigen
 export async function approveMemoryItem(id: string | number, companyId: string): Promise<{ success: boolean }> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `?company_id=${encodeURIComponent(resolvedCompanyId)}`;

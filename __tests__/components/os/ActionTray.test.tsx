@@ -52,7 +52,7 @@ describe('ActionTray', () => {
 
     expect(screen.getByText('Aktionsverlauf')).toBeInTheDocument();
     expect(screen.getByText('Ordner erstellen')).toBeInTheDocument();
-    expect(screen.getByText('Wartet auf Bestaetigung')).toBeInTheDocument();
+    expect(screen.getByText('Wartet auf Bestätigung')).toBeInTheDocument();
     expect(screen.getByText("Ordner 'Q4 Marketing' wird erstellt")).toBeInTheDocument();
   });
 

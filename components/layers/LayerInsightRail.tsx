@@ -89,7 +89,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                         {showToggle ? (
                             <button
                                 type="button"
-                                aria-label={isExpanded ? 'Insight schliessen' : 'Insight oeffnen'}
+                                aria-label={isExpanded ? 'Insight schließen' : 'Insight öffnen'}
                                 onClick={() => setIsManuallyExpanded((current) => !current)}
                                 className={`flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${isExpanded ? 'border-white/12 bg-white/[0.08] text-white/72' : 'border-white/8 bg-white/[0.04] text-white/38 hover:border-white/14 hover:text-white/68'}`}
                             >

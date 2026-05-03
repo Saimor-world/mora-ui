@@ -1,6 +1,7 @@
 import { corePost, coreGet } from './coreClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import type { PerceptionBundle } from '@/lib/types/perception';
 
 // Types matching Backend Schema
 export interface AgentMessage {
@@ -20,6 +21,8 @@ export interface ChatContext {
     layer?: string;
     route_path?: string;
     pane_id?: string;
+    /** Real Mora P1: structured perception bundle, included when feature flag is on. */
+    perception?: PerceptionBundle;
 }
 
 export interface AgentChatRequest {

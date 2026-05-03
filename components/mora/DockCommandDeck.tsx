@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { motion } from 'framer-motion';
@@ -186,7 +186,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                 className={`rounded-[22px] border px-4 py-4 text-left transition-colors ${isStandardMode ? 'border-[#0078D4]/18 bg-[#0078D4]/8 hover:border-[#0078D4]/38' : 'border-emerald-400/18 bg-emerald-500/[0.08] hover:border-emerald-400/28 hover:bg-emerald-500/[0.12]'}`}
                             >
                                 <div className={`text-[10px] uppercase tracking-[0.2em] ${accentText}`}>
-                                    Naechster Schritt
+                                    Nächster Schritt
                                 </div>
                                 <div className={`mt-2 text-sm ${primaryText}`}>{nextMoveLabel}</div>
                                 <div className={`mt-1 text-[11px] leading-relaxed ${secondaryText}`}>{nextMoveHint}</div>
@@ -252,29 +252,29 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                         <div className="mt-3 flex items-center justify-between gap-3">
                             <div className="min-w-0">
                                 <div className={`truncate text-base ${primaryText}`}>
-                                    {trackName || 'Noch kein Track aktiv'}
+                                    {trackName || 'Mora Ambient'}
                                 </div>
                                 <div className={`mt-1 text-sm ${secondaryText}`}>
-                                    {trackCount > 0 ? `${trackCount} Tracks in deiner Library` : 'Library in den Einstellungen aufbauen'}
+                                    {trackCount > 0 ? `${trackCount} Tracks in deiner Library` : 'Eingebauter prozeduraler Pad'}
                                 </div>
                             </div>
 
-                            {trackCount > 0 && (
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={onToggleAudio}
-                                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
-                                    >
-                                        {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-                                    </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={onToggleAudio}
+                                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
+                                >
+                                    {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+                                </button>
+                                {trackCount > 0 && (
                                     <button
                                         onClick={onNextTrack}
                                         className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
                                     >
                                         <SkipForward size={15} />
                                     </button>
-                                </div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
 

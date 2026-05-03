@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * useKeyboardShortcuts - Global keyboard shortcuts
@@ -28,13 +28,13 @@ export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
         // 1.0 Core Work shortcuts
-        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
-        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
+        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette öffnen' },
+        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
-        { keys: [m, 'N'], label: 'Notes', description: 'Notizen oeffnen' },
-        { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
+        { keys: [m, 'N'], label: 'Notes', description: 'Notizen öffnen' },
+        { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
-        { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
+        { keys: ['Esc'], label: 'Schließen', description: 'Oberstes Panel schließen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
         // 1.0 gated (future-tier): Terminal (Cmd+T), Mora Nexus (Cmd+.), Memory (Cmd+Shift+M)
     ];

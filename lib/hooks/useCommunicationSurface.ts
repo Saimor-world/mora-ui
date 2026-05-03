@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useMemo } from 'react';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
@@ -6,7 +6,7 @@ import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 
 const DEFAULT_LOCAL_UI = 'http://127.0.0.1:3000/home';
 const DEFAULT_CONNECT_SURFACE = 'about:saimor-connect';
-const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v1/auth/google/callback';
+const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
 
 const MAIL_SETUP_DETAIL = 'Setze im Core echte Mail-Zugangsdaten: EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD.';
 const CALENDAR_OAUTH_DETAIL = `Setze Google Calendar OAuth tenantweit in SAIMOR oder als Core-Fallback: GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=${LOCAL_GOOGLE_CALLBACK}.`;
@@ -81,7 +81,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         const calendarStatusLabel = calendarConfigured
             ? (overview?.calendar?.email || 'Kalender verbunden')
             : !calendarOauthEnabled
-                ? 'OAuth fuer Tenant fehlt'
+                ? 'OAuth für Tenant fehlt'
                 : 'Kalender nicht eingerichtet';
 
         const localTruthStatusLabel =
@@ -94,6 +94,13 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         : localTruthBridge.state === 'checking'
                             ? 'Localhost pruefen'
                             : 'Local Truth starten';
+
+        const localTruthUiOpenable =
+            localTruthBridge.state === 'ready'
+            || localTruthBridge.state === 'ui_only';
+        const localTruthReachable =
+            localTruthUiOpenable
+            || localTruthBridge.state === 'core_only';
 
         return {
             browserStatusLabel,
@@ -108,11 +115,11 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         : (mailSetupDetail || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
-                    ? 'Der verbundene Kalender wird im OS gelesen und fuer Home, Kalender und Mora genutzt.'
+                    ? 'Der verbundene Kalender wird im OS gelesen und für Home, Kalender und Mora genutzt.'
                     : !calendarOauthEnabled
                         ? (ownerManageable
                             ? calendarSetupDetail
-                            : `Google-OAuth muss tenantweit zuerst von einem Eigentuemer eingerichtet werden. Redirect: ${calendarRedirectUrl}.`)
+                            : `Google-OAuth muss tenantweit zuerst von einem Eigentümer eingerichtet werden. Redirect: ${calendarRedirectUrl}.`)
                         : 'Starte jetzt den Google-OAuth-Flow, damit echte Kalenderdaten im OS erscheinen.',
             browserConnectable: integrations.browserBridge.supported,
             browserPermission,
@@ -123,15 +130,14 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'Benachrichtigungen blockiert'
                         : browserPermission === 'default'
                             ? 'Benachrichtigungen noch nicht freigegeben'
-                            : 'Browser-Freigaben hier nicht verfuegbar',
+                            : 'Browser-Freigaben hier nicht verfügbar',
             mailConfigured,
             calendarConfigured,
             mailLocalMode,
             calendarOauthEnabled,
             ownerManageable,
-            localTruthReachable: localTruthBridge.state === 'ready'
-                || localTruthBridge.state === 'core_only'
-                || localTruthBridge.state === 'ui_only',
+            localTruthReachable,
+            localTruthUiOpenable,
             connectSurfaceUrl,
             localTruthUrl,
             providerMailUrl: providerMailUrl(overview?.mail?.provider),
@@ -159,23 +165,44 @@ interface CommunicationPreviewItem {
     location?: string;
 }
 
+interface FeedPreviewItem {
+    sourceTitle?: string;
+    source_title?: string;
+    title?: string;
+    summary?: string;
+    published?: string;
+}
+
+interface CloudPreviewItem {
+    connectorLabel?: string;
+    provider?: string;
+    itemName?: string;
+    itemPath?: string;
+}
+
 export function buildCommunicationOperationalContextMessage(
     summary: CommunicationContextSummary,
     overview: CommunicationContextOverview,
     mailPreview: CommunicationPreviewItem[],
-    calendarPreview: CommunicationPreviewItem[]
+    calendarPreview: CommunicationPreviewItem[],
+    feedPreview: FeedPreviewItem[] = [],
+    cloudPreview: CloudPreviewItem[] = []
 ): string | null {
     const sections: string[] = [
         'Lokaler Kommunikationskontext aus SAIMOR.',
-        'Nutze ihn nur fuer Mail, Kalender, Kommunikation, Priorisierung oder aktuelle Signale.',
+        'Nutze ihn nur für Mail, Kalender, Kommunikation, Priorisierung oder aktuelle Signale.',
     ];
 
     const hasMailData = mailPreview.length > 0;
     const hasCalendarData = calendarPreview.length > 0;
+    const hasFeedData = feedPreview.length > 0;
+    const hasCloudData = cloudPreview.length > 0;
 
     sections.push('Kommunikationsstatus:');
     sections.push(`- Mail: ${summary.mailStatusLabel}${summary.mailStatusDetail ? ` | ${summary.mailStatusDetail}` : ''}`);
     sections.push(`- Kalender: ${summary.calendarStatusLabel}${summary.calendarStatusDetail ? ` | ${summary.calendarStatusDetail}` : ''}`);
+    sections.push(`- Feeds: ${overview?.rss?.configured ? `${overview.rss.count || 0} Quellen verbunden` : 'Noch keine RSS/Atom-Quellen verbunden'}`);
+    sections.push(`- Cloud: ${overview?.cloud_storage?.configured ? `${overview.cloud_storage.count || 0} Quellen verbunden` : 'Noch keine persoenliche Cloud-Quelle verbunden'}`);
     sections.push(`- Browser: ${summary.browserStatusLabel}${summary.browserPermissionSummary ? ` | ${summary.browserPermissionSummary}` : ''}`);
     sections.push(`- Local Truth: ${summary.localTruthStatusLabel}`);
 
@@ -205,12 +232,34 @@ export function buildCommunicationOperationalContextMessage(
         sections.push('- Kalender ist verbunden, aber es liegen aktuell keine Termine im Vorschauzeitraum vor.');
     }
 
+    if (hasFeedData) {
+        sections.push('Aktuelle Feed-Signale:');
+        feedPreview.slice(0, 5).forEach((item) => {
+            const source = item.sourceTitle || item.source_title || 'Feed';
+            const summaryText = item.summary?.trim();
+            sections.push(summaryText ? `- ${source} | ${item.title || 'Feed-Eintrag'} | ${summaryText}` : `- ${source} | ${item.title || 'Feed-Eintrag'}`);
+        });
+    } else if (!overview?.rss?.configured) {
+        sections.push('- Feeds haben derzeit keine Live-Daten, weil noch keine RSS/Atom-Quellen verbunden sind.');
+    }
+
+    if (hasCloudData) {
+        sections.push('Aktuelle Cloud-Signale:');
+        cloudPreview.slice(0, 6).forEach((item) => {
+            const source = item.connectorLabel || item.provider || 'Cloud';
+            const label = item.itemName || 'Element';
+            sections.push(item.itemPath ? `- ${source} | ${label} | ${item.itemPath}` : `- ${source} | ${label}`);
+        });
+    } else if (!overview?.cloud_storage?.configured) {
+        sections.push('- Cloud hat derzeit keine Live-Daten, weil noch keine persoenliche Cloud-Quelle verbunden ist.');
+    }
+
     if (overview?.setup?.calendar?.missing_env?.length) {
         sections.push(`- Kalender-OAuth fehlt im Core noch bei: ${overview.setup.calendar.missing_env.join(', ')}.`);
     }
 
     if (!summary.ownerManageable && !summary.calendarOauthEnabled) {
-        sections.push('- Die tenantweite Google-OAuth-App ist noch nicht eingerichtet; das muss ein Eigentuemer zuerst freischalten.');
+        sections.push('- Die tenantweite Google-OAuth-App ist noch nicht eingerichtet; das muss ein Eigentümer zuerst freischalten.');
     }
 
     return sections.join('\n');

@@ -29,7 +29,13 @@ jest.mock('@/components/home/UniverseView', () => ({
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
     motion: {
-        div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+        div: ({ children, ...props }: any) => {
+            const motionProps = new Set(['animate', 'exit', 'initial', 'transition']);
+            const domProps = Object.fromEntries(
+                Object.entries(props).filter(([key]) => !motionProps.has(key))
+            );
+            return <div {...domProps}>{children}</div>;
+        },
     },
     useReducedMotion: () => false,
 }));

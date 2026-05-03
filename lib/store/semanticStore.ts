@@ -1,4 +1,5 @@
-import { create } from 'zustand';
+﻿import { create } from 'zustand';
+import { logger } from '@/lib/utils/logger';
 
 export interface SemanticNode {
     id: string;
@@ -60,7 +61,7 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
 
         try {
             // UPGRADE E1: Initialize Qdrant connection (mock)
-            console.log('🔗 Initializing semantic engine with Qdrant...');
+
 
             // Generate initial semantic nodes from current data
             const initialNodes: SemanticNode[] = [
@@ -80,9 +81,9 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
                 isProcessing: false
             });
 
-            console.log('✅ Semantic engine initialized');
+
         } catch (error) {
-            console.error('❌ Failed to initialize semantic engine:', error);
+            logger.error('Failed to initialize semantic engine', error as Error);
             set({ isProcessing: false });
         }
     },
@@ -162,9 +163,9 @@ export const useSemanticStore = create<SemanticState>((set, get) => ({
                 isProcessing: false
             }));
 
-            console.log(`✨ Generated ${newConstellations.length} new constellations`);
+            logger.debug(`Generated ${newConstellations.length} new constellations`);
         } catch (error) {
-            console.error('❌ Failed to generate constellations:', error);
+            logger.error('Failed to generate constellations', error as Error);
             set({ isProcessing: false });
         }
     },

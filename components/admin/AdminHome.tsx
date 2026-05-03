@@ -1,10 +1,11 @@
-'use client';
+﻿'use client';
 
 import React from 'react';
 import { Settings2, X } from 'lucide-react';
 import { useContextStore } from '@/lib/store/contextStore';
 import { AdminRosterView } from './AdminRosterView';
 import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
+import { WebsiteLeadLedger } from './WebsiteLeadLedger';
 
 /**
  * AdminHome -- the admin OS surface (spec Section 2, Surface C).
@@ -17,7 +18,7 @@ import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
  */
 export const AdminHome: React.FC = () => {
     const setAdminMode = useContextStore((s) => s.setAdminMode);
-    const ownerConsoleUrl = 'https://owner.saimor.world/login';
+    const ownerConsoleUrl = 'https://owner.saimor.world/owner';
     const operationsConsoleUrl = 'https://www.saimor.world/systems/control';
 
     return (
@@ -39,19 +40,21 @@ export const AdminHome: React.FC = () => {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6">
+                <WebsiteLeadLedger />
+
                 <div className="mb-6 grid gap-4 md:grid-cols-2">
                     <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
                         <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">In dieser Instanz</div>
                         <div className="mt-2 text-sm text-white/85">Organisationsverwaltung</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/48">
-                            Dieser Bereich ist fuer Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
+                            Dieser Bereich ist für Team-Mitglieder, Sichtbarkeit und die aktuelle Arbeitsstruktur gedacht.
                         </p>
                     </div>
                     <div className="rounded-2xl border border-amber-400/18 bg-amber-500/[0.06] p-4">
                         <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Separat</div>
                         <div className="mt-2 text-sm text-white/88">Owner-Bereich</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
-                            Systemweite Organisations-, Benutzer-, Token- und Instanzverwaltung bleibt bewusst ausserhalb dieser Arbeitsoberflaeche.
+                            Systemweite Organisations-, Benutzer-, Token-, Website-Lead- und Besucheruebersicht bleibt bewusst ausserhalb dieser Arbeitsoberflaeche.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                             <a
@@ -60,7 +63,7 @@ export const AdminHome: React.FC = () => {
                                 rel="noreferrer"
                                 className="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
                             >
-                                Owner-Bereich oeffnen
+                                Owner Command oeffnen
                             </a>
                             <a
                                 href={operationsConsoleUrl}
@@ -68,7 +71,7 @@ export const AdminHome: React.FC = () => {
                                 rel="noreferrer"
                                 className="inline-flex rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-cyan-100 transition-colors hover:bg-cyan-500/18"
                             >
-                                Operations oeffnen
+                                Operations öffnen
                             </a>
                         </div>
                     </div>

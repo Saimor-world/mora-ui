@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 /**
  * ChatApp - Mora AI Conversation Interface (App Module)
@@ -23,11 +23,17 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
+import { useMoraPerception } from '@/lib/queries/useMoraPerception';
+import { isMoraPerceiveV1Enabled } from '@/lib/featureFlags';
 import { parseAIResponse, executeCursorCommands } from '@/lib/ai/cursorBridge';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
+import { useMoraFrameStream } from '@/lib/hooks/useMoraFrameStream';
+import { FramedMessage } from '@/components/mora/dialogue/FramedMessage';
+import { isMoraDialogueV1Enabled } from '@/lib/featureFlags';
+import type { MoraFrame } from '@/lib/types/moraFrame';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Wifi, WifiOff, Maximize2, Minimize2, LayoutList } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList, WifiOff, RefreshCw } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -63,6 +69,8 @@ interface Message {
     pendingAction?: PendingAction;
     /** set when the agent produced a work-session plan; used to open WorkSessionPane */
     planId?: string;
+    /** typed frames from mora.dialogue.v1 path — rendered via FramedMessage */
+    frames?: MoraFrame[];
 }
 
 function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
@@ -87,7 +95,7 @@ function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
 
     return {
         label: intent.headline || 'Treffer',
-        title: intent.open_explanation?.headline || intent.reason || `Suche fuer "${query}"`,
+        title: intent.open_explanation?.headline || intent.reason || `Suche für "${query}"`,
         body: intent.open_explanation?.reason || intent.reason || undefined,
         chips,
         footer: intent.next?.message,
@@ -203,7 +211,7 @@ function shouldPreferAgenticLoop(text: string): boolean {
         /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|rewrite|schreib um)\b/,
         /\b(verschiebe|move|sortiere|ordne|organisiere)\b/,
         /\b(lösche|loesche|entferne|delete|archive)\b/,
-        /\b(teile|share|veröffentliche|veroeffentliche)\b/,
+        /\b(teile|share|veröffentliche|veröffentliche)\b/,
         /\b(fasse zusammen|zusammenfassen|review|prüfe|pruefe|analysiere|compare|vergleiche)\b/,
         /\b(starte|setze fort|continue|mach weiter|plane|bereite vor|arbeite aus)\b/,
     ].some((pattern) => pattern.test(lower));
@@ -421,21 +429,64 @@ interface SetupRequiredCardProps {
 
 function SetupRequiredCard({ onOpenSettings }: SetupRequiredCardProps) {
     return (
-        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.03] text-center">
-            <p className="text-sm font-medium text-foreground/80">
-                Kein Kontext aktiv
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-amber-500/20 bg-amber-500/[0.04] text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-amber-400/25 bg-amber-500/10">
+                <Sparkles className="h-5 w-5 text-amber-300/80" />
+            </div>
+            <p className="text-sm font-medium text-white/80">
+                Mora ist noch nicht eingerichtet
             </p>
-            <p className="text-xs text-muted-foreground max-w-[280px] leading-relaxed">
-                Oeffne zuerst das Beispielsystem oder waehle einen Bereich, damit Mora sinnvoll arbeiten kann.
+            <p className="text-xs text-white/45 max-w-[300px] leading-relaxed">
+                Erstelle oder verknüpfe dein Unternehmen in den Einstellungen, damit Mora in deinem Organisationskontext arbeiten kann.
             </p>
             {onOpenSettings && (
                 <button
                     id="chat-setup-settings"
                     data-agency-id="chat-setup-settings"
                     onClick={onOpenSettings}
-                    className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors underline underline-offset-2"
+                    className="mt-1 px-4 py-2 rounded-lg bg-amber-500/15 border border-amber-400/25 text-xs text-amber-200/80 hover:bg-amber-500/25 hover:border-amber-400/40 transition-all"
                 >
-                    Einstellungen oeffnen
+                    Einstellungen öffnen
+                </button>
+            )}
+        </div>
+    );
+}
+
+// ─── InputLoadingPlaceholder ──────────────────────────────────────────────────
+
+function InputLoadingPlaceholder() {
+    return (
+        <div className="p-4 border-t border-white/10">
+            <div className="flex gap-2 animate-pulse">
+                <div className="flex-1 h-12 rounded-lg bg-white/[0.04] border border-white/[0.06]" />
+                <div className="w-16 h-12 rounded-xl bg-white/[0.03] border border-white/[0.05]" />
+            </div>
+        </div>
+    );
+}
+
+// ─── OfflineCard ─────────────────────────────────────────────────────────────
+
+function OfflineCard({ onRetry }: { onRetry?: () => void }) {
+    return (
+        <div className="flex flex-col items-center justify-center gap-3 px-6 py-8 mx-4 mb-4 rounded-xl border border-white/10 bg-white/[0.02] text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5">
+                <WifiOff className="h-5 w-5 text-white/40" />
+            </div>
+            <p className="text-sm font-medium text-white/60">
+                Mora ist nicht erreichbar
+            </p>
+            <p className="text-xs text-white/30 max-w-[280px] leading-relaxed">
+                Das Backend antwortet nicht. Stelle sicher, dass CORE läuft (Port 8081).
+            </p>
+            {onRetry && (
+                <button
+                    onClick={onRetry}
+                    className="mt-1 flex items-center gap-1.5 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-xs text-white/50 hover:bg-white/10 hover:text-white/70 transition-all"
+                >
+                    <RefreshCw size={12} />
+                    Erneut versuchen
                 </button>
             )}
         </div>
@@ -530,7 +581,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         return { scope: 'shared' };
     }, [activeDepartment]);
 
-    // Streaming hook — real AI, token-by-token
+    // Streaming hook — real AI, token-by-token (legacy free-text path)
     const {
         sendMessage: streamSend,
         streamingText,
@@ -539,7 +590,19 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         messages: streamHistory,
         clearHistory,
     } = useMoraStream();
-    const { mailPreview, calendarPreview } = useCommunicationLiveData();
+
+    // Typed-frame stream — mora.dialogue.v1 path (spec §4).
+    // Always called (hooks must not be conditional); only used when flag is on.
+    const {
+        send: frameSend,
+        frames: liveFrames,
+        isStreaming: isFrameStreaming,
+        error: frameError,
+        reset: frameReset,
+    } = useMoraFrameStream();
+
+    const useFramePath = isMoraDialogueV1Enabled();
+    const { mailPreview, calendarPreview, feedPreview, cloudPreview } = useCommunicationLiveData();
     const { overview: communicationOverview, summary: communicationSummary } = useCommunicationSurface();
 
     const [messages, setMessages] = useState<Message[]>(() => {
@@ -554,8 +617,8 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
 - **"Zeig mir ${d1}"** → ich navigiere dorthin
 - **"Was ist neu?"** → ich fasse reale Signale zusammen
-- **"Was laeuft in ${d2}?"** → ich suche in Inhalten und Aktivitaet
-- **"Merke dir ..."** → ich speichere belastbare Fakten fuer spaeter
+- **"Was läuft in ${d2}?"** → ich suche in Inhalten und Aktivität
+- **"Merke dir ..."** → ich speichere belastbare Fakten für später
 
 Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             timestamp: new Date()
@@ -569,6 +632,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const hasPromptedSetupRef = useRef(false);
 
     // Memory Integration State
+    const [bootstrapTimedOut, setBootstrapTimedOut] = useState(false);
     const [memoryHint, setMemoryHint] = useState<{ show: boolean; content: string }>({ show: false, content: '' });
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
@@ -583,14 +647,31 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         receipt: ReturnType<typeof buildOpenIntentReceipt>;
     } | null>(null);
     const moraCtx = useMoraContext();
+
+    // Real Mora P1: when the perceive flag is on, fetch the bundle keyed on
+    // current scope so the LLM gets fresh perception each turn. The hook is
+    // called unconditionally; when the flag is off the bundle is unused.
+    const { data: perceptionBundle } = useMoraPerception({
+        active_pane: {
+            type: pane?.type ?? 'chat',
+            data: {
+                department_id: activeDepartmentId ?? undefined,
+                space_id: activeSpaceId ?? undefined,
+                folder_id: activeFolderId ?? undefined,
+            },
+        },
+    });
+
     const communicationContextMessage = useMemo(
         () => buildCommunicationOperationalContextMessage(
             communicationSummary,
             communicationOverview,
             mailPreview,
             calendarPreview,
+            feedPreview,
+            cloudPreview,
         ),
-        [calendarPreview, communicationOverview, communicationSummary, mailPreview]
+        [calendarPreview, cloudPreview, communicationOverview, communicationSummary, feedPreview, mailPreview]
     );
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
     const previousAnswerSourceRef = useRef<string | null>(moraCtx.lastAnswerSource);
@@ -683,6 +764,16 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
+
+    // Bootstrap timeout: if isOperational stays null >7s, backend is likely down
+    useEffect(() => {
+        if (moraCtx.isOperational !== null) {
+            setBootstrapTimedOut(false);
+            return;
+        }
+        const timer = window.setTimeout(() => setBootstrapTimedOut(true), 7000);
+        return () => window.clearTimeout(timer);
+    }, [moraCtx.isOperational]);
 
     useEffect(() => {
         if (moraCtx.isOperational !== false) {
@@ -793,10 +884,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             data: { query, globalSearch: global, companyId: activeCompanyId || undefined }
         });
         dispatchNavigationResult({
-            title: global ? 'Unternehmenssuche geoeffnet' : 'Suche geoeffnet',
+            title: global ? 'Unternehmenssuche geöffnet' : 'Suche geöffnet',
             message: global
-                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geoeffnet.'
-                : `Ich habe die Suche fuer ${query} im aktuellen Organisationskontext geoeffnet.`,
+                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geöffnet.'
+                : `Ich habe die Suche für ${query} im aktuellen Organisationskontext geöffnet.`,
             targetType: 'search',
             label: query || 'Alle Dokumente',
             query: query || '',
@@ -832,7 +923,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         if (openIntent.resolution === 'choose' && openIntent.candidates.length > 0) {
             dispatchNavigationResult({
                 title: 'Mehrdeutiger Treffer',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer fuer ${trimmed}. Waehle unten einen aus.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer für ${trimmed}. Wähle unten einen aus.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -844,7 +935,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 results: openIntent.candidates.map((candidate) => toChatOpenableResult(candidate)),
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich sehe mehrere passende Treffer fuer **${trimmed}**. Waehle unten einen aus.`;
+            return `Ich sehe mehrere passende Treffer für **${trimmed}**. Wähle unten einen aus.`;
         }
 
         if (openIntent.resolution === 'none' || !openIntent.chosen) {
@@ -856,8 +947,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 data: { query: trimmed },
             });
             dispatchNavigationResult({
-                title: 'Suche geoeffnet',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fuer ${trimmed} gefunden und die Suche geoeffnet.`,
+                title: 'Suche geöffnet',
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer für ${trimmed} gefunden und die Suche geöffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -868,7 +959,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 query: trimmed,
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fuer **${trimmed}** geoeffnet.`;
+            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche für **${trimmed}** geöffnet.`;
         }
 
         const chosen = toChatOpenableResult(openIntent.chosen);
@@ -962,7 +1053,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             setMessages(prev => [...prev, {
                                 id: crypto.randomUUID(),
                                 role: 'assistant',
-                                content: agentResponse.final_message || `Ich habe einen Aktionsplan fuer ${confirm.tool_name} vorbereitet. Bitte bestaetige ihn.`,
+                                content: agentResponse.final_message || `Ich habe einen Aktionsplan für ${confirm.tool_name} vorbereitet. Bitte bestätige ihn.`,
                                 timestamp: new Date(),
                                 pendingAction: {
                                     tool_name: confirm.tool_name,
@@ -1097,12 +1188,44 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ? [{ role: 'assistant' as const, content: communicationContextMessage }, ...historyForStream]
                     : historyForStream;
 
+                const chatContext = buildChatContext({
+                    session_id: "chat_pane",
+                    pane_id: paneId,
+                    ...(isMoraPerceiveV1Enabled() && perceptionBundle ? { perception: perceptionBundle } : {}),
+                }) as Record<string, unknown> | undefined;
+
+                if (useFramePath) {
+                    // mora.dialogue.v1: typed frames via /v3/chat/stream
+                    frameReset();
+                    await frameSend(content, {
+                        history: streamHistoryWithCommunication,
+                        context: chatContext,
+                    });
+                    // After stream done — commit frames as a message
+                    const captured = [...liveFrames];
+                    if (captured.length > 0) {
+                        setMessages(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            role: 'assistant',
+                            content: '',
+                            frames: captured,
+                            timestamp: new Date(),
+                        }]);
+                    } else if (frameError) {
+                        setMessages(prev => [...prev, {
+                            id: crypto.randomUUID(),
+                            role: 'assistant',
+                            content: `Mora konnte nicht antworten – ${frameError}`,
+                            timestamp: new Date(),
+                        }]);
+                    }
+                    return;
+                }
+
+                // Legacy free-text stream via /v1/chat/stream
                 const fullReply = await streamSend(content, {
                     history: streamHistoryWithCommunication,
-                    context: buildChatContext({
-                        session_id: "chat_pane",
-                        pane_id: paneId,
-                    }) as Record<string, unknown> | undefined
+                    context: chatContext,
                 });
 
                 // After stream done — add finalized message to local list
@@ -1115,10 +1238,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         timestamp: new Date(),
                     }]);
                 } else if (streamError) {
+                    const isConnErr = streamError.toLowerCase().includes('fetch') || streamError.toLowerCase().includes('network') || streamError.toLowerCase().includes('connect');
                     setMessages(prev => [...prev, {
                         id: crypto.randomUUID(),
                         role: 'assistant',
-                        content: `⚠️ Fehler: ${streamError}`,
+                        content: isConnErr
+                            ? 'Das Backend ist gerade nicht erreichbar. Stelle sicher, dass CORE läuft, und versuche es erneut.'
+                            : `Mora konnte nicht antworten – ${streamError}`,
                         timestamp: new Date(),
                     }]);
                 }
@@ -1156,6 +1282,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         streamError,
         streamSend,
         viewLevel,
+        perceptionBundle,
+        useFramePath,
+        frameSend,
+        frameReset,
+        frameError,
+        liveFrames,
     ]);
 
     // Handle initial message from Dock/Spotlight chat input
@@ -1244,6 +1376,47 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
 
             {/* Messages */}
             <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                {/* Empty state — shown when no messages yet */}
+                {messages.length === 0 && !isStreaming && !isFrameStreaming && (
+                    <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                            isStandardMode
+                                ? 'bg-[#0078D4]/15 border border-[#0078D4]/25'
+                                : 'bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
+                        }`}>
+                            <Sparkles size={22} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
+                        </div>
+                        <div>
+                            <p className={`text-sm font-medium mb-1 ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white/75'}`}>
+                                Hallo, ich bin Môra
+                            </p>
+                            <p className={`text-xs leading-relaxed max-w-[260px] ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>
+                                Frag mich etwas, oder lass mich dir beim Durchsuchen, Erstellen und Verstehen deiner Inhalte helfen.
+                            </p>
+                        </div>
+                        {/* Quick prompt suggestions */}
+                        <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
+                            {[
+                                'Was ist mein letzter Stand?',
+                                'Suche nach…',
+                                'Erstelle eine Notiz',
+                            ].map((prompt) => (
+                                <button
+                                    key={prompt}
+                                    onClick={() => setInput(prompt)}
+                                    className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors ${
+                                        isStandardMode
+                                            ? 'border-[#E1E1E1] text-[#605E5C] hover:border-[#0078D4]/40 hover:text-[#0078D4]'
+                                            : 'border-white/[0.08] text-white/40 hover:border-emerald-400/30 hover:text-white/70 hover:bg-white/[0.03]'
+                                    }`}
+                                >
+                                    {prompt}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <AnimatePresence>
                     {messages.map((msg) => (
                         <motion.div
@@ -1266,10 +1439,18 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                                             }`} />
                                     )}
-                                    <div
-                                        className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
-                                        dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                                    />
+                                    {msg.frames && msg.frames.length > 0 ? (
+                                        <div className="flex-1 min-w-0 space-y-2">
+                                            {msg.frames.map((frame, i) => (
+                                                <FramedMessage key={i} frame={frame} />
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
+                                            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                        />
+                                    )}
                                     {msg.role === 'user' && (
                                         <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
                                             }`} />
@@ -1380,9 +1561,39 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ))}
                 </AnimatePresence>
 
-                {/* Live streaming bubble — shown while Mora is generating */}
+                {/* Thinking indicator — shown when stream started but no content yet */}
                 <AnimatePresence>
-                    {isStreaming && streamingText && (
+                    {((useFramePath && isFrameStreaming && liveFrames.length === 0) ||
+                      (!useFramePath && isStreaming && !streamingText)) && (
+                        <motion.div
+                            key="thinking-indicator"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
+                            className="flex justify-start"
+                        >
+                            <div className="bg-white/[0.04] border border-white/[0.08] rounded-2xl px-4 py-3 flex items-center gap-3">
+                                {/* Animated dots */}
+                                <div className="flex items-center gap-1">
+                                    {[0, 1, 2].map(i => (
+                                        <span
+                                            key={i}
+                                            className="block w-1.5 h-1.5 rounded-full bg-emerald-400/70"
+                                            style={{
+                                                animation: `mora-thinking-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                <span className="text-xs text-white/45">Môra denkt nach…</span>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Live streaming bubble — legacy free-text path */}
+                <AnimatePresence>
+                    {!useFramePath && isStreaming && streamingText && (
                         <motion.div
                             key="stream-bubble"
                             initial={{ opacity: 0, y: 10 }}
@@ -1400,6 +1611,34 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                                 '<span style="display:inline-block;width:2px;height:1em;background:#34d399;vertical-align:middle;margin-left:2px" class="animate-pulse"></span>'
                                         }}
                                     />
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Live frame stream — mora.dialogue.v1 path */}
+                <AnimatePresence>
+                    {useFramePath && isFrameStreaming && liveFrames.length > 0 && (
+                        <motion.div
+                            key="frame-stream-bubble"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="flex justify-start"
+                        >
+                            <div className="max-w-[80%] w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
+                                <div className="flex items-start gap-2">
+                                    <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        {liveFrames.map((frame, i) => (
+                                            <FramedMessage key={i} frame={frame} />
+                                        ))}
+                                        <span
+                                            style={{ display: 'inline-block', width: 2, height: '1em', background: '#34d399', verticalAlign: 'middle', marginLeft: 2 }}
+                                            className="animate-pulse"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
@@ -1511,8 +1750,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             </div>
 
             {/* Input */}
-            {moraCtx.isOperational !== null && (
-                moraCtx.isOperational ? (
+            {moraCtx.isOperational === null ? (
+                bootstrapTimedOut
+                    ? <OfflineCard onRetry={() => { setBootstrapTimedOut(false); window.location.reload(); }} />
+                    : <InputLoadingPlaceholder />
+            ) : moraCtx.isOperational ? (
                     <div className="p-4 border-t border-white/10 space-y-2">
                         {/* Memory Hint - shown when user types "merke dir..." etc. */}
                         <AnimatePresence>
@@ -1560,24 +1802,35 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             );
                         })()}
 
-                        <div className={`flex gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
-                            <input
-                                type="text"
+                        <div className={`flex items-end gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+                            <textarea
                                 value={input}
-                                onChange={(e) => setInput(e.target.value)}
+                                rows={1}
+                                onChange={(e) => {
+                                    setInput(e.target.value);
+                                    // Auto-resize: reset to 1 row, then grow to fit content
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = `${Math.min(e.target.scrollHeight, 140)}px`;
+                                }}
                                 onKeyDown={(e) => {
-                                    if (e.key === 'Enter' && !isStreaming) sendMessage();
+                                    if (e.key === 'Enter' && !e.shiftKey && !isStreaming) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                        // Reset height after send
+                                        (e.target as HTMLTextAreaElement).style.height = 'auto';
+                                    }
                                     if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
                                 }}
-                                placeholder="Schreib Mora... (z.B. 'Merke dir...')"
+                                placeholder="Schreib Mora… (Shift+↵ für Zeilenumbruch)"
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
+                                style={{ resize: 'none', overflowY: 'hidden' }}
                                 className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                             />
                             <button
                                 onClick={sendMessage}
                                 disabled={!input.trim() || isLoading || isStreaming}
-                                className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                                className="shrink-0 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
                             >
                                 {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                                 {isFullscreen && <span>Senden</span>}
@@ -1591,13 +1844,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             <ChatSuggestions onSelect={setInput} />
                         )}
                     </div>
-                ) : (
-                    <SetupRequiredCard
-                        onOpenSettings={() => {
-                            openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
-                        }}
-                    />
-                )
+            ) : (
+                <SetupRequiredCard
+                    onOpenSettings={() => {
+                        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                    }}
+                />
             )}
         </div>
     );

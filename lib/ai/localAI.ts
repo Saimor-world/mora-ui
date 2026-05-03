@@ -78,8 +78,7 @@ class MoraAIClient {
             });
             this.isConnected = response.ok;
             return this.isConnected;
-        } catch (error) {
-            console.log('[MoraAI] Local AI not available:', error);
+        } catch {
             this.isConnected = false;
             return false;
         }

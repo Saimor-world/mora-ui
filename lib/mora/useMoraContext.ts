@@ -11,8 +11,11 @@ import { useMemoryOverview } from '@/lib/hooks/useMemoryOverview';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
+import { useMoraPerception } from '@/lib/queries/useMoraPerception';
+import { isMoraPerceiveV1Enabled } from '@/lib/featureFlags';
 import type { OrbState } from '@/lib/api/awarenessClient';
 import type { CoreTreeNode } from '@/lib/types/core';
+import type { PerceptionBundle } from '@/lib/types/perception';
 
 // ─── Contract ───────────────────────────────────────────────────────────────
 
@@ -115,6 +118,12 @@ export function useMoraContext(): MoraContextSnapshot {
     const memoryPendingCount = useMemoryPendingCount();
     const memoryOverview = useMemoryOverview();
 
+    // Real Mora P1: when the perceive flag is on, fetch the canonical bundle.
+    // Hook is called unconditionally to keep React hook order stable; the
+    // result is only consumed inside the memo when the flag is on.
+    const flagOn = isMoraPerceiveV1Enabled();
+    const { data: perceptionBundle } = useMoraPerception({});
+
     return useMemo((): MoraContextSnapshot => {
         const resolved = lastChatScope?.resolved_scope;
         const contract = lastChatScope?.scope_contract;
@@ -187,9 +196,28 @@ export function useMoraContext(): MoraContextSnapshot {
 
         const scopeSource = lastChatScope?.resolved_scope?.scope_source ?? null;
 
+        // Real Mora P1: when the perceive flag is on AND a bundle is loaded,
+        // override scope-derived fields with bundle truth. The bundle is the
+        // canonical perception; legacy fields stay where the bundle is silent.
+        let bundleScopeLevel = scopeLevel;
+        let bundleScopeLabels = scopeLabels;
+        let bundleIsOperational = isOperational;
+        if (flagOn && perceptionBundle) {
+            bundleScopeLevel = deriveScopeLevelFromBundle(perceptionBundle);
+            bundleScopeLabels = deriveScopeLabelsFromBundle(perceptionBundle);
+            // A successful bundle delivery implies an authenticated, scoped session.
+            // Preserve explicit setup_required if backend says so; otherwise treat
+            // bundle presence as a positive operational signal.
+            if (user?.operational_state === 'setup_required') {
+                bundleIsOperational = false;
+            } else {
+                bundleIsOperational = true;
+            }
+        }
+
         return {
-            scopeLevel,
-            scopeLabels,
+            scopeLevel: bundleScopeLevel,
+            scopeLabels: bundleScopeLabels,
             scopeEnforced,
             scopeReason,
             scopeDroppedFields,
@@ -205,7 +233,7 @@ export function useMoraContext(): MoraContextSnapshot {
             lastAnswerSource,
             lastAnswerSourceMode,
             lastAnswerScopeLabel,
-            isOperational,
+            isOperational: bundleIsOperational,
             scopeSource,
         };
     }, [
@@ -217,5 +245,27 @@ export function useMoraContext(): MoraContextSnapshot {
         storeAnswerSource, storeAnswerSourceMode, storeAnswerScopeLabel,
         memoryOverview,
         user,
+        flagOn, perceptionBundle,
     ]);
+}
+
+// ─── Bundle-driven derivation helpers (Real Mora P1) ───────────────────────
+
+function deriveScopeLevelFromBundle(bundle: PerceptionBundle): MoraContextSnapshot['scopeLevel'] {
+    const s = bundle.scope;
+    if (s.folder) return 'folder';
+    if (s.space) return 'space';
+    if (s.department) return 'department';
+    if (s.company) return 'company';
+    return 'global';
+}
+
+function deriveScopeLabelsFromBundle(bundle: PerceptionBundle): MoraContextSnapshot['scopeLabels'] {
+    const labels: MoraContextSnapshot['scopeLabels'] = {};
+    const s = bundle.scope;
+    if (s.company) labels.company = s.company.name;
+    if (s.department) labels.department = s.department.name;
+    if (s.space) labels.space = s.space.name;
+    if (s.folder) labels.folder = s.folder.name;
+    return labels;
 }

@@ -23,6 +23,8 @@ interface PlanetProps {
     health?: number;
     activity?: number;
     capacity?: number | null; // V10: Knowledge Capacity / Storage Use
+    showLabel?: boolean;
+    labelSide?: 'left' | 'right';
 }
 
 export const Planet: React.FC<PlanetProps> = ({
@@ -37,7 +39,9 @@ export const Planet: React.FC<PlanetProps> = ({
     health = 98,
     activity = 42,
     capacity = null,
-    iconOverride
+    iconOverride,
+    showLabel = true,
+    labelSide = 'right'
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const planetRef = useRef<HTMLButtonElement>(null);
@@ -61,9 +65,9 @@ export const Planet: React.FC<PlanetProps> = ({
     useEffect(() => () => { if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current); }, []);
 
     const sizeMap = {
-        sm: { diameter: 60, iconSize: 20 },
-        md: { diameter: 74, iconSize: 24 },
-        lg: { diameter: 90, iconSize: 28 }
+        sm: { diameter: 74, iconSize: 23 },
+        md: { diameter: 96, iconSize: 29 },
+        lg: { diameter: 118, iconSize: 35 }
     };
 
     const planetSize = sizeMap[size];
@@ -84,7 +88,9 @@ export const Planet: React.FC<PlanetProps> = ({
         <motion.button
             ref={planetRef}
             type="button"
-            aria-label={`${department.name} oeffnen`}
+            aria-label={`${department.name} öffnen`}
+            data-testid={`planet-${department.id}`}
+            data-planet-name={department.name}
             className="absolute group pointer-events-auto border-0 bg-transparent p-6 -m-6 text-left cursor-pointer touch-manipulation"
             style={{
                 left: position.x,
@@ -112,13 +118,14 @@ export const Planet: React.FC<PlanetProps> = ({
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[28px] w-[88px] -translate-x-1/2 translate-y-[34px] rounded-full"
                 style={{
                     background: `radial-gradient(circle, ${style.glow}30 0%, rgba(0,0,0,0.32) 46%, transparent 78%)`,
-                    filter: 'blur(16px)',
+                    filter: 'blur(18px)',
                 }}
                 animate={{
-                    opacity: isHovered || isActive ? 0.72 : 0.44,
-                    scaleX: isHovered ? 1.16 : 1,
-                    scaleY: isHovered ? 1.08 : 1,
+                    opacity: isHovered || isActive ? 0.82 : 0.52,
+                    scaleX: isHovered || isActive ? 1.22 : 1.08,
+                    scaleY: isHovered || isActive ? 1.12 : 1.02,
                 }}
+                initial={{ opacity: 0.52, scaleX: 1.08, scaleY: 1.02 }}
                 transition={{ duration: 0.28, ease: 'easeOut' }}
             />
 
@@ -146,6 +153,7 @@ export const Planet: React.FC<PlanetProps> = ({
                             strokeDashoffset={223 - (223 * (ringProgress / 100))}
                             strokeLinecap="round"
                             transform="rotate(-90 50 50)"
+                            initial={{ opacity: ringProgressOpacity }}
                             animate={{
                                 opacity: ringProgressOpacity,
                             }}
@@ -161,6 +169,7 @@ export const Planet: React.FC<PlanetProps> = ({
                         stroke={orbitTone}
                         strokeWidth="0.65"
                         strokeDasharray="2 8"
+                        initial={{ opacity: 0.035, scale: 1 }}
                         animate={{
                             opacity: isHovered || isActive ? 0.12 : 0.035,
                             scale: isHovered ? 1.03 : 1,
@@ -176,6 +185,7 @@ export const Planet: React.FC<PlanetProps> = ({
                         fill="none"
                         stroke="rgba(226, 232, 240, 0.1)"
                         strokeWidth="0.45"
+                        initial={{ opacity: 0.018, scale: 1 }}
                         animate={{
                             opacity: isHovered || isActive ? 0.06 : 0.018,
                             scale: isHovered || isActive ? 1.02 : 1,
@@ -190,9 +200,10 @@ export const Planet: React.FC<PlanetProps> = ({
             <motion.div
                 className="orb-glass-halo"
                 style={{ '--orb-glow': style.glow } as React.CSSProperties}
+                initial={{ opacity: 0.22, scale: 1.04 }}
                 animate={{
-                    opacity: isActive ? 0.42 : isHovered ? 0.3 : 0.16,
-                    scale: isHovered ? 1.16 : isActive ? 1.08 : 1
+                    opacity: isActive ? 0.52 : isHovered ? 0.38 : 0.22,
+                    scale: isHovered ? 1.18 : isActive ? 1.12 : 1.04
                 }}
             />
 
@@ -204,14 +215,15 @@ export const Planet: React.FC<PlanetProps> = ({
                     height: planetSize.diameter,
                     transformOrigin: '50% 50%',
                     '--orb-glow': `${style.glow}08`,
-                    '--orb-border': `${style.border}30`,
+                    '--orb-border': `${style.border}3A`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 44px ${style.glow}28, 0 18px 44px rgba(0,0,0,0.46), inset 0 0 22px ${style.glow}14, inset 2px 2px 6px rgba(255,255,255,0.26)`
-                        : `0 14px 36px rgba(0,0,0,0.42), inset 0 0 14px ${style.glow}0C, inset 1px 1px 2px rgba(255,255,255,0.14)`,
+                        ? `0 0 58px ${style.glow}34, 0 22px 54px rgba(0,0,0,0.50), inset 0 0 26px ${style.glow}18, inset 2px 2px 8px rgba(255,255,255,0.30)`
+                        : `0 18px 44px rgba(0,0,0,0.46), 0 0 28px ${style.glow}10, inset 0 0 18px ${style.glow}10, inset 1px 1px 4px rgba(255,255,255,0.18)`,
                 } as React.CSSProperties}
-                whileHover={{ scale: 1.08 }}
+                whileHover={{ scale: 1.09 }}
+                initial={{ scale: 1, rotateZ: 0 }}
                 animate={{
-                    scale: isHovered || isActive ? 1.03 : 1,
+                    scale: isHovered || isActive ? 1.045 : 1,
                     rotateZ: isHovered ? 1.2 : 0,
                 }}
                 transition={{
@@ -244,24 +256,32 @@ export const Planet: React.FC<PlanetProps> = ({
             </motion.div>
 
             {/* ═ DATA LABELS (V10 Cinematic HUD) ═ */}
-            <div className="absolute top-1/2 left-[calc(100%+32px)] -translate-y-1/2 flex flex-col pointer-events-none min-w-[120px]">
+            {showLabel && (
+            <div
+                className={`absolute top-1/2 -translate-y-1/2 flex flex-col pointer-events-none min-w-[112px] ${
+                    labelSide === 'left'
+                        ? 'right-[calc(100%+22px)] items-end text-right'
+                        : 'left-[calc(100%+22px)] items-start text-left'
+                }`}
+            >
                 <motion.span
-                    className="text-[10px] font-medium text-white/90 tracking-[0.2em] mb-1"
+                    className="text-[9px] font-medium text-white/84 tracking-[0.2em] mb-1 uppercase"
+                    initial={{ opacity: 0.68, x: 0 }}
                     animate={{
-                        opacity: isHovered ? 1 : 0.6,
-                        x: isHovered ? 4 : 0
+                        opacity: isHovered || isActive ? 1 : 0.68,
+                        x: isHovered ? (labelSide === 'left' ? -3 : 3) : 0
                     }}
                 >
-                    {department.name.toUpperCase()}
+                    {department.name}
                 </motion.span>
 
                 {/* Functional Stats (Steam Deck Vibes) */}
                 <AnimatePresence>
                     {(isHovered || isActive) && (
                         <motion.div
-                            initial={{ opacity: 0, x: -5 }}
+                            initial={{ opacity: 0, x: labelSide === 'left' ? 5 : -5 }}
                             animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -5 }}
+                            exit={{ opacity: 0, x: labelSide === 'left' ? 5 : -5 }}
                             className="flex flex-col gap-1"
                         >
                             <div className="flex items-center gap-3 text-[8px] text-cyan-400 font-medium tracking-[0.15em]">
@@ -292,6 +312,7 @@ export const Planet: React.FC<PlanetProps> = ({
                     )}
                 </AnimatePresence>
             </div>
+            )}
         </motion.button>
     );
 };

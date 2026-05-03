@@ -5,63 +5,82 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import {
+    Activity, Bot, Calendar, Clock, Folder, FileText, Globe, Grid, Inbox,
+    MessageCircle, PenTool, Plug, ScanLine, Search, Settings, ShieldCheck,
+    SquareCheckBig, StickyNote, Terminal, Timer, UserCog, Users,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { APP_REGISTRY } from '@/lib/apps/appRegistry';
+import type { AppCategory, AppColor } from '@/lib/apps/types';
+import type { PaneType } from '@/lib/surface/surfaceRegistry';
+import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
+import type { AppProps } from '@/lib/apps/types';
+
+// ─── Icon map ─────────────────────────────────────────────────────────────────
+// Maps Lucide icon names (stored in APP_REGISTRY) to their component references.
+// Add entries here when new icons are needed by new apps.
+
+const ICON_MAP: Record<string, LucideIcon> = {
     Activity,
+    Bot,
     Calendar,
+    Clock,
+    FileText,
     Folder,
+    Globe,
     Grid,
+    Inbox,
+    MessageCircle,
     PenTool,
+    Plug,
     ScanLine,
     Search,
     Settings,
+    ShieldCheck,
     SquareCheckBig,
     StickyNote,
+    Terminal,
+    Timer,
+    UserCog,
     Users,
-} from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-import type { PaneType } from '@/lib/surface/surfaceRegistry';
-import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
-import { getAppManifest } from '@/lib/apps/appRegistry';
-import type { AppProps } from '@/lib/apps/types';
-
-// ─── App catalogue ────────────────────────────────────────────────────────────
-
-type AppCategory = 'core' | 'workspace' | 'collaboration' | 'system';
-
-const CATEGORY_ORDER: AppCategory[] = ['core', 'workspace', 'collaboration', 'system'];
-
-const CATEGORY_LABELS: Record<AppCategory, string> = {
-    core:          'Kern',
-    workspace:     'Arbeitsbereich',
-    collaboration: 'Zusammenarbeit',
-    system:        'System',
 };
 
-interface AppEntry {
-    name: string;
-    type: PaneType;
-    icon: LucideIcon;
-    color: string;
-    category: AppCategory;
-}
+// ─── Apps excluded from the launcher ─────────────────────────────────────────
+// These apps are opened programmatically, not by the user from the library.
 
-const ALL_APPS: AppEntry[] = [
-    // Core
-    { name: 'Finder',          type: 'finder',       icon: Folder,         color: 'text-emerald-400',  category: 'core' },
-    { name: 'Alle Inhalte',    type: 'grid',         icon: Grid,           color: 'text-emerald-300',  category: 'core' },
-    { name: 'Suche',           type: 'search',       icon: Search,         color: 'text-emerald-400',  category: 'core' },
-    { name: 'Notizen',         type: 'notes',        icon: StickyNote,     color: 'text-yellow-400',   category: 'core' },
-    { name: 'Scanner',         type: 'scanner',      icon: ScanLine,       color: 'text-purple-400',   category: 'core' },
-    // Workspace
-    { name: 'Aufgaben',        type: 'tasks',        icon: SquareCheckBig, color: 'text-orange-400',   category: 'workspace' },
-    { name: 'Zeitverlauf',     type: 'timeline',     icon: Activity,       color: 'text-rose-400',     category: 'workspace' },
-    { name: 'Canvas',          type: 'canvas',       icon: PenTool,        color: 'text-violet-400',   category: 'workspace' },
-    { name: 'Kalender',        type: 'calendar',     icon: Calendar,       color: 'text-orange-400',   category: 'workspace' },
-    // Collaboration
-    { name: 'Team',            type: 'team',         icon: Users,          color: 'text-emerald-400',  category: 'collaboration' },
-    { name: 'Benutzer',        type: 'users',        icon: Users,          color: 'text-emerald-300',  category: 'collaboration' },
-    // System
-    { name: 'Einstellungen',   type: 'settings',     icon: Settings,       color: 'text-white/80',     category: 'system' },
-];
+const LAUNCHER_EXCLUDE = new Set<string>([
+    'document',       // opened from Finder by clicking a node
+    'website-dossier', // opened from saimor.world security-check
+    'action-center',  // has its own dedicated HUD button
+    'meine-dateien',  // accessible via sidebar / profile
+]);
+
+// ─── Category display order + labels ─────────────────────────────────────────
+
+const CATEGORY_ORDER: AppCategory[] = ['core', 'intelligence', 'workspace', 'people', 'creative', 'system'];
+
+const CATEGORY_LABELS: Record<AppCategory, string> = {
+    core:         'Kern',
+    intelligence: 'Intelligenz',
+    workspace:    'Arbeitsbereich',
+    people:       'Team',
+    creative:     'Kreativ',
+    system:       'System',
+};
+
+// ─── Color → icon text + background class ────────────────────────────────────
+
+const COLOR_CLASS: Record<AppColor, { icon: string; bg: string; border: string }> = {
+    blue:   { icon: 'text-blue-300',    bg: 'bg-blue-500/15',    border: 'border-blue-400/20' },
+    purple: { icon: 'text-purple-300',  bg: 'bg-purple-500/15',  border: 'border-purple-400/20' },
+    green:  { icon: 'text-emerald-300', bg: 'bg-emerald-500/15', border: 'border-emerald-400/20' },
+    orange: { icon: 'text-orange-300',  bg: 'bg-orange-500/15',  border: 'border-orange-400/20' },
+    rose:   { icon: 'text-rose-300',    bg: 'bg-rose-500/15',    border: 'border-rose-400/20' },
+    teal:   { icon: 'text-teal-300',    bg: 'bg-teal-500/15',    border: 'border-teal-400/20' },
+    amber:  { icon: 'text-amber-300',   bg: 'bg-amber-500/15',   border: 'border-amber-400/20' },
+    indigo: { icon: 'text-indigo-300',  bg: 'bg-indigo-500/15',  border: 'border-indigo-400/20' },
+    slate:  { icon: 'text-slate-300',   bg: 'bg-slate-500/15',   border: 'border-slate-400/15' },
+};
 
 // ─── AppLibraryApp ────────────────────────────────────────────────────────────
 
@@ -73,21 +92,20 @@ export default function AppLibraryApp({ paneId }: AppProps) {
 
     if (!pane) return null;
 
-    // Filter: surface tier (not future-gated) + requiresRole from APP_REGISTRY
-    const visibleApps = ALL_APPS.filter(app => {
-        if (!isPaneEnabled(app.type)) return false;
-        const manifest = getAppManifest(app.type);
-        if (manifest?.requiresRole && userRole && !manifest.requiresRole.includes(userRole as any)) return false;
+    // Build the list from APP_REGISTRY, applying all filters.
+    const visibleApps = APP_REGISTRY.filter(manifest => {
+        if (LAUNCHER_EXCLUDE.has(manifest.id)) return false;
+        if (!isPaneEnabled(manifest.id as PaneType)) return false;
+        if (manifest.requiresRole && userRole && !manifest.requiresRole.includes(userRole as 'owner' | 'admin' | 'member')) return false;
         return true;
     });
 
-    const handleAppClick = (app: AppEntry) => {
-        const manifest = getAppManifest(app.type);
+    const handleAppClick = (id: string, name: string, size: { width: number; height: number }) => {
         openPane({
-            id: `${app.type}-main`,
-            type: app.type,
-            title: app.name,
-            size: manifest?.defaultSize ?? { width: 800, height: 600 },
+            id: `${id}-main`,
+            type: id as PaneType,
+            title: name,
+            size,
         });
         removePane(paneId);
     };
@@ -123,26 +141,30 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                             </p>
                             <div className="grid grid-cols-4 gap-3">
                                 {section.map(app => {
-                                    const manifest = getAppManifest(app.type);
-                                    const isNew = manifest?.isNew ?? false;
+                                    const IconComp = ICON_MAP[app.icon] ?? Grid;
+                                    const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
                                     return (
-                                        <div
-                                            key={app.type}
-                                            onClick={() => handleAppClick(app)}
-                                            className="relative aspect-square rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-emerald-500/30 transition-all flex flex-col items-center justify-center gap-3 group cursor-pointer"
+                                        <button
+                                            key={app.id}
+                                            type="button"
+                                            onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
+                                            title={app.description}
+                                            className="relative flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 pt-4 pb-3 hover:bg-white/[0.07] hover:border-white/15 transition-all group cursor-pointer text-left"
                                         >
-                                            {isNew && (
-                                                <span className="absolute top-2 right-2 text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none">
+                                            {app.isNew && (
+                                                <span className="absolute top-2 right-2 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none uppercase tracking-wide">
                                                     Neu
                                                 </span>
                                             )}
-                                            <div className={`p-3 rounded-xl bg-black/20 ${app.color}`}>
-                                                <app.icon size={28} />
+                                            {/* Icon */}
+                                            <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${colors.bg} ${colors.border}`}>
+                                                <IconComp size={22} className={colors.icon} />
                                             </div>
-                                            <span className="text-sm text-white/60 group-hover:text-white transition-colors text-center leading-tight px-1">
+                                            {/* Label */}
+                                            <span className="text-[11px] font-medium text-white/65 group-hover:text-white/90 transition-colors text-center leading-tight">
                                                 {app.name}
                                             </span>
-                                        </div>
+                                        </button>
                                     );
                                 })}
                             </div>

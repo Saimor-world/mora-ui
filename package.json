@@ -1,6 +1,6 @@
 {
   "name": "mora-ui",
-  "version": "1.0.0-prealpha.1",
+  "version": "1.0.0-beta.1",
   "private": true,
   "scripts": {
     "predev": "node -e \"process.exit(0)\"",
@@ -12,9 +12,13 @@
     "lint": "next lint",
     "test": "jest",
     "test:e2e": "playwright test",
+    "test:e2e:live": "playwright test --config=playwright.live.config.ts",
+    "verify:os:smoke": "jest --runInBand __tests__/app/page.session-entry.test.tsx __tests__/components/home/HomeSurface.test.tsx __tests__/components/os/shell/ShellBreadcrumb.test.tsx __tests__/components/os/shell/MoraShell.execution.test.tsx __tests__/components/mora/Dock.navigation.test.tsx __tests__/components/panes/TerminalPane.trust.test.tsx",
     "verify:types": "npx tsc --noEmit -p tsconfig.verify.json",
-    "verify:critical-flow": "node scripts/check-critical-flow-gate.mjs",
-    "verify:mr16:smoke": "npm run verify:types && npm run verify:critical-flow && npx playwright test e2e/finder-from-l3.spec.ts"
+    "verify:critical-flow": "node scripts/check-critical-flow-gate.mjs --input docs/reports/mr16-baseline-2026-03-05.json",
+    "verify:critical-flow:live": "node scripts/check-critical-flow-gate.mjs",
+    "verify:mr16:smoke": "npm run verify:types && npm run verify:critical-flow && npm run verify:os:smoke",
+    "verify:mr16:smoke:live": "npm run verify:types && npm run verify:critical-flow:live && npx playwright test --config=playwright.live.config.ts e2e/finder-from-l3.spec.ts"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -55,7 +59,6 @@
     "@types/react-dom": "^18.3.1",
     "@types/three": "^0.181.0",
     "autoprefixer": "^10.4.20",
-    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.15.0",
     "eslint-config-next": "15.5.12",
     "jest": "^29.7.0",

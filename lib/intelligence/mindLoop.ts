@@ -1,5 +1,6 @@
 import { CoreNode } from "@/lib/types/core";
 import { recordAwarenessSignal } from "@/lib/api/coreClient";
+import { logger } from "@/lib/utils/logger";
 
 /**
  * MINDLOOP EVENT MODEL (Phase 8 Active)
@@ -77,7 +78,7 @@ class MindLoopController {
         };
 
         this.eventLog.push(fullEvent);
-        // console.log(`[MindLoop] Event: ${fullEvent.type}`, fullEvent);
+        logger.debug(`[MindLoop] Event: ${fullEvent.type}`, fullEvent);
 
         // V12: Intelligent batching for backend sync
         // Only queue significant events, not every navigation click
@@ -164,10 +165,10 @@ class MindLoopController {
                     }
                 );
             }
-            // console.log(`[MindLoop] Synced ${eventsToSync.length} events to backend`);
+            logger.debug(`[MindLoop] Synced ${eventsToSync.length} events to backend`);
         } catch (error) {
             // Silent fail - don't block UI for backend issues
-            // console.warn('[MindLoop] Backend sync failed:', error);
+            logger.warn('[MindLoop] Backend sync failed', error as Error);
         }
     }
 

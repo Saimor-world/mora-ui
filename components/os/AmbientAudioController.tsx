@@ -24,6 +24,14 @@ export const AmbientAudioController: React.FC = () => {
     const audioRef = useRef<HTMLAudioElement | null>(null);
     const objectUrlRef = useRef<string | null>(null);
     const currentTrackIdRef = useRef<string | null>(null);
+    const syntheticContextRef = useRef<AudioContext | null>(null);
+    const syntheticNodesRef = useRef<{
+        oscillators: OscillatorNode[];
+        gains: GainNode[];
+        master: GainNode;
+        lfo: OscillatorNode;
+        lfoGain: GainNode;
+    } | null>(null);
     const autoplayBlockedRef = useRef(false);
     const fadeFrameRef = useRef<number | null>(null);
     const interactionReadyRef = useRef(false);
@@ -45,6 +53,10 @@ export const AmbientAudioController: React.FC = () => {
         : 0.2;
     const effectiveVolume = Math.max(0, Math.min(1, baseVolume * surfaceVolumeMultiplier));
     const clampVolume = useRef((value: number) => Math.max(0, Math.min(1, value)));
+    const effectiveVolumeRef = useRef(effectiveVolume);
+    useEffect(() => {
+        effectiveVolumeRef.current = effectiveVolume;
+    }, [effectiveVolume]);
     const tryPlay = useRef(async () => {
         const audioElement = audioRef.current;
         if (!audioElement || !audioElement.src) return;
@@ -55,6 +67,80 @@ export const AmbientAudioController: React.FC = () => {
         } catch {
             autoplayBlockedRef.current = true;
         }
+    });
+    const stopSyntheticAmbient = useRef(() => {
+        const nodes = syntheticNodesRef.current;
+        if (nodes) {
+            nodes.oscillators.forEach((oscillator) => {
+                try {
+                    oscillator.stop();
+                } catch {
+                    // Already stopped.
+                }
+            });
+            try {
+                nodes.lfo.stop();
+            } catch {
+                // Already stopped.
+            }
+            nodes.oscillators.forEach((oscillator) => oscillator.disconnect());
+            nodes.gains.forEach((gain) => gain.disconnect());
+            nodes.lfo.disconnect();
+            nodes.lfoGain.disconnect();
+            nodes.master.disconnect();
+            syntheticNodesRef.current = null;
+        }
+    });
+    const startSyntheticAmbient = useRef(async () => {
+        if (syntheticNodesRef.current) return;
+        if (typeof window === 'undefined') return;
+
+        const Ctx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+        if (!Ctx) return;
+
+        const context = syntheticContextRef.current ?? new Ctx();
+        syntheticContextRef.current = context;
+        if (context.state === 'suspended') {
+            await context.resume().catch(() => null);
+        }
+        if (context.state !== 'running') return;
+
+        const master = context.createGain();
+        master.gain.value = 0.0001;
+        master.connect(context.destination);
+
+        const lfo = context.createOscillator();
+        const lfoGain = context.createGain();
+        lfo.type = 'sine';
+        lfo.frequency.value = 0.035;
+        const currentVolume = effectiveVolumeRef.current;
+        lfoGain.gain.value = Math.max(0.001, currentVolume * 0.16);
+        lfo.connect(lfoGain);
+        lfoGain.connect(master.gain);
+
+        const frequencies = [110, 164.81, 220, 329.63];
+        const oscillators = frequencies.map((frequency, index) => {
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            oscillator.type = index % 2 === 0 ? 'sine' : 'triangle';
+            oscillator.frequency.value = frequency;
+            oscillator.detune.value = (index - 1.5) * 3.5;
+            gain.gain.value = Math.max(0.001, currentVolume * (index === 0 ? 0.18 : 0.09));
+            oscillator.connect(gain);
+            gain.connect(master);
+            oscillator.start();
+            return { oscillator, gain };
+        });
+
+        lfo.start();
+        master.gain.setTargetAtTime(Math.max(0.001, currentVolume * 0.54), context.currentTime, 1.8);
+        syntheticNodesRef.current = {
+            oscillators: oscillators.map((node) => node.oscillator),
+            gains: oscillators.map((node) => node.gain),
+            master,
+            lfo,
+            lfoGain,
+        };
     });
 
     useEffect(() => {
@@ -160,10 +246,15 @@ export const AmbientAudioController: React.FC = () => {
 
         if (!effectiveTrackId) {
             clearSource();
+            if (ambientAudio.enabled && interactionReadyRef.current) {
+                void startSyntheticAmbient.current();
+            }
             return () => {
                 cancelled = true;
             };
         }
+
+        stopSyntheticAmbient.current();
 
         const syncTrack = async () => {
             if (currentTrackIdRef.current === effectiveTrackId && audioElement.src) {
@@ -229,6 +320,28 @@ export const AmbientAudioController: React.FC = () => {
     }, [ambientAudio.enabled, ambientAudio.trackId, effectiveTrackId, ritualSceneId, sceneTrackMap]);
 
     useEffect(() => {
+        const nodes = syntheticNodesRef.current;
+        if (!nodes) return;
+        nodes.master.gain.setTargetAtTime(
+            ambientAudio.enabled ? Math.max(0.001, effectiveVolume * 0.54) : 0.0001,
+            syntheticContextRef.current?.currentTime ?? 0,
+            1.2
+        );
+        nodes.gains.forEach((gain, index) => {
+            gain.gain.setTargetAtTime(
+                ambientAudio.enabled ? Math.max(0.001, effectiveVolume * (index === 0 ? 0.18 : 0.09)) : 0.0001,
+                syntheticContextRef.current?.currentTime ?? 0,
+                1.2
+            );
+        });
+        nodes.lfoGain.gain.setTargetAtTime(
+            ambientAudio.enabled ? Math.max(0.001, effectiveVolume * 0.16) : 0.0001,
+            syntheticContextRef.current?.currentTime ?? 0,
+            1.2
+        );
+    }, [ambientAudio.enabled, effectiveVolume]);
+
+    useEffect(() => {
         const audioElement = audioRef.current;
         if (!audioElement) return;
 
@@ -279,13 +392,19 @@ export const AmbientAudioController: React.FC = () => {
 
         if (!ambientAudio.enabled) {
             audioElement.pause();
+            stopSyntheticAmbient.current();
             return;
         }
 
-        if (!audioElement.src) return;
+        if (!audioElement.src) {
+            if (interactionReadyRef.current && !effectiveTrackId) {
+                void startSyntheticAmbient.current();
+            }
+            return;
+        }
 
         void tryPlay.current();
-    }, [ambientAudio.enabled]);
+    }, [ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         if (!ambientAudio.enabled) return;
@@ -293,9 +412,13 @@ export const AmbientAudioController: React.FC = () => {
         const tryResume = () => {
             interactionReadyRef.current = true;
             const audioElement = audioRef.current;
-            if (!audioElement || !audioElement.src) return;
+            if (!audioElement) return;
 
-            void tryPlay.current();
+            if (audioElement.src) {
+                void tryPlay.current();
+            } else if (!effectiveTrackId) {
+                void startSyntheticAmbient.current();
+            }
         };
 
         window.addEventListener('pointerdown', tryResume, { passive: true });
@@ -349,6 +472,7 @@ export const AmbientAudioController: React.FC = () => {
 
     useEffect(() => {
         const audioElement = audioRef.current;
+        const stopSyntheticAmbientOnCleanup = stopSyntheticAmbient.current;
 
         return () => {
             if (audioElement) {
@@ -365,6 +489,12 @@ export const AmbientAudioController: React.FC = () => {
             if (fadeFrameRef.current) {
                 cancelAnimationFrame(fadeFrameRef.current);
                 fadeFrameRef.current = null;
+            }
+
+            stopSyntheticAmbientOnCleanup();
+            if (syntheticContextRef.current) {
+                void syntheticContextRef.current.close();
+                syntheticContextRef.current = null;
             }
         };
     }, []);

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -110,17 +110,17 @@ const kindLabels: Record<string, string> = {
     move: 'Verschieben',
     rename: 'Umbenennen',
     intake: 'Einordnen',
-    delete: 'Loeschen',
+    delete: 'Löschen',
     search: 'Suchen',
     navigate: 'Navigieren',
     write: 'Schreiben',
-    execute: 'Ausfuehren',
+    execute: 'Ausführen',
     patch: 'Aktualisieren',
 };
 
 const planStateLabels: Record<string, { label: string; cls: string }> = {
     pending: { label: 'Bereit', cls: 'bg-white/[0.05] text-white/40 border-white/10' },
-    running: { label: 'Laeuft', cls: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
+    running: { label: 'Läuft', cls: 'bg-blue-500/10 text-blue-300 border-blue-500/20' },
     waiting_confirmation: { label: 'Wartet', cls: 'bg-amber-500/10 text-amber-300 border-amber-500/20' },
     done: { label: 'Abgeschlossen', cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' },
     partial: { label: 'Teilweise', cls: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/20' },
@@ -136,11 +136,11 @@ const segmentOriginLabels: Record<string, string> = {
 
 const stepStatusLabels: Record<WorkSessionStepStatus, string> = {
     pending: 'Geplant',
-    running: 'Laeuft',
+    running: 'Läuft',
     done: 'Fertig',
     failed: 'Fehlgeschlagen',
     pending_confirmation: 'Wartet',
-    skipped: 'Uebersprungen',
+    skipped: 'Übersprungen',
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ function renderContentDiff(step: WorkSessionStep) {
     if (!before && !after && !summary) return null;
     return (
         <div className="rounded bg-white/[0.03] border border-white/[0.06] px-2.5 py-2 space-y-1.5">
-            <div className="text-[9px] uppercase tracking-wider text-white/22">Inhaltsaenderung</div>
+            <div className="text-[9px] uppercase tracking-wider text-white/22">Inhaltsänderung</div>
             {summary && <p className="text-[11px] text-white/58 leading-relaxed">{summary}</p>}
             {(before || after) && (
                 <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
@@ -232,26 +232,26 @@ function openWorkSessionNavigation(step: WorkSessionStep, openPane: OpenPaneFn) 
     switch (nav.target_type) {
         case 'department':
             if (!nav.department_id) return;
-            surfaceNavigationOutcome({ title: 'Bereich geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'department', label, companyId, departmentId: nav.department_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Bereich geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'department', label, companyId, departmentId: nav.department_id, source: 'work-session' }, openPane);
             return;
         case 'space':
             if (!nav.space_id) return;
-            surfaceNavigationOutcome({ title: 'Bereich geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'space', label, companyId, spaceId: nav.space_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Bereich geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'space', label, companyId, spaceId: nav.space_id, source: 'work-session' }, openPane);
             return;
         case 'folder':
             if (!nav.folder_id) return;
-            surfaceNavigationOutcome({ title: 'Ordner geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan im Finder geoeffnet.`, targetType: 'folder', label, companyId, folderId: nav.folder_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Ordner geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan im Finder geöffnet.`, targetType: 'folder', label, companyId, folderId: nav.folder_id, source: 'work-session' }, openPane);
             return;
         case 'company':
             if (!companyId) return;
-            surfaceNavigationOutcome({ title: 'Organisation geoeffnet', message: `Ich habe ${label} im aktuellen Organisationskontext geoeffnet.`, targetType: 'company', label, companyId, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Organisation geöffnet', message: `Ich habe ${label} im aktuellen Organisationskontext geöffnet.`, targetType: 'company', label, companyId, source: 'work-session' }, openPane);
             return;
         case 'node':
             if (!nav.node_id) return;
-            surfaceNavigationOutcome({ title: 'Datei geoeffnet', message: `Ich habe ${label} aus dem Arbeitsplan geoeffnet.`, targetType: 'node', label, companyId, folderId: nav.folder_id || undefined, nodeId: nav.node_id, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Datei geöffnet', message: `Ich habe ${label} aus dem Arbeitsplan geöffnet.`, targetType: 'node', label, companyId, folderId: nav.folder_id || undefined, nodeId: nav.node_id, source: 'work-session' }, openPane);
             return;
         case 'search':
-            surfaceNavigationOutcome({ title: 'Suche geoeffnet', message: `Ich habe die Suche aus dem Arbeitsplan geoeffnet.`, targetType: 'search', label, query: label, companyId, source: 'work-session' }, openPane);
+            surfaceNavigationOutcome({ title: 'Suche geöffnet', message: `Ich habe die Suche aus dem Arbeitsplan geöffnet.`, targetType: 'search', label, query: label, companyId, source: 'work-session' }, openPane);
             return;
         default: return;
     }
@@ -310,7 +310,7 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                             {hasNavigation && (isDone || isRunning) && (
                                 <button type="button" onClick={() => onOpen(step)}
                                     className="inline-flex items-center gap-1 rounded-full border border-cyan-400/15 bg-cyan-500/[0.06] px-2 py-0.5 text-[10px] text-cyan-200/65 hover:border-cyan-400/30 hover:bg-cyan-500/[0.12] hover:text-cyan-200 transition-colors">
-                                    <ArrowUpRight size={10} />Oeffnen
+                                    <ArrowUpRight size={10} />Öffnen
                                 </button>
                             )}
                             {hasDetail && (
@@ -350,7 +350,7 @@ function ConfirmStepCard({ step, onConfirm, onReject }: { step: WorkSessionStep;
         setProcessing(true);
         try { await fn(step.step_id); } finally { setProcessing(false); }
     };
-    const confirmLabel = step.action_label || kindLabels[step.kind.toLowerCase()] || 'Ausfuehren';
+    const confirmLabel = step.action_label || kindLabels[step.kind.toLowerCase()] || 'Ausführen';
     const primaryResult = step.result?.result_summary || step.result?.change_summary || step.result?.destination_summary || step.summary;
     const contentDiff = renderContentDiff(step);
     return (
@@ -380,7 +380,7 @@ function ConfirmStepCard({ step, onConfirm, onReject }: { step: WorkSessionStep;
             <div className="flex gap-2">
                 <button type="button" onClick={() => handle(onReject)} disabled={processing}
                     className="flex-1 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-white/45 hover:text-white/65 text-xs transition-colors disabled:opacity-40">
-                    Ueberspringen
+                    Überspringen
                 </button>
                 <button type="button" onClick={() => handle(onConfirm)} disabled={processing}
                     className="flex-1 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/25 text-amber-100 text-xs font-medium transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5">
@@ -395,9 +395,9 @@ function ConfirmStepCard({ step, onConfirm, onReject }: { step: WorkSessionStep;
 function TransitionGhostCard({ stepTitle, transitionType, message, segmentContext }: { stepTitle: string; transitionType: 'confirmed' | 'skipped' | string; message: string; segmentContext?: string }) {
     const isConfirmed = transitionType === 'confirmed';
     const tone = isConfirmed ? 'emerald' : 'slate';
-    const label = isConfirmed ? 'Bestaetigt' : 'Uebersprungen';
+    const label = isConfirmed ? 'Bestätigt' : 'Übersprungen';
     const Icon = isConfirmed ? CheckCircle2 : SkipForward;
-    const body = compactText(message, 220) || (isConfirmed ? 'Schritt bestaetigt.' : 'Schritt uebersprungen.');
+    const body = compactText(message, 220) || (isConfirmed ? 'Schritt bestätigt.' : 'Schritt übersprungen.');
     const footer = segmentContext ? `Weiter in ${segmentContext}.` : undefined;
     return (
         <CommandReceipt tone={tone} icon={Icon} label={label}
@@ -490,7 +490,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
         try {
             const updated = await corePost('/v3/work-session/confirm', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
             if (updated) setPlan(updated as WorkSessionPlan);
-        } catch { toast.error('Bestaetigung fehlgeschlagen.'); }
+        } catch { toast.error('Bestätigung fehlgeschlagen.'); }
     };
 
     const handleRejectStep = async (stepId: string) => {
@@ -498,7 +498,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
         try {
             const updated = await corePost('/v3/work-session/reject', { plan_id: plan.plan_id, step_id: stepId }, { isOptional: true });
             if (updated) setPlan(updated as WorkSessionPlan);
-        } catch { toast.error('Schritt konnte nicht uebersprungen werden.'); }
+        } catch { toast.error('Schritt konnte nicht übersprungen werden.'); }
     };
 
     if (!pane) return null;
@@ -541,15 +541,15 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                 {!isLoading && error && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="red" icon={XCircle} label="Arbeitsplan nicht erreichbar" title={error}
-                            body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schliessen und erneut oeffnen, wenn der Fehler bleibt."
-                            chips={[{ label: 'Keine Aktion ausgefuehrt' }, { label: 'Datenstand bleibt erhalten' }]} className="w-full max-w-xl" />
+                            body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schließen und erneut öffnen, wenn der Fehler bleibt."
+                            chips={[{ label: 'Keine Aktion ausgeführt' }, { label: 'Datenstand bleibt erhalten' }]} className="w-full max-w-xl" />
                     </div>
                 )}
 
                 {!isLoading && !error && !plan && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="slate" label="Arbeitsplan" title="Kein Plan geladen."
-                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geoeffnet wurde, erscheint er in dieser Flaeche."
+                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geöffnet wurde, erscheint er in dieser Flaeche."
                             chips={[{ label: 'Wartet auf Plan' }, { label: 'Universe bleibt aktiv' }]} className="w-full max-w-xl" />
                     </div>
                 )}
@@ -565,8 +565,8 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                                     ...(plan.mode ? [{ label: `Modus: ${plan.mode}` }] : []),
                                     ...(readCount > 0 ? [{ label: `Lesen ${readCount}` }] : []),
                                     ...(writeCount > 0 ? [{ label: `Schreiben ${writeCount}` }] : []),
-                                    ...(runningCount > 0 ? [{ label: `Laeuft ${runningCount}` }] : []),
-                                    ...(skippedCount > 0 ? [{ label: `Uebersprungen ${skippedCount}` }] : []),
+                                    ...(runningCount > 0 ? [{ label: `Läuft ${runningCount}` }] : []),
+                                    ...(skippedCount > 0 ? [{ label: `Übersprungen ${skippedCount}` }] : []),
                                     ...(completedCount !== undefined && totalCount > 0 && completedCount > 0 ? [{ label: `${completedCount}/${totalCount} fertig`, tone: 'emerald' as const }] : []),
                                 ]}
                                 footer={plan.transparency_note || 'Mora zeigt nur den Zustand, den der Kern geliefert hat.'}
@@ -576,7 +576,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                         <AnimatePresence>
                             {(pendingSteps.length > 0 || showGhost) && (
                                 <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className="px-4 pt-4 pb-2">
-                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">Bestaetigung erforderlich</div>}
+                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-amber-300/55 mb-2.5">Bestätigung erforderlich</div>}
                                     <div className="space-y-2">
                                         {showGhost && ghostStep && (
                                             <motion.div key={`ghost-${lastTransitionStepId}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

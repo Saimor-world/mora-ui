@@ -1,22 +1,13 @@
-/**
- * MoraShell.execution.test.tsx
- * TDD RED → GREEN: state-aware session card renders correctly for
- * running / waiting_confirmation / done states.
- *
- * Strategy: render MoraShell, fire a WORK_SESSION_PLAN_EVENT CustomEvent
- * to set workSessionSummary state, then assert card content.
- */
-
 import React from 'react';
-import { screen, waitFor, act } from '@testing-library/react';
+import { act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { WORK_SESSION_PLAN_EVENT } from '@/lib/utils/moraExplanation';
 import { renderWithProviders, resetAllStores } from '../../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 
-// ── heavy dependency mocks ─────────────────────────────────────────────────
+const mockDetectSnapZone = jest.fn();
+const mockApplySnap = jest.fn();
 
 jest.mock('next/navigation', () => ({
     useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
@@ -43,7 +34,16 @@ jest.mock('@/lib/auth/useAccount', () => ({
     },
 }));
 
-const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
+const STABLE_PANE = {
+    id: 'pane-test',
+    type: 'search',
+    title: 'Test',
+    size: { width: 960, height: 720 },
+    position: { x: 0, y: 0 },
+    zIndex: 1,
+    data: {},
+};
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector?: any) => {
         const store = {
@@ -174,6 +174,14 @@ jest.mock('@/components/os/SnapPreview', () => ({
     SnapPreview: () => <div data-testid="snap-preview" />,
 }));
 
+jest.mock('@/components/os/AmbientAudioController', () => ({
+    AmbientAudioController: () => <div data-testid="ambient-audio" />,
+}));
+
+jest.mock('@/components/os/MoraPulsePanel', () => ({
+    MoraPulsePanel: () => <div data-testid="mora-pulse" />,
+}));
+
 jest.mock('@/components/os/MemorySidebar', () => ({
     MemorySidebar: () => <div data-testid="memory-sidebar" />,
     useMemorySidebarShortcut: jest.fn(),
@@ -181,8 +189,8 @@ jest.mock('@/components/os/MemorySidebar', () => ({
 
 jest.mock('@/lib/hooks/useWindowSnapping', () => ({
     useWindowSnapping: () => ({
-        detectSnapZone: jest.fn(),
-        applySnap: jest.fn(),
+        detectSnapZone: mockDetectSnapZone,
+        applySnap: mockApplySnap,
         snapPreview: null,
     }),
 }));
@@ -210,164 +218,70 @@ import { MoraShell } from '@/components/os/shell/MoraShell';
 
 beforeEach(resetAllStores);
 
-// ── helpers ────────────────────────────────────────────────────────────────
+function seedShellStores() {
+    useNavStore.setState({
+        viewLevel: 'company',
+        coreMode: 'home',
+        viewMode: 'workspace',
+        activeCompanyId: 'company-1',
+        activeDepartmentId: null,
+        activeSpaceId: null,
+        activeFolderId: null,
+        isStandardMode: false,
+        nameConflict: null,
+        navigateToCore: jest.fn(),
+        navigateToDepartment: jest.fn(),
+        navigateToSpace: jest.fn(),
+        navigateToFolder: jest.fn(),
+        navigateToExplore: jest.fn(),
+        setActiveCompany: jest.fn(),
+        setViewMode: jest.fn(),
+        setIsStandardMode: jest.fn(),
+        cancelNameConflict: jest.fn(),
+        setNameConflict: jest.fn(),
+    } as any);
 
-function fireSessionEvent(detail: Record<string, unknown>) {
-    act(() => {
-        window.dispatchEvent(new CustomEvent(WORK_SESSION_PLAN_EVENT, { detail }));
-    });
+    useSessionStore.setState({
+        user: { role: 'admin', tenant_id: 'tenant-1' },
+        permissions: {
+            canCreate: false,
+            canDelete: false,
+            canAdmin: true,
+            canEditSettings: true,
+            canViewAnalytics: false,
+        },
+        hasBooted: true,
+        isLoggingOut: false,
+        resetStore: jest.fn(),
+        setIsLoggingOut: jest.fn(),
+    } as any);
+
+    useOrbStore.setState({
+        orbState: 'idle',
+        setOrbState: jest.fn(),
+    } as any);
 }
 
-const BASE_SUMMARY = {
-    planId: 'plan-1',
-    sessionId: 'sess-1',
-    source: 'chat',
-    title: 'Mein Testplan',
-    stats: { total_steps: 3, completed_steps: 1, read_steps: 1, write_steps: 2, pending_confirmations: 0 },
-};
-
-// ── tests ──────────────────────────────────────────────────────────────────
-
-// 1.0 gated — WorkSession banner removed from shell (work-session is future-tier).
-// Tests kept for reactivation when work-session surface ships.
-// See docs/plans/2026-03-27-surface-hierarchy-1.0.md § Future / Hidden
-describe.skip('MoraShell execution card', () => {
+describe('MoraShell window snapping', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-
-        useNavStore.setState({
-            viewLevel: 'company', coreMode: 'home', viewMode: 'workspace',
-            activeCompanyId: 'company-1', activeDepartmentId: null, activeSpaceId: null, activeFolderId: null,
-            isStandardMode: false, nameConflict: null,
-            navigateToCore: jest.fn(), navigateToDepartment: jest.fn(),
-            navigateToSpace: jest.fn(), navigateToFolder: jest.fn(), navigateToExplore: jest.fn(),
-            setActiveCompany: jest.fn(), setViewMode: jest.fn(), setIsStandardMode: jest.fn(),
-            cancelNameConflict: jest.fn(), setNameConflict: jest.fn(),
-        } as any);
-
-        useSessionStore.setState({
-            user: { role: 'admin', tenant_id: 'tenant-1' },
-            permissions: { canCreate: false, canDelete: false, canAdmin: true, canEditSettings: true, canViewAnalytics: false },
-            hasBooted: true, isLoggingOut: false,
-            resetStore: jest.fn(), setIsLoggingOut: jest.fn(),
-        } as any);
-
-        useOrbStore.setState({
-            orbState: 'idle', setOrbState: jest.fn(),
-        } as any);
+        seedShellStores();
+        mockDetectSnapZone
+            .mockReturnValueOnce('left')
+            .mockReturnValueOnce('right');
     });
 
-    it('state running: card has border-blue-400/28 class and "Laeuft gerade" text', async () => {
+    it('keeps drag listeners stable and applies the latest snap zone', () => {
         renderWithProviders(<MoraShell />);
 
-        fireSessionEvent({ ...BASE_SUMMARY, state: 'running' });
-
-        await waitFor(() => {
-            expect(screen.getByText('Laeuft gerade')).toBeInTheDocument();
+        act(() => {
+            window.dispatchEvent(new CustomEvent('mora-pane-drag-start'));
+            window.dispatchEvent(new MouseEvent('mousemove', { clientX: 10, clientY: 40 }));
+            window.dispatchEvent(new MouseEvent('mousemove', { clientX: 1200, clientY: 40 }));
+            window.dispatchEvent(new CustomEvent('mora-pane-drag-end', { detail: { paneId: 'pane-test' } }));
         });
 
-        const card = document.querySelector('.border-blue-400\\/28');
-        expect(card).not.toBeNull();
-    });
-
-    it('state waiting_confirmation: card has border-amber-400/28 class and "Freigabe erforderlich" text', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({ ...BASE_SUMMARY, state: 'waiting_confirmation' });
-
-        await waitFor(() => {
-            expect(screen.getByText('Freigabe erforderlich')).toBeInTheDocument();
-        });
-
-        const card = document.querySelector('.border-amber-400\\/28');
-        expect(card).not.toBeNull();
-    });
-
-    it('state done: "Abgeschlossen" renders', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({ ...BASE_SUMMARY, state: 'done' });
-
-        await waitFor(() => {
-            expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
-        });
-    });
-
-    it('running with running_step_title: step title renders in card body', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({ ...BASE_SUMMARY, state: 'running', running_step_title: 'Datei lesen' });
-
-        await waitFor(() => {
-            expect(screen.getByText('Datei lesen')).toBeInTheDocument();
-        });
-    });
-
-    it('running without running_step_title: getSessionBodyText fallback renders', async () => {
-        renderWithProviders(<MoraShell />);
-
-        // No running_step_title — fallback should show "Mora arbeitet am Arbeitsplan."
-        fireSessionEvent({ ...BASE_SUMMARY, state: 'running', stats: { total_steps: 0, completed_steps: 0 } });
-
-        await waitFor(() => {
-            expect(screen.getByText('Mora arbeitet am Arbeitsplan.')).toBeInTheDocument();
-        });
-    });
-
-    it('waiting with next_message: renders next_message text', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({
-            ...BASE_SUMMARY,
-            state: 'waiting_confirmation',
-            next_message: 'Bitte bestaetige diesen Schritt',
-        });
-
-        await waitFor(() => {
-            expect(screen.getByText('Bitte bestaetige diesen Schritt')).toBeInTheDocument();
-        });
-    });
-
-    it('waiting with no next_message but pending_confirmation_title: renders that title', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({
-            ...BASE_SUMMARY,
-            state: 'waiting_confirmation',
-            pending_confirmation_title: 'Schritt X',
-        });
-
-        await waitFor(() => {
-            expect(screen.getByText('Schritt X')).toBeInTheDocument();
-        });
-    });
-
-    it('waiting with neither next_message nor pending_confirmation_title: fallback renders', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({
-            ...BASE_SUMMARY,
-            state: 'waiting_confirmation',
-            stats: { total_steps: 3, completed_steps: 1, pending_confirmations: 0 },
-        });
-
-        await waitFor(() => {
-            expect(screen.getByText('Mora wartet auf deine Entscheidung')).toBeInTheDocument();
-        });
-    });
-
-    it('waiting with next_label: renders next_label as secondary hint', async () => {
-        renderWithProviders(<MoraShell />);
-
-        fireSessionEvent({
-            ...BASE_SUMMARY,
-            state: 'waiting_confirmation',
-            next_message: 'Bitte bestaetige',
-            next_label: 'Ausfuehren',
-        });
-
-        await waitFor(() => {
-            expect(screen.getByText('Ausfuehren')).toBeInTheDocument();
-        });
+        expect(mockDetectSnapZone).toHaveBeenCalledTimes(2);
+        expect(mockApplySnap).toHaveBeenCalledWith('pane-test', 'right');
     });
 });

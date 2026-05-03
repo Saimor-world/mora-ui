@@ -220,13 +220,13 @@ describe('ConfirmationCard — content-ops trust pass', () => {
       <ConfirmationCard action={createNoteAction} onConfirmed={jest.fn()} onRejected={jest.fn()} />
     );
     // "diese Änderung" is wrong for content creation — must use "diesen Inhalt" or similar
-    expect(screen.queryByText(/diese Aenderung/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/diese Änderung/)).not.toBeInTheDocument();
   });
 
   it('footer disclaimer still uses "Änderung" framing for filesystem ops', () => {
     render(
       <ConfirmationCard action={mixedAction} onConfirmed={jest.fn()} onRejected={jest.fn()} />
     );
-    expect(screen.getByText(/diese Aenderung/)).toBeInTheDocument();
+    expect(screen.getByText(/diese Änderung/)).toBeInTheDocument();
   });
 });

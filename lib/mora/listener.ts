@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { create } from "zustand";
 import { immer } from "zustand/middleware/immer";
@@ -89,10 +89,10 @@ export function emitMoraEvent(action: MoraEventAction, payload?: Record<string, 
   if (process.env.NODE_ENV !== 'production' && typeof console !== 'undefined') {
     if (typeof console.groupCollapsed === 'function') {
       console.groupCollapsed(`🧠 Môra Awareness | ${action}`);
-      console.log('payload', payload ?? null);
+
       console.groupEnd();
     } else {
-      console.log('🧠 Môra Awareness', action, payload ?? null);
+
     }
   }
 }

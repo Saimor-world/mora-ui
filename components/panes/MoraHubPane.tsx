@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
@@ -27,7 +27,7 @@ interface Props {
 // TAB CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════════════
 const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
-    { id: "overview", label: "Ueberblick", icon: Sparkles },
+    { id: "overview", label: "Überblick", icon: Sparkles },
     { id: "memory", label: "Erinnerungen", icon: Brain },
     { id: "stats", label: "Signale", icon: BarChart3 },
 ];
@@ -35,18 +35,18 @@ const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
 const TAB_DESCRIPTIONS: Record<HubSection, string> = {
     overview: "Kontext, Schnellaktionen und aktueller Arbeitsfokus.",
     memory: "Gespeicherte Erinnerungen, gelernte Fakten und Suchzugriff.",
-    stats: "Live-Signale und operative Aktivitaet dieses Bereichs.",
+    stats: "Live-Signale und operative Aktivität dieses Bereichs.",
 };
 
 const SECTION_TITLES: Record<HubSection, string> = {
     overview: "Arbeitsfokus",
     memory: "Erinnerungsebenen",
-    stats: "Signale und Aktivitaet",
+    stats: "Signale und Aktivität",
 };
 
 /**
  * MORA CENTER PANE
- * Zentrale fuer Mora: Kontext, Erinnerungen und operative Signale.
+ * Zentrale für Mora: Kontext, Erinnerungen und operative Signale.
  * Supports tab navigation: Overview, Memory, Stats
  */
 export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data }) => {
@@ -195,7 +195,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                     <div>
                                         <p className="text-sm font-medium text-white/70">Mora wartet</p>
                                         <p className="mt-1.5 text-[12px] leading-relaxed text-white/35 max-w-[240px]">
-                                            Oeffne einen Bereich oder eine Instanz — dann wird Mora hier aktiv.
+                                            Öffne einen Bereich oder eine Instanz — dann wird Mora hier aktiv.
                                         </p>
                                     </div>
                                     {/* Quick-jump hints */}

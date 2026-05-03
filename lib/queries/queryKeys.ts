@@ -34,6 +34,10 @@ export const STALE_TIMES = {
   // Like a Windows account — role/company don't change mid-session.
   // Only invalidated explicitly on logout or admin role-change action.
   userProfile: Infinity,
+
+  // Perception bundle — short stale because user navigation/edits invalidate it.
+  // 30s matches the spec target (§2.2).
+  perception: 30 * 1000, // 30 seconds
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -61,4 +65,7 @@ export const queryKeys = {
     companyId ? ['tree', companyId] : ['tree'],
 
   userProfile: () => ['userProfile'] as const,
+
+  perceptionRoot: () => ['perception'] as const,
+  perception: (key: string) => ['perception', key] as const,
 };

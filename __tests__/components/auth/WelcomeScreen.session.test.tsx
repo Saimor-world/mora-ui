@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
@@ -138,7 +138,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
-            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
+            expect(screen.getByText('Zugang prüfen')).toBeInTheDocument();
         });
     });
 
@@ -202,7 +202,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         await waitFor(() => {
             expect(screen.getByText(/Mora erkennt dich/i)).toBeInTheDocument();
-            expect(screen.getByText(/Identitaet bestaetigt/i)).toBeInTheDocument();
+            expect(screen.getByText(/Identität bestätigt/i)).toBeInTheDocument();
         });
     });
 
@@ -282,39 +282,123 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         });
     });
 
-    it('quick demo logs in directly without relying on pending state updates', async () => {
+    it('does not open a shared demo account from the default entry button', async () => {
         const mockFetch = global.fetch as jest.Mock;
         mockCoreGet.mockResolvedValue(null);
+
+        renderWithStore();
+
+        await waitFor(() => {
+            expect(screen.getByText('Zugang prüfen')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Zugang prüfen'));
+
+        await waitFor(() => {
+            expect(screen.getByPlaceholderText('name@firma.de')).toBeInTheDocument();
+            expect(mockFetch).not.toHaveBeenCalled();
+            expect(mockSignIn).not.toHaveBeenCalled();
+        });
+    });
+
+    it('creates an isolated website-entry workspace when a signed entry token exists', async () => {
+        const mockFetch = global.fetch as jest.Mock;
+        mockCoreGet.mockResolvedValue(null);
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                ...window.location,
+                hostname: 'localhost',
+                search: '?surface=website&entity=security-audit&id=audit-123&company=Acme+GmbH&email=lead%40acme.de&domain=acme.de&score=64&level=Mittel&entry_token=signed-entry-token',
+                assign: mockLocationAssign,
+            },
+        });
         mockFetch.mockResolvedValue({
             ok: true,
             json: async () => ({
                 success: true,
-                role: 'demo',
-                email: 'demo@saimor.io',
-                tenant_id: 'tenant-demo',
+                role: 'owner',
+                email: 'entry-abc@preview.saimor.local',
+                tenant_id: 'tenant-preview-abc',
+                active_company_name: 'Acme GmbH',
+                auth_type: 'website_entry_preview',
             }),
         } as any);
 
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Simple Coffee Group oeffnen')).toBeInTheDocument();
+            expect(screen.getByText('Acme GmbH als HQ-Workspace öffnen')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Simple Coffee Group oeffnen'));
+        fireEvent.click(screen.getByText('Acme GmbH als HQ-Workspace öffnen'));
 
         await waitFor(() => {
             expect(mockFetch).toHaveBeenCalledWith(
-                '/api/auth/core-login',
+                '/api/auth/website-entry-login',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({ entryToken: 'signed-entry-token' }),
+                })
+            );
+            expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
+            expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
+            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+        });
+    });
+
+    it('binds a website-entry dossier to a customer account', async () => {
+        const mockFetch = global.fetch as jest.Mock;
+        mockCoreGet.mockResolvedValue(null);
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                ...window.location,
+                hostname: 'localhost',
+                search: '?surface=website&entity=security-audit&id=audit-claim&company=Acme+GmbH&email=lead%40acme.de&domain=acme.de&score=64&level=Mittel&entry_token=signed-entry-token',
+                assign: mockLocationAssign,
+            },
+        });
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                success: true,
+                role: 'owner',
+                email: 'lead@acme.de',
+                tenant_id: 'tenant-preview-abc',
+                active_company_name: 'Acme GmbH',
+                auth_type: 'website_entry_claim',
+            }),
+        } as any);
+
+        renderWithStore();
+
+        await waitFor(() => {
+            expect(screen.getByText('Dossier mit Account verbinden')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Dossier mit Account verbinden'));
+        await waitFor(() => expect(screen.getByText('Kundenaccount verbinden')).toBeInTheDocument());
+        fireEvent.change(screen.getByPlaceholderText('ihre@email.de'), { target: { value: 'lead@acme.de' } });
+        fireEvent.change(screen.getByPlaceholderText('Name Ihrer Organisation'), { target: { value: 'Acme GmbH' } });
+        fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'claim12345' } });
+        fireEvent.click(screen.getByText('Kundenaccount verbinden'));
+
+        await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/auth/website-entry-claim',
                 expect.objectContaining({
                     method: 'POST',
                     body: JSON.stringify({
-                        email: 'demo@saimor.io',
-                        password: 'demo123',
+                        entryToken: 'signed-entry-token',
+                        email: 'lead@acme.de',
+                        password: 'claim12345',
+                        fullName: 'Acme GmbH',
                     }),
                 })
             );
-            expect(mockSignIn).not.toHaveBeenCalled();
+            expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
+            expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
         });
     });

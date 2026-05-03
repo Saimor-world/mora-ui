@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CoreFolder } from '@/lib/types/core';
@@ -140,7 +140,6 @@ type PositionedFolder = RankedFolder & {
 
 export const SpaceLayer: React.FC = () => {
     const { activeSpaceId, activeDepartmentId, activeCompanyId, activeFolderId, viewLevel, navigateToDepartment, navigateToExplore, navigateToFolder } = useNavStore();
-    const nodesByFolder: Record<string, unknown[]> = {};
     const orbState = useOrbStore((state) => state.orbState);
 
     const queryClient = useQueryClient();
@@ -176,6 +175,10 @@ export const SpaceLayer: React.FC = () => {
     const currentSpace = useMemo(
         () => safeSpaces.find((space) => space.id === activeSpaceId) ?? null,
         [safeSpaces, activeSpaceId]
+    );
+    const activeFolder = useMemo(
+        () => folders.find((folder) => folder.id === activeFolderId) ?? null,
+        [folders, activeFolderId]
     );
 
     const displaySpaceName = useCallback((name: string) => {
@@ -266,6 +269,7 @@ export const SpaceLayer: React.FC = () => {
     // useFolders(activeSpaceId) auto-fetches when activeSpaceId changes
 
     const rankedFolders = useMemo(() => {
+        const nodesByFolder: Record<string, unknown[]> = {};
         const ranked = folders.map((folder, index) => {
             const liveNodes = nodesByFolder[folder.id] || [];
             const docCount = liveNodes.length > 0 ? liveNodes.length : (folder.node_count || 0);
@@ -296,7 +300,7 @@ export const SpaceLayer: React.FC = () => {
         const activeEntry = ranked.find((entry) => entry.folder.id === activeFolderId);
         if (!activeEntry) return limited;
         return [...limited.slice(0, Math.max(0, MAX_RENDERED_FOLDERS - 1)), activeEntry];
-    }, [folders, nodesByFolder, activeFolderId]);
+    }, [folders, activeFolderId]);
 
     const laneCounts = useMemo(
         () => rankedFolders.reduce<Record<LaneKey, number>>((accumulator, _, index) => {
@@ -400,6 +404,22 @@ export const SpaceLayer: React.FC = () => {
     }, [navigateToExplore]);
 
     const openSpaceFinder = useCallback(() => {
+        if (activeFolderId) {
+            openPane({
+                id: `finder-${activeFolderId}`,
+                type: 'finder',
+                title: activeFolder?.name || displaySpaceName(currentSpace?.name || 'Bereich'),
+                size: { width: 1280, height: 820 },
+                data: {
+                    folderId: activeFolderId,
+                    spaceId: activeSpaceId,
+                    departmentId: activeDepartmentId,
+                    companyId: activeCompanyId || currentDepartment?.company_id || undefined,
+                },
+            });
+            return;
+        }
+
         openPane({
             id: 'finder-main',
             type: 'finder',
@@ -415,6 +435,8 @@ export const SpaceLayer: React.FC = () => {
         openPane,
         displaySpaceName,
         currentSpace?.name,
+        activeFolder?.name,
+        activeFolderId,
         activeSpaceId,
         activeDepartmentId,
         activeCompanyId,
@@ -480,7 +502,7 @@ export const SpaceLayer: React.FC = () => {
                 </button>
                 <div className="flex flex-col items-start gap-0.5">
                     <span className="text-[9px] font-medium uppercase tracking-[0.2em] text-emerald-500/70">
-                        Zurueck
+                        Zurück
                     </span>
                     <span className="flex items-center gap-2 text-sm font-light tracking-widest">
                         <button
@@ -529,8 +551,8 @@ export const SpaceLayer: React.FC = () => {
                 title={currentSpace?.name || 'Bereich'}
                 badge={activeFolderId ? 'Aktiver Ordner' : 'Ordnerstruktur'}
                 accent={currentSpace?.color || '#34d399'}
-                collapsedHint="Ordner oeffnen oder Control Center nutzen."
-                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivitaet abgeleitet.`}
+                collapsedHint="Ordner öffnen oder Control Center nutzen."
+                summary={`${laneSummaries.focus.count} priorisierte, ${laneSummaries.flow.count} aktive und ${laneSummaries.archive.count} abgelegte Ordner werden aus echter Dokumentdichte und letzter Aktivität abgeleitet.`}
                 metrics={[
                     { label: 'Ordner', value: rankedFolders.length, toneClassName: 'text-emerald-200' },
                     { label: 'Mit Inhalt', value: foldersWithDocs, toneClassName: 'text-cyan-200' },
@@ -561,7 +583,7 @@ export const SpaceLayer: React.FC = () => {
                     onClick={openSpaceFinder}
                     className="mt-3 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-white/46 transition-colors hover:border-emerald-400/18 hover:text-emerald-200/90"
                 >
-                    Finder oeffnen
+                    {activeFolderId ? 'Aktiven Ordner im Finder öffnen' : 'Finder öffnen'}
                 </button>
             </LayerInsightRail>
 
@@ -598,7 +620,7 @@ export const SpaceLayer: React.FC = () => {
                                 onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
                                 className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
                             >
-                                Oeffnen
+                                Öffnen
                             </button>
                         </div>
 
@@ -614,7 +636,7 @@ export const SpaceLayer: React.FC = () => {
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Die linke Karte zeigt den aktuell staerksten oder gerade geoeffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
+                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>
@@ -624,7 +646,7 @@ export const SpaceLayer: React.FC = () => {
                 {isLoadingFolders ? (
                     <LoadingState message="Bereich wird geladen..." />
                 ) : (
-                    <div className="relative h-full w-full pb-16">
+                    <div className="relative h-full w-full -translate-y-12 pb-24">
                         <svg
                             className="pointer-events-none absolute inset-0 z-0 h-full w-full"
                             viewBox="-640 -420 1280 840"
@@ -700,15 +722,15 @@ export const SpaceLayer: React.FC = () => {
                                     opacity: 0.24,
                                 }}
                             />
-                            <div
-                                className="pointer-events-auto relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full backdrop-blur-sm"
+                                <div
+                                    className="pointer-events-auto relative flex h-40 w-40 cursor-pointer items-center justify-center overflow-hidden rounded-full backdrop-blur-sm"
                                 style={{
                                     background: `radial-gradient(145% 145% at 30% 24%, rgba(255,255,255,0.22) 0%, ${(currentDepartment?.color || '#10b981')}bb 45%, rgba(0,0,0,0.30) 100%)`,
                                     border: `1.5px solid ${(currentDepartment?.color || '#10b981')}99`,
                                     boxShadow: `0 0 90px ${(currentDepartment?.color || '#10b981')}55, 0 0 180px ${(currentDepartment?.color || '#10b981')}26, inset 2px 2px 8px rgba(255,255,255,0.28)`,
                                 }}
                                 onClick={openSpaceFinder}
-                                title={`Finder oeffnen: ${spaceName}`}
+                                title={activeFolderId ? `Finder öffnen: ${activeFolder?.name || 'Aktiver Ordner'}` : `Finder öffnen: ${spaceName}`}
                             >
                                 <div
                                     className="absolute left-[17%] top-[15%] h-[10%] w-[20%] rounded-full bg-white/70 blur-[1px]"
