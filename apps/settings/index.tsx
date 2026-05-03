@@ -32,6 +32,7 @@ import {
     type AmbientAudioTrackMeta,
 } from '@/lib/audio/ambientAudio';
 import { RITUAL_SCENES, RITUAL_SCENE_ORDER } from '@/lib/os/ritualMode';
+import { isMoraPerceiveV1Enabled, isMoraDialogueV1Enabled, isMoraLiveV1Enabled } from '@/lib/featureFlags';
 import type { AppProps } from '@/lib/apps/types';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
@@ -1366,6 +1367,32 @@ useEffect(() => {
                                     <div className="text-white font-mono text-sm">
                                         {surfaceProfile.isPublicDemoSurface ? 'Demo' : companies.length}
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Real Mora feature flags */}
+                            <div className="pt-4 border-t border-white/5 space-y-3">
+                                <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">Real Mora Flags</h4>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { label: 'Perceive v1', active: isMoraPerceiveV1Enabled() },
+                                        { label: 'Dialogue v1', active: isMoraDialogueV1Enabled() },
+                                        { label: 'Live v1',     active: isMoraLiveV1Enabled() },
+                                    ].map(({ label, active }) => (
+                                        <div
+                                            key={label}
+                                            className={`p-2.5 rounded-lg border text-center ${
+                                                active
+                                                    ? 'border-emerald-500/30 bg-emerald-500/[0.08] text-emerald-400'
+                                                    : 'border-white/[0.06] bg-white/[0.02] text-white/30'
+                                            }`}
+                                        >
+                                            <div className="text-[10px] font-mono">{label}</div>
+                                            <div className="text-[9px] mt-0.5 uppercase tracking-wide opacity-60">
+                                                {active ? 'aktiv' : 'aus'}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
 
