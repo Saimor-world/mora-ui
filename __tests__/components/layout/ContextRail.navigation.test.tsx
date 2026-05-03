@@ -9,10 +9,11 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 
 const STABLE_COMPANIES = [{ id: 'co-1', name: 'Workspace', tenant_id: 'tenant-1' }];
 
-const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
+const mockOpenPane = jest.fn();
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: {
-        getState: () => ({ openPane: jest.fn() }),
+        getState: () => ({ openPane: mockOpenPane }),
     },
 }));
 
@@ -108,6 +109,7 @@ function renderWithState(state: Record<string, unknown>) {
 describe('ContextRail core navigation contract', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockOpenPane.mockClear();
     });
 
     it('Home button resets to core home via navigateToCore', async () => {
@@ -128,12 +130,9 @@ describe('ContextRail core navigation contract', () => {
         expect(navigateToCore).toHaveBeenCalledTimes(1);
     });
 
-    it('Search button also resets to core home before opening chat', () => {
-        const navigateToCore = jest.fn();
-        const dispatchSpy = jest.spyOn(window, 'dispatchEvent');
-
+    it('Search button opens the search pane', () => {
         renderWithState({
-            navigateToCore,
+            navigateToCore: jest.fn(),
             viewLevel: 'department',
             viewMode: 'workspace',
             setViewMode: jest.fn(),
@@ -142,8 +141,8 @@ describe('ContextRail core navigation contract', () => {
 
         fireEvent.click(screen.getByRole('button', { name: 'Suche' }));
 
-        expect(navigateToCore).toHaveBeenCalledTimes(1);
-        expect(dispatchSpy).toHaveBeenCalled();
-        dispatchSpy.mockRestore();
+        expect(mockOpenPane).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'search' })
+        );
     });
 });
