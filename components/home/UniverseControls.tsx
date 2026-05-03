@@ -123,15 +123,18 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     const showCoreSurfaceSwitch = viewLevel === 'core';
-    const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface;
-    const contextModeLabel = surfaceProfile.isLocalTruthSurface
-        ? 'Lokale Instanz'
-        : workspaceLabel || 'Kontext';
+    const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface && !surfaceProfile.isHqSurface;
+    const contextModeLabel = surfaceProfile.isHqSurface
+        ? 'HQ'
+        : surfaceProfile.isLocalTruthSurface
+            ? 'Lokale Instanz'
+            : workspaceLabel || 'Kontext';
     const showCompanySwitcher = Boolean(
         activeCompany &&
         companies.length > 1 &&
         !disableContextSwitch &&
         !surfaceProfile.isLocalTruthSurface &&
+        !surfaceProfile.isHqSurface &&
         !activeCompanyId
     );
 
