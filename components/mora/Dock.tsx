@@ -15,6 +15,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
 
 // Derived from paneStore — consistent with other pane-opening components
@@ -497,6 +498,7 @@ export const Dock = () => {
     const removePane = usePaneStore((s) => s.removePane);
     const openPane = usePaneStore((s) => s.openPane);
     const runningPanes = useMemo(() => panes.filter((pane) => pane.type !== 'search'), [panes]);
+    const activePlanId = useWorkSessionStore((s) => s.activePlanId);
     const mod = usePlatformModifier();
 
     const [chatInput, setChatInput] = useState('');
@@ -1439,6 +1441,13 @@ export const Dock = () => {
                     {/* RIGHT SECTION: Status + Context */}
                     {!websiteEntryContext && <div className="flex items-center gap-2">
                         <NotificationCenter />
+                        {activePlanId && (
+                            <SessionChip
+                                planId={activePlanId}
+                                openPane={openPane}
+                                isStandardMode={isStandardMode}
+                            />
+                        )}
                     </div>}
 
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
@@ -1592,7 +1601,6 @@ export const Dock = () => {
                                             ? 'Mora wartet auf Klaerung'
                                             : 'Mora ist bereit'}
                                 </span>
-                                {/* activePlanId chip — 1.0 gated with work-session surface */}
                                 {/* pendingCount chip — 1.0 gated with MemorySidebar */}
                             </div>
                         </div>
