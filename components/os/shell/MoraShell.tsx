@@ -756,7 +756,7 @@ export const MoraShell: React.FC = () => {
         >
             <AmbientAudioController />
             <InteractionAudioController />
-            {!hasFullscreenPane && <MoraPulsePanel />}
+            {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
