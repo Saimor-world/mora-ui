@@ -4,6 +4,7 @@ import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber';
 import { MeshDistortMaterial, Sphere, Float, Environment } from '@react-three/drei';
 import * as THREE from 'three';
+import { useOrbStore } from '@/lib/store/orbStore';
 
 let WEBGL_UNAVAILABLE = false;
 let WEBGL_CONTEXT_LOST_LOGGED = false;
@@ -92,6 +93,8 @@ const LiquidMesh: React.FC<LiquidOrbProps> = ({ color, state, intensity = 1 }) =
  * Setup the 3D scene with automatic WebGL fallback.
  */
 export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
+    const hasProactiveAlert = useOrbStore((s) => s.hasProactiveAlert);
+    const effectiveColor = hasProactiveAlert ? '#f59e0b' : props.color;
     const [webglFailed, setWebglFailed] = useState(() => WEBGL_UNAVAILABLE || WEBGL_DISABLED_BY_ENV);
     const glRef = useRef<THREE.WebGLRenderer | null>(null);
 
@@ -168,7 +171,7 @@ export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
             >
                 {/* Lighting setup for "Jewel" look */}
                 <ambientLight intensity={0.5} />
-                <pointLight position={[10, 10, 10]} intensity={1.5} color={props.color} />
+                <pointLight position={[10, 10, 10]} intensity={1.5} color={effectiveColor} />
                 <pointLight position={[-10, -10, -10]} intensity={0.5} color="white" />
 
                 {/* Floating animation container */}
@@ -178,7 +181,7 @@ export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
                     floatIntensity={0.5}
                     floatingRange={[-0.1, 0.1]}
                 >
-                    <LiquidMesh {...props} />
+                    <LiquidMesh {...props} color={effectiveColor} />
                 </Float>
 
                 {/* Environment for shiny reflections (Pseudo-Glass) */}
@@ -194,8 +197,10 @@ export const LiquidOrb: React.FC<LiquidOrbProps> = (props) => {
  * Now with 3D depth, inner swirls, ethereal mist, and magical subsurface glow.
  */
 export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
+    const hasProactiveAlert = useOrbStore((s) => s.hasProactiveAlert);
+    const effectiveColor = hasProactiveAlert ? '#f59e0b' : color;
     // State-based animations
-    const pulseSpeed = state === 'thinking' ? '3s' : state === 'alert' ? '1.5s' : '6s';
+    const pulseSpeed = state === 'thinking' ? '3s' : state === 'alert' ? '1.5s' : hasProactiveAlert ? '2s' : '6s';
     const glowIntensity = state === 'alert' ? 50 : state === 'thinking' ? 36 : 30;
 
     return (
@@ -204,7 +209,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
             <div
                 className="absolute inset-[-30%] rounded-full animate-pulse"
                 style={{
-                    background: `radial-gradient(circle at center, ${color}30 0%, ${color}10 30%, transparent 60%)`,
+                    background: `radial-gradient(circle at center, ${effectiveColor}30 0%, ${effectiveColor}10 30%, transparent 60%)`,
                     filter: 'blur(40px)',
                     animationDuration: `${parseFloat(pulseSpeed) * 1.5}s`,
                 }}
@@ -224,7 +229,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
             <div
                 className="absolute inset-[-20%] rounded-full animate-pulse"
                 style={{
-                    background: `radial-gradient(circle at center, ${color}50 0%, ${color}25 40%, transparent 70%)`,
+                    background: `radial-gradient(circle at center, ${effectiveColor}50 0%, ${effectiveColor}25 40%, transparent 70%)`,
                     filter: `blur(${glowIntensity}px)`,
                     animationDuration: pulseSpeed,
                 }}
@@ -235,12 +240,12 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
                 className="absolute inset-0 rounded-full overflow-hidden"
                 style={{
                     background: `
-                        radial-gradient(circle at 35% 35%, ${color}FF 0%, ${color}CC 20%, ${color}80 50%, ${color}40 80%, transparent 100%)
+                        radial-gradient(circle at 35% 35%, ${effectiveColor}FF 0%, ${effectiveColor}CC 20%, ${effectiveColor}80 50%, ${effectiveColor}40 80%, transparent 100%)
                     `,
                     boxShadow: `
                         inset -10px -10px 30px rgba(0,0,0,0.6),
                         inset 8px 8px 20px rgba(255,255,255,0.2),
-                        0 0 ${glowIntensity}px ${color}80,
+                        0 0 ${glowIntensity}px ${effectiveColor}80,
                         0 10px 40px rgba(0,0,0,0.5)
                     `,
                 }}
@@ -249,7 +254,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
                 <div
                     className="absolute inset-0 rounded-full animate-spin"
                     style={{
-                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, ${color}40 25%, transparent 50%, ${color}30 75%, transparent 100%)`,
+                        background: `conic-gradient(from 0deg at 50% 50%, transparent 0%, ${effectiveColor}40 25%, transparent 50%, ${effectiveColor}30 75%, transparent 100%)`,
                         filter: 'blur(8px)',
                         animationDuration: '16s',
                     }}
@@ -259,7 +264,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
                 <div
                     className="absolute inset-[10%] rounded-full"
                     style={{
-                        background: `conic-gradient(from 45deg at 50% 50%, transparent 0%, ${color}30 30%, transparent 60%, ${color}20 90%, transparent 100%)`,
+                        background: `conic-gradient(from 45deg at 50% 50%, transparent 0%, ${effectiveColor}30 30%, transparent 60%, ${effectiveColor}20 90%, transparent 100%)`,
                         filter: 'blur(6px)',
                         animation: `spin 18s linear infinite reverse`,
                     }}
@@ -296,8 +301,8 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
             <div
                 className="absolute inset-[-5%] rounded-full animate-pulse"
                 style={{
-                    border: `2px solid ${color}40`,
-                    boxShadow: `0 0 25px ${color}30`,
+                    border: `2px solid ${effectiveColor}40`,
+                    boxShadow: `0 0 25px ${effectiveColor}30`,
                     animationDuration: pulseSpeed,
                 }}
             />
@@ -306,7 +311,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
             <div
                 className="absolute inset-[-10%] rounded-full"
                 style={{
-                    border: `1px solid ${color}25`,
+                    border: `1px solid ${effectiveColor}25`,
                     opacity: 0.35,
                 }}
             />
@@ -315,7 +320,7 @@ export const CSSFallbackOrb: React.FC<LiquidOrbProps> = ({ color, state }) => {
             <div
                 className="absolute inset-[-15%] rounded-full animate-spin"
                 style={{
-                    background: `conic-gradient(from 0deg, transparent 0%, ${color}20 5%, transparent 8%, transparent 20%, ${color}15 23%, transparent 26%, transparent 40%, ${color}10 43%, transparent 46%, transparent 60%, ${color}20 63%, transparent 66%, transparent 80%, ${color}15 83%, transparent 86%)`,
+                    background: `conic-gradient(from 0deg, transparent 0%, ${effectiveColor}20 5%, transparent 8%, transparent 20%, ${effectiveColor}15 23%, transparent 26%, transparent 40%, ${effectiveColor}10 43%, transparent 46%, transparent 60%, ${effectiveColor}20 63%, transparent 66%, transparent 80%, ${effectiveColor}15 83%, transparent 86%)`,
                     filter: 'blur(2px)',
                     animationDuration: '45s',
                 }}

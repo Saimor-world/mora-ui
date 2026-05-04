@@ -38,6 +38,9 @@ export const STALE_TIMES = {
   // Perception bundle — short stale because user navigation/edits invalidate it.
   // 30s matches the spec target (§2.2).
   perception: 30 * 1000, // 30 seconds
+
+  // Radar notifications — short stale; WebSocket invalidates immediately on push.
+  radar: 30 * 1000, // 30 seconds
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -68,4 +71,6 @@ export const queryKeys = {
 
   perceptionRoot: () => ['perception'] as const,
   perception: (key: string) => ['perception', key] as const,
+
+  radar: () => ['radar'] as const,
 };

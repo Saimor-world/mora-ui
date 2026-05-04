@@ -34,6 +34,13 @@ import {
 } from 'lucide-react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useQueryClient } from '@tanstack/react-query';
+import { useRadarStore } from '@/lib/store/radarStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { useRadar } from '@/lib/queries/useRadar';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { corePatch, corePost } from '@/lib/api/http';
+import { RadarCard } from '@/components/mora/RadarCard';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -345,6 +352,30 @@ export const NotificationCenter: React.FC = () => {
 
     const unreadCount = notifications.filter((n) => !n.read).length;
 
+    // Radar (proactive Mora notifications)
+    const queryClient = useQueryClient();
+    useRadar(); // starts 60s polling + syncs to radarStore
+    const { notifications: radarNotifications, dismiss: dismissRadar } = useRadarStore();
+    const { setProactiveAlert } = useOrbStore();
+    const radarUnread = radarNotifications.filter((n) => n.status === 'pending').length;
+
+    // Sync unread radar count → orb amber glow
+    useEffect(() => {
+        setProactiveAlert(radarUnread > 0);
+    }, [radarUnread, setProactiveAlert]);
+
+    const handleRadarDismiss = async (id: string) => {
+        dismissRadar(id);
+        await corePatch(`/v3/mora/radar/${id}`, { status: 'dismissed' });
+        queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+    };
+
+    const handleRadarAct = async (id: string) => {
+        dismissRadar(id);
+        await corePost(`/v3/mora/radar/${id}/act`, {});
+        queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+    };
+
     // Keyboard shortcut: Strg+Shift+N
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -488,6 +519,30 @@ export const NotificationCenter: React.FC = () => {
 
                             {/* Content */}
                             <div className="flex-1 overflow-y-auto p-3 space-y-4">
+                                {/* Mora Radar — proactive signals */}
+                                {radarNotifications.length > 0 && (
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2 px-1">
+                                            <Brain size={10} className="text-amber-400/60" />
+                                            <span className="text-[10px] text-white/30 uppercase tracking-wider">
+                                                Mora beobachtet
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <AnimatePresence mode="popLayout">
+                                                {radarNotifications.map((rn) => (
+                                                    <RadarCard
+                                                        key={rn.id}
+                                                        notification={rn}
+                                                        onDismiss={() => handleRadarDismiss(rn.id)}
+                                                        onAct={rn.entity_id ? () => handleRadarAct(rn.id) : undefined}
+                                                    />
+                                                ))}
+                                            </AnimatePresence>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {notifications.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 text-center">
                                         <Bell size={32} className="text-white/10 mb-3" />

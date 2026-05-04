@@ -14,6 +14,8 @@ interface OrbStoreState {
   lastAnswerSourceMode: string | null;
   lastAnswerScopeLabel: string | null;
 
+  hasProactiveAlert: boolean;
+
   setOrbState(state: OrbStateValue): void;
   setSpeculativeState(state: OrbStateValue, ttlMs?: number): void;
   clearSpeculativeState(): void;
@@ -22,6 +24,7 @@ interface OrbStoreState {
     mode: string | null,
     label: string | null,
   ): void;
+  setProactiveAlert(val: boolean): void;
   initializeMindLoop(): void;
 }
 
@@ -36,6 +39,7 @@ export const useOrbStore = create<OrbStoreState>((set, get) => ({
   lastAnswerSource: null,
   lastAnswerSourceMode: null,
   lastAnswerScopeLabel: null,
+  hasProactiveAlert: false,
 
   setOrbState: (state) => {
     const { speculativeState, speculativeUntil } = get();
@@ -57,6 +61,8 @@ export const useOrbStore = create<OrbStoreState>((set, get) => ({
 
   setAnswerProvenance: (source, mode, label) =>
     set({ lastAnswerSource: source, lastAnswerSourceMode: mode, lastAnswerScopeLabel: label }),
+
+  setProactiveAlert: (val) => set({ hasProactiveAlert: val }),
 
   initializeMindLoop: () => {
     if (mindLoopInitialized) return;
