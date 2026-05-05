@@ -19,7 +19,7 @@ import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
-import { loadWebsiteEntryContext, markWebsiteEntryContextForHomeOpen, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import { clearWebsiteEntryActiveContext, loadWebsiteEntryContext, markWebsiteEntryContextForHomeOpen, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -293,6 +293,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setIsLoading(true);
 
         try {
+            clearWebsiteEntryActiveContext();
+            setWebsiteEntryContext(null);
             // Refresh companies from server
             const companies = await queryClient.fetchQuery({
                 queryKey: queryKeys.companies(),
@@ -443,6 +445,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             if (response.ok && data?.success) {
+                clearWebsiteEntryActiveContext();
+                setWebsiteEntryContext(null);
                 saveAuthState(data.role || 'member', data.email || loginEmail, data.tenant_id, null);
                 toast.success(`Willkommen, ${(data.email || loginEmail).split('@')[0]}!`);
 

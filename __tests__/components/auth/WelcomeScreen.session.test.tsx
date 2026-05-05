@@ -8,6 +8,7 @@ import { signIn } from 'next-auth/react';
 import { renderWithProviders, resetAllStores } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
 
 jest.mock('@/lib/queries/queryKeys', () => ({
     queryKeys: {
@@ -343,6 +344,53 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
             );
             expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
             expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
+            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+        });
+    });
+
+    it('clears active website-entry context after a normal account login', async () => {
+        const mockFetch = global.fetch as jest.Mock;
+        mockCoreGet.mockResolvedValue(null);
+        localStorage.setItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY, JSON.stringify({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-old',
+            companyName: 'Old Lead GmbH',
+            title: 'Digital Risk Check aus der Website',
+            email: 'lead@old.example',
+            entryToken: 'old-entry-token',
+            storedAt: new Date().toISOString(),
+            openOnHome: true,
+            rooms: [],
+            documents: [],
+            tasks: [],
+        }));
+        localStorage.setItem('saimor_website_entry_auto_opened_audit-old', '1');
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                success: true,
+                role: 'owner',
+                email: 'nextchaptergermany@gmail.com',
+                tenant_id: 'tenant-hq',
+            }),
+        } as any);
+
+        renderWithStore();
+
+        fireEvent.click(screen.getByText('Anmelden'));
+        fireEvent.change(screen.getByPlaceholderText('name@firma.de'), {
+            target: { value: 'nextchaptergermany@gmail.com' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('********'), {
+            target: { value: 'real-hq-password' },
+        });
+        fireEvent.click(screen.getAllByText('Anmelden').at(-1)!);
+
+        await waitFor(() => {
+            expect(localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY)).toBeNull();
+            expect(localStorage.getItem('saimor_website_entry_auto_opened_audit-old')).toBeNull();
+            expect(localStorage.getItem('saimor_tenant')).toBe('tenant-hq');
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
         });
     });

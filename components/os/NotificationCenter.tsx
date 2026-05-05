@@ -45,6 +45,7 @@ import { realtime } from '@/lib/api/realtimeClient';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openNavigationOutcome } from '@/lib/utils/searchOpen';
 import { RadarCard } from '@/components/mora/RadarCard';
+import { MoraRadarToast } from '@/components/mora/MoraRadarToast';
 import type { RadarNotification } from '@/lib/store/radarStore';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -385,6 +386,9 @@ export const NotificationCenter: React.FC = () => {
     const { setProactiveAlert } = useOrbStore();
     const radarUnread = radarNotifications.filter((n) => n.status === 'pending').length;
     const totalUnread = unreadCount + radarUnread;
+    const radarToastNotification = !isOpen && !focusModeEnabled
+        ? radarNotifications.find((n) => n.status === 'pending' && n.tier === 'suggest' && Boolean(n.entity_id))
+        : undefined;
 
     // Sync unread radar count → orb amber glow
     useEffect(() => {
@@ -569,6 +573,18 @@ export const NotificationCenter: React.FC = () => {
 
     return (
         <div className="relative">
+            <AnimatePresence>
+                {radarToastNotification && (
+                    <MoraRadarToast
+                        key={radarToastNotification.id}
+                        notification={radarToastNotification}
+                        onOpen={() => handleRadarAct(radarToastNotification)}
+                        onDismiss={() => handleRadarDismiss(radarToastNotification.id)}
+                        onShowAll={() => setOpen(true)}
+                    />
+                )}
+            </AnimatePresence>
+
             {/* Trigger Button (used by Dock or TopBar) */}
             <button
                 onClick={() => setOpen(!isOpen)}

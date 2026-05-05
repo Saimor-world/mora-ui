@@ -56,6 +56,22 @@ export function clearWebsiteEntryContext() {
     }
 }
 
+export function clearWebsiteEntryActiveContext() {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.removeItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+        for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
+            const key = window.localStorage.key(i);
+            if (key?.startsWith('saimor_website_entry_auto_opened_')) {
+                window.localStorage.removeItem(key);
+            }
+        }
+        window.dispatchEvent(new Event(WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT));
+    } catch {
+        // Best-effort cleanup only.
+    }
+}
+
 export function consumeWebsiteEntryHomeOpenFlag(context: StoredWebsiteEntryContext) {
     if (typeof window === 'undefined') return;
     try {

@@ -215,4 +215,26 @@ describe('NotificationCenter radar integration', () => {
       expect(panes.some((pane) => pane.id === 'finder-space-2')).toBe(true);
     });
   });
+
+  it('surfaces a compact Mora toast for actionable suggest signals while closed', async () => {
+    useNotificationStore.setState({
+      notifications: [],
+      isOpen: false,
+      focusModeEnabled: false,
+    });
+    useRadarStore.getState().setNotifications([makeRadar({
+      title: 'Termin braucht Status',
+      body: 'Ein Dokument braucht Aufmerksamkeit.',
+    })], 1);
+
+    renderCenter();
+
+    expect(screen.getByText('Mora sieht etwas')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Jetzt ansehen/i }));
+
+    await waitFor(() => {
+      const panes = usePaneStore.getState().panes;
+      expect(panes.some((pane) => pane.id === 'document-node-1')).toBe(true);
+    });
+  });
 });
