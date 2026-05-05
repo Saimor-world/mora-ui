@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ArrowRight, Check, Clock3, Info, Lightbulb } from 'lucide-react';
+import { ArrowRight, Check, Clock3, FileText, FolderOpen, Info, Layers3, Lightbulb, MapPin } from 'lucide-react';
 import type { RadarNotification } from '@/lib/store/radarStore';
 
 interface RadarCardProps {
@@ -14,6 +14,8 @@ interface RadarCardProps {
 export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, onAct }) => {
   const isInform = notification.tier === 'inform';
   const Icon = isInform ? Info : Lightbulb;
+  const signal = getSignalMeta(notification.signal_type, notification.entity_type);
+  const TargetIcon = signal.targetIcon;
   const tone = isInform
     ? {
         label: 'Hinweis',
@@ -43,7 +45,7 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
         <div className={`inline-flex items-center gap-1.5 rounded-full border border-current/20 px-2 py-0.5 text-[10px] font-medium ${tone.accent}`}>
           <Icon size={11} />
           <span>{tone.label}</span>
-          <span className={tone.muted}>/ {getSignalLabel(notification.signal_type)}</span>
+          <span className={tone.muted}>/ {signal.label}</span>
         </div>
         <div className="inline-flex items-center gap-1 text-[10px] text-white/35">
           <Clock3 size={10} />
@@ -58,6 +60,23 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
         </div>
       </div>
 
+      <div className="mt-3 grid gap-2 rounded-md border border-white/8 bg-black/20 p-2">
+        <div className="flex items-start gap-2">
+          <TargetIcon size={13} className={`mt-0.5 shrink-0 ${tone.accent}`} />
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/32">Mora sieht</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-white/62">{signal.read}</p>
+          </div>
+        </div>
+        <div className="flex items-start gap-2">
+          <ArrowRight size={13} className="mt-0.5 shrink-0 text-white/34" />
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/32">Naechster Schritt</p>
+            <p className="mt-0.5 text-[11px] leading-relaxed text-white/58">{signal.next}</p>
+          </div>
+        </div>
+      </div>
+
       <div className="mt-3 flex items-center justify-end gap-2">
         <button
           onClick={onDismiss}
@@ -66,12 +85,12 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
           <Check size={11} />
           Erledigt
         </button>
-        {notification.tier === 'suggest' && onAct && (
+        {onAct && (
           <button
             onClick={onAct}
             className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${tone.button}`}
           >
-            Ansehen <ArrowRight size={10} />
+            {signal.cta} <ArrowRight size={10} />
           </button>
         )}
       </div>
@@ -79,7 +98,13 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
   );
 };
 
-function getSignalLabel(signalType: string): string {
+function getSignalMeta(signalType: string, entityType?: string): {
+  label: string;
+  read: string;
+  next: string;
+  cta: string;
+  targetIcon: typeof FileText;
+} {
   const normalized = signalType
     .replace(/Rule$/, '')
     .replace(/([a-z])([A-Z])/g, '$1_$2')
@@ -87,19 +112,61 @@ function getSignalLabel(signalType: string): string {
 
   switch (normalized) {
     case 'stale_document':
-      return 'Dokument';
+      return {
+        label: 'Dokument',
+        read: 'Ein Dokument liegt in einem aktiven Bereich, wurde selbst aber laenger nicht beruehrt.',
+        next: 'Oeffne es im Kontext und entscheide: aktualisieren, archivieren oder jemandem zuweisen.',
+        cta: entityType === 'folder' ? 'Ordner oeffnen' : 'Dokument oeffnen',
+        targetIcon: FileText,
+      };
     case 'inactive_space':
-      return 'Bereich';
+      return {
+        label: 'Bereich',
+        read: 'Ein Space wirkt still, obwohl er noch Teil der Arbeitsstruktur ist.',
+        next: 'Pruefe, ob der Bereich noch gebraucht wird oder als Archiv markiert werden sollte.',
+        cta: 'Bereich oeffnen',
+        targetIcon: Layers3,
+      };
     case 'deadline_proximity':
-      return 'Termin';
+      return {
+        label: 'Termin',
+        read: 'Ein Titel enthaelt ein nahes Datum, aber es gibt kein aktuelles Update dazu.',
+        next: 'Oeffne das Dokument, klaere Status und naechste Verantwortung.',
+        cta: 'Termin ansehen',
+        targetIcon: FileText,
+      };
     case 'duplicate_folder':
-      return 'Ordner';
+      return {
+        label: 'Ordner',
+        read: 'Mora hat aehnliche Ordnernamen in getrennten Bereichen erkannt.',
+        next: 'Oeffne den neuen Ordner und klaere, ob zusammenfuehren oder sauber trennen sinnvoll ist.',
+        cta: 'Ordner oeffnen',
+        targetIcon: FolderOpen,
+      };
     case 'hot_document':
-      return 'Aktivitaet';
+      return {
+        label: 'Aktivitaet',
+        read: 'Ein Dokument wurde auffaellig oft bearbeitet. Dort entsteht gerade Arbeit oder Reibung.',
+        next: 'Oeffne es und pruefe, ob eine Entscheidung, Zusammenfassung oder Aufgabe fehlt.',
+        cta: 'Dokument oeffnen',
+        targetIcon: FileText,
+      };
     case 'missing_recurring_update':
-      return 'Routine';
+      return {
+        label: 'Routine',
+        read: 'Ein Bereich hatte wiederkehrende Updates, diesmal fehlt dieses Muster.',
+        next: 'Pruefe kurz, ob die Routine ausgesetzt, vergessen oder abgeschlossen ist.',
+        cta: 'Routine pruefen',
+        targetIcon: Layers3,
+      };
     default:
-      return normalized.replace(/_/g, ' ');
+      return {
+        label: normalized.replace(/_/g, ' '),
+        read: 'Mora hat ein Signal aus deinem Workspace erkannt.',
+        next: 'Oeffne den betroffenen Ort und entscheide, ob daraus eine Aufgabe wird.',
+        cta: entityType === 'folder' ? 'Ort oeffnen' : 'Ansehen',
+        targetIcon: entityType === 'folder' ? FolderOpen : entityType === 'space' ? Layers3 : MapPin,
+      };
   }
 }
 

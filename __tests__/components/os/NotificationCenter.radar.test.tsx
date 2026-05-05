@@ -141,7 +141,7 @@ describe('NotificationCenter radar integration', () => {
     useRadarStore.getState().setNotifications([makeRadar()], 1);
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /Ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;
@@ -175,7 +175,7 @@ describe('NotificationCenter radar integration', () => {
 
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /Ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;
@@ -208,7 +208,7 @@ describe('NotificationCenter radar integration', () => {
 
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /Ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;

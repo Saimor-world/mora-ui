@@ -32,6 +32,9 @@ describe('RadarCard', () => {
     expect(screen.getByText(/seit 14 Tagen/)).toBeInTheDocument();
     expect(screen.getByText('/ Dokument')).toBeInTheDocument();
     expect(screen.getByText('1m')).toBeInTheDocument();
+    expect(screen.getByText('Mora sieht')).toBeInTheDocument();
+    expect(screen.getByText('Naechster Schritt')).toBeInTheDocument();
+    expect(screen.getByText(/aktiven Bereich/)).toBeInTheDocument();
   });
 
   it('renders inform tier as Hinweis', () => {
@@ -53,22 +56,24 @@ describe('RadarCard', () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('shows Ansehen only for actionable suggest cards', () => {
+  it('shows a concrete action for actionable suggest cards', () => {
     const onAct = jest.fn();
     render(<RadarCard notification={makeNotif({ tier: 'suggest' })} onDismiss={jest.fn()} onAct={onAct} />);
-    const btn = screen.getByRole('button', { name: /Ansehen/i });
+    const btn = screen.getByRole('button', { name: /Dokument oeffnen/i });
     expect(btn).toBeInTheDocument();
     fireEvent.click(btn);
     expect(onAct).toHaveBeenCalledTimes(1);
   });
 
-  it('does not show Ansehen for inform cards', () => {
-    render(<RadarCard notification={makeNotif({ tier: 'inform' })} onDismiss={jest.fn()} onAct={jest.fn()} />);
-    expect(screen.queryByRole('button', { name: /Ansehen/i })).toBeNull();
+  it('shows a direct action for actionable inform cards too', () => {
+    const onAct = jest.fn();
+    render(<RadarCard notification={makeNotif({ tier: 'inform' })} onDismiss={jest.fn()} onAct={onAct} />);
+    fireEvent.click(screen.getByRole('button', { name: /Dokument oeffnen/i }));
+    expect(onAct).toHaveBeenCalledTimes(1);
   });
 
-  it('does not show Ansehen for suggest cards without an action', () => {
+  it('does not show an open action without an action handler', () => {
     render(<RadarCard notification={makeNotif({ tier: 'suggest' })} onDismiss={jest.fn()} />);
-    expect(screen.queryByRole('button', { name: /Ansehen/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /oeffnen|ansehen/i })).toBeNull();
   });
 });
