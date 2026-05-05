@@ -142,7 +142,7 @@ export interface NavigationOutcome {
     spaceId?: string;
     folderId?: string;
     nodeId?: string;
-    source?: 'chat' | 'search-popup' | 'search-pane' | 'search' | 'mycelium' | 'work-session';
+    source?: 'chat' | 'search-popup' | 'search-pane' | 'search' | 'mycelium' | 'work-session' | 'radar';
 }
 
 export interface FinderNavigationContext {

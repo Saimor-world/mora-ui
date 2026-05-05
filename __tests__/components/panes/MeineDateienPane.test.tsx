@@ -11,7 +11,7 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-const mockAppLoader = jest.fn(() => <div data-testid="app-loader-mock" />);
+const mockAppLoader = jest.fn((_props: any) => <div data-testid="app-loader-mock" />);
 jest.mock('@/lib/apps/AppLoader', () => ({
     AppLoader: (props: any) => mockAppLoader(props),
 }));

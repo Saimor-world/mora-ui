@@ -1,7 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 
-// Mock framer-motion — standard SAIMOR pattern
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, className, ...rest }: any) =>
@@ -22,25 +21,39 @@ const makeNotif = (overrides: Partial<RadarNotification> = {}): RadarNotificatio
   status: 'pending',
   entity_id: 'e1',
   entity_type: 'node',
-  created_at: '2026-05-04T10:00:00Z',
+  created_at: new Date(Date.now() - 60_000).toISOString(),
   ...overrides,
 });
 
 describe('RadarCard', () => {
-  it('renders title and body', () => {
+  it('renders title, body, signal label and time meta', () => {
     render(<RadarCard notification={makeNotif()} onDismiss={jest.fn()} />);
     expect(screen.getByText('Dokument veraltet')).toBeInTheDocument();
     expect(screen.getByText(/seit 14 Tagen/)).toBeInTheDocument();
+    expect(screen.getByText('/ Dokument')).toBeInTheDocument();
+    expect(screen.getByText('1m')).toBeInTheDocument();
   });
 
-  it('calls onDismiss when X is clicked', () => {
+  it('renders inform tier as Hinweis', () => {
+    render(<RadarCard notification={makeNotif({ tier: 'inform', signal_type: 'InactiveSpaceRule' })} onDismiss={jest.fn()} />);
+    expect(screen.getByText('Hinweis')).toBeInTheDocument();
+    expect(screen.getByText('/ Bereich')).toBeInTheDocument();
+  });
+
+  it('renders suggest tier as Vorschlag', () => {
+    render(<RadarCard notification={makeNotif({ tier: 'suggest', signal_type: 'deadline_proximity' })} onDismiss={jest.fn()} />);
+    expect(screen.getByText('Vorschlag')).toBeInTheDocument();
+    expect(screen.getByText('/ Termin')).toBeInTheDocument();
+  });
+
+  it('calls onDismiss from the Erledigt action', () => {
     const onDismiss = jest.fn();
     render(<RadarCard notification={makeNotif()} onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByRole('button', { name: /Schließen/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it('shows Ansehen button for suggest tier with onAct', () => {
+  it('shows Ansehen only for actionable suggest cards', () => {
     const onAct = jest.fn();
     render(<RadarCard notification={makeNotif({ tier: 'suggest' })} onDismiss={jest.fn()} onAct={onAct} />);
     const btn = screen.getByRole('button', { name: /Ansehen/i });
@@ -49,12 +62,12 @@ describe('RadarCard', () => {
     expect(onAct).toHaveBeenCalledTimes(1);
   });
 
-  it('does not show Ansehen button for inform tier', () => {
+  it('does not show Ansehen for inform cards', () => {
     render(<RadarCard notification={makeNotif({ tier: 'inform' })} onDismiss={jest.fn()} onAct={jest.fn()} />);
     expect(screen.queryByRole('button', { name: /Ansehen/i })).toBeNull();
   });
 
-  it('does not show Ansehen button for suggest tier without onAct', () => {
+  it('does not show Ansehen for suggest cards without an action', () => {
     render(<RadarCard notification={makeNotif({ tier: 'suggest' })} onDismiss={jest.fn()} />);
     expect(screen.queryByRole('button', { name: /Ansehen/i })).toBeNull();
   });

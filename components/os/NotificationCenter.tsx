@@ -40,7 +40,12 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { useRadar } from '@/lib/queries/useRadar';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { corePatch, corePost } from '@/lib/api/http';
+import { fetchNodeDetails, getEntityContext } from '@/lib/api/coreClient';
+import { realtime } from '@/lib/api/realtimeClient';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { openNavigationOutcome } from '@/lib/utils/searchOpen';
 import { RadarCard } from '@/components/mora/RadarCard';
+import type { RadarNotification } from '@/lib/store/radarStore';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -224,6 +229,25 @@ const formatTimestamp = (date: Date) => {
     return `vor ${days}d`;
 };
 
+type RadarActResponse = {
+    action_type?: string;
+    payload?: {
+        entity_id?: string | null;
+        entity_type?: string | null;
+    };
+};
+
+const buildContextPath = (ctx: Awaited<ReturnType<typeof getEntityContext>> | null): string | undefined => {
+    if (!ctx?.path) return undefined;
+    const parts = [
+        ctx.path.company?.name,
+        ctx.path.department?.name,
+        ctx.path.space?.name,
+        ...(ctx.path.breadcrumbs || []).map((item) => item.name),
+    ].filter(Boolean);
+    return parts.length > 0 ? parts.join(' / ') : undefined;
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // NOTIFICATION ITEM COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -347,10 +371,12 @@ export const NotificationCenter: React.FC = () => {
         markAsRead,
         markAllAsRead,
         clearAll,
-        setFocusMode
+        setFocusMode,
+        addNotification
     } = useNotificationStore();
 
     const unreadCount = notifications.filter((n) => !n.read).length;
+    const openPane = usePaneStore((s) => s.openPane);
 
     // Radar (proactive Mora notifications)
     const queryClient = useQueryClient();
@@ -358,22 +384,149 @@ export const NotificationCenter: React.FC = () => {
     const { notifications: radarNotifications, dismiss: dismissRadar } = useRadarStore();
     const { setProactiveAlert } = useOrbStore();
     const radarUnread = radarNotifications.filter((n) => n.status === 'pending').length;
+    const totalUnread = unreadCount + radarUnread;
 
     // Sync unread radar count → orb amber glow
     useEffect(() => {
         setProactiveAlert(radarUnread > 0);
     }, [radarUnread, setProactiveAlert]);
 
+    useEffect(() => {
+        const handleRadarPush = () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+        };
+
+        realtime.on('mora.radar.new', handleRadarPush);
+        realtime.connect();
+        return () => realtime.off('mora.radar.new', handleRadarPush);
+    }, [queryClient]);
+
     const handleRadarDismiss = async (id: string) => {
         dismissRadar(id);
-        await corePatch(`/v3/mora/radar/${id}`, { status: 'dismissed' });
-        queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+        try {
+            await corePatch(`/v3/mora/radar/${id}`, { status: 'dismissed' });
+        } catch {
+            addNotification({
+                type: 'warning',
+                title: 'Radar konnte nicht aktualisiert werden',
+                message: 'Mora synchronisiert die Hinweise erneut.',
+                source: 'mora',
+                autoDismiss: 6000,
+            });
+        } finally {
+            queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+        }
     };
 
-    const handleRadarAct = async (id: string) => {
-        dismissRadar(id);
-        await corePost(`/v3/mora/radar/${id}/act`, {});
-        queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+    const openRadarTarget = useCallback(async (
+        notification: RadarNotification,
+        payload: NonNullable<RadarActResponse['payload']>,
+    ): Promise<boolean> => {
+        const entityId = payload.entity_id || notification.entity_id;
+        const entityType = (payload.entity_type || notification.entity_type || '').toLowerCase();
+        if (!entityId || !entityType) return false;
+
+        if (entityType === 'node') {
+            let node: any = null;
+            try {
+                node = await fetchNodeDetails(entityId);
+            } catch {
+                // The document pane can still resolve by nodeId.
+            }
+            const folderId = node?.folder_id || node?.folderId || node?.parent_id || node?.parentId;
+            const companyId = node?.company_id || node?.companyId || node?.metadata?.company_id || node?.metadata?.companyId;
+            const label = node?.title || node?.name || notification.title;
+            openNavigationOutcome({
+                title: 'Radar-Signal geöffnet',
+                message: folderId
+                    ? `${label} wurde im Finder-Kontext und als Dokument geöffnet.`
+                    : `${label} wurde als Dokument geöffnet.`,
+                targetType: 'node',
+                label,
+                companyId,
+                folderId,
+                nodeId: entityId,
+                source: 'radar',
+            }, openPane);
+            return true;
+        }
+
+        if (entityType === 'folder') {
+            let context: Awaited<ReturnType<typeof getEntityContext>> | null = null;
+            try {
+                context = await getEntityContext(entityId);
+            } catch {
+                context = null;
+            }
+            const breadcrumbs = context?.path?.breadcrumbs || [];
+            const label = context?.name || breadcrumbs[breadcrumbs.length - 1]?.name || notification.title;
+            openNavigationOutcome({
+                title: 'Radar-Ordner geöffnet',
+                message: `${label} wurde im Finder geöffnet.`,
+                targetType: 'folder',
+                label,
+                path: buildContextPath(context),
+                companyId: context?.path?.company?.id,
+                departmentId: context?.path?.department?.id,
+                spaceId: context?.path?.space?.id,
+                folderId: entityId,
+                source: 'radar',
+            }, openPane);
+            return true;
+        }
+
+        if (entityType === 'space') {
+            let context: Awaited<ReturnType<typeof getEntityContext>> | null = null;
+            try {
+                context = await getEntityContext(entityId);
+            } catch {
+                context = null;
+            }
+            const label = context?.name || notification.title;
+            openNavigationOutcome({
+                title: 'Radar-Bereich geoeffnet',
+                message: `${label} wurde im Finder geoeffnet.`,
+                targetType: 'space',
+                label,
+                path: buildContextPath(context),
+                companyId: context?.path?.company?.id,
+                departmentId: context?.path?.department?.id,
+                spaceId: entityId,
+                source: 'radar',
+            }, openPane);
+            return true;
+        }
+
+        return false;
+    }, [openPane]);
+
+    const handleRadarAct = async (notification: RadarNotification) => {
+        try {
+            const response = await corePost(`/v3/mora/radar/${notification.id}/act`, {}) as RadarActResponse | null;
+            const opened = response?.action_type === 'navigate' && response.payload
+                ? await openRadarTarget(notification, response.payload)
+                : false;
+            if (!opened) {
+                addNotification({
+                    type: 'info',
+                    title: 'Radar-Hinweis aktualisiert',
+                    message: 'Der Hinweis wurde erledigt. Für dieses Ziel gibt es noch keine direkte OS-Ansicht.',
+                    source: 'mora',
+                    autoDismiss: 7000,
+                });
+            }
+            dismissRadar(notification.id);
+        } catch {
+            addNotification({
+                type: 'warning',
+                title: 'Radar-Ziel nicht geöffnet',
+                message: 'Mora konnte den Hinweis nicht ausführen. Die Liste wird neu synchronisiert.',
+                source: 'mora',
+                autoDismiss: 7000,
+            });
+        } finally {
+            queryClient.invalidateQueries({ queryKey: queryKeys.radar() });
+        }
     };
 
     // Keyboard shortcut: Strg+Shift+N
@@ -421,16 +574,18 @@ export const NotificationCenter: React.FC = () => {
                 onClick={() => setOpen(!isOpen)}
                 className={`
                     relative p-2 rounded-lg transition-all
-                    ${isOpen ? 'bg-emerald-500/20 text-emerald-400' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}
+                    ${isOpen
+                        ? radarUnread > 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'
+                        : radarUnread > 0 ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}
                 `}
                 title="Notifications (Strg+Shift+N)"
             >
                 {focusModeEnabled ? <BellOff size={18} /> : <Bell size={18} />}
 
                 {/* Unread Badge */}
-                {unreadCount > 0 && !focusModeEnabled && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
+                {totalUnread > 0 && !focusModeEnabled && (
+                    <span className={`absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white ${radarUnread > 0 ? 'bg-amber-500' : 'bg-red-500'}`}>
+                        {totalUnread > 9 ? '9+' : totalUnread}
                     </span>
                 )}
             </button>
@@ -454,7 +609,9 @@ export const NotificationCenter: React.FC = () => {
                                     <div>
                                         <h3 className="text-sm font-medium text-white">Benachrichtigungen</h3>
                                         <p className="text-[10px] text-white/40">
-                                            {unreadCount > 0 ? `${unreadCount} ungelesen` : 'Alles gelesen'}
+                                            {totalUnread > 0
+                                                ? `${totalUnread} offen${radarUnread > 0 ? ` · ${radarUnread} von Mora` : ''}`
+                                                : 'Alles gelesen'}
                                         </p>
                                     </div>
                                 </div>
@@ -521,12 +678,19 @@ export const NotificationCenter: React.FC = () => {
                             <div className="flex-1 overflow-y-auto p-3 space-y-4">
                                 {/* Mora Radar — proactive signals */}
                                 {radarNotifications.length > 0 && (
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2 px-1">
-                                            <Brain size={10} className="text-amber-400/60" />
-                                            <span className="text-[10px] text-white/30 uppercase tracking-wider">
-                                                Mora beobachtet
-                                            </span>
+                                    <div className="rounded-xl border border-amber-400/15 bg-amber-500/[0.035] p-2 shadow-[0_18px_50px_rgba(245,158,11,0.08)]">
+                                        <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                                            <div className="flex items-center gap-2">
+                                                <Brain size={10} className="text-amber-300/80" />
+                                                <span className="text-[10px] text-amber-100/55 uppercase tracking-wider">
+                                                    Mora beobachtet
+                                                </span>
+                                            </div>
+                                            {radarUnread > 0 && (
+                                                <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-medium text-amber-100/80">
+                                                    {radarUnread} offen
+                                                </span>
+                                            )}
                                         </div>
                                         <div className="space-y-2">
                                             <AnimatePresence mode="popLayout">
@@ -535,7 +699,7 @@ export const NotificationCenter: React.FC = () => {
                                                         key={rn.id}
                                                         notification={rn}
                                                         onDismiss={() => handleRadarDismiss(rn.id)}
-                                                        onAct={rn.entity_id ? () => handleRadarAct(rn.id) : undefined}
+                                                        onAct={rn.entity_id ? () => handleRadarAct(rn) : undefined}
                                                     />
                                                 ))}
                                             </AnimatePresence>
@@ -543,7 +707,7 @@ export const NotificationCenter: React.FC = () => {
                                     </div>
                                 )}
 
-                                {notifications.length === 0 ? (
+                                {notifications.length === 0 && radarNotifications.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-12 text-center">
                                         <Bell size={32} className="text-white/10 mb-3" />
                                         <p className="text-sm text-white/40">Keine Benachrichtigungen</p>
@@ -580,7 +744,7 @@ export const NotificationCenter: React.FC = () => {
                             {/* Footer */}
                             <div className="p-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/30">
                                 <span>Strg+Shift+N zum Öffnen</span>
-                                <span>{notifications.length} Benachrichtigungen</span>
+                                <span>{notifications.length + radarNotifications.length} Eintraege</span>
                             </div>
                         </motion.div>
                     </>

@@ -112,6 +112,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             case 'chat': return 'Aus Mora-Chat geöffnet';
             case 'mycelium': return 'Aus Einordnung geöffnet';
             case 'work-session': return 'Aus Arbeitsplan geöffnet';
+            case 'radar': return 'Aus Mora Radar geöffnet';
             case 'search': case 'search-popup': case 'search-pane': return 'Aus Suche geöffnet';
             default: return 'Von Mora geöffnet';
         }
