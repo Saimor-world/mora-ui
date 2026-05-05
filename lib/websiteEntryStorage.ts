@@ -4,14 +4,18 @@ export const WEBSITE_ENTRY_CONTEXT_STORAGE_KEY = 'saimor_website_entry_context';
 export const WEBSITE_ENTRY_LEADS_STORAGE_KEY = 'saimor_website_entry_leads';
 export const WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT = 'saimor:website-entry-context-updated';
 
-export type StoredWebsiteEntryContext = WebsiteEntryContext & { storedAt?: string };
+export type StoredWebsiteEntryContext = WebsiteEntryContext & {
+    storedAt?: string;
+    openOnHome?: boolean;
+};
 
-export function saveWebsiteEntryContext(context: WebsiteEntryContext) {
+export function saveWebsiteEntryContext(context: WebsiteEntryContext, options?: { openOnHome?: boolean }) {
     if (typeof window === 'undefined') return;
     try {
         const next = {
             ...context,
             storedAt: new Date().toISOString(),
+            openOnHome: Boolean(options?.openOnHome),
         };
         window.localStorage.setItem(
             WEBSITE_ENTRY_CONTEXT_STORAGE_KEY,
@@ -22,6 +26,10 @@ export function saveWebsiteEntryContext(context: WebsiteEntryContext) {
     } catch {
         // Storage can be unavailable in hardened browsers; the entry page still renders.
     }
+}
+
+export function markWebsiteEntryContextForHomeOpen(context: WebsiteEntryContext) {
+    saveWebsiteEntryContext(context, { openOnHome: true });
 }
 
 export function loadWebsiteEntryContext(): StoredWebsiteEntryContext | null {
@@ -43,6 +51,24 @@ export function clearWebsiteEntryContext() {
     if (typeof window === 'undefined') return;
     try {
         window.localStorage.removeItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+    } catch {
+        // Best-effort cleanup only.
+    }
+}
+
+export function consumeWebsiteEntryHomeOpenFlag(context: StoredWebsiteEntryContext) {
+    if (typeof window === 'undefined') return;
+    try {
+        const next = {
+            ...context,
+            openOnHome: false,
+            storedAt: context.storedAt || new Date().toISOString(),
+        };
+        window.localStorage.setItem(
+            WEBSITE_ENTRY_CONTEXT_STORAGE_KEY,
+            JSON.stringify(next)
+        );
+        window.dispatchEvent(new Event(WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT));
     } catch {
         // Best-effort cleanup only.
     }

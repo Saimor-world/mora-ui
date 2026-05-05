@@ -19,7 +19,7 @@ import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
-import { loadWebsiteEntryContext, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import { loadWebsiteEntryContext, markWebsiteEntryContextForHomeOpen, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -485,6 +485,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (data.active_company_name) {
                 localStorage.setItem('last_workspace', data.active_company_name);
             }
+            markWebsiteEntryContextForHomeOpen(websiteEntryContext);
             toast.success(`${websiteEntryContext.companyName} ist als isolierter HQ-Workspace bereit.`);
             setViewMode('workspace');
             window.location.assign('/home');

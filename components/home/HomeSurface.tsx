@@ -17,8 +17,8 @@ import { buildBriefing } from '@/lib/home/briefing';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
-import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
-import { loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export const HomeSurface: React.FC = () => {
     const [teamActivities, setTeamActivities] = useState<TeamActivitySurface[]>([]);
     const [teamMessages, setTeamMessages] = useState<TeamMessageSurface[]>([]);
     const [teamPresence, setTeamPresence] = useState<TeamPresenceSurface | null>(null);
-    const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
+    const [websiteEntryContext, setWebsiteEntryContext] = useState<StoredWebsiteEntryContext | null>(null);
     const {
         overview: integrationsOverview,
         summary: communicationSummary,
@@ -375,10 +375,18 @@ export const HomeSurface: React.FC = () => {
 
     useEffect(() => {
         if (!websiteEntryContext || process.env.NODE_ENV === 'test') return;
+        const storedAt = websiteEntryContext.storedAt ? Date.parse(websiteEntryContext.storedAt) : 0;
+        const isFreshExplicitOpen = Boolean(
+            websiteEntryContext.openOnHome &&
+            Number.isFinite(storedAt) &&
+            Date.now() - storedAt < 10 * 60 * 1000
+        );
+        if (!isFreshExplicitOpen) return;
         const autoOpenKey = `saimor_website_entry_auto_opened_${websiteEntryContext.id || websiteEntryContext.companyName}`;
         try {
             if (window.localStorage.getItem(autoOpenKey)) return;
             window.localStorage.setItem(autoOpenKey, '1');
+            consumeWebsiteEntryHomeOpenFlag(websiteEntryContext);
         } catch {
             // If storage is unavailable, still open once for this mounted session.
         }
