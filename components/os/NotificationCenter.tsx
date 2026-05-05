@@ -238,6 +238,8 @@ type RadarActResponse = {
     };
 };
 
+const RADAR_TOAST_HIDDEN_KEY = 'saimor.radar.toast.hidden.v1';
+
 const buildContextPath = (ctx: Awaited<ReturnType<typeof getEntityContext>> | null): string | undefined => {
     if (!ctx?.path) return undefined;
     const parts = [
@@ -378,6 +380,15 @@ export const NotificationCenter: React.FC = () => {
 
     const unreadCount = notifications.filter((n) => !n.read).length;
     const openPane = usePaneStore((s) => s.openPane);
+    const [hiddenRadarToastIds, setHiddenRadarToastIds] = useState<string[]>(() => {
+        if (typeof window === 'undefined') return [];
+        try {
+            const parsed = JSON.parse(window.localStorage.getItem(RADAR_TOAST_HIDDEN_KEY) || '[]');
+            return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+        } catch {
+            return [];
+        }
+    });
 
     // Radar (proactive Mora notifications)
     const queryClient = useQueryClient();
@@ -387,8 +398,18 @@ export const NotificationCenter: React.FC = () => {
     const radarUnread = radarNotifications.filter((n) => n.status === 'pending').length;
     const totalUnread = unreadCount + radarUnread;
     const radarToastNotification = !isOpen && !focusModeEnabled
-        ? radarNotifications.find((n) => n.status === 'pending' && n.tier === 'suggest' && Boolean(n.entity_id))
+        ? radarNotifications.find((n) => n.status === 'pending' && n.tier === 'suggest' && Boolean(n.entity_id) && !hiddenRadarToastIds.includes(n.id))
         : undefined;
+
+    const hideRadarToast = useCallback((id: string) => {
+        setHiddenRadarToastIds((current) => {
+            const next = current.includes(id) ? current : [...current, id].slice(-80);
+            if (typeof window !== 'undefined') {
+                window.localStorage.setItem(RADAR_TOAST_HIDDEN_KEY, JSON.stringify(next));
+            }
+            return next;
+        });
+    }, []);
 
     // Sync unread radar count → orb amber glow
     useEffect(() => {
@@ -404,6 +425,14 @@ export const NotificationCenter: React.FC = () => {
         realtime.connect();
         return () => realtime.off('mora.radar.new', handleRadarPush);
     }, [queryClient]);
+
+    useEffect(() => {
+        if (!radarToastNotification) return;
+        const timeout = window.setTimeout(() => {
+            hideRadarToast(radarToastNotification.id);
+        }, 10000);
+        return () => window.clearTimeout(timeout);
+    }, [hideRadarToast, radarToastNotification]);
 
     const handleRadarDismiss = async (id: string) => {
         dismissRadar(id);
@@ -579,7 +608,7 @@ export const NotificationCenter: React.FC = () => {
                         key={radarToastNotification.id}
                         notification={radarToastNotification}
                         onOpen={() => handleRadarAct(radarToastNotification)}
-                        onDismiss={() => handleRadarDismiss(radarToastNotification.id)}
+                        onDismiss={() => hideRadarToast(radarToastNotification.id)}
                         onShowAll={() => setOpen(true)}
                     />
                 )}

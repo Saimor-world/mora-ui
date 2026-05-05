@@ -72,6 +72,7 @@ function renderCenter(queryClient = new QueryClient({ defaultOptions: { queries:
 
 beforeEach(() => {
   jest.clearAllMocks();
+  window.localStorage.clear();
   mockCorePatch.mockResolvedValue({ ok: true });
   mockCorePost.mockResolvedValue({
     action_type: 'navigate',
@@ -236,5 +237,25 @@ describe('NotificationCenter radar integration', () => {
       const panes = usePaneStore.getState().panes;
       expect(panes.some((pane) => pane.id === 'document-node-1')).toBe(true);
     });
+  });
+
+  it('snoozes the Mora toast locally without dismissing the server signal', () => {
+    useNotificationStore.setState({
+      notifications: [],
+      isOpen: false,
+      focusModeEnabled: false,
+    });
+    useRadarStore.getState().setNotifications([makeRadar({
+      title: 'Termin braucht Status',
+      body: 'Ein Dokument braucht Aufmerksamkeit.',
+    })], 1);
+
+    renderCenter();
+
+    fireEvent.click(screen.getByLabelText('Mora-Hinweis spaeter zeigen'));
+
+    expect(screen.queryByText('Mora sieht etwas')).toBeNull();
+    expect(mockCorePatch).not.toHaveBeenCalled();
+    expect(useRadarStore.getState().notifications).toHaveLength(1);
   });
 });
