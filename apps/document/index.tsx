@@ -1,13 +1,14 @@
 ﻿'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Copy, Download, File, FileImage, FileText, FileVideo, FolderOpen,
-    Link, Loader2, Paperclip, RefreshCw, Search, Sparkles, UploadCloud, X,
+    Copy, Download, Edit3, File, FileImage, FileText, FileVideo, FolderOpen,
+    Link, Loader2, Paperclip, RefreshCw, Save, Search, Sparkles, UploadCloud, X,
 } from 'lucide-react';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
+import { updateNode } from '@/lib/api/orgClient';
 import { fetchCompanyFileBlob, getCompanyFileUrl } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
@@ -44,6 +45,9 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const [type, setType] = useState(initialType || '');
     const [metadata, setMetadata] = useState<Record<string, any>>(initialMetadata || {});
     const [relations, setRelations] = useState<NodeRelation[]>([]);
+    const [draftContent, setDraftContent] = useState(initialContent || '');
+    const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loadError, setLoadError] = useState<string | null>(null);
     const [reloadKey, setReloadKey] = useState(0);
@@ -77,6 +81,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 if (!nodeData) { setLoadError('Dokument nicht gefunden oder kein Zugriff.'); return; }
                 setName(nodeData.name || nodeData.title || 'Dokument');
                 setContent(nodeData.content || '');
+                setDraftContent(nodeData.content || '');
                 setType(nodeData.type || '');
                 setMetadata(nodeData.metadata || {});
                 const nodeRelations = await fetchNodeRelations(nodeId);
@@ -104,6 +109,8 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const isMarkdown = ['md', 'markdown'].includes(fileExtension) || type === 'markdown';
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
     const isVideo = ['mp4', 'webm', 'mov'].includes(fileExtension);
+    const canEditCoreDocument = Boolean(nodeId) && !isPDF && !isImage && !isVideo;
+    const hasUnsavedChanges = draftContent !== content;
 
     const sourceFileId = getNodeSourceFileId({ metadata });
     const sourceFileName = getNodeSourceFileName({ metadata, name, title: name, id: nodeId || 'document' });
@@ -191,6 +198,33 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         link.remove();
         URL.revokeObjectURL(downloadUrl);
         toast.success('Textinhalt heruntergeladen');
+    };
+
+    const handleStartEditing = () => {
+        setDraftContent(content || '');
+        setIsEditing(true);
+    };
+
+    const handleCancelEditing = () => {
+        setDraftContent(content || '');
+        setIsEditing(false);
+    };
+
+    const handleSaveCoreDocument = async () => {
+        if (!nodeId || isSaving) return;
+        setIsSaving(true);
+        try {
+            const updated = await updateNode(nodeId, { content: draftContent });
+            const nextContent = updated?.content ?? draftContent;
+            setContent(nextContent);
+            setDraftContent(nextContent);
+            setIsEditing(false);
+            toast.success('Dokument im CORE gespeichert');
+        } catch (error: any) {
+            toast.error(error?.message || 'Dokument konnte nicht gespeichert werden');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleOpenOriginal = async () => {
@@ -285,6 +319,27 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 </div>
             );
         }
+        if (isEditing && canEditCoreDocument) {
+            return (
+                <div className="flex h-full flex-col">
+                    <div className="flex items-center justify-between border-b border-white/[0.06] bg-emerald-500/[0.045] px-4 py-2">
+                        <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-emerald-100/55">
+                            <Edit3 size={12} /> CORE Editor
+                        </div>
+                        <span className="text-[11px] text-white/35">
+                            {hasUnsavedChanges ? 'Ungespeicherte Aenderungen' : 'Synchron'}
+                        </span>
+                    </div>
+                    <textarea
+                        value={draftContent}
+                        onChange={(event) => setDraftContent(event.target.value)}
+                        spellCheck={false}
+                        className="min-h-[420px] flex-1 resize-none bg-black/24 p-5 font-mono text-sm leading-6 text-white/84 outline-none placeholder:text-white/24"
+                        placeholder="Schreibe direkt in dieses CORE-Dokument..."
+                    />
+                </div>
+            );
+        }
         if (isMarkdown && content) {
             return <div className="p-6 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
         }
@@ -364,10 +419,32 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         : <FileText size={18} className="text-blue-400" />}
                     <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
                     <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">{fileExtension || type || 'doc'}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">{isPDF ? 'PDF Reader' : 'Nur lesen'}</span>
-                    {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">Mit Original</span>}
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">{isPDF ? 'PDF Reader' : canEditCoreDocument ? 'CORE editierbar' : 'Nur lesen'}</span>
+                    {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">Quelle verknuepft</span>}
                 </div>
                 <div className="flex items-center gap-2">
+                    {canEditCoreDocument && (
+                        isEditing ? (
+                            <>
+                                <button onClick={() => void handleSaveCoreDocument()} disabled={isSaving || !hasUnsavedChanges}
+                                    className="inline-flex items-center gap-2 rounded-lg border border-emerald-300/20 bg-emerald-500/14 px-3 py-2 text-xs font-medium text-emerald-50 transition-colors hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-45"
+                                    title="Im CORE speichern">
+                                    {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Speichern
+                                </button>
+                                <button onClick={handleCancelEditing}
+                                    className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors"
+                                    title="Bearbeitung abbrechen">
+                                    <X size={16} />
+                                </button>
+                            </>
+                        ) : (
+                            <button onClick={handleStartEditing}
+                                className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/68 transition-colors hover:bg-white/[0.08] hover:text-white"
+                                title="Dokument bearbeiten">
+                                <Edit3 size={14} /> Bearbeiten
+                            </button>
+                        )
+                    )}
                     {!isPDF && !isImage && !isVideo && content && (
                         <button onClick={() => void handleCopy()} className="p-2 rounded-lg hover:bg-white/5 text-white/60 hover:text-white transition-colors" title="Inhalt kopieren"><Copy size={16} /></button>
                     )}

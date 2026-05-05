@@ -88,9 +88,9 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
 
     expect((await screen.findAllByText('vertrag.pdf')).length).toBeGreaterThan(0);
-    expect(screen.getByText('CORE')).toBeInTheDocument();
-    expect(screen.getByText('Lokal')).toBeInTheDocument();
-    expect(screen.getByText('Cloud')).toBeInTheDocument();
+    expect(screen.getAllByText('CORE').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Lokal').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
   });
 
   it('creates a local editable note', async () => {

@@ -1,9 +1,13 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 jest.mock('@/lib/api/coreClient', () => ({
   fetchNodeDetails: jest.fn().mockResolvedValue(null),
   fetchNodeRelations: jest.fn().mockResolvedValue([]),
+}));
+
+jest.mock('@/lib/api/orgClient', () => ({
+  updateNode: jest.fn(),
 }));
 
 jest.mock('@/lib/api/filesClient', () => ({
@@ -51,6 +55,8 @@ jest.mock('@/lib/store/paneStore', () => ({
 }));
 
 import DocumentApp from '@/apps/document/index';
+import { fetchNodeDetails } from '@/lib/api/coreClient';
+import { updateNode } from '@/lib/api/orgClient';
 
 describe('DocumentApp', () => {
   it('renders loading state when nodeId is absent', async () => {
@@ -62,5 +68,35 @@ describe('DocumentApp', () => {
   it('renders inside a GlassPanel wrapper', async () => {
     render(<DocumentApp paneId="doc-1" initialData={{}} />);
     expect(await screen.findByTestId('glass-panel')).toBeInTheDocument();
+  });
+
+  it('edits and saves a CORE text document', async () => {
+    (fetchNodeDetails as jest.Mock).mockResolvedValue({
+      id: 'node-1',
+      name: 'Plan.md',
+      title: 'Plan.md',
+      type: 'markdown',
+      content: '# Alt',
+      metadata: {},
+    });
+    (updateNode as jest.Mock).mockResolvedValueOnce({
+      id: 'node-1',
+      name: 'Plan.md',
+      type: 'markdown',
+      content: '# Neu',
+      metadata: {},
+    });
+
+    render(<DocumentApp paneId="doc-1" initialData={{ nodeId: 'node-1' }} />);
+
+    expect(await screen.findByText('Alt')).toBeInTheDocument();
+    expect(await screen.findByText('Bearbeiten')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Bearbeiten'));
+    fireEvent.change(screen.getByPlaceholderText(/Schreibe direkt/i), { target: { value: '# Neu' } });
+    fireEvent.click(screen.getByText('Speichern'));
+
+    await waitFor(() => {
+      expect(updateNode).toHaveBeenCalledWith('node-1', { content: '# Neu' });
+    });
   });
 });

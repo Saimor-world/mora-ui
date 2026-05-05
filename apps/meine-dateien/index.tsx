@@ -61,6 +61,8 @@ type UnifiedFile = {
     dataUrl?: string;
 };
 
+type SourceFilter = 'all' | 'local' | 'core' | 'cloud';
+
 const LOCAL_FILES_KEY = 'saimor_local_files_v1';
 const LOCAL_FILE_LIMIT = 8 * 1024 * 1024;
 
@@ -164,6 +166,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [isUploading, setIsUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
+    const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
 
     const loadContent = useCallback(async () => {
         setIsLoading(true);
@@ -200,6 +203,13 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     }, [coreFiles, localFiles]);
 
     const selectedFile = useMemo(() => files.find((file) => file.id === selectedId) || files[0] || null, [files, selectedId]);
+    const cloudCount = content?.cloud_storage?.connectors?.length ?? content?.cloud_storage?.count ?? 0;
+    const filteredFiles = useMemo(() => {
+        if (sourceFilter === 'local') return files.filter((file) => file.source === 'local');
+        if (sourceFilter === 'core') return files.filter((file) => file.source === 'core');
+        if (sourceFilter === 'cloud') return [];
+        return files;
+    }, [files, sourceFilter]);
 
     useEffect(() => {
         if (!selectedFile) {
@@ -390,7 +400,6 @@ export default function MeineDateienApp({ paneId }: AppProps) {
 
     if (!pane) return null;
 
-    const cloudCount = content?.cloud_storage?.connectors?.length ?? content?.cloud_storage?.count ?? 0;
     const canEditSelected = selectedFile?.source === 'local' && (selectedFile.text != null || selectedFile.mime.startsWith('text/'));
     const selectedIsPdf = selectedFile?.mime === 'application/pdf' || /\.pdf$/i.test(selectedFile?.name || '');
     const selectedIsImage = selectedFile?.mime.startsWith('image/');
@@ -419,6 +428,18 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             <div className="flex h-full min-h-0 bg-black/10">
                 <aside className="flex w-[310px] shrink-0 flex-col border-r border-white/[0.07] bg-black/20">
                     <div className="space-y-3 border-b border-white/[0.07] p-4">
+                        <div className="rounded-2xl border border-emerald-300/12 bg-emerald-500/[0.055] p-3">
+                            <div className="flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/45">Privater Bereich</p>
+                                    <p className="mt-1 text-sm font-medium text-white/84">Meine Dateien</p>
+                                </div>
+                                <HardDrive size={17} className="shrink-0 text-emerald-100/60" />
+                            </div>
+                            <p className="mt-2 text-[11px] leading-relaxed text-white/42">
+                                Lokal ist nur dieser Browser. CORE ist dein geschuetzter Workspace. Cloud-Connectoren werden hier gebuendelt.
+                            </p>
+                        </div>
                         <div className="grid grid-cols-3 gap-2">
                             <Metric icon={HardDrive} label="Lokal" value={localFiles.length} />
                             <Metric icon={Server} label="CORE" value={coreFiles.length} />
@@ -473,16 +494,40 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3">
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-white/35">Arbeitsdateien</span>
-                        <button
-                            type="button"
-                            onClick={() => void loadContent()}
-                            className="rounded-lg p-1.5 text-white/45 hover:bg-white/[0.06] hover:text-white"
-                            title="Aktualisieren"
-                        >
-                            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-                        </button>
+                    <div className="border-b border-white/[0.06] px-4 py-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/35">Arbeitsdateien</span>
+                            <button
+                                type="button"
+                                onClick={() => void loadContent()}
+                                className="rounded-lg p-1.5 text-white/45 hover:bg-white/[0.06] hover:text-white"
+                                title="Aktualisieren"
+                            >
+                                <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+                            </button>
+                        </div>
+                        <div className="mt-3 grid grid-cols-4 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
+                            {([
+                                ['all', 'Alle'],
+                                ['local', 'Lokal'],
+                                ['core', 'CORE'],
+                                ['cloud', 'Cloud'],
+                            ] as const).map(([value, label]) => (
+                                <button
+                                    key={value}
+                                    type="button"
+                                    onClick={() => setSourceFilter(value)}
+                                    className={`rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${sourceFilter === value ? 'bg-white/12 text-white' : 'text-white/42 hover:bg-white/[0.06] hover:text-white/70'}`}
+                                >
+                                    {label}
+                                </button>
+                            ))}
+                        </div>
+                        {sourceFilter === 'cloud' && (
+                            <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Dateien hier neben Lokal und CORE.
+                            </p>
+                        )}
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto p-2">
@@ -490,13 +535,13 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                             <div className="flex h-full items-center justify-center text-white/35">
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
-                        ) : files.length === 0 ? (
+                        ) : filteredFiles.length === 0 ? (
                             <div className="px-3 py-10 text-center">
                                 <FileText size={24} className="mx-auto text-white/25" />
-                                <p className="mt-3 text-sm text-white/58">Noch keine Dateien</p>
-                                <p className="mt-1 text-xs text-white/32">Importiere PDFs, Texte oder Bilder.</p>
+                                <p className="mt-3 text-sm text-white/58">{sourceFilter === 'all' ? 'Noch keine Dateien' : 'Keine Dateien in dieser Ansicht'}</p>
+                                <p className="mt-1 text-xs text-white/32">{sourceFilter === 'cloud' ? 'Cloud-Connectoren kommen als naechster Schritt.' : 'Importiere PDFs, Texte oder Bilder.'}</p>
                             </div>
-                        ) : files.map((file) => (
+                        ) : filteredFiles.map((file) => (
                             <button
                                 key={file.id}
                                 type="button"
@@ -520,7 +565,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
-                                {selectedFile ? `${selectedFile.source === 'local' ? 'Local-first' : 'CORE'} · ${selectedFile.mime || 'Datei'} · ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
+                                {selectedFile ? `${selectedFile.source === 'local' ? 'Privat lokal' : 'CORE Workspace'} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
@@ -590,7 +635,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                     <h3 className="mt-4 text-lg font-medium text-white/86">Datei liegt bereit</h3>
                                     <p className="mt-2 text-sm leading-relaxed text-white/42">
                                         {selectedFile.source === 'core'
-                                            ? 'Die Originaldatei liegt in CORE. Oeffne sie als Dokument oder lade die Quelle herunter.'
+                                            ? 'Die Datei liegt in CORE. Oeffne das daraus erzeugte OS-Dokument oder lade die Quelldatei herunter.'
                                             : 'Diese Datei liegt lokal. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
