@@ -8,7 +8,7 @@ import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
-import { getCompanyFileUrl } from '@/lib/api/filesClient';
+import { fetchCompanyFileBlob, getCompanyFileUrl } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
@@ -48,6 +48,8 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const [loadError, setLoadError] = useState<string | null>(null);
     const [reloadKey, setReloadKey] = useState(0);
     const [imageLoadError, setImageLoadError] = useState(false);
+    const [pdfObjectUrl, setPdfObjectUrl] = useState<string | null>(null);
+    const [pdfLoadError, setPdfLoadError] = useState<string | null>(null);
     // Ref: true during a focus-triggered background refresh — UI stays visible
     const isBackgroundRefetch = useRef(false);
     const prevIsActiveRef = useRef(false);
@@ -106,6 +108,33 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const sourceFileId = getNodeSourceFileId({ metadata });
     const sourceFileName = getNodeSourceFileName({ metadata, name, title: name, id: nodeId || 'document' });
     const previewUrl = url || (sourceFileId ? getCompanyFileUrl(sourceFileId) : null);
+
+    useEffect(() => {
+        if (!isPDF || !sourceFileId) {
+            setPdfObjectUrl(null);
+            setPdfLoadError(null);
+            return;
+        }
+
+        let cancelled = false;
+        let objectUrl: string | null = null;
+        setPdfLoadError(null);
+
+        fetchCompanyFileBlob(sourceFileId)
+            .then((blob) => {
+                if (cancelled) return;
+                objectUrl = URL.createObjectURL(blob);
+                setPdfObjectUrl(objectUrl);
+            })
+            .catch((error: any) => {
+                if (!cancelled) setPdfLoadError(error?.message || 'PDF konnte nicht geladen werden');
+            });
+
+        return () => {
+            cancelled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [isPDF, sourceFileId, reloadKey]);
 
     const navigationSourceLabel = (() => {
         switch (navigationContext?.source) {
@@ -225,10 +254,34 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         }
         if (isPDF) {
             return (
-                <div className="h-full flex flex-col items-center justify-center p-6 bg-black/20">
-                    <File size={64} className="text-red-400/60 mb-4" />
-                    <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
-                    {content ? <><p className="text-white/50 text-sm text-center max-w-md mb-4">{content}</p><p className="text-white/30 text-xs">Die PDF liegt als Originaldatei vor.</p></> : <p className="text-white/40 text-sm">PDF-Dokument</p>}
+                <div className="h-full bg-black/20">
+                    {pdfObjectUrl ? (
+                        <iframe
+                            src={pdfObjectUrl}
+                            title={name}
+                            className="h-full min-h-[520px] w-full border-0 bg-white"
+                        />
+                    ) : previewUrl && !sourceFileId ? (
+                        <iframe
+                            src={previewUrl}
+                            title={name}
+                            className="h-full min-h-[520px] w-full border-0 bg-white"
+                        />
+                    ) : (
+                        <div className="flex h-full flex-col items-center justify-center p-6">
+                            <File size={64} className="text-red-400/60 mb-4" />
+                            <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
+                            <p className="text-white/45 text-sm text-center max-w-md">
+                                {pdfLoadError || (sourceFileId ? 'PDF wird aus der Originaldatei geladen.' : 'PDF-Dokument ohne verknuepfte Quelle.')}
+                            </p>
+                            {sourceFileId && (
+                                <button type="button" onClick={() => void handleOpenOriginal()}
+                                    className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-2 text-[11px] font-medium text-white/70 transition-colors hover:border-white/25 hover:bg-white/[0.1] hover:text-white">
+                                    <Paperclip size={13} />Originaldatei oeffnen
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             );
         }
@@ -311,7 +364,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         : <FileText size={18} className="text-blue-400" />}
                     <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
                     <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">{fileExtension || type || 'doc'}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">Nur lesen</span>
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">{isPDF ? 'PDF Reader' : 'Nur lesen'}</span>
                     {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">Mit Original</span>}
                 </div>
                 <div className="flex items-center gap-2">

@@ -7,6 +7,7 @@ jest.mock('@/lib/api/coreClient', () => ({
 }));
 
 jest.mock('@/lib/api/filesClient', () => ({
+  fetchCompanyFileBlob: jest.fn(),
   getCompanyFileUrl: jest.fn().mockReturnValue(null),
 }));
 
