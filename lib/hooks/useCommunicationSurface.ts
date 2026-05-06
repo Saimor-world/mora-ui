@@ -144,7 +144,14 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
             providerMailUrl: providerMailUrl(overview?.mail?.provider),
             providerCalendarUrl: providerCalendarUrl(overview?.calendar?.provider),
         };
-    }, [integrations.browserBridge.permission, integrations.browserBridge.supported, integrations.overview, localTruthBridge.selectedUiUrl, localTruthBridge.state]);
+    }, [
+        integrations.browserBridge.permission,
+        integrations.browserBridge.supported,
+        integrations.overview,
+        localTruthBridge.isLocalSurface,
+        localTruthBridge.selectedUiUrl,
+        localTruthBridge.state,
+    ]);
 
     return {
         ...integrations,
