@@ -5,6 +5,7 @@ import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 import { useLocalTruthBridge } from '@/lib/hooks/useLocalTruthBridge';
 
 const DEFAULT_LOCAL_UI = 'http://127.0.0.1:3000/home';
+const REMOTE_LOCAL_UI_PLACEHOLDER = 'about:saimor-local-bridge';
 const DEFAULT_CONNECT_SURFACE = 'about:saimor-connect';
 const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
 
@@ -42,8 +43,8 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
         const browserPermission = integrations.browserBridge.permission;
         const localTruthUrl =
             localTruthBridge.selectedUiUrl
-            || overview?.runtime?.surfaces?.local_truth
-            || DEFAULT_LOCAL_UI;
+            || (localTruthBridge.isLocalSurface ? overview?.runtime?.surfaces?.local_truth : null)
+            || (localTruthBridge.isLocalSurface ? DEFAULT_LOCAL_UI : REMOTE_LOCAL_UI_PLACEHOLDER);
         const connectSurfaceUrl =
             overview?.runtime?.surfaces?.connect_surface
             || DEFAULT_CONNECT_SURFACE;
@@ -93,7 +94,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                         ? 'UI lokal bereit'
                         : localTruthBridge.state === 'checking'
                             ? 'Localhost pruefen'
-                            : 'Local Truth starten';
+                            : localTruthBridge.isLocalSurface ? 'Local Truth starten' : 'Desktop Bridge getrennt';
 
         const localTruthUiOpenable =
             localTruthBridge.state === 'ready'

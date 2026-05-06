@@ -110,6 +110,17 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
 
     const refresh = useCallback(async (options?: { force?: boolean; announce?: boolean }) => {
         if (typeof window === 'undefined') return;
+        if (!isLocalSurface) {
+            setUiReachable(false);
+            setCoreReachable(false);
+            setSelectedUiUrl(null);
+            setSelectedCoreUrl(null);
+            setLastCheckedAt(new Date().toISOString());
+            setState('blocked');
+            setError('Lokale Desktop-Instanzen werden von HQ nicht automatisch abgefragt. Nutze eine lokale SAIMOR-Session oder verbinde spaeter den Desktop-Bridge-Agent.');
+            return;
+        }
+
         const force = Boolean(options?.force);
         const announce = Boolean(options?.announce);
         const now = Date.now();
