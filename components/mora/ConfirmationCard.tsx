@@ -202,8 +202,8 @@ const formatSignal = (signal: string): string =>
 
 const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
-    move_node: 'Datei verschieben',
-    rename_node: 'Datei umbenennen',
+    move_node: 'Dokument verschieben',
+    rename_node: 'Dokument umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
     update_note_content: 'Inhalt aktualisieren',
@@ -545,7 +545,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                     <div className="flex items-start justify-between gap-3">
                                         <span className="text-white/45">Element</span>
                                         <span className="text-right text-white/90 break-words">
-                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Datei / Node')}
+                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Dokument')}
                                         </span>
                                     </div>
                                     <div className="flex items-start justify-between gap-3">
@@ -568,7 +568,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                                     <div className="flex items-start justify-between gap-3">
                                         <span className="text-white/45">Element</span>
                                         <span className="text-right text-white/90 break-words">
-                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Datei / Node')}
+                                            {formatTargetLabel(operation.node_name, operation.node_id, 'Dokument')}
                                         </span>
                                     </div>
                                     <div className="flex items-start justify-between gap-3">

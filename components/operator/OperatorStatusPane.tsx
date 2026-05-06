@@ -124,7 +124,7 @@ export const OperatorStatusPane: React.FC = () => {
                                     </div>
                                     <div className="grid grid-cols-2 gap-2">
                                         <div className="bg-white/5 p-1.5 rounded border border-white/5">
-                                            <div className="text-white">Nodes</div>
+                                            <div className="text-white">Dokumente</div>
                                             <div className="text-lg font-bold text-white">{data.database.total_nodes}</div>
                                         </div>
                                         <div className="bg-white/5 p-1.5 rounded border border-white/5">
@@ -193,7 +193,7 @@ export const OperatorStatusPane: React.FC = () => {
                                     </div>
                                 </div>
 
-                                {/* 4. Promoted Nodes (Impact) */}
+                                {/* 4. Promoted Documents (Impact) */}
                                 <div className="space-y-1">
                                     <div className="flex items-center gap-1.5 text-white/40 mb-1">
                                         <Brain size={10} />
@@ -201,7 +201,7 @@ export const OperatorStatusPane: React.FC = () => {
                                     </div>
                                     <div className="bg-emerald-900/10 p-2 rounded border border-emerald-500/20">
                                         <div className="flex justify-between items-center mb-1">
-                                            <span className="text-emerald-400 font-bold">PROMOTED NODES</span>
+                                            <span className="text-emerald-400 font-bold">PROMOTED DOCUMENTS</span>
                                             <span className="text-emerald-300 font-mono text-lg">{data.promoted_nodes.total}</span>
                                         </div>
                                         <div className="flex flex-wrap gap-1">

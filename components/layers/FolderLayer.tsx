@@ -228,7 +228,7 @@ export const FolderLayer: React.FC = () => {
             setFormData({ name: '', type: 'note', content: '', url: '' });
             setIsCreateModalOpen(false);
         } catch (error) {
-            console.error('Failed to create node:', error);
+            console.error('Failed to create document:', error);
         } finally {
             setIsSubmitting(false);
         }
@@ -370,7 +370,7 @@ export const FolderLayer: React.FC = () => {
                                                 type="text"
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                placeholder="Search nodes..."
+                                                placeholder="Dokumente suchen..."
                                                 className="pl-9 pr-4 py-2 rounded-lg bg-black/20 border border-white/5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-emerald-500/30 w-48 transition-all focus:w-64"
                                             />
                                         </div>
@@ -412,7 +412,7 @@ export const FolderLayer: React.FC = () => {
                                             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/20 text-emerald-400 transition-all text-sm tracking-wide"
                                         >
                                             <Plus size={16} />
-                                            NEW NODE
+                                            NEUES DOKUMENT
                                         </button>
                                     </div>
                                 </div>
@@ -421,7 +421,7 @@ export const FolderLayer: React.FC = () => {
                                 <div className="flex-1 relative overflow-hidden min-h-[320px]">
                                     {isLoadingNodes && (
                                         <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 backdrop-blur-sm">
-                                            <LoadingState message="Loading neural nodes..." />
+                                            <LoadingState message="Dokumente werden geladen..." />
                                         </div>
                                     )}
 
@@ -553,7 +553,7 @@ export const FolderLayer: React.FC = () => {
                                                     );
                                                 })}
                                             </div>
-                                            {filteredNodes.length === 0 && <EmptyState icon={Box} title="No nodes found" description="Create a new node to populate this folder." />}
+                                            {filteredNodes.length === 0 && <EmptyState icon={Box} title="Keine Dokumente gefunden" description="Erstelle ein Dokument, um diesen Ordner zu fuellen." />}
                                         </div>
                                     )}
 
@@ -600,7 +600,7 @@ export const FolderLayer: React.FC = () => {
                                                     );
                                                 })}
                                             </div>
-                                            {filteredNodes.length === 0 && <EmptyState icon={Box} title="No nodes found" description="Create a new node to populate this folder." />}
+                                            {filteredNodes.length === 0 && <EmptyState icon={Box} title="Keine Dokumente gefunden" description="Erstelle ein Dokument, um diesen Ordner zu fuellen." />}
                                         </div>
                                     )}
                                 </div>
@@ -613,7 +613,7 @@ export const FolderLayer: React.FC = () => {
                 <CreateModal
                     isOpen={isCreateModalOpen}
                     onClose={() => setIsCreateModalOpen(false)}
-                    title="Create New Node"
+                    title="Neues Dokument erstellen"
                 >
                     <form onSubmit={handleCreateNode} className="space-y-6">
                         <div>

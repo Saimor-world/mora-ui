@@ -80,9 +80,9 @@ describe('ActionTray', () => {
 
     fireEvent.click(screen.getByTitle('Action tray'));
 
-    expect(screen.getByText('Datei verschieben')).toBeInTheDocument();
+    expect(screen.getByText('Dokument verschieben')).toBeInTheDocument();
     expect(screen.getAllByText('Verworfen').length).toBeGreaterThan(0);
-    expect(screen.getByText("Verworfen: Datei/Node 'Budget 2026.pdf' wird verschoben")).toBeInTheDocument();
+    expect(screen.getByText("Verworfen: Dokument 'Budget 2026.pdf' wird verschoben")).toBeInTheDocument();
   });
 
   it('renders expandable action details and filters', () => {
@@ -117,7 +117,7 @@ describe('ActionTray', () => {
 
 
     fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
-    expect(screen.getByText('Datei umbenennen')).toBeInTheDocument();
+    expect(screen.getByText('Dokument umbenennen')).toBeInTheDocument();
   });
 
   it('opens the action center pane from the tray footer', () => {

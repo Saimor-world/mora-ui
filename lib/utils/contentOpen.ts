@@ -75,6 +75,8 @@ export function getNodeSourceFileId(item: Pick<OpenableNodeLike, 'metadata'>): s
     return typeof fileId === 'string' && fileId.trim() ? fileId : null;
 }
 
+export const getContentSourceFileId = getNodeSourceFileId;
+
 export function getNodeSourceFileName(item: Pick<OpenableNodeLike, 'metadata' | 'name' | 'title' | 'id'>): string {
     const metadata = item.metadata;
     const originalFilename = metadata && typeof metadata === 'object'
@@ -85,6 +87,8 @@ export function getNodeSourceFileName(item: Pick<OpenableNodeLike, 'metadata' | 
     }
     return getContentDisplayName(item);
 }
+
+export const getContentSourceFileName = getNodeSourceFileName;
 
 export function hasLinkedSourceFile(item: Pick<OpenableNodeLike, 'metadata'>): boolean {
     return Boolean(getNodeSourceFileId(item));
@@ -113,6 +117,8 @@ export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'ur
     }
     return 'Dokument öffnen';
 }
+
+export const getContentOpenActionLabel = getNodeOpenActionLabel;
 
 export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'id'>): string {
     return item.name || `Datei ${item.id.slice(0, 8)}`;

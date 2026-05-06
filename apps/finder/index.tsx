@@ -2967,7 +2967,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                     result: 'Verworfen',
                                                     outcome: 'rejected',
                                                 });
-                                                toast.info('Node creation rejected');
+                                                toast.info('Dokument-Erstellung verworfen');
                                             } catch (err) {
                                                 console.error('Reject failed', err);
                                             }

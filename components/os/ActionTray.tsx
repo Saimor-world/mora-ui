@@ -28,8 +28,8 @@ const statusLabelMap: Record<ActionStatus, string> = {
 
 const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
-    move_node: 'Datei verschieben',
-    rename_node: 'Datei umbenennen',
+    move_node: 'Dokument verschieben',
+    rename_node: 'Dokument umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
     update_note_content: 'Inhalt aktualisieren',
@@ -78,6 +78,15 @@ type TrayFilter = (typeof trayFilters)[number]['key'];
 function extractPayloadString(payload: Record<string, unknown>, key: string): string | null {
     const value = payload?.[key];
     return typeof value === 'string' && value.trim().length > 0 ? value : null;
+}
+
+function humanizeContentModelText(value: string): string {
+    return value
+        .replace(/\bDatei\/Node\b/g, 'Dokument')
+        .replace(/\bDatei \/ Node\b/g, 'Dokument')
+        .replace(/\bNode:\s*/g, 'Dokument: ')
+        .replace(/\bNodes:\s*/g, 'Dokumente: ')
+        .replace(/\bnode\b(?!\.js)/gi, 'Dokument');
 }
 
 function formatActionTitle(evt: ActionEventLike): string {
@@ -161,10 +170,10 @@ function formatActionMessage(evt: ActionEventLike): string | null {
         const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
         const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
         const routeMode = rs?.route_mode ?? ic?.route_mode;
-        if (routeMode === 'learned_route') return `Gelernt: ${base}`;
+        if (routeMode === 'learned_route') return `Gelernt: ${humanizeContentModelText(base)}`;
     }
 
-    return base;
+    return humanizeContentModelText(base);
 }
 
 function getWorkSessionPlanId(evt: ActionEventLike): string | null {
@@ -204,8 +213,8 @@ function buildExpandedDetails(evt: ActionEventLike): string[] {
     const navigation = getNavigationOutcome(evt);
     if (navigation) {
         return [
-            navigation.label ? `Ziel: ${navigation.label}` : null,
-            navigation.path ? `Pfad: ${navigation.path}` : null,
+            navigation.label ? `Ziel: ${humanizeContentModelText(navigation.label)}` : null,
+            navigation.path ? `Pfad: ${humanizeContentModelText(navigation.path)}` : null,
             navigation.query ? `Suche: ${navigation.query}` : null,
         ].filter(Boolean) as string[];
     }
@@ -221,9 +230,9 @@ function buildExpandedDetails(evt: ActionEventLike): string[] {
         ? cc.after_preview
         : extractPayloadString(evt.payload, 'content_preview');
     return [
-        destSummary ? `Ziel: ${destSummary}` : null,
-        before ? `Vorher: ${before}` : null,
-        after ? `Neu: ${after}` : null,
+        destSummary ? `Ziel: ${humanizeContentModelText(destSummary)}` : null,
+        before ? `Vorher: ${humanizeContentModelText(before)}` : null,
+        after ? `Neu: ${humanizeContentModelText(after)}` : null,
     ].filter(Boolean) as string[];
 }
 

@@ -124,11 +124,11 @@ describe('ActionCenterPane', () => {
 
     expect(await screen.findByText('Action Center')).toBeInTheDocument();
     expect(await screen.findByText('Ordner erstellen', { selector: 'div' })).toBeInTheDocument();
-    expect(screen.getByText('Datei umbenennen', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Dokument umbenennen', { selector: 'div' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Erledigt' }));
     expect(screen.queryByText('Ordner erstellen', { selector: 'div' })).not.toBeInTheDocument();
-    expect(screen.getByText('Datei umbenennen', { selector: 'div' })).toBeInTheDocument();
+    expect(screen.getByText('Dokument umbenennen', { selector: 'div' })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
     expect(screen.getByText('Aktion')).toBeInTheDocument();
@@ -180,12 +180,12 @@ describe('ActionCenterPane', () => {
 
     render(<ActionCenterPane id="actions-main" />);
 
-    expect(await screen.findByText('Datei verschieben', { selector: 'div' })).toBeInTheDocument();
+    expect(await screen.findByText('Dokument verschieben', { selector: 'div' })).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Action details' }));
 
     expect(screen.getByText('Plan')).toBeInTheDocument();
     expect(screen.getByText('Ergebnis')).toBeInTheDocument();
-    expect(screen.getAllByText('Node: Budgetplanung.pdf')).toHaveLength(2);
+    expect(screen.getAllByText('Dokument: Budgetplanung.pdf')).toHaveLength(2);
     expect(screen.getAllByText('Quelle: Inbox')).toHaveLength(2);
     expect(screen.getAllByText('Ziel: Q4 Planning')).toHaveLength(2);
   });

@@ -170,14 +170,14 @@ Nutze dies nur wenn es dem User WIRKLICH hilft, z.B.:
 
     if (context?.nodeTitle) {
         prompt += `\n\nAktueller Kontext:
-- Node: "${context.nodeTitle}" (Type: ${context.nodeType || 'unknown'})`;
+- Dokument: "${context.nodeTitle}" (Typ: ${context.nodeType || 'unknown'})`;
     } else if (context?.folderId) {
         prompt += `\n\nAktueller Kontext:
-- Folder-Ebene (Folder ID: ${context.folderId})`;
+- Ordner-Ebene (Folder ID: ${context.folderId})`;
 
-        // Sprint Tag 2: Include Folder Nodes
+        // Include folder documents; "node" stays an internal storage primitive.
         if (context?.folderNodes && context.folderNodes.length > 0) {
-            prompt += `\n\nDieser Folder enthält ${context.folderNodes.length} Nodes:`;
+            prompt += `\n\nDieser Ordner enthält ${context.folderNodes.length} Dokumente:`;
             context.folderNodes.slice(0, 10).forEach((node: any) => {
                 prompt += `\n- "${node.title}" (${node.type})`;
             });
@@ -185,7 +185,7 @@ Nutze dies nur wenn es dem User WIRKLICH hilft, z.B.:
                 prompt += `\n- ... und ${context.folderNodes.length - 10} weitere`;
             }
         } else {
-            prompt += `\n- Folder ist leer`;
+            prompt += `\n- Ordner ist leer`;
         }
     } else if (context?.spaceId) {
         prompt += `\n\nAktueller Kontext:
@@ -222,11 +222,11 @@ Hier sind die letzten Aktivitäten in diesem Kontext:`;
     // Sprint Tag 4: Include Relations
     if (context?.relations && context.relations.length > 0) {
         prompt += `\n\n## Related Context (Relations)
-This node is related to:`;
+This document is related to:`;
         context.relations.forEach((r: any) => {
             // Note: r.target is just an ID. Ideally we'd have the title, but heuristic service returns IDs.
             // Mora can at least see the connection exists.
-            prompt += `\n- [${r.type}] -> Node ${r.target} (Strength: ${r.strength})`;
+            prompt += `\n- [${r.type}] -> Document ${r.target} (Strength: ${r.strength})`;
         });
     }
 

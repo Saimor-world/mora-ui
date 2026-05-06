@@ -194,7 +194,7 @@ class MoraAIClient {
     }): Promise<string> {
         const prompt = `Analysiere diesen Firmenkontext:
 - Departments: ${context.departments.join(', ')}
-- Nodes: ${context.nodeCount}
+- Dokumente: ${context.nodeCount}
 - Letzte Aktivität: ${context.recentActivity.slice(0, 5).join(', ')}
 
 Gib eine kurze Zusammenfassung und 2-3 konkrete nächste Schritte.`;

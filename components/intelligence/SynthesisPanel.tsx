@@ -116,7 +116,7 @@ export const SynthesisPanel: React.FC<IntelligencePanelProps> = ({ visible = tru
                                             </div>
                                         </div>
                                         <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center text-center gap-1">
-                                            <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">Total Nodes</div>
+                                            <div className="text-[10px] text-emerald-500/50 uppercase tracking-wider">Dokumente</div>
                                             <div className="text-lg font-bold text-emerald-100">{synthesis?.summary?.total_nodes ?? 0}</div>
                                         </div>
                                         <div className="p-4 rounded-xl bg-white/5 border border-white/5 flex flex-col items-center justify-center text-center gap-1">
@@ -165,7 +165,7 @@ export const SynthesisPanel: React.FC<IntelligencePanelProps> = ({ visible = tru
                                     {/* Footer Info */}
                                     <div className="pt-4 border-t border-white/5 flex justify-between items-center text-[10px] text-emerald-500/40">
                                         <span>Last Analysis: {synthesis?.summary?.last_activity ? new Date(synthesis.summary.last_activity).toLocaleTimeString() : '—'}</span>
-                                        <span>Nodes: {synthesis?.summary?.total_nodes ?? 0}</span>
+                                        <span>Dokumente: {synthesis?.summary?.total_nodes ?? 0}</span>
                                     </div>
                                 </div>
                             )}

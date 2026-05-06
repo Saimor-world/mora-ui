@@ -221,8 +221,8 @@ const statusLabelMap: Record<ActionStatus, string> = {
 
 const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
-    move_node: 'Datei verschieben',
-    rename_node: 'Datei umbenennen',
+    move_node: 'Dokument verschieben',
+    rename_node: 'Dokument umbenennen',
     create_note: 'Notiz erstellen',
     create_draft: 'Entwurf erstellen',
     update_note_content: 'Inhalt aktualisieren',
@@ -369,7 +369,7 @@ function renderOperationCards(items: Record<string, unknown>[], heading: string,
                         type === 'create_folder'
                             ? `Ordner: ${folder?.name || op.name || '-'}`
                             : type === 'move_node'
-                                ? `Node: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
+                                ? `Dokument: ${node?.title || node?.name || op.node_name || op.node_id || '-'}`
                                 : type === 'rename_node'
                                     ? `${op.old_name || op.node_name || node?.title || node?.name || op.node_id || '-'} ? ${op.new_name || node?.title || node?.name || '-'}`
                                     : type === 'create_note'
