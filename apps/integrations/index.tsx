@@ -1,430 +1,221 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
+import {
+    AlertCircle,
+    Bell,
+    Bot,
+    Calendar,
+    CheckCircle2,
+    Cloud,
+    Cpu,
+    Database,
+    ExternalLink,
+    KeyRound,
+    Mail,
+    MonitorCog,
+    PlugZap,
+    RefreshCw,
+    Rss,
+    ShieldCheck,
+    type LucideIcon,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { GlassPanel } from '@/components/layers/GlassPanel';
-import { usePaneStore } from '@/lib/store/paneStore';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
 import { RssIntegration } from '@/components/integrations/RssIntegration';
 import { CloudStorageIntegration } from '@/components/integrations/CloudStorageIntegration';
-import { coreGet, corePost } from '@/lib/api/coreClient';
-import { AlertCircle, Bell, Bot, Calendar, Cloud, Copy, Cpu, ExternalLink, Mail, RefreshCw, Rss, ShieldCheck } from 'lucide-react';
-import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { corePost } from '@/lib/api/coreClient';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
-import { toast } from 'sonner';
 import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
 import type { AppProps } from '@/lib/apps/types';
+import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
-interface MailOverview {
-    configured?: boolean;
-    enabled?: boolean;
-    provider?: string;
-    email?: string;
-    status?: string;
-}
+type Lane = 'overview' | 'sources' | 'desktop' | 'setup';
+type RuntimeAction = 'start' | 'stop' | 'restart';
+type RuntimeServiceId = 'local_truth' | 'ui' | 'core';
 
-interface CalendarOverview {
-    configured?: boolean;
-    provider?: string;
-    email?: string;
-    status?: string;
-}
+const laneItems: Array<{ id: Lane; label: string; icon: LucideIcon }> = [
+    { id: 'overview', label: 'Konto', icon: KeyRound },
+    { id: 'sources', label: 'Daten', icon: Database },
+    { id: 'desktop', label: 'Desktop', icon: MonitorCog },
+    { id: 'setup', label: 'Setup', icon: PlugZap },
+];
 
-interface RssOverview {
-    configured?: boolean;
-    enabled?: boolean;
-    status?: string;
-    count?: number;
-}
-
-interface CloudStorageOverview {
-    configured?: boolean;
-    enabled?: boolean;
-    status?: string;
-    count?: number;
-    providers?: string[];
-}
-
-interface AssistantProviderMeta {
-    healthy?: boolean;
-    available?: boolean;
-    priority?: number;
-    error?: string;
-}
-
-interface AssistantOverview {
-    status?: string;
-    recommended_provider?: string | null;
-    fallback_order?: string[];
-    providers?: Record<string, AssistantProviderMeta>;
-    routing_profile?: string | null;
-    primary_preference?: string | null;
-    healthy_provider_count?: number;
-    configured_provider_count?: number;
-    error?: string;
-}
-
-interface IntegrationsOverview {
-    mail?: MailOverview;
-    calendar?: CalendarOverview;
-    rss?: RssOverview;
-    cloud_storage?: CloudStorageOverview;
-    assistant?: AssistantOverview;
-    runtime?: {
-        local_truth?: {
-            preferred_provider?: string;
-            configured_model?: string;
-            recommended_model?: string;
-            ollama_api_url?: string;
-            contract_version?: string;
-            mode?: string;
-            state?: string;
-            action_endpoint_template?: string;
-            supported_actions?: string[];
-            startup_script?: string;
-            startup_scripts?: {
-                windows?: string;
-                linux?: string;
-            };
-            startup_command?: string;
-            startup_commands?: {
-                windows?: string;
-                linux?: string;
-            };
-            ui_start_command?: string;
-            ui_start_commands?: {
-                windows?: string;
-                linux?: string;
-            };
-            core_start_command?: string;
-            core_start_commands?: {
-                windows?: string;
-                linux?: string;
-            };
-            platform_notes?: {
-                windows?: string;
-                linux?: string;
-            };
-            services?: {
-                ui?: {
-                    kind?: string;
-                    service_id?: string;
-                    status?: string;
-                    reachable?: boolean;
-                    status_code?: number | null;
-                    running?: boolean;
-                    process_count?: number;
-                    pids?: number[];
-                    started_at?: string | null;
-                    supported_actions?: string[];
-                };
-                core?: {
-                    kind?: string;
-                    service_id?: string;
-                    status?: string;
-                    reachable?: boolean;
-                    status_code?: number | null;
-                    running?: boolean;
-                    process_count?: number;
-                    pids?: number[];
-                    started_at?: string | null;
-                    supported_actions?: string[];
-                };
-                assistant?: {
-                    kind?: string;
-                    service_id?: string;
-                    status?: string;
-                    reachable?: boolean;
-                    status_code?: number | null;
-                    available?: boolean;
-                    configured_model?: string;
-                    error?: string;
-                    supported_actions?: string[];
-                };
-            };
-            routing_profile?: string;
-            available?: boolean;
-        };
-        cloud_mirror?: {
-            recommended_provider?: string | null;
-            routing_profile?: string | null;
-            gemini_model?: string;
-            anthropic_model?: string;
-            openai_model?: string;
-        };
-        surfaces?: {
-            local_truth?: string;
-            demo_mirror?: string;
-            owner_console?: string;
-            operations_console?: string;
-        };
-    };
-    capabilities?: {
-        real_email_enabled?: boolean;
-        mail_local_mode?: boolean;
-        calendar_oauth_enabled?: boolean;
-        rss_enabled?: boolean;
-        cloud_storage_enabled?: boolean;
-        owner_manageable?: boolean;
-        assistant_available?: boolean;
-    };
-    setup?: {
-        mail?: {
-            mode?: string;
-            detail?: string;
-            required_fields?: string[];
-            optional_fields?: string[];
-            provider_options?: string[];
-        };
-        calendar?: {
-            mode?: string;
-            configured?: boolean;
-            required_env?: string[];
-            missing_env?: string[];
-            redirect_url?: string;
-            provider?: string;
-        };
-    };
-}
-
-type RuntimePlatform = 'windows' | 'linux';
-type RuntimeJob = {
-    job_id: string;
-    service_id?: string;
-    action?: string;
-    status?: string;
-    accepted_at?: string;
-    started_at?: string | null;
-    finished_at?: string | null;
-    error?: string | null;
+const runtimeActionLabels: Record<RuntimeAction, string> = {
+    start: 'Starten',
+    stop: 'Stoppen',
+    restart: 'Neu starten',
 };
 
-const DEFAULT_LOCAL_TRUTH_COMMANDS: Record<RuntimePlatform, string> = {
-    windows: 'Set-Location C:\\saimor; .\\scripts\\Start-LocalTruth.ps1 -ForceRestart',
-    linux: 'bash ./scripts/start-local-truth.sh --force-restart',
-};
-
-const statusTone = (status?: string) => {
+const statusLabel = (status?: string | null) => {
     switch (status) {
         case 'available':
-        case 'configured':
-        case 'connected':
-            return 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20';
-        case 'local':
-        case 'degraded':
-            return 'text-amber-200 bg-amber-500/10 border-amber-500/20';
-        case 'owner_only':
-        case 'forbidden_demo':
-            return 'text-white/60 bg-white/5 border-white/10';
-        case 'unavailable':
-            return 'text-red-200 bg-red-500/10 border-red-500/20';
-        default:
-            return 'text-white/60 bg-white/5 border-white/10';
-    }
-};
-
-const humanizeIntegrationStatus = (status?: string) => {
-    switch (status) {
-        case 'available':
-            return 'Verfuegbar';
+            return 'Bereit';
         case 'configured':
             return 'Konfiguriert';
         case 'connected':
             return 'Verbunden';
         case 'local':
             return 'Lokal';
-        case 'not_configured':
-            return 'Nicht eingerichtet';
         case 'degraded':
-            return 'Eingeschraenkt';
-        case 'owner_only':
-            return 'Nur für Eigentümer';
-        case 'forbidden_demo':
-            return 'Im Demo-Modus gesperrt';
-        case 'unavailable':
-            return 'Nicht verfügbar';
-        default:
-            return 'Unbekannt';
-    }
-};
-
-const humanizeRuntimeState = (state?: string) => {
-    switch (state) {
-        case 'ready':
-            return 'Bereit';
-        case 'degraded':
-            return 'Eingeschraenkt';
         case 'partial':
-            return 'Teilweise bereit';
+            return 'Eingeschraenkt';
+        case 'not_configured':
+            return 'Offen';
+        case 'owner_only':
+            return 'Owner';
+        case 'forbidden_demo':
+            return 'Gesperrt';
+        case 'unavailable':
         case 'offline':
             return 'Offline';
+        case 'ready':
+            return 'Bereit';
+        case 'blocked':
+            return 'Getrennt';
         default:
-            return 'Unbekannt';
+            return 'Unklar';
     }
 };
 
-const buildAssistantDescription = (assistant?: AssistantOverview) => {
+const statusClass = (status?: string | null) => {
+    switch (status) {
+        case 'available':
+        case 'configured':
+        case 'connected':
+        case 'ready':
+            return 'border-emerald-300/20 bg-emerald-400/[0.10] text-emerald-100';
+        case 'local':
+        case 'degraded':
+        case 'partial':
+            return 'border-amber-300/20 bg-amber-400/[0.10] text-amber-100';
+        case 'unavailable':
+        case 'offline':
+            return 'border-red-300/20 bg-red-400/[0.10] text-red-100';
+        default:
+            return 'border-white/10 bg-white/[0.05] text-white/58';
+    }
+};
+
+const isReady = (status?: string | null, configured?: boolean) =>
+    Boolean(configured || status === 'available' || status === 'configured' || status === 'connected' || status === 'ready' || status === 'local');
+
+const buildMailText = (overview?: IntegrationsOverview | null) => {
+    if (overview?.mail?.configured) return overview.mail.email ? `Verbunden mit ${overview.mail.email}` : 'Postfach ist verbunden.';
+    if (overview?.capabilities?.mail_local_mode || overview?.mail?.status === 'local') return 'Lokaler Postfachmodus aktiv. Keine externe IMAP-Synchronisation.';
+    return overview?.setup?.mail?.detail || 'Noch kein Postfach verbunden. Richte Mail ein, damit Môra echte Nachrichten lesen kann.';
+};
+
+const buildCalendarText = (overview?: IntegrationsOverview | null) => {
+    if (overview?.calendar?.configured) return overview.calendar.email ? `Verbunden mit ${overview.calendar.email}` : 'Kalender ist verbunden.';
+    if (!overview?.capabilities?.calendar_oauth_enabled) return 'Google OAuth ist serverseitig noch nicht fertig. Owner-Setup pruefen.';
+    return 'Noch kein Kalender verbunden. Starte Google OAuth, wenn du Termine im OS sehen willst.';
+};
+
+const buildCloudText = (overview?: IntegrationsOverview | null) => {
+    const count = overview?.cloud_storage?.count || overview?.cloud_storage?.connectors?.length || 0;
+    if (count > 0) return `${count} Cloud-Verbindung${count === 1 ? '' : 'en'} im privaten Bereich.`;
+    return 'Noch keine Cloud verbunden. Spaeter erscheinen hier Drive, OneDrive, Nextcloud und andere Quellen.';
+};
+
+const buildAssistantText = (overview?: IntegrationsOverview | null) => {
+    const assistant = overview?.assistant;
     if (!assistant) return 'Provider-Status wird geladen.';
     if (assistant.status === 'available') {
-        const provider = assistant.recommended_provider || assistant.primary_preference || 'automatisch';
-        return `${assistant.healthy_provider_count || 0} gesunde Provider aktiv. Empfehlung: ${provider}.`;
+        return `${assistant.healthy_provider_count || 0} Provider gesund. Routing: ${assistant.recommended_provider || assistant.primary_preference || 'automatisch'}.`;
     }
-    if (assistant.status === 'configured') {
-        return `${assistant.configured_provider_count || 0} Provider sind konfiguriert, aber aktuell nicht gesund.`;
-    }
-    if (assistant.status === 'degraded') {
-        return 'Provider-Konfiguration vorhanden, aber derzeit eingeschraenkt.';
-    }
-    if (assistant.status === 'unavailable') {
-        return 'Assistant-Provider konnten nicht gelesen werden.';
-    }
-    return 'Assistant-Status ist derzeit unklar.';
+    if (assistant.status === 'configured') return `${assistant.configured_provider_count || 0} Provider konfiguriert, aktuell aber nicht gesund.`;
+    return assistant.error || 'Assistant-Routing ist noch nicht stabil verbunden.';
 };
 
-const buildMailDescription = (overview?: IntegrationsOverview) => {
-    const mail = overview?.mail;
-    const caps = overview?.capabilities;
-    if (!mail) return 'Mail-Status wird geladen.';
-    if (mail.status === 'forbidden_demo') {
-        return 'Diese Verbindung kann nur im Eigentümer-Kontext verwaltet werden.';
+function safeOpen(url?: string | null) {
+    if (!url || typeof window === 'undefined' || url.startsWith('about:')) {
+        toast.info('Diese Verbindung ist hier noch nicht direkt oeffenbar.');
+        return;
     }
-    if (mail.status === 'local' || caps?.mail_local_mode) {
-        return 'Lokaler Postfach-Modus aktiv. Keine externe IMAP-Synchronisation.';
-    }
-    if (mail.configured) {
-        return mail.email ? `Verbunden mit ${mail.email}.` : 'Postfach ist eingerichtet.';
-    }
-    return overview?.setup?.mail?.detail || 'Noch keine Mail-Verbindung eingerichtet. Hinterlege Provider, E-Mail und App-Passwort im Integrationsbereich.';
-};
-
-const buildCalendarDescription = (overview?: IntegrationsOverview) => {
-    const calendar = overview?.calendar;
-    const caps = overview?.capabilities;
-    if (!calendar) return 'Kalender-Status wird geladen.';
-    if (!caps?.calendar_oauth_enabled) {
-        const missing = overview?.setup?.calendar?.missing_env || [];
-        const redirect = overview?.setup?.calendar?.redirect_url || 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
-        const ownerManageable = Boolean(caps?.owner_manageable);
-        return !ownerManageable
-            ? `Google-OAuth muss tenantweit zuerst von einem Eigentümer eingerichtet werden. Redirect: ${redirect}.`
-            : missing.length > 0
-            ? `Kalender-OAuth ist serverseitig noch nicht aktiviert. Es fehlen ${missing.join(' / ')}. Redirect: ${redirect}.`
-            : `Kalender-OAuth ist serverseitig noch nicht aktiviert. Redirect: ${redirect}.`;
-    }
-    if (calendar.configured) {
-        return calendar.email ? `Verbunden mit ${calendar.email}.` : 'Kalender ist eingerichtet.';
-    }
-    return 'Noch keine Kalender-Verbindung eingerichtet.';
-};
-
-const buildRssDescription = (overview?: IntegrationsOverview) => {
-    const rss = overview?.rss;
-    if (!rss) return 'Feed-Status wird geladen.';
-    if (rss.configured) {
-        return `${rss.count || 0} RSS/Atom-Quellen verbunden. Mora kann daraus aktuelle Signale ableiten.`;
-    }
-    return 'Noch keine RSS/Atom-Feeds verbunden. Nutze Feeds fuer News, Releases, Monitoring und Marktbeobachtung.';
-};
-
-const buildCloudDescription = (overview?: IntegrationsOverview) => {
-    const cloud = overview?.cloud_storage;
-    if (!cloud) return 'Cloud-Status wird geladen.';
-    if (cloud.configured) {
-        return `${cloud.count || 0} persoenliche Cloud-Quelle(n) mit deinem privaten Bereich verbunden.`;
-    }
-    if (cloud.count && cloud.count > 0) {
-        return 'Cloud-Provider sind vorgemerkt, aber fuer SharePoint oder Google Drive fehlt noch der OAuth-Flow.';
-    }
-    return 'Noch keine persoenliche Cloud verbunden. Nextcloud kann direkt per WebDAV/App-Passwort angebunden werden.';
-};
-
-const SummaryCard: React.FC<{
-    icon: React.ReactNode;
-    title: string;
-    status?: string;
-    description: string;
-    meta?: string | null;
-    detail?: string | null;
-}> = ({ icon, title, status, description, meta, detail }) => (
-    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-        <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 text-emerald-300">
-                    {icon}
-                </div>
-                <div>
-                    <h4 className="text-sm font-medium text-white">{title}</h4>
-                    {meta && <p className="mt-0.5 text-xs text-white/40">{meta}</p>}
-                </div>
-            </div>
-            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(status)}`}>
-                {humanizeIntegrationStatus(status)}
-            </span>
-        </div>
-        <p className="text-xs leading-relaxed text-white/65">{description}</p>
-        {detail ? <p className="mt-3 text-[11px] text-white/42">{detail}</p> : null}
-    </div>
-);
+    window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 export default function IntegrationsApp({ paneId }: AppProps) {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
-    const isActive = usePaneStore((state) => state.activePaneId === paneId);
+    const {
+        removePane,
+        minimizePane,
+        focusPane,
+        getPane,
+        updatePanePosition,
+        updatePaneSize,
+        openPane,
+    } = usePaneStore();
     const pane = getPane(paneId);
-    const surfaceProfile = useSurfaceProfile();
-
+    const isActive = usePaneStore((state) => state.activePaneId === paneId);
+    const runtimeSession = useRuntimeSession();
     const {
         overview,
         isLoading,
         error,
         browserBridge,
-        loadOverview,
         refreshBrowserBridge,
+        loadOverview,
         localTruthBridge,
         summary,
     } = useCommunicationSurface();
-    const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
-    const runtimeSession = useRuntimeSession();
+    const { mailPreview, calendarPreview, feedPreview, cloudPreview, refresh: refreshLiveData } = useCommunicationLiveData();
+
+    const [lane, setLane] = useState<Lane>('overview');
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [runtimeActionKey, setRuntimeActionKey] = useState<string | null>(null);
-    const [runtimeJobs, setRuntimeJobs] = useState<RuntimeJob[]>([]);
 
+    const canControlRuntime = runtimeSession.data?.user?.role === 'system_owner';
+    const runtimeServices = overview?.runtime?.local_truth?.services;
     const assistantProviders = useMemo(
         () => Object.entries(overview?.assistant?.providers || {}).sort((a, b) => (a[1].priority || 99) - (b[1].priority || 99)),
-        [overview]
+        [overview?.assistant?.providers]
     );
-    const localTruthStartupCommands = useMemo(() => {
-        const commands = overview?.runtime?.local_truth?.startup_commands;
-        return {
-            windows: commands?.windows || overview?.runtime?.local_truth?.startup_command || DEFAULT_LOCAL_TRUTH_COMMANDS.windows,
-            linux: commands?.linux || DEFAULT_LOCAL_TRUTH_COMMANDS.linux,
-        };
-    }, [overview]);
-    const runtimeServices = overview?.runtime?.local_truth?.services;
-    const runtimeRole = runtimeSession.data?.user?.role;
-    const canControlRuntime = runtimeRole === 'system_owner';
-    const latestMail = mailPreview[0] ?? null;
-    const nextEvent = calendarPreview[0] ?? null;
-    const latestFeedItem = feedPreview[0] ?? null;
+
+    const readiness = useMemo(() => {
+        const checks = [
+            browserBridge.permission === 'granted',
+            isReady(overview?.mail?.status, overview?.mail?.configured),
+            isReady(overview?.calendar?.status, overview?.calendar?.configured),
+            isReady(overview?.rss?.status, overview?.rss?.configured),
+            isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured),
+            isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available),
+        ];
+        const ready = checks.filter(Boolean).length;
+        return { ready, total: checks.length, percent: Math.round((ready / checks.length) * 100) };
+    }, [browserBridge.permission, overview]);
+
+    const refreshAll = useCallback(async () => {
+        await Promise.all([
+            loadOverview(),
+            refreshLiveData(),
+            localTruthBridge.refresh({ force: true }),
+        ]);
+    }, [loadOverview, localTruthBridge, refreshLiveData]);
 
     const requestBrowserNotifications = useCallback(async () => {
-        if (typeof window === 'undefined' || typeof Notification === 'undefined') return;
+        if (typeof window === 'undefined' || typeof Notification === 'undefined') {
+            toast.error('Dieser Browser unterstuetzt Benachrichtigungen nicht.');
+            return;
+        }
         setIsRequestingNotifications(true);
         try {
             const permission = await Notification.requestPermission();
             refreshBrowserBridge();
             if (permission === 'granted') {
-                toast.success('Browser-Benachrichtigungen aktiviert');
-                new Notification('Mora ist jetzt mit deinem Browser verbunden', {
-                    body: 'Hinweise, Mail- und Kalender-Signale koennen direkt im Browser auftauchen.',
-                });
+                toast.success('Browser ist verbunden');
+                new Notification('Môra ist verbunden', { body: 'Signale koennen jetzt direkt im Browser erscheinen.' });
             } else {
-                toast.info('Benachrichtigungen wurden nicht freigegeben');
+                toast.info('Benachrichtigungen wurden nicht freigegeben.');
             }
         } catch (err: any) {
-            toast.error(err?.message || 'Benachrichtigungen konnten nicht aktiviert werden');
+            toast.error(err?.message || 'Browser-Freigabe fehlgeschlagen');
         } finally {
             setIsRequestingNotifications(false);
         }
@@ -432,151 +223,60 @@ export default function IntegrationsApp({ paneId }: AppProps) {
 
     const sendBrowserTestNotification = useCallback(() => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
-            toast.error('Browser-Benachrichtigungen sind noch nicht freigegeben');
+            toast.error('Browser-Benachrichtigungen sind noch nicht freigegeben.');
             return;
         }
-        new Notification('Mora Testsignal', {
-            body: 'Dein Browser ist jetzt Teil der internen Instanz.',
-        });
+        new Notification('Môra Testsignal', { body: 'Der Browser-Kanal funktioniert.' });
         toast.success('Testsignal gesendet');
     }, []);
 
     const openMailPane = useCallback(() => {
-        openPane({
-            id: 'mail-main',
-            type: 'mail',
-            title: 'Post',
-            size: { width: 860, height: 640 },
-            position: { x: 160, y: 120 },
-        });
+        openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 860, height: 640 }, position: { x: 160, y: 120 } });
     }, [openPane]);
 
     const openCalendarPane = useCallback(() => {
-        openPane({
-            id: 'calendar-main',
-            type: 'calendar',
-            title: 'Kalender',
-            size: { width: 840, height: 620 },
-            position: { x: 180, y: 110 },
-        });
+        openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 840, height: 620 }, position: { x: 180, y: 110 } });
     }, [openPane]);
-
-    const openOwnerConsole = useCallback(() => {
-        if (typeof window === 'undefined') return;
-        const url = overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login';
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }, [overview]);
-
-    const openOperationsControl = useCallback(() => {
-        if (typeof window === 'undefined') return;
-        const url = overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control';
-        window.open(url, '_blank', 'noopener,noreferrer');
-    }, [overview]);
-
-    const openLocalTruthSurface = useCallback(() => {
-        if (summary.localTruthUiOpenable && typeof window !== 'undefined') {
-            window.open(summary.localTruthUrl, '_blank', 'noopener,noreferrer');
-            return;
-        }
-        openPane({
-            id: 'browser-connect',
-            type: 'browser',
-            title: 'Browser',
-            size: { width: 1160, height: 760 },
-            position: { x: 160, y: 100 },
-            data: { initialUrl: summary.connectSurfaceUrl },
-        });
-    }, [openPane, summary.connectSurfaceUrl, summary.localTruthUiOpenable, summary.localTruthUrl]);
 
     const connectGoogleCalendar = useCallback(async () => {
         setIsConnectingCalendar(true);
         try {
-            const res = await corePost('/v3/integrations/calendar/connect', {
-                return_to: getCalendarOAuthReturnTo(),
-            });
-            const authUrl = res?.auth_url;
-            if (!authUrl) {
-                toast.error('Google-Kalender-Verbindung ist noch nicht sauber konfiguriert');
+            const res = await corePost('/v3/integrations/calendar/connect', { return_to: getCalendarOAuthReturnTo() });
+            if (!res?.auth_url) {
+                toast.error('Google-Kalender ist serverseitig noch nicht voll konfiguriert.');
                 return;
             }
-            if (typeof window !== 'undefined') {
-                const result = await openCalendarOAuthPopup(authUrl);
-                if (result.ok) {
-                    toast.success('Kalender verbunden');
-                    await loadOverview();
-                } else if (result.reason === 'blocked') {
-                    toast.error('Popup blockiert. Erlaube das Verbindungsfenster für SAIMOR.');
-                } else if (result.reason !== 'closed') {
-                    toast.error('Kalender-Verbindung wurde nicht abgeschlossen');
-                }
+            const result = await openCalendarOAuthPopup(res.auth_url);
+            if (result.ok) {
+                toast.success('Kalender verbunden');
+                await refreshAll();
+            } else if (result.reason === 'blocked') {
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
             }
         } catch (err: any) {
             toast.error(err?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
         } finally {
             setIsConnectingCalendar(false);
         }
-    }, [loadOverview]);
+    }, [refreshAll]);
 
-    const copyRuntimeCommand = useCallback(async (platform: RuntimePlatform) => {
-        try {
-            await navigator.clipboard.writeText(localTruthStartupCommands[platform]);
-            toast.success(`Startbefehl für ${platform === 'windows' ? 'Windows' : 'Linux'} kopiert`);
-        } catch {
-            toast.error('Befehl konnte nicht kopiert werden');
-        }
-    }, [localTruthStartupCommands]);
-
-    const loadRuntimeJobs = useCallback(async () => {
-        if (!canControlRuntime) {
-            setRuntimeJobs([]);
-            return;
-        }
-        try {
-            const payload = await coreGet((overview?.runtime?.local_truth as any)?.jobs_endpoint || '/v3/system/runtime/jobs', { isOptional: true });
-            const items = Array.isArray(payload?.items) ? payload.items : [];
-            setRuntimeJobs(items.slice(0, 6));
-        } catch {
-            setRuntimeJobs([]);
-        }
-    }, [canControlRuntime, overview]);
-
-    const runRuntimeAction = useCallback(async (serviceId: 'local_truth' | 'ui' | 'core', action: 'start' | 'stop' | 'restart') => {
+    const runRuntimeAction = useCallback(async (serviceId: RuntimeServiceId, action: RuntimeAction) => {
         const actionKey = `${serviceId}:${action}`;
         setRuntimeActionKey(actionKey);
         try {
             const result = await corePost(`/v3/system/runtime/actions/${serviceId}`, { action });
             if (!result?.accepted) {
-                toast.error('Runtime-Aktion wurde nicht angenommen');
+                toast.error('Runtime-Aktion wurde nicht angenommen.');
                 return;
             }
-            toast.success(`${serviceId} -> ${action} wurde eingereiht`);
-            await loadOverview();
-            await loadRuntimeJobs();
-            if (typeof window !== 'undefined') {
-                window.setTimeout(() => {
-                    void loadOverview();
-                    void localTruthBridge.refresh();
-                    void loadRuntimeJobs();
-                }, 1800);
-            }
+            toast.success(`${serviceId} ${runtimeActionLabels[action].toLowerCase()} wurde eingereiht`);
+            window.setTimeout(() => void refreshAll(), 1600);
         } catch (err: any) {
             toast.error(err?.message || 'Runtime-Aktion konnte nicht gestartet werden');
         } finally {
             setRuntimeActionKey(null);
         }
-    }, [loadOverview, loadRuntimeJobs, localTruthBridge]);
-
-    useEffect(() => {
-        void loadRuntimeJobs();
-    }, [loadRuntimeJobs]);
-
-    useEffect(() => {
-        if (!canControlRuntime || runtimeActionKey === null) return;
-        const timer = window.setInterval(() => {
-            void loadRuntimeJobs();
-        }, 1500);
-        return () => window.clearInterval(timer);
-    }, [canControlRuntime, runtimeActionKey, loadRuntimeJobs]);
+    }, [refreshAll]);
 
     if (!pane) return null;
 
@@ -588,6 +288,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             height={pane.size.height}
             initialX={pane.position.x}
             initialY={pane.position.y}
+            padding={0}
             onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
             onResize={(w, h) => updatePaneSize(paneId, w, h)}
             onClose={() => removePane(paneId)}
@@ -600,618 +301,350 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex h-full flex-col overflow-hidden">
-                <div className="border-b border-white/10 px-6 py-5">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <p className="text-[10px] uppercase tracking-[0.3em] text-white/35">Integrationsuebersicht</p>
-                            <h3 className="mt-2 text-lg font-medium text-white">Konten, Browser und Assistant-Provider</h3>
+            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-black/10">
+                <header className="border-b border-white/[0.07] px-6 py-5">
+                    <div className="flex flex-wrap items-start justify-between gap-5">
+                        <div className="min-w-0">
+                            <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/50">Verbindungszentrale</p>
+                            <h2 className="mt-2 text-2xl font-light tracking-[-0.03em] text-white/92">Was Môra wirklich nutzen darf</h2>
                             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-                                Mail, Kalender, Browser-Freigaben und LLM-Provider werden hier als operative Kontoschicht zusammengezogen.
-                                Diese Flaeche ist die echte Verbindungslogik der Instanz, nicht nur ein Mock-Panel.
+                                Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann kann Môra echte Arbeit sehen.
                             </p>
-                            <div className="mt-4 flex flex-wrap items-center gap-2">
-                                <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-                                    !surfaceProfile.isPublicDemoSurface
-                                        ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-200'
-                                        : surfaceProfile.isPublicDemoSurface
-                                            ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
-                                            : 'border-white/10 bg-white/[0.04] text-white/60'
-                                }`}>
-                                    {!surfaceProfile.isPublicDemoSurface ? 'Interne Instanz' : surfaceProfile.isPublicDemoSurface ? 'Demo-Spiegel' : 'Standardmodus'}
-                                </span>
-                                <span className="text-xs text-white/40">
-                                    {!surfaceProfile.isPublicDemoSurface
-                                        ? 'Hier werden echte lokale Regeln, Browser-Freigaben und Verbindungen aufgebaut.'
-                                        : surfaceProfile.isPublicDemoSurface
-                                            ? 'Die Demo zeigt dieselbe Oberfläche, spiegelt aber nur den stabilen Stand.'
-                                            : 'Diese Organisation nutzt den Standardmodus der Plattform.'}
-                                </span>
-                            </div>
                         </div>
-                        <button
-                            onClick={() => void loadOverview()}
-                            disabled={isLoading}
-                            className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70 transition-colors hover:bg-white/10 disabled:opacity-50"
-                        >
-                            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-                            Aktualisieren
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-2xl border border-emerald-300/14 bg-emerald-400/[0.07] px-4 py-3 text-right">
+                                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-100/45">Bereits nutzbar</div>
+                                <div className="mt-1 text-2xl text-white/90">{readiness.ready}/{readiness.total}</div>
+                            </div>
+                            <button
+                                onClick={() => void refreshAll()}
+                                disabled={isLoading}
+                                className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-xs font-medium text-white/72 transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+                            >
+                                <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+                                Aktualisieren
+                            </button>
+                        </div>
                     </div>
-                </div>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                        {laneItems.map((item) => (
+                            <button
+                                key={item.id}
+                                type="button"
+                                onClick={() => setLane(item.id)}
+                                className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs transition-colors ${
+                                    lane === item.id
+                                        ? 'border-emerald-300/28 bg-emerald-400/[0.12] text-emerald-50'
+                                        : 'border-white/10 bg-white/[0.035] text-white/52 hover:bg-white/[0.07] hover:text-white/76'
+                                }`}
+                            >
+                                <item.icon size={14} />
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+                </header>
 
-                <div className="flex-1 overflow-y-auto px-6 py-6">
+                <main className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
                     {isLoading ? (
-                        <div className="space-y-6">
-                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-                                {[0, 1, 2].map((index) => (
-                                    <div key={index} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                                        <div className="mb-4 h-4 w-28 rounded bg-white/10" />
-                                        <div className="h-10 rounded bg-white/5" />
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                                {[0, 1].map((index) => (
-                                    <div key={index} className="animate-pulse rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-                                        <div className="mb-4 h-5 w-36 rounded bg-white/10" />
-                                        <div className="h-32 rounded bg-white/5" />
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <LoadingState />
                     ) : error ? (
-                        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-                            <div className="flex items-start gap-3">
-                                <AlertCircle className="mt-0.5 text-red-300" size={18} />
-                                <div>
-                                    <h4 className="text-sm font-medium text-red-100">Integrationen konnten nicht geladen werden</h4>
-                                    <p className="mt-1 text-sm text-red-100/70">{error}</p>
-                                    <button
-                                        onClick={() => void loadOverview()}
-                                        className="mt-4 rounded-xl bg-white/10 px-3 py-2 text-xs text-white transition-colors hover:bg-white/15"
-                                    >
-                                        Erneut versuchen
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <ErrorState error={error} onRetry={() => void refreshAll()} />
                     ) : (
-                        <div className="space-y-6">
-                            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                <div className="mb-4">
-                                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Konten & Browser</p>
-                                    <h4 className="mt-1 text-sm font-medium text-white">Direkte Arbeitsanbindung</h4>
-                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-                                        Hier verknuepfst du den Browser selbst mit Mora: Benachrichtigungen, Postfach, Kalender und die direkten Arbeitsflaechen im OS.
-                                    </p>
+                        <div className="space-y-5">
+                            <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+                                <div className="rounded-[28px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(13,43,39,0.44),rgba(3,8,9,0.78))] p-5">
+                                    <div className="flex items-start justify-between gap-4">
+                                        <div>
+                                            <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Aktueller Stand</p>
+                                            <h3 className="mt-2 text-lg font-medium text-white/90">{readiness.percent}% Integrationsbereit</h3>
+                                            <p className="mt-2 text-sm leading-relaxed text-white/55">
+                                                {readiness.ready >= 4
+                                                    ? 'Die Instanz hat genug echte Quellen fuer sinnvolle Môra-Signale.'
+                                                    : 'Noch wenige echte Quellen. Verbinde zuerst Browser, Kalender oder Datenquellen.'}
+                                            </p>
+                                        </div>
+                                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-emerald-300/16 bg-emerald-400/[0.10] text-emerald-100">
+                                            <PlugZap size={24} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-5 h-2 overflow-hidden rounded-full bg-white/[0.055]">
+                                        <div className="h-full rounded-full bg-[linear-gradient(90deg,#10b981,#22d3ee,#fbbf24)]" style={{ width: `${readiness.percent}%` }} />
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <div className="mb-3 flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/10 text-cyan-300">
-                                                    <Bell size={18} />
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-white">Browser</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">Benachrichtigungen und lokale Hinweise</p>
-                                                </div>
-                                            </div>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'degraded' : 'not_configured')}`}>
-                                                {summary.browserStatusLabel}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs leading-relaxed text-white/60">
-                                            Echte Browser-Benachrichtigungen sind die erste lokale Brücke für Mail-, Kalender- und Mora-Signale.
-                                        </p>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                onClick={requestBrowserNotifications}
-                                                disabled={!browserBridge.supported || isRequestingNotifications}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18 disabled:opacity-50"
-                                            >
-                                                <Bell size={14} />
-                                                {isRequestingNotifications ? 'Freigabe...' : 'Benachrichtigungen aktivieren'}
-                                            </button>
-                                            <button
-                                                onClick={sendBrowserTestNotification}
-                                                disabled={browserBridge.permission !== 'granted'}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08] disabled:opacity-50"
-                                            >
-                                                <ExternalLink size={14} />
-                                                Testsignal
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <div className="mb-3 flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300">
-                                                    <Mail size={18} />
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-white">Postfach</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">Gmail, Outlook oder eigenes IMAP</p>
-                                                </div>
-                                            </div>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(overview?.mail?.status)}`}>
-                                                {humanizeIntegrationStatus(overview?.mail?.status)}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs leading-relaxed text-white/60">{buildMailDescription(overview || undefined)}</p>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                onClick={openMailPane}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/12 px-3 py-2 text-xs text-emerald-100 transition-colors hover:border-emerald-300/35 hover:bg-emerald-500/18"
-                                            >
-                                                <Mail size={14} />
-                                                Post öffnen
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <div className="mb-3 flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500/10 text-orange-300">
-                                                    <Calendar size={18} />
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-white">Kalender</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">Google Calendar und lokale Terminansicht</p>
-                                                </div>
-                                            </div>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(overview?.calendar?.status)}`}>
-                                                {humanizeIntegrationStatus(overview?.calendar?.status)}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs leading-relaxed text-white/60">{buildCalendarDescription(overview || undefined)}</p>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                onClick={openCalendarPane}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-orange-400/20 bg-orange-500/12 px-3 py-2 text-xs text-orange-100 transition-colors hover:border-orange-300/35 hover:bg-orange-500/18"
-                                            >
-                                                <Calendar size={14} />
-                                                Kalender öffnen
-                                            </button>
-                                            <button
-                                                onClick={connectGoogleCalendar}
-                                                disabled={!overview?.capabilities?.calendar_oauth_enabled || isConnectingCalendar}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08] disabled:opacity-50"
-                                            >
-                                                <ExternalLink size={14} />
-                                                {isConnectingCalendar ? 'Verbinde...' : 'Mit Google verbinden'}
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <div className="mb-3 flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-300">
-                                                    <Cpu size={18} />
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-white">Local Truth</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">localhost als echte Arbeitsinstanz</p>
-                                                </div>
-                                            </div>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                localTruthBridge.state === 'ready'
-                                                    ? 'border-violet-400/20 bg-violet-500/12 text-violet-100'
-                                                    : localTruthBridge.state === 'core_only' || localTruthBridge.state === 'ui_only'
-                                                        ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
-                                                        : 'border-white/10 bg-white/[0.04] text-white/60'
-                                            }`}>
-                                                {summary.localTruthStatusLabel}
-                                            </span>
-                                        </div>
-                                        <p className="text-xs leading-relaxed text-white/60">
-                                            {localTruthBridge.error
-                                                || 'Hier wird geprueft, ob lokale UI und lokaler Core für echte Konten und echte Integrationen erreichbar sind.'}
-                                        </p>
-                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/25 px-3 py-2 text-[11px] text-white/55">
-                                            UI: <span className="text-white/78">{summary.localTruthUrl}</span>
-                                            <br />
-                                            Core: <span className="text-white/78">{localTruthBridge.selectedCoreUrl || (overview?.runtime?.local_truth as any)?.core_candidates?.[0] || 'http://127.0.0.1:8081/v3/health'}</span>
-                                        </div>
-                                        <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                onClick={() => void localTruthBridge.refresh()}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/12 px-3 py-2 text-xs text-violet-100 transition-colors hover:border-violet-300/35 hover:bg-violet-500/18"
-                                            >
-                                                <RefreshCw size={14} />
-                                                Localhost pruefen
-                                            </button>
-                                            <button
-                                                onClick={openLocalTruthSurface}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
-                                            >
-                                                <ExternalLink size={14} />
-                                                Local Truth öffnen
-                                            </button>
-                                        </div>
+                                <div className="rounded-[28px] border border-white/[0.08] bg-white/[0.03] p-5">
+                                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Live-Vorschau</p>
+                                    <div className="mt-4 space-y-3">
+                                        <SignalLine icon={Mail} label="Mail" text={mailPreview[0] ? `${mailPreview[0].from}: ${mailPreview[0].subject}` : 'Keine aktuelle Mail sichtbar'} />
+                                        <SignalLine icon={Calendar} label="Kalender" text={calendarPreview[0] ? calendarPreview[0].title : 'Kein Termin im Vorschaufenster'} />
+                                        <SignalLine icon={Rss} label="Feeds" text={feedPreview[0] ? feedPreview[0].title : 'Keine Feed-Signale'} />
+                                        <SignalLine icon={Cloud} label="Cloud" text={cloudPreview[0] ? cloudPreview[0].itemName : 'Keine Cloud-Datei geladen'} />
                                     </div>
                                 </div>
                             </section>
 
-                            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                <div className="mb-4">
-                                    <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Lokale Intelligenz</p>
-                                    <h4 className="mt-1 text-sm font-medium text-white">Local Truth Runtime</h4>
-                                    <p className="mt-2 max-w-3xl text-sm leading-relaxed text-white/55">
-                                        Auf localhost soll Mora nicht nur spiegeln, sondern mit echten lokalen Regeln, Konten und Integrationen arbeiten.
-                                        Die Demo zeigt dieselbe Schale, aber nicht dieselbe operative Wahrheit.
-                                    </p>
-                                </div>
-                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-[1.4fr_0.6fr]">
-                                    <div className="rounded-2xl border border-cyan-400/12 bg-cyan-500/[0.06] p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex items-center gap-3">
-                                                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/12 text-cyan-200">
-                                                    <Cpu size={18} />
-                                                </div>
-                                                <div>
-                                                    <h5 className="text-sm font-medium text-white">Gemma / Ollama lokal</h5>
-                                                    <p className="mt-0.5 text-xs text-white/40">
-                                                        {overview?.runtime?.local_truth?.preferred_provider || 'ollama'} · {overview?.runtime?.local_truth?.routing_profile || 'privacy'} · Browser bleibt verbunden
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${
-                                                overview?.runtime?.local_truth?.state === 'ready'
-                                                    ? 'border-cyan-400/20 bg-cyan-500/12 text-cyan-100'
-                                                    : overview?.runtime?.local_truth?.state === 'degraded' || overview?.runtime?.local_truth?.state === 'partial'
-                                                        ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
-                                                        : 'border-white/10 bg-white/[0.04] text-white/60'
-                                            }`}>
-                                                {humanizeRuntimeState(overview?.runtime?.local_truth?.state)}
-                                            </span>
-                                        </div>
-                                        <p className="mt-4 text-xs leading-relaxed text-white/60">
-                                            Verwende lokal <span className="text-cyan-100">{overview?.runtime?.local_truth?.recommended_model || 'gemma4:e2b'}</span> für schnellen privaten Betrieb.
-                                            Das aktuell konfigurierte Modell ist <span className="text-white/80">{overview?.runtime?.local_truth?.configured_model || 'unbekannt'}</span>.
-                                        </p>
-                                        <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-3">
-                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
-                                                UI: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.ui?.status)}</span>
-                                            </div>
-                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
-                                                Core: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.core?.status)}</span>
-                                            </div>
-                                            <div className="rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
-                                                Assistant: <span className="text-white/80">{humanizeRuntimeState(runtimeServices?.assistant?.status)}</span>
-                                            </div>
-                                        </div>
-                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Windows Host</div>
-                                            {localTruthStartupCommands.windows}
-                                        </div>
-                                        <div className="mt-3 rounded-xl border border-white/10 bg-black/30 px-3 py-2 font-mono text-[11px] text-cyan-100/85">
-                                            <div className="mb-1 text-[10px] uppercase tracking-[0.2em] text-white/40">Linux Host</div>
-                                            {localTruthStartupCommands.linux}
-                                        </div>
-                                        <p className="mt-2 text-[11px] text-white/45">
-                                            SAIMOR nutzt denselben Runtime-Vertrag auf beiden Host-Systemen: gleicher Core, gleiche UI, gleiche Dienste. Unterschiedlich sind nur die Host-Launcher.
-                                        </p>
+                            {lane === 'overview' && (
+                                <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                    <ConnectionCard
+                                        icon={Bell}
+                                        title="Browser"
+                                        subtitle="Hinweise und Agent-Signale"
+                                        status={browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'degraded' : 'not_configured'}
+                                        body={summary.browserPermissionSummary}
+                                        actions={[
+                                            { label: isRequestingNotifications ? 'Frage an...' : 'Freigeben', onClick: requestBrowserNotifications, disabled: !browserBridge.supported || isRequestingNotifications },
+                                            { label: 'Testsignal', onClick: sendBrowserTestNotification, disabled: browserBridge.permission !== 'granted', ghost: true },
+                                        ]}
+                                    />
+                                    <ConnectionCard
+                                        icon={Mail}
+                                        title="Mail"
+                                        subtitle="Postfach fuer Môra"
+                                        status={overview?.mail?.status}
+                                        body={buildMailText(overview)}
+                                        actions={[{ label: 'Mail oeffnen', onClick: openMailPane }]}
+                                    />
+                                    <ConnectionCard
+                                        icon={Calendar}
+                                        title="Kalender"
+                                        subtitle="Termine und Zeitkontext"
+                                        status={overview?.calendar?.status}
+                                        body={buildCalendarText(overview)}
+                                        actions={[
+                                            { label: 'Kalender oeffnen', onClick: openCalendarPane },
+                                            { label: isConnectingCalendar ? 'Verbinde...' : 'Google verbinden', onClick: connectGoogleCalendar, disabled: !overview?.capabilities?.calendar_oauth_enabled || isConnectingCalendar, ghost: true },
+                                        ]}
+                                    />
+                                </section>
+                            )}
+
+                            {lane === 'sources' && (
+                                <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                    <ConnectionCard
+                                        icon={Cloud}
+                                        title="Cloud"
+                                        subtitle="Private externe Dateien"
+                                        status={overview?.cloud_storage?.status}
+                                        body={buildCloudText(overview)}
+                                        meta={overview?.cloud_storage?.providers?.join(' / ') || null}
+                                    />
+                                    <ConnectionCard
+                                        icon={Rss}
+                                        title="Feeds"
+                                        subtitle="News, Releases, Monitoring"
+                                        status={overview?.rss?.status}
+                                        body={overview?.rss?.configured ? `${overview.rss.count || 0} Quellen verbunden.` : 'Noch keine Feed-Quellen. Gut fuer Markt- und Systemsignale.'}
+                                    />
+                                    <ConnectionCard
+                                        icon={Bot}
+                                        title="Assistant"
+                                        subtitle="Provider-Routing"
+                                        status={overview?.assistant?.status}
+                                        body={buildAssistantText(overview)}
+                                        meta={overview?.assistant?.routing_profile ? `Profil: ${overview.assistant.routing_profile}` : null}
+                                    />
+                                    <div className="xl:col-span-3 rounded-[26px] border border-white/[0.08] bg-black/20 p-5">
+                                        <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Provider</p>
                                         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                                            {[
-                                                {
-                                                    serviceId: 'local_truth' as const,
-                                                    title: 'Local Truth',
-                                                    state: overview?.runtime?.local_truth?.state,
-                                                    supportedActions: overview?.runtime?.local_truth?.supported_actions || [],
-                                                },
-                                                {
-                                                    serviceId: 'ui' as const,
-                                                    title: 'UI',
-                                                    state: runtimeServices?.ui?.status,
-                                                    supportedActions: runtimeServices?.ui?.supported_actions || [],
-                                                },
-                                                {
-                                                    serviceId: 'core' as const,
-                                                    title: 'Core',
-                                                    state: runtimeServices?.core?.status,
-                                                    supportedActions: runtimeServices?.core?.supported_actions || [],
-                                                },
-                                            ].map((service) => (
-                                                <div key={service.serviceId} className="rounded-xl border border-white/10 bg-black/20 p-3">
-                                                    <div className="flex items-center justify-between gap-2">
+                                            {assistantProviders.length > 0 ? assistantProviders.map(([provider, meta]) => (
+                                                <div key={provider} className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+                                                    <div className="flex items-start justify-between gap-3">
                                                         <div>
-                                                            <div className="text-xs font-medium text-white">{service.title}</div>
-                                                    <div className="mt-1 text-[11px] text-white/45">{humanizeRuntimeState(service.state)}</div>
-                                                            {'process_count' in service && typeof (service as any).process_count === 'number' ? (
-                                                                <div className="mt-1 text-[10px] text-white/35">
-                                                                    Prozesse: {(service as any).process_count}
-                                                                </div>
-                                                            ) : null}
+                                                            <div className="text-sm font-medium text-white/85">{provider}</div>
+                                                            <div className="mt-1 text-[11px] text-white/42">Prioritaet {meta.priority ?? '-'}</div>
                                                         </div>
-                                                        <span className={`rounded-full border px-2 py-1 text-[10px] uppercase tracking-[0.18em] ${
-                                                            service.state === 'ready'
-                                                                ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
-                                                                : service.state === 'degraded' || service.state === 'partial'
-                                                                    ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
-                                                                    : 'border-white/10 bg-white/[0.04] text-white/60'
-                                                        }`}>
-                                                            {humanizeRuntimeState(service.state)}
-                                                        </span>
+                                                        <StatusPill status={meta.healthy ? 'available' : meta.available ? 'configured' : 'unavailable'} />
                                                     </div>
-                                                    <div className="mt-3 flex flex-wrap gap-2">
-                                                        {(['start', 'stop', 'restart'] as const)
-                                                            .filter((action) => service.supportedActions.includes(action))
-                                                            .map((action) => {
-                                                                const actionKey = `${service.serviceId}:${action}`;
-                                                                return (
-                                                                    <button
-                                                                        key={action}
-                                                                        onClick={() => void runRuntimeAction(service.serviceId, action)}
-                                                                        disabled={!canControlRuntime || runtimeActionKey !== null}
-                                                                        className="rounded-lg border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] text-white/75 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-45"
-                                                                    >
-                                                                        {runtimeActionKey === actionKey ? 'Laeuft...' : action}
-                                                                    </button>
-                                                                );
-                                                            })}
-                                                    </div>
-                                                    {'pids' in service && Array.isArray((service as any).pids) && (service as any).pids.length > 0 ? (
-                                                        <div className="mt-2 text-[10px] text-white/35">
-                                                            PID: {(service as any).pids.join(', ')}
-                                                        </div>
-                                                    ) : null}
+                                                    {meta.error ? <p className="mt-3 text-xs leading-relaxed text-red-100/75">{meta.error}</p> : null}
                                                 </div>
-                                            ))}
+                                            )) : (
+                                                <div className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4 text-sm text-white/45">Keine Provider-Metadaten sichtbar.</div>
+                                            )}
                                         </div>
-                                        <p className="mt-3 text-[11px] text-white/45">
-                                            {canControlRuntime
-                                                ? 'Als System-Eigentümer kannst du die lokale Runtime jetzt direkt aus dem OS starten, stoppen und neu anstoen.'
-                                                : 'Runtime-Aktionen sind bewusst nur für den System-Eigentümer freigegeben.'}
-                                        </p>
+                                    </div>
+                                </section>
+                            )}
+
+                            {lane === 'desktop' && (
+                                <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1fr]">
+                                    <ConnectionCard
+                                        icon={Cpu}
+                                        title="Desktop Bridge"
+                                        subtitle={localTruthBridge.isLocalSurface ? 'Lokale Instanz' : 'HQ Web-Version'}
+                                        status={localTruthBridge.state}
+                                        body={localTruthBridge.error || 'Lokale UI und lokaler Core werden nur in einer lokalen Session automatisch geprueft.'}
+                                        meta={localTruthBridge.isLocalSurface ? summary.localTruthUrl : 'Remote-HQ scannt deinen Rechner nicht automatisch.'}
+                                        actions={[
+                                            { label: 'Pruefen', onClick: () => void localTruthBridge.refresh({ force: true, announce: true }) },
+                                            { label: 'Oeffnen', onClick: () => safeOpen(summary.localTruthUrl), disabled: !summary.localTruthUiOpenable, ghost: true },
+                                        ]}
+                                    />
+                                    <div className="rounded-[26px] border border-white/[0.08] bg-white/[0.03] p-5">
+                                        <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Runtime</p>
+                                        <div className="mt-4 grid grid-cols-1 gap-3">
+                                            <RuntimeRow title="UI" state={runtimeServices?.ui?.status} />
+                                            <RuntimeRow title="OS Core" state={runtimeServices?.core?.status} />
+                                            <RuntimeRow title="Assistant" state={runtimeServices?.assistant?.status} />
+                                        </div>
                                         <div className="mt-4 flex flex-wrap gap-2">
-                                            <button
-                                                onClick={() => void copyRuntimeCommand('windows')}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
-                                            >
-                                                <Copy size={14} />
-                                                Windows kopieren
-                                            </button>
-                                            <button
-                                                onClick={() => void copyRuntimeCommand('linux')}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-cyan-400/20 bg-cyan-500/12 px-3 py-2 text-xs text-cyan-100 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/18"
-                                            >
-                                                <Copy size={14} />
-                                                Linux kopieren
-                                            </button>
-                                            <button
-                                                onClick={openOperationsControl}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
-                                            >
-                                                <ShieldCheck size={14} />
-                                                Operations-Leitstand
-                                            </button>
-                                            <button
-                                                onClick={openLocalTruthSurface}
-                                                className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/75 transition-colors hover:bg-white/[0.08]"
-                                            >
-                                                <ExternalLink size={14} />
-                                                Local Truth öffnen
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                                        <p className="text-[10px] uppercase tracking-[0.22em] text-white/35">Wahrheitsmodus</p>
-                                        <div className="mt-3 space-y-3 text-xs leading-relaxed text-white/60">
-                                            <p><span className="text-white/80">localhost</span> arbeitet mit echten lokalen Regeln, Browser-Freigaben und privaten Integrationen.</p>
-                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.demo_mirror || 'https://hq.saimor.world'}</span> zeigt dieselbe Oberfläche, bleibt aber dein Demo-Spiegel.</p>
-                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.owner_console || 'https://owner.saimor.world/login'}</span> bleibt die getrennte Verwaltungs- und Verbindungsebene.</p>
-                                            <p><span className="text-white/80">{overview?.runtime?.surfaces?.operations_console || 'https://www.saimor.world/systems/control'}</span> ist der operative Runtime- und Integrationsleitstand.</p>
-                                        </div>
-                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3 text-[11px] text-white/55">
-                                            <div>Runtime: <span className="text-white/78">{overview?.runtime?.local_truth?.state || 'unknown'}</span></div>
-                                            <div className="mt-1">Bridge: <span className="text-white/78">{localTruthBridge.state}</span></div>
-                                            <div className="mt-1">Letzte Pruefung: <span className="text-white/78">{localTruthBridge.lastCheckedAt || 'noch keine'}</span></div>
-                                        </div>
-                                        <div className="mt-4 rounded-xl border border-white/10 bg-black/25 px-3 py-3">
-                                            <div className="text-[10px] uppercase tracking-[0.22em] text-white/35">Runtime Jobs</div>
-                                            <div className="mt-3 space-y-2">
-                                                {canControlRuntime ? runtimeJobs.length > 0 ? runtimeJobs.map((job) => (
-                                                    <div key={job.job_id} className="rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-[11px] text-white/60">
-                                                        <div className="flex items-center justify-between gap-2">
-                                                            <span className="text-white/80">{job.service_id} · {job.action}</span>
-                                                            <span className={`rounded-full border px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] ${
-                                                                job.status === 'succeeded'
-                                                                    ? 'border-emerald-400/20 bg-emerald-500/12 text-emerald-100'
-                                                                    : job.status === 'failed'
-                                                                        ? 'border-red-400/20 bg-red-500/12 text-red-100'
-                                                                        : job.status === 'running'
-                                                                            ? 'border-amber-400/20 bg-amber-500/12 text-amber-100'
-                                                                            : 'border-white/10 bg-white/[0.04] text-white/60'
-                                                            }`}>
-                                                                {job.status || 'unknown'}
-                                                            </span>
-                                                        </div>
-                                                        <div className="mt-1 text-white/45">{job.job_id}</div>
-                                                        {job.error ? <div className="mt-1 text-red-200/80">{job.error}</div> : null}
-                                                    </div>
-                                                )) : (
-                                                    <div className="text-[11px] text-white/45">Noch keine Runtime-Aktionen protokolliert.</div>
-                                                ) : (
-                                                    <div className="text-[11px] text-white/45">Nur der System-Eigentümer sieht Runtime-Jobs.</div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </section>
-                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                                <SummaryCard
-                                    icon={<Mail size={18} />}
-                                    title="Mail"
-                                    status={overview?.mail?.status}
-                                    description={buildMailDescription(overview || undefined)}
-                                    meta={overview?.mail?.provider ? `Provider: ${overview.mail.provider}` : null}
-                                    detail={latestMail ? `${latestMail.from}: ${latestMail.subject}` : 'Nach dem Verbinden erscheinen neue Nachrichten direkt im OS.'}
-                                />
-                                <SummaryCard
-                                    icon={<Calendar size={18} />}
-                                    title="Kalender"
-                                    status={overview?.calendar?.status}
-                                    description={buildCalendarDescription(overview || undefined)}
-                                    meta={overview?.calendar?.provider ? `Provider: ${overview.calendar.provider}` : null}
-                                    detail={nextEvent ? `${nextEvent.title}${nextEvent.time ? ` · ${nextEvent.time}` : ''}` : 'Naechste Termine erscheinen direkt in Home, Kalender und Integrationen.'}
-                                />
-                                <SummaryCard
-                                    icon={<Rss size={18} />}
-                                    title="Feeds"
-                                    status={overview?.rss?.status}
-                                    description={buildRssDescription(overview || undefined)}
-                                    meta={overview?.rss?.count ? `${overview.rss.count} Quellen` : null}
-                                    detail={latestFeedItem ? `${latestFeedItem.sourceTitle}: ${latestFeedItem.title}` : 'RSS/Atom-Eintraege werden direkt in Moras Kontext eingespeist.'}
-                                />
-                                <SummaryCard
-                                    icon={<Cloud size={18} />}
-                                    title="Cloud"
-                                    status={overview?.cloud_storage?.status}
-                                    description={buildCloudDescription(overview || undefined)}
-                                    meta={overview?.cloud_storage?.count ? `${overview.cloud_storage.count} Quellen` : null}
-                                    detail="Diese Quellen gehoeren zum privaten Nutzerbereich, nicht zur Organisation."
-                                />
-                                <SummaryCard
-                                    icon={<Bot size={18} />}
-                                    title="Assistant"
-                                    status={overview?.assistant?.status}
-                                    description={buildAssistantDescription(overview?.assistant)}
-                                    meta={overview?.assistant?.routing_profile ? `Profil: ${overview.assistant.routing_profile}` : null}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Assistant Operations</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">Provider-Routing und Fallback</h4>
-                                    </div>
-                                    <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                                        <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-white/55">
-                                            Routing-Profil: <span className="text-white/80">{overview?.assistant?.routing_profile || 'unbekannt'}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-white/55">
-                                            Primaer: <span className="text-white/80">{overview?.assistant?.recommended_provider || overview?.assistant?.primary_preference || 'automatisch'}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-black/20 px-3 py-2 text-xs text-white/55">
-                                            Fallbacks: <span className="text-white/80">{overview?.assistant?.fallback_order?.length || 0}</span>
-                                        </div>
-                                    </div>
-
-                                    {assistantProviders.length > 0 ? (
-                                        <div className="space-y-3">
-                                            {assistantProviders.map(([provider, meta]) => {
-                                                const providerStatus = meta.healthy ? 'available' : (meta.available ? 'configured' : 'unavailable');
+                                            {(['start', 'restart', 'stop'] as RuntimeAction[]).map((action) => {
+                                                const actionKey = `local_truth:${action}`;
                                                 return (
-                                                    <div key={provider} className="rounded-xl border border-white/10 bg-black/20 p-4">
-                                                        <div className="flex items-start justify-between gap-3">
-                                                            <div>
-                                                                <h5 className="text-sm font-medium text-white">{provider}</h5>
-                                                                <p className="mt-1 text-xs text-white/45">
-                                                                    Prioritaet {meta.priority ?? '-'}
-                                                                </p>
-                                                            </div>
-                                                            <span className={`rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider ${statusTone(providerStatus)}`}>
-                                                                {meta.healthy ? 'Gesund' : meta.available ? 'Konfiguriert' : 'Nicht verfügbar'}
-                                                            </span>
-                                                        </div>
-                                                        {meta.error && (
-                                                            <p className="mt-3 text-xs text-red-200/80">
-                                                                Fehler: {meta.error}
-                                                            </p>
-                                                        )}
-                                                    </div>
+                                                    <button
+                                                        key={action}
+                                                        onClick={() => void runRuntimeAction('local_truth', action)}
+                                                        disabled={!canControlRuntime || runtimeActionKey !== null}
+                                                        className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-xs text-white/70 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
+                                                    >
+                                                        {runtimeActionKey === actionKey ? 'Laeuft...' : runtimeActionLabels[action]}
+                                                    </button>
                                                 );
                                             })}
                                         </div>
-                                    ) : (
-                                        <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-white/50">
-                                            Keine Provider-Metadaten verfügbar.
-                                        </div>
-                                    )}
+                                        <p className="mt-3 text-[11px] leading-relaxed text-white/42">
+                                            {canControlRuntime
+                                                ? 'Owner-Modus: Runtime-Aktionen werden ueber den Server eingereiht.'
+                                                : 'Runtime-Steuerung ist nur fuer den System-Owner freigegeben.'}
+                                        </p>
+                                    </div>
+                                </section>
+                            )}
 
-                                    {overview?.assistant?.error && (
-                                        <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/5 p-4 text-xs text-red-100/80">
-                                            Provider-Fehler: {overview.assistant.error}
-                                        </div>
-                                    )}
+                            {lane === 'setup' && (
+                                <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+                                    <SetupPanel eyebrow="Mail" title="Postfach verbinden"><EmailIntegration overviewSnapshot={overview} /></SetupPanel>
+                                    <SetupPanel eyebrow="Kalender" title="Termine verbinden"><CalendarIntegration overviewSnapshot={overview} /></SetupPanel>
+                                    <SetupPanel eyebrow="Feeds" title="RSS/Atom Quellen"><RssIntegration /></SetupPanel>
+                                    <SetupPanel eyebrow="Cloud" title="Private Cloud-Speicher"><CloudStorageIntegration /></SetupPanel>
                                 </section>
-
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Betriebszustand</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">Runtime-Signale</h4>
-                                    </div>
-                                    <div className="space-y-3 text-xs text-white/55">
-                                        <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Mail-Modus: <span className="text-white/80">{overview?.capabilities?.mail_local_mode ? 'Lokal' : 'Extern'}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Kalender-OAuth: <span className="text-white/80">{overview?.capabilities?.calendar_oauth_enabled ? 'Aktiv' : 'Nicht aktiv'}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Assistant: <span className="text-white/80">{overview?.capabilities?.assistant_available ? 'Verfuegbar' : 'Nicht verfügbar'}</span>
-                                        </div>
-                                        <div className="rounded-xl bg-black/20 px-3 py-2">
-                                            Steuerung: <span className="text-white/80">{overview?.capabilities?.owner_manageable ? 'Eigentümer-Modus' : 'Eingeschraenkt'}</span>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-                                <div className="xl:col-span-2 rounded-2xl border border-white/10 bg-black/20 p-4">
-                                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Mehrnutzer-Vertrag</p>
-                                    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
-                                        <div className="rounded-xl border border-cyan-400/10 bg-cyan-500/[0.05] px-3 py-3 text-xs leading-relaxed text-cyan-100/78">
-                                            <div className="font-medium text-cyan-100">Serverweit</div>
-                                            Google OAuth Client ID, Secret und Redirect gehoeren zur SAIMOR-Plattform. Ohne diese App-Konfiguration kann kein Nutzer den Kalender verbinden.
-                                        </div>
-                                        <div className="rounded-xl border border-emerald-400/10 bg-emerald-500/[0.05] px-3 py-3 text-xs leading-relaxed text-emerald-100/78">
-                                            <div className="font-medium text-emerald-100">Pro Nutzer</div>
-                                            Mail-Zugangsdaten sowie Google-Refresh-Tokens werden pro Nutzer gespeichert. Mora, Home, Mail und Kalender arbeiten danach auf genau diesem Nutzerkontext.
-                                        </div>
-                                    </div>
-                                </div>
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Mail</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">Postfach-Verbindung</h4>
-                                    </div>
-                                    <EmailIntegration overviewSnapshot={overview} />
-                                </section>
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Kalender</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">Termin-Verbindung</h4>
-                                    </div>
-                                    <CalendarIntegration overviewSnapshot={overview} />
-                                </section>
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 xl:col-span-2">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Feeds</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">RSS/Atom-Quellen</h4>
-                                    </div>
-                                    <RssIntegration />
-                                </section>
-                                <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 xl:col-span-2">
-                                    <div className="mb-4">
-                                        <p className="text-[10px] uppercase tracking-[0.25em] text-white/35">Cloud</p>
-                                        <h4 className="mt-1 text-sm font-medium text-white">Persoenlicher Speicher</h4>
-                                    </div>
-                                    <CloudStorageIntegration />
-                                </section>
-                            </div>
+                            )}
                         </div>
                     )}
-                </div>
+                </main>
             </div>
         </GlassPanel>
+    );
+}
+
+function StatusPill({ status }: { status?: string | null }) {
+    return (
+        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.16em] ${statusClass(status)}`}>
+            {statusLabel(status)}
+        </span>
+    );
+}
+
+function ConnectionCard({
+    icon: Icon,
+    title,
+    subtitle,
+    status,
+    body,
+    meta,
+    actions = [],
+}: {
+    icon: LucideIcon;
+    title: string;
+    subtitle: string;
+    status?: string | null;
+    body: string;
+    meta?: string | null;
+    actions?: Array<{ label: string; onClick: () => void | Promise<void>; disabled?: boolean; ghost?: boolean }>;
+}) {
+    return (
+        <div className="rounded-[26px] border border-white/[0.08] bg-white/[0.035] p-5">
+            <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.08] text-emerald-100">
+                        <Icon size={19} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-medium text-white/90">{title}</h3>
+                        <p className="mt-0.5 text-xs text-white/40">{subtitle}</p>
+                    </div>
+                </div>
+                <StatusPill status={status} />
+            </div>
+            <p className="mt-4 min-h-[3.2rem] text-sm leading-relaxed text-white/58">{body}</p>
+            {meta ? <p className="mt-2 truncate text-[11px] text-white/34">{meta}</p> : null}
+            {actions.length > 0 ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                    {actions.map((action) => (
+                        <button
+                            key={action.label}
+                            onClick={() => void action.onClick()}
+                            disabled={action.disabled}
+                            className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                                action.ghost
+                                    ? 'border-white/10 bg-white/[0.04] text-white/70 hover:bg-white/[0.08]'
+                                    : 'border-emerald-300/18 bg-emerald-400/[0.10] text-emerald-50 hover:bg-emerald-400/[0.16]'
+                            }`}
+                        >
+                            {action.ghost ? <ExternalLink size={14} /> : <CheckCircle2 size={14} />}
+                            {action.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function SignalLine({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
+    return (
+        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-black/18 px-3 py-2">
+            <Icon size={15} className="shrink-0 text-emerald-100/58" />
+            <span className="w-16 shrink-0 text-[11px] uppercase tracking-[0.14em] text-white/35">{label}</span>
+            <span className="min-w-0 truncate text-xs text-white/64">{text}</span>
+        </div>
+    );
+}
+
+function RuntimeRow({ title, state }: { title: string; state?: string | null }) {
+    return (
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-black/18 px-3 py-3">
+            <span className="text-sm text-white/74">{title}</span>
+            <StatusPill status={state} />
+        </div>
+    );
+}
+
+function SetupPanel({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
+    return (
+        <div className="rounded-[26px] border border-white/[0.08] bg-black/20 p-5">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">{eyebrow}</p>
+            <h3 className="mt-1 text-sm font-medium text-white/84">{title}</h3>
+            <div className="mt-4">{children}</div>
+        </div>
+    );
+}
+
+function LoadingState() {
+    return (
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            {[0, 1, 2, 3, 4, 5].map((item) => (
+                <div key={item} className="h-44 animate-pulse rounded-[26px] border border-white/[0.08] bg-white/[0.035]" />
+            ))}
+        </div>
+    );
+}
+
+function ErrorState({ error, onRetry }: { error: string; onRetry: () => void }) {
+    return (
+        <div className="rounded-[26px] border border-red-300/18 bg-red-400/[0.07] p-6">
+            <div className="flex items-start gap-3">
+                <AlertCircle size={20} className="mt-0.5 text-red-100/80" />
+                <div>
+                    <h3 className="text-sm font-medium text-red-50">Integrationen konnten nicht geladen werden</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-red-50/70">{error}</p>
+                    <button
+                        onClick={onRetry}
+                        className="mt-4 rounded-xl border border-white/10 bg-white/[0.08] px-3 py-2 text-xs text-white/80 transition-colors hover:bg-white/[0.12]"
+                    >
+                        Erneut versuchen
+                    </button>
+                </div>
+            </div>
+        </div>
     );
 }
