@@ -688,32 +688,33 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [totalSpaceCount, visiblePlanets.length]);
 
     const accentStars = useMemo(
-        () => Array.from({ length: 42 }, (_, index) => {
+        () => Array.from({ length: 72 }, (_, index) => {
             const left = ((index * 19.7) % 96) + 2;
             const top = ((index * 13.4) % 78) + 6;
-            const size = [1.4, 1.8, 2.2, 2.8][index % 4];
+            const size = [0.9, 1.2, 1.6, 2.2, 2.8][index % 5];
             const color = [
                 'rgba(255,255,255,0.92)',
                 'rgba(191,219,254,0.88)',
                 'rgba(167,243,208,0.78)',
                 'rgba(250,204,21,0.58)',
-            ][index % 4];
+                'rgba(196,181,253,0.64)',
+            ][index % 5];
             return {
                 id: `accent-star-${index}`,
                 left,
                 top,
                 size,
                 color,
-                opacity: 0.44 + ((index % 5) * 0.08),
+                opacity: 0.34 + ((index % 6) * 0.075),
             };
         }),
         []
     );
     const heroStars = useMemo(
-        () => Array.from({ length: 14 }, (_, index) => {
+        () => Array.from({ length: 20 }, (_, index) => {
             const left = ((index * 23.7) % 88) + 6;
             const top = ((index * 15.1) % 72) + 8;
-            const size = [2.2, 2.8, 3.6][index % 3];
+            const size = [1.8, 2.4, 3.1, 3.8][index % 4];
             const color = [
                 'rgba(255,255,255,0.95)',
                 'rgba(125,211,252,0.88)',
@@ -780,10 +781,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 className="absolute inset-0 z-[-10] pointer-events-none"
                 style={{
                     background: `
-                        radial-gradient(1600px 920px at 52% 54%, rgba(52, 120, 190, 0.24) 0%, rgba(14, 34, 56, 0.12) 42%, transparent 78%),
-                        radial-gradient(920px 620px at 14% 18%, rgba(26, 213, 184, 0.18) 0%, transparent 62%),
-                        radial-gradient(860px 520px at 88% 16%, rgba(96, 165, 250, 0.16) 0%, transparent 58%),
-                        linear-gradient(135deg, rgba(4, 18, 18, 0.32) 0%, rgba(8, 22, 34, 0.18) 48%, rgba(4, 16, 16, 0.3) 100%)
+                        radial-gradient(1500px 900px at 51% 50%, rgba(28, 105, 155, 0.18) 0%, rgba(7, 22, 42, 0.10) 40%, transparent 72%),
+                        radial-gradient(980px 640px at 12% 14%, rgba(20, 184, 166, 0.15) 0%, transparent 60%),
+                        radial-gradient(860px 560px at 88% 18%, rgba(99, 102, 241, 0.12) 0%, transparent 58%),
+                        radial-gradient(720px 540px at 72% 82%, rgba(180, 83, 9, 0.08) 0%, transparent 58%),
+                        linear-gradient(135deg, rgba(0, 8, 10, 0.98) 0%, rgba(3, 9, 21, 0.96) 48%, rgba(0, 5, 7, 0.98) 100%)
                     `,
                 }}
             />
@@ -793,11 +795,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
                 style={{
                     background: `
-                        radial-gradient(1200px 760px at 52% 56%, rgba(96, 165, 250, 0.38) 0%, transparent 66%),
-                        radial-gradient(1040px 640px at 18% 24%, rgba(45, 212, 191, 0.24) 0%, transparent 54%),
-                        radial-gradient(860px 480px at 84% 20%, rgba(167, 139, 250, 0.16) 0%, transparent 48%),
-                        radial-gradient(760px 420px at 22% 76%, rgba(16, 185, 129, 0.16) 0%, transparent 52%)
+                        radial-gradient(1120px 720px at 52% 54%, rgba(56, 189, 248, 0.22) 0%, transparent 62%),
+                        radial-gradient(980px 620px at 18% 24%, rgba(45, 212, 191, 0.18) 0%, transparent 54%),
+                        radial-gradient(860px 520px at 84% 20%, rgba(167, 139, 250, 0.13) 0%, transparent 50%),
+                        radial-gradient(780px 460px at 22% 78%, rgba(16, 185, 129, 0.10) 0%, transparent 54%)
                     `,
+                    mixBlendMode: 'screen',
                 }}
             />
             <motion.div
@@ -805,10 +808,22 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 animate={{ x: parallaxOffset.x * 0.44, y: parallaxOffset.y * 0.2, rotate: -2.4 }}
                 transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
                 style={{
-                    background: 'linear-gradient(102deg, transparent 0%, rgba(220,248,255,0.04) 16%, rgba(96,165,250,0.1) 32%, rgba(45,212,191,0.08) 48%, rgba(167,139,250,0.06) 66%, transparent 84%)',
-                    transform: 'scale(1.16)',
-                    filter: 'blur(26px)',
-                    opacity: 0.78,
+                    background: 'linear-gradient(104deg, transparent 0%, rgba(220,248,255,0.025) 16%, rgba(96,165,250,0.075) 32%, rgba(45,212,191,0.052) 48%, rgba(167,139,250,0.044) 66%, transparent 84%)',
+                    transform: 'scale(1.2)',
+                    filter: 'blur(34px)',
+                    opacity: 0.62,
+                    mixBlendMode: 'screen',
+                }}
+            />
+            <motion.div
+                className="absolute inset-0 z-[-8] pointer-events-none"
+                animate={{ x: parallaxOffset.x * 0.18, y: parallaxOffset.y * 0.12, rotate: 2.2 }}
+                transition={{ type: 'spring', stiffness: 18, damping: 16, mass: 1.2 }}
+                style={{
+                    background: 'conic-gradient(from 218deg at 50% 50%, transparent 0deg, rgba(45,212,191,0.08) 58deg, rgba(59,130,246,0.10) 112deg, rgba(167,139,250,0.055) 168deg, transparent 250deg, rgba(250,204,21,0.035) 306deg, transparent 360deg)',
+                    transform: 'scale(1.34)',
+                    filter: 'blur(42px)',
+                    opacity: 0.55,
                     mixBlendMode: 'screen',
                 }}
             />
@@ -827,13 +842,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     `,
                     backgroundSize: '220px 220px, 260px 260px, 280px 280px, 320px 320px, 360px 360px, 420px 420px, 300px 300px, 340px 340px',
                     backgroundPosition: '0 0, 60px 110px, 120px 24px, 24px 200px, 180px 70px, 260px 220px, 140px 160px, 210px 40px',
-                    opacity: 0.92,
+                    opacity: 0.82,
                 }}
             />
             <div
                 className="absolute inset-0 z-[-7] pointer-events-none"
                 style={{
-                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.015) 24%, rgba(0,0,0,0.14) 64%, rgba(0,0,0,0.42) 100%)',
+                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.024) 0%, rgba(255,255,255,0.010) 24%, rgba(0,0,0,0.22) 64%, rgba(0,0,0,0.62) 100%)',
                 }}
             />
             <motion.div

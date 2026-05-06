@@ -9,6 +9,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { getUserColorHex } from '@/lib/utils/userColors';
 import { PlasmaOrb } from '@/components/mora/PlasmaOrb';
+import { IdentityMedallion } from '@/components/os/shell/IdentityMedallion';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import type { AppProps } from '@/lib/apps/types';
@@ -20,6 +21,7 @@ interface TeamMember {
     role: string;
     status: string;
     aura_color?: string;
+    is_self?: boolean;
 }
 interface ChatRoom {
     id: string;
@@ -35,6 +37,15 @@ interface TeamActivity {
     content: string;
     timestamp: string;
 }
+
+const OWNER_AURA_HEX = '#d4af37';
+const normalizeIdentity = (value?: string | null) => (value || '').trim().toLowerCase();
+const isOwnerRole = (role?: string | null) => role === 'owner' || role === 'system_owner';
+const sameIdentity = (left?: string | null, right?: string | null) => {
+    const a = normalizeIdentity(left);
+    const b = normalizeIdentity(right);
+    return Boolean(a && b && a === b);
+};
 
 export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
     const { getPane, removePane, minimizePane, focusPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -62,19 +73,46 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             ]);
             
             const membersRes = Array.isArray(membersV3Res) ? membersV3Res : [];
+            const currentUser = user as any;
+            const currentUserId = currentUser?.id || currentUser?.user_id || currentUser?.uid || null;
+            const currentUserEmail = currentUser?.email || null;
+            const currentUserName = currentUser?.name || currentUser?.full_name || null;
             const realMembers: TeamMember[] = membersRes.map((u: any) => {
                 const email: string = u.email || '';
                 const name: string = u.name || u.full_name || (email ? email.split('@')[0] : 'User');
+                const role: string = u.role || 'member';
+                const isSelf = sameIdentity(u.id, currentUserId)
+                    || sameIdentity(u.user_id, currentUserId)
+                    || sameIdentity(email, currentUserEmail)
+                    || (!email && isOwnerRole(role) && isOwnerRole(currentUser?.role));
                 return {
                     id: u.id,
                     name,
                     email,
-                    role: u.role,
+                    role,
                     status: u.status || (u.is_online ? 'online' : 'offline'),
-                    // Deterministic per-user color — falls back to API value if server ever sends one
-                    aura_color: u.aura_color || getUserColorHex(email || name),
+                    // Self and owner identity must match the dock medallion.
+                    is_self: isSelf,
+                    aura_color: isSelf || isOwnerRole(role) ? OWNER_AURA_HEX : (u.aura_color || getUserColorHex(email || name)),
                 };
             });
+
+            if (currentUser && !realMembers.some((member) =>
+                sameIdentity(member.id, currentUserId) ||
+                sameIdentity(member.email, currentUserEmail) ||
+                sameIdentity(member.name, currentUserName)
+            )) {
+                const fallbackName = currentUserName || (currentUserEmail ? currentUserEmail.split('@')[0] : 'Ich');
+                realMembers.unshift({
+                    id: currentUserId || currentUserEmail || 'current-user',
+                    name: fallbackName,
+                    email: currentUserEmail || '',
+                    role: currentUser.role || 'member',
+                    status: 'online',
+                    is_self: true,
+                    aura_color: isOwnerRole(currentUser.role) ? OWNER_AURA_HEX : getUserColorHex(currentUserEmail || fallbackName),
+                });
+            }
 
             setMembers(realMembers);
             if (activityRes) setActivities(activityRes);
@@ -88,7 +126,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [selectedRoomId]);
+    }, [selectedRoomId, user]);
 
     const fetchHistory = useCallback(async () => {
         if (!selectedRoomId || activeTab !== "chat") return;
@@ -170,6 +208,39 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             m.role.toLowerCase().includes(q)
         );
     }, [members, searchQuery]);
+
+    const roomMembers = useMemo(() => {
+        const ordered = [...members].sort((a, b) => {
+            if (a.is_self && !b.is_self) return -1;
+            if (!a.is_self && b.is_self) return 1;
+            if (isOwnerRole(a.role) && !isOwnerRole(b.role)) return -1;
+            if (!isOwnerRole(a.role) && isOwnerRole(b.role)) return 1;
+            return a.name.localeCompare(b.name);
+        });
+
+        const orbitMembers = ordered.filter((member) => !member.is_self);
+        const orbitTotal = Math.max(1, orbitMembers.length);
+        const orbitPositions = new Map<string, { x: number; y: number; size: number; delay: number }>();
+
+        orbitMembers.forEach((member, index) => {
+            const angle = (-Math.PI / 2) + (index * (Math.PI * 2 / orbitTotal));
+            const radiusX = orbitTotal <= 3 ? 24 : 32;
+            const radiusY = orbitTotal <= 3 ? 20 : 24;
+            orbitPositions.set(member.id, {
+                x: 50 + Math.cos(angle) * radiusX,
+                y: 52 + Math.sin(angle) * radiusY,
+                size: isOwnerRole(member.role) ? 108 : 84,
+                delay: index * 0.22,
+            });
+        });
+
+        return ordered.map((member, index) => ({
+            member,
+            position: member.is_self
+                ? { x: 50, y: 52, size: 122, delay: 0 }
+                : orbitPositions.get(member.id) || { x: 50, y: 52, size: 84, delay: index * 0.2 },
+        }));
+    }, [members]);
 
     if (!pane) return null;
 
@@ -273,53 +344,81 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                     )}
 
                     {activeTab === 'room' && (
-                        <div className="relative flex h-full items-center justify-center overflow-hidden rounded-2xl bg-black/40">
-                            {/* Ambient background particles */}
-                            <div className="absolute inset-0 opacity-20" style={{ 
-                                backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.05) 1px, transparent 0)',
-                                backgroundSize: '40px 40px' 
+                        <div className="relative h-full overflow-hidden rounded-[28px] border border-white/[0.07] bg-[radial-gradient(circle_at_50%_52%,rgba(15,118,110,0.20),transparent_30%),radial-gradient(circle_at_18%_18%,rgba(52,211,153,0.12),transparent_38%),radial-gradient(circle_at_82%_16%,rgba(56,189,248,0.10),transparent_36%),linear-gradient(180deg,rgba(1,12,12,0.90),rgba(0,4,5,0.96))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_22px_70px_rgba(0,0,0,0.28)]">
+                            <div className="absolute inset-0 opacity-35" style={{
+                                backgroundImage: `
+                                    radial-gradient(circle at 14% 26%, rgba(255,255,255,0.22) 0 1px, transparent 1.8px),
+                                    radial-gradient(circle at 72% 18%, rgba(52,211,153,0.20) 0 1px, transparent 1.8px),
+                                    radial-gradient(circle at 48% 76%, rgba(125,211,252,0.18) 0 1px, transparent 1.8px)
+                                `,
+                                backgroundSize: '120px 120px, 180px 180px, 150px 150px',
                             }} />
+                            <div className="absolute inset-x-[8%] top-1/2 h-px bg-gradient-to-r from-transparent via-emerald-200/18 to-transparent" />
+                            <div className="absolute left-1/2 top-1/2 h-[44%] w-[68%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-emerald-200/[0.06]" />
+                            <div className="absolute left-1/2 top-1/2 h-[68%] w-[88%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-200/[0.045]" />
 
-                            <div className="relative flex flex-wrap items-center justify-center gap-12 p-8 overflow-y-auto max-h-full">
+                            <div className="absolute left-6 top-5 z-10">
+                                <div className="text-[10px] uppercase tracking-[0.24em] text-emerald-100/42">Teamraum</div>
+                                <div className="mt-1 text-sm text-white/76">Deine Identitaet liegt im Zentrum. Teammitglieder bewegen sich darum.</div>
+                            </div>
+
+                            <div className="relative h-full">
                                 <AnimatePresence>
-                                    {members.map((member, idx) => (
+                                    {roomMembers.map(({ member, position }, idx) => (
                                         <motion.div
                                             key={member.id}
                                             initial={{ opacity: 0, scale: 0.5, y: 20 }}
-                                            animate={{ 
-                                                opacity: 1, 
-                                                scale: 1, 
-                                                y: [0, -10, 0], 
+                                            animate={{
+                                                opacity: 1,
+                                                scale: 1,
+                                                y: [0, member.is_self ? -5 : -10, 0],
                                             }}
-                                            transition={{ 
-                                                duration: 4 + (idx % 3), 
-                                                repeat: Infinity, 
-                                                delay: idx * 0.3,
-                                                ease: "easeInOut" 
+                                            transition={{
+                                                duration: member.is_self ? 5.6 : 4 + (idx % 3),
+                                                repeat: Infinity,
+                                                delay: position.delay,
+                                                ease: "easeInOut"
                                             }}
-                                            className="flex flex-col items-center gap-4"
+                                            className="absolute flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3"
+                                            style={{
+                                                left: `${position.x}%`,
+                                                top: `${position.y}%`,
+                                            }}
                                         >
-                                            <div className="relative">
-                                                <PlasmaOrb 
-                                                    color={member.aura_color || "#10B981"} 
-                                                    state={member.status === 'online' ? 'idle' : 'focus'} 
-                                                    size={100} 
+                                            <div className="relative flex items-center justify-center">
+                                                <div
+                                                    className="absolute inset-[-34%] rounded-full blur-2xl"
+                                                    style={{ background: `radial-gradient(circle, ${member.aura_color || '#10B981'}28, transparent 68%)` }}
                                                 />
+                                                {member.is_self || isOwnerRole(member.role) ? (
+                                                    <IdentityMedallion
+                                                        name={member.name}
+                                                        role={member.role}
+                                                        size={position.size}
+                                                        preferInitials
+                                                    />
+                                                ) : (
+                                                    <PlasmaOrb
+                                                        color={member.aura_color || "#10B981"}
+                                                        state={member.status === 'online' ? 'idle' : 'focus'}
+                                                        size={position.size}
+                                                    />
+                                                )}
                                                 {member.status === 'online' && (
                                                     <div className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
                                                 )}
                                             </div>
                                             <div className="text-center">
-                                                <div className="text-sm font-medium text-white">{member.name}</div>
-                                                <div className="text-[10px] uppercase tracking-widest text-white/40">{member.role}</div>
+                                                <div className={`font-medium text-white ${member.is_self ? 'text-base' : 'text-sm'}`}>{member.is_self ? 'Du' : member.name}</div>
+                                                <div className="text-[10px] uppercase tracking-widest text-white/40">{member.is_self ? `${member.name} - ${member.role}` : member.role}</div>
                                             </div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
                             </div>
 
-                            <div className="absolute bottom-4 left-4 right-4 rounded-xl bg-white/5 p-3 text-center text-[10px] text-white/30 italic">
-                                Teammitglieder erscheinen hier als energetische Orbs.
+                            <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-white/[0.06] bg-white/[0.04] p-3 text-center text-[10px] text-white/34">
+                                Auren sind identisch mit der Konto-Identitaet: Besitzer/Owner erscheinen als goldene Medaille, Mitglieder als stabile Teamfarben.
                             </div>
                         </div>
                     )}

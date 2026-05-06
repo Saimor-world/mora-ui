@@ -73,7 +73,7 @@ export const Planet: React.FC<PlanetProps> = ({
     const planetSize = sizeMap[size];
 
     // Use shared util — single source of truth across all layers.
-    const style = _getDeptStyle(department.name);
+    const style = _getDeptStyle(department.name, department.color);
     const Icon = iconOverride || style.icon;
 
     const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
