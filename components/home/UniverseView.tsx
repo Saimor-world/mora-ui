@@ -40,6 +40,83 @@ const UNIVERSE_CORE_POINT = {
     y: 44,
 };
 
+const routePointToward = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    offset: number
+) => {
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const distance = Math.max(0.01, Math.hypot(dx, dy));
+    return {
+        x: from.x + (dx / distance) * offset,
+        y: from.y + (dy / distance) * offset,
+    };
+};
+
+const distancePointToSegment = (
+    point: { x: number; y: number },
+    start: { x: number; y: number },
+    end: { x: number; y: number }
+) => {
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSq = dx * dx + dy * dy;
+    if (lengthSq === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+    const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSq));
+    const projection = {
+        x: start.x + t * dx,
+        y: start.y + t * dy,
+    };
+    return Math.hypot(point.x - projection.x, point.y - projection.y);
+};
+
+const buildSoftUniverseRoute = (
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    key: string,
+    endpointOffset: number,
+    baseCurveRatio: number,
+    curveMin: number,
+    curveMax: number
+) => {
+    const start = routePointToward(from, to, endpointOffset);
+    const end = routePointToward(to, from, endpointOffset);
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const distance = Math.max(1, Math.hypot(dx, dy));
+    const normalX = -dy / distance;
+    const normalY = dx / distance;
+    const curveSign = stableUniverseHash(key) % 2 === 0 ? 1 : -1;
+    const baseCurve = Math.min(curveMax, Math.max(curveMin, distance * baseCurveRatio)) * curveSign;
+    const mid = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
+    const coreDistance = distancePointToSegment(UNIVERSE_CORE_POINT, start, end);
+    const avoidStrength = coreDistance < 10 ? (10 - coreDistance) * 0.9 : 0;
+    const avoidVector = {
+        x: mid.x - UNIVERSE_CORE_POINT.x,
+        y: mid.y - UNIVERSE_CORE_POINT.y,
+    };
+    const avoidDistance = Math.max(1, Math.hypot(avoidVector.x, avoidVector.y));
+    const control = {
+        x: mid.x + normalX * baseCurve + (avoidVector.x / avoidDistance) * avoidStrength,
+        y: mid.y + normalY * baseCurve + (avoidVector.y / avoidDistance) * avoidStrength,
+    };
+    const c1 = {
+        x: start.x * 0.58 + control.x * 0.42,
+        y: start.y * 0.58 + control.y * 0.42,
+    };
+    const c2 = {
+        x: end.x * 0.58 + control.x * 0.42,
+        y: end.y * 0.58 + control.y * 0.42,
+    };
+
+    return {
+        d: `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} C ${c1.x.toFixed(2)} ${c1.y.toFixed(2)} ${c2.x.toFixed(2)} ${c2.y.toFixed(2)} ${end.x.toFixed(2)} ${end.y.toFixed(2)}`,
+        labelX: (start.x * 0.24) + (control.x * 0.52) + (end.x * 0.24),
+        labelY: (start.y * 0.24) + (control.y * 0.52) + (end.y * 0.24),
+    };
+};
+
 const clampUniverseCoordinate = (value: number, min: number, max: number) =>
     Math.max(min, Math.min(max, value));
 
@@ -452,17 +529,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 if (!from || !to) return null;
 
                 const pathId = buildSemanticEdgeKey(edge.fromId, edge.toId);
-                const dx = to.x - from.x;
-                const dy = to.y - from.y;
-                const distance = Math.max(1, Math.hypot(dx, dy));
-                const normalX = -dy / distance;
-                const normalY = dx / distance;
-                const curveSign = stableUniverseHash(pathId) % 2 === 0 ? 1 : -1;
-                const curve = Math.min(5.8, Math.max(1.8, distance * 0.08)) * curveSign;
-                const controlX = (from.x + to.x) / 2 + normalX * curve;
-                const controlY = (from.y + to.y) / 2 + normalY * curve;
-                const labelX = (from.x * 0.34) + (controlX * 0.32) + (to.x * 0.34);
-                const labelY = (from.y * 0.34) + (controlY * 0.32) + (to.y * 0.34);
+                const route = buildSoftUniverseRoute(from, to, pathId, 3.3, 0.18, 4.4, 12.5);
                 const focusPeerName = focusedPlanetId
                     ? edge.fromId === focusedPlanetId
                         ? to.name
@@ -480,7 +547,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                 return {
                     id: pathId,
-                    d: `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`,
+                    d: route.d,
                     fromId: from.id,
                     fromName: from.name,
                     toId: to.id,
@@ -488,8 +555,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     strength: edge.strength,
                     semanticAffinity: edge.semanticAffinity,
                     dominantDriver: edge.dominantDriver,
-                    labelX,
-                    labelY,
+                    labelX: route.labelX,
+                    labelY: route.labelY,
                     focusPeerName,
                     focusPeerId,
                     highlighted:
@@ -534,10 +601,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         visiblePlanets.map((planet) => {
             const metrics = departmentMetrics[planet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
             const loadSignal = metrics.nodes * 0.35 + metrics.folders * 1.1 + metrics.spaces * 1.4;
+            const route = buildSoftUniverseRoute(UNIVERSE_CORE_POINT, planet, `core:${planet.id}`, 4.8, 0.14, 3.2, 9.6);
             return {
                 id: planet.id,
                 x: planet.x,
                 y: planet.y,
+                d: route.d,
                 intensity: Math.max(0.16, Math.min(1, loadSignal / Math.max(1, maxNodes * 0.45 + 12))),
                 highlighted:
                     hoverPlanetId === planet.id ||
@@ -973,7 +1042,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
                 <defs>
                     <filter id="silkGlow">
-                        <feGaussianBlur stdDeviation="0.3" result="blur" />
+                        <feGaussianBlur stdDeviation="0.18" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -983,7 +1052,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <stop offset="100%" stopColor="rgba(125,211,252,0)" />
                     </linearGradient>
                     <filter id="beamGlow">
-                        <feGaussianBlur stdDeviation="1.2" result="blur" />
+                        <feGaussianBlur stdDeviation="0.62" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
@@ -992,22 +1061,25 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 {coreConnections
                     .filter((connection) => activeCoreBeamPlanetIds.has(connection.id))
                     .map((connection) => (
-                    <motion.line
+                    <motion.path
                         key={`core-${connection.id}`}
-                        x1={UNIVERSE_CORE_POINT.x}
-                        y1={UNIVERSE_CORE_POINT.y}
-                        x2={connection.x}
-                        y2={connection.y}
+                        d={connection.d}
+                        fill="none"
                         stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.14 + connection.intensity * 0.16 : 0.07 + connection.intensity * 0.07}
+                        strokeWidth={connection.highlighted ? 0.11 + connection.intensity * 0.11 : 0.045 + connection.intensity * 0.05}
+                        strokeLinecap="round"
                         filter="url(#beamGlow)"
-                        initial={{ opacity: 0 }}
+                        initial={{ pathLength: 0, opacity: 0 }}
                         animate={{
+                            pathLength: 1,
                             opacity: isHomeUniversePreview
-                                ? (connection.highlighted ? 0.18 : 0.055 + connection.intensity * 0.025)
-                                : (connection.highlighted ? 0.26 : 0.08 + connection.intensity * 0.035)
+                                ? (connection.highlighted ? 0.13 : 0.035 + connection.intensity * 0.018)
+                                : (connection.highlighted ? 0.20 : 0.045 + connection.intensity * 0.025)
                         }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        transition={{
+                            pathLength: { duration: 0.82, ease: "easeOut" },
+                            opacity: { duration: 0.44, ease: "easeOut" },
+                        }}
                     />
                 ))}
 
@@ -1019,17 +1091,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const baseOpacity = isHomeUniversePreview
                         ? (
                             path.highlighted || isPreviewedPath
-                                ? 0.42
+                                ? 0.30
                                 : isFocusedPath
-                                    ? 0.16
+                                    ? 0.10
                                     : 0
                         )
                         : (
                             path.highlighted || isPreviewedPath
-                                ? 0.52
+                                ? 0.38
                                 : isFocusedPath
-                                    ? 0.22
-                                    : Math.max(0.05, 0.035 + path.strength * 0.08)
+                                    ? 0.14
+                                    : Math.max(0.025, 0.018 + path.strength * 0.045)
                         );
 
                     return (
@@ -1038,7 +1110,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.22 + path.strength * 0.2}
+                                strokeWidth={0.16 + path.strength * 0.13}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
@@ -1056,7 +1128,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.08 + path.strength * 0.12}
+                                strokeWidth={0.045 + path.strength * 0.075}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
