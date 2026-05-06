@@ -754,7 +754,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             case 'search':
                 return 'Aus Suche geöffnet';
             default:
-                return 'Von Mora geöffnet';
+                return 'Automatisch geöffnet';
         }
     }, [navigationContext?.source]);
 
@@ -1906,7 +1906,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     <div className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
-                        <div className="relative flex flex-col gap-3 overflow-hidden rounded-[22px] border border-emerald-300/[0.12] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.18),transparent_34%),radial-gradient(circle_at_88%_18%,rgba(34,211,238,0.10),transparent_28%),linear-gradient(135deg,rgba(5,28,23,0.92),rgba(1,13,12,0.80)_58%,rgba(0,5,5,0.88))] px-4 py-3 shadow-[0_18px_56px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.05)] lg:flex-row lg:items-center lg:justify-between">
+                        <div className="relative flex flex-col gap-2 overflow-hidden rounded-[18px] border border-emerald-300/[0.10] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.14),transparent_34%),linear-gradient(135deg,rgba(5,28,23,0.86),rgba(1,13,12,0.72)_58%,rgba(0,5,5,0.84))] px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.04)] lg:flex-row lg:items-center lg:justify-between">
                             <div className="pointer-events-none absolute -left-20 -top-24 h-48 w-48 rounded-full bg-emerald-300/16 blur-3xl" />
                             <div className="pointer-events-none absolute right-12 top-1/2 h-px w-64 bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
                             <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-72 bg-[radial-gradient(circle_at_bottom_right,rgba(20,184,166,0.14),transparent_65%)]" />
@@ -1936,36 +1936,36 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         </span>
                                     ) : null}
                                 </div>
-                                <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                                    <h2 className="truncate text-[20px] font-semibold tracking-[-0.03em] text-white md:text-[24px]">
+                                <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                                    <h2 className="truncate text-[18px] font-semibold tracking-[-0.03em] text-white md:text-[21px]">
                                         {searchQuery.trim() ? `Suche in ${currentPathLabel}` : currentPathLabel}
                                     </h2>
-                                    <p className="max-w-2xl text-[12px] leading-relaxed text-emerald-50/54">
+                                    <p className="max-w-2xl text-[11px] leading-relaxed text-emerald-50/50">
                                         {currentFolderId
                                             ? 'Dateien, Dokumente und Ordner im aktuellen Pfad.'
                                             : 'Der Einstieg in die aktive Instanz: Struktur, Eingang und aktuelle Inhalte.'}
                                     </p>
                                 </div>
                             </div>
-                            <div className="relative z-10 grid grid-cols-3 gap-2 lg:min-w-[290px]">
-                                <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
-                                    <div className="mt-0.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
+                            <div className="relative z-10 grid grid-cols-3 gap-1.5 lg:min-w-[260px]">
+                                <div className="rounded-xl border border-emerald-300/[0.10] bg-black/16 px-2.5 py-1.5">
+                                    <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
+                                    <div className="mt-0.5 text-base font-semibold text-emerald-100">{filteredFolders.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
-                                    <div className="mt-0.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
+                                <div className="rounded-xl border border-cyan-300/[0.10] bg-black/16 px-2.5 py-1.5">
+                                    <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
+                                    <div className="mt-0.5 text-base font-semibold text-cyan-100">{displayFiles.length}</div>
                                 </div>
-                                <div className="rounded-2xl border border-white/[0.1] bg-black/18 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                                    <div className="text-[10px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
-                                    <div className="mt-1 text-sm font-semibold text-white/82">{densityLabel}</div>
+                                <div className="rounded-xl border border-white/[0.08] bg-black/16 px-2.5 py-1.5">
+                                    <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
+                                    <div className="mt-0.5 text-xs font-semibold text-white/82">{densityLabel}</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {navigationContext && (
-                        <div className="px-3 md:px-6 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
+                        <div className="px-3 md:px-6 py-2 border-b border-cyan-400/10 bg-cyan-500/[0.045]">
                             <CommandReceipt
                                 tone="cyan"
                                 icon={NavigationIcon}
@@ -1991,7 +1991,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         Ausblenden
                                     </button>
                                 )}
-                                footer="Mora zeigt hier die Herkunft des offenen Kontexts. Der Eintrag bleibt sichtbar, bis du ihn ausblendest oder ein neuer Kontext ihn ersetzt."
+                                footer="Automatisch geöffnet: Dieser Hinweis erklärt, warum du hier gelandet bist. Der Ordner bleibt offen, auch wenn du den Hinweis schließt."
                             />
                         </div>
                     )}
@@ -2327,40 +2327,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
-                                            <aside className="space-y-4">
-                                                <div className="sticky top-0 overflow-hidden rounded-[28px] border border-white/[0.08] bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.18),transparent_38%),linear-gradient(180deg,rgba(255,255,255,0.048),rgba(255,255,255,0.016))] px-4 py-4 shadow-[0_18px_52px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.05)]">
-                                                    <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-cyan-300/12 blur-2xl" />
-                                                    <p className="relative text-[10px] uppercase tracking-[0.22em] text-emerald-100/38">Explorer</p>
-                                                    <h3 className="relative mt-2 text-[18px] font-semibold tracking-[-0.03em] text-white">Navigator</h3>
-                                                    <p className="relative mt-1 text-[11px] leading-relaxed text-white/38">Pfad, Inhalt und Routing in einer kompakten Arbeitskarte.</p>
-                                                    <div className="relative mt-5 grid gap-2">
-                                                        <div className="rounded-2xl border border-emerald-300/[0.12] bg-black/20 px-3 py-3">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-emerald-100/34">Ordner</div>
-                                                            <div className="mt-1.5 text-xl font-semibold text-emerald-100">{filteredFolders.length}</div>
-                                                        </div>
-                                                        <div className="rounded-2xl border border-cyan-300/[0.12] bg-black/20 px-3 py-3">
-                                                            <div className="text-[10px] uppercase tracking-[0.14em] text-cyan-100/34">Inhalte</div>
-                                                            <div className="mt-1.5 text-xl font-semibold text-cyan-100">{displayFiles.length}</div>
-                                                        </div>
-                                                        {contextlessFiles.length > 0 && (
-                                                            <div className="rounded-2xl border border-amber-500/[0.1] bg-amber-500/[0.05] px-3 py-2.5">
-                                                                <div className="text-[10px] uppercase tracking-[0.14em] text-amber-200/45">Ohne Bereich</div>
-                                                                <div className="mt-1.5 text-lg font-semibold text-amber-50/90">{contextlessFiles.length}</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="relative mt-4 border-t border-white/[0.06] pt-4">
-                                                        <p className="text-[10px] uppercase tracking-[0.14em] text-white/24">Ansicht</p>
-                                                        <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-white/58">
-                                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{isDeepView ? 'Gesamtsicht' : 'Pfadfokus'}</span>
-                                                            <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1">{densityLabel}</span>
-                                                            {searchQuery ? <span className="rounded-full border border-cyan-400/12 bg-cyan-500/[0.06] px-2.5 py-1 text-cyan-100/60">Suche aktiv</span> : null}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </aside>
-
+                                        <div className="space-y-6">
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
