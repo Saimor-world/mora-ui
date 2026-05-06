@@ -90,7 +90,7 @@ function writeLocalFiles(files: LocalFileRecord[]) {
 
 function fileToLocalRecord(file: File): Promise<LocalFileRecord> {
     if (file.size > LOCAL_FILE_LIMIT) {
-        return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt in CORE hochladen.'));
+        return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt in den OS-Speicher hochladen.'));
     }
 
     const isText = file.type.startsWith('text/')
@@ -306,9 +306,9 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             persistLocalFiles(next);
             setSelectedId(`core-${uploaded.id}`);
             await loadContent();
-            toast.success('Lokale Datei in CORE uebernommen');
+            toast.success('Lokale Datei im OS gesichert');
         } catch (error: any) {
-            toast.error(error?.message || 'Upload in CORE fehlgeschlagen');
+            toast.error(error?.message || 'Sichern im OS fehlgeschlagen');
         } finally {
             setIsUploading(false);
         }
@@ -431,18 +431,18 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="rounded-2xl border border-emerald-300/12 bg-emerald-500/[0.055] p-3">
                             <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/45">Privater Bereich</p>
-                                    <p className="mt-1 text-sm font-medium text-white/84">Meine Dateien</p>
+                                    <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/45">Mein Universum</p>
+                                    <p className="mt-1 text-sm font-medium text-white/84">Private Dateien</p>
                                 </div>
                                 <HardDrive size={17} className="shrink-0 text-emerald-100/60" />
                             </div>
                             <p className="mt-2 text-[11px] leading-relaxed text-white/42">
-                                Lokal ist nur dieser Browser. CORE ist dein geschuetzter Workspace. Cloud-Connectoren werden hier gebuendelt.
+                                Dein Account bleibt der Besitzer. Lokal bleibt nur auf diesem Geraet, OS-Speicher ist geschuetzt im HQ, Cloud verbindet spaeter externe Laufwerke.
                             </p>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
-                            <Metric icon={HardDrive} label="Lokal" value={localFiles.length} />
-                            <Metric icon={Server} label="CORE" value={coreFiles.length} />
+                            <Metric icon={HardDrive} label="Geraet" value={localFiles.length} />
+                            <Metric icon={Server} label="OS" value={coreFiles.length} />
                             <Metric icon={Cloud} label="Cloud" value={cloudCount} />
                         </div>
                         <div
@@ -461,7 +461,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-white/85">Dateien hier ablegen</p>
                                     <p className="mt-1 text-[11px] leading-relaxed text-white/42">
-                                        {activeCompanyId ? 'Upload in deinen CORE-Workspace mit lokaler Vorschau.' : 'Ohne Workspace bleiben Dateien lokal in diesem Browser.'}
+                                        {activeCompanyId ? 'Wird als private OS-Datei in deinem aktuellen Arbeitskontext gesichert.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
                                     </p>
                                 </div>
                             </div>
@@ -509,8 +509,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="mt-3 grid grid-cols-4 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
                             {([
                                 ['all', 'Alle'],
-                                ['local', 'Lokal'],
-                                ['core', 'CORE'],
+                                ['local', 'Geraet'],
+                                ['core', 'OS'],
                                 ['cloud', 'Cloud'],
                             ] as const).map(([value, label]) => (
                                 <button
@@ -525,7 +525,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         </div>
                         {sourceFilter === 'cloud' && (
                             <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Dateien hier neben Lokal und CORE.
+                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Drive-, OneDrive- oder andere Quellen hier neben Geraet und OS-Speicher.
                             </p>
                         )}
                     </div>
@@ -552,7 +552,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-white/78">{file.name}</p>
                                     <p className="mt-0.5 truncate text-[11px] text-white/35">
-                                        {file.source === 'local' ? 'Lokal' : file.linkedNodeId ? 'CORE + Dokument' : 'CORE Datei'} · {formatBytes(file.size)}
+                                        {file.source === 'local' ? 'Nur dieses Geraet' : file.linkedNodeId ? 'OS-Datei + Dokument' : 'Private OS-Datei'} - {formatBytes(file.size)}
                                     </p>
                                 </div>
                             </button>
@@ -565,14 +565,14 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
-                                {selectedFile ? `${selectedFile.source === 'local' ? 'Privat lokal' : 'CORE Workspace'} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
+                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : 'Private OS-Datei'} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
                             {selectedFile?.source === 'local' && activeCompanyId && (
                                 <button type="button" onClick={() => void uploadLocalToCore()} disabled={isUploading}
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-3 py-2 text-xs font-medium text-emerald-50 hover:bg-emerald-500/18 disabled:opacity-50">
-                                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Server size={14} />} In CORE
+                                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Server size={14} />} In OS sichern
                                 </button>
                             )}
                             {selectedFile?.source === 'core' && (
@@ -635,7 +635,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                     <h3 className="mt-4 text-lg font-medium text-white/86">Datei liegt bereit</h3>
                                     <p className="mt-2 text-sm leading-relaxed text-white/42">
                                         {selectedFile.source === 'core'
-                                            ? 'Die Datei liegt in CORE. Oeffne das daraus erzeugte OS-Dokument oder lade die Quelldatei herunter.'
+                                            ? 'Diese Datei liegt in deinem geschuetzten OS-Speicher. Oeffne das erzeugte Dokument oder lade die Originaldatei herunter.'
                                             : 'Diese Datei liegt lokal. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
@@ -674,7 +674,7 @@ function EmptyPreview() {
                 <HardDrive size={30} className="mx-auto text-white/25" />
                 <h3 className="mt-4 text-lg font-medium text-white/78">Local-first Arbeitsplatz</h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/40">
-                    Dateien koennen lokal entstehen, bearbeitet werden und spaeter bewusst in CORE uebernommen werden.
+                    Dateien koennen lokal entstehen, bearbeitet werden und spaeter bewusst im geschuetzten OS-Speicher gesichert werden.
                 </p>
             </div>
         </div>
