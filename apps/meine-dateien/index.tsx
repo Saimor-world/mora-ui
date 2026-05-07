@@ -59,6 +59,7 @@ type UnifiedFile = {
     linkedFolderId?: string | null;
     fileId?: string;
     sourceAvailable?: boolean;
+    visibilityScope?: string | null;
     text?: string;
     dataUrl?: string;
 };
@@ -111,7 +112,15 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
         linkedNodeId: file.linked_node_id,
         linkedFolderId: file.linked_folder_id,
         sourceAvailable: file.source_available ?? file.source_status !== 'missing',
+        visibilityScope: file.visibility_scope,
     };
+}
+
+function getCoreVisibilityLabel(file: UnifiedFile): string {
+    const scope = (file.visibilityScope || '').toLowerCase();
+    if (scope === 'public_link') return 'Freigabelink';
+    if (scope === 'team' || scope === 'department' || scope === 'company') return 'Team-Datei';
+    return file.linkedNodeId ? 'Nur du im OS + Dokument' : 'Nur du im OS';
 }
 
 export default function MeineDateienApp({ paneId }: AppProps) {
@@ -476,7 +485,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <HardDrive size={17} className="shrink-0 text-emerald-100/60" />
                             </div>
                             <p className="mt-2 text-[11px] leading-relaxed text-white/42">
-                                Dein Account bleibt der Besitzer. Lokal bleibt nur auf diesem Geraet, OS-Speicher ist geschuetzt im HQ, Cloud verbindet spaeter externe Laufwerke.
+                                Drei klare Orte: Geraet bleibt nur in diesem Browser, OS ist dein geschuetzter privater HQ-Speicher, Teamdaten liegen bewusst in Bereichs- oder Ordnerfreigaben.
                             </p>
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -500,7 +509,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-white/85">Dateien hier ablegen</p>
                                     <p className="mt-1 text-[11px] leading-relaxed text-white/42">
-                                        {activeCompanyId ? 'Wird als private OS-Datei in deinem aktuellen Arbeitskontext gesichert.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
+                                        {activeCompanyId ? 'Wird als private OS-Datei gesichert: nur dein Account sieht sie, bis du sie bewusst teilst.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
                                     </p>
                                 </div>
                             </div>
@@ -591,7 +600,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-white/78">{file.name}</p>
                                     <p className="mt-0.5 truncate text-[11px] text-white/35">
-                                        {file.source === 'local' ? 'Nur dieses Geraet' : file.linkedNodeId ? 'OS-Datei + Dokument' : 'Private OS-Datei'} - {formatBytes(file.size)}
+                                        {file.source === 'local' ? 'Nur dieses Geraet' : getCoreVisibilityLabel(file)} - {formatBytes(file.size)}
                                     </p>
                                 </div>
                             </button>
@@ -604,7 +613,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
-                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : 'Private OS-Datei'} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
+                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : getCoreVisibilityLabel(selectedFile)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
@@ -687,8 +696,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                         {corePreviewError
                                             ? corePreviewError
                                             : selectedFile.source === 'core'
-                                            ? 'Diese Datei liegt in deinem OS-Speicher. PDF und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
-                                            : 'Diese Datei liegt lokal. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
+                                            ? 'Diese Datei liegt privat in deinem OS-Speicher. PDF und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
+                                            : 'Diese Datei liegt nur auf diesem Geraet. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
                             </div>
@@ -724,9 +733,9 @@ function EmptyPreview() {
         <div className="flex h-full min-h-[420px] items-center justify-center p-6">
             <div className="max-w-sm text-center">
                 <HardDrive size={30} className="mx-auto text-white/25" />
-                <h3 className="mt-4 text-lg font-medium text-white/78">Local-first Arbeitsplatz</h3>
+                <h3 className="mt-4 text-lg font-medium text-white/78">Privater Datei-Arbeitsplatz</h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/40">
-                    Dateien koennen lokal entstehen, bearbeitet werden und spaeter bewusst im geschuetzten OS-Speicher gesichert werden.
+                    Starte auf diesem Geraet oder speichere bewusst privat im OS. Teamfreigaben passieren spaeter als eigene Aktion, nicht automatisch.
                 </p>
             </div>
         </div>

@@ -62,6 +62,7 @@ jest.mock('@/lib/api/filesClient', () => ({
       size: 2048,
       created_at: '2026-05-05T10:00:00Z',
       linked_node_id: 'node-1',
+      visibility_scope: 'personal',
       source_available: true,
     },
   ]),
@@ -92,6 +93,7 @@ describe('MeineDateienApp', () => {
     expect(screen.getAllByText('OS').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Geraet').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Nur du im OS/i).length).toBeGreaterThan(0);
   });
 
   it('creates a local editable note', async () => {
