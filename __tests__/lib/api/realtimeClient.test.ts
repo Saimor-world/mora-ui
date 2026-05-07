@@ -80,14 +80,14 @@ describe('buildWsUrl', () => {
         expect(url).toContain('token=mytoken');
     });
 
-    it('Branch B localhost: uses ws://localhost:8081', () => {
+    it('Branch B localhost: defaults to production websocket unless local core is explicit', () => {
         const url = buildWsUrl('tok', {
             coreApiUrl: '/api/core',
             hostname: 'localhost',
             host: 'localhost:3000',
             protocol: 'ws:',
         });
-        expect(url).toBe('ws://localhost:8081/v3/realtime/subscribe?token=tok&event_types=all');
+        expect(url).toBe('wss://api.saimor.world/v3/realtime/subscribe?token=tok&event_types=all');
     });
 
     it('uses explicit event_types when provided', () => {

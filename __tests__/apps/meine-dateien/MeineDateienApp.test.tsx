@@ -68,6 +68,7 @@ jest.mock('@/lib/api/filesClient', () => ({
   uploadCompanyFile: jest.fn(),
   requestCreateNodeFromFile: jest.fn(),
   getFileNode: jest.fn(),
+  fetchCompanyFileBlob: jest.fn().mockResolvedValue(new Blob(['%PDF'], { type: 'application/pdf' })),
   downloadCompanyFile: jest.fn(),
   deleteCompanyFile: jest.fn(),
 }));
@@ -88,8 +89,8 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
 
     expect((await screen.findAllByText('vertrag.pdf')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('CORE').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Lokal').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('OS').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Geraet').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
   });
 
@@ -112,7 +113,14 @@ describe('MeineDateienApp', () => {
     await waitFor(() => {
       expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({
         type: 'document',
-        data: expect.objectContaining({ nodeId: 'node-1' }),
+        data: expect.objectContaining({
+          nodeId: 'node-1',
+          metadata: expect.objectContaining({
+            file_id: 'file-1',
+            source_file_id: 'file-1',
+            original_filename: 'vertrag.pdf',
+          }),
+        }),
       }));
     });
   });

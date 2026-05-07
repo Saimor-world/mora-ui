@@ -83,7 +83,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 setContent(nodeData.content || '');
                 setDraftContent(nodeData.content || '');
                 setType(nodeData.type || '');
-                setMetadata(nodeData.metadata || {});
+                setMetadata({ ...(initialMetadata || {}), ...(nodeData.metadata || {}) });
                 const nodeRelations = await fetchNodeRelations(nodeId);
                 if (cancelled) return;
                 setRelations(Array.isArray(nodeRelations) ? nodeRelations : []);
@@ -306,7 +306,9 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                             <File size={64} className="text-red-400/60 mb-4" />
                             <p className="text-white/70 text-lg font-medium mb-2">{name}</p>
                             <p className="text-white/45 text-sm text-center max-w-md">
-                                {pdfLoadError || (sourceFileId ? 'PDF wird aus der Originaldatei geladen.' : 'PDF-Dokument ohne verknuepfte Quelle.')}
+                                {pdfLoadError
+                                    ? pdfLoadError.replace('File not found on disk', 'Die Quelldatei ist im OS-Speicher nicht mehr auffindbar.')
+                                    : (sourceFileId ? 'PDF wird aus der OS-Datei geladen.' : 'PDF-Dokument ohne verbundene OS-Datei.')}
                             </p>
                             {sourceFileId && (
                                 <button type="button" onClick={() => void handleOpenOriginal()}
@@ -407,7 +409,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                                 className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22">
                                 <FolderOpen size={13} />Im Zielordner öffnen</button>
                         ) : null}
-                        footer="Dieses Arbeitsdokument bleibt mit seinem Ursprung verknuepft." />
+                        footer="Geoeffnet aus dem OS-Kontext. Datei, Dokument und Zielordner bleiben gemeinsam auffindbar." />
                 </div>
             )}
 
@@ -419,8 +421,8 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                         : <FileText size={18} className="text-blue-400" />}
                     <span className="text-sm text-white/80 font-medium truncate max-w-[300px]">{name}</span>
                     <span className="px-2 py-0.5 rounded-full bg-white/10 text-white/50 text-[10px] uppercase">{fileExtension || type || 'doc'}</span>
-                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">{isPDF ? 'PDF Reader' : canEditCoreDocument ? 'CORE editierbar' : 'Nur lesen'}</span>
-                    {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">Quelle verknuepft</span>}
+                    <span className="px-2 py-0.5 rounded-full bg-white/5 text-white/25 text-[10px] uppercase tracking-wider">{isPDF ? 'PDF Vorschau' : canEditCoreDocument ? 'OS editierbar' : 'Nur lesen'}</span>
+                    {sourceFileId && <span className="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-100/70 text-[10px] uppercase border border-cyan-400/15">OS-Datei verbunden</span>}
                 </div>
                 <div className="flex items-center gap-2">
                     {canEditCoreDocument && (

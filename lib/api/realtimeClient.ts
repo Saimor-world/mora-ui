@@ -54,7 +54,7 @@ function eventTypesFromKey(key: string): Set<string> {
  * Extracted from connect() to be testable without a live WebSocket engine.
  */
 export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
-    const coreApiUrl = opts?.coreApiUrl ?? process.env.NEXT_PUBLIC_CORE_API_URL ?? '/api/core';
+    const coreApiUrl = opts?.coreApiUrl ?? process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ?? process.env.NEXT_PUBLIC_CORE_API_URL ?? '/api/core';
     const coreWsUrl = opts?.coreWsUrl ?? process.env.NEXT_PUBLIC_CORE_WS_URL;
     const hostname = opts?.hostname ?? (typeof window !== 'undefined' ? window.location.hostname : 'localhost');
     const host = opts?.host ?? (typeof window !== 'undefined' ? window.location.host : 'localhost');
@@ -69,11 +69,12 @@ export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
 
     if (coreApiUrl.startsWith('/')) {
         const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
+        const useLocalCore = process.env.NEXT_PUBLIC_LOCAL_CORE === 'true';
 
-        if (['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+        if (useLocalCore && ['localhost', '127.0.0.1', '::1'].includes(hostname)) {
             return `ws://localhost:8081/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
         }
-        return `${protocol}//${apiHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
+        return `wss://${apiHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
     }
 
     const wsHost = coreApiUrl.replace(/^http/, 'ws');

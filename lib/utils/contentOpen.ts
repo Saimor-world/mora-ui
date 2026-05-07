@@ -18,6 +18,7 @@ export interface OpenableNodeLike {
 export interface OpenableSourceFileLike {
     id: string;
     name?: string | null;
+    filename?: string | null;
     size?: number | null;
     mime_type?: string | null;
     linked_status?: 'document' | 'standalone' | string | null;
@@ -71,8 +72,8 @@ export function getContentTypeLabel(type?: string | null): string {
 export function getNodeSourceFileId(item: Pick<OpenableNodeLike, 'metadata'>): string | null {
     const metadata = item.metadata;
     if (!metadata || typeof metadata !== 'object') return null;
-    const fileId = metadata.file_id;
-    return typeof fileId === 'string' && fileId.trim() ? fileId : null;
+    const fileId = metadata.file_id || metadata.source_file_id || metadata.sourceFileId;
+    return typeof fileId === 'string' && fileId.trim() ? fileId.trim() : null;
 }
 
 export const getContentSourceFileId = getNodeSourceFileId;
@@ -80,7 +81,7 @@ export const getContentSourceFileId = getNodeSourceFileId;
 export function getNodeSourceFileName(item: Pick<OpenableNodeLike, 'metadata' | 'name' | 'title' | 'id'>): string {
     const metadata = item.metadata;
     const originalFilename = metadata && typeof metadata === 'object'
-        ? metadata.original_filename
+        ? metadata.original_filename || metadata.source_filename || metadata.filename
         : null;
     if (typeof originalFilename === 'string' && originalFilename.trim()) {
         return originalFilename;
@@ -120,8 +121,8 @@ export function getNodeOpenActionLabel(item: Pick<OpenableNodeLike, 'type' | 'ur
 
 export const getContentOpenActionLabel = getNodeOpenActionLabel;
 
-export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'id'>): string {
-    return item.name || `Datei ${item.id.slice(0, 8)}`;
+export function getSourceFileDisplayName(item: Pick<OpenableSourceFileLike, 'name' | 'filename' | 'id'>): string {
+    return item.name || item.filename || `Datei ${item.id.slice(0, 8)}`;
 }
 
 export function hasLinkedDocument(item: Pick<OpenableSourceFileLike, 'linked_node_id'>): boolean {

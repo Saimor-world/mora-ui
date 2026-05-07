@@ -141,6 +141,7 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
         const request = (async () => {
             let resolvedUi: string | null = null;
             let resolvedCore: string | null = null;
+            const shouldProbeLocalCore = process.env.NEXT_PUBLIC_LOCAL_CORE === 'true' || announce;
 
             for (const candidate of uiCandidates) {
                 // eslint-disable-next-line no-await-in-loop
@@ -151,12 +152,14 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
                 }
             }
 
-            for (const candidate of coreCandidates) {
-                // eslint-disable-next-line no-await-in-loop
-                const reachable = await probeUrl(candidate, isLocalSurface);
-                if (reachable) {
-                    resolvedCore = candidate;
-                    break;
+            if (shouldProbeLocalCore) {
+                for (const candidate of coreCandidates) {
+                    // eslint-disable-next-line no-await-in-loop
+                    const reachable = await probeUrl(candidate, isLocalSurface);
+                    if (reachable) {
+                        resolvedCore = candidate;
+                        break;
+                    }
                 }
             }
 
@@ -181,7 +184,9 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
             }
             if (nextUiReachable) {
                 setState('ui_only');
-                setError('Lokale UI antwortet, aber der lokale Core ist noch nicht erreichbar.');
+                setError(shouldProbeLocalCore
+                    ? 'Lokale UI antwortet, aber der lokale Core ist noch nicht erreichbar.'
+                    : 'Lokale UI antwortet. Lokalen Core pruefen wir erst, wenn du es bewusst anstoesst.');
                 return;
             }
 
@@ -202,7 +207,7 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
     }, [coreCandidates, isLocalSurface, uiCandidates]);
 
     useEffect(() => {
-        void refresh({ force: true, announce: true });
+        void refresh({ force: true, announce: false });
     }, [refresh]);
 
     return {

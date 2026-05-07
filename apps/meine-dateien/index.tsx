@@ -27,6 +27,7 @@ import { fetchMyContent, type UserContentResponse } from '@/lib/api/contentClien
 import {
     deleteCompanyFile,
     downloadCompanyFile,
+    fetchCompanyFileBlob,
     getFileNode,
     listCompanyFiles,
     requestCreateNodeFromFile,
@@ -55,6 +56,7 @@ type UnifiedFile = {
     size: number;
     updatedAt: string;
     linkedNodeId?: string | null;
+    linkedFolderId?: string | null;
     fileId?: string;
     sourceAvailable?: boolean;
     text?: string;
@@ -107,6 +109,7 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
         size: file.size,
         updatedAt: file.created_at,
         linkedNodeId: file.linked_node_id,
+        linkedFolderId: file.linked_folder_id,
         sourceAvailable: file.source_available ?? file.source_status !== 'missing',
     };
 }
@@ -135,6 +138,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const [isUploading, setIsUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
+    const [corePreviewUrl, setCorePreviewUrl] = useState<string | null>(null);
+    const [corePreviewError, setCorePreviewError] = useState<string | null>(null);
 
     const loadContent = useCallback(async () => {
         setIsLoading(true);
@@ -188,6 +193,9 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     }, [coreFiles, localFiles]);
 
     const selectedFile = useMemo(() => files.find((file) => file.id === selectedId) || files[0] || null, [files, selectedId]);
+    const canEditSelected = selectedFile?.source === 'local' && (selectedFile.text != null || selectedFile.mime.startsWith('text/'));
+    const selectedIsPdf = selectedFile?.mime === 'application/pdf' || /\.pdf$/i.test(selectedFile?.name || '');
+    const selectedIsImage = Boolean(selectedFile?.mime.startsWith('image/'));
     const cloudCount = content?.cloud_storage?.connectors?.length ?? content?.cloud_storage?.count ?? 0;
     const filteredFiles = useMemo(() => {
         if (sourceFilter === 'local') return files.filter((file) => file.source === 'local');
@@ -203,6 +211,34 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         }
         setDraftText(selectedFile.text || '');
     }, [selectedFile?.id, selectedFile?.text]);
+
+    useEffect(() => {
+        if (!selectedFile || selectedFile.source !== 'core' || !selectedFile.fileId || (!selectedIsPdf && !selectedIsImage)) {
+            setCorePreviewUrl(null);
+            setCorePreviewError(null);
+            return;
+        }
+
+        let cancelled = false;
+        let objectUrl: string | null = null;
+        setCorePreviewUrl(null);
+        setCorePreviewError(null);
+
+        fetchCompanyFileBlob(selectedFile.fileId)
+            .then((blob) => {
+                if (cancelled) return;
+                objectUrl = URL.createObjectURL(blob);
+                setCorePreviewUrl(objectUrl);
+            })
+            .catch((error: any) => {
+                if (!cancelled) setCorePreviewError(error?.message || 'Datei konnte nicht aus dem OS-Speicher geladen werden');
+            });
+
+        return () => {
+            cancelled = true;
+            if (objectUrl) URL.revokeObjectURL(objectUrl);
+        };
+    }, [selectedFile?.id, selectedFile?.fileId, selectedFile?.source, selectedIsImage, selectedIsPdf]);
 
     const persistLocalFiles = useCallback((next: LocalFileRecord[]) => {
         setLocalFiles(next);
@@ -304,7 +340,13 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                     nodeId: selectedFile.linkedNodeId,
                     name: selectedFile.name,
                     type: selectedFile.name.split('.').pop()?.toLowerCase(),
-                    metadata: { source_file_id: selectedFile.fileId, original_filename: selectedFile.name },
+                    folderId: selectedFile.linkedFolderId || undefined,
+                    companyId: activeCompanyId || undefined,
+                    metadata: {
+                        file_id: selectedFile.fileId,
+                        source_file_id: selectedFile.fileId,
+                        original_filename: selectedFile.name,
+                    },
                 },
             });
             return;
@@ -322,15 +364,40 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                     data: {
                         nodeId: status.node_id,
                         name: selectedFile.name,
+                        type: selectedFile.name.split('.').pop()?.toLowerCase(),
                         folderId: status.folder_id,
                         companyId: status.company_id || activeCompanyId || undefined,
-                        metadata: { source_file_id: selectedFile.fileId, original_filename: selectedFile.name },
+                        metadata: {
+                            file_id: selectedFile.fileId,
+                            source_file_id: selectedFile.fileId,
+                            original_filename: selectedFile.name,
+                        },
                     },
                 });
                 return;
             }
-            await requestCreateNodeFromFile(selectedFile.fileId, { autoExecute: true });
+            const created = await requestCreateNodeFromFile(selectedFile.fileId, { autoExecute: true });
             await loadContent();
+            if (created?.node_id) {
+                openPane({
+                    id: `document-${created.node_id}`,
+                    type: 'document',
+                    title: selectedFile.name,
+                    size: { width: 860, height: 680 },
+                    data: {
+                        nodeId: created.node_id,
+                        name: selectedFile.name,
+                        type: selectedFile.name.split('.').pop()?.toLowerCase(),
+                        folderId: created.folder_id || undefined,
+                        companyId: activeCompanyId || undefined,
+                        metadata: {
+                            file_id: selectedFile.fileId,
+                            source_file_id: selectedFile.fileId,
+                            original_filename: selectedFile.name,
+                        },
+                    },
+                });
+            }
             toast.success('Dokument aus Datei erzeugt');
         } catch (error: any) {
             toast.error(error?.message || 'Dokument konnte nicht geoeffnet werden');
@@ -375,10 +442,6 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     }, [loadContent, localFiles, persistLocalFiles, selectedFile]);
 
     if (!pane) return null;
-
-    const canEditSelected = selectedFile?.source === 'local' && (selectedFile.text != null || selectedFile.mime.startsWith('text/'));
-    const selectedIsPdf = selectedFile?.mime === 'application/pdf' || /\.pdf$/i.test(selectedFile?.name || '');
-    const selectedIsImage = selectedFile?.mime.startsWith('image/');
 
     return (
         <GlassPanel
@@ -604,14 +667,27 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={selectedFile.dataUrl} alt={selectedFile.name} className="max-h-full max-w-full rounded-lg object-contain" />
                             </div>
+                        ) : selectedFile.source === 'core' && selectedIsPdf && corePreviewUrl ? (
+                            <iframe src={corePreviewUrl} title={selectedFile.name} className="h-full min-h-[420px] w-full border-0 bg-white" />
+                        ) : selectedFile.source === 'core' && selectedIsImage && corePreviewUrl ? (
+                            <div className="flex h-full items-center justify-center bg-black/28 p-5">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={corePreviewUrl} alt={selectedFile.name} className="max-h-full max-w-full rounded-lg object-contain" />
+                            </div>
                         ) : (
                             <div className="flex h-full min-h-[420px] items-center justify-center p-6">
                                 <div className="max-w-md text-center">
-                                    <Sparkles size={28} className="mx-auto text-emerald-200/60" />
-                                    <h3 className="mt-4 text-lg font-medium text-white/86">Datei liegt bereit</h3>
+                                    {selectedFile.source === 'core' && (selectedIsPdf || selectedIsImage) && !corePreviewError
+                                        ? <Loader2 size={28} className="mx-auto animate-spin text-cyan-200/60" />
+                                        : <Sparkles size={28} className="mx-auto text-emerald-200/60" />}
+                                    <h3 className="mt-4 text-lg font-medium text-white/86">
+                                        {corePreviewError ? 'Vorschau nicht verfuegbar' : 'Datei liegt bereit'}
+                                    </h3>
                                     <p className="mt-2 text-sm leading-relaxed text-white/42">
-                                        {selectedFile.source === 'core'
-                                            ? 'Diese Datei liegt in deinem geschuetzten OS-Speicher. Oeffne das erzeugte Dokument oder lade die Originaldatei herunter.'
+                                        {corePreviewError
+                                            ? corePreviewError
+                                            : selectedFile.source === 'core'
+                                            ? 'Diese Datei liegt in deinem OS-Speicher. PDF und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
                                             : 'Diese Datei liegt lokal. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
