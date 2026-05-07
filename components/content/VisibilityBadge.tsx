@@ -2,18 +2,19 @@
 'use client';
 
 import React from 'react';
-import { Lock, Users, Globe, Link } from 'lucide-react';
+import { Building2, Link, Lock, Users } from 'lucide-react';
 import type { NodeVisibility } from '@/lib/types/core';
+import { visibilityFromScope } from '@/lib/utils/visibility';
 
 const CONFIG: Record<NodeVisibility, {
     icon: React.ElementType;
     label: string;
     color: string;
 }> = {
-    private:    { icon: Lock,  label: 'Privat',           color: 'text-amber-400/70'   },
-    department: { icon: Users, label: 'Abteilung',        color: 'text-blue-400/60'    },
-    company:    { icon: Globe, label: 'Alle',             color: 'text-white/40'        },
-    public:     { icon: Link,  label: 'Öffentlicher Link', color: 'text-emerald-400/70' },
+    private: { icon: Lock, label: 'Nur ich', color: 'text-amber-300/75' },
+    department: { icon: Users, label: 'Bereich sichtbar', color: 'text-blue-300/70' },
+    company: { icon: Building2, label: 'Workspace sichtbar', color: 'text-cyan-200/70' },
+    public: { icon: Link, label: 'Freigabelink', color: 'text-emerald-300/75' },
 };
 
 interface VisibilityBadgeProps {
@@ -29,9 +30,10 @@ export const VisibilityBadge: React.FC<VisibilityBadgeProps> = ({
     showLabel = false,
     className = '',
 }) => {
-    const resolvedConfig = CONFIG[visibility as NodeVisibility] ?? {
+    const normalizedVisibility = visibilityFromScope(visibility, visibility) || visibility;
+    const resolvedConfig = CONFIG[normalizedVisibility as NodeVisibility] ?? {
         icon: Lock,
-        label: visibility || 'Privat',
+        label: visibility || 'Nur ich',
         color: 'text-white/35',
     };
     const { icon: Icon, label, color } = resolvedConfig;
@@ -45,3 +47,4 @@ export const VisibilityBadge: React.FC<VisibilityBadgeProps> = ({
         </span>
     );
 };
+

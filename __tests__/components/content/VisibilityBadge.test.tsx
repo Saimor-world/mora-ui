@@ -4,24 +4,29 @@ import { render, screen } from '@testing-library/react';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 
 describe('VisibilityBadge', () => {
-    it('shows "Privat" for private visibility', () => {
+    it('shows "Nur ich" for private visibility', () => {
         render(<VisibilityBadge visibility="private" />);
-        expect(screen.getByTitle('Privat')).toBeInTheDocument();
+        expect(screen.getByTitle('Nur ich')).toBeInTheDocument();
     });
 
-    it('shows "Abteilung" for department visibility', () => {
+    it('shows "Bereich sichtbar" for department visibility', () => {
         render(<VisibilityBadge visibility="department" />);
-        expect(screen.getByTitle('Abteilung')).toBeInTheDocument();
+        expect(screen.getByTitle('Bereich sichtbar')).toBeInTheDocument();
     });
 
-    it('shows "Alle" for company visibility', () => {
+    it('shows "Workspace sichtbar" for company visibility', () => {
         render(<VisibilityBadge visibility="company" />);
-        expect(screen.getByTitle('Alle')).toBeInTheDocument();
+        expect(screen.getByTitle('Workspace sichtbar')).toBeInTheDocument();
     });
 
-    it('shows "Öffentlicher Link" for public visibility', () => {
+    it('shows "Freigabelink" for public visibility', () => {
         render(<VisibilityBadge visibility="public" />);
-        expect(screen.getByTitle('Öffentlicher Link')).toBeInTheDocument();
+        expect(screen.getByTitle('Freigabelink')).toBeInTheDocument();
+    });
+
+    it('normalizes file visibility scopes', () => {
+        render(<VisibilityBadge visibility="public_link" />);
+        expect(screen.getByTitle('Freigabelink')).toBeInTheDocument();
     });
 
     it('accepts size prop without error', () => {
@@ -31,6 +36,6 @@ describe('VisibilityBadge', () => {
 
     it('shows label text when showLabel is true', () => {
         render(<VisibilityBadge visibility="private" showLabel />);
-        expect(screen.getByText('Privat')).toBeInTheDocument();
+        expect(screen.getByText('Nur ich')).toBeInTheDocument();
     });
 });

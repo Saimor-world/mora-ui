@@ -12,12 +12,13 @@ import { toast } from '@/lib/toast';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import type { NodeVisibility } from '@/lib/types/core';
 import type { AppProps } from '@/lib/apps/types';
+import { visibilityFromScope } from '@/lib/utils/visibility';
 
-function toNodeVisibility(node: CoreNode & { visibility_scope?: string }): NodeVisibility | null {
-    if (node.visibility) return node.visibility;
-    if (node.visibility_scope === 'personal') return 'private';
-    if (node.visibility_scope === 'public') return 'public';
-    return null; // company = default, no badge
+function toNodeVisibility(node: CoreNode & { visibility_scope?: string; file_visibility_scope?: string }): NodeVisibility | null {
+    return visibilityFromScope(
+        node.visibility_scope ?? node.file_visibility_scope ?? (node.metadata as any)?.file_visibility_scope,
+        node.visibility,
+    );
 }
 
 const getNodeIcon = (type: string) => {

@@ -39,6 +39,7 @@ import {
 } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import type { AppProps } from '@/lib/apps/types';
+import { getCoreFileVisibilityLabel, isWorkspaceVisibilityScope } from '@/lib/utils/visibility';
 import {
     LOCAL_PRIVATE_FILE_LIMIT,
     LOCAL_PRIVATE_FILES_CHANGED,
@@ -119,17 +120,8 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
     };
 }
 
-function getCoreVisibilityLabel(file: UnifiedFile): string {
-    const scope = (file.visibilityScope || '').toLowerCase();
-    if (scope === 'public_link') return 'Freigabelink';
-    if (scope === 'department') return 'Bereich sichtbar';
-    if (scope === 'team' || scope === 'company') return 'Workspace sichtbar';
-    return file.linkedNodeId ? 'Nur du im OS + Dokument' : 'Nur du im OS';
-}
-
 function isWorkspaceVisible(file?: UnifiedFile | null): boolean {
-    const scope = (file?.visibilityScope || '').toLowerCase();
-    return scope === 'team' || scope === 'department' || scope === 'company';
+    return isWorkspaceVisibilityScope(file?.visibilityScope);
 }
 
 export default function MeineDateienApp({ paneId }: AppProps) {
@@ -632,7 +624,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-white/78">{file.name}</p>
                                     <p className="mt-0.5 truncate text-[11px] text-white/35">
-                                        {file.source === 'local' ? 'Nur dieses Geraet' : getCoreVisibilityLabel(file)} - {formatBytes(file.size)}
+                                        {file.source === 'local' ? 'Nur dieses Geraet' : getCoreFileVisibilityLabel(file.visibilityScope, file.linkedNodeId)} - {formatBytes(file.size)}
                                     </p>
                                 </div>
                             </button>
@@ -645,7 +637,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
-                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : getCoreVisibilityLabel(selectedFile)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
+                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : getCoreFileVisibilityLabel(selectedFile.visibilityScope, selectedFile.linkedNodeId)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">

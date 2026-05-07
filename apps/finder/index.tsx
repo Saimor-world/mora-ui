@@ -9,7 +9,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
 import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
-import type { CoreTreeNode } from '@/lib/types/core';
+import type { CoreTreeNode, NodeVisibility } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
@@ -20,6 +20,7 @@ import {
     getFileNode,
     downloadCompanyFile,
     relocateCompanyFile,
+    shareCompanyFile,
     deleteCompanyFile,
     type CompanyFileRecord,
     type FileIntakeDestination,
@@ -33,6 +34,7 @@ import type { FinderNavigationContext, DocumentNavigationContext } from '@/lib/u
 import { toOpenableSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { dispatchMyceliumBatchComplete } from '@/lib/utils/moraExplanation';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
+import { getCoreFileVisibilityLabel, isWorkspaceVisibilityScope, visibilityFromScope } from '@/lib/utils/visibility';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import {
     getContentDisplayName,
@@ -845,6 +847,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         metadata: {
             size: file.size,
             mime: file.mime,
+            visibility_scope: file.visibility_scope,
         },
     }), []);
 
@@ -1380,6 +1383,50 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         });
         setContextMenu(null);
     }, [relocateFinderFile, resolveUploadFolderId]);
+
+    const getFinderItemFileId = useCallback((item: any): string | null => {
+        if (!item) return null;
+        if (item.type === 'file') return String(item.id);
+        return getNodeSourceFileId(item);
+    }, []);
+
+    const getFinderItemVisibilityScope = useCallback((item: any): string | null => (
+        item?.visibility_scope
+        || item?.metadata?.file_visibility_scope
+        || item?.metadata?.visibility_scope
+        || null
+    ), []);
+
+    const getFinderItemVisibility = useCallback((item: any): NodeVisibility | null => (
+        visibilityFromScope(getFinderItemVisibilityScope(item), item?.visibility)
+    ), [getFinderItemVisibilityScope]);
+
+    const handleSetFinderFileVisibility = useCallback(async (item: any, scope: 'personal' | 'company') => {
+        const fileId = getFinderItemFileId(item);
+        if (!fileId) {
+            toast.info('Diese Ansicht hat noch keine echte Quelldatei zum Teilen.');
+            setContextMenu(null);
+            return;
+        }
+
+        try {
+            const updated = await shareCompanyFile(fileId, scope);
+            setCompanyFiles((prev) => prev.map((file) => (
+                file.id === fileId
+                    ? { ...file, visibility_scope: updated.visibility_scope ?? scope }
+                    : file
+            )));
+            await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
+            await loadContent();
+            toast.success(scope === 'company'
+                ? 'Datei ist jetzt im Workspace sichtbar'
+                : 'Datei ist wieder nur fuer dich sichtbar');
+        } catch (error: any) {
+            toast.error(error?.message || 'Sichtbarkeit konnte nicht geaendert werden');
+        } finally {
+            setContextMenu(null);
+        }
+    }, [getFinderItemFileId, loadContent, queryClient, resolvedCompanyId]);
 
     // UNIFIED FINDER: Navigate to starting point based on pane data
     const appliedStartKeyRef = useRef<string>('');
@@ -2453,7 +2500,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                             </span>
                                                             <p className="min-h-[34px] text-[12px] leading-relaxed text-white/38">
                                                                 {file.type === 'file'
-                                                                    ? 'Reale Datei im aktiven Kontext. Kann direkt geöffnet oder weiterverarbeitet werden.'
+                                                                    ? `${getCoreFileVisibilityLabel((file as any).visibility_scope ?? (file as any).metadata?.visibility_scope, (file as any).linked_node_id)}. Reale Datei im aktiven Kontext.`
                                                                     : getContextOpenLabel(file, 'file')}
                                                             </p>
                                                             <div className="mt-auto flex flex-wrap items-center gap-2">
@@ -2467,10 +2514,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                                     </>
                                                                 )}
                                                                 {(() => {
-                                                                    const vis = file.visibility ||
-                                                                        ((file as any).visibility_scope === 'personal' ? 'private' :
-                                                                         (file as any).visibility_scope === 'public' ? 'public' : null);
-                                                                    return vis ? <VisibilityBadge visibility={vis as any} size={10} /> : null;
+                                                                    const vis = getFinderItemVisibility(file);
+                                                                    return vis ? <VisibilityBadge visibility={vis} size={10} /> : null;
                                                                 })()}
                                                             </div>
                                                         </div>
@@ -2830,10 +2875,8 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         </div>
                                                         <span className="text-[10px] text-white/30 shrink-0">{new Date(file.created_at || Date.now()).toLocaleDateString()}</span>
                                                         {(() => {
-                                                            const vis = file.visibility ||
-                                                                ((file as any).visibility_scope === 'personal' ? 'private' :
-                                                                 (file as any).visibility_scope === 'public' ? 'public' : null);
-                                                            return vis ? <VisibilityBadge visibility={vis as any} size={11} /> : null;
+                                                            const vis = getFinderItemVisibility(file);
+                                                            return vis ? <VisibilityBadge visibility={vis} size={11} /> : null;
                                                         })()}
                                                         {isResonant && <Sparkles size={14} className="text-amber-400" />}
                                                     </div>
@@ -3003,6 +3046,17 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
                                             <Paperclip size={14} /> Quelle öffnen
+                                        </button>
+                                    )}
+                                    {contextMenu.type === 'file' && getFinderItemFileId(contextMenu.item) && (
+                                        <button
+                                            onClick={() => {
+                                                const workspaceVisible = isWorkspaceVisibilityScope(getFinderItemVisibilityScope(contextMenu.item));
+                                                void handleSetFinderFileVisibility(contextMenu.item, workspaceVisible ? 'personal' : 'company');
+                                            }}
+                                            className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
+                                        >
+                                            <Share2 size={14} /> {isWorkspaceVisibilityScope(getFinderItemVisibilityScope(contextMenu.item)) ? 'Nur ich' : 'Workspace sichtbar'}
                                         </button>
                                     )}
                                     {contextMenu.type === 'file' && (

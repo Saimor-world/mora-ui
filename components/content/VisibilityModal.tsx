@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Lock, Users, Globe, Link, X } from 'lucide-react';
+import { Building2, Link, Lock, Users, X } from 'lucide-react';
 import type { NodeVisibility } from '@/lib/types/core';
 
 const OPTIONS: Array<{
@@ -14,26 +14,26 @@ const OPTIONS: Array<{
     {
         value: 'private',
         icon: Lock,
-        label: 'Privat',
-        description: 'Nur du siehst diesen Inhalt',
+        label: 'Nur ich',
+        description: 'Privat in deinem OS. Niemand im Workspace sieht diesen Inhalt.',
     },
     {
         value: 'department',
         icon: Users,
-        label: 'Abteilung',
-        description: 'Alle Mitglieder deiner Abteilung',
+        label: 'Bereich',
+        description: 'Sichtbar fuer Mitglieder des passenden Bereichs.',
     },
     {
         value: 'company',
-        icon: Globe,
-        label: 'Alle',
-        description: 'Alle authentifizierten Unternehmensmitglieder',
+        icon: Building2,
+        label: 'Workspace',
+        description: 'Sichtbar fuer angemeldete Mitglieder dieses Workspaces.',
     },
     {
         value: 'public',
         icon: Link,
-        label: 'Öffentlicher Link',
-        description: 'Jeder mit dem Link — keine Anmeldung nötig',
+        label: 'Freigabelink',
+        description: 'Nur mit bewusst erzeugtem Link erreichbar.',
     },
 ];
 
@@ -47,10 +47,6 @@ interface VisibilityModalProps {
 /**
  * VisibilityModal -- shown at upload or content creation time.
  *
- * The user chooses who can see the new content before it is submitted.
- * Default: 'department' — safe default that doesn't over-expose.
- *
- * onConfirm is called with the selected NodeVisibility.
  * The caller is responsible for the actual upload/create API call.
  */
 export const VisibilityModal: React.FC<VisibilityModalProps> = ({
@@ -63,31 +59,29 @@ export const VisibilityModal: React.FC<VisibilityModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-            <div className="bg-[#0e1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+            <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0e1117] p-6 shadow-2xl">
+                <div className="mb-4 flex items-start justify-between">
                     <div>
-                        <div className="text-sm font-medium text-white truncate max-w-[220px]">
+                        <div className="max-w-[220px] truncate text-sm font-medium text-white">
                             {fileName}
                         </div>
-                        <div className="text-xs text-white/40 mt-0.5">Wer kann das sehen?</div>
+                        <div className="mt-0.5 text-xs text-white/40">Wer kann das sehen?</div>
                     </div>
                     <button
                         onClick={onCancel}
-                        className="text-white/30 hover:text-white/60 transition-colors"
-                        aria-label="Schließen"
+                        className="text-white/30 transition-colors hover:text-white/60"
+                        aria-label="Schliessen"
                     >
                         <X size={16} />
                     </button>
                 </div>
 
-                {/* Visibility options */}
-                <div className="flex flex-col gap-2 mb-5">
+                <div className="mb-5 flex flex-col gap-2">
                     {OPTIONS.map(({ value, icon: Icon, label, description }) => (
                         <label
                             key={value}
                             className={[
-                                'flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all border',
+                                'flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-all',
                                 selected === value
                                     ? 'border-white/20 bg-white/5'
                                     : 'border-transparent hover:bg-white/[0.03]',
@@ -102,7 +96,7 @@ export const VisibilityModal: React.FC<VisibilityModalProps> = ({
                                 className="sr-only"
                                 aria-label={label}
                             />
-                            <Icon size={14} className="mt-0.5 text-white/50 shrink-0" />
+                            <Icon size={14} className="mt-0.5 shrink-0 text-white/50" />
                             <div>
                                 <div className="text-sm text-white/80">{label}</div>
                                 <div className="text-[10px] text-white/30">{description}</div>
@@ -111,22 +105,22 @@ export const VisibilityModal: React.FC<VisibilityModalProps> = ({
                     ))}
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-2 justify-end">
+                <div className="flex justify-end gap-2">
                     <button
                         onClick={onCancel}
-                        className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+                        className="px-3 py-1.5 text-xs text-white/40 transition-colors hover:text-white/70"
                     >
                         Abbrechen
                     </button>
                     <button
                         onClick={() => onConfirm(selected)}
-                        className="px-4 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs rounded-lg transition-colors"
+                        className="rounded-lg bg-white/10 px-4 py-1.5 text-xs text-white transition-colors hover:bg-white/15"
                     >
-                        Hochladen
+                        Anwenden
                     </button>
                 </div>
             </div>
         </div>
     );
 };
+

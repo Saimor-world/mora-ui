@@ -16,21 +16,21 @@ describe('VisibilityModal', () => {
 
     it('defaults to department visibility', () => {
         render(<VisibilityModal fileName="doc.pdf" onConfirm={onConfirm} onCancel={onCancel} />);
-        expect(screen.getByRole('radio', { name: /Abteilung/i })).toBeChecked();
+        expect(screen.getByRole('radio', { name: /Bereich/i })).toBeChecked();
     });
 
     it('shows all 4 visibility options', () => {
         render(<VisibilityModal fileName="doc.pdf" onConfirm={onConfirm} onCancel={onCancel} />);
-        expect(screen.getByRole('radio', { name: /Privat/i })).toBeInTheDocument();
-        expect(screen.getByRole('radio', { name: /Abteilung/i })).toBeInTheDocument();
-        expect(screen.getByRole('radio', { name: /Alle/i })).toBeInTheDocument();
-        expect(screen.getByRole('radio', { name: /Öffentlicher Link/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /Nur ich/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /Bereich/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /Workspace/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /Freigabelink/i })).toBeInTheDocument();
     });
 
-    it('calls onConfirm with selected visibility on upload', () => {
+    it('calls onConfirm with selected visibility on apply', () => {
         render(<VisibilityModal fileName="doc.pdf" onConfirm={onConfirm} onCancel={onCancel} />);
-        fireEvent.click(screen.getByRole('radio', { name: /Privat/i }));
-        fireEvent.click(screen.getByRole('button', { name: /Hochladen/i }));
+        fireEvent.click(screen.getByRole('radio', { name: /Nur ich/i }));
+        fireEvent.click(screen.getByRole('button', { name: /Anwenden/i }));
         expect(onConfirm).toHaveBeenCalledWith('private');
     });
 
@@ -49,6 +49,6 @@ describe('VisibilityModal', () => {
                 onCancel={onCancel}
             />
         );
-        expect(screen.getByRole('radio', { name: /Privat/i })).toBeChecked();
+        expect(screen.getByRole('radio', { name: /Nur ich/i })).toBeChecked();
     });
 });

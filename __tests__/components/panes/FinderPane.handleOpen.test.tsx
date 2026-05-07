@@ -99,6 +99,7 @@ jest.mock('@/lib/api/filesClient', () => ({
     getFileNode: jest.fn(),
     downloadCompanyFile: jest.fn(),
     relocateCompanyFile: jest.fn(),
+    shareCompanyFile: jest.fn(),
 }));
 
 jest.mock('@/lib/api/realtimeClient', () => ({
