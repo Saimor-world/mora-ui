@@ -44,6 +44,11 @@ function serializeEventTypes(eventTypes?: string[]): string {
     return normalized.length > 0 ? normalized.join(',') : 'all';
 }
 
+function eventTypesFromKey(key: string): Set<string> {
+    if (!key || key === 'all') return new Set();
+    return new Set(key.split(',').filter(Boolean));
+}
+
 /**
  * Build the WebSocket URL for /v3/realtime/subscribe.
  * Extracted from connect() to be testable without a live WebSocket engine.
@@ -96,29 +101,41 @@ class RealtimeClient {
         return serializeEventTypes(this.getDesiredEventTypes());
     }
 
-    private scheduleResubscribe() {
+    private syncSubscriptions() {
         const desiredKey = this.getDesiredEventTypesKey();
         if (desiredKey === this.subscribedEventTypesKey) return;
+
         const wsState = this.ws?.readyState;
-        if (wsState !== WebSocket.OPEN && wsState !== WebSocket.CONNECTING) return;
+        if (wsState !== WebSocket.OPEN) {
+            // If the socket is still handshaking, do nothing here. onopen will
+            // reconcile the final listener set without tearing down the socket.
+            return;
+        }
+
+        const previous = eventTypesFromKey(this.subscribedEventTypesKey);
+        const desired = eventTypesFromKey(desiredKey);
+        const added = Array.from(desired).filter((eventType) => !previous.has(eventType));
+        const removed = Array.from(previous).filter((eventType) => !desired.has(eventType));
+
+        try {
+            if (added.length > 0) {
+                this.ws?.send(JSON.stringify({ type: 'subscribe', event_types: added }));
+            }
+            if (removed.length > 0) {
+                this.ws?.send(JSON.stringify({ type: 'unsubscribe', event_types: removed }));
+            }
+            this.subscribedEventTypesKey = desiredKey;
+        } catch (error) {
+            logger.warn('[Realtime] Subscription sync failed', error as Error);
+        }
+    }
+
+    private scheduleResubscribe() {
         if (this.resubscribeTimer) clearTimeout(this.resubscribeTimer);
 
         this.resubscribeTimer = setTimeout(() => {
             this.resubscribeTimer = null;
-            const latestDesiredKey = this.getDesiredEventTypesKey();
-            if (latestDesiredKey === this.subscribedEventTypesKey) return;
-
-            this.subscribedEventTypesKey = latestDesiredKey;
-            if (this.ws) {
-                this.ws.onclose = null;
-                this.ws.onerror = null;
-                this.ws.close();
-                this.ws = null;
-            }
-            this.clearHeartbeat();
-            this.isConnecting = false;
-            setWsLock(false);
-            this.connect();
+            this.syncSubscriptions();
         }, 75);
     }
 
@@ -194,6 +211,7 @@ class RealtimeClient {
                 // Lock stays set (wsLocked=true) while OPEN — prevents other instances connecting
                 if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
                 this.startHeartbeat();
+                this.syncSubscriptions();
                 this.emit('connected', { timestamp: Date.now() });
             };
 

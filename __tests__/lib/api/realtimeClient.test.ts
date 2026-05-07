@@ -9,10 +9,60 @@ jest.mock('@/lib/api/coreClient', () => ({
     getCoreBaseUrl: jest.fn(() => 'http://localhost:8081'),
 }));
 
-import { buildWsUrl, fetchRealtimeStats, broadcastRealtimeEvent } from '@/lib/api/realtimeClient';
+import { buildWsUrl, fetchRealtimeStats, broadcastRealtimeEvent, realtime } from '@/lib/api/realtimeClient';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 
-beforeEach(() => jest.clearAllMocks());
+class FakeWebSocket {
+    static CONNECTING = 0;
+    static OPEN = 1;
+    static CLOSING = 2;
+    static CLOSED = 3;
+    static instances: FakeWebSocket[] = [];
+
+    readyState = FakeWebSocket.CONNECTING;
+    sent: string[] = [];
+    closed = false;
+    onopen: (() => void) | null = null;
+    onmessage: ((event: { data: string }) => void) | null = null;
+    onclose: (() => void) | null = null;
+    onerror: ((event: unknown) => void) | null = null;
+
+    constructor(public url: string) {
+        FakeWebSocket.instances.push(this);
+    }
+
+    send(message: string) {
+        this.sent.push(message);
+    }
+
+    close() {
+        this.closed = true;
+        this.readyState = FakeWebSocket.CLOSED;
+        this.onclose?.();
+    }
+
+    open() {
+        this.readyState = FakeWebSocket.OPEN;
+        this.onopen?.();
+    }
+}
+
+beforeEach(() => {
+    jest.clearAllMocks();
+    realtime.disconnect();
+    FakeWebSocket.instances = [];
+    (window as any).__mora_ws_lock = false;
+    Object.defineProperty(global, 'WebSocket', {
+        writable: true,
+        value: FakeWebSocket,
+    });
+    document.cookie = 'mora_auth_token=test-session';
+});
+
+afterEach(() => {
+    realtime.disconnect();
+    jest.useRealTimers();
+});
 
 describe('buildWsUrl', () => {
     it('uses /v3/realtime/subscribe not /v1/', () => {
@@ -90,5 +140,61 @@ describe('broadcastRealtimeEvent', () => {
             '/v3/realtime/broadcast/node.updated',
             { id: 'nd-1' }
         );
+    });
+});
+
+describe('realtime subscription lifecycle', () => {
+    it('does not close a connecting socket when a second event is added', () => {
+        jest.useFakeTimers();
+
+        const ghostHandler = jest.fn();
+        const radarHandler = jest.fn();
+
+        realtime.on('ghost_presence', ghostHandler);
+        realtime.connect();
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        const socket = FakeWebSocket.instances[0];
+        expect(socket.url).toContain('event_types=ghost_presence');
+
+        realtime.on('mora.radar.new', radarHandler);
+        jest.advanceTimersByTime(75);
+
+        expect(socket.closed).toBe(false);
+        expect(FakeWebSocket.instances).toHaveLength(1);
+
+        socket.open();
+
+        expect(socket.sent.map((message) => JSON.parse(message))).toContainEqual({
+            type: 'subscribe',
+            event_types: ['mora.radar.new'],
+        });
+
+        realtime.off('ghost_presence', ghostHandler);
+        realtime.off('mora.radar.new', radarHandler);
+    });
+
+    it('subscribes live without reconnecting when a socket is already open', () => {
+        jest.useFakeTimers();
+
+        const ghostHandler = jest.fn();
+        const radarHandler = jest.fn();
+
+        realtime.on('ghost_presence', ghostHandler);
+        realtime.connect();
+        const socket = FakeWebSocket.instances[0];
+        socket.open();
+
+        realtime.on('mora.radar.new', radarHandler);
+        jest.advanceTimersByTime(75);
+
+        expect(socket.closed).toBe(false);
+        expect(FakeWebSocket.instances).toHaveLength(1);
+        expect(socket.sent.map((message) => JSON.parse(message))).toContainEqual({
+            type: 'subscribe',
+            event_types: ['mora.radar.new'],
+        });
+
+        realtime.off('ghost_presence', ghostHandler);
+        realtime.off('mora.radar.new', radarHandler);
     });
 });
