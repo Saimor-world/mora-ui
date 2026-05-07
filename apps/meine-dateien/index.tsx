@@ -39,7 +39,7 @@ import {
 } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import type { AppProps } from '@/lib/apps/types';
-import { getCoreFileVisibilityLabel, isWorkspaceVisibilityScope } from '@/lib/utils/visibility';
+import { getCoreFileVisibilityLabel, isSharedVisibilityScope, isWorkspaceVisibilityScope } from '@/lib/utils/visibility';
 import {
     LOCAL_PRIVATE_FILE_LIMIT,
     LOCAL_PRIVATE_FILES_CHANGED,
@@ -68,7 +68,7 @@ type UnifiedFile = {
     dataUrl?: string;
 };
 
-type SourceFilter = 'all' | 'local' | 'core' | 'cloud';
+type SourceFilter = 'all' | 'local' | 'private' | 'workspace' | 'cloud';
 
 function formatBytes(size?: number | null) {
     if (!size) return '0 B';
@@ -208,10 +208,13 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const selectedIsPdf = selectedFile?.mime === 'application/pdf' || /\.pdf$/i.test(selectedFile?.name || '');
     const selectedIsImage = Boolean(selectedFile?.mime.startsWith('image/'));
     const selectedIsWorkspaceVisible = isWorkspaceVisible(selectedFile);
+    const privateCoreCount = coreFiles.filter((file) => !isSharedVisibilityScope(file.visibility_scope)).length;
+    const workspaceCoreCount = coreFiles.filter((file) => isSharedVisibilityScope(file.visibility_scope)).length;
     const cloudCount = content?.cloud_storage?.connectors?.length ?? content?.cloud_storage?.count ?? 0;
     const filteredFiles = useMemo(() => {
         if (sourceFilter === 'local') return files.filter((file) => file.source === 'local');
-        if (sourceFilter === 'core') return files.filter((file) => file.source === 'core');
+        if (sourceFilter === 'private') return files.filter((file) => file.source === 'core' && !isSharedVisibilityScope(file.visibilityScope));
+        if (sourceFilter === 'workspace') return files.filter((file) => file.source === 'core' && isSharedVisibilityScope(file.visibilityScope));
         if (sourceFilter === 'cloud') return [];
         return files;
     }, [files, sourceFilter]);
@@ -504,17 +507,18 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                             <div className="flex items-center justify-between gap-3">
                                 <div className="min-w-0">
                                     <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/45">Mein Universum</p>
-                                    <p className="mt-1 text-sm font-medium text-white/84">Private Dateien</p>
+                                    <p className="mt-1 text-sm font-medium text-white/84">Meine Dateien</p>
                                 </div>
                                 <HardDrive size={17} className="shrink-0 text-emerald-100/60" />
                             </div>
                             <p className="mt-2 text-[11px] leading-relaxed text-white/42">
-                                Drei klare Orte: Geraet bleibt nur in diesem Browser, OS ist dein geschuetzter privater HQ-Speicher, Teamdaten liegen bewusst in Bereichs- oder Ordnerfreigaben.
+                                Drei klare Orte: Geraet bleibt nur in diesem Browser, Privat liegt geschuetzt auf dem SAIMOR-Server, Workspace ist fuer berechtigte Kolleginnen und Kollegen sichtbar.
                             </p>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                             <Metric icon={HardDrive} label="Geraet" value={localFiles.length} />
-                            <Metric icon={Server} label="OS" value={coreFiles.length} />
+                            <Metric icon={Lock} label="Privat" value={privateCoreCount} />
+                            <Metric icon={Users} label="Workspace" value={workspaceCoreCount} />
                             <Metric icon={Cloud} label="Cloud" value={cloudCount} />
                         </div>
                         <div
@@ -533,7 +537,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-white/85">Dateien hier ablegen</p>
                                     <p className="mt-1 text-[11px] leading-relaxed text-white/42">
-                                        {activeCompanyId ? 'Wird als private OS-Datei gesichert: nur dein Account sieht sie, bis du sie bewusst teilst.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
+                                        {activeCompanyId ? 'Wird privat auf dem SAIMOR-Server gesichert: nur dein Account sieht sie, bis du sie bewusst teilst.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
                                     </p>
                                 </div>
                             </div>
@@ -578,11 +582,12 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
                             </button>
                         </div>
-                        <div className="mt-3 grid grid-cols-4 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
+                        <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
                             {([
                                 ['all', 'Alle'],
                                 ['local', 'Geraet'],
-                                ['core', 'OS'],
+                                ['private', 'Privat'],
+                                ['workspace', 'Workspace'],
                                 ['cloud', 'Cloud'],
                             ] as const).map(([value, label]) => (
                                 <button
@@ -644,7 +649,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                             {selectedFile?.source === 'local' && activeCompanyId && (
                                 <button type="button" onClick={() => void uploadLocalToCore()} disabled={isUploading}
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-3 py-2 text-xs font-medium text-emerald-50 hover:bg-emerald-500/18 disabled:opacity-50">
-                                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Server size={14} />} In OS sichern
+                                    {isUploading ? <Loader2 size={14} className="animate-spin" /> : <Server size={14} />} Privat sichern
                                 </button>
                             )}
                             {selectedFile?.source === 'core' && (
@@ -728,7 +733,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                         {corePreviewError
                                             ? corePreviewError
                                             : selectedFile.source === 'core'
-                                            ? 'Diese Datei liegt privat in deinem OS-Speicher. PDF und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
+                                            ? 'Diese Datei liegt auf dem SAIMOR-Server. PDFs und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
                                             : 'Diese Datei liegt nur auf diesem Geraet. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
@@ -765,9 +770,9 @@ function EmptyPreview() {
         <div className="flex h-full min-h-[420px] items-center justify-center p-6">
             <div className="max-w-sm text-center">
                 <HardDrive size={30} className="mx-auto text-white/25" />
-                <h3 className="mt-4 text-lg font-medium text-white/78">Privater Datei-Arbeitsplatz</h3>
+                <h3 className="mt-4 text-lg font-medium text-white/78">Datei-Arbeitsplatz</h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/40">
-                    Starte auf diesem Geraet oder speichere bewusst privat im OS. Teamfreigaben passieren spaeter als eigene Aktion, nicht automatisch.
+                    Starte auf diesem Geraet, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
                 </p>
             </div>
         </div>

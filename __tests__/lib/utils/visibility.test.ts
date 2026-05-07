@@ -1,5 +1,6 @@
 import {
     getCoreFileVisibilityLabel,
+    isSharedVisibilityScope,
     isWorkspaceVisibilityScope,
     normalizeVisibilityScope,
     visibilityFromScope,
@@ -20,8 +21,8 @@ describe('visibility utilities', () => {
     });
 
     it('labels the same scopes across Meine Dateien and Finder', () => {
-        expect(getCoreFileVisibilityLabel('personal')).toBe('Nur du im OS');
-        expect(getCoreFileVisibilityLabel('personal', 'node-1')).toBe('Nur du im OS + Dokument');
+        expect(getCoreFileVisibilityLabel('personal')).toBe('Privat');
+        expect(getCoreFileVisibilityLabel('personal', 'node-1')).toBe('Privat + OS-Dokument');
         expect(getCoreFileVisibilityLabel('company')).toBe('Workspace sichtbar');
         expect(getCoreFileVisibilityLabel('department')).toBe('Bereich sichtbar');
         expect(getCoreFileVisibilityLabel('public_link')).toBe('Freigabelink');
@@ -31,5 +32,12 @@ describe('visibility utilities', () => {
         expect(normalizeVisibilityScope('team')).toBe('company');
         expect(isWorkspaceVisibilityScope('company')).toBe(true);
         expect(isWorkspaceVisibilityScope('public_link')).toBe(false);
+    });
+
+    it('separates private server files from shared workspace files', () => {
+        expect(isSharedVisibilityScope('personal')).toBe(false);
+        expect(isSharedVisibilityScope('company')).toBe(true);
+        expect(isSharedVisibilityScope('department')).toBe(true);
+        expect(isSharedVisibilityScope('public_link')).toBe(true);
     });
 });

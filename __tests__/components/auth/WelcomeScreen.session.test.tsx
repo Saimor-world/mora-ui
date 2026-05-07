@@ -8,7 +8,11 @@ import { signIn } from 'next-auth/react';
 import { renderWithProviders, resetAllStores } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
+import {
+    WEBSITE_ENTRY_CONTEXT_STORAGE_KEY,
+    WEBSITE_ENTRY_PREVIEW_SESSION_KIND,
+    WEBSITE_ENTRY_SESSION_KIND_KEY,
+} from '@/lib/websiteEntryStorage';
 
 jest.mock('@/lib/queries/queryKeys', () => ({
     queryKeys: {
@@ -343,6 +347,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
                 })
             );
             expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
+            expect(localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY)).toBe(WEBSITE_ENTRY_PREVIEW_SESSION_KIND);
             expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
         });
@@ -389,9 +394,43 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         await waitFor(() => {
             expect(localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY)).toBeNull();
+            expect(localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY)).toBeNull();
             expect(localStorage.getItem('saimor_website_entry_auto_opened_audit-old')).toBeNull();
             expect(localStorage.getItem('saimor_tenant')).toBe('tenant-hq');
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+        });
+    });
+
+    it('does not auto-resume stale website-entry preview sessions as the normal account', async () => {
+        mockCoreGet.mockResolvedValue(null);
+        (cookies.readCookie as jest.Mock).mockImplementation((name: string) => {
+            if (name === 'mora_session') return 'sess_preview';
+            return null;
+        });
+        localStorage.setItem(WEBSITE_ENTRY_SESSION_KIND_KEY, WEBSITE_ENTRY_PREVIEW_SESSION_KIND);
+        localStorage.setItem('last_activity', new Date().toISOString());
+        localStorage.setItem('saimor_tenant', 'tenant-preview-old');
+        localStorage.setItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY, JSON.stringify({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-old',
+            companyName: 'Old Lead GmbH',
+            title: 'Digital Risk Check aus der Website',
+            email: 'lead@old.example',
+            entryToken: 'old-entry-token',
+            storedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+            openOnHome: false,
+            rooms: [],
+            documents: [],
+            tasks: [],
+        }));
+
+        renderWithStore();
+
+        await waitFor(() => {
+            expect(coreClient.authLogout).toHaveBeenCalled();
+            expect(localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY)).toBeNull();
+            expect(localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY)).toBeNull();
         });
     });
 

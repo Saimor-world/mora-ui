@@ -97,10 +97,11 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
 
     expect((await screen.findAllByText('vertrag.pdf')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('OS').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Geraet').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Privat').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Workspace').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Nur du im OS/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Privat \+ OS-Dokument/i).length).toBeGreaterThan(0);
   });
 
   it('creates a local editable note', async () => {
@@ -138,7 +139,7 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
     await screen.findAllByText('vertrag.pdf');
 
-    fireEvent.click(screen.getByRole('button', { name: /Workspace/i }));
+    fireEvent.click(screen.getByTitle('Im Workspace sichtbar machen'));
 
     await waitFor(() => {
       expect(shareCompanyFile).toHaveBeenCalledWith('file-1', 'company');

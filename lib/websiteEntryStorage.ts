@@ -3,6 +3,8 @@ import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 export const WEBSITE_ENTRY_CONTEXT_STORAGE_KEY = 'saimor_website_entry_context';
 export const WEBSITE_ENTRY_LEADS_STORAGE_KEY = 'saimor_website_entry_leads';
 export const WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT = 'saimor:website-entry-context-updated';
+export const WEBSITE_ENTRY_SESSION_KIND_KEY = 'saimor_session_kind';
+export const WEBSITE_ENTRY_PREVIEW_SESSION_KIND = 'website_entry_preview';
 
 export type StoredWebsiteEntryContext = WebsiteEntryContext & {
     storedAt?: string;
@@ -69,6 +71,33 @@ export function clearWebsiteEntryActiveContext() {
         window.dispatchEvent(new Event(WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT));
     } catch {
         // Best-effort cleanup only.
+    }
+}
+
+export function markWebsiteEntryPreviewSession() {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.setItem(WEBSITE_ENTRY_SESSION_KIND_KEY, WEBSITE_ENTRY_PREVIEW_SESSION_KIND);
+    } catch {
+        // Best-effort marker only. Core session remains the source of truth.
+    }
+}
+
+export function clearWebsiteEntryPreviewSessionMarker() {
+    if (typeof window === 'undefined') return;
+    try {
+        window.localStorage.removeItem(WEBSITE_ENTRY_SESSION_KIND_KEY);
+    } catch {
+        // Best-effort cleanup only.
+    }
+}
+
+export function isWebsiteEntryPreviewSession() {
+    if (typeof window === 'undefined') return false;
+    try {
+        return window.localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY) === WEBSITE_ENTRY_PREVIEW_SESSION_KIND;
+    } catch {
+        return false;
     }
 }
 

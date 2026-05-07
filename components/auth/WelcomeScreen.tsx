@@ -19,7 +19,15 @@ import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
-import { clearWebsiteEntryActiveContext, loadWebsiteEntryContext, markWebsiteEntryContextForHomeOpen, saveWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import {
+    clearWebsiteEntryActiveContext,
+    clearWebsiteEntryPreviewSessionMarker,
+    isWebsiteEntryPreviewSession,
+    loadWebsiteEntryContext,
+    markWebsiteEntryContextForHomeOpen,
+    markWebsiteEntryPreviewSession,
+    saveWebsiteEntryContext,
+} from '@/lib/websiteEntryStorage';
 
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
@@ -173,6 +181,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const userName = typeof window !== 'undefined' ? localStorage.getItem('user_name') : null;
             const userEmail = typeof window !== 'undefined' ? localStorage.getItem('last_user_email') : null;
             const savedRole = typeof window !== 'undefined' ? localStorage.getItem('saimor_role') : null;
+            const storedWebsiteEntry = loadWebsiteEntryContext();
+            const storedAt = storedWebsiteEntry?.storedAt ? Date.parse(storedWebsiteEntry.storedAt) : 0;
+            const hasFreshExplicitWebsiteEntryOpen = Boolean(
+                storedWebsiteEntry?.openOnHome &&
+                Number.isFinite(storedAt) &&
+                Date.now() - storedAt < 10 * 60 * 1000
+            );
+
+            if (isWebsiteEntryPreviewSession() && !hasFreshExplicitWebsiteEntryOpen) {
+                await handleLogout(false);
+                clearWebsiteEntryActiveContext();
+                clearWebsiteEntryPreviewSessionMarker();
+                return;
+            }
 
             const tier = getSessionTier(lastActivity);
             const hasToken = !!(authToken || coreSession || devToken);
@@ -370,7 +392,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         // SECURITY: Clear ALL auth state first to prevent role pollution
         const keysToRemove = [
             'saimor_dev_token', 'saimor_mode', 'saimor_role', 'saimor_tenant',
-            'last_workspace', 'last_activity', 'user_name', 'mora_session', 'last_user_name', 'last_user_email'
+            'saimor_session_kind', 'last_workspace', 'last_activity', 'user_name',
+            'mora_session', 'last_user_name', 'last_user_email'
         ];
         keysToRemove.forEach(key => localStorage.removeItem(key));
 
@@ -446,6 +469,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
             if (response.ok && data?.success) {
                 clearWebsiteEntryActiveContext();
+                clearWebsiteEntryPreviewSessionMarker();
                 setWebsiteEntryContext(null);
                 saveAuthState(data.role || 'member', data.email || loginEmail, data.tenant_id, null);
                 toast.success(`Willkommen, ${(data.email || loginEmail).split('@')[0]}!`);
@@ -489,6 +513,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (data.active_company_name) {
                 localStorage.setItem('last_workspace', data.active_company_name);
             }
+            markWebsiteEntryPreviewSession();
             markWebsiteEntryContextForHomeOpen(websiteEntryContext);
             toast.success(`${websiteEntryContext.companyName} ist als isolierter HQ-Workspace bereit.`);
             setViewMode('workspace');
@@ -583,6 +608,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             saveAuthState(role, email, data.tenant_id, null);
             if (data.active_company_name) {
                 localStorage.setItem('last_workspace', data.active_company_name);
+            }
+            if (claimingWebsitePreview) {
+                clearWebsiteEntryActiveContext();
+                clearWebsiteEntryPreviewSessionMarker();
             }
 
             // Fix: Clear onboarding and session flags

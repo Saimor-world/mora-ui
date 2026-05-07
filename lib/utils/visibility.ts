@@ -34,11 +34,19 @@ export function isWorkspaceVisibilityScope(scope?: string | null): boolean {
     return normalizeVisibilityScope(scope) === 'company';
 }
 
+export function isPrivateVisibilityScope(scope?: string | null): boolean {
+    return normalizeVisibilityScope(scope) === 'personal';
+}
+
+export function isSharedVisibilityScope(scope?: string | null): boolean {
+    const normalized = normalizeVisibilityScope(scope);
+    return normalized === 'company' || normalized === 'department' || normalized === 'public_link';
+}
+
 export function getCoreFileVisibilityLabel(scope?: string | null, linkedNodeId?: string | null): string {
     const normalized = normalizeVisibilityScope(scope);
     if (normalized === 'public_link') return 'Freigabelink';
     if (normalized === 'department') return 'Bereich sichtbar';
     if (normalized === 'company') return 'Workspace sichtbar';
-    return linkedNodeId ? 'Nur du im OS + Dokument' : 'Nur du im OS';
+    return linkedNodeId ? 'Privat + OS-Dokument' : 'Privat';
 }
-
