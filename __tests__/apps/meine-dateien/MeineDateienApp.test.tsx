@@ -88,6 +88,17 @@ import MeineDateienApp from '@/apps/meine-dateien';
 import { shareCompanyFile } from '@/lib/api/filesClient';
 
 describe('MeineDateienApp', () => {
+  beforeAll(() => {
+    Object.defineProperty(URL, 'createObjectURL', {
+      configurable: true,
+      value: jest.fn(() => 'blob:mock-pdf'),
+    });
+    Object.defineProperty(URL, 'revokeObjectURL', {
+      configurable: true,
+      value: jest.fn(),
+    });
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     window.localStorage.clear();
@@ -101,7 +112,9 @@ describe('MeineDateienApp', () => {
     expect(screen.getAllByText('Privat').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Workspace').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Privat \+ OS-Dokument/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Privat \+ Dokument/i).length).toBeGreaterThan(0);
+    expect(await screen.findByText(/PDF Vorschau/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Als Dokument/i })).toBeInTheDocument();
   });
 
   it('creates a local editable note', async () => {

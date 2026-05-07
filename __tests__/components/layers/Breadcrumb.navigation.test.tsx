@@ -15,11 +15,12 @@ const navigateToDepartment = jest.fn();
 const navigateToSpace = jest.fn();
 const navigateToFolder = jest.fn();
 const setActiveSpace = jest.fn();
+const openPane = jest.fn();
 
 const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (sel?: (s: any) => unknown) => {
-        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: jest.fn(), removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE };
+        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane, removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE };
         return sel ? sel(s) : s;
     }
 }));
@@ -169,5 +170,49 @@ describe('Breadcrumb root navigation', () => {
 
         expect(navigateToDepartment).toHaveBeenCalledWith('dept-1');
         expect(navigateToExplore).not.toHaveBeenCalled();
+    });
+
+    it('opens the Finder when clicking a folder moon in Space', () => {
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.departments('company-1'), [{ id: 'dept-1', name: 'Operations', color: '#10b981', company_id: 'company-1' }]);
+        qc.setQueryData(queryKeys.spaces('dept-1'), [{ id: 'space-1', name: 'Ops Workspace', department_id: 'dept-1', order: 0, is_default: false }]);
+        qc.setQueryData(queryKeys.folders('space-1'), [{
+            id: 'folder-1',
+            name: 'Inbox',
+            space_id: 'space-1',
+            color: '#10b981',
+            node_count: 14,
+            created_at: '2026-05-01T10:00:00Z',
+            updated_at: '2026-05-05T10:00:00Z',
+        }]);
+        qc.setQueryData(queryKeys.nodes(undefined), []);
+        qc.setQueryData(queryKeys.tree('company-1'), []);
+
+        useNavStore.setState({
+            activeSpaceId: 'space-1',
+            activeDepartmentId: 'dept-1',
+            activeCompanyId: 'company-1',
+            activeFolderId: null,
+            viewLevel: 'space',
+            navigateToDepartment,
+            navigateToFolder,
+            navigateToExplore,
+        } as any);
+
+        renderWithProviders(<SpaceLayer />, { queryClient: qc });
+        fireEvent.click(screen.getByTestId('folder-folder-1'));
+
+        expect(navigateToFolder).toHaveBeenCalledWith('folder-1');
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'finder-folder-1',
+            type: 'finder',
+            title: 'Inbox',
+            data: expect.objectContaining({
+                folderId: 'folder-1',
+                spaceId: 'space-1',
+                departmentId: 'dept-1',
+                companyId: 'company-1',
+            }),
+        }));
     });
 });

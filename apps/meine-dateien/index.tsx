@@ -79,7 +79,7 @@ function formatBytes(size?: number | null) {
 
 function fileToLocalRecord(file: File): Promise<LocalFileRecord> {
     if (file.size > LOCAL_PRIVATE_FILE_LIMIT) {
-        return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt in den OS-Speicher hochladen.'));
+        return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt auf dem SAIMOR-Server sichern.'));
     }
 
     const isText = file.type.startsWith('text/')
@@ -122,6 +122,19 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
 
 function isWorkspaceVisible(file?: UnifiedFile | null): boolean {
     return isWorkspaceVisibilityScope(file?.visibilityScope);
+}
+
+function getFileLocationLabel(file?: UnifiedFile | null): string {
+    if (!file) return '';
+    return file.source === 'local'
+        ? 'Nur dieses Geraet'
+        : getCoreFileVisibilityLabel(file.visibilityScope, file.linkedNodeId);
+}
+
+function appendPdfViewerParams(src: string): string {
+    if (!src) return src;
+    const separator = src.includes('#') ? '&' : '#';
+    return `${src}${separator}toolbar=1&navpanes=0&view=FitH`;
 }
 
 export default function MeineDateienApp({ paneId }: AppProps) {
@@ -246,7 +259,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                 setCorePreviewUrl(objectUrl);
             })
             .catch((error: any) => {
-                if (!cancelled) setCorePreviewError(error?.message || 'Datei konnte nicht aus dem OS-Speicher geladen werden');
+                if (!cancelled) setCorePreviewError(error?.message || 'Datei konnte nicht vom SAIMOR-Server geladen werden');
             });
 
         return () => {
@@ -293,7 +306,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         }
 
         if (activeCompanyId) {
-            toast.success('Datei in den Workspace geladen');
+            toast.success('Datei privat auf dem SAIMOR-Server gesichert');
             await loadContent();
         }
     }, [activeCompanyId, loadContent, persistLocalFiles]);
@@ -333,9 +346,9 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             persistLocalFiles(next);
             setSelectedId(`core-${uploaded.id}`);
             await loadContent();
-            toast.success('Lokale Datei im OS gesichert');
+            toast.success('Lokale Datei privat auf dem SAIMOR-Server gesichert');
         } catch (error: any) {
-            toast.error(error?.message || 'Sichern im OS fehlgeschlagen');
+            toast.error(error?.message || 'Sichern auf dem SAIMOR-Server fehlgeschlagen');
         } finally {
             setIsUploading(false);
         }
@@ -602,7 +615,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         </div>
                         {sourceFilter === 'cloud' && (
                             <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Drive-, OneDrive- oder andere Quellen hier neben Geraet und OS-Speicher.
+                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Drive-, OneDrive- oder andere Quellen hier neben Geraet, Privat und Workspace.
                             </p>
                         )}
                     </div>
@@ -629,7 +642,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0 flex-1">
                                     <p className="truncate text-sm font-medium text-white/78">{file.name}</p>
                                     <p className="mt-0.5 truncate text-[11px] text-white/35">
-                                        {file.source === 'local' ? 'Nur dieses Geraet' : getCoreFileVisibilityLabel(file.visibilityScope, file.linkedNodeId)} - {formatBytes(file.size)}
+                                        {getFileLocationLabel(file)} - {formatBytes(file.size)}
                                     </p>
                                 </div>
                             </button>
@@ -642,7 +655,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
-                                {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : getCoreFileVisibilityLabel(selectedFile.visibilityScope, selectedFile.linkedNodeId)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
+                                {selectedFile ? `${getFileLocationLabel(selectedFile)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
                         <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
@@ -707,14 +720,25 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 />
                             </div>
                         ) : selectedFile.source === 'local' && selectedIsPdf && selectedFile.dataUrl ? (
-                            <iframe src={selectedFile.dataUrl} title={selectedFile.name} className="h-full min-h-[420px] w-full border-0 bg-white" />
+                            <PdfPreview
+                                src={selectedFile.dataUrl}
+                                fileName={selectedFile.name}
+                                locationLabel={getFileLocationLabel(selectedFile)}
+                                onDownload={() => void downloadSelected()}
+                            />
                         ) : selectedFile.source === 'local' && selectedIsImage && selectedFile.dataUrl ? (
                             <div className="flex h-full items-center justify-center bg-black/28 p-5">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={selectedFile.dataUrl} alt={selectedFile.name} className="max-h-full max-w-full rounded-lg object-contain" />
                             </div>
                         ) : selectedFile.source === 'core' && selectedIsPdf && corePreviewUrl ? (
-                            <iframe src={corePreviewUrl} title={selectedFile.name} className="h-full min-h-[420px] w-full border-0 bg-white" />
+                            <PdfPreview
+                                src={corePreviewUrl}
+                                fileName={selectedFile.name}
+                                locationLabel={getFileLocationLabel(selectedFile)}
+                                onOpenDocument={() => void openSelected()}
+                                onDownload={() => void downloadSelected()}
+                            />
                         ) : selectedFile.source === 'core' && selectedIsImage && corePreviewUrl ? (
                             <div className="flex h-full items-center justify-center bg-black/28 p-5">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -733,7 +757,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                         {corePreviewError
                                             ? corePreviewError
                                             : selectedFile.source === 'core'
-                                            ? 'Diese Datei liegt auf dem SAIMOR-Server. PDFs und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
+                                            ? 'Diese Datei liegt privat oder geteilt auf dem SAIMOR-Server. PDFs und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
                                             : 'Diese Datei liegt nur auf diesem Geraet. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
@@ -774,6 +798,75 @@ function EmptyPreview() {
                 <p className="mt-2 text-sm leading-relaxed text-white/40">
                     Starte auf diesem Geraet, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
                 </p>
+            </div>
+        </div>
+    );
+}
+
+function PdfPreview({
+    src,
+    fileName,
+    locationLabel,
+    onOpenDocument,
+    onDownload,
+}: {
+    src: string;
+    fileName: string;
+    locationLabel: string;
+    onOpenDocument?: () => void;
+    onDownload: () => void;
+}) {
+    const viewerSrc = appendPdfViewerParams(src);
+    return (
+        <div className="flex h-full min-h-[420px] flex-col bg-[#060a08]">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] bg-black/28 px-4 py-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <FileIcon size={15} className="shrink-0 text-red-200/78" />
+                        <p className="truncate text-sm font-medium text-white/86">{fileName}</p>
+                    </div>
+                    <p className="mt-1 text-[11px] text-white/38">{locationLabel} - PDF Vorschau</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                    {onOpenDocument && (
+                        <button
+                            type="button"
+                            onClick={onOpenDocument}
+                            className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-50 hover:bg-cyan-500/16"
+                        >
+                            <FolderOpen size={14} /> Als Dokument
+                        </button>
+                    )}
+                    <a
+                        href={src}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/72 hover:bg-white/[0.08]"
+                    >
+                        <FileIcon size={14} /> Neuer Tab
+                    </a>
+                    <button
+                        type="button"
+                        onClick={onDownload}
+                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white/72 hover:bg-white/[0.08]"
+                    >
+                        <Download size={14} /> Download
+                    </button>
+                </div>
+            </div>
+            <div className="min-h-0 flex-1 bg-white">
+                <object data={viewerSrc} type="application/pdf" className="h-full min-h-[420px] w-full">
+                    <iframe src={viewerSrc} title={fileName} className="h-full min-h-[420px] w-full border-0 bg-white" />
+                    <div className="flex h-full min-h-[420px] items-center justify-center bg-[#070b09] p-6 text-center">
+                        <div className="max-w-sm">
+                            <FileIcon size={30} className="mx-auto text-red-200/70" />
+                            <h3 className="mt-4 text-lg font-medium text-white/86">PDF kann hier nicht angezeigt werden</h3>
+                            <p className="mt-2 text-sm leading-relaxed text-white/45">
+                                Dein Browser blockiert die eingebettete Vorschau. Oeffne die Datei in einem neuen Tab oder lade sie herunter.
+                            </p>
+                        </div>
+                    </div>
+                </object>
             </div>
         </div>
     );

@@ -443,10 +443,27 @@ export const SpaceLayer: React.FC = () => {
         currentDepartment?.company_id,
     ]);
 
+    const openFolderFinder = useCallback((folder: CoreFolder | null, folderId: string) => {
+        openPane({
+            id: `finder-${folderId}`,
+            type: 'finder',
+            title: folder?.name || 'Ordner',
+            size: { width: 1280, height: 820 },
+            data: {
+                folderId,
+                spaceId: folder?.space_id || activeSpaceId,
+                departmentId: activeDepartmentId,
+                companyId: activeCompanyId || currentDepartment?.company_id || undefined,
+            },
+        });
+    }, [activeCompanyId, activeDepartmentId, activeSpaceId, currentDepartment?.company_id, openPane]);
+
     const openFocusedFolder = useCallback((folderId: string) => {
+        const folder = folders.find((entry) => entry.id === folderId) ?? null;
         setInteractionFolder(folderId);
         navigateToFolder(folderId);
-    }, [navigateToFolder, setInteractionFolder]);
+        openFolderFinder(folder, folderId);
+    }, [folders, navigateToFolder, openFolderFinder, setInteractionFolder]);
 
     if (viewLevel !== 'space' || !activeSpaceId) return null;
 

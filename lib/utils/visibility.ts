@@ -48,5 +48,5 @@ export function getCoreFileVisibilityLabel(scope?: string | null, linkedNodeId?:
     if (normalized === 'public_link') return 'Freigabelink';
     if (normalized === 'department') return 'Bereich sichtbar';
     if (normalized === 'company') return 'Workspace sichtbar';
-    return linkedNodeId ? 'Privat + OS-Dokument' : 'Privat';
+    return linkedNodeId ? 'Privat + Dokument' : 'Privat';
 }
