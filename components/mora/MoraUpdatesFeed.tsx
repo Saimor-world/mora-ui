@@ -54,20 +54,36 @@ interface MoraUpdatesFeedProps {
 }
 
 const EVENT_LABELS: Record<string, string> = {
-    semantic: "Semantic Insight",
-    awareness: "Awareness Signal",
-    system: "System Signal",
-    context_shift: "Context Shift",
-    potential_risk: "Potential Risk",
-    related_objects_cluster: "Related Cluster",
-    data_change: "Data Change",
-    system_alert: "System Alert",
-    insight: "Insight",
+    semantic: "Semantischer Hinweis",
+    awareness: "Wahrnehmung",
+    system: "Systemsignal",
+    context_shift: "Kontextwechsel",
+    potential_risk: "Mögliches Risiko",
+    related_objects_cluster: "Mora entdeckt etwas",
+    data_change: "Änderung",
+    system_alert: "Hinweis",
+    insight: "Erkenntnis",
     signal: "Signal",
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+    system: "Mora",
+    mindloop: "Mora",
+    mora: "Mora",
+    ai: "Mora",
+    background: "Mora",
+    user: "Du",
+    team: "Team",
+    integration: "Integration",
 };
 
 const getEventLabel = (eventType: string) => {
     return EVENT_LABELS[eventType] || eventType.replace(/_/g, " ");
+};
+
+const getSourceLabel = (source: string) => {
+    const normalized = (source || "").toLowerCase().trim();
+    return SOURCE_LABELS[normalized] || SOURCE_LABELS[source] || "Mora";
 };
 
 const pickPayloadValue = (payload: Record<string, any> | undefined, ...keys: string[]) => {
@@ -503,8 +519,8 @@ export const MoraUpdatesFeed: React.FC<MoraUpdatesFeedProps> = ({
                                 <div className="flex flex-col gap-1">
                                     <div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-emerald-300/80">
                                         <span>{getEventLabel(event.event_type)}</span>
-                                        {actionLabel && <span className="text-white/40">{actionLabel}</span>}
-                                        <span className="text-white/40">{event.source}</span>
+                                        <span className="text-white/30">·</span>
+                                        <span className="text-white/40">{getSourceLabel(event.source)}</span>
                                     </div>
                                     <div className="text-sm text-white/90 leading-snug">
                                         {summary}

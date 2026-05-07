@@ -21,7 +21,7 @@
 
 import {
     Building2, Briefcase, Users, DollarSign, TrendingUp,
-    Code, LucideIcon, Compass, ArrowRight, Activity,
+    Code, LucideIcon, Compass, ShoppingCart, Activity,
     Folder as FolderIcon, Star, Sparkles,
 } from 'lucide-react';
 
@@ -56,7 +56,7 @@ export function getDeptStyle(name: string, customColor?: string | null): DeptSty
         style = { glow: '#06B6D4', border: '#22D3EE', core: '#0891B2', icon: Code };
 
     else if (n.includes('sales') || n.includes('store') || n.includes('shop') || n.includes('retail') || n.includes('commerce'))
-        style = { glow: '#F97316', border: '#FB923C', core: '#EA580C', icon: ArrowRight };
+        style = { glow: '#14B8A6', border: '#2DD4BF', core: '#0D9488', icon: ShoppingCart };
 
     else if (n.includes('marketing') || n.includes('brand') || n.includes('pr') || n.includes('media'))
         style = { glow: '#8B5CF6', border: '#A78BFA', core: '#7C3AED', icon: TrendingUp };

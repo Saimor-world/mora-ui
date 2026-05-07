@@ -734,8 +734,8 @@ export const HomeSurface: React.FC = () => {
                         <div className="relative mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
                             <HomeCommandButton dataTestId="qa-finder" label="Finder öffnen" detail="Dateien & Ordner" onClick={openFinder} tone="emerald" />
                             <HomeCommandButton dataTestId="qa-universe" label="Universe" detail="Topographie" onClick={openUniverse} tone="cyan" />
-                            <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="muted" />
-                            <HomeCommandButton dataTestId="qa-upload" label="Upload" detail="Datei ablegen" onClick={openUpload} tone="muted" />
+                            <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
+                            <HomeCommandButton dataTestId="qa-upload" label="Upload" detail="Datei ablegen" onClick={openUpload} tone="violet" />
                         </div>
 
                         {featuredDeptTiles.length > 0 && (
@@ -890,29 +890,50 @@ const HomeChip: React.FC<{ label: string; value: number }> = ({ label, value }) 
     </div>
 );
 
-const commandToneClass: Record<string, string> = {
-    emerald: 'border-emerald-300/18 bg-emerald-400/[0.10] hover:border-emerald-200/28 hover:bg-emerald-400/[0.16]',
-    cyan: 'border-cyan-300/16 bg-cyan-400/[0.08] hover:border-cyan-200/26 hover:bg-cyan-400/[0.13]',
-    muted: 'border-white/[0.065] bg-white/[0.026] hover:border-white/13 hover:bg-white/[0.05]',
+const commandToneClass: Record<string, { card: string; accent: string }> = {
+    emerald: {
+        card: 'border-emerald-300/18 bg-emerald-400/[0.10] hover:border-emerald-200/28 hover:bg-emerald-400/[0.16]',
+        accent: 'bg-emerald-400',
+    },
+    cyan: {
+        card: 'border-cyan-300/16 bg-cyan-400/[0.08] hover:border-cyan-200/26 hover:bg-cyan-400/[0.13]',
+        accent: 'bg-cyan-400',
+    },
+    amber: {
+        card: 'border-amber-300/16 bg-amber-400/[0.07] hover:border-amber-200/26 hover:bg-amber-400/[0.12]',
+        accent: 'bg-amber-400',
+    },
+    violet: {
+        card: 'border-violet-300/16 bg-violet-400/[0.07] hover:border-violet-200/24 hover:bg-violet-400/[0.11]',
+        accent: 'bg-violet-400',
+    },
+    muted: {
+        card: 'border-white/[0.065] bg-white/[0.026] hover:border-white/13 hover:bg-white/[0.05]',
+        accent: 'bg-white/30',
+    },
 };
 
 const HomeCommandButton: React.FC<{
     label: string;
     detail: string;
     onClick: () => void;
-    tone: 'emerald' | 'cyan' | 'muted';
+    tone: 'emerald' | 'cyan' | 'amber' | 'violet' | 'muted';
     dataTestId?: string;
-}> = ({ label, detail, onClick, tone, dataTestId }) => (
-    <button
-        type="button"
-        data-testid={dataTestId}
-        onClick={onClick}
-        className={`rounded-[20px] border px-4 py-3 text-left transition-all ${commandToneClass[tone]}`}
-    >
-        <span className="block text-[13px] font-medium text-white/84">{label}</span>
-        <span className="mt-1 block text-[10px] uppercase tracking-[0.14em] text-white/34">{detail}</span>
-    </button>
-);
+}> = ({ label, detail, onClick, tone, dataTestId }) => {
+    const toneStyle = commandToneClass[tone];
+    return (
+        <button
+            type="button"
+            data-testid={dataTestId}
+            onClick={onClick}
+            className={`relative overflow-hidden rounded-[20px] border pl-5 pr-4 py-3 text-left transition-all ${toneStyle.card}`}
+        >
+            <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full opacity-70 ${toneStyle.accent}`} />
+            <span className="block text-[13px] font-medium text-white/84">{label}</span>
+            <span className="mt-1 block text-[10px] uppercase tracking-[0.14em] text-white/34">{detail}</span>
+        </button>
+    );
+};
 
 const signalToneClass: Record<string, string> = {
     emerald: 'border-emerald-300/[0.10] bg-emerald-500/[0.035] text-emerald-100 hover:border-emerald-200/20 hover:bg-emerald-500/[0.065]',
