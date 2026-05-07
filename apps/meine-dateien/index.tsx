@@ -35,17 +35,17 @@ import {
 } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
 import type { AppProps } from '@/lib/apps/types';
+import {
+    LOCAL_PRIVATE_FILE_LIMIT,
+    LOCAL_PRIVATE_FILES_CHANGED,
+    localPrivateRecordToFile,
+    makeLocalPrivateTextFile,
+    readLocalPrivateFiles,
+    writeLocalPrivateFiles,
+    type LocalPrivateFileRecord,
+} from '@/lib/files/localPrivateFiles';
 
-type LocalFileRecord = {
-    id: string;
-    source: 'local';
-    name: string;
-    mime: string;
-    size: number;
-    updatedAt: string;
-    text?: string;
-    dataUrl?: string;
-};
+type LocalFileRecord = LocalPrivateFileRecord;
 
 type UnifiedFile = {
     id: string;
@@ -63,9 +63,6 @@ type UnifiedFile = {
 
 type SourceFilter = 'all' | 'local' | 'core' | 'cloud';
 
-const LOCAL_FILES_KEY = 'saimor_local_files_v1';
-const LOCAL_FILE_LIMIT = 8 * 1024 * 1024;
-
 function formatBytes(size?: number | null) {
     if (!size) return '0 B';
     if (size < 1024) return `${size} B`;
@@ -73,23 +70,8 @@ function formatBytes(size?: number | null) {
     return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function readLocalFiles(): LocalFileRecord[] {
-    if (typeof window === 'undefined') return [];
-    try {
-        const parsed = JSON.parse(window.localStorage.getItem(LOCAL_FILES_KEY) || '[]');
-        return Array.isArray(parsed) ? parsed : [];
-    } catch {
-        return [];
-    }
-}
-
-function writeLocalFiles(files: LocalFileRecord[]) {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(LOCAL_FILES_KEY, JSON.stringify(files.slice(0, 80)));
-}
-
 function fileToLocalRecord(file: File): Promise<LocalFileRecord> {
-    if (file.size > LOCAL_FILE_LIMIT) {
+    if (file.size > LOCAL_PRIVATE_FILE_LIMIT) {
         return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt in den OS-Speicher hochladen.'));
     }
 
@@ -113,20 +95,6 @@ function fileToLocalRecord(file: File): Promise<LocalFileRecord> {
         if (isText) reader.readAsText(file);
         else reader.readAsDataURL(file);
     });
-}
-
-function localRecordToFile(record: LocalFileRecord): File {
-    if (record.text != null) {
-        return new window.File([record.text], record.name, { type: record.mime || 'text/plain' });
-    }
-    const dataUrl = record.dataUrl || '';
-    const [header, body] = dataUrl.split(',');
-    const mimeMatch = header.match(/data:([^;]+)/);
-    const mime = mimeMatch?.[1] || record.mime || 'application/octet-stream';
-    const binary = atob(body || '');
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-    return new window.File([bytes], record.name, { type: mime });
 }
 
 function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
@@ -177,7 +145,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             ]);
             setContent(myContent);
             setCoreFiles(files);
-            setLocalFiles(readLocalFiles());
+            setLocalFiles(readLocalPrivateFiles());
         } finally {
             setIsLoading(false);
         }
@@ -186,6 +154,23 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     useEffect(() => {
         void loadContent();
     }, [loadContent]);
+
+    useEffect(() => {
+        const requestedFileId = pane?.data?.selectedFileId;
+        if (typeof requestedFileId === 'string') {
+            setSelectedId(requestedFileId);
+        }
+    }, [pane?.data?.selectedFileId]);
+
+    useEffect(() => {
+        const syncLocalFiles = () => setLocalFiles(readLocalPrivateFiles());
+        window.addEventListener(LOCAL_PRIVATE_FILES_CHANGED, syncLocalFiles);
+        window.addEventListener('storage', syncLocalFiles);
+        return () => {
+            window.removeEventListener(LOCAL_PRIVATE_FILES_CHANGED, syncLocalFiles);
+            window.removeEventListener('storage', syncLocalFiles);
+        };
+    }, []);
 
     const files = useMemo<UnifiedFile[]>(() => {
         const fromCore = coreFiles.map(toUnifiedFile);
@@ -221,7 +206,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
 
     const persistLocalFiles = useCallback((next: LocalFileRecord[]) => {
         setLocalFiles(next);
-        writeLocalFiles(next);
+        writeLocalPrivateFiles(next);
     }, []);
 
     const importFiles = useCallback(async (incoming: FileList | File[]) => {
@@ -250,7 +235,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         }
 
         if (localResults.length) {
-            const next = [...localResults, ...readLocalFiles()];
+            const next = [...localResults, ...readLocalPrivateFiles()];
             persistLocalFiles(next);
             setSelectedId(`local-${localResults[0].id}`);
             toast.success(`${localResults.length} lokale Datei${localResults.length === 1 ? '' : 'en'} importiert`);
@@ -263,16 +248,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     }, [activeCompanyId, loadContent, persistLocalFiles]);
 
     const createLocalNote = useCallback(() => {
-        const now = new Date().toISOString();
-        const note: LocalFileRecord = {
-            id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            source: 'local',
-            name: 'Neue Notiz.md',
-            mime: 'text/markdown',
-            size: 0,
-            updatedAt: now,
-            text: '# Neue Notiz\n\n',
-        };
+        const note = makeLocalPrivateTextFile('Neue Notiz.md', '# Neue Notiz\n\n');
         persistLocalFiles([note, ...localFiles]);
         setSelectedId(`local-${note.id}`);
         toast.success('Lokale Notiz angelegt');
@@ -300,7 +276,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         if (!local) return;
         setIsUploading(true);
         try {
-            const uploaded = await uploadCompanyFile(localRecordToFile({ ...local, text: draftText || local.text }), activeCompanyId, 'private');
+            const uploaded = await uploadCompanyFile(localPrivateRecordToFile({ ...local, text: draftText || local.text }), activeCompanyId, 'private');
             await requestCreateNodeFromFile(uploaded.id, { autoExecute: true }).catch(() => null);
             const next = localFiles.filter((file) => file.id !== local.id);
             persistLocalFiles(next);
