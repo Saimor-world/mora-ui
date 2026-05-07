@@ -656,7 +656,7 @@ export const Dock = () => {
             icon:        DOCK_ICON_MAP[entry.action] ?? Minus,
             label:       entry.label,
             description: entry.description,
-            shortcut:    entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
+            shortcut:    entry.action === 'notes' ? 'Alt+N' : entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
             action:      entry.action,
         }))
     , [mod, DOCK_ICON_MAP]);
@@ -1354,7 +1354,7 @@ export const Dock = () => {
                     </DockPod>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        {!websiteEntryContext && <DockPod className="hidden min-w-0 items-center gap-2 px-3 py-2 xl:flex" isStandardMode={isStandardMode}>
+                        {!websiteEntryContext && <DockPod className="hidden min-w-0 max-w-[560px] items-center gap-2 px-3 py-2 min-[1700px]:flex" isStandardMode={isStandardMode}>
                             <DockSearchLauncher
                                 isStandardMode={isStandardMode}
                                 shortcutLabel={`${mod}+K`}

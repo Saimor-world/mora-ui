@@ -1,42 +1,26 @@
 "use client";
 
 /**
- * useKeyboardShortcuts - Global keyboard shortcuts
+ * useKeyboardShortcuts - global OS keyboard shortcuts.
  *
- * Handles:
- * - Strg/Cmd+K: Toggle spotlight
- * - Strg/Cmd+J: Open chat
- * - Strg/Cmd+F: Open finder
- * - Strg/Cmd+N: Open notes
- * - Strg/Cmd+,: Open settings
- * - Strg/Cmd+T: Open terminal
- * - Strg/Cmd+H: Go home (core view)
- * - Strg/Cmd+.: Open Mora Nexus
- * - Strg/Cmd+Shift+M: Open memory
- * - Escape: Close top pane
- * - ?: Show shortcuts overlay
+ * Browser-reserved shortcuts stay out of the public contract where possible.
+ * Alt+N is used for notes because Ctrl/Cmd+N is owned by the browser.
  */
 
 import { useEffect } from 'react';
 import { getPlatformModifier } from '@/lib/hooks/usePlatformModifier';
 
-/**
- * Returns keyboard shortcuts with platform-aware modifier key label.
- * @param mod - 'Strg' (Windows/Linux) or 'Cmd' (Mac). Defaults to auto-detect.
- */
 export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
-        // 1.0 Core Work shortcuts
-        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette öffnen' },
-        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
+        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
+        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
-        { keys: [m, 'N'], label: 'Notes', description: 'Notizen öffnen' },
-        { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
+        { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen oeffnen' },
+        { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
-        { keys: ['Esc'], label: 'Schließen', description: 'Oberstes Panel schließen' },
+        { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
-        // 1.0 gated (future-tier): Terminal (Cmd+T), Mora Nexus (Cmd+.), Memory (Cmd+Shift+M)
     ];
 }
 
@@ -46,7 +30,6 @@ interface UseKeyboardShortcutsOptions {
     onOpenFinder?: () => void;
     onOpenNotes?: () => void;
     onOpenSettings?: () => void;
-    // 1.0 gated: onOpenTerminal, onOpenMoraHub, onOpenMemory removed (future-tier)
     onGoHome?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
@@ -71,8 +54,9 @@ export function useKeyboardShortcuts({
                 target.isContentEditable;
 
             const meta = e.metaKey || e.ctrlKey;
+            const key = e.key.toLowerCase();
 
-            if (meta && e.key === 'k') {
+            if (meta && key === 'k') {
                 e.preventDefault();
                 onToggleSpotlight();
                 return;
@@ -80,33 +64,31 @@ export function useKeyboardShortcuts({
 
             if (isInputField) return;
 
-            if (meta && e.key === 'j') {
+            if (meta && key === 'j') {
                 e.preventDefault();
                 onOpenChat?.();
                 return;
             }
 
-            if (meta && e.key === 'f') {
+            if (meta && key === 'f') {
                 e.preventDefault();
                 onOpenFinder?.();
                 return;
             }
 
-            if (meta && e.key === 'n') {
+            if ((meta && key === 'n') || (e.altKey && !meta && key === 'n')) {
                 e.preventDefault();
                 onOpenNotes?.();
                 return;
             }
 
-            if (meta && e.key === ',') {
+            if (meta && key === ',') {
                 e.preventDefault();
                 onOpenSettings?.();
                 return;
             }
 
-            // 1.0 gated: Cmd+T (Terminal), Cmd+. (MoraHub), Cmd+Shift+M (Memory) removed
-
-            if (meta && e.key === 'h') {
+            if (meta && key === 'h') {
                 e.preventDefault();
                 onGoHome?.();
                 return;
