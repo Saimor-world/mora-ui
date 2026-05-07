@@ -103,6 +103,19 @@ export interface FileCreateNodeResponse {
     result?: Record<string, any>;
 }
 
+export type FileShareScope = 'personal' | 'company' | 'department' | 'public_link';
+
+export interface FileShareResponse {
+    file_id: string;
+    company_id?: string;
+    owner_user_id?: string | null;
+    visibility?: string;
+    visibility_scope?: string | null;
+    public_path?: string | null;
+    public_url?: string | null;
+    status?: string;
+}
+
 const AUTH_COOKIE = "mora_auth_token";
 
 function isLocalhost(): boolean {
@@ -285,6 +298,13 @@ export const requestCreateNodeFromFile = async (
         folder_id: options?.folderId,
         batch_id: options?.batchId,
     }) as Promise<FileCreateNodeResponse>;
+};
+
+export const shareCompanyFile = async (
+    fileId: string,
+    scope: FileShareScope,
+): Promise<FileShareResponse> => {
+    return corePost(`/v3/files/${fileId}/share`, { scope }) as Promise<FileShareResponse>;
 };
 
 export const confirmCreateNodeFromFile = async (

@@ -68,6 +68,12 @@ jest.mock('@/lib/api/filesClient', () => ({
   ]),
   uploadCompanyFile: jest.fn(),
   requestCreateNodeFromFile: jest.fn(),
+  shareCompanyFile: jest.fn().mockResolvedValue({
+    file_id: 'file-1',
+    visibility: 'private',
+    visibility_scope: 'company',
+    status: 'workspace_visible',
+  }),
   getFileNode: jest.fn(),
   fetchCompanyFileBlob: jest.fn().mockResolvedValue(new Blob(['%PDF'], { type: 'application/pdf' })),
   downloadCompanyFile: jest.fn(),
@@ -79,6 +85,7 @@ jest.mock('@/lib/toast', () => ({
 }));
 
 import MeineDateienApp from '@/apps/meine-dateien';
+import { shareCompanyFile } from '@/lib/api/filesClient';
 
 describe('MeineDateienApp', () => {
   beforeEach(() => {
@@ -124,6 +131,17 @@ describe('MeineDateienApp', () => {
           }),
         }),
       }));
+    });
+  });
+
+  it('shares a private CORE file into the workspace without creating a public link', async () => {
+    render(<MeineDateienApp paneId="files-1" initialData={{}} />);
+    await screen.findAllByText('vertrag.pdf');
+
+    fireEvent.click(screen.getByRole('button', { name: /Workspace/i }));
+
+    await waitFor(() => {
+      expect(shareCompanyFile).toHaveBeenCalledWith('file-1', 'company');
     });
   });
 });

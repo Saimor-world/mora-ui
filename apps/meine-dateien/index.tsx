@@ -10,6 +10,7 @@ import {
     FolderOpen,
     HardDrive,
     Loader2,
+    Lock,
     Pencil,
     Plus,
     RefreshCw,
@@ -18,6 +19,7 @@ import {
     Sparkles,
     Trash2,
     UploadCloud,
+    Users,
     type LucideIcon,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -31,6 +33,7 @@ import {
     getFileNode,
     listCompanyFiles,
     requestCreateNodeFromFile,
+    shareCompanyFile,
     uploadCompanyFile,
     type CompanyFileRecord,
 } from '@/lib/api/filesClient';
@@ -119,8 +122,14 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
 function getCoreVisibilityLabel(file: UnifiedFile): string {
     const scope = (file.visibilityScope || '').toLowerCase();
     if (scope === 'public_link') return 'Freigabelink';
-    if (scope === 'team' || scope === 'department' || scope === 'company') return 'Team-Datei';
+    if (scope === 'department') return 'Bereich sichtbar';
+    if (scope === 'team' || scope === 'company') return 'Workspace sichtbar';
     return file.linkedNodeId ? 'Nur du im OS + Dokument' : 'Nur du im OS';
+}
+
+function isWorkspaceVisible(file?: UnifiedFile | null): boolean {
+    const scope = (file?.visibilityScope || '').toLowerCase();
+    return scope === 'team' || scope === 'department' || scope === 'company';
 }
 
 export default function MeineDateienApp({ paneId }: AppProps) {
@@ -149,6 +158,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all');
     const [corePreviewUrl, setCorePreviewUrl] = useState<string | null>(null);
     const [corePreviewError, setCorePreviewError] = useState<string | null>(null);
+    const [isSharing, setIsSharing] = useState(false);
 
     const loadContent = useCallback(async () => {
         setIsLoading(true);
@@ -205,6 +215,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const canEditSelected = selectedFile?.source === 'local' && (selectedFile.text != null || selectedFile.mime.startsWith('text/'));
     const selectedIsPdf = selectedFile?.mime === 'application/pdf' || /\.pdf$/i.test(selectedFile?.name || '');
     const selectedIsImage = Boolean(selectedFile?.mime.startsWith('image/'));
+    const selectedIsWorkspaceVisible = isWorkspaceVisible(selectedFile);
     const cloudCount = content?.cloud_storage?.connectors?.length ?? content?.cloud_storage?.count ?? 0;
     const filteredFiles = useMemo(() => {
         if (sourceFilter === 'local') return files.filter((file) => file.source === 'local');
@@ -430,6 +441,27 @@ export default function MeineDateienApp({ paneId }: AppProps) {
         if (selectedFile.fileId) await downloadCompanyFile(selectedFile.fileId, selectedFile.name);
     }, [draftText, selectedFile]);
 
+    const setSelectedCoreVisibility = useCallback(async (scope: 'personal' | 'company') => {
+        if (!selectedFile || selectedFile.source !== 'core' || !selectedFile.fileId) return;
+        setIsSharing(true);
+        try {
+            const shared = await shareCompanyFile(selectedFile.fileId, scope);
+            setCoreFiles((current) => current.map((file) => (
+                file.id === selectedFile.fileId
+                    ? { ...file, visibility_scope: shared.visibility_scope ?? scope }
+                    : file
+            )));
+            toast.success(scope === 'company'
+                ? 'Datei ist jetzt im Workspace sichtbar'
+                : 'Datei ist wieder nur fuer dich sichtbar');
+            await loadContent();
+        } catch (error: any) {
+            toast.error(error?.message || 'Sichtbarkeit konnte nicht geaendert werden');
+        } finally {
+            setIsSharing(false);
+        }
+    }, [loadContent, selectedFile]);
+
     const deleteSelected = useCallback(async () => {
         if (!selectedFile) return;
         if (selectedFile.source === 'local') {
@@ -616,7 +648,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 {selectedFile ? `${selectedFile.source === 'local' ? 'Nur dieses Geraet' : getCoreVisibilityLabel(selectedFile)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
                         </div>
-                        <div className="flex shrink-0 items-center gap-2">
+                        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
                             {selectedFile?.source === 'local' && activeCompanyId && (
                                 <button type="button" onClick={() => void uploadLocalToCore()} disabled={isUploading}
                                     className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-500/12 px-3 py-2 text-xs font-medium text-emerald-50 hover:bg-emerald-500/18 disabled:opacity-50">
@@ -624,10 +656,18 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 </button>
                             )}
                             {selectedFile?.source === 'core' && (
-                                <button type="button" onClick={() => void openSelected()}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-50 hover:bg-cyan-500/16">
-                                    <FolderOpen size={14} /> Oeffnen
-                                </button>
+                                <>
+                                    <button type="button" onClick={() => void setSelectedCoreVisibility(selectedIsWorkspaceVisible ? 'personal' : 'company')} disabled={isSharing}
+                                        className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium disabled:opacity-50 ${selectedIsWorkspaceVisible ? 'border-white/10 bg-white/[0.05] text-white/70 hover:bg-white/[0.08]' : 'border-amber-300/20 bg-amber-500/12 text-amber-50 hover:bg-amber-500/18'}`}
+                                        title={selectedIsWorkspaceVisible ? 'Zurueck auf privat setzen' : 'Im Workspace sichtbar machen'}>
+                                        {isSharing ? <Loader2 size={14} className="animate-spin" /> : selectedIsWorkspaceVisible ? <Lock size={14} /> : <Users size={14} />}
+                                        {selectedIsWorkspaceVisible ? 'Nur ich' : 'Workspace'}
+                                    </button>
+                                    <button type="button" onClick={() => void openSelected()}
+                                        className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-50 hover:bg-cyan-500/16">
+                                        <FolderOpen size={14} /> Oeffnen
+                                    </button>
+                                </>
                             )}
                             {canEditSelected && (
                                 <button type="button" onClick={saveLocalDraft}
