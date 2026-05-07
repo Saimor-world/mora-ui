@@ -479,6 +479,21 @@ export const HomeSurface: React.FC = () => {
     const latestFeed = feedPreview[0] ?? null;
     const latestTeamMessage = teamMessages[teamMessages.length - 1] ?? null;
     const latestTeamActivity = teamActivities[0] ?? null;
+    const TEAM_ACTIVITY_LABELS: Record<string, string> = {
+        related_objects_cluster: 'Mora entdeckt Zusammenhänge',
+        context_shift: 'Kontext hat sich verschoben',
+        semantic: 'Semantische Verbindung',
+        potential_risk: 'Mora hat etwas bemerkt',
+        node_updated: 'Dokument bearbeitet',
+        node_created: 'Neues Dokument',
+        folder_created: 'Neuer Ordner',
+    };
+    const teamActivityTitle = latestTeamActivity
+        ? (TEAM_ACTIVITY_LABELS[latestTeamActivity.action] ?? latestTeamActivity.target_name ?? 'Teamaktivität')
+        : null;
+    const teamActivityDetail = latestTeamActivity
+        ? (latestTeamActivity.user_name ? `${latestTeamActivity.user_name} · Teamraum` : 'Mora · Teamraum')
+        : null;
     const onlineTeamCount = Math.max(0, Number(teamPresence?.online_count || 0));
     const unreadTeamCount = Math.max(0, Number(teamPresence?.unread_messages || 0));
     const hasCommunicationSignal = Boolean(latestMail || nextCalendarEvent || latestFeed);
@@ -816,8 +831,8 @@ export const HomeSurface: React.FC = () => {
                             <HomeSignalCard
                                 icon={<Users size={14} />}
                                 label="Teamraum"
-                                title={latestTeamMessage ? latestTeamMessage.content : latestTeamActivity ? latestTeamActivity.target_name || latestTeamActivity.action || 'Neue Teamaktivitaet' : `${onlineTeamCount} online`}
-                                detail={latestTeamMessage ? latestTeamMessage.sender_name || 'Team' : latestTeamActivity ? `${latestTeamActivity.user_name || 'System'} · ${latestTeamActivity.action || 'Aktivitaet'}` : 'Teamchat und Praesenz'}
+                                title={latestTeamMessage ? latestTeamMessage.content : teamActivityTitle ?? `${onlineTeamCount} online`}
+                                detail={latestTeamMessage ? latestTeamMessage.sender_name || 'Team' : teamActivityDetail ?? 'Teamchat und Präsenz'}
                                 tone="emerald"
                                 onClick={openTeam}
                             />
