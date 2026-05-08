@@ -1132,11 +1132,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{
+                                animate={path.highlighted || isFocusedPath ? {
+                                    pathLength: 1,
+                                    opacity: [baseOpacity * 0.5, baseOpacity, baseOpacity * 0.5],
+                                } : {
                                     pathLength: 1,
                                     opacity: baseOpacity,
                                 }}
-                                transition={{
+                                transition={path.highlighted || isFocusedPath ? {
+                                    pathLength: { duration: 1.8, ease: "easeInOut" },
+                                    opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" },
+                                } : {
                                     pathLength: { duration: 1.8, ease: "easeInOut" },
                                     opacity: { duration: 0.35, ease: "easeOut" }
                                 }}

@@ -132,14 +132,22 @@ export const Planet: React.FC<PlanetProps> = ({
             {/* Functional rings: capacity halo + structural orbit */}
             <div className="absolute inset-[-34px] pointer-events-none flex items-center justify-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
-                    <circle
+                    <motion.circle
                         cx="50"
                         cy="50"
                         r="35.5"
                         fill="none"
-                        stroke={neutralRingTone}
+                        stroke={isActive ? 'rgba(52, 211, 153, 0.55)' : neutralRingTone}
                         strokeWidth={isHovered || isActive ? '1.05' : '0.85'}
-                        opacity={ringBaseOpacity}
+                        animate={isActive ? {
+                            opacity: [ringBaseOpacity, ringBaseOpacity * 3.2, ringBaseOpacity],
+                            strokeWidth: ['1.05', '1.45', '1.05'],
+                        } : { opacity: ringBaseOpacity }}
+                        transition={isActive ? {
+                            duration: 2.8,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                        } : { duration: 0.22 }}
                     />
                     {hasCapacity && ringProgress > 0 && (
                         <motion.circle
@@ -265,14 +273,22 @@ export const Planet: React.FC<PlanetProps> = ({
                 }`}
             >
                 <motion.span
-                    className="text-[9px] font-medium text-white/84 tracking-[0.2em] mb-1 uppercase"
+                    className="flex items-center gap-1 mb-1"
                     initial={{ opacity: 0.68, x: 0 }}
                     animate={{
                         opacity: isHovered || isActive ? 1 : 0.68,
                         x: isHovered ? (labelSide === 'left' ? -3 : 3) : 0
                     }}
                 >
-                    {department.name}
+                    {isActive && (
+                        <span
+                            className="inline-block shrink-0 rounded-full"
+                            style={{ width: 5, height: 5, background: 'rgba(52, 211, 153, 0.90)', boxShadow: '0 0 6px rgba(52,211,153,0.7)' }}
+                        />
+                    )}
+                    <span className={`text-[9px] tracking-[0.2em] uppercase ${isActive ? 'font-semibold text-white' : 'font-medium text-white/84'}`}>
+                        {department.name}
+                    </span>
                 </motion.span>
 
                 {/* Functional Stats (Steam Deck Vibes) */}

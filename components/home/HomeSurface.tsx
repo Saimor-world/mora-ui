@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, FileText, FolderOpen, Globe, LogOut, Mail, MessageCircle, MessageSquare, StickyNote, Users, Wrench } from 'lucide-react';
+import { Activity, CalendarDays, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, StickyNote, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -489,7 +489,7 @@ export const HomeSurface: React.FC = () => {
         folder_created: 'Neuer Ordner',
     };
     const teamActivityTitle = latestTeamActivity
-        ? (TEAM_ACTIVITY_LABELS[latestTeamActivity.action] ?? latestTeamActivity.target_name ?? 'Teamaktivität')
+        ? (TEAM_ACTIVITY_LABELS[latestTeamActivity.action ?? ''] ?? latestTeamActivity.target_name ?? 'Teamaktivität')
         : null;
     const teamActivityDetail = latestTeamActivity
         ? (latestTeamActivity.user_name ? `${latestTeamActivity.user_name} · Teamraum` : 'Mora · Teamraum')
@@ -596,10 +596,12 @@ export const HomeSurface: React.FC = () => {
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/56">Home</div>
-                            <h1 className="mt-2 text-[21px] font-light leading-tight tracking-[-0.02em] text-white/90">
+                            <h1 className="mt-2 text-[24px] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
                                     ? `${websiteEntryContext.companyName} · Preview`
-                                    : firstName ? `${greeting}, ${firstName}.` : 'Arbeitsplatz'}
+                                    : firstName
+                                        ? <><span className="text-white/95">{greeting}</span><span className="text-white/50">, {firstName}.</span></>
+                                        : 'Arbeitsplatz'}
                             </h1>
                             <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/30">{todayLabel}</div>
                         </div>
@@ -633,10 +635,13 @@ export const HomeSurface: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="mt-4 rounded-[22px] border border-white/[0.05] bg-black/[0.13] p-3">
+                    <div className="mt-4 rounded-[22px] border border-white/[0.05] bg-black/[0.13] p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/42">Privater Bereich</div>
+                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-emerald-200/42">
+                                    <Lock size={9} className="opacity-60" />
+                                    Privater Bereich
+                                </div>
                                 <div className="mt-1 text-[12px] text-white/62">{privateArea?.label || 'Eigene Daten'}</div>
                             </div>
                             <button
@@ -671,12 +676,23 @@ export const HomeSurface: React.FC = () => {
 
                         <div className="relative flex items-start justify-between gap-6">
                             <div className="min-w-0 flex-1">
-                                <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/58">Heute</div>
+                                <div className="inline-block text-[10px] uppercase tracking-[0.28em] text-emerald-200/58 relative">
+                                    Heute
+                                    <span
+                                        className="absolute left-0 bottom-[-3px] rounded-full"
+                                        style={{ width: 24, height: 1, background: 'rgba(52,211,153,0.70)' }}
+                                    />
+                                </div>
                                 <h2 className="mt-3 max-w-[28rem] text-[32px] font-light leading-[1.05] tracking-[-0.04em] text-white/92">
-                                    {focusTitle}
+                                    {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
+                                        ? <>Weiter in <span style={{ color: 'rgba(52,211,153,0.92)' }}>{overlayRecentActivityItems[0].label}</span>.</>
+                                        : focusTitle}
                                 </h2>
-                                <p className="mt-4 max-w-[29rem] text-[13px] leading-relaxed text-white/58">
-                                    {focusDetail}
+                                <p className="mt-4 flex max-w-[29rem] items-start gap-1.5 text-[13px] leading-relaxed text-white/58">
+                                    {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage && (
+                                        <span className="mt-1.5 inline-block w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                                    )}
+                                    <span>{focusDetail}</span>
                                 </p>
                                 {websiteEntryContext ? (
                                     <div
@@ -804,9 +820,15 @@ export const HomeSurface: React.FC = () => {
                 <div className="pointer-events-auto rounded-[28px] border border-white/[0.055] bg-[linear-gradient(155deg,rgba(4,17,17,0.36),rgba(2,8,9,0.10))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.20)] backdrop-blur-[22px]">
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <div className="text-[10px] uppercase tracking-[0.26em] text-emerald-200/48">Tageslage</div>
+                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.26em] text-emerald-200/48">
+                                Tageslage
+                                <span className="text-emerald-200/28">›</span>
+                            </div>
                             <div className="mt-1 text-[18px] font-light tracking-[-0.03em] text-white/82">{absenceFocusLabel}</div>
-                            <div className="mt-1 text-[11px] text-white/38">{homeSignalCount} echte Signal{homeSignalCount === 1 ? '' : 'e'}</div>
+                            <div className="mt-1 text-[11px] text-white/38">
+                                <span style={{ color: 'rgba(251,191,36,0.72)' }}>{homeSignalCount}</span>
+                                {' '}echte Signal{homeSignalCount === 1 ? '' : 'e'}
+                            </div>
                         </div>
                         <button
                             type="button"
@@ -898,12 +920,31 @@ export const HomeSurface: React.FC = () => {
     );
 };
 
-const HomeChip: React.FC<{ label: string; value: number }> = ({ label, value }) => (
-    <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/40">
-        <span>{label}</span>
-        <span className="ml-2 text-[11px] normal-case tracking-normal text-white/82">{value}</span>
-    </div>
-);
+const CHIP_ACCENT: Record<string, { border: string; shadow: string }> = {
+    Bereiche: { border: '2px solid rgba(52,211,153,0.55)', shadow: 'inset 2px 0 0 rgba(52,211,153,0.45)' },
+    Signale:  { border: '2px solid rgba(251,191,36,0.55)', shadow: 'inset 2px 0 0 rgba(251,191,36,0.45)' },
+    Privat:   { border: '2px solid rgba(100,116,139,0.55)', shadow: 'inset 2px 0 0 rgba(100,116,139,0.45)' },
+    Website:  { border: '2px solid rgba(56,189,248,0.55)', shadow: 'inset 2px 0 0 rgba(56,189,248,0.45)' },
+};
+
+const HomeChip: React.FC<{ label: string; value: number }> = ({ label, value }) => {
+    const accent = CHIP_ACCENT[label];
+    return (
+        <div
+            className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-white/40 overflow-hidden relative"
+            style={accent ? { borderLeftColor: 'transparent', boxShadow: accent.shadow } : undefined}
+        >
+            {accent && (
+                <span
+                    className="absolute left-0 top-0 bottom-0 w-[2px] rounded-l-full"
+                    style={{ background: accent.border.replace('2px solid ', '') }}
+                />
+            )}
+            <span>{label}</span>
+            <span className="ml-2 text-[11px] normal-case tracking-normal text-white/82">{value}</span>
+        </div>
+    );
+};
 
 const commandToneClass: Record<string, { card: string; accent: string }> = {
     emerald: {
@@ -957,6 +998,13 @@ const signalToneClass: Record<string, string> = {
     muted: 'border-white/[0.045] bg-white/[0.012] text-white/56 hover:border-white/9 hover:bg-white/[0.028]',
 };
 
+const SIGNAL_CARD_BORDER: Record<string, string> = {
+    emerald: 'rgba(52,211,153,0.55)',
+    amber:   'rgba(251,191,36,0.55)',
+    cyan:    'rgba(56,189,248,0.55)',
+    muted:   'rgba(100,116,139,0.28)',
+};
+
 const HomeSignalCard: React.FC<{
     icon: React.ReactNode;
     label: string;
@@ -968,7 +1016,8 @@ const HomeSignalCard: React.FC<{
     <button
         type="button"
         onClick={onClick}
-        className={`group flex w-full items-start gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all ${signalToneClass[tone]}`}
+        className={`group relative flex w-full items-start gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all overflow-hidden ${signalToneClass[tone]}`}
+        style={{ borderLeftColor: SIGNAL_CARD_BORDER[tone] }}
     >
         <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20">
             {icon}

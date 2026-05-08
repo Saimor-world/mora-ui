@@ -1295,6 +1295,11 @@ export const Dock = () => {
                     {/* TOP GLOW LINE - Premium animated */}
                     {!isStandardMode && (
                         <>
+                            {/* Subtle white separation line — the first visual layer */}
+                            <div
+                                className="absolute inset-x-0 top-0 h-[1px] rounded-full pointer-events-none"
+                                style={{ background: 'rgba(255,255,255,0.06)' }}
+                            />
                             <div
                                 className="dock-glow-line absolute inset-x-0 top-0 h-[2px] rounded-full"
                                 style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}70, transparent 90%)` }}
