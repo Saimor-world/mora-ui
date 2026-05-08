@@ -1,12 +1,12 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Compass, Sparkles, Activity, ArrowRight, X } from 'lucide-react';
+import { Compass, Sparkles, Activity, ArrowRight, X, type LucideIcon } from 'lucide-react';
 import { isFirstRunTourDone, markFirstRunTourDone } from '@/lib/onboarding/firstRunStore';
 
 interface TourStep {
     id: string;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
+    icon: LucideIcon;
     title: string;
     body: string;
     target: { selector: string; offsetX?: number; offsetY?: number };
