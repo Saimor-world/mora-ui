@@ -197,3 +197,41 @@ export async function reconcileMemory(
         { isOptional: true }
     );
 }
+
+// =============================================================================
+// Sprint 3: Mora Episodic Memory (mora_memories table)
+// These functions target the new /v3/memory/list and /v3/memory/search endpoints
+// that use cosine-similarity-based semantic recall.
+// =============================================================================
+
+export interface MoraMemory {
+    id: string;
+    summary: string;
+    sentiment?: string | null;
+    source_conversation_id?: string | null;
+    created_at: string;
+    similarity?: number;
+}
+
+/** List most recent mora_memories for the authenticated user. */
+export async function fetchMoraMemories(limit = 50): Promise<MoraMemory[] | null> {
+    const result = await coreGet(`/v3/memory/list?limit=${limit}`, { isOptional: true });
+    if (!result) return null;
+    // Handle both raw array and { data: [...] } envelope
+    if (Array.isArray(result)) return result as MoraMemory[];
+    if (Array.isArray((result as any)?.data)) return (result as any).data as MoraMemory[];
+    return null;
+}
+
+/** Semantic search over mora_memories using cosine similarity. */
+export async function searchMoraMemories(query: string, topK = 10): Promise<MoraMemory[] | null> {
+    if (!query || query.trim().length < 2) return null;
+    const result = await coreGet(
+        `/v3/memory/search?q=${encodeURIComponent(query)}&top_k=${topK}`,
+        { isOptional: true }
+    );
+    if (!result) return null;
+    if (Array.isArray(result)) return result as MoraMemory[];
+    if (Array.isArray((result as any)?.data)) return (result as any).data as MoraMemory[];
+    return null;
+}

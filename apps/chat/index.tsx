@@ -50,6 +50,9 @@ import { detectMemoryIntent, extractInsightFromRequest } from '@/lib/chat/memory
 import type { AppProps } from '@/lib/apps/types';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { buildCommunicationOperationalContextMessage, useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+// Sprint 3: Mora episodic memory hooks
+import { useMemories, useMemorySearch } from '@/lib/queries/useMemories';
+import type { MoraMemory } from '@/lib/api/memoryClient';
 
 interface PendingAction {
     tool_name: string;
@@ -71,6 +74,8 @@ interface Message {
     planId?: string;
     /** typed frames from mora.dialogue.v1 path — rendered via FramedMessage */
     frames?: MoraFrame[];
+    /** Sprint 3: IDs of mora_memories recalled for this response */
+    recalledMemoryIds?: string[];
 }
 
 function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
@@ -550,6 +555,91 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
 // Memoize so parent stream re-renders don't re-run this subtree
 const ChatSuggestionsMemo = React.memo(ChatSuggestions);
 
+// =============================================================================
+// Sprint 3: MemoriesView — episodic memory browser with semantic search
+// =============================================================================
+
+interface MemoriesViewProps {
+    searchQuery: string;
+    onSearchQueryChange: (q: string) => void;
+    isStandardMode: boolean;
+}
+
+function MemoriesView({ searchQuery, onSearchQueryChange, isStandardMode }: MemoriesViewProps) {
+    const { data: memoriesList, isLoading: isLoadingList } = useMemories(50);
+    const { data: searchResults, isLoading: isLoadingSearch } = useMemorySearch(searchQuery);
+
+    const isSearching = searchQuery.trim().length >= 2;
+    const displayMemories: MoraMemory[] = isSearching
+        ? (searchResults ?? [])
+        : (memoriesList ?? []);
+    const isLoading = isSearching ? isLoadingSearch : isLoadingList;
+
+    return (
+        <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Search field */}
+            <div className={`px-4 py-3 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
+                <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => onSearchQueryChange(e.target.value)}
+                    placeholder="Erinnerungen durchsuchen…"
+                    className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+                        isStandardMode
+                            ? 'bg-gray-100 border border-gray-200 text-[#1F1F1F] placeholder-gray-400 focus:ring-[#0078D4]/30'
+                            : 'bg-white/5 border border-white/10 text-white/90 placeholder-white/30 focus:ring-emerald-500/20'
+                    }`}
+                />
+            </div>
+
+            {/* Memory list */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {isLoading && (
+                    <div className="flex justify-center py-8">
+                        <Loader2 size={20} className={`animate-spin ${isStandardMode ? 'text-[#0078D4]/40' : 'text-emerald-400/40'}`} />
+                    </div>
+                )}
+
+                {!isLoading && displayMemories.length === 0 && (
+                    <div className={`text-center py-8 text-sm ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>
+                        {isSearching
+                            ? 'Keine passenden Erinnerungen gefunden.'
+                            : 'Noch keine Erinnerungen. Chatte mit Mora, um Erinnerungen zu erzeugen.'}
+                    </div>
+                )}
+
+                {!isLoading && displayMemories.map((memory) => (
+                    <div
+                        key={memory.id}
+                        className={`rounded-xl p-3 border text-sm ${
+                            isStandardMode
+                                ? 'bg-gray-50 border-gray-200 text-[#1F1F1F]'
+                                : 'bg-white/[0.03] border-white/[0.07] text-white/80'
+                        }`}
+                    >
+                        {memory.similarity !== undefined && (
+                            <div className={`text-[10px] mb-1 flex items-center gap-1 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'}`}>
+                                <Sparkles size={9} />
+                                Ähnlichkeit: {(memory.similarity * 100).toFixed(0)}%
+                            </div>
+                        )}
+                        <p className="leading-relaxed">{memory.summary}</p>
+                        <p className={`text-[10px] mt-2 ${isStandardMode ? 'text-gray-400' : 'text-white/25'}`}>
+                            {new Date(memory.created_at).toLocaleString('de-DE', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                            })}
+                        </p>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export default function ChatApp({ paneId, initialData }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
@@ -637,6 +727,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const [relevantMemories, setRelevantMemories] = useState<MemorySearchResult[]>([]);
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    // Sprint 3: tab state for chat vs. memories view
+    const [chatView, setChatView] = useState<'chat' | 'memories'>('chat');
+    const [memoriesSearchQuery, setMemoriesSearchQuery] = useState('');
     const [ambiguityChoice, setAmbiguityChoice] = useState<{
         query: string;
         results: OpenableSearchResult[];
@@ -1165,12 +1258,15 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                 });
                             }
                         }
+                        // Sprint 3: extract recalled_memory_ids from agent response
+                        const recalledMemoryIds = (agentResponse as any).recalled_memory_ids as string[] | undefined;
                         setMessages(prev => [...prev, {
                             id: crypto.randomUUID(),
                             role: 'assistant',
                             content: agentResponse.final_message,
                             timestamp: new Date(),
                             planId,
+                            recalledMemoryIds: recalledMemoryIds && recalledMemoryIds.length > 0 ? recalledMemoryIds : undefined,
                         }]);
                         setIsLoading(false);
                         return;
@@ -1362,9 +1458,30 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     </button>
                 </div>
             </div>
+            {/* Sprint 3: Tab bar — Chat / Erinnerungen */}
+            <div className={`flex gap-0 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
+                {(['chat', 'memories'] as const).map((tab) => (
+                    <button
+                        key={tab}
+                        onClick={() => setChatView(tab)}
+                        className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${
+                            chatView === tab
+                                ? isStandardMode
+                                    ? 'border-[#0078D4] text-[#0078D4]'
+                                    : 'border-emerald-400 text-white/90'
+                                : isStandardMode
+                                    ? 'border-transparent text-[#605E5C] hover:text-[#1F1F1F]'
+                                    : 'border-transparent text-white/40 hover:text-white/70'
+                        }`}
+                    >
+                        {tab === 'chat' ? 'Chat' : 'Erinnerungen'}
+                    </button>
+                ))}
+            </div>
+
             {/* Relevant Memories Context */}
             <AnimatePresence>
-                {showMemories && (relevantMemories.length > 0 || (moraCtx.lastAnswerSource === 'memory' && memoryBasisCompanyId === activeCompanyId)) ? (
+                {chatView === 'chat' && showMemories && (relevantMemories.length > 0 || (moraCtx.lastAnswerSource === 'memory' && memoryBasisCompanyId === activeCompanyId)) ? (
                     <RelevantMemories
                         memories={relevantMemories}
                         isMemoryBasis={moraCtx.lastAnswerSource === 'memory'}
@@ -1374,8 +1491,17 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 ) : null}
             </AnimatePresence>
 
+            {/* Sprint 3: Memories tab view */}
+            {chatView === 'memories' && (
+                <MemoriesView
+                    searchQuery={memoriesSearchQuery}
+                    onSearchQueryChange={setMemoriesSearchQuery}
+                    isStandardMode={isStandardMode}
+                />
+            )}
+
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
+            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView === 'memories' ? 'hidden' : ''}`}>
                 {/* Empty state — shown when no messages yet */}
                 {messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
@@ -1434,6 +1560,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
                                     : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
                                 }`}>
+                                {/* Sprint 3: "Mora erinnert sich" recall indicator */}
+                                {msg.role === 'assistant' && msg.recalledMemoryIds && msg.recalledMemoryIds.length > 0 && (
+                                    <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-emerald-300/72">
+                                        <Sparkles size={10} />
+                                        Mora erinnert sich an {msg.recalledMemoryIds.length} Gespräch{msg.recalledMemoryIds.length !== 1 ? 'e' : ''}
+                                    </div>
+                                )}
                                 <div className="flex items-start gap-2">
                                     {msg.role === 'assistant' && (
                                         <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
@@ -1749,8 +1882,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            {moraCtx.isOperational === null ? (
+            {/* Input — hidden when viewing memories tab */}
+            {chatView === 'memories' ? null : moraCtx.isOperational === null ? (
                 bootstrapTimedOut
                     ? <OfflineCard onRetry={() => { setBootstrapTimedOut(false); window.location.reload(); }} />
                     : <InputLoadingPlaceholder />
