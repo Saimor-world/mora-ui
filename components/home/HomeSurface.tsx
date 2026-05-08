@@ -14,6 +14,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
+import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
@@ -542,6 +543,35 @@ export const HomeSurface: React.FC = () => {
                     : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
     const displayCompanyName = websiteEntryContext?.companyName || currentCompany?.name || user?.active_company_name || 'Organisation';
 
+    const stackBriefings = useMemo((): Briefing[] => {
+        const items: Briefing[] = [];
+        if (overlayRecentActivityItems[0] && !websiteEntryContext) {
+            items.push({
+                id: 'activity',
+                label: 'Aktivität',
+                title: `Weiter in ${overlayRecentActivityItems[0].label}`,
+                detail: relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString()),
+            });
+        }
+        if (latestMail) {
+            items.push({
+                id: 'mail',
+                label: 'Mail',
+                title: latestMail.subject || 'Neue Mail',
+                detail: latestMail.from || 'Posteingang',
+            });
+        }
+        if (nextCalendarEvent) {
+            items.push({
+                id: 'calendar',
+                label: 'Termin',
+                title: nextCalendarEvent.title,
+                detail: nextCalendarEvent.time || nextCalendarEvent.date || 'heute',
+            });
+        }
+        return items.slice(0, 3);
+    }, [overlayRecentActivityItems, latestMail, nextCalendarEvent, websiteEntryContext]);
+
     const openRecentActivity = useCallback((item: RecentActivityItem) => {
         if (item.kind === 'document' && item.paneData?.nodeId) {
             revealPane(`doc-${item.paneData.nodeId}`, {
@@ -683,11 +713,17 @@ export const HomeSurface: React.FC = () => {
                                         style={{ width: 24, height: 1, background: 'rgba(52,211,153,0.70)' }}
                                     />
                                 </div>
-                                <h2 className="mt-3 max-w-[28rem] text-[32px] font-light leading-[1.05] tracking-[-0.04em] text-white/92">
-                                    {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
-                                        ? <>Weiter in <span style={{ color: 'rgba(52,211,153,0.92)' }}>{overlayRecentActivityItems[0].label}</span>.</>
-                                        : focusTitle}
-                                </h2>
+                                {stackBriefings.length > 0 ? (
+                                    <div className="mt-3">
+                                        <BriefingStack briefings={stackBriefings} />
+                                    </div>
+                                ) : (
+                                    <h2 className="mt-3 max-w-[28rem] text-[32px] font-light leading-[1.05] tracking-[-0.04em] text-white/92">
+                                        {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
+                                            ? <>Weiter in <span style={{ color: 'rgba(52,211,153,0.92)' }}>{overlayRecentActivityItems[0].label}</span>.</>
+                                            : focusTitle}
+                                    </h2>
+                                )}
                                 <p className="mt-4 flex max-w-[29rem] items-start gap-1.5 text-[13px] leading-relaxed text-white/58">
                                     {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage && (
                                         <span className="mt-1.5 inline-block w-1.5 h-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
@@ -817,7 +853,7 @@ export const HomeSurface: React.FC = () => {
             </section>
 
             <aside className="absolute bottom-[9.5rem] right-8 w-[320px] 2xl:right-[22rem]">
-                <div className="pointer-events-auto rounded-[28px] border border-white/[0.055] bg-[linear-gradient(155deg,rgba(4,17,17,0.36),rgba(2,8,9,0.10))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.20)] backdrop-blur-[22px]">
+                <div data-tageslage-panel className="pointer-events-auto rounded-[28px] border border-white/[0.055] bg-[linear-gradient(155deg,rgba(4,17,17,0.36),rgba(2,8,9,0.10))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.20)] backdrop-blur-[22px]">
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.26em] text-emerald-200/48">
