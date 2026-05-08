@@ -63,6 +63,7 @@ import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
+import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 // 1.0 gated (future-tier) — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
 // import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
@@ -834,6 +835,9 @@ export const MoraShell: React.FC = () => {
 
             {/* Dock (Bottom Navigation) */}
             {!hasFullscreenPane && <Dock />}
+
+            {/* First-visit Mora greeting (one-time, localStorage-gated) */}
+            {!hasFullscreenPane && <MoraGreetingBubble />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight
