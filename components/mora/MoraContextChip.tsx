@@ -96,9 +96,16 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                 </span>
             )}
 
-            {/* Scope breadcrumb */}
+            {/* Scope breadcrumb — with pulsing dot signaling Mora awareness */}
             {breadcrumb && (
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 transition-colors duration-150">
+                <div
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 transition-colors duration-150"
+                    title="Mora kennt diesen Kontext"
+                >
+                    <span
+                        className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse"
+                        style={{ boxShadow: '0 0 6px rgba(52,211,153,0.62)' }}
+                    />
                     <Layers size={10} className="text-emerald-400/70 shrink-0" />
                     <span className="text-[11px] text-white/70 font-light leading-none">
                         {truncate(breadcrumb, maxChars)}

@@ -6,6 +6,7 @@
  */
 
 import { coreGet, corePost } from './coreClient';
+import { useNavStore } from '@/lib/store/navStore';
 
 export interface ProactiveSuggestion {
     type: 'action' | 'optimization' | 'insight';
@@ -173,12 +174,16 @@ export async function executeAgenticLoop(
 ): Promise<AgentResponse> {
     try {
         const allowToolExecution = process.env.NEXT_PUBLIC_ALLOW_TOOL_EXECUTION !== 'false';
+        // Sprint 2: forward active workspace context for Mora awareness
+        const navState = useNavStore.getState();
         const response = await corePost('/v3/cognition/agent', {
             intent,
             view_level: viewContext?.level,
             active_entity_id: viewContext?.entityId,
             active_entity_type: viewContext?.entityType,
             company_id: viewContext?.companyId,
+            active_company_id: viewContext?.companyId ?? navState.activeCompanyId,
+            active_department_id: navState.activeDepartmentId,
             plan_id: workSession?.planId,
             session_id: workSession?.sessionId,
             allow_tool_execution: allowToolExecution,
