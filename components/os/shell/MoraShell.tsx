@@ -65,6 +65,7 @@ import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 import { Dock } from '@/components/mora/Dock';
 import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 import { FirstRunTour } from '@/components/onboarding/FirstRunTour';
+import { useMoraSpeaks } from '@/lib/queries/useMoraSpeaks';
 // 1.0 gated (future-tier) — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
 // import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
@@ -571,6 +572,7 @@ export const MoraShell: React.FC = () => {
 
     useRealtime(isBootstrapped);
     useMoraExecutions(isBootstrapped); // P4: realtime execution events → window bus + orb
+    useMoraSpeaks(); // Sprint 2: urgent KAIROS signals → auto-open chat with proactive message
     useOperationalFlip();
 
     useKeyboardShortcuts({

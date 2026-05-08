@@ -858,6 +858,22 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streamingText]);
 
+    // Sprint 2: listen for proactive Mora speaks (urgent KAIROS signals)
+    useEffect(() => {
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent).detail;
+            if (!detail?.message) return;
+            setMessages(prev => [...prev, {
+                id: `speak-${detail.id}`,
+                role: 'assistant',
+                content: detail.message,
+                timestamp: new Date(),
+            }]);
+        };
+        window.addEventListener('mora-speaks-message', handler as EventListener);
+        return () => window.removeEventListener('mora-speaks-message', handler as EventListener);
+    }, []);
+
     // Bootstrap timeout: if isOperational stays null >7s, backend is likely down
     useEffect(() => {
         if (moraCtx.isOperational !== null) {
