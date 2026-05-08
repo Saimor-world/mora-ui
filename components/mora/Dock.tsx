@@ -1543,6 +1543,12 @@ export const Dock = () => {
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
                     <div className="flex items-center gap-3 pl-1">
+                        <motion.div
+                            animate={{ scale: [1, 1.018, 1] }}
+                            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                            style={{ transformOrigin: 'center' }}
+                            data-mora-orb
+                        >
                         <button
                             onClick={() => handleDockClick('chat')}
                             data-mora-home="true"
@@ -1583,6 +1589,7 @@ export const Dock = () => {
                                 size={54}
                             />
                         </button>
+                        </motion.div>
                         <div className="hidden 2xl:flex flex-col items-start leading-tight">
                             <span className={`text-sm font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
                                 }`}>
