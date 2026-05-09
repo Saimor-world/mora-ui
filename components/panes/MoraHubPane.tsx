@@ -94,19 +94,11 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const isCompact = width < 500;
 
     const renderSectionHeader = (section: HubSection) => (
-        <div className="border-b border-white/[0.06] px-4 py-3">
-            <div className="flex items-center justify-between gap-3">
-                <div>
-                    <p className="text-[10px] uppercase tracking-[0.24em] text-white/32">
-                        {TABS.find((tab) => tab.id === section)?.label}
-                    </p>
-                    <p className="mt-1 text-sm text-white/82">{SECTION_TITLES[section]}</p>
-                </div>
-                <span className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-white/55">
-                    {surfaceProfile.isLocalTruthSurface ? "Interne Instanz" : surfaceProfile.isPublicDemoSurface ? "Demo-Spiegel" : "Standardmodus"}
-                </span>
-            </div>
-            <p className="mt-2 text-xs leading-relaxed text-white/38">
+        <div className="border-b border-white/[0.06] px-5 py-3">
+            <p className="text-[10px] uppercase tracking-[0.24em] text-white/28">
+                {SECTION_TITLES[section]}
+            </p>
+            <p className="mt-1 text-[12px] leading-relaxed text-white/38">
                 {TAB_DESCRIPTIONS[section]}
             </p>
         </div>
@@ -258,50 +250,27 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
             className="overflow-hidden"
         >
             <div className="flex h-full flex-col">
-                <div className="border-b border-white/[0.06] px-4 py-3">
-                    <div className="mb-3 flex items-center gap-2">
-                        <span className={`rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.22em] ${
-                            surfaceProfile.isLocalTruthSurface
-                                ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-200"
-                                : surfaceProfile.isPublicDemoSurface
-                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-200"
-                                    : "border-white/10 bg-white/[0.04] text-white/55"
-                        }`}>
-                            {surfaceProfile.isLocalTruthSurface
-                                ? "Interne Instanz"
-                                : surfaceProfile.isPublicDemoSurface
-                                    ? "Demo-Spiegel"
-                                    : "Standardmodus"}
-                        </span>
-                        <span className="text-[11px] text-white/35">
-                            {surfaceProfile.isLocalTruthSurface
-                                ? "Diese Sicht folgt der internen Instanzwahrheit."
-                                : surfaceProfile.isPublicDemoSurface
-                                    ? "Diese Sicht spiegelt die kuratierte Demo-Instanz."
-                                    : "Diese Sicht folgt dem Standardmodus der Organisation."}
-                        </span>
-                    </div>
-                    <div className="flex items-center gap-1 rounded-xl bg-black/25 p-1">
-                        {TABS.map((tab) => {
-                            const Icon = tab.icon;
-                            const isTabActive = activeSection === tab.id;
-                            return (
-                                <button
-                                    key={tab.id}
-                                    type="button"
-                                    onClick={() => switchSection(tab.id)}
-                                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] transition-all ${
-                                        isTabActive
-                                            ? "bg-emerald-500/18 text-emerald-200 shadow-[0_0_0_1px_rgba(16,185,129,0.18)]"
-                                            : "text-white/45 hover:bg-white/[0.05] hover:text-white/72"
-                                    }`}
-                                >
-                                    <Icon className="h-3.5 w-3.5" />
-                                    <span>{tab.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
+                {/* Tab bar — minimal, no mode banner */}
+                <div className="flex items-center gap-0.5 border-b border-white/[0.06] px-3 py-2 shrink-0">
+                    {TABS.map((tab) => {
+                        const Icon = tab.icon;
+                        const isTabActive = activeSection === tab.id;
+                        return (
+                            <button
+                                key={tab.id}
+                                type="button"
+                                onClick={() => switchSection(tab.id)}
+                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] transition-all ${
+                                    isTabActive
+                                        ? "bg-emerald-500/14 text-emerald-200/90 shadow-[0_0_0_1px_rgba(16,185,129,0.16)]"
+                                        : "text-white/38 hover:bg-white/[0.04] hover:text-white/65"
+                                }`}
+                            >
+                                <Icon className="h-3.5 w-3.5" />
+                                <span>{tab.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
                 {renderContent()}
             </div>

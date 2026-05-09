@@ -1,33 +1,27 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
-    Sparkles,
     MessageCircle,
     FolderOpen,
     Upload,
     Search,
     Users,
     StickyNote,
-    Settings,
     Brain,
     Waves,
     Eye,
     Zap,
     Shield,
     Activity,
-    ChevronDown,
-    ChevronUp,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
 import { useOrbStore } from "@/lib/store/orbStore";
 import { useDepartments } from "@/lib/queries/useDepartments";
-import { useTree } from "@/lib/queries/useTree";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useHilToggle } from "@/lib/hooks/useHilToggle";
 import MoraUpdatesFeed from "./MoraUpdatesFeed";
 import { PlasmaOrb } from "./PlasmaOrb";
-import { MoraMemory } from "./MoraMemory";
 
 type FeedScope = "company" | "department";
 
@@ -46,42 +40,36 @@ const ORB_CONFIG: Record<string, {
     label: string;
     sublabel: string;
     icon: React.ElementType;
-    glowClass: string;
 }> = {
     idle: {
         color: "#34d399",
         label: "Bereit",
         sublabel: "Warte auf Kontext",
         icon: Waves,
-        glowClass: "shadow-emerald-500/20",
     },
     thinking: {
         color: "#60a5fa",
         label: "Analysiere",
         sublabel: "Signale werden verarbeitet",
         icon: Brain,
-        glowClass: "shadow-blue-500/20",
     },
     watch: {
         color: "#a78bfa",
         label: "Beobachte",
         sublabel: "Bereich wird gescannt",
         icon: Eye,
-        glowClass: "shadow-violet-500/20",
     },
     focus: {
         color: "#22c55e",
         label: "Fokus",
         sublabel: "Ordnerfokus aktiv",
         icon: Zap,
-        glowClass: "shadow-green-500/20",
     },
     alert: {
         color: "#ef4444",
         label: "Achtung",
         sublabel: "Aktion erforderlich",
         icon: Shield,
-        glowClass: "shadow-red-500/20",
     },
 };
 
@@ -91,73 +79,10 @@ const getOrbConfig = (state: string, viewMode?: string) => {
             ...ORB_CONFIG.idle,
             color: "#22d3ee",
             label: "Beispiel",
-            sublabel: "Beispielsystem aktiv",
-            glowClass: "shadow-cyan-500/20",
+            sublabel: "Demo-Instanz aktiv",
         };
     }
     return ORB_CONFIG[state] || ORB_CONFIG.idle;
-};
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ACTION BUTTONS
-// ═══════════════════════════════════════════════════════════════════════════
-interface ActionDef {
-    id: string;
-    label: string;
-    icon: React.ElementType;
-    shortcut?: string;
-    color: string;
-    onClick: () => void;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// UNIVERSE STATS GRID (merged from IntelligenceDashboard)
-// ═══════════════════════════════════════════════════════════════════════════
-interface UniverseStatsGridProps {
-    planetCount: number;
-    spaceCount: number;
-    nebulaCount: number;
-    starCount: number;
-}
-
-const UniverseStatsGrid: React.FC<UniverseStatsGridProps> = ({
-    planetCount,
-    spaceCount,
-    nebulaCount,
-    starCount,
-}) => {
-
-    const stats = [
-        { label: "Abteilungen", count: planetCount, color: "emerald" },
-        { label: "Bereiche", count: spaceCount, color: "blue" },
-        { label: "Ordner", count: nebulaCount, color: "violet" },
-        { label: "Inhalte", count: starCount, color: "amber" },
-    ];
-
-    const colorClasses: Record<string, string> = {
-        emerald: "text-emerald-400",
-        blue: "text-blue-400",
-        violet: "text-violet-400",
-        amber: "text-amber-400",
-    };
-
-    return (
-        <div className="grid grid-cols-4 gap-1.5">
-            {stats.map((stat) => (
-                <div
-                    key={stat.label}
-                    className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04] hover:bg-white/[0.06] transition-colors"
-                >
-                    <div className={`text-lg font-light ${colorClasses[stat.color]}`}>
-                        {stat.count}
-                    </div>
-                    <div className="text-[8px] text-white/30 uppercase tracking-wider mt-0.5">
-                        {stat.label}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -165,75 +90,30 @@ const UniverseStatsGrid: React.FC<UniverseStatsGridProps> = ({
 // ═══════════════════════════════════════════════════════════════════════════
 export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     scope,
-    title = "Mora Center",
     compact = false,
     className,
 }) => {
     const orbState = useOrbStore((s) => s.orbState);
     const viewMode = useNavStore((s) => s.viewMode);
     const viewLevel = useNavStore((s) => s.viewLevel);
-    // cursorAgent — 1.0 gated (CursorAgent component is future-tier; local stub for UI)
-    const cursorAgent = useMemo(() => ({ active: false, action: 'idle' as const }), []);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { data: departments = [] } = useDepartments(activeCompanyId);
-    const { data: treeData = [] } = useTree(activeCompanyId);
     const { hilEnabled, setHilEnabled } = useHilToggle();
     const { openPane, getPane, minimizePane } = usePaneStore();
-    const [showMemory, setShowMemory] = useState(false);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
 
     const orbConfig = getOrbConfig(orbState, viewMode);
     const StatusIcon = orbConfig.icon;
-    const safeTree = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
-
-    const universeCounts = useMemo(() => {
-        let spaceCount = 0;
-        let nebulaCount = 0;
-        let starCount = 0;
-
-        const visit = (nodes: any[]) => {
-            nodes.forEach((node) => {
-                if (node?.type === "space") spaceCount += 1;
-                else if (node?.type === "folder") nebulaCount += 1;
-                else if (node?.type && !["department"].includes(node.type)) starCount += 1;
-
-                if (Array.isArray(node?.children)) visit(node.children);
-            });
-        };
-
-        visit(safeTree as any[]);
-
-        return {
-            planetCount: safeDepartments.length,
-            spaceCount,
-            nebulaCount,
-            starCount,
-        };
-    }, [safeDepartments.length, safeTree]);
 
     // Dynamic context line
     const contextLine = useMemo(() => {
         const dept = safeDepartments.find((d) => d.id === activeDepartmentId);
-        if (viewLevel === "folder") return dept ? `${dept.name} > Ordnerfokus` : "Ordnerfokus";
-        if (viewLevel === "space") return dept ? `${dept.name} > Bereich` : "Bereich";
+        if (viewLevel === "folder") return dept ? `${dept.name} › Ordnerfokus` : "Ordnerfokus";
+        if (viewLevel === "space") return dept ? `${dept.name} › Bereich` : "Bereich";
         if (viewLevel === "department") return dept?.name || "Abteilung";
         return viewMode === "demo" ? "Beispielsystem" : "Universe";
     }, [viewLevel, viewMode, safeDepartments, activeDepartmentId]);
-
-    // Cursor Agent status
-    const agentStatus = useMemo(() => {
-        if (!cursorAgent.active) return null;
-        const labels: Record<string, string> = {
-            idle: "Standby",
-            highlight: "Markiert Ziel",
-            point: "Zeigt Kontext",
-            navigate: "Fuehrt dich hin",
-            return: "Kehrt zurück",
-            roam: "Scannt Umgebung",
-        };
-        return labels[cursorAgent.action] || "Aktiv";
-    }, [cursorAgent]);
 
     // ─── Pane Openers ───
     const openChat = () => {
@@ -264,228 +144,96 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
         openPane({ id: "notes-main", type: "notes", title: "Notizen", size: { width: 720, height: 560 } });
     };
 
-    const openSettings = () => {
-        openPane({ id: "settings-main", type: "settings", title: "Einstellungen", size: { width: 720, height: 640 } });
-    };
-
-    // ─── Actions Grid ───
-    const actions: ActionDef[] = [
-        { id: "chat", label: "Chat", icon: MessageCircle, shortcut: "C", color: "emerald", onClick: openChat },
-        { id: "finder", label: "Finder", icon: FolderOpen, shortcut: "F", color: "blue", onClick: () => openFinder(false) },
-        { id: "upload", label: "Upload", icon: Upload, color: "violet", onClick: () => openFinder(true) },
-        { id: "search", label: "Suche", icon: Search, shortcut: "S", color: "amber", onClick: openSearch },
-        { id: "team", label: "Team", icon: Users, color: "pink", onClick: openTeam },
-        { id: "notes", label: "Notizen", icon: StickyNote, shortcut: "N", color: "cyan", onClick: openNotes },
+    // ─── Actions ───
+    const actions = [
+        { id: "chat",    label: "Chat",    icon: MessageCircle, onClick: openChat },
+        { id: "finder",  label: "Finder",  icon: FolderOpen,    onClick: () => openFinder(false) },
+        { id: "upload",  label: "Upload",  icon: Upload,        onClick: () => openFinder(true) },
+        { id: "search",  label: "Suche",   icon: Search,        onClick: openSearch },
+        { id: "team",    label: "Team",    icon: Users,         onClick: openTeam },
+        { id: "notes",   label: "Notizen", icon: StickyNote,    onClick: openNotes },
     ];
 
-    // Color map for tailwind classes
-    const colorMap: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-        emerald: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-300", glow: "hover:shadow-emerald-500/20" },
-        blue: { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-300", glow: "hover:shadow-blue-500/20" },
-        violet: { bg: "bg-violet-500/10", border: "border-violet-500/20", text: "text-violet-300", glow: "hover:shadow-violet-500/20" },
-        amber: { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-300", glow: "hover:shadow-amber-500/20" },
-        pink: { bg: "bg-pink-500/10", border: "border-pink-500/20", text: "text-pink-300", glow: "hover:shadow-pink-500/20" },
-        cyan: { bg: "bg-cyan-500/10", border: "border-cyan-500/20", text: "text-cyan-300", glow: "hover:shadow-cyan-500/20" },
-    };
-
     return (
-        <div
-            className={`flex h-full flex-col rounded-2xl border border-white/[0.06] bg-gradient-to-b from-black/50 to-black/30 backdrop-blur-xl shadow-2xl overflow-hidden ${className ?? ""}`}
-        >
-            {/* ═══ HEADER ═══ */}
-            <div className={`flex items-center justify-between gap-3 border-b border-white/[0.06] ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
-                <div className="flex items-center gap-2.5">
-                    <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                    </div>
-                    <div className="flex flex-col">
-                        <span className="text-xs font-semibold text-white/90 tracking-wide">{title}</span>
-                        <span className="text-[9px] uppercase tracking-[0.25em] text-white/30">
-                            {contextLine}
-                        </span>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => setHilEnabled(!hilEnabled)}
-                        className={`text-[9px] px-2.5 py-1 rounded-full border transition-all duration-300 ${
-                            hilEnabled
-                                ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-300"
-                                : "bg-white/[0.03] border-white/10 text-white/40 hover:bg-white/[0.06]"
-                        }`}
-                        title="Automatikmodus umschalten"
-                    >
-                        {hilEnabled ? "Bestaetigen" : "Auto"}
-                    </button>
-                    <button
-                        onClick={openSettings}
-                        className="p-1.5 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.05] transition-colors"
-                        title="Einstellungen"
-                    >
-                        <Settings className="h-3.5 w-3.5" />
-                    </button>
-                </div>
-            </div>
+        <div className={`flex h-full flex-col overflow-hidden ${className ?? ""}`}>
 
-            {/* ═══ MAIN CONTENT ═══ */}
-            <div className={`flex flex-1 min-h-0 ${compact ? "flex-col" : "flex-row"}`}>
-                {/* ─── LEFT: Orb + Actions ─── */}
-                <div className={`flex flex-col ${compact ? "" : "w-[44%] border-r border-white/[0.06]"}`}>
-                    {/* Orb Section */}
-                    <div className={`flex items-center gap-3 ${compact ? "p-3" : "p-4"}`}>
+            {/* ═══ ORB + STATUS ═══ */}
+            <div className="flex items-center gap-4 px-5 py-4 border-b border-white/[0.06] shrink-0">
+                <button
+                    type="button"
+                    onClick={openChat}
+                    className="relative rounded-full shrink-0 transition-opacity hover:opacity-80"
+                    title="Chat mit Mora öffnen"
+                >
+                    <PlasmaOrb
+                        color={orbConfig.color}
+                        state={orbState as any}
+                        size={compact ? 68 : 88}
+                    />
+                </button>
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <StatusIcon className="h-3.5 w-3.5 shrink-0" style={{ color: orbConfig.color }} />
+                        <span className="text-[15px] font-light text-white/90">{orbConfig.label}</span>
+                    </div>
+                    <div className="mt-0.5 text-[11px] text-white/38 truncate">{contextLine}</div>
+                    <div className="mt-2.5">
                         <button
                             type="button"
-                            onClick={openChat}
-                            className={`relative rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-shadow duration-500 ${orbConfig.glowClass}`}
-                            title="Chat mit Mora"
+                            onClick={() => setHilEnabled(!hilEnabled)}
+                            className={`text-[10px] px-3 py-1 rounded-full border transition-all ${
+                                hilEnabled
+                                    ? "bg-emerald-500/12 border-emerald-500/22 text-emerald-300/80"
+                                    : "bg-white/[0.03] border-white/10 text-white/32 hover:bg-white/[0.06] hover:text-white/55"
+                            }`}
                         >
-                            <PlasmaOrb
-                                color={orbConfig.color}
-                                state={orbState as any}
-                                size={compact ? 64 : 80}
-                            />
+                            {hilEnabled ? "Bestätigung aktiv" : "Automatik"}
                         </button>
-                        <div className="flex flex-1 flex-col gap-0.5 min-w-0">
-                            <div className="flex items-center gap-1.5">
-                                <StatusIcon className="h-3 w-3 flex-shrink-0" style={{ color: orbConfig.color }} />
-                                <span className="text-xs font-medium text-white/90 truncate">
-                                    {orbConfig.label}
-                                </span>
-                            </div>
-                            <span className="text-[10px] text-white/40 truncate">
-                                {orbConfig.sublabel}
-                            </span>
-                            {agentStatus && (
-                                <div className="flex items-center gap-1 mt-0.5">
-                                    <div className="h-1 w-1 rounded-full bg-violet-400 animate-pulse" />
-                                    <span className="text-[9px] text-violet-300/70">
-                                        Agent: {agentStatus}
-                                    </span>
-                                </div>
-                            )}
-                        </div>
                     </div>
-
-                    {/* ─── Universe Stats (from IntelligenceDashboard) ─── */}
-                    {!compact && (
-                        <div className="px-4 pb-3">
-                            <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
-                                Universe Übersicht
-                            </div>
-                            <UniverseStatsGrid {...universeCounts} />
-                        </div>
-                    )}
-
-                    {/* ─── Quick Actions ─── */}
-                    <div className={`flex-1 ${compact ? "px-3 pb-3" : "px-4 pb-4"}`}>
-                        <div className="text-[9px] uppercase tracking-[0.3em] text-white/20 mb-2">
-                            Schnellaktionen
-                        </div>
-                        <div className={`grid ${compact ? "grid-cols-3" : "grid-cols-2"} gap-1.5`}>
-                            {actions.map((action) => {
-                                const c = colorMap[action.color] || colorMap.emerald;
-                                const Icon = action.icon;
-                                return (
-                                    <button
-                                        key={action.id}
-                                        onClick={action.onClick}
-                                        className={`group relative flex items-center gap-2 rounded-xl border ${c.border} ${c.bg} px-3 py-2.5 transition-all duration-200 hover:bg-white/[0.08] hover:shadow-lg ${c.glow} hover:scale-[1.02] active:scale-[0.98]`}
-                                    >
-                                        <Icon className={`h-3.5 w-3.5 ${c.text} transition-transform group-hover:scale-110`} />
-                                        <span className="text-[11px] text-white/80 font-medium">
-                                            {action.label}
-                                        </span>
-                                        {action.shortcut && (
-                                            <span className="ml-auto text-[8px] text-white/20 font-mono bg-white/[0.04] px-1 py-0.5 rounded">
-                                                {action.shortcut}
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                </div>
-
-                {/* ─── RIGHT: Activity Feed ─── */}
-                <div className={`flex-1 min-h-0 flex flex-col ${compact ? "border-t border-white/[0.06]" : ""}`}>
-                    <div className={`flex items-center justify-between ${compact ? "px-3 pt-2" : "px-4 pt-3"}`}>
-                        <div className="flex items-center gap-1.5">
-                            <Activity className="h-3 w-3 text-emerald-400/60" />
-                            <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
-                                Live-Signale
-                            </span>
-                        </div>
-                        <span className="text-[9px] text-white/20">
-                            {scope === "department" ? "Bereich" : "Kontext"}
-                        </span>
-                    </div>
-                    <div className={`flex-1 min-h-0 ${compact ? "p-2" : "p-3"}`}>
-                        <MoraUpdatesFeed
-                            scope={scope}
-                            title="Signale"
-                            maxEvents={compact ? 4 : (showMemory ? 3 : 6)}
-                            compact
-                            showHeader={false}
-                            showHilToggle={false}
-                        />
-                    </div>
-
-                    {/* ─── Memory Section (Collapsible) ─── */}
-                    {!compact && (
-                        <div className="border-t border-white/[0.06]">
-                            <button
-                                onClick={() => setShowMemory(!showMemory)}
-                                className="w-full flex items-center justify-between px-4 py-2 hover:bg-white/[0.02] transition-colors"
-                            >
-                                <div className="flex items-center gap-1.5">
-                                    <Brain className="h-3 w-3 text-violet-400/60" />
-                                    <span className="text-[10px] uppercase tracking-[0.25em] text-white/30">
-                                        Erinnerungen
-                                    </span>
-                                </div>
-                                {showMemory ? (
-                                    <ChevronUp className="h-3 w-3 text-white/20" />
-                                ) : (
-                                    <ChevronDown className="h-3 w-3 text-white/20" />
-                                )}
-                            </button>
-                            {showMemory && (
-                                <div className="px-4 pb-3">
-                                    <MoraMemory compact showStats={false} companyId={activeCompanyId} />
-                                </div>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
 
-            {/* ═══ FOOTER: Status Bar ═══ */}
-            <div className="flex items-center justify-between px-4 py-1.5 border-t border-white/[0.04] bg-white/[0.01]">
-                <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-1">
-                        <div
-                            className="h-1.5 w-1.5 rounded-full animate-pulse"
-                            style={{ backgroundColor: orbConfig.color }}
-                        />
-                        <span className="text-[8px] text-white/25 font-mono uppercase">
-                            {orbState}
-                        </span>
-                    </div>
-                    {cursorAgent.active && (
-                        <span className="text-[8px] text-violet-400/40 font-mono">
-                            AGENT
-                        </span>
-                    )}
+            {/* ═══ LIVE-SIGNALE ═══ */}
+            <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                <div className="flex items-center gap-1.5 px-5 pt-3 pb-2 shrink-0">
+                    <Activity className="h-3 w-3 text-emerald-400/50" />
+                    <span className="text-[10px] uppercase tracking-[0.22em] text-white/28">Live-Signale</span>
+                    <span className="ml-auto text-[9px] text-white/18">
+                        {scope === "department" ? "Bereich" : "Kontext"}
+                    </span>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="text-[8px] text-white/15 font-mono">
-                        HIL:{hilEnabled ? "ON" : "OFF"}
-                    </span>
-                    <span className="text-[8px] text-white/15 font-mono">
-                        {viewMode.toUpperCase()}
-                    </span>
+                <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-3">
+                    <MoraUpdatesFeed
+                        scope={scope}
+                        title=""
+                        maxEvents={compact ? 3 : 6}
+                        compact
+                        showHeader={false}
+                        showHilToggle={false}
+                    />
+                </div>
+            </div>
+
+            {/* ═══ SCHNELLZUGRIFF ═══ */}
+            <div className="border-t border-white/[0.06] px-5 py-3 shrink-0">
+                <div className="text-[9px] uppercase tracking-[0.24em] text-white/22 mb-2.5">
+                    Schnellzugriff
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                    {actions.map((action) => {
+                        const Icon = action.icon;
+                        return (
+                            <button
+                                key={action.id}
+                                type="button"
+                                onClick={action.onClick}
+                                className="flex items-center gap-2 rounded-[14px] border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 text-left transition-all hover:bg-white/[0.055] hover:border-white/[0.12]"
+                            >
+                                <Icon className="h-3.5 w-3.5 text-white/38 shrink-0" />
+                                <span className="text-[11px] text-white/60">{action.label}</span>
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
         </div>
