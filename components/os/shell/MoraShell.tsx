@@ -144,7 +144,7 @@ const LoadingScreen: React.FC = () => (
             </div>
             <div className="flex flex-col items-center gap-2">
                 <span className="text-emerald-400/60 text-xs font-medium tracking-[0.4em] uppercase">
-                    SAIMOR
+                    SAIMÔR OS
                 </span>
                 <span className="text-white/20 text-[10px] tracking-[0.2em]">
                     Mora erwacht...
@@ -240,7 +240,7 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
                     {retrying ? 'Verbinde...' : 'Erneut verbinden'}
                 </button>
 
-                <div className="text-[9px] text-white/15 tracking-[0.3em] uppercase">SAIMOR OS • Mora Core</div>
+                <div className="text-[9px] text-white/15 tracking-[0.3em] uppercase">SAIMÔR OS • Mora Core</div>
             </div>
         </div>
     );

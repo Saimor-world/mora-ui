@@ -93,8 +93,8 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>SAIMOR | Mora OS</title>
-        <meta name="description" content="Intelligent System" />
+        <title>SAIMÔR OS</title>
+        <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
       </head>
       <body className="font-sans antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
         <QueryProvider>

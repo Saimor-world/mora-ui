@@ -271,7 +271,7 @@ export const LockScreen: React.FC<LockScreenProps> = ({
 
             {/* Bottom Branding */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] text-white/20 tracking-widest">
-                {surfaceProfile.isPublicDemoSurface ? 'SECURE DEMO INSTANCE' : surfaceProfile.isHqSurface ? 'SAIMOR HQ' : 'SECURE ORGANIZATION'}
+                {surfaceProfile.isPublicDemoSurface ? 'SECURE DEMO INSTANCE' : surfaceProfile.isHqSurface ? 'SAIMÔR HQ' : 'SECURE ORGANIZATION'}
             </div>
         </div>
     );

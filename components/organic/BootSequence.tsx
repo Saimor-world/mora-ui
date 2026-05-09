@@ -43,7 +43,7 @@ export function BootSequence({ onComplete }: BootSequenceProps) {
                         <div className="absolute inset-0 w-3 h-3 bg-mora-gold rounded-full animate-ping opacity-30" />
                     </div>
                     <span className="text-mora-gold tracking-[0.3em] text-xs font-bold">
-                        SAIMOR BIOS v1.0
+                        SAIMÔR BIOS v1.0
                     </span>
                 </div>
 

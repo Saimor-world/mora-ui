@@ -97,7 +97,7 @@ export const KeyboardShortcutsOverlay: React.FC<KeyboardShortcutsOverlayProps> =
                                     <span>
                                         Drücke <kbd className="px-1.5 py-0.5 rounded bg-white/10 mx-1">?</kbd> um dieses Menu zu öffnen
                                     </span>
-                                    <span className="text-emerald-400/50">SAIMOR OS</span>
+                                    <span className="text-emerald-400/50">SAIMÔR OS</span>
                                 </div>
                             </div>
                         </div>
