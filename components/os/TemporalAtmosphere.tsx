@@ -50,31 +50,35 @@ const SCENE_PROFILES: Record<RitualSceneId, {
     motionScale: number;
 }> = {
     flow: {
-        haze: 'radial-gradient(circle at 20% 74%, rgba(16,185,129,0.16), transparent 38%), radial-gradient(circle at 82% 28%, rgba(34,211,238,0.12), transparent 34%)',
-        orbAccent: 'rgba(34,211,238,0.16)',
+        // Emerald-cyan: energetisch, frisch — spürbar anders als night/lounge
+        haze: 'radial-gradient(circle at 20% 74%, rgba(16,185,129,0.42), transparent 38%), radial-gradient(circle at 82% 28%, rgba(34,211,238,0.34), transparent 34%)',
+        orbAccent: 'rgba(34,211,238,0.40)',
         lineAngle: 115,
-        grainOpacity: 0.14,
+        grainOpacity: 0.26,
         motionScale: 1,
     },
     build: {
-        haze: 'radial-gradient(circle at 18% 72%, rgba(59,130,246,0.18), transparent 38%), radial-gradient(circle at 84% 20%, rgba(251,191,36,0.14), transparent 30%)',
-        orbAccent: 'rgba(59,130,246,0.18)',
+        // Blau-amber: strukturiert, fokussiert — warmer Gelb-Akzent gegen kühl-blaue Basis
+        haze: 'radial-gradient(circle at 18% 72%, rgba(59,130,246,0.46), transparent 38%), radial-gradient(circle at 84% 20%, rgba(251,191,36,0.36), transparent 30%)',
+        orbAccent: 'rgba(59,130,246,0.46)',
         lineAngle: 102,
-        grainOpacity: 0.18,
+        grainOpacity: 0.32,
         motionScale: 1.08,
     },
     lounge: {
-        haze: 'radial-gradient(circle at 22% 70%, rgba(251,146,60,0.16), transparent 36%), radial-gradient(circle at 80% 20%, rgba(244,114,182,0.14), transparent 32%)',
-        orbAccent: 'rgba(244,114,182,0.16)',
+        // Orange-rose: warm, entspannt — deutlich wärmer als alle anderen Szenen
+        haze: 'radial-gradient(circle at 22% 70%, rgba(251,146,60,0.44), transparent 36%), radial-gradient(circle at 80% 20%, rgba(244,114,182,0.38), transparent 32%)',
+        orbAccent: 'rgba(244,114,182,0.44)',
         lineAngle: 126,
-        grainOpacity: 0.12,
+        grainOpacity: 0.22,
         motionScale: 0.96,
     },
     night: {
-        haze: 'radial-gradient(circle at 18% 74%, rgba(99,102,241,0.18), transparent 36%), radial-gradient(circle at 84% 18%, rgba(34,211,238,0.10), transparent 32%)',
-        orbAccent: 'rgba(99,102,241,0.18)',
+        // Indigo-violet: dunkel, ruhig — klar kühler/dunkler als alle anderen
+        haze: 'radial-gradient(circle at 18% 74%, rgba(99,102,241,0.48), transparent 36%), radial-gradient(circle at 84% 18%, rgba(139,92,246,0.32), transparent 32%)',
+        orbAccent: 'rgba(99,102,241,0.48)',
         lineAngle: 134,
-        grainOpacity: 0.16,
+        grainOpacity: 0.28,
         motionScale: 0.9,
     },
 };
@@ -135,19 +139,19 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     x: '0%',
                     y: '0%',
                 } : liveAudio ? {
-                    // Audio on: wider drift, more vivid
-                    opacity: [0.55 * baseOpacity, 0.88 * baseOpacity, 0.62 * baseOpacity],
+                    // Audio on: wider drift, vivid
+                    opacity: [0.80 * baseOpacity, 1.0 * baseOpacity, 0.86 * baseOpacity],
                     scale: [1, 1.10 * sceneProfile.motionScale, 1],
                     x: ['-3%', '3%', '-1.5%'],
                     y: ['0%', '-2%', '0%'],
                 } : isFocused ? {
                     // Focus mode: contained, centered, minimal drift
-                    opacity: [0.48 * baseOpacity, 0.68 * baseOpacity, 0.52 * baseOpacity],
+                    opacity: [0.72 * baseOpacity, 0.92 * baseOpacity, 0.76 * baseOpacity],
                     scale: [1, 1.03 * sceneProfile.motionScale, 1],
                     x: ['-0.5%', '0.5%', '0%'],
                     y: ['0%', '-0.5%', '0%'],
                 } : {
-                    opacity: [0.45 * baseOpacity, 0.72 * baseOpacity, 0.5 * baseOpacity],
+                    opacity: [0.68 * baseOpacity, 0.96 * baseOpacity, 0.72 * baseOpacity],
                     scale: [1, 1.06 * sceneProfile.motionScale, 1],
                     x: ['-2%', '2%', '-1%'],
                     y: ['0%', '-1%', '0%'],
@@ -170,18 +174,18 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     willChange: 'transform, opacity',
                 }}
                 animate={paused ? {
-                    opacity: 0.25 * baseOpacity,
+                    opacity: 0.30 * baseOpacity,
                     scale: 1,
                 } : liveAudio ? {
                     // Audio: wider pulse range, more energetic
-                    opacity: [0.28 * baseOpacity, 0.58 * baseOpacity, 0.32 * baseOpacity],
+                    opacity: [0.50 * baseOpacity, 0.84 * baseOpacity, 0.55 * baseOpacity],
                     scale: [0.90, 1.18, 0.94],
                 } : isFocused ? {
                     // Focus: strong, stable center glow — breathing slowly
-                    opacity: [0.32 * baseOpacity, 0.52 * baseOpacity, 0.34 * baseOpacity],
+                    opacity: [0.52 * baseOpacity, 0.78 * baseOpacity, 0.56 * baseOpacity],
                     scale: [0.96, 1.06, 0.98],
                 } : {
-                    opacity: [0.18 * baseOpacity, 0.42 * baseOpacity, 0.2 * baseOpacity],
+                    opacity: [0.38 * baseOpacity, 0.68 * baseOpacity, 0.42 * baseOpacity],
                     scale: [0.92, 1.12, 0.96],
                 }}
                 transition={paused ? { duration: 0.4 } : {
@@ -223,18 +227,18 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     willChange: 'transform, opacity',
                 }}
                 animate={paused ? {
-                    opacity: 0.10 * baseOpacity,
+                    opacity: 0.18 * baseOpacity,
                     scale: 1,
                 } : liveAudio ? {
                     // Audio: deep glow blooms with the music
-                    opacity: [0.14 * baseOpacity, 0.30 * baseOpacity, 0.16 * baseOpacity],
+                    opacity: [0.32 * baseOpacity, 0.58 * baseOpacity, 0.36 * baseOpacity],
                     scale: [0.92, 1.14, 0.98],
                 } : isFocused ? {
                     // Focus: warm, steady glow at center — grounding presence
-                    opacity: [0.16 * baseOpacity, 0.26 * baseOpacity, 0.18 * baseOpacity],
+                    opacity: [0.30 * baseOpacity, 0.50 * baseOpacity, 0.34 * baseOpacity],
                     scale: [0.96, 1.04, 0.98],
                 } : {
-                    opacity: [0.08 * baseOpacity, 0.18 * baseOpacity, 0.1 * baseOpacity],
+                    opacity: [0.24 * baseOpacity, 0.46 * baseOpacity, 0.28 * baseOpacity],
                     scale: [0.94, 1.08, 0.98],
                 }}
                 transition={paused ? { duration: 0.4 } : {

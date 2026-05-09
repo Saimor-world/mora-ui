@@ -626,7 +626,7 @@ export const HomeSurface: React.FC = () => {
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/56">Home</div>
-                            <h1 className="mt-2 text-[24px] font-light leading-tight tracking-[-0.02em] text-white/92">
+                            <h1 className="mt-2 text-[28px] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
                                     ? `${websiteEntryContext.companyName} · Preview`
                                     : firstName
@@ -697,10 +697,10 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </div>
 
-            <section className="absolute left-[390px] right-[660px] top-[180px] bottom-[150px] flex items-center justify-center">
-                <div className="pointer-events-auto relative w-full max-w-[650px]">
-                    <div className="absolute inset-x-[12%] top-1/2 h-52 -translate-y-1/2 rounded-full bg-emerald-300/[0.10] blur-[110px]" />
-                    <div className="relative overflow-hidden rounded-[44px] border border-emerald-200/[0.075] bg-[linear-gradient(145deg,rgba(5,22,23,0.50),rgba(2,9,11,0.12)_52%,rgba(7,34,31,0.24))] px-6 py-6 shadow-[0_36px_140px_rgba(0,0,0,0.30)] backdrop-blur-[28px]">
+            <section className="absolute left-[390px] right-[380px] xl:right-[420px] 2xl:right-[700px] top-[180px] bottom-[150px] flex items-center justify-center">
+                <div className="pointer-events-auto relative w-full max-w-[700px]">
+                    <div className="absolute inset-x-[8%] top-1/2 h-64 -translate-y-1/2 rounded-full bg-emerald-300/[0.13] blur-[120px]" />
+                    <div className="relative overflow-hidden rounded-[44px] border border-emerald-200/[0.09] bg-[linear-gradient(145deg,rgba(5,22,23,0.55),rgba(2,9,11,0.14)_52%,rgba(7,34,31,0.28))] px-8 py-7 shadow-[0_40px_160px_rgba(0,0,0,0.36)] backdrop-blur-[28px]">
                         <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-cyan-300/[0.09] blur-[72px]" />
                         <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-emerald-300/[0.08] blur-[82px]" />
 
@@ -718,7 +718,7 @@ export const HomeSurface: React.FC = () => {
                                         <BriefingStack briefings={stackBriefings} />
                                     </div>
                                 ) : (
-                                    <h2 className="mt-3 max-w-[28rem] text-[32px] font-light leading-[1.05] tracking-[-0.04em] text-white/92">
+                                    <h2 className="mt-3 max-w-[32rem] text-[40px] font-light leading-[1.04] tracking-[-0.04em] text-white/92">
                                         {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
                                             ? <>Weiter in <span style={{ color: 'rgba(52,211,153,0.92)' }}>{overlayRecentActivityItems[0].label}</span>.</>
                                             : focusTitle}
@@ -860,7 +860,7 @@ export const HomeSurface: React.FC = () => {
                                 Tageslage
                                 <span className="text-emerald-200/28">›</span>
                             </div>
-                            <div className="mt-1 text-[18px] font-light tracking-[-0.03em] text-white/82">{absenceFocusLabel}</div>
+                            <div className="mt-1 text-[22px] font-light tracking-[-0.03em] text-white/86">{absenceFocusLabel}</div>
                             <div className="mt-1 text-[11px] text-white/38">
                                 <span style={{ color: 'rgba(251,191,36,0.72)' }}>{homeSignalCount}</span>
                                 {' '}echte Signal{homeSignalCount === 1 ? '' : 'e'}
