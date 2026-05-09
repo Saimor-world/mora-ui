@@ -529,7 +529,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 if (!from || !to) return null;
 
                 const pathId = buildSemanticEdgeKey(edge.fromId, edge.toId);
-                const route = buildSoftUniverseRoute(from, to, pathId, 3.3, 0.18, 4.4, 12.5);
+                const route = buildSoftUniverseRoute(from, to, pathId, 3.3, 0.22, 5.5, 16.0);
                 const focusPeerName = focusedPlanetId
                     ? edge.fromId === focusedPlanetId
                         ? to.name
@@ -601,7 +601,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         visiblePlanets.map((planet) => {
             const metrics = departmentMetrics[planet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 };
             const loadSignal = metrics.nodes * 0.35 + metrics.folders * 1.1 + metrics.spaces * 1.4;
-            const route = buildSoftUniverseRoute(UNIVERSE_CORE_POINT, planet, `core:${planet.id}`, 4.8, 0.14, 3.2, 9.6);
+            const route = buildSoftUniverseRoute(UNIVERSE_CORE_POINT, planet, `core:${planet.id}`, 4.8, 0.18, 4.0, 12.0);
             return {
                 id: planet.id,
                 x: planet.x,
@@ -1039,20 +1039,26 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             </div>
 
             {/* 2. ORBITAL SVG (Connection Field) */}
-            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ willChange: 'transform', transform: 'translateZ(0)' }}>
                 <defs>
-                    <filter id="silkGlow">
-                        <feGaussianBlur stdDeviation="0.18" result="blur" />
+                    {/* Deep-space diffuse glow — wider spread, fainter */}
+                    <filter id="silkGlow" x="-30%" y="-30%" width="160%" height="160%">
+                        <feGaussianBlur stdDeviation="0.55" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                    {/* Tight accent glow for focused/active lines */}
+                    <filter id="accentGlow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="0.28" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                     <linearGradient id="coreBeam" x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stopColor="rgba(125,211,252,0)" />
-                        <stop offset="30%" stopColor="rgba(125,211,252,0.26)" />
-                        <stop offset="56%" stopColor="rgba(196,181,253,0.19)" />
+                        <stop offset="30%" stopColor="rgba(125,211,252,0.32)" />
+                        <stop offset="56%" stopColor="rgba(196,181,253,0.24)" />
                         <stop offset="100%" stopColor="rgba(125,211,252,0)" />
                     </linearGradient>
-                    <filter id="beamGlow">
-                        <feGaussianBlur stdDeviation="0.62" result="blur" />
+                    <filter id="beamGlow" x="-40%" y="-40%" width="180%" height="180%">
+                        <feGaussianBlur stdDeviation="0.75" result="blur" />
                         <feComposite in="SourceGraphic" in2="blur" operator="over" />
                     </filter>
                 </defs>
@@ -1066,15 +1072,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         d={connection.d}
                         fill="none"
                         stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.11 + connection.intensity * 0.11 : 0.045 + connection.intensity * 0.05}
+                        strokeWidth={connection.highlighted ? 0.14 + connection.intensity * 0.12 : 0.06 + connection.intensity * 0.06}
                         strokeLinecap="round"
                         filter="url(#beamGlow)"
                         initial={{ pathLength: 0, opacity: 0 }}
                         animate={{
                             pathLength: 1,
                             opacity: isHomeUniversePreview
-                                ? (connection.highlighted ? 0.13 : 0.035 + connection.intensity * 0.018)
-                                : (connection.highlighted ? 0.20 : 0.045 + connection.intensity * 0.025)
+                                ? (connection.highlighted ? 0.18 : 0.055 + connection.intensity * 0.025)
+                                : (connection.highlighted ? 0.28 : 0.07 + connection.intensity * 0.035)
                         }}
                         transition={{
                             pathLength: { duration: 0.82, ease: "easeOut" },
@@ -1091,62 +1097,60 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const baseOpacity = isHomeUniversePreview
                         ? (
                             path.highlighted || isPreviewedPath
-                                ? 0.30
+                                ? 0.42
                                 : isFocusedPath
-                                    ? 0.10
+                                    ? 0.16
                                     : 0
                         )
                         : (
                             path.highlighted || isPreviewedPath
-                                ? 0.38
+                                ? 0.52
                                 : isFocusedPath
-                                    ? 0.14
-                                    : Math.max(0.025, 0.018 + path.strength * 0.045)
+                                    ? 0.20
+                                    : Math.max(0.055, 0.04 + path.strength * 0.065)
                         );
+
+                    const isActive = path.highlighted || isFocusedPath;
 
                     return (
                         <g key={path.id}>
+                            {/* Wide diffuse glow layer — deeper-space feel */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.16 + path.strength * 0.13}
+                                strokeWidth={0.22 + path.strength * 0.16}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.18,
+                                    opacity: baseOpacity * 0.28,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
-                                    opacity: { duration: 0.35, ease: "easeOut" }
+                                    opacity: { duration: 0.5, ease: "easeOut" }
                                 }}
-                                filter="url(#beamGlow)"
+                                filter="url(#silkGlow)"
                             />
+                            {/* Core line — no infinite loop for FPS */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.045 + path.strength * 0.075}
+                                strokeWidth={0.055 + path.strength * 0.085}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
-                                animate={path.highlighted || isFocusedPath ? {
-                                    pathLength: 1,
-                                    opacity: [baseOpacity * 0.5, baseOpacity, baseOpacity * 0.5],
-                                } : {
+                                animate={{
                                     pathLength: 1,
                                     opacity: baseOpacity,
                                 }}
-                                transition={path.highlighted || isFocusedPath ? {
+                                transition={{
                                     pathLength: { duration: 1.8, ease: "easeInOut" },
-                                    opacity: { duration: 3, repeat: Infinity, ease: "easeInOut" },
-                                } : {
-                                    pathLength: { duration: 1.8, ease: "easeInOut" },
-                                    opacity: { duration: 0.35, ease: "easeOut" }
+                                    opacity: { duration: 0.4, ease: "easeOut" }
                                 }}
-                                filter="url(#silkGlow)"
+                                filter={isActive ? "url(#accentGlow)" : "url(#silkGlow)"}
                             />
                         </g>
                     );

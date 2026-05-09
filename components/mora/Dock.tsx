@@ -1287,26 +1287,27 @@ export const Dock = () => {
                         border: '1px solid #E1E1E1',
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
-                        background: 'linear-gradient(180deg, rgba(8, 20, 17, 0.68) 0%, rgba(4, 10, 10, 0.78) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.11)',
-                        boxShadow: `0 -6px 28px rgba(16, 185, 129, 0.07), 0 14px 40px rgba(0, 0, 0, 0.58), 0 0 58px ${accent}10, inset 0 1px 0 rgba(255,255,255,0.03)`,
+                        background: 'linear-gradient(180deg, rgba(10, 24, 20, 0.82) 0%, rgba(5, 13, 12, 0.90) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.22)',
+                        boxShadow: `0 -6px 28px rgba(16, 185, 129, 0.09), 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 58px ${accent}14, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                        willChange: 'transform',
                     }}
                 >
                     {/* TOP GLOW LINE - Premium animated */}
                     {!isStandardMode && (
                         <>
-                            {/* Subtle white separation line — the first visual layer */}
+                            {/* White separation line — always visible */}
                             <div
                                 className="absolute inset-x-0 top-0 h-[1px] rounded-full pointer-events-none"
-                                style={{ background: 'rgba(255,255,255,0.06)' }}
+                                style={{ background: 'rgba(255,255,255,0.10)' }}
                             />
                             <div
                                 className="dock-glow-line absolute inset-x-0 top-0 h-[2px] rounded-full"
-                                style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}70, transparent 90%)` }}
+                                style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}80, transparent 90%)` }}
                             />
                             {/* Corner accents */}
-                            <div className="absolute top-0 left-6 w-12 h-[2px] bg-gradient-to-r from-emerald-400/60 to-transparent rounded-full" />
-                            <div className="absolute top-0 right-6 w-12 h-[2px] bg-gradient-to-l from-emerald-400/60 to-transparent rounded-full" />
+                            <div className="absolute top-0 left-6 w-12 h-[2px] bg-gradient-to-r from-emerald-400/70 to-transparent rounded-full" />
+                            <div className="absolute top-0 right-6 w-12 h-[2px] bg-gradient-to-l from-emerald-400/70 to-transparent rounded-full" />
                         </>
                     )}
 

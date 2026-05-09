@@ -775,7 +775,7 @@ export const MoraShell: React.FC = () => {
             {/* Deep Void Foundation + Living Background */}
             <div className="fixed inset-0 bg-black z-[-10]" />
             <MoraLivingBackground />
-            <TemporalAtmosphere />
+            <TemporalAtmosphere paused={pauseHeavyBackground} />
 
             {/* Background Layers */}
             {!isUniverseExploreSurface && <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />}

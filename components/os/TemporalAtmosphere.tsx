@@ -75,7 +75,7 @@ const SCENE_PROFILES: Record<RitualSceneId, {
     },
 };
 
-export const TemporalAtmosphere: React.FC = () => {
+export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = false }) => {
     const orbState = useOrbStore((state) => state.orbState);
     const viewLevel = useNavStore((state) => state.viewLevel);
     const isStandardMode = useNavStore((state) => state.isStandardMode);
@@ -101,19 +101,26 @@ export const TemporalAtmosphere: React.FC = () => {
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[-8] overflow-hidden">
+            {/* Layer 1: Band + scene haze — slow drift */}
             <motion.div
                 className="absolute inset-0"
                 style={{
                     background: `${BAND_BACKGROUNDS[timeBand]}, ${sceneProfile.haze}, radial-gradient(circle at 28% 78%, ${sceneDefinition.accent} 0%, transparent 36%), radial-gradient(circle at 84% 22%, ${sceneDefinition.aura} 0%, transparent 32%)`,
                     mixBlendMode: 'screen',
+                    willChange: 'transform, opacity',
                 }}
-                animate={{
+                animate={paused ? {
+                    opacity: 0.50 * baseOpacity,
+                    scale: 1,
+                    x: '0%',
+                    y: '0%',
+                } : {
                     opacity: [0.45 * baseOpacity, 0.72 * baseOpacity, 0.5 * baseOpacity],
                     scale: [1, 1.06 * sceneProfile.motionScale, 1],
                     x: ['-2%', '2%', '-1%'],
                     y: ['0%', '-1%', '0%'],
                 }}
-                transition={{
+                transition={paused ? { duration: 0.4 } : {
                     duration: 24,
                     repeat: Infinity,
                     ease: 'easeInOut',
@@ -121,24 +128,30 @@ export const TemporalAtmosphere: React.FC = () => {
                 }}
             />
 
+            {/* Layer 2: Orb accent pulse */}
             <motion.div
                 className="absolute inset-0"
                 style={{
                     background: `radial-gradient(circle at 50% 50%, ${orbAccent} 0%, transparent 44%)`,
                     filter: 'blur(24px)',
                     mixBlendMode: 'screen',
+                    willChange: 'transform, opacity',
                 }}
-                animate={{
+                animate={paused ? {
+                    opacity: 0.25 * baseOpacity,
+                    scale: 1,
+                } : {
                     opacity: [0.18 * baseOpacity, 0.42 * baseOpacity, 0.2 * baseOpacity],
                     scale: [0.92, 1.12, 0.96],
                 }}
-                transition={{
+                transition={paused ? { duration: 0.4 } : {
                     duration: orbState === 'alert' ? 6 : 14,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
             />
 
+            {/* Layer 3: Grid texture drift */}
             <motion.div
                 className="absolute inset-0"
                 style={{
@@ -147,30 +160,36 @@ export const TemporalAtmosphere: React.FC = () => {
                     WebkitMaskImage: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.8) 22%, rgba(255,255,255,0.5) 78%, transparent)',
                     opacity: viewLevel === 'core' ? sceneProfile.grainOpacity : sceneProfile.grainOpacity * 0.7,
                     mixBlendMode: 'overlay',
+                    willChange: paused ? 'auto' : 'transform, opacity',
                 }}
-                animate={{
+                animate={paused ? { x: '0%', opacity: 0.10 } : {
                     x: ['0%', '1.5%', '0%'],
                     opacity: [0.08, 0.16, 0.08],
                 }}
-                transition={{
+                transition={paused ? { duration: 0.4 } : {
                     duration: 18,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
             />
 
+            {/* Layer 4: Deep scene orb glow */}
             <motion.div
                 className="absolute inset-0"
                 style={{
                     background: `radial-gradient(circle at 50% 56%, ${sceneProfile.orbAccent} 0%, transparent 52%)`,
                     filter: 'blur(70px)',
                     mixBlendMode: 'screen',
+                    willChange: 'transform, opacity',
                 }}
-                animate={{
+                animate={paused ? {
+                    opacity: 0.10 * baseOpacity,
+                    scale: 1,
+                } : {
                     opacity: [0.08 * baseOpacity, 0.18 * baseOpacity, 0.1 * baseOpacity],
                     scale: [0.94, 1.08, 0.98],
                 }}
-                transition={{
+                transition={paused ? { duration: 0.4 } : {
                     duration: 20,
                     repeat: Infinity,
                     ease: 'easeInOut',
