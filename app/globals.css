@@ -638,6 +638,18 @@
   textarea,
   select {
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: hsl(var(--input));
+    color: hsl(var(--foreground));
+  }
+
+  /* Chrome Autofill override — verhindert weißen Hintergrund bei gespeicherten Passwörtern */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 50px hsl(var(--input)) inset !important;
+    -webkit-text-fill-color: hsl(var(--foreground)) !important;
+    caret-color: hsl(var(--foreground));
   }
 
   /* Custom Scrollbars - Dark Theme Compatible */
