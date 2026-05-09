@@ -85,7 +85,7 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
     },
     version: {
         description: "Version anzeigen",
-        handler: async () => "MORA OS v2.0.0-beta | Core Terminal | Build: 2026.03",
+        handler: async () => "SAIMÔR OS v1.0-beta | Core Terminal | Build: 2026.05",
     },
     whoami: {
         description: "Angemeldete Rolle und Nutzer anzeigen",
