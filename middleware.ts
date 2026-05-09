@@ -12,8 +12,9 @@ import { getToken } from "next-auth/jwt";
 const PUBLIC_PATHS = [
     "/",
     "/login",
-    "/entry",  // Website entry preview — React app gates real data via useAuthBootstrapper
-    "/home",   // Website entry preview — needs to render so localStorage bridge works
+    "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
+    "/home",           // Website entry preview — needs to render so localStorage bridge works
+    "/reset-password", // Token-based password reset — unauthenticated by design
 ];
 
 const PUBLIC_PREFIXES = [
