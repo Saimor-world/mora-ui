@@ -11,7 +11,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { authLogout, coreGet, getCoreBaseUrl } from '@/lib/api/coreClient';
+import { authLogout, coreGet, corePost, getCoreBaseUrl } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier, formatAbsenceText, touchSessionActivity, type SessionTier } from '@/lib/auth/sessionLifecycle';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
@@ -54,7 +54,7 @@ const getCoreUrl = () => getCoreBaseUrl();
  * - Real backend authentication
  */
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated }) => {
-    const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select'>('welcome');
+    const [mode, setMode] = useState<'welcome' | 'login' | 'register' | 'role-select' | 'forgot-password' | 'forgot-success'>('welcome');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [inviteCode, setInviteCode] = useState('');
@@ -66,6 +66,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [sessionTier, setSessionTier] = useState<SessionTier | null>(null);
     const [tokenValid, setTokenValid] = useState<boolean | null>(null); // null = not checked yet
     const [reAuthPassword, setReAuthPassword] = useState('');
+    const [forgotEmail, setForgotEmail] = useState('');
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
     const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
@@ -126,6 +127,23 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             toast.info("Sitzung wurde vollständig bereinigt");
         }
     }, []);
+
+    const handleForgotPassword = async () => {
+        if (!forgotEmail.trim()) {
+            toast.error('Bitte E-Mail-Adresse eingeben.');
+            return;
+        }
+        setIsLoading(true);
+        try {
+            await corePost('/v3/auth/forgot-password', { email: forgotEmail.trim() }, { skipAuth: true });
+            setMode('forgot-success');
+        } catch {
+            // Always show success to avoid account enumeration
+            setMode('forgot-success');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
         try {
@@ -1236,6 +1254,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
                                         <button
                                             onClick={() => {
+                                                setForgotEmail(email);
+                                                setMode('forgot-password');
+                                            }}
+                                            className="w-full py-2 text-xs text-emerald-500/40 hover:text-emerald-400/80 transition-colors tracking-wider"
+                                        >
+                                            Passwort vergessen?
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
                                                 setEmail('');
                                                 setPassword('');
                                                 setMode('welcome');
@@ -1396,6 +1424,99 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         </button>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+                {/* Forgot Password Form */}
+                {mode === 'forgot-password' && (
+                    <motion.div
+                        key="forgot-password"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="relative z-10 w-full max-w-md px-6"
+                    >
+                        <div className="relative group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-transparent to-emerald-500/5 rounded-2xl blur-2xl opacity-60" />
+                            <div className="relative bg-[#050d0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-[0_8px_32px_0_rgba(16,185,129,0.15)]">
+                                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-transparent rounded-2xl pointer-events-none" />
+                                <div className="relative z-10">
+                                    <h2 className="text-2xl font-extralight tracking-[0.2em] text-emerald-50 mb-3 text-center uppercase">
+                                        PASSWORT RESET
+                                    </h2>
+                                    <p className="text-xs text-emerald-500/50 text-center mb-8 leading-relaxed tracking-wide">
+                                        Gib deine E-Mail-Adresse ein. Falls ein Konto existiert, erhältst du einen Reset-Link.
+                                    </p>
+                                    <div className="space-y-5">
+                                        <div>
+                                            <label className="block text-[10px] text-emerald-500/60 mb-2.5 uppercase tracking-widest font-medium">
+                                                E-Mail
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={forgotEmail}
+                                                onChange={(e) => setForgotEmail(e.target.value)}
+                                                onKeyDown={(e) => e.key === 'Enter' && void handleForgotPassword()}
+                                                autoFocus
+                                                className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
+                                                placeholder="name@firma.de"
+                                            />
+                                        </div>
+                                        <motion.button
+                                            onClick={() => void handleForgotPassword()}
+                                            disabled={isLoading}
+                                            whileHover={{ scale: isLoading ? 1 : 1.02 }}
+                                            whileTap={{ scale: isLoading ? 1 : 0.98 }}
+                                            className="w-full mt-2 py-3.5 bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 hover:from-emerald-500/30 hover:to-emerald-500/20 border border-emerald-500/40 hover:border-emerald-500/60 rounded-xl text-emerald-100 font-medium tracking-wide transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {isLoading ? 'Sende...' : 'Reset-Link anfordern'}
+                                        </motion.button>
+                                        <button
+                                            onClick={() => setMode('login')}
+                                            className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
+                                        >
+                                            {'← Zurück zum Login'}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Forgot Password Success */}
+                {mode === 'forgot-success' && (
+                    <motion.div
+                        key="forgot-success"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="relative z-10 w-full max-w-md px-6"
+                    >
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/15 via-transparent to-emerald-500/5 rounded-2xl blur-2xl opacity-60" />
+                            <div className="relative bg-[#050d0a]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-[0_8px_32px_0_rgba(16,185,129,0.15)] text-center">
+                                <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto mb-6">
+                                    <svg className="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                                    </svg>
+                                </div>
+                                <h2 className="text-lg font-light tracking-widest text-emerald-50 mb-3 uppercase">
+                                    E-Mail Gesendet
+                                </h2>
+                                <p className="text-xs text-emerald-500/60 leading-relaxed mb-8 max-w-xs mx-auto">
+                                    Falls diese E-Mail-Adresse mit einem Konto verknüpft ist, wurde ein Reset-Link gesendet. Bitte prüfe deinen Posteingang.
+                                </p>
+                                <button
+                                    onClick={() => {
+                                        setForgotEmail('');
+                                        setMode('login');
+                                    }}
+                                    className="text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
+                                >
+                                    {'← Zurück zum Login'}
+                                </button>
                             </div>
                         </div>
                     </motion.div>
