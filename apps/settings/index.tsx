@@ -12,7 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Lock } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
-import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost } from '@/lib/api/coreClient';
+import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
 import { isAdmin, roleLabel } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
@@ -191,6 +191,19 @@ export default function SettingsApp({ paneId }: AppProps) {
     const [brandingName, setBrandingName] = useState('');
     const [brandingLogo, setBrandingLogo] = useState<string | null>(null);
     const [brandingSaving, setBrandingSaving] = useState(false);
+
+    // SMTP status — only fetched for system_owner
+    const [smtpStatus, setSmtpStatus] = useState<{
+        configured: boolean;
+        smtp_host: string | null;
+        smtp_port: number;
+        smtp_from: string;
+        smtp_tls: boolean;
+        smtp_user_set: boolean;
+        smtp_pass_set: boolean;
+    } | null>(null);
+    const [smtpLoading, setSmtpLoading] = useState(false);
+    const [smtpTesting, setSmtpTesting] = useState(false);
     const userSettings = useMemo(() => (user?.settings ?? {}) as Record<string, unknown>, [user?.settings]);
 
         const activeCompany = useMemo(() => safeCompanies.find(c => c.id === activeCompanyId) || null, [safeCompanies, activeCompanyId]);
@@ -297,6 +310,31 @@ useEffect(() => {
             isMounted = false;
         };
     }, []);
+
+    // Load SMTP status when system tab opens (system_owner only)
+    useEffect(() => {
+        if (activeTab !== 'system' || user?.role !== 'system_owner' || smtpStatus !== null || smtpLoading) return;
+        let cancelled = false;
+        setSmtpLoading(true);
+        coreGet('/v3/system/smtp/status', { isOptional: true })
+            .then((data: any) => { if (!cancelled && data) setSmtpStatus(data); })
+            .catch(() => {})
+            .finally(() => { if (!cancelled) setSmtpLoading(false); });
+        return () => { cancelled = true; };
+    }, [activeTab, user?.role, smtpStatus, smtpLoading]);
+
+    const handleSmtpTest = async () => {
+        setSmtpTesting(true);
+        try {
+            await corePost('/v3/system/smtp/test', {});
+            toast.success('Testmail versandt — bitte Posteingang prüfen.');
+        } catch (err: any) {
+            const msg = err?.detail || err?.message || 'Testmail fehlgeschlagen.';
+            toast.error(msg);
+        } finally {
+            setSmtpTesting(false);
+        }
+    };
 
     const saveSetting = (updates: Record<string, any>) => {
         try {
@@ -1553,6 +1591,74 @@ useEffect(() => {
                                     <span className="text-xs text-white/50 font-mono">{getCoreBaseUrl()}</span>
                                 </div>
                             </div>
+
+                            {/* SMTP outbound status — system_owner only */}
+                            {user?.role === 'system_owner' && (
+                                <div className="pt-4 border-t border-white/5 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <h4 className="text-xs font-medium text-white/40 uppercase tracking-wider">E-Mail (SMTP)</h4>
+                                        {smtpStatus && (
+                                            <button
+                                                onClick={handleSmtpTest}
+                                                disabled={smtpTesting || !smtpStatus.configured}
+                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/15 border border-emerald-500/25 text-emerald-300 text-xs hover:bg-emerald-500/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                {smtpTesting ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                                                Testmail senden
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {smtpLoading && (
+                                        <div className="flex items-center gap-2 text-sm text-white/40">
+                                            <Loader2 size={14} className="animate-spin" />
+                                            Lade SMTP-Status…
+                                        </div>
+                                    )}
+
+                                    {smtpStatus && smtpStatus.configured && (
+                                        <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4 space-y-2">
+                                            <div className="flex items-center gap-2 text-sm font-medium text-emerald-300">
+                                                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                                                SMTP konfiguriert
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-white/50 font-mono mt-2">
+                                                <span className="text-white/30">Host</span>
+                                                <span>{smtpStatus.smtp_host}:{smtpStatus.smtp_port}</span>
+                                                <span className="text-white/30">Von</span>
+                                                <span>{smtpStatus.smtp_from}</span>
+                                                <span className="text-white/30">TLS</span>
+                                                <span>{smtpStatus.smtp_tls ? 'aktiv' : 'aus'}</span>
+                                                <span className="text-white/30">Benutzername</span>
+                                                <span>{smtpStatus.smtp_user_set ? '••••••••' : '—'}</span>
+                                                <span className="text-white/30">Passwort</span>
+                                                <span>{smtpStatus.smtp_pass_set ? '••••••••' : '—'}</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {smtpStatus && !smtpStatus.configured && (
+                                        <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.05] p-4 space-y-3">
+                                            <div className="flex items-center gap-2 text-sm text-amber-300">
+                                                <div className="w-2 h-2 rounded-full bg-amber-400" />
+                                                SMTP nicht konfiguriert — Passwort-Reset-Mails werden nicht versandt
+                                            </div>
+                                            <p className="text-xs text-white/45 leading-relaxed">
+                                                Füge folgende Variablen in die <span className="font-mono text-white/60">.env</span> Datei des Servers ein und starte Core neu:
+                                            </p>
+                                            <pre className="text-[10px] text-emerald-300/80 bg-black/30 border border-white/10 rounded-lg px-3 py-2 overflow-x-auto leading-relaxed">{`SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=deine@email.com
+SMTP_PASS=dein-app-passwort
+SMTP_FROM=noreply@saimor.world
+SMTP_TLS=true`}</pre>
+                                            <p className="text-[10px] text-white/30 leading-relaxed">
+                                                Für Gmail: Aktiviere 2-Faktor-Auth und erstelle ein App-Passwort unter myaccount.google.com/apppasswords.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 
