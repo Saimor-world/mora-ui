@@ -11,6 +11,10 @@ import {
     resolveRitualSettings,
     type RitualSceneId,
 } from '@/lib/os/ritualMode';
+import {
+    AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT,
+    resolveAmbientAudioSettings,
+} from '@/lib/audio/ambientAudio';
 
 type TimeBand = 'morning' | 'day' | 'evening' | 'night';
 
@@ -81,10 +85,21 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     const isStandardMode = useNavStore((state) => state.isStandardMode);
     const userSettings = useSessionStore((state) => state.user?.settings);
     const [now, setNow] = useState(() => new Date());
+    // Reactive ambient audio state — updates when user toggles audio in settings
+    const [audioActive, setAudioActive] = useState(() => {
+        if (typeof window === 'undefined') return false;
+        return resolveAmbientAudioSettings().enabled;
+    });
 
     useEffect(() => {
         const timer = window.setInterval(() => setNow(new Date()), 60000);
         return () => window.clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const handleAudioUpdate = () => setAudioActive(resolveAmbientAudioSettings().enabled);
+        window.addEventListener(AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT, handleAudioUpdate);
+        return () => window.removeEventListener(AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT, handleAudioUpdate);
     }, []);
 
     const timeBand = useMemo(() => getTimeBand(now), [now]);
@@ -94,6 +109,8 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     const sceneDefinition = RITUAL_SCENES[ritualSceneId];
     const baseOpacity = viewLevel === 'core' ? 1 : viewLevel === 'space' ? 0.7 : 0.62;
     const orbAccent = ORB_ACCENTS[orbState] || sceneProfile.orbAccent || ORB_ACCENTS.idle;
+    // Amplify atmosphere when ambient audio is playing (not paused)
+    const liveAudio = audioActive && !paused;
 
     if (isStandardMode) {
         return null;
@@ -101,7 +118,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[-8] overflow-hidden">
-            {/* Layer 1: Band + scene haze — slow drift */}
+            {/* Layer 1: Band + scene haze — slow drift, amplified when audio is on */}
             <motion.div
                 className="absolute inset-0"
                 style={{
@@ -114,6 +131,11 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     scale: 1,
                     x: '0%',
                     y: '0%',
+                } : liveAudio ? {
+                    opacity: [0.55 * baseOpacity, 0.88 * baseOpacity, 0.62 * baseOpacity],
+                    scale: [1, 1.10 * sceneProfile.motionScale, 1],
+                    x: ['-3%', '3%', '-1.5%'],
+                    y: ['0%', '-2%', '0%'],
                 } : {
                     opacity: [0.45 * baseOpacity, 0.72 * baseOpacity, 0.5 * baseOpacity],
                     scale: [1, 1.06 * sceneProfile.motionScale, 1],
@@ -121,14 +143,14 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     y: ['0%', '-1%', '0%'],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: 24,
+                    duration: liveAudio ? 18 : 24,
                     repeat: Infinity,
                     ease: 'easeInOut',
                     times: [0, 0.55, 1],
                 }}
             />
 
-            {/* Layer 2: Orb accent pulse */}
+            {/* Layer 2: Orb accent pulse — richer beat when audio active */}
             <motion.div
                 className="absolute inset-0"
                 style={{
@@ -140,18 +162,21 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                 animate={paused ? {
                     opacity: 0.25 * baseOpacity,
                     scale: 1,
+                } : liveAudio ? {
+                    opacity: [0.28 * baseOpacity, 0.58 * baseOpacity, 0.32 * baseOpacity],
+                    scale: [0.90, 1.18, 0.94],
                 } : {
                     opacity: [0.18 * baseOpacity, 0.42 * baseOpacity, 0.2 * baseOpacity],
                     scale: [0.92, 1.12, 0.96],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: orbState === 'alert' ? 6 : 14,
+                    duration: orbState === 'alert' ? 6 : liveAudio ? 10 : 14,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
             />
 
-            {/* Layer 3: Grid texture drift */}
+            {/* Layer 3: Grid texture drift — unchanged, serves as structure */}
             <motion.div
                 className="absolute inset-0"
                 style={{
@@ -173,7 +198,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                 }}
             />
 
-            {/* Layer 4: Deep scene orb glow */}
+            {/* Layer 4: Deep scene orb glow — blooms wider with audio */}
             <motion.div
                 className="absolute inset-0"
                 style={{
@@ -185,12 +210,15 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                 animate={paused ? {
                     opacity: 0.10 * baseOpacity,
                     scale: 1,
+                } : liveAudio ? {
+                    opacity: [0.14 * baseOpacity, 0.30 * baseOpacity, 0.16 * baseOpacity],
+                    scale: [0.92, 1.14, 0.98],
                 } : {
                     opacity: [0.08 * baseOpacity, 0.18 * baseOpacity, 0.1 * baseOpacity],
                     scale: [0.94, 1.08, 0.98],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: 20,
+                    duration: liveAudio ? 15 : 20,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
