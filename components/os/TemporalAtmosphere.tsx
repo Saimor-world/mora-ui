@@ -111,6 +111,9 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     const orbAccent = ORB_ACCENTS[orbState] || sceneProfile.orbAccent || ORB_ACCENTS.idle;
     // Amplify atmosphere when ambient audio is playing (not paused)
     const liveAudio = audioActive && !paused;
+    // Focus mode: orb is in 'focus' state (e.g. during guided work session)
+    // Reduces peripheral drift, increases center presence — intentional & contained
+    const isFocused = orbState === 'focus' && !paused;
 
     if (isStandardMode) {
         return null;
@@ -132,10 +135,17 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     x: '0%',
                     y: '0%',
                 } : liveAudio ? {
+                    // Audio on: wider drift, more vivid
                     opacity: [0.55 * baseOpacity, 0.88 * baseOpacity, 0.62 * baseOpacity],
                     scale: [1, 1.10 * sceneProfile.motionScale, 1],
                     x: ['-3%', '3%', '-1.5%'],
                     y: ['0%', '-2%', '0%'],
+                } : isFocused ? {
+                    // Focus mode: contained, centered, minimal drift
+                    opacity: [0.48 * baseOpacity, 0.68 * baseOpacity, 0.52 * baseOpacity],
+                    scale: [1, 1.03 * sceneProfile.motionScale, 1],
+                    x: ['-0.5%', '0.5%', '0%'],
+                    y: ['0%', '-0.5%', '0%'],
                 } : {
                     opacity: [0.45 * baseOpacity, 0.72 * baseOpacity, 0.5 * baseOpacity],
                     scale: [1, 1.06 * sceneProfile.motionScale, 1],
@@ -143,7 +153,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     y: ['0%', '-1%', '0%'],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: liveAudio ? 18 : 24,
+                    duration: liveAudio ? 18 : isFocused ? 30 : 24,
                     repeat: Infinity,
                     ease: 'easeInOut',
                     times: [0, 0.55, 1],
@@ -163,14 +173,19 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     opacity: 0.25 * baseOpacity,
                     scale: 1,
                 } : liveAudio ? {
+                    // Audio: wider pulse range, more energetic
                     opacity: [0.28 * baseOpacity, 0.58 * baseOpacity, 0.32 * baseOpacity],
                     scale: [0.90, 1.18, 0.94],
+                } : isFocused ? {
+                    // Focus: strong, stable center glow — breathing slowly
+                    opacity: [0.32 * baseOpacity, 0.52 * baseOpacity, 0.34 * baseOpacity],
+                    scale: [0.96, 1.06, 0.98],
                 } : {
                     opacity: [0.18 * baseOpacity, 0.42 * baseOpacity, 0.2 * baseOpacity],
                     scale: [0.92, 1.12, 0.96],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: orbState === 'alert' ? 6 : liveAudio ? 10 : 14,
+                    duration: orbState === 'alert' ? 6 : liveAudio ? 10 : isFocused ? 8 : 14,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
@@ -211,14 +226,19 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     opacity: 0.10 * baseOpacity,
                     scale: 1,
                 } : liveAudio ? {
+                    // Audio: deep glow blooms with the music
                     opacity: [0.14 * baseOpacity, 0.30 * baseOpacity, 0.16 * baseOpacity],
                     scale: [0.92, 1.14, 0.98],
+                } : isFocused ? {
+                    // Focus: warm, steady glow at center — grounding presence
+                    opacity: [0.16 * baseOpacity, 0.26 * baseOpacity, 0.18 * baseOpacity],
+                    scale: [0.96, 1.04, 0.98],
                 } : {
                     opacity: [0.08 * baseOpacity, 0.18 * baseOpacity, 0.1 * baseOpacity],
                     scale: [0.94, 1.08, 0.98],
                 }}
                 transition={paused ? { duration: 0.4 } : {
-                    duration: liveAudio ? 15 : 20,
+                    duration: liveAudio ? 15 : isFocused ? 12 : 20,
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
