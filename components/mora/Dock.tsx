@@ -237,15 +237,24 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
             </button>
 
             <div className="flex items-end gap-1 px-1">
-                {[10, 18, 12, 20, 14].map((height, index) => (
-                    <span
-                        key={`${height}-${index}`}
-                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'} ${isPlaying ? 'animate-pulse' : 'opacity-30'}`}
-                        style={{
-                            height,
-                            animationDelay: `${index * 0.1}s`,
-                            animationDuration: `${1 + index * 0.08}s`,
+                {[10, 18, 12, 20, 14].map((baseH, index) => (
+                    <motion.span
+                        key={`bar-${index}`}
+                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'}`}
+                        animate={isPlaying ? {
+                            height: [baseH * 0.35, baseH * 1.5, baseH * 0.55, baseH * 1.3, baseH * 0.35],
+                            opacity: [0.6, 1, 0.75, 1, 0.6],
+                        } : {
+                            height: Math.max(3, baseH * 0.28),
+                            opacity: 0.25,
                         }}
+                        transition={isPlaying ? {
+                            duration: 0.72 + index * 0.11,
+                            repeat: Infinity,
+                            ease: 'easeInOut',
+                            delay: index * 0.09,
+                        } : { duration: 0.3 }}
+                        style={{ height: baseH }}
                     />
                 ))}
             </div>
@@ -1342,21 +1351,6 @@ export const Dock = () => {
                             )}
                         />
                         {!websiteEntryContext && <AdminModeSwitcher />}
-                        <button
-                            onClick={() => openPane({
-                                id: 'meine-dateien',
-                                type: 'meine-dateien',
-                                title: 'Privater Bereich',
-                                size: { width: 920, height: 720 },
-                            })}
-                            title="Privater Bereich"
-                            aria-label="Privaten Bereich öffnen"
-                            data-interaction-sound="soft"
-                            className="hidden"
-                        >
-                            <FolderHeart size={18} />
-                            <span className="hidden 2xl:inline text-[11px] uppercase tracking-[0.16em]">Privat</span>
-                        </button>
                     </DockPod>
 
                     <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
