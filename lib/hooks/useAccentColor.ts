@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useWebsiteEntryContext } from './useWebsiteEntryContext';
+import { deriveColorFromText } from '@/lib/utils/colorDerivation';
 
 // Default accent colors
 export const ACCENT_COLORS = {
@@ -29,7 +31,15 @@ const DEFAULT_COLOR = ACCENT_COLORS.emerald;
  * - Company branding
  */
 export function useAccentColor() {
-    const [accentColor, setAccentColorState] = useState<string>(DEFAULT_COLOR);
+    const [storedAccentColor, setAccentColorState] = useState<string>(DEFAULT_COLOR);
+    const websiteContext = useWebsiteEntryContext();
+
+    const accentColor = useMemo(() => {
+        if (websiteContext?.companyName) {
+            return deriveColorFromText(websiteContext.companyName);
+        }
+        return storedAccentColor;
+    }, [websiteContext?.companyName, storedAccentColor]);
 
     // Load initial value
     useEffect(() => {

@@ -16,6 +16,9 @@ import {
     resolveAmbientAudioSettings,
 } from '@/lib/audio/ambientAudio';
 
+import { useAccentColor } from '@/lib/hooks/useAccentColor';
+import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
+
 type TimeBand = 'morning' | 'day' | 'evening' | 'night';
 
 const getTimeBand = (date: Date): TimeBand => {
@@ -119,13 +122,38 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     // Reduces peripheral drift, increases center presence — intentional & contained
     const isFocused = orbState === 'focus' && !paused;
 
+    const { accentColor } = useAccentColor();
+    const websiteContext = useWebsiteEntryContext();
+
     if (isStandardMode) {
         return null;
     }
 
     return (
         <div className="pointer-events-none fixed inset-0 z-[-8] overflow-hidden">
-            {/* Layer 1: Band + scene haze — slow drift, amplified when audio is on */}
+            {/* Layer 0: Dynamic Lead Context Aura (Proactive Adaptive Theming) */}
+            {websiteContext && (
+                <motion.div
+                    className="absolute inset-0 z-[-9]"
+                    style={{
+                        background: `radial-gradient(circle at 15% 85%, ${accentColor}26 0%, transparent 45%), radial-gradient(circle at 85% 15%, ${accentColor}14 0%, transparent 35%)`,
+                        mixBlendMode: 'screen',
+                        willChange: 'opacity, transform',
+                    }}
+                    animate={{
+                        opacity: websiteContext.score !== undefined && websiteContext.score < 50 ? [0.4, 0.8, 0.4] : [0.4, 0.6, 0.4],
+                        scale: [1, 1.04, 1],
+                    }}
+                    transition={{
+                        duration: 12,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                    }}
+                />
+            )}
+
+            {/* Layer 1: Band + scene haze â€” slow drift, amplified when audio is on */}
+
             <motion.div
                 className="absolute inset-0"
                 style={{

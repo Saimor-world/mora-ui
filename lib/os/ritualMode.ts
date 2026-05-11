@@ -48,9 +48,9 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         label: 'Build',
         shortLabel: 'Build',
         description: 'Klarer Kontrast für Umsetzung, Struktur und schnelle Entscheidungen.',
-        accent: 'rgba(56,189,248,0.34)',
-        aura: 'rgba(251,191,36,0.18)',
-        audioGain: 1,
+        accent: 'rgba(56,189,248,0.40)',
+        aura: 'rgba(251,191,36,0.22)',
+        audioGain: 1.05,
     },
     lounge: {
         id: 'lounge',

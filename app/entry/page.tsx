@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowRight, Bot, Building2, ClipboardList, FileText, Gauge, Home, ShieldCheck } from 'lucide-react';
 import { buildWebsiteEntryContext, firstQueryValue, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { WebsiteEntryPersistence } from '@/components/entry/WebsiteEntryPersistence';
+import { WebsiteEntryTokenLogin } from '@/components/entry/WebsiteEntryTokenLogin';
 
 type EntryPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -34,11 +35,13 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
     const surface = firstQueryValue(resolved.surface);
     const entity = firstQueryValue(resolved.entity);
     const id = firstQueryValue(resolved.id);
+    const token = firstQueryValue(resolved.token);
     const websiteContext = buildWebsiteEntryContext(resolved);
     const contextLabel = surface === 'website' ? labelForContext(entity, id) : null;
 
     return (
         <main className="min-h-screen bg-[#040908] text-white">
+            {token ? <WebsiteEntryTokenLogin token={token} /> : null}
             <WebsiteEntryPersistence context={websiteContext} />
             <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
                 <header className="flex items-center justify-between border-b border-white/10 pb-6">

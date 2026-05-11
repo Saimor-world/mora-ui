@@ -45,7 +45,10 @@ export function MoraOrb({
     }, []);
 
     const getStateParams = () => {
-        // V10: Colors aligned with Forest Canopy for "Resonance"
+        // Use custom accentColor if provided (e.g. from company branding)
+        // while maintaining the characteristic glow for specific states.
+        const baseColor = accentColor || '#0D9488';
+        
         switch (state) {
             case 'alert':
                 return { color: '#EF4444', glowIntensity: 60, pulse: 1.0 };
@@ -54,14 +57,14 @@ export function MoraOrb({
             case 'thinking':
                 return { color: '#3B82F6', glowIntensity: 45, pulse: 2.5 };
             case 'focus':
-                return { color: '#10B981', glowIntensity: 40, pulse: 1.5 };
+                return { color: accentColor || '#10B981', glowIntensity: 40, pulse: 1.5 };
             case 'watch':
-                return { color: '#06B6D4', glowIntensity: 35, pulse: 2.5 };
+                return { color: accentColor || '#06B6D4', glowIntensity: 35, pulse: 2.5 };
             case 'demo':
-                return { color: '#0D9488', glowIntensity: 40, pulse: 3.0 };
+                return { color: baseColor, glowIntensity: 40, pulse: 3.0 };
             case 'idle':
             default:
-                return { color: '#0D9488', glowIntensity: 50, pulse: 4.0 };
+                return { color: baseColor, glowIntensity: 50, pulse: 4.0 };
         }
     };
 

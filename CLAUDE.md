@@ -31,8 +31,7 @@ python scripts/test_mora.py "Was kannst du?" --agent
 ## Demo Login
 
 - **Email:** nextchaptergermany@gmail.com
-
-- **Passwort:** saimor2026
+- **Passwort:** [CHANGED_BY_USER] (Use forgot-password flow if needed)
 
 ## Session Status (15.01.2026)
 

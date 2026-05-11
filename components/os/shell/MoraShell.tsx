@@ -343,32 +343,37 @@ export const MoraShell: React.FC = () => {
 
     const displayCompany = React.useMemo(() => {
         const baseCompany = activeCompanyForView || activeCompany;
-        if (!websiteEntryContext?.companyName) return baseCompany;
-        if (baseCompany) {
+        
+        // If we have a website context, it should dominate the UI experience in demo mode
+        if (websiteEntryContext?.companyName) {
+            const contextId = websiteEntryContext.id || 'current-scan';
+            const previewTenant = `tenant-preview-${contextId}`;
+            
+            if (!baseCompany || baseCompany.is_demo || baseCompany.id.includes('demo')) {
+                return {
+                    id: `scan-${contextId}`,
+                    tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO ? user.tenant_id : previewTenant,
+                    owner_id: user?.id || 'demo-user',
+                    name: websiteEntryContext.companyName,
+                    slug: websiteEntryContext.companyName.toLowerCase().replaceAll(' ', '-'),
+                    description: websiteEntryContext.summary || `Personalisiertes Dossier für ${websiteEntryContext.companyName}`,
+                    logo_url: null,
+                    settings: null,
+                    is_demo: true,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                };
+            }
+
+            // If we're logged in with a real company but came from a scan, merge the names
             return {
                 ...baseCompany,
                 name: websiteEntryContext.companyName,
-                description: websiteEntryContext.summary || baseCompany.description,
-                tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
-                    ? user.tenant_id
-                    : `tenant-preview-${websiteEntryContext.id || 'current'}`,
-                is_demo: false,
             };
         }
-        return {
-            id: `website-entry-${websiteEntryContext.id || 'current'}`,
-            tenant_id: user?.tenant_id && user.tenant_id !== TENANT_DEMO
-                ? user.tenant_id
-                : `tenant-preview-${websiteEntryContext.id || 'current'}`,
-            owner_id: 'website-entry',
-            name: websiteEntryContext.companyName,
-            slug: `website-entry-${websiteEntryContext.id || 'current'}`,
-            description: websiteEntryContext.summary || null,
-            logo_url: null,
-            settings: null,
-            is_demo: false,
-        };
-    }, [activeCompany, activeCompanyForView, user?.tenant_id, websiteEntryContext]);
+        
+        return baseCompany;
+    }, [activeCompany, activeCompanyForView, user?.id, user?.tenant_id, websiteEntryContext]);
     const displayCompanies = React.useMemo(() => {
         if (!displayCompany || !websiteEntryContext?.companyName) return filteredCompanies;
         return [
