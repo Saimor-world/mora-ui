@@ -13,14 +13,19 @@ export type { OperationalState };
  * - Some envs mistakenly include /v1; normalize that away to avoid /v1/v1.
  */
 export function getCoreBaseUrl(): string {
+    const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || '').trim();
+    const absoluteBase = raw.replace(/\/+$/, '');
+
     if (typeof window !== 'undefined') {
-        // Browser requests go through the Next.js proxy so auth cookies and CORS
-        // behave the same locally and on hq.saimor.world.
+        // Prefer absolute URL if provided (prevents rewrite issues in production)
+        if (absoluteBase && absoluteBase.startsWith('http')) {
+            return absoluteBase;
+        }
+        // Fallback to proxy
         return '/api/core';
     }
-    const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim();
-    let base = raw.length > 0 ? raw : '/api/core';
-    base = base.replace(/\/+$/, '');
+    
+    let base = absoluteBase.length > 0 ? absoluteBase : '/api/core';
     if (base.toLowerCase().endsWith('/v1')) base = base.slice(0, -3);
     return base.length > 0 ? base : '/api/core';
 }
