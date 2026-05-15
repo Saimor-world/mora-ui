@@ -22,3 +22,24 @@ export function extractInsightFromRequest(text: string): string {
     }
     return content.trim();
 }
+
+// Neue Recall-Keywords (Abruf-Intents — kein Speichern)
+const RECALL_KEYWORDS = [
+    'zeig mir meine erinnerungen', 'zeige mir meine erinnerungen',
+    'zeig mir dein gedächtnis', 'zeige mir dein gedächtnis',
+    'was weißt du über mich', 'was weisst du über mich',
+    'was weißt du', 'was weisst du',
+    'erinnerst du dich', 'erinnerst du dich daran',
+    'was hast du gespeichert', 'was hast du dir gemerkt',
+    'deine erinnerungen', 'meine erinnerungen',
+    'dein gedächtnis', 'mein gedächtnis',
+    'zeig memory', 'zeige memory',
+    'show me my memories', 'show memories', 'show my memories',
+    'what do you remember', 'what have you saved',
+    'recall', 'what do you know about me',
+];
+
+export function detectRecallIntent(text: string): boolean {
+    const lower = text.toLowerCase();
+    return RECALL_KEYWORDS.some((kw) => lower.includes(kw));
+}
