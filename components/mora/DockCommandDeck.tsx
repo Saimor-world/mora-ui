@@ -15,6 +15,44 @@ import {
     type LucideIcon,
 } from 'lucide-react';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
+import type { RitualSceneId } from '@/lib/os/ritualMode';
+
+const SCENE_PALETTE: Record<RitualSceneId, {
+    gradient: string;
+    border: string;
+    badge: string;
+    badgeBg: string;
+    glow: string;
+}> = {
+    flow: {
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(16,185,129,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(34,211,238,0.14), transparent 50%)',
+        border: 'rgba(34,211,238,0.28)',
+        badge: 'text-cyan-200',
+        badgeBg: 'rgba(34,211,238,0.10)',
+        glow: 'rgba(34,211,238,0.06)',
+    },
+    build: {
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(59,130,246,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(251,191,36,0.14), transparent 50%)',
+        border: 'rgba(59,130,246,0.28)',
+        badge: 'text-blue-200',
+        badgeBg: 'rgba(59,130,246,0.10)',
+        glow: 'rgba(59,130,246,0.06)',
+    },
+    lounge: {
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(251,146,60,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(244,114,182,0.14), transparent 50%)',
+        border: 'rgba(244,114,182,0.28)',
+        badge: 'text-rose-200',
+        badgeBg: 'rgba(244,114,182,0.10)',
+        glow: 'rgba(244,114,182,0.06)',
+    },
+    night: {
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(99,102,241,0.20), transparent 55%), radial-gradient(circle at 90% 20%, rgba(139,92,246,0.16), transparent 50%)',
+        border: 'rgba(139,92,246,0.28)',
+        badge: 'text-violet-200',
+        badgeBg: 'rgba(139,92,246,0.10)',
+        glow: 'rgba(139,92,246,0.06)',
+    },
+};
 
 export interface DockCommandDeckAction {
     id: string;
@@ -40,6 +78,7 @@ interface DockCommandDeckProps {
     contextActionLabel: string;
     nextMoveLabel: string;
     nextMoveHint: string;
+    sceneId: RitualSceneId;
     sceneLabel: string;
     sceneDescription: string;
     autoSceneEnabled: boolean;
@@ -73,6 +112,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     contextActionLabel,
     nextMoveLabel,
     nextMoveHint,
+    sceneId,
     sceneLabel,
     sceneDescription,
     autoSceneEnabled,
@@ -90,6 +130,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     actions,
 }) => {
     const assistantRuntime = useAssistantRuntime(45_000);
+    const scenePalette = SCENE_PALETTE[sceneId];
     const shellCard = isStandardMode
         ? 'border-gray-200 bg-white shadow-[0_18px_60px_rgba(0,0,0,0.12)]'
         : 'border-white/10 bg-[linear-gradient(180deg,rgba(7,18,14,0.96),rgba(4,10,8,0.98))] shadow-[0_30px_100px_rgba(0,0,0,0.52)]';
@@ -201,44 +242,77 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     </div>
                 </div>
 
-                <div className={`rounded-[28px] border p-3.5 ${microCard}`}>
-                    <div className="flex items-start justify-between gap-4">
+                <div
+                    className={`relative overflow-hidden rounded-[28px] border p-3.5 ${isStandardMode ? 'border-gray-200 bg-gray-50' : ''}`}
+                    style={!isStandardMode ? {
+                        background: 'rgba(7,18,14,0.6)',
+                        borderColor: scenePalette.border,
+                        boxShadow: `0 0 32px ${scenePalette.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                    } : undefined}
+                >
+                    {/* Scene color wash */}
+                    {!isStandardMode && (
+                        <div
+                            className="pointer-events-none absolute inset-0 rounded-[28px]"
+                            style={{ background: scenePalette.gradient }}
+                        />
+                    )}
+
+                    <div className="relative flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                                 <Clock3 size={12} />
                                 Szene
                             </div>
-                            <div className={`mt-2 text-base ${primaryText}`}>{sceneLabel}</div>
+                            <div className={`mt-2 flex items-center gap-2`}>
+                                {!isStandardMode && (
+                                    <span
+                                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] font-medium ${scenePalette.badge}`}
+                                        style={{ background: scenePalette.badgeBg, border: `1px solid ${scenePalette.border}` }}
+                                    >
+                                        {sceneId}
+                                    </span>
+                                )}
+                                <span className={`text-base ${primaryText}`}>{sceneLabel}</span>
+                            </div>
                             <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>
                                 {sceneDescription}
                             </p>
                         </div>
                         <button
                             onClick={onToggleAutoScene}
-                            className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.22em] transition-colors ${autoSceneEnabled
+                            className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.22em] transition-colors ${autoSceneEnabled
                                 ? isStandardMode
                                     ? 'border-[#0078D4]/25 bg-[#0078D4]/8 text-[#0078D4]'
-                                    : 'border-cyan-400/22 bg-cyan-500/10 text-cyan-200'
+                                    : `border-[${scenePalette.border}] text-white/70`
                                 : isStandardMode
                                     ? 'border-gray-200 bg-white text-gray-500 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                    : 'border-white/10 bg-white/[0.03] text-white/50 hover:border-cyan-400/25 hover:text-cyan-200'
+                                    : 'border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70'
                                 }`}
+                            style={!isStandardMode && autoSceneEnabled ? { borderColor: scenePalette.border, background: scenePalette.badgeBg } : undefined}
                         >
                             <Clock3 size={12} />
                             {autoSceneEnabled ? 'Auto' : 'Manuell'}
                         </button>
                     </div>
 
-                    <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="relative mt-4 flex flex-wrap gap-2">
                         <button
                             onClick={onCycleScene}
-                            className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                            className={`rounded-2xl border px-3 py-2 text-sm transition-all ${isStandardMode
+                                ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+                                : 'border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10] hover:text-white'
+                                }`}
+                            style={!isStandardMode ? { borderColor: scenePalette.border } : undefined}
                         >
                             Szene wechseln
                         </button>
                         <button
                             onClick={onOpenAudio}
-                            className={`rounded-2xl border px-3 py-2 text-sm transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/25 hover:text-emerald-200'}`}
+                            className={`rounded-2xl border px-3 py-2 text-sm transition-all ${isStandardMode
+                                ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+                                : 'border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white'
+                                }`}
                         >
                             Audio
                         </button>

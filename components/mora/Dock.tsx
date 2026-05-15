@@ -1265,6 +1265,7 @@ export const Dock = () => {
                                     contextActionLabel={contextDeck.actionLabel}
                                     nextMoveLabel={controlCenterNextMove.label}
                                     nextMoveHint={controlCenterNextMove.hint}
+                                    sceneId={ritualSceneId}
                                     sceneLabel={ritualScene.label}
                                     sceneDescription={ritualScene.description}
                                     autoSceneEnabled={ritualSettings.autoTime}
@@ -1287,7 +1288,7 @@ export const Dock = () => {
                 </AnimatePresence>
 
                 <div
-                    className={`relative flex flex-wrap items-center justify-between gap-2.5 overflow-visible px-3 py-2.5 xl:flex-nowrap ${isStandardMode
+                    className={`relative flex flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2.5 ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
                         : 'rounded-3xl backdrop-blur-2xl'
                         }`}
