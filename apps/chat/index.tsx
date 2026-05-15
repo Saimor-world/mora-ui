@@ -46,13 +46,13 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
 import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
-import { detectMemoryIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
+import { detectMemoryIntent, detectRecallIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
 import type { AppProps } from '@/lib/apps/types';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { buildCommunicationOperationalContextMessage, useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 // Sprint 3: Mora episodic memory hooks
 import { useMemories, useMemorySearch } from '@/lib/queries/useMemories';
-import type { MoraMemory } from '@/lib/api/memoryClient';
+import { fetchMoraMemories, type MoraMemory } from '@/lib/api/memoryClient';
 
 interface PendingAction {
     tool_name: string;
@@ -1086,6 +1086,47 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         setIsLoading(true);
         setAmbiguityChoice(null);
         setOpenIntentReceipt(null);
+
+        // ── Recall-Intent: direkt aus Memory rendern, kein Agent-Call ──────────────
+        if (detectRecallIntent(content)) {
+            try {
+                const memories = await fetchMoraMemories(20);
+                let recallText: string;
+                if (!memories || memories.length === 0) {
+                    recallText = 'Ich habe noch keine Erinnerungen gespeichert. Wenn du mir sagst "merke dir ...", speichere ich es für später.';
+                } else {
+                    const lines = memories
+                        .slice(0, 10)
+                        .map((m) => `• ${m.summary}`)
+                        .join('\n');
+                    recallText = `Ich erinnere mich an ${memories.length} Dinge:\n\n${lines}`;
+                }
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: 'assistant' as const,
+                        content: recallText,
+                        timestamp: new Date(),
+                    },
+                ]);
+            } catch {
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: crypto.randomUUID(),
+                        role: 'assistant' as const,
+                        content: 'Ich konnte deine Erinnerungen gerade nicht laden. Versuch es nochmal.',
+                        timestamp: new Date(),
+                    },
+                ]);
+            } finally {
+                setIsLoading(false);
+            }
+            return; // ← kein Agent-Call, kein parseIntent
+        }
+        // ── Ende Recall-Intent ──────────────────────────────────────────────────────
+
         const intent = parseIntent(content);
 
         // Check for memory intent (e.g., "merke dir...", "wichtig...")
