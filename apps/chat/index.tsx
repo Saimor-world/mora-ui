@@ -1099,7 +1099,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         .slice(0, 10)
                         .map((m) => `• ${m.summary}`)
                         .join('\n');
-                    recallText = `Ich erinnere mich an ${memories.length} Dinge:\n\n${lines}`;
+                    recallText = `Ich erinnere mich an ${memories.length} ${memories.length === 1 ? 'Ding' : 'Dinge'}:\n\n${lines}`;
                 }
                 setMessages((prev) => [
                     ...prev,
@@ -1426,6 +1426,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         executeDirectOpenIntent,
         executeNavigation,
         executeSearch,
+        fetchMoraMemories,
         fetchRelevantMemories,
         paneId,
         messages,
