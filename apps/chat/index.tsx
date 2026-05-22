@@ -840,17 +840,37 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     // Handle memory hint confirmation
     const handleMemoryConfirm = useCallback(async () => {
         if (!memoryHint.content || !activeCompanyId) return;
+        const savedContent = memoryHint.content; // capture before clearing
+        setMemoryHint({ show: false, content: '' });
         try {
             await learnInsight({
-                insight: memoryHint.content,
+                insight: savedContent,
                 category: 'context',
                 auto_commit: true,
                 company_id: activeCompanyId
             });
+            // Bestätigung im Chat anzeigen
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    role: 'assistant' as const,
+                    content: `✓ Gespeichert [👤 Persönlich]: „${savedContent}"`,
+                    timestamp: new Date(),
+                },
+            ]);
         } catch (err) {
             console.error('[ChatApp] Failed to save memory:', err);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    id: crypto.randomUUID(),
+                    role: 'assistant' as const,
+                    content: 'Ich konnte das leider nicht speichern. Versuch es nochmal.',
+                    timestamp: new Date(),
+                },
+            ]);
         }
-        setMemoryHint({ show: false, content: '' });
     }, [memoryHint.content, activeCompanyId]);
 
     // Auto-scroll to bottom when messages or streaming text changes

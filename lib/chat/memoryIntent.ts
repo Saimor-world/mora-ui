@@ -5,9 +5,9 @@ const MEMORY_KEYWORDS = [
 ];
 
 const MEMORY_PREFIXES = [
-    'merke dir,?', 'merk dir,?', 'speicher das,?', 'speichere das,?',
-    'wichtig:', 'vergiss nicht,?', 'erinnere dich,?',
-    'remember,?', 'save this,?', 'note that,?', 'keep in mind,?'
+    'merke dir[,:]?', 'merk dir[,:]?', 'speicher das[,:]?', 'speichere das[,:]?',
+    'wichtig[,:]?', 'vergiss nicht[,:]?', 'erinnere dich[,:]?',
+    'remember[,:]?', 'save this[,:]?', 'note that[,:]?', 'keep in mind[,:]?'
 ];
 
 export function detectMemoryIntent(text: string): boolean {
