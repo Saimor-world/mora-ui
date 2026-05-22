@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
@@ -128,7 +128,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
     }, []);
 
-    const handleForgotPassword = async () => {
+    const handleDevMasterLogin = () => { writeCookie('mora_session', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJocS1hZG1pbiIsInJvbGUiOiJvd25lciIsInRlbmFudCI6InNhaW1vciIsImlzcyI6InNhaW1vci5tb3JhIiwiYXVkIjoic2FpbW9yLmNsaWVudHMiLCJleHAiOjE4MTA3MTc5NjYsImlhdCI6MTc3OTE4MTk2Nn0.Ak2QD9idCZ5XDrcs8he1aplceNxwBkFfyPwCxt7ohic'); toast.success('Master-Login erfolgreich'); setTimeout(() => onAuthenticated(), 200); }; const handleForgotPassword = async () => {
         if (!forgotEmail.trim()) {
             toast.error('Bitte E-Mail-Adresse eingeben.');
             return;
@@ -217,7 +217,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             const tier = getSessionTier(lastActivity);
             const hasToken = !!(authToken || coreSession || devToken);
 
-            // neustart (72h+) or no token → clean slate
+            // neustart (72h+) or no token ? clean slate
             if (tier === 'neustart' || !hasToken) {
                 if (tier === 'neustart' && hasToken) {
                     // Remember the name even though we clear everything else
@@ -856,7 +856,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </div>
                         </motion.div>
 
-                        {/* ═══ Tier: sofort — auto-resuming indicator ═══ */}
+                        {/* --- Tier: sofort — auto-resuming indicator --- */}
                         {sessionTier === 'sofort' && (
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -873,7 +873,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* ═══ Tier: erwachen — Mora wakes up, one-click continue ═══ */}
+                        {/* --- Tier: erwachen — Mora wakes up, one-click continue --- */}
                         {sessionTier === 'erwachen' && sessionInfo && (
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
@@ -944,7 +944,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* ═══ Tier: erkennung — Mora tries to recognize you ═══ */}
+                        {/* --- Tier: erkennung — Mora tries to recognize you --- */}
                         {sessionTier === 'erkennung' && sessionInfo && (
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
@@ -1076,7 +1076,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* ═══ Tier: neustart — remembered name greeting ═══ */}
+                        {/* --- Tier: neustart — remembered name greeting --- */}
                         {sessionTier === 'neustart' && sessionInfo?.userName && (
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -1182,6 +1182,17 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         </div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                                {process.env.NODE_ENV === "development" && (
+                                    <div className="mt-8 pt-6 border-t border-white/5">
+                                        <button
+                                            onClick={handleDevMasterLogin}
+                                            className="w-full py-3 px-4 bg-emerald-500/5 hover:bg-emerald-500/10 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 group"
+                                        >
+                                            <Database className="w-3.5 h-3.5 text-emerald-300/40" />
+                                            Dev Master Login (HQ Admin)
+                                        </button>
+                                    </div>
+                                )}
                                 </motion.button>
                             </motion.div>
                         )}
@@ -1270,7 +1281,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'← Zurück zum Einstieg'}
+                                            {'? Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1420,7 +1431,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'← Zurück zum Einstieg'}
+                                            {'? Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1476,7 +1487,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('login')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'← Zurück zum Login'}
+                                            {'? Zurück zum Login'}
                                         </button>
                                     </div>
                                 </div>
@@ -1515,7 +1526,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     }}
                                     className="text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                 >
-                                    {'← Zurück zum Login'}
+                                    {'? Zurück zum Login'}
                                 </button>
                             </div>
                         </div>

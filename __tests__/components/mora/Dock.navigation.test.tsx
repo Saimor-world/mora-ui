@@ -88,6 +88,7 @@ jest.mock('framer-motion', () => {
         motion: {
             div: passthrough('div'),
             button: passthrough('button'),
+            span: passthrough('span'),
         },
         AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
     };

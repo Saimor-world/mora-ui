@@ -43,13 +43,16 @@ it('advances on next button', async () => {
     act(() => { jest.advanceTimersByTime(9000); });
     await waitFor(() => screen.getByText(/Universe/i));
     fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
-    expect(screen.getByText(/Mora/i)).toBeInTheDocument();
+    // Use heading role to disambiguate from body text that also contains "Mora"
+    expect(screen.getByRole('heading', { name: /Mora/i })).toBeInTheDocument();
 });
 
 it('persists dismissal to localStorage', async () => {
     render(<FirstRunTour />);
     act(() => { jest.advanceTimersByTime(9000); });
     await waitFor(() => screen.getByText(/Universe/i));
-    fireEvent.click(screen.getByRole('button', { name: /überspringen/i }));
+    // Two Überspringen targets exist (icon btn + text btn); click the text one
+    const skipButtons = screen.getAllByRole('button', { name: /überspringen/i });
+    fireEvent.click(skipButtons[0]);
     expect(localStorage.getItem('saimor_first_run_tour_v1')).toBe('done');
 });

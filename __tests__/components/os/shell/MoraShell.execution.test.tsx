@@ -71,7 +71,7 @@ jest.mock('@/lib/hooks/shell', () => ({
 }));
 
 jest.mock('@/lib/api/realtimeClient', () => ({
-    realtime: { connect: jest.fn(), disconnect: jest.fn() },
+    realtime: { connect: jest.fn(), disconnect: jest.fn(), on: jest.fn(), off: jest.fn() },
 }));
 
 jest.mock('@/components/layout/ViewPort', () => ({

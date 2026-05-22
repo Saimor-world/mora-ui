@@ -46,7 +46,7 @@ describe('WebsiteLeadLedger', () => {
             expect(screen.getByText('tenant-preview-abc')).toBeInTheDocument();
             expect(screen.getByText('lead@acme.de')).toBeInTheDocument();
             expect(screen.getByText(/64\s*Preview/)).toBeInTheDocument();
-            expect(screen.getByText('Preview-Zugang')).toBeInTheDocument();
+            expect(screen.getByText('Zugang senden')).toBeInTheDocument();
         });
     });
 
@@ -79,7 +79,7 @@ describe('WebsiteLeadLedger', () => {
             expect(screen.getByText('Kunde AG')).toBeInTheDocument();
             expect(screen.getByText(/82\s*Kundenaccount/)).toBeInTheDocument();
             expect(screen.getAllByText('owner@kunde.de').length).toBeGreaterThan(0);
-            expect(screen.getByText('Verbundenes Konto')).toBeInTheDocument();
+            expect(screen.getByText('Link erneut senden')).toBeInTheDocument();
         });
     });
 

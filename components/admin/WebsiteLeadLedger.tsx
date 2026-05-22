@@ -99,7 +99,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                 data: { context }
             });
         } catch (err) {
-            toast.error('Dossier konnte nicht geöffnet werden.');
+            toast.error('Dossier konnte nicht geÃ¶ffnet werden.');
         }
     };
 
