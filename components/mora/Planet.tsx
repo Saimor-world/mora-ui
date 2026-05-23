@@ -215,50 +215,40 @@ export const Planet: React.FC<PlanetProps> = ({
                 }}
             />
 
-            {/* ═ THE PLANET SPHERE (V12 Premium Glass) ═ */}
+            {/* ═ PLANET SPHERE — Solid energy node, no more glass ═ */}
             <motion.div
-                className="orb-glass flex items-center justify-center"
+                className="flex items-center justify-center relative"
                 style={{
                     width: planetSize.diameter,
                     height: planetSize.diameter,
+                    borderRadius: '9999px',
                     transformOrigin: '50% 50%',
-                    '--orb-glow': `${style.glow}CC`,
-                    '--orb-border': `${style.border}FF`,
+                    // Solid sphere — bright color, dark edge for depth
+                    background: `
+                        radial-gradient(ellipse 48% 36% at 32% 24%, rgba(255,255,255,0.65) 0%, transparent 48%),
+                        radial-gradient(circle at 50% 50%, ${style.border} 0%, ${style.glow} 40%, ${style.core} 75%, rgba(0,0,0,0.55) 100%)
+                    `,
+                    border: `2px solid ${style.border}`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 60px ${style.glow}CC, 0 0 120px ${style.glow}88, 0 0 200px ${style.glow}44, 0 22px 54px rgba(0,0,0,0.6), inset 0 0 50px ${style.glow}88, inset 0 0 20px ${style.glow}CC, inset 2px 2px 12px rgba(255,255,255,0.5)`
-                        : `0 0 40px ${style.glow}AA, 0 0 80px ${style.glow}66, 0 0 140px ${style.glow}33, 0 18px 44px rgba(0,0,0,0.55), inset 0 0 35px ${style.glow}77, inset 0 0 15px ${style.glow}AA, inset 1px 1px 8px rgba(255,255,255,0.35)`,
+                        ? `0 0 35px ${style.glow}, 0 0 70px ${style.glow}BB, 0 0 120px ${style.glow}66, inset 0 0 20px rgba(255,255,255,0.15)`
+                        : `0 0 20px ${style.glow}CC, 0 0 45px ${style.glow}88, 0 0 80px ${style.glow}44, inset 0 0 12px rgba(255,255,255,0.08)`,
                 } as React.CSSProperties}
-                whileHover={{ scale: 1.09 }}
-                initial={{ scale: 1, rotateZ: 0 }}
-                animate={{
-                    scale: isHovered || isActive ? 1.045 : 1,
-                    rotateZ: isHovered ? 1.2 : 0,
-                }}
-                transition={{
-                    scale: { type: 'spring', stiffness: 280, damping: 24 },
-                    rotateZ: { duration: 0.18, ease: 'easeOut' },
-                }}
+                whileHover={{ scale: 1.1 }}
+                initial={{ scale: 1 }}
+                animate={{ scale: isHovered || isActive ? 1.06 : 1 }}
+                transition={{ scale: { type: 'spring', stiffness: 320, damping: 22 } }}
             >
-                {/* Subsurface scattering core */}
-                <div
-                    className="orb-glass-core"
-                    style={{
-                        '--orb-glow': style.border,
-                        opacity: isHovered || isActive ? 0.95 : 0.65,
-                        transform: `scale(${isHovered ? 1.04 : 1})`,
-                        transition: 'opacity 180ms ease, transform 180ms ease',
-                    } as React.CSSProperties}
-                />
-
-                {/* Glass caustic refraction */}
-                <div className="orb-glass-caustic" />
-
+                {/* Bottom rim light */}
+                <div style={{
+                    position: 'absolute', inset: 0, borderRadius: '9999px', pointerEvents: 'none',
+                    background: `radial-gradient(ellipse 60% 30% at 50% 88%, ${style.border}55 0%, transparent 60%)`,
+                }} />
                 {/* Icon */}
                 <div className="relative z-10">
                     <Icon
                         size={planetSize.iconSize}
-                        className="text-white/90"
-                        strokeWidth={1.2}
+                        className="text-white"
+                        strokeWidth={1.4}
                     />
                 </div>
             </motion.div>

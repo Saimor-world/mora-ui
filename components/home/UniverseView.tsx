@@ -864,10 +864,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
                 style={{
                     background: `
-                        radial-gradient(1120px 720px at 52% 54%, rgba(56, 189, 248, 0.22) 0%, transparent 62%),
-                        radial-gradient(980px 620px at 18% 24%, rgba(45, 212, 191, 0.18) 0%, transparent 54%),
-                        radial-gradient(860px 520px at 84% 20%, rgba(167, 139, 250, 0.13) 0%, transparent 50%),
-                        radial-gradient(780px 460px at 22% 78%, rgba(16, 185, 129, 0.10) 0%, transparent 54%)
+                        radial-gradient(1120px 720px at 52% 54%, rgba(124, 58, 237, 0.38) 0%, transparent 62%),
+                        radial-gradient(980px 620px at 18% 24%, rgba(16, 185, 129, 0.28) 0%, transparent 54%),
+                        radial-gradient(860px 520px at 84% 20%, rgba(245, 158, 11, 0.20) 0%, transparent 50%),
+                        radial-gradient(780px 460px at 22% 78%, rgba(34, 211, 238, 0.18) 0%, transparent 54%)
                     `,
                     mixBlendMode: 'screen',
                 }}
@@ -877,7 +877,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 animate={{ x: parallaxOffset.x * 0.44, y: parallaxOffset.y * 0.2, rotate: -2.4 }}
                 transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
                 style={{
-                    background: 'linear-gradient(104deg, transparent 0%, rgba(220,248,255,0.025) 16%, rgba(96,165,250,0.075) 32%, rgba(45,212,191,0.052) 48%, rgba(167,139,250,0.044) 66%, transparent 84%)',
+                    background: 'linear-gradient(104deg, transparent 0%, rgba(124,58,237,0.06) 16%, rgba(16,185,129,0.10) 32%, rgba(245,158,11,0.06) 48%, rgba(124,58,237,0.05) 66%, transparent 84%)',
                     transform: 'scale(1.2)',
                     filter: 'blur(34px)',
                     opacity: 0.62,
