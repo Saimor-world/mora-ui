@@ -979,8 +979,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         onMouseEnter={() => setIsCoreLogoHovered(true)}
                         onMouseLeave={() => setIsCoreLogoHovered(false)}
                     >
-                        {/* Glow Behind Logo */}
-                        <div className="absolute inset-0 bg-cyan-500/20 blur-[80px] rounded-full scale-150 group-hover:bg-cyan-400/40 transition-all duration-700" />
+                        {/* Glow Behind Logo — emerald core presence */}
+                        <div className="absolute inset-0 rounded-full scale-[2.2] pointer-events-none" style={{
+                            background: 'radial-gradient(circle, rgba(16,185,129,0.24) 0%, rgba(6,182,212,0.12) 45%, transparent 75%)',
+                            filter: 'blur(28px)',
+                            transition: 'all 0.7s ease',
+                        }} />
+                        <div className="absolute inset-0 rounded-full scale-[3.5] pointer-events-none group-hover:scale-[4] transition-all duration-700" style={{
+                            background: 'radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 65%)',
+                            filter: 'blur(40px)',
+                        }} />
 
                         <CompanyLogo
                             src={websiteEntryContext ? undefined : currentCompany?.logo_url}

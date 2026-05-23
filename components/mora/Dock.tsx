@@ -24,8 +24,7 @@ type DockPane = ReturnType<typeof usePaneStore.getState>['panes'][number];
 import { SearchPopup } from './SearchPopup';
 import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
-// 1.0 gated — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
-// import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
+import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 // import { ActionTray } from '@/components/os/ActionTray';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
 import { PlasmaOrb } from './PlasmaOrb';
@@ -517,6 +516,7 @@ export const Dock = () => {
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
     const surfaceProfile = useSurfaceProfile();
+    useFocusModeShortcut();
     const websiteEntryContext = useWebsiteEntryContext();
     const [ambientTracks, setAmbientTracks] = useState<AmbientAudioTrackMeta[]>([]);
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
@@ -1297,9 +1297,9 @@ export const Dock = () => {
                         border: '1px solid #E1E1E1',
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
-                        background: 'linear-gradient(180deg, rgba(10, 24, 20, 0.82) 0%, rgba(5, 13, 12, 0.90) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.22)',
-                        boxShadow: `0 -6px 28px rgba(16, 185, 129, 0.09), 0 14px 40px rgba(0, 0, 0, 0.65), 0 0 58px ${accent}14, inset 0 1px 0 rgba(255,255,255,0.05)`,
+                        background: 'linear-gradient(180deg, rgba(8, 22, 16, 0.86) 0%, rgba(3, 10, 8, 0.94) 100%)',
+                        border: '1px solid rgba(16, 185, 129, 0.26)',
+                        boxShadow: `0 -8px 32px rgba(16, 185, 129, 0.10), 0 16px 48px rgba(0, 0, 0, 0.72), 0 0 64px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.4)`,
                         willChange: 'transform',
                     }}
                 >
@@ -1441,6 +1441,7 @@ export const Dock = () => {
                         <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'flex shrink-0 items-center gap-3 px-3 py-2.5'} isStandardMode={isStandardMode}>
                     {/* RIGHT SECTION: Status + Context */}
                     {!websiteEntryContext && <div className="flex items-center gap-2">
+                        <FocusModeWidget />
                         <NotificationCenter />
                         {activePlanId && (
                             <SessionChip

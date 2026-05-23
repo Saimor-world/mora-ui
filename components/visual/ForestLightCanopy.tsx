@@ -52,12 +52,40 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
     }, []);
 
     return (
-        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden bg-[#000102]">
+        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden" style={{ background: '#010b06' }}>
+            {/* PERSISTENT EMERALD AURORA — always present, Mora's resting presence */}
+            <div
+                className="absolute inset-x-0 top-0 h-[45vh]"
+                style={{
+                    background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${palette.glow} 0%, transparent 70%)`,
+                    opacity: 0.45,
+                    mixBlendMode: 'screen',
+                    transition: 'background 2s ease',
+                }}
+            />
+
+            {/* SECONDARY AURORA — state-reactive side wash */}
+            <div
+                className="absolute top-0 left-0 w-[55vw] h-[35vh]"
+                style={{
+                    background: `radial-gradient(ellipse 80% 70% at 0% 0%, ${palette.secondary} 0%, transparent 75%)`,
+                    opacity: 0.35,
+                    transition: 'background 2.5s ease',
+                }}
+            />
+            <div
+                className="absolute top-0 right-0 w-[45vw] h-[30vh]"
+                style={{
+                    background: `radial-gradient(ellipse 80% 70% at 100% 0%, ${palette.accent} 0%, transparent 75%)`,
+                    opacity: 0.28,
+                    transition: 'background 2.5s ease',
+                }}
+            />
+
             {/* 1. DEEP STARFIELD (The "Universe" Layer) */}
-            {/* V10.7: Mixed density to match user request: "Bisschen Sterne und Universum" */}
-            <div className="absolute inset-0 opacity-50">
+            <div className="absolute inset-0 opacity-55">
                 {/* Distant Micro-Stars */}
-                <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:60px_60px] opacity-[0.1]" />
+                <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:60px_60px] opacity-[0.12]" />
                 {/* Mid-Range Stars */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.4)_1.5px,transparent_1px)] bg-[length:250px_250px]" />
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.3)_1.5px,transparent_1px)] bg-[length:350px_350px]" />
@@ -119,21 +147,20 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
             </div>
 
             {/* 2. NEBULA PILLARS (The "Deep Galaxy" Layer) */}
-            {/* Reduced Green, More Deep Space/Void Blue/Indigo */}
-            <div className="absolute inset-0 opacity-20 mix-blend-screen">
-                {/* Pillar 1: Golden/Red Cosmic Dust (Warmer contrast) */}
+            <div className="absolute inset-0 opacity-22 mix-blend-screen">
+                {/* Pillar 1: Emerald Void — deep forest depths */}
                 <div
-                    className={`absolute bottom-[-20%] left-[10%] w-[60vw] h-[80vh] rounded-full blur-[100px] ${
+                    className={`absolute bottom-[-20%] left-[5%] w-[55vw] h-[75vh] rounded-full blur-[110px] ${
                         animateAmbient ? 'forest-canopy-nebula-a' : ''
                     }`}
-                    style={{ background: 'conic-gradient(from 180deg, #7c2d12, #ea580c, transparent)', opacity: animateAmbient ? undefined : 0.18 }}
+                    style={{ background: 'conic-gradient(from 180deg, #064e3b, #10b981, #065f46, transparent)', opacity: animateAmbient ? undefined : 0.20 }}
                 />
-                {/* Pillar 2: Deep Indigo/Cyan (Less Green) */}
+                {/* Pillar 2: Deep Indigo pulse */}
                 <div
-                    className={`absolute top-[-10%] right-[10%] w-[70vw] h-[70vh] rounded-full blur-[120px] ${
+                    className={`absolute top-[-10%] right-[10%] w-[65vw] h-[65vh] rounded-full blur-[120px] ${
                         animateAmbient ? 'forest-canopy-nebula-b' : ''
                     }`}
-                    style={{ background: 'radial-gradient(circle, #1e3a8a, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.16 }}
+                    style={{ background: 'radial-gradient(circle, #1e3a5a, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.14 }}
                 />
             </div>
 

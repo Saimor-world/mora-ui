@@ -43,10 +43,18 @@
     --mora-radius-xl: 32px;
 
     /* GLASS PANEL SETTINGS */
-    --mora-glass-blur: 20px;
-    --mora-glass-opacity: 0.90;
-    --mora-glass-bg: rgba(3, 8, 6, 0.85);
-    --mora-glass-border: rgba(16, 185, 129, 0.15);
+    --mora-glass-blur: 28px;
+    --mora-glass-opacity: 0.92;
+    --mora-glass-bg: rgba(2, 7, 5, 0.88);
+    --mora-glass-border: rgba(16, 185, 129, 0.18);
+    --mora-glass-bg-light: rgba(4, 14, 10, 0.72);
+    --mora-glass-highlight: rgba(255, 255, 255, 0.04);
+
+    /* DEPTH GRADIENTS */
+    --mora-void-deep: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(10, 35, 25, 0.95) 0%, rgba(2, 7, 5, 1) 60%);
+    --mora-depth-glow: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+    --mora-emerald-glow: 0 0 40px rgba(16, 185, 129, 0.12), 0 0 80px rgba(16, 185, 129, 0.06);
+    --mora-emerald-glow-strong: 0 0 20px rgba(16, 185, 129, 0.25), 0 0 60px rgba(16, 185, 129, 0.12);
 
     /* LAYER OPACITY SCALE */
     --mora-layer-0: 1.0;
@@ -56,9 +64,10 @@
     --mora-layer-4: 0.80;
 
     /* SHADOWS */
-    --mora-shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.1);
-    --mora-shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.2);
-    --mora-shadow-strong: 0 8px 32px rgba(0, 0, 0, 0.3);
+    --mora-shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.18);
+    --mora-shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.35);
+    --mora-shadow-strong: 0 8px 40px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(16, 185, 129, 0.06);
+    --mora-shadow-glow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(16, 185, 129, 0.1);
 
     /* Z-INDEX SYSTEM (standardized layers) */
     --mora-z-base: 0;
@@ -88,15 +97,15 @@
 
     /* 🌿 Môra Resonanz-Farben: Wald & Sonne */
 
-    /* Tiefes Myzel-Grün - wie Waldboden */
-    --background: 155 45% 6%;
-    --foreground: 150 15% 92%;
+    /* Tiefes Myzel-Grün - wie kosmischer Waldboden */
+    --background: 155 52% 4%;
+    --foreground: 150 18% 93%;
 
-    /* Karten & Panels - organisch, matt */
-    --card: 155 40% 9%;
-    --card-foreground: 150 15% 92%;
-    --popover: 155 40% 9%;
-    --popover-foreground: 150 15% 92%;
+    /* Karten & Panels - organisch, tief */
+    --card: 155 48% 7%;
+    --card-foreground: 150 18% 93%;
+    --popover: 155 48% 7%;
+    --popover-foreground: 150 18% 93%;
   }
 
   /* === STANDARD MODE (LIGHT CORPORATE THEME - Like Excel/Word) === */
@@ -398,23 +407,27 @@
 
   /* UTILITIES */
   .glass-card {
-    background: linear-gradient(135deg,
-        rgba(10, 30, 20, 0.4) 0%,
-        rgba(4, 13, 10, 0.85) 50%,
-        rgba(10, 20, 15, 0.6) 100%);
-    backdrop-filter: blur(28px);
-    -webkit-backdrop-filter: blur(28px);
-    border: 1px solid rgba(16, 185, 129, 0.15);
+    background: linear-gradient(145deg,
+        rgba(12, 36, 24, 0.52) 0%,
+        rgba(3, 10, 7, 0.90) 45%,
+        rgba(8, 22, 16, 0.72) 100%);
+    backdrop-filter: blur(32px) saturate(1.4);
+    -webkit-backdrop-filter: blur(32px) saturate(1.4);
+    border: 1px solid rgba(16, 185, 129, 0.18);
     box-shadow:
-      0 12px 48px rgba(0, 0, 0, 0.7),
-      inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      0 16px 56px rgba(0, 0, 0, 0.75),
+      0 0 0 1px rgba(255, 255, 255, 0.025),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.3);
     border-radius: 20px;
   }
 
   .glass-panel {
-    background: rgba(4, 13, 10, 0.6);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: linear-gradient(160deg, rgba(6, 18, 13, 0.72) 0%, rgba(3, 10, 7, 0.88) 100%);
+    backdrop-filter: blur(20px) saturate(1.2);
+    -webkit-backdrop-filter: blur(20px) saturate(1.2);
+    border: 1px solid rgba(16, 185, 129, 0.12);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.04);
     border-radius: 12px;
   }
 
@@ -470,41 +483,43 @@
   /* Atmospheric halo behind orb */
   .orb-glass-halo {
     position: absolute;
-    inset: -20%;
+    inset: -28%;
     border-radius: 9999px;
-    background: radial-gradient(circle, var(--orb-glow, rgba(16,185,129,0.5)) 0%, transparent 70%);
-    filter: blur(25px);
+    background: radial-gradient(circle, var(--orb-glow, rgba(16,185,129,0.5)) 0%, transparent 65%);
+    filter: blur(30px);
     z-index: -1;
     pointer-events: none;
-    opacity: 0.14;
-    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0.18;
+    transition: opacity 0.35s ease, transform 0.35s ease;
   }
 
   .orb-glass-halo[data-active="true"],
   .orb-glass:hover + .orb-glass-halo {
-    opacity: 0.3;
-    transform: scale(1.1);
+    opacity: 0.38;
+    transform: scale(1.15);
   }
 
   /* Inner luminous subsurface core */
   .orb-glass-core {
     position: absolute;
-    inset: 20%;
+    inset: 18%;
     border-radius: 9999px;
-    background: radial-gradient(circle, var(--orb-glow, rgba(16,185,129,0.8)) 0%, transparent 70%);
+    background: radial-gradient(circle at 38% 32%, var(--orb-glow, rgba(16,185,129,0.9)) 0%, transparent 65%);
     mix-blend-mode: overlay;
-    filter: blur(8px);
-    opacity: 0.7;
+    filter: blur(7px);
+    opacity: 0.75;
     pointer-events: none;
     transition: opacity 0.18s ease;
   }
 
-  /* Glass caustic refraction overlay */
+  /* Glass caustic refraction overlay — simulates specular highlight */
   .orb-glass-caustic {
     position: absolute;
     inset: 0;
     border-radius: 9999px;
-    background: radial-gradient(circle at 28% 26%, rgba(255,255,255,0.20) 0%, transparent 50%);
+    background:
+      radial-gradient(ellipse 55% 35% at 30% 24%, rgba(255,255,255,0.26) 0%, transparent 55%),
+      radial-gradient(ellipse 28% 18% at 68% 72%, rgba(255,255,255,0.08) 0%, transparent 60%);
     pointer-events: none;
   }
 

@@ -58,8 +58,10 @@ import { AdminHome } from '@/components/admin/AdminHome';
 
 // Background Layers
 import { StarField } from '@/components/visual/StarField';
+import { NeuralGrid } from '@/components/visual/NeuralGrid';
 import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
 import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
+import { AmbientDust } from '@/components/organic/AmbientDust';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
@@ -777,8 +779,13 @@ export const MoraShell: React.FC = () => {
                 LAYER 1: BACKGROUND
             ================================================================= */}
 
-            {/* Deep Void Foundation + Living Background */}
-            <div className="fixed inset-0 bg-black z-[-10]" />
+            {/* Deep Void Foundation — near-black with green soul */}
+            <div
+                className="fixed inset-0 z-[-10]"
+                style={{
+                    background: 'radial-gradient(ellipse 140% 80% at 50% 0%, hsl(155 52% 5%) 0%, hsl(155 52% 2%) 55%, #000 100%)',
+                }}
+            />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground} />
 
@@ -788,6 +795,18 @@ export const MoraShell: React.FC = () => {
                 density={isUniverseExploreSurface ? 'low' : viewLevel === 'core' ? 'medium' : 'medium'}
                 opacity={0.97}
                 paused={pauseHeavyBackground}
+            />
+
+            {/* Neural Grid — Tesla-style tech texture, reacts to Mora state */}
+            <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
+
+            {/* Ambient Dust — floating emerald particles for depth */}
+            <AmbientDust
+                count={32}
+                color="rgba(16, 185, 129, 0.07)"
+                sizeRange={[0.8, 2.5]}
+                durationRange={[18, 36]}
+                opacity={0.28}
             />
 
             {/* ================================================================
