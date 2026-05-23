@@ -222,11 +222,11 @@ export const Planet: React.FC<PlanetProps> = ({
                     width: planetSize.diameter,
                     height: planetSize.diameter,
                     transformOrigin: '50% 50%',
-                    '--orb-glow': `${style.glow}08`,
-                    '--orb-border': `${style.border}3A`,
+                    '--orb-glow': `${style.glow}55`,
+                    '--orb-border': `${style.border}70`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 58px ${style.glow}34, 0 22px 54px rgba(0,0,0,0.50), inset 0 0 26px ${style.glow}18, inset 2px 2px 8px rgba(255,255,255,0.30)`
-                        : `0 18px 44px rgba(0,0,0,0.46), 0 0 28px ${style.glow}10, inset 0 0 18px ${style.glow}10, inset 1px 1px 4px rgba(255,255,255,0.18)`,
+                        ? `0 0 80px ${style.glow}70, 0 0 140px ${style.glow}30, 0 22px 54px rgba(0,0,0,0.55), inset 0 0 40px ${style.glow}40, inset 2px 2px 10px rgba(255,255,255,0.35)`
+                        : `0 18px 44px rgba(0,0,0,0.50), 0 0 50px ${style.glow}35, 0 0 90px ${style.glow}15, inset 0 0 28px ${style.glow}28, inset 1px 1px 6px rgba(255,255,255,0.22)`,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.09 }}
                 initial={{ scale: 1, rotateZ: 0 }}

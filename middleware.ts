@@ -17,6 +17,10 @@ const PUBLIC_PATHS = [
     "/reset-password", // Token-based password reset — unauthenticated by design
 ];
 
+/** Dev-only UI museum — see app/tunnel/page.tsx */
+const DEV_PUBLIC_PATHS = ["/tunnel", "/tunel"]; //
+    
+
 const PUBLIC_PREFIXES = [
     "/_next/static",
     "/_next/image",
@@ -34,7 +38,7 @@ const PUBLIC_FILES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
-    if (PUBLIC_PATHS.includes(pathname)) return true;
+    if (PUBLIC_PATHS.includes(pathname) || DEV_PUBLIC_PATHS.includes(pathname)) return true;
 
     for (const prefix of PUBLIC_PREFIXES) {
         if (pathname.startsWith(prefix)) return true;

@@ -24,8 +24,7 @@ export default function RootLayout({
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
 
-  // Show bar (OS Dock/UI) only if NOT on login page
-  const showBar = pathname !== "/" && pathname !== "/login";
+  const isTunnelDev = pathname === "/tunnel";
 
   // Fix hydration mismatch from browser extensions
   useEffect(() => {
@@ -102,7 +101,7 @@ export default function RootLayout({
             <MoraSessionProvider>
               <StandardModeHandler />
               {children}
-              {mounted && (
+              {mounted && !isTunnelDev && (
                 <>
                   <PaneManager />
                   <Toaster position="top-right" />

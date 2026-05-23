@@ -439,12 +439,12 @@
     position: relative;
     border-radius: 9999px;
     overflow: hidden;
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
     background:
       radial-gradient(150% 150% at 30% 28%,
-        rgba(255,255,255,0.08) 0%,
-        var(--orb-glow, rgba(16,185,129,0.03)) 50%,
-        rgba(0,0,0,0.32) 100%);
+        rgba(255,255,255,0.14) 0%,
+        var(--orb-glow, rgba(16,185,129,0.45)) 45%,
+        rgba(0,0,0,0.55) 100%);
     border: 1.5px solid var(--orb-border, rgba(255,255,255,0.12));
   }
 

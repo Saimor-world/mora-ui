@@ -49,11 +49,11 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
                 className="absolute inset-0"
                 style={{
                     backgroundImage: `
-                        linear-gradient(to right, rgba(16, 185, 129, 0.055) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(16, 185, 129, 0.055) 1px, transparent 1px)
+                        linear-gradient(to right, rgba(16, 185, 129, 0.18) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(16, 185, 129, 0.18) 1px, transparent 1px)
                     `,
                     backgroundSize: '100px 100px',
-                    maskImage: 'radial-gradient(ellipse 80% 70% at 50% 50%, black 25%, transparent 75%)'
+                    maskImage: 'radial-gradient(ellipse 90% 80% at 50% 50%, black 30%, transparent 80%)'
                 }}
             />
 
