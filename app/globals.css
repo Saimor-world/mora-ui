@@ -638,16 +638,15 @@
   }
 
   body {
-    background-color: hsl(var(--background));
     color: hsl(var(--foreground));
-    /* MASTERBIBEL: Deep Forest Universe - darker, more green, less blue */
+    /* COSMIC DAWN — Deep indigo universe */
     background:
-      radial-gradient(circle at 15% 50%, rgba(6, 95, 70, 0.15) 0%, transparent 35%),
-      radial-gradient(circle at 85% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 35%),
-      radial-gradient(circle at 50% 45%, #040d0a 0%, #010302 100%);
+      radial-gradient(circle at 20% 40%, rgba(124, 58, 237, 0.18) 0%, transparent 40%),
+      radial-gradient(circle at 80% 25%, rgba(16, 185, 129, 0.10) 0%, transparent 35%),
+      radial-gradient(circle at 60% 75%, rgba(245, 158, 11, 0.08) 0%, transparent 30%),
+      radial-gradient(circle at 50% 50%, #0d0921 0%, #080618 100%);
     background-attachment: fixed;
     font-family: system-ui, -apple-system, sans-serif;
-    /* Sanfte, organische Übergänge überall */
     transition: background-color 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 

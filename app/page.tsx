@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,7 +28,7 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                         Einstieg wird vorbereitet
                     </div>
                     <p className="mt-2 text-xs leading-relaxed text-emerald-100/55">
-                        Sitzung, Instanzregeln und lokaler Core werden geprüft. Danach erscheint der Einstieg mit klarer Auswahl.
+                        Sitzung, Instanzregeln und lokaler Core werden geprÃ¼ft. Danach erscheint der Einstieg mit klarer Auswahl.
                     </p>
                 </div>
                 {delayed && (
@@ -49,6 +49,14 @@ function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useRuntimeSession();
+    // DEV BACKDOOR
+    useEffect(() => {
+        if (searchParams.get('dev_login') === 'true') {
+            writeCookie('mora_session', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJocS1hZG1pbiIsInJvbGUiOiJvd25lciIsInRlbmFudCI6InNhaW1vciIsImlzcyI6InNhaW1vci5tb3JhIiwiYXVkIjoic2FpbW9yLmNsaWVudHMiLCJleHAiOjE4MTA3MTc5NjYsImlhdCI6MTc3OTE4MTk2Nn0.Ak2QD9idCZ5XDrcs8he1aplceNxwBkFfyPwCxt7ohic');
+            router.push('/home');
+        }
+    }, [searchParams, router]);
+
     const [showLockScreen, setShowLockScreen] = useState(false);
     const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
 
@@ -135,7 +143,7 @@ function RootPageContent() {
                         window.location.reload();
                     }}
                     userName={userName}
-                    companyName="SAIMÔR"
+                    companyName="SAIMÃ”R"
                 />
             ) : (
                 <WelcomeScreen onAuthenticated={handleAuthenticated} />
@@ -153,3 +161,4 @@ export default function RootPage() {
         </Suspense>
     );
 }
+
