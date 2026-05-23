@@ -22,7 +22,7 @@
 import {
     Building2, Briefcase, Users, DollarSign, TrendingUp,
     Code, LucideIcon, Compass, ShoppingCart, Activity,
-    Folder as FolderIcon, Star, Sparkles,
+    Folder as FolderIcon, Star, Sparkles, Brain, FlaskConical,
 } from 'lucide-react';
 
 export interface DeptStyle {
@@ -46,7 +46,15 @@ export function getDeptStyle(name: string, customColor?: string | null): DeptSty
 
     let style: DeptStyle = { glow: '#64748B', border: '#94A3B8', core: '#475569', icon: Compass };
 
-    if (n.includes('finance') || n.includes('finanz') || n.includes('growth'))
+    // Intelligence / KI / Research → violet (Cosmic Dawn accent)
+    if (n.includes('intelligence') || n.includes('bi ') || n.includes('analytics') || n.includes('insight'))
+        style = { glow: '#8B5CF6', border: '#A78BFA', core: '#6D28D9', icon: Brain };
+
+    // R&D / Research / Science → cyan (discovery / frontier)
+    else if (n.includes('r&d') || n.includes('research') || n.includes('lab') || n.includes('science') || n.includes('innovation'))
+        style = { glow: '#22D3EE', border: '#67E8F9', core: '#0891B2', icon: FlaskConical };
+
+    else if (n.includes('finance') || n.includes('finanz') || n.includes('growth'))
         style = { glow: '#F59E0B', border: '#FBBF24', core: '#D97706', icon: DollarSign };
 
     else if (n.includes('hr') || n.includes('human') || n.includes('culture') || n.includes('people'))

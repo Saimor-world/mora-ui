@@ -52,13 +52,22 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
     }, []);
 
     return (
-        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden" style={{ background: '#010b06' }}>
-            {/* PERSISTENT EMERALD AURORA — always present, Mora's resting presence */}
+        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden" style={{ background: '#0d0921' }}>
+            {/* PERSISTENT VIOLET ATMOSPHERE — Cosmic Dawn base wash */}
+            <div
+                className="absolute inset-x-0 top-0 h-[60vh]"
+                style={{
+                    background: 'radial-gradient(ellipse 110% 65% at 50% -10%, rgba(124,58,237,0.28) 0%, rgba(99,40,200,0.12) 45%, transparent 75%)',
+                    mixBlendMode: 'screen',
+                }}
+            />
+
+            {/* PERSISTENT EMERALD PULSE — Mora's signature, always alive */}
             <div
                 className="absolute inset-x-0 top-0 h-[45vh]"
                 style={{
-                    background: `radial-gradient(ellipse 90% 55% at 50% -5%, ${palette.glow} 0%, transparent 70%)`,
-                    opacity: 0.45,
+                    background: `radial-gradient(ellipse 70% 45% at 50% -5%, ${palette.glow} 0%, transparent 65%)`,
+                    opacity: 0.38,
                     mixBlendMode: 'screen',
                     transition: 'background 2s ease',
                 }}
@@ -69,7 +78,7 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 className="absolute top-0 left-0 w-[55vw] h-[35vh]"
                 style={{
                     background: `radial-gradient(ellipse 80% 70% at 0% 0%, ${palette.secondary} 0%, transparent 75%)`,
-                    opacity: 0.35,
+                    opacity: 0.38,
                     transition: 'background 2.5s ease',
                 }}
             />
@@ -77,8 +86,17 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 className="absolute top-0 right-0 w-[45vw] h-[30vh]"
                 style={{
                     background: `radial-gradient(ellipse 80% 70% at 100% 0%, ${palette.accent} 0%, transparent 75%)`,
-                    opacity: 0.28,
+                    opacity: 0.32,
                     transition: 'background 2.5s ease',
+                }}
+            />
+
+            {/* AMBER WARMTH — subtle depth warmth from below */}
+            <div
+                className="absolute inset-x-0 bottom-0 h-[25vh]"
+                style={{
+                    background: 'radial-gradient(ellipse 80% 60% at 50% 110%, rgba(245,158,11,0.12) 0%, transparent 70%)',
+                    mixBlendMode: 'screen',
                 }}
             />
 
@@ -148,19 +166,24 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
 
             {/* 2. NEBULA PILLARS (The "Deep Galaxy" Layer) */}
             <div className="absolute inset-0 opacity-22 mix-blend-screen">
-                {/* Pillar 1: Emerald Void — deep forest depths */}
+                {/* Pillar 1: Violet cosmic cloud — Cosmic Dawn identity */}
                 <div
                     className={`absolute bottom-[-20%] left-[5%] w-[55vw] h-[75vh] rounded-full blur-[110px] ${
                         animateAmbient ? 'forest-canopy-nebula-a' : ''
                     }`}
-                    style={{ background: 'conic-gradient(from 180deg, #064e3b, #10b981, #065f46, transparent)', opacity: animateAmbient ? undefined : 0.20 }}
+                    style={{ background: 'conic-gradient(from 180deg, #1e0f4a, #7c3aed, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.32 }}
                 />
-                {/* Pillar 2: Deep Indigo pulse */}
+                {/* Pillar 2: Emerald-Indigo pulse — Mora meets cosmos */}
                 <div
                     className={`absolute top-[-10%] right-[10%] w-[65vw] h-[65vh] rounded-full blur-[120px] ${
                         animateAmbient ? 'forest-canopy-nebula-b' : ''
                     }`}
-                    style={{ background: 'radial-gradient(circle, #1e3a5a, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.14 }}
+                    style={{ background: 'radial-gradient(circle, #0a1f3a, #065f46, #10b981, transparent)', opacity: animateAmbient ? undefined : 0.22 }}
+                />
+                {/* Pillar 3: Amber nebula — depth + warmth */}
+                <div
+                    className="absolute bottom-[10%] right-[20%] w-[35vw] h-[40vh] rounded-full blur-[90px]"
+                    style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%)', opacity: 0.6 }}
                 />
             </div>
 

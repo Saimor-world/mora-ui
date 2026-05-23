@@ -133,8 +133,8 @@ import { IntelligenceDiagnostics } from '@/components/dev/IntelligenceDiagnostic
 // =============================================================================
 
 const LoadingScreen: React.FC = () => (
-    <div className="relative w-full h-screen bg-gradient-to-b from-[#0a1a14] to-[#030806] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(24,134,154,0.12),rgba(3,8,8,0)_34%)]" />
+    <div className="relative w-full h-screen bg-gradient-to-b from-[#1a1135] to-[#0d0921] flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(124,58,237,0.14),rgba(13,9,33,0)_40%)]" />
         <div className="flex flex-col items-center gap-6">
             <div className="relative">
                 <IdentityMedallion
@@ -779,11 +779,11 @@ export const MoraShell: React.FC = () => {
                 LAYER 1: BACKGROUND
             ================================================================= */}
 
-            {/* Deep Void Foundation — near-black with green soul */}
+            {/* Cosmic Dawn Foundation — deep indigo void */}
             <div
                 className="fixed inset-0 z-[-10]"
                 style={{
-                    background: 'radial-gradient(ellipse 140% 80% at 50% 0%, hsl(155 52% 5%) 0%, hsl(155 52% 2%) 55%, #000 100%)',
+                    background: 'radial-gradient(ellipse 140% 80% at 50% 0%, hsl(248 45% 12%) 0%, hsl(248 48% 7%) 55%, hsl(248 52% 4%) 100%)',
                 }}
             />
             <MoraLivingBackground />

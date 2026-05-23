@@ -10,8 +10,16 @@
     --mora-emerald-core: #10B981;
     --mora-deep-forest: #065F46;
     --mora-gold: #CEB676;
-    --mora-shadow-black: #030806;
+    --mora-shadow-black: #0d0921;
     --mora-frost-white: #F0FDF4;
+
+    /* COSMIC DAWN ACCENT PALETTE */
+    --mora-cosmic-violet: #7C3AED;
+    --mora-cosmic-violet-light: #A78BFA;
+    --mora-cosmic-amber: #F59E0B;
+    --mora-cosmic-amber-light: #FCD34D;
+    --mora-cosmic-cyan: #22D3EE;
+    --mora-cosmic-indigo: #13112a;
 
     /* AWARENESS STATES */
     --mora-state-idle: #10B981;
@@ -42,17 +50,17 @@
     --mora-radius-lg: 24px;
     --mora-radius-xl: 32px;
 
-    /* GLASS PANEL SETTINGS */
+    /* GLASS PANEL SETTINGS — Cosmic Dawn: indigo-tinted glass */
     --mora-glass-blur: 28px;
     --mora-glass-opacity: 0.92;
-    --mora-glass-bg: rgba(2, 7, 5, 0.88);
-    --mora-glass-border: rgba(16, 185, 129, 0.18);
-    --mora-glass-bg-light: rgba(4, 14, 10, 0.72);
-    --mora-glass-highlight: rgba(255, 255, 255, 0.04);
+    --mora-glass-bg: rgba(13, 9, 33, 0.88);
+    --mora-glass-border: rgba(139, 92, 246, 0.20);
+    --mora-glass-bg-light: rgba(20, 15, 50, 0.72);
+    --mora-glass-highlight: rgba(167, 139, 250, 0.06);
 
     /* DEPTH GRADIENTS */
-    --mora-void-deep: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(10, 35, 25, 0.95) 0%, rgba(2, 7, 5, 1) 60%);
-    --mora-depth-glow: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+    --mora-void-deep: radial-gradient(ellipse 120% 80% at 50% 0%, rgba(30, 15, 65, 0.95) 0%, rgba(13, 9, 33, 1) 60%);
+    --mora-depth-glow: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
     --mora-emerald-glow: 0 0 40px rgba(16, 185, 129, 0.12), 0 0 80px rgba(16, 185, 129, 0.06);
     --mora-emerald-glow-strong: 0 0 20px rgba(16, 185, 129, 0.25), 0 0 60px rgba(16, 185, 129, 0.12);
 
@@ -97,15 +105,15 @@
 
     /* 🌿 Môra Resonanz-Farben: Wald & Sonne */
 
-    /* Tiefes Myzel-Grün - wie kosmischer Waldboden */
-    --background: 155 52% 4%;
-    --foreground: 150 18% 93%;
+    /* Cosmic Dawn — Tiefes Indigo-Violett als Basis */
+    --background: 245 43% 8%;
+    --foreground: 240 20% 94%;
 
-    /* Karten & Panels - organisch, tief */
-    --card: 155 48% 7%;
-    --card-foreground: 150 18% 93%;
-    --popover: 155 48% 7%;
-    --popover-foreground: 150 18% 93%;
+    /* Karten & Panels - kosmisch, tief */
+    --card: 245 40% 11%;
+    --card-foreground: 240 20% 94%;
+    --popover: 245 40% 11%;
+    --popover-foreground: 240 20% 94%;
   }
 
   /* === STANDARD MODE (LIGHT CORPORATE THEME - Like Excel/Word) === */

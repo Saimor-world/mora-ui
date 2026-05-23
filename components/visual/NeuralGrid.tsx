@@ -70,11 +70,11 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
                 }}
             />
 
-            {/* Bottom depth glow — pulls grid into perspective */}
+            {/* Bottom depth glow — cosmic violet + emerald */}
             <div
                 className="absolute inset-x-0 bottom-0 h-[40%]"
                 style={{
-                    background: 'linear-gradient(to top, rgba(16, 185, 129, 0.04) 0%, transparent 100%)',
+                    background: 'linear-gradient(to top, rgba(124, 58, 237, 0.06) 0%, rgba(16, 185, 129, 0.03) 60%, transparent 100%)',
                     maskImage: 'radial-gradient(ellipse 90% 60% at 50% 100%, black 0%, transparent 70%)'
                 }}
             />
@@ -104,14 +104,14 @@ export const NeuralGrid: React.FC<NeuralGridProps> = ({
             <div className="absolute bottom-24 left-8 w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(16, 185, 129, 0.35)' }} />
             <div className="absolute bottom-24 right-8 w-1.5 h-1.5 rounded-full" style={{ background: 'rgba(16, 185, 129, 0.35)' }} />
 
-            {/* Scanning Line (only when thinking) */}
+            {/* Scanning Line (only when thinking) — violet + emerald mix */}
             {showScanLine && (
                 <div
                     className="absolute inset-x-0 h-px neural-grid-scanline"
                     style={{
-                        background: 'linear-gradient(90deg, transparent 5%, rgba(16, 185, 129, 0.28) 40%, rgba(52, 211, 153, 0.45) 50%, rgba(16, 185, 129, 0.28) 60%, transparent 95%)',
+                        background: 'linear-gradient(90deg, transparent 5%, rgba(139, 92, 246, 0.22) 30%, rgba(16, 185, 129, 0.45) 50%, rgba(139, 92, 246, 0.22) 70%, transparent 95%)',
                         willChange: 'transform, opacity',
-                        boxShadow: '0 0 8px rgba(16, 185, 129, 0.2)',
+                        boxShadow: '0 0 10px rgba(139, 92, 246, 0.25), 0 0 4px rgba(16, 185, 129, 0.3)',
                     }}
                 />
             )}
