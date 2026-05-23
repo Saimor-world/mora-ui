@@ -53,49 +53,51 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
 
     return (
         <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden" style={{ background: '#0d0921' }}>
-            {/* PERSISTENT VIOLET ATMOSPHERE — Cosmic Dawn base wash */}
+            {/* MASSIVE VIOLET CROWN — fills top 70% of screen */}
             <div
-                className="absolute inset-x-0 top-0 h-[60vh]"
+                className="absolute inset-x-0 top-0 h-[70vh]"
                 style={{
-                    background: 'radial-gradient(ellipse 110% 65% at 50% -10%, rgba(124,58,237,0.28) 0%, rgba(99,40,200,0.12) 45%, transparent 75%)',
+                    background: 'radial-gradient(ellipse 130% 80% at 50% -15%, rgba(124,58,237,0.65) 0%, rgba(99,40,200,0.35) 40%, transparent 72%)',
                     mixBlendMode: 'screen',
                 }}
             />
 
-            {/* PERSISTENT EMERALD PULSE — Mora's signature, always alive */}
+            {/* EMERALD MORA CORE — Mora's heart always visible */}
             <div
-                className="absolute inset-x-0 top-0 h-[45vh]"
+                className="absolute inset-x-0 top-0 h-[50vh]"
                 style={{
-                    background: `radial-gradient(ellipse 70% 45% at 50% -5%, ${palette.glow} 0%, transparent 65%)`,
-                    opacity: 0.38,
+                    background: `radial-gradient(ellipse 80% 55% at 50% -8%, ${palette.glow} 0%, transparent 65%)`,
+                    opacity: 0.65,
                     mixBlendMode: 'screen',
                     transition: 'background 2s ease',
                 }}
             />
 
-            {/* SECONDARY AURORA — state-reactive side wash */}
+            {/* LEFT AURORA — secondary color wash */}
             <div
-                className="absolute top-0 left-0 w-[55vw] h-[35vh]"
+                className="absolute top-0 left-0 w-[60vw] h-[50vh]"
                 style={{
-                    background: `radial-gradient(ellipse 80% 70% at 0% 0%, ${palette.secondary} 0%, transparent 75%)`,
-                    opacity: 0.38,
-                    transition: 'background 2.5s ease',
-                }}
-            />
-            <div
-                className="absolute top-0 right-0 w-[45vw] h-[30vh]"
-                style={{
-                    background: `radial-gradient(ellipse 80% 70% at 100% 0%, ${palette.accent} 0%, transparent 75%)`,
-                    opacity: 0.32,
+                    background: `radial-gradient(ellipse 90% 80% at 0% 0%, ${palette.secondary} 0%, transparent 70%)`,
+                    opacity: 0.55,
                     transition: 'background 2.5s ease',
                 }}
             />
 
-            {/* AMBER WARMTH — subtle depth warmth from below */}
+            {/* RIGHT AURORA — accent side */}
             <div
-                className="absolute inset-x-0 bottom-0 h-[25vh]"
+                className="absolute top-0 right-0 w-[55vw] h-[45vh]"
                 style={{
-                    background: 'radial-gradient(ellipse 80% 60% at 50% 110%, rgba(245,158,11,0.12) 0%, transparent 70%)',
+                    background: `radial-gradient(ellipse 90% 80% at 100% 0%, ${palette.accent} 0%, transparent 70%)`,
+                    opacity: 0.50,
+                    transition: 'background 2.5s ease',
+                }}
+            />
+
+            {/* AMBER DEPTH GLOW — warm base, pulls scene forward */}
+            <div
+                className="absolute inset-x-0 bottom-0 h-[35vh]"
+                style={{
+                    background: 'radial-gradient(ellipse 100% 70% at 50% 110%, rgba(245,158,11,0.28) 0%, rgba(217,119,6,0.12) 50%, transparent 75%)',
                     mixBlendMode: 'screen',
                 }}
             />
@@ -164,26 +166,26 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 </svg>
             </div>
 
-            {/* 2. NEBULA PILLARS (The "Deep Galaxy" Layer) */}
-            <div className="absolute inset-0 opacity-22 mix-blend-screen">
-                {/* Pillar 1: Violet cosmic cloud — Cosmic Dawn identity */}
+            {/* 2. NEBULA PILLARS — massive, impossible to miss */}
+            <div className="absolute inset-0 mix-blend-screen">
+                {/* Pillar 1: Violet — left deep cloud */}
                 <div
-                    className={`absolute bottom-[-20%] left-[5%] w-[55vw] h-[75vh] rounded-full blur-[110px] ${
+                    className={`absolute bottom-[-10%] left-[-5%] w-[60vw] h-[80vh] rounded-full blur-[90px] ${
                         animateAmbient ? 'forest-canopy-nebula-a' : ''
                     }`}
-                    style={{ background: 'conic-gradient(from 180deg, #1e0f4a, #7c3aed, #4338ca, transparent)', opacity: animateAmbient ? undefined : 0.32 }}
+                    style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.55) 0%, rgba(99,40,200,0.30) 50%, transparent 75%)', opacity: animateAmbient ? undefined : 0.75 }}
                 />
-                {/* Pillar 2: Emerald-Indigo pulse — Mora meets cosmos */}
+                {/* Pillar 2: Emerald — right top cloud */}
                 <div
-                    className={`absolute top-[-10%] right-[10%] w-[65vw] h-[65vh] rounded-full blur-[120px] ${
+                    className={`absolute top-[-5%] right-[5%] w-[55vw] h-[60vh] rounded-full blur-[100px] ${
                         animateAmbient ? 'forest-canopy-nebula-b' : ''
                     }`}
-                    style={{ background: 'radial-gradient(circle, #0a1f3a, #065f46, #10b981, transparent)', opacity: animateAmbient ? undefined : 0.22 }}
+                    style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.50) 0%, rgba(6,95,70,0.25) 55%, transparent 75%)', opacity: animateAmbient ? undefined : 0.65 }}
                 />
-                {/* Pillar 3: Amber nebula — depth + warmth */}
+                {/* Pillar 3: Amber — bottom right warmth */}
                 <div
-                    className="absolute bottom-[10%] right-[20%] w-[35vw] h-[40vh] rounded-full blur-[90px]"
-                    style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18) 0%, transparent 70%)', opacity: 0.6 }}
+                    className="absolute bottom-[5%] right-[10%] w-[45vw] h-[50vh] rounded-full blur-[80px]"
+                    style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.40) 0%, rgba(217,119,6,0.20) 55%, transparent 75%)', opacity: 0.70 }}
                 />
             </div>
 

@@ -115,17 +115,17 @@ export const Planet: React.FC<PlanetProps> = ({
             }}
         >
             <motion.div
-                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[28px] w-[88px] -translate-x-1/2 translate-y-[34px] rounded-full"
+                className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[40px] w-[110px] -translate-x-1/2 translate-y-[38px] rounded-full"
                 style={{
-                    background: `radial-gradient(circle, ${style.glow}30 0%, rgba(0,0,0,0.32) 46%, transparent 78%)`,
-                    filter: 'blur(18px)',
+                    background: `radial-gradient(circle, ${style.glow}88 0%, ${style.glow}33 50%, transparent 78%)`,
+                    filter: 'blur(22px)',
                 }}
                 animate={{
-                    opacity: isHovered || isActive ? 0.82 : 0.52,
-                    scaleX: isHovered || isActive ? 1.22 : 1.08,
-                    scaleY: isHovered || isActive ? 1.12 : 1.02,
+                    opacity: isHovered || isActive ? 1.0 : 0.75,
+                    scaleX: isHovered || isActive ? 1.35 : 1.15,
+                    scaleY: isHovered || isActive ? 1.25 : 1.08,
                 }}
-                initial={{ opacity: 0.52, scaleX: 1.08, scaleY: 1.02 }}
+                initial={{ opacity: 0.75, scaleX: 1.15, scaleY: 1.08 }}
                 transition={{ duration: 0.28, ease: 'easeOut' }}
             />
 
@@ -222,11 +222,11 @@ export const Planet: React.FC<PlanetProps> = ({
                     width: planetSize.diameter,
                     height: planetSize.diameter,
                     transformOrigin: '50% 50%',
-                    '--orb-glow': `${style.glow}55`,
-                    '--orb-border': `${style.border}70`,
+                    '--orb-glow': `${style.glow}CC`,
+                    '--orb-border': `${style.border}FF`,
                     boxShadow: isActive || isHovered
-                        ? `0 0 80px ${style.glow}70, 0 0 140px ${style.glow}30, 0 22px 54px rgba(0,0,0,0.55), inset 0 0 40px ${style.glow}40, inset 2px 2px 10px rgba(255,255,255,0.35)`
-                        : `0 18px 44px rgba(0,0,0,0.50), 0 0 50px ${style.glow}35, 0 0 90px ${style.glow}15, inset 0 0 28px ${style.glow}28, inset 1px 1px 6px rgba(255,255,255,0.22)`,
+                        ? `0 0 60px ${style.glow}CC, 0 0 120px ${style.glow}88, 0 0 200px ${style.glow}44, 0 22px 54px rgba(0,0,0,0.6), inset 0 0 50px ${style.glow}88, inset 0 0 20px ${style.glow}CC, inset 2px 2px 12px rgba(255,255,255,0.5)`
+                        : `0 0 40px ${style.glow}AA, 0 0 80px ${style.glow}66, 0 0 140px ${style.glow}33, 0 18px 44px rgba(0,0,0,0.55), inset 0 0 35px ${style.glow}77, inset 0 0 15px ${style.glow}AA, inset 1px 1px 8px rgba(255,255,255,0.35)`,
                 } as React.CSSProperties}
                 whileHover={{ scale: 1.09 }}
                 initial={{ scale: 1, rotateZ: 0 }}
