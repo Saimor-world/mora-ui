@@ -351,21 +351,21 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const panelBackgroundColor = isStandardMode
         ? 'var(--mora-glass-bg, #FFFFFF)'
         : effectiveIsActive
-            ? `rgba(4, 13, 10, ${Math.max(hasDensePaneStack ? 0.7 : 0.74, opacity - 0.05)})`
+            ? `rgba(13, 9, 33, ${Math.max(hasDensePaneStack ? 0.7 : 0.74, opacity - 0.05)})`
             : hasDensePaneStack
-                ? 'rgba(2, 8, 6, 0.9)'
-                : 'rgba(3, 10, 8, 0.84)';
+                ? 'rgba(8, 5, 22, 0.9)'
+                : 'rgba(10, 7, 26, 0.84)';
     const panelBoxShadow = effectiveIsActive
         ? hasDensePaneStack
-            ? '0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(16, 185, 129, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
-            : '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(16, 185, 129, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            ? '0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(124, 58, 237, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
+            : '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(124, 58, 237, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
         : hasPaneStack
             ? '0 6px 18px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.035)'
             : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
     const panelBackgroundImage = isStandardMode
         ? undefined
         : effectiveIsActive
-            ? 'radial-gradient(circle at 14% 0%, rgba(16,185,129,0.16), transparent 32%), radial-gradient(circle at 88% 8%, rgba(34,211,238,0.10), transparent 28%), linear-gradient(160deg, rgba(255,255,255,0.035), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))'
+            ? 'radial-gradient(circle at 14% 0%, rgba(124,58,237,0.14), transparent 32%), radial-gradient(circle at 88% 8%, rgba(34,211,238,0.08), transparent 28%), linear-gradient(160deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))'
             : 'linear-gradient(160deg, rgba(255,255,255,0.018), rgba(0,0,0,0.12))';
 
     // Safe Portal Rendering (Client-side only)
@@ -490,7 +490,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     <button
                                         data-testid="nav-back-to-space"
                                         onClick={(e) => { e.stopPropagation(); onBack(); }}
-                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-emerald-100/80 transition-all group"
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-violet-100/80 transition-all group"
                                     >
                                         <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                                         <span className="text-sm">Back</span>
@@ -503,13 +503,13 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                 {title && (
                                     typeof title === 'string' ? (
                                         <h2 
-                                            className="text-lg font-medium tracking-wide text-emerald-50 uppercase truncate flex-1 px-3 md:px-6 text-center"
+                                            className="text-lg font-medium tracking-wide text-violet-50 uppercase truncate flex-1 px-3 md:px-6 text-center"
                                             title={title}
                                         >
                                             {title}
                                         </h2>
                                     ) : (
-                                        <div className="text-lg font-medium tracking-wide text-emerald-50 uppercase truncate flex-1 px-3 md:px-6 flex justify-center">
+                                        <div className="text-lg font-medium tracking-wide text-violet-50 uppercase truncate flex-1 px-3 md:px-6 flex justify-center">
                                             {title}
                                         </div>
                                     )
@@ -520,7 +520,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     {showMinimizeButton && onMinimize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onMinimize(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-yellow-500/20 text-emerald-100/60 hover:text-yellow-400 transition-all"
+                                            className="p-2 rounded-lg bg-white/5 hover:bg-yellow-500/20 text-violet-100/60 hover:text-yellow-400 transition-all"
                                             aria-label="Minimize panel"
                                         >
                                             <Minus className="w-4 h-4" />
@@ -529,7 +529,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     {allowMaximize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-emerald-100/60 hover:text-cyan-300 transition-all"
+                                            className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-violet-100/60 hover:text-cyan-300 transition-all"
                                             aria-label={isMaximized ? "Restore panel" : "Maximize panel"}
                                         >
                                             {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -538,7 +538,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     {showCloseButton && onClose && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onClose(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-emerald-100/60 hover:text-red-400 transition-all"
+                                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-violet-100/60 hover:text-red-400 transition-all"
                                             aria-label="Close panel"
                                         >
                                             <X className="w-4 h-4" />
@@ -556,8 +556,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                         key={tab.id}
                                         onClick={() => onTabChange?.(tab.id)}
                                         className={`px-4 py-2 text-sm font-medium transition-all border-b-2 ${activeTabId === tab.id
-                                            ? 'text-emerald-400 border-emerald-400 bg-emerald-400/5'
-                                            : 'text-emerald-300/60 border-transparent hover:text-emerald-300 hover:border-emerald-300/50'
+                                            ? 'text-violet-400 border-violet-400 bg-violet-400/5'
+                                            : 'text-violet-300/60 border-transparent hover:text-violet-300 hover:border-violet-300/50'
                                             }`}
                                     >
                                         {tab.title}

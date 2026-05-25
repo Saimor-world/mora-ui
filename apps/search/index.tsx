@@ -70,7 +70,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Suche nach Elementen, Bereichen..."
-            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all"
+            className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
           />
           {query && (
             <button onClick={() => setQuery('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70">
@@ -88,7 +88,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
         {(searchHint || isSearching) && (
           <div className="mt-2 flex items-center gap-2 text-[11px]">
             {searchHint && (
-              <span className={`px-2 py-0.5 rounded-full border ${searchMode === 'mora' ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-white/10 bg-white/5 text-white/55'}`}>
+              <span className={`px-2 py-0.5 rounded-full border ${searchMode === 'mora' ? 'border-violet-500/30 bg-violet-500/10 text-violet-300' : 'border-white/10 bg-white/5 text-white/55'}`}>
                 {searchHint}
               </span>
             )}
@@ -104,7 +104,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
             {isSearching && results.length === 0 ? (
               <div className="flex items-center justify-center py-8">
                 <motion.div animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}>
-                  <Sparkles className="text-emerald-400" size={24} />
+                  <Sparkles className="text-violet-400" size={24} />
                 </motion.div>
               </div>
             ) : results.length > 0 ? (
@@ -169,7 +169,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
 
       <div className="p-3 border-t border-white/10">
         <div className="flex items-center gap-2 text-xs text-white/30">
-          <Search size={12} className="text-emerald-400" />
+          <Search size={12} className="text-violet-400" />
           <span>{searchMode === 'mora' ? 'Lokal + Mora-Semantik' : 'Lokale Suche'}{activeCompanyName ? ` · ${activeCompanyName}` : ''}</span>
         </div>
       </div>

@@ -276,7 +276,7 @@ const SaveInsightButton: React.FC<{
 
     if (isSaved) {
         return (
-            <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400/60 ml-2">
+            <span className="inline-flex items-center gap-1 text-[10px] text-violet-400/60 ml-2">
                 <Check size={10} />
                 Gespeichert
             </span>
@@ -288,7 +288,7 @@ const SaveInsightButton: React.FC<{
             <button
                 onClick={() => setShowCategorySelect(!showCategorySelect)}
                 disabled={saving}
-                className="inline-flex items-center gap-1 text-[10px] text-white/30 hover:text-emerald-400 transition-colors"
+                className="inline-flex items-center gap-1 text-[10px] text-white/30 hover:text-violet-400 transition-colors"
                 title="Als Insight speichern"
             >
                 {saving ? (
@@ -312,7 +312,7 @@ const SaveInsightButton: React.FC<{
                             <button
                                 key={cat}
                                 onClick={() => handleSave(cat)}
-                                className="block w-full text-left text-xs px-2 py-1 text-white/70 hover:bg-emerald-500/20 hover:text-emerald-300 rounded transition-colors capitalize"
+                                className="block w-full text-left text-xs px-2 py-1 text-white/70 hover:bg-violet-500/20 hover:text-violet-300 rounded transition-colors capitalize"
                             >
                                 {cat === 'context' ? 'Kontext' :
                                     cat === 'fact' ? 'Fakt' :
@@ -336,13 +336,13 @@ const MemoryHint: React.FC<{
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 10 }}
-        className="flex items-center gap-2 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs"
+        className="flex items-center gap-2 px-3 py-2 bg-violet-500/10 border border-violet-500/20 rounded-lg text-xs"
     >
-        <Lightbulb size={14} className="text-emerald-400 shrink-0" />
+        <Lightbulb size={14} className="text-violet-400 shrink-0" />
         <span className="text-white/70">Soll ich das speichern?</span>
         <button
             onClick={onConfirm}
-            className="px-2 py-0.5 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 rounded transition-colors"
+            className="px-2 py-0.5 bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 rounded transition-colors"
         >
             Ja
         </button>
@@ -384,7 +384,7 @@ const RelevantMemories: React.FC<{
                         {onOpenMemory && (
                             <button
                                 onClick={onOpenMemory}
-                                className="text-[11px] text-emerald-300/80 hover:text-emerald-200 transition-colors"
+                                className="text-[11px] text-violet-300/80 hover:text-violet-200 transition-colors"
                             >
                                 Im Memory öffnen
                             </button>
@@ -544,7 +544,7 @@ const ChatSuggestions: React.FC<{ onSelect: (text: string) => void }> = ({ onSel
                 <button
                     key={suggestion}
                     onClick={() => onSelect(suggestion)}
-                    className="text-xs px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/15 border border-emerald-500/20 rounded-full text-emerald-100/60 hover:text-emerald-300 transition-all duration-200"
+                    className="text-xs px-3 py-1.5 bg-violet-500/5 hover:bg-violet-500/15 border border-violet-500/20 rounded-full text-violet-100/60 hover:text-violet-300 transition-all duration-200"
                 >
                     {suggestion}
                 </button>
@@ -587,7 +587,7 @@ function MemoriesView({ searchQuery, onSearchQueryChange, isStandardMode }: Memo
                     className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
                         isStandardMode
                             ? 'bg-gray-100 border border-gray-200 text-[#1F1F1F] placeholder-gray-400 focus:ring-[#0078D4]/30'
-                            : 'bg-white/5 border border-white/10 text-white/90 placeholder-white/30 focus:ring-emerald-500/20'
+                            : 'bg-white/5 border border-white/10 text-white/90 placeholder-white/30 focus:ring-violet-500/20'
                     }`}
                 />
             </div>
@@ -596,7 +596,7 @@ function MemoriesView({ searchQuery, onSearchQueryChange, isStandardMode }: Memo
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {isLoading && (
                     <div className="flex justify-center py-8">
-                        <Loader2 size={20} className={`animate-spin ${isStandardMode ? 'text-[#0078D4]/40' : 'text-emerald-400/40'}`} />
+                        <Loader2 size={20} className={`animate-spin ${isStandardMode ? 'text-[#0078D4]/40' : 'text-violet-400/40'}`} />
                     </div>
                 )}
 
@@ -618,7 +618,7 @@ function MemoriesView({ searchQuery, onSearchQueryChange, isStandardMode }: Memo
                         }`}
                     >
                         {memory.similarity !== undefined && (
-                            <div className={`text-[10px] mb-1 flex items-center gap-1 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400/70'}`}>
+                            <div className={`text-[10px] mb-1 flex items-center gap-1 ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400/70'}`}>
                                 <Sparkles size={9} />
                                 Ähnlichkeit: {(memory.similarity * 100).toFixed(0)}%
                             </div>
@@ -1514,14 +1514,14 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 }`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
                     ? 'bg-[#0078D4]'
-                    : 'bg-gradient-to-br from-emerald-400 to-cyan-500'
+                    : 'bg-gradient-to-br from-violet-400 to-cyan-500'
                     }`}>
                     <Sparkles className="w-5 h-5 text-white" />
                 </div>
                 <div>
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
                         }`}>Môra</h3>
-                    <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                    <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
                         }`}>Deine KI-Begleiterin</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
@@ -1546,7 +1546,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             chatView === tab
                                 ? isStandardMode
                                     ? 'border-[#0078D4] text-[#0078D4]'
-                                    : 'border-emerald-400 text-white/90'
+                                    : 'border-violet-400 text-white/90'
                                 : isStandardMode
                                     ? 'border-transparent text-[#605E5C] hover:text-[#1F1F1F]'
                                     : 'border-transparent text-white/40 hover:text-white/70'
@@ -1586,9 +1586,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
                             isStandardMode
                                 ? 'bg-[#0078D4]/15 border border-[#0078D4]/25'
-                                : 'bg-emerald-500/10 border border-emerald-500/20 shadow-[0_0_24px_rgba(16,185,129,0.08)]'
+                                : 'bg-violet-500/10 border border-violet-500/20 shadow-[0_0_24px_rgba(124,58,237,0.08)]'
                         }`}>
-                            <Sparkles size={22} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
+                            <Sparkles size={22} className={isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'} />
                         </div>
                         <div>
                             <p className={`text-sm font-medium mb-1 ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white/75'}`}>
@@ -1611,7 +1611,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     className={`px-3 py-1.5 rounded-full text-[11px] border transition-colors ${
                                         isStandardMode
                                             ? 'border-[#E1E1E1] text-[#605E5C] hover:border-[#0078D4]/40 hover:text-[#0078D4]'
-                                            : 'border-white/[0.08] text-white/40 hover:border-emerald-400/30 hover:text-white/70 hover:bg-white/[0.03]'
+                                            : 'border-white/[0.08] text-white/40 hover:border-violet-400/30 hover:text-white/70 hover:bg-white/[0.03]'
                                     }`}
                                 >
                                     {prompt}
@@ -1635,19 +1635,19 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
                                     : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
                                 : msg.role === 'user'
-                                    ? 'bg-emerald-500/20 border border-emerald-500/30 text-white rounded-2xl'
+                                    ? 'bg-violet-500/20 border border-violet-500/30 text-white rounded-2xl'
                                     : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
                                 }`}>
                                 {/* Sprint 3: "Mora erinnert sich" recall indicator */}
                                 {msg.role === 'assistant' && msg.recalledMemoryIds && msg.recalledMemoryIds.length > 0 && (
-                                    <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-emerald-300/72">
+                                    <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-violet-300/72">
                                         <Sparkles size={10} />
                                         Mora erinnert sich an {msg.recalledMemoryIds.length} Gespräch{msg.recalledMemoryIds.length !== 1 ? 'e' : ''}
                                     </div>
                                 )}
                                 <div className="flex items-start gap-2">
                                     {msg.role === 'assistant' && (
-                                        <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                        <Bot size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
                                             }`} />
                                     )}
                                     {msg.frames && msg.frames.length > 0 ? (
@@ -1663,7 +1663,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         />
                                     )}
                                     {msg.role === 'user' && (
-                                        <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                        <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
                                             }`} />
                                     )}
                                 </div>
@@ -1789,7 +1789,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     {[0, 1, 2].map(i => (
                                         <span
                                             key={i}
-                                            className="block w-1.5 h-1.5 rounded-full bg-emerald-400/70"
+                                            className="block w-1.5 h-1.5 rounded-full bg-violet-400/70"
                                             style={{
                                                 animation: `mora-thinking-dot 1.2s ease-in-out ${i * 0.2}s infinite`,
                                             }}
@@ -1814,7 +1814,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         >
                             <div className="max-w-[80%] px-4 py-3 bg-white/5 border border-white/10 text-white/90 rounded-2xl">
                                 <div className="flex items-start gap-2">
-                                    <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                    <Bot size={16} className="mt-0.5 shrink-0 text-violet-400" />
                                     <div
                                         className="text-sm leading-relaxed max-w-none"
                                         dangerouslySetInnerHTML={{
@@ -1840,7 +1840,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         >
                             <div className="max-w-[80%] w-full px-4 py-3 bg-white/5 border border-white/10 rounded-2xl space-y-2">
                                 <div className="flex items-start gap-2">
-                                    <Bot size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                                    <Bot size={16} className="mt-0.5 shrink-0 text-violet-400" />
                                     <div className="flex-1 min-w-0 space-y-2">
                                         {liveFrames.map((frame, i) => (
                                             <FramedMessage key={i} frame={frame} />
@@ -1951,7 +1951,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         className="flex justify-start"
                     >
                         <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
-                            <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                            <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
                             <span className="text-sm text-white/60">Môra denkt nach...</span>
                         </div>
                     </motion.div>
@@ -2036,12 +2036,12 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
                                 style={{ resize: 'none', overflowY: 'hidden' }}
-                                className={`flex-1 bg-black/40 border border-emerald-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
+                                className={`flex-1 bg-black/40 border border-violet-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                             />
                             <button
                                 onClick={sendMessage}
                                 disabled={!input.trim() || isLoading || isStreaming}
-                                className="shrink-0 px-5 py-3 bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 disabled:hover:bg-emerald-500 rounded-xl text-black font-medium transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20"
+                                className="shrink-0 px-5 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:hover:bg-violet-600 rounded-xl text-white font-medium transition-colors flex items-center gap-2 shadow-lg shadow-violet-500/20"
                             >
                                 {isStreaming ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                                 {isFullscreen && <span>Senden</span>}
