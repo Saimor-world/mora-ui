@@ -25,6 +25,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useChatStore } from '@/lib/store/chatStore';
+import { useContextStore } from '@/lib/store/contextStore';
 
 // ─── QueryClient factory ──────────────────────────────────────────────────────
 
@@ -82,6 +83,9 @@ export function resetAllStores(): void {
         lastAnswerSourceMode: null,
         lastAnswerScopeLabel: null,
     } as any, true);
+
+    // Merge-reset (no true flag) — action functions from the real store are preserved
+    useContextStore.setState({ isAdminMode: false, personalSpaceId: null });
 }
 
 // ─── Render wrapper ───────────────────────────────────────────────────────────

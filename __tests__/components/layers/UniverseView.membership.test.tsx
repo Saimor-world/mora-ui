@@ -2,73 +2,72 @@ import React from 'react';
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import UniverseView from '@/components/home/UniverseView';
 import * as coreClient from '@/lib/api/coreClient';
-import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 
+// ─── HTTP boundary ────────────────────────────────────────────────────────────
+// Only the API layer is mocked — it's a network call, not business logic.
 jest.mock('@/lib/api/coreClient', () => ({
     ...jest.requireActual('@/lib/api/coreClient'),
     fetchUserMemberships: jest.fn(),
     fetchDepartmentStats: jest.fn(),
 }));
 
-// Planet renders the department name
+// ─── Heavy UI sub-components not under test ───────────────────────────────────
+// Planet: replaced with a minimal testid stub so membership tests can assert
+// which departments are visible / locked without rendering the full 3D planet.
 jest.mock('@/components/mora/Planet', () => ({
-    Planet: ({ department }: any) => <div data-testid={`planet-${department.id}`}>{department.name}</div>,
+    Planet: ({ department }: any) => (
+        <div data-testid={`planet-${department.id}`}>{department.name}</div>
+    ),
 }));
 
-// Suppress heavy sub-components not under test
 jest.mock('@/components/layers/LayerInsightRail', () => ({
     LayerInsightRail: () => null,
 }));
+
 jest.mock('@/components/ui/CompanyLogo', () => ({
     CompanyLogo: () => null,
 }));
 
-jest.mock('framer-motion', () => ({
-    AnimatePresence: ({ children }: any) => <>{children}</>,
-    motion: {
-        div: ({ children, ...p }: any) => <div {...p}>{children}</div>,
-        circle: (p: any) => <circle {...p} />,
-        path: (p: any) => <path {...p} />,
-        line: (p: any) => <line {...p} />,
-    },
-    useReducedMotion: () => false,
-}));
-
-// Stable mock: the fn is created once in the factory scope, so its reference never
-// changes between renders. A fresh jest.fn() per call would mutate the useEffect
-// dep array every render → infinite re-render loop → membershipsLoaded stays false.
-jest.mock('@/lib/store/contextStore', () => {
-    const stableSetPersonalSpaceId = jest.fn();
+// framer-motion: animations don't run in jsdom; passthrough keeps DOM structure intact.
+jest.mock('framer-motion', () => {
+    const React = require('react');
+    const pass = (tag: string) =>
+        React.forwardRef(({ children, initial, animate, exit, transition, ...rest }: any, ref: any) =>
+            React.createElement(tag, { ref, ...rest }, children)
+        );
     return {
-        useContextStore: jest.fn((selector) => {
-            const state = { setPersonalSpaceId: stableSetPersonalSpaceId };
-            return typeof selector === 'function' ? selector(state) : state;
-        }),
+        motion: { div: pass('div'), circle: pass('circle'), path: pass('path'), line: pass('line') },
+        AnimatePresence: ({ children }: any) => <>{children}</>,
+        useReducedMotion: () => false,
     };
 });
 
-jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
-    useSurfaceProfile: jest.fn().mockReturnValue({ isPublicDemoSurface: false }),
-}));
+// ─── Typed API mock handles ───────────────────────────────────────────────────
+const mockFetchUserMemberships = coreClient.fetchUserMemberships as jest.MockedFunction<
+    typeof coreClient.fetchUserMemberships
+>;
+const mockFetchDepartmentStats = coreClient.fetchDepartmentStats as jest.MockedFunction<
+    typeof coreClient.fetchDepartmentStats
+>;
 
-const mockFetchUserMemberships = coreClient.fetchUserMemberships as jest.MockedFunction<typeof coreClient.fetchUserMemberships>;
-const mockFetchDepartmentStats = coreClient.fetchDepartmentStats as jest.MockedFunction<typeof coreClient.fetchDepartmentStats>;
-
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
 const departments = [
     { id: 'dept-eng', name: 'Engineering', visibility: 'private' },
-    { id: 'dept-all', name: 'Allgemein', visibility: 'public' },
-    { id: 'dept-fin', name: 'Finance', visibility: 'visible', description: 'Finanzabteilung' },
-    { id: 'dept-hr', name: 'HR', visibility: 'private' },
+    { id: 'dept-all', name: 'Allgemein',   visibility: 'public'  },
+    { id: 'dept-fin', name: 'Finance',     visibility: 'visible', description: 'Finanzabteilung' },
+    { id: 'dept-hr',  name: 'HR',          visibility: 'private' },
 ];
 
 const memberships = [
     { department_id: 'dept-eng', department_name: 'Engineering' },
 ];
 
+// ─── Per-test setup ───────────────────────────────────────────────────────────
 beforeEach(resetAllStores);
 
 describe('UniverseView membership-scoped rendering', () => {
@@ -134,6 +133,7 @@ describe('UniverseView membership-scoped rendering', () => {
         });
         renderView();
         await waitFor(() => {
+            // dept-hr is private and not in memberships → must not appear
             expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
         });
     });
@@ -145,8 +145,7 @@ describe('UniverseView membership-scoped rendering', () => {
             has_department_assignments: true,
         });
         renderView();
-        // Both assertions inside waitFor: locked-planet-dept-fin only appears after
-        // membershipsLoaded=true, so we must wait for the async fetch to settle.
+        // Both checks inside waitFor: locked wrapper only appears after membershipsLoaded=true
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
             expect(screen.getByTestId('locked-planet-dept-fin')).toBeInTheDocument();
@@ -160,7 +159,6 @@ describe('UniverseView membership-scoped rendering', () => {
             has_department_assignments: true,
         });
         renderView();
-        // Click the locked planet once it's stable in the DOM, then verify tooltip renders
         await waitFor(() => {
             const lockedPlanet = screen.getByTestId('locked-planet-dept-fin');
             fireEvent.click(lockedPlanet);
@@ -172,13 +170,10 @@ describe('UniverseView membership-scoped rendering', () => {
         mockFetchUserMemberships.mockResolvedValue(null);
         renderView();
         await waitFor(() => {
-            // public department always renders
-            expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();
-            // visible department renders (locked)
-            expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
-            // private departments do NOT render
-            expect(screen.queryByTestId('planet-dept-eng')).not.toBeInTheDocument();
-            expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
+            expect(screen.getByTestId('planet-dept-all')).toBeInTheDocument();  // public → always shows
+            expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();  // visible → shows locked
+            expect(screen.queryByTestId('planet-dept-eng')).not.toBeInTheDocument(); // private → hidden
+            expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();  // private → hidden
         });
     });
 
