@@ -1714,7 +1714,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             ) : searchResults.length === 0 ? (
                                 <div className="text-center py-10 text-xs text-white/45 flex flex-col items-center gap-2">
                                     <Search className="w-8 h-8 text-white/20 mb-1" />
-                                    <span>Keine Treffer für "{searchQuery}"</span>
+                                    <span>Keine Treffer für &quot;{searchQuery}&quot;</span>
                                 </div>
                             ) : (
                                 <div className="flex flex-col gap-1">
