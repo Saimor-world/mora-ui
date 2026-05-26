@@ -38,12 +38,18 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
-jest.mock('@/lib/store/contextStore', () => ({
-    useContextStore: jest.fn((selector) => {
-        const state = { setPersonalSpaceId: jest.fn() };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
+// Stable mock: the fn is created once in the factory scope, so its reference never
+// changes between renders. A fresh jest.fn() per call would mutate the useEffect
+// dep array every render → infinite re-render loop → membershipsLoaded stays false.
+jest.mock('@/lib/store/contextStore', () => {
+    const stableSetPersonalSpaceId = jest.fn();
+    return {
+        useContextStore: jest.fn((selector) => {
+            const state = { setPersonalSpaceId: stableSetPersonalSpaceId };
+            return typeof selector === 'function' ? selector(state) : state;
+        }),
+    };
+});
 
 jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
     useSurfaceProfile: jest.fn().mockReturnValue({ isPublicDemoSurface: false }),
@@ -86,6 +92,7 @@ describe('UniverseView membership-scoped rendering', () => {
             navigateToSpace: jest.fn(),
             navigateToFolder: jest.fn(),
             navigateToExplore: jest.fn(),
+            navigateToAmbient: jest.fn(),
         } as any);
 
         useSessionStore.setState({
@@ -138,10 +145,12 @@ describe('UniverseView membership-scoped rendering', () => {
             has_department_assignments: true,
         });
         renderView();
+        // Both assertions inside waitFor: locked-planet-dept-fin only appears after
+        // membershipsLoaded=true, so we must wait for the async fetch to settle.
         await waitFor(() => {
             expect(screen.getByTestId('planet-dept-fin')).toBeInTheDocument();
+            expect(screen.getByTestId('locked-planet-dept-fin')).toBeInTheDocument();
         });
-        expect(screen.getByTestId('locked-planet-dept-fin')).toBeInTheDocument();
     });
 
     it('shows LockedPlanetTooltip when clicking a Visible locked planet', async () => {
