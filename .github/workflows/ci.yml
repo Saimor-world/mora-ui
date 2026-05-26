@@ -47,19 +47,7 @@ jobs:
         run: npm run verify:os:smoke
 
       - name: Unit tests
-        run: |
-          set -o pipefail
-          npm test -- --runInBand --verbose 2>&1 | tee /tmp/jest-out.txt
-        continue-on-error: true
-
-      - name: Show failing tests
-        if: always()
-        run: |
-          echo "=== FAILING TESTS ==="
-          grep -E "^\s+(✕|✗|×|FAIL|●|✘)" /tmp/jest-out.txt 2>/dev/null || true
-          grep -A 5 "● " /tmp/jest-out.txt 2>/dev/null | head -60 || true
-          echo "=== END ==="
-          grep -q "Tests:.*0 failed" /tmp/jest-out.txt && exit 0 || exit 1
+        run: npm test -- --runInBand
 
       - name: Production build
         run: npm run build
