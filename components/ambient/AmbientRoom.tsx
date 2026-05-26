@@ -305,9 +305,16 @@ export const AmbientRoom: React.FC = () => {
     return (
         <div
             className="absolute inset-0 flex flex-col items-center justify-start overflow-hidden select-none"
-            style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 30%, rgba(109,40,217,0.22) 0%, transparent 70%), #0a0618' }}
+            style={{
+                background: [
+                    'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(178,142,255,0.22) 0%, rgba(83,54,159,0.08) 42%, transparent 72%)',
+                    'radial-gradient(circle at 24% 38%, rgba(33,211,184,0.12), transparent 32%)',
+                    'radial-gradient(circle at 76% 45%, rgba(82,197,255,0.10), transparent 35%)',
+                    'linear-gradient(145deg, #04080d 0%, #0b1020 42%, #080613 100%)',
+                ].join(', '),
+            }}
         >
-            <AmbientDust count={35} color="rgba(124,58,237,0.12)" durationRange={[18, 38]} />
+            <AmbientDust count={56} color="rgba(150,220,255,0.16)" durationRange={[20, 44]} />
 
             {/* Back button */}
             <button
@@ -319,7 +326,7 @@ export const AmbientRoom: React.FC = () => {
             </button>
 
             {/* Header */}
-            <div className="mt-16 mb-2 text-[10px] tracking-[0.35em] uppercase text-violet-300/40 font-medium">
+            <div className="mt-16 mb-2 text-[10px] tracking-[0.35em] uppercase text-cyan-200/45 font-medium">
                 Môra Field
             </div>
 
@@ -441,16 +448,24 @@ export const AmbientRoom: React.FC = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Môra verbal response (text-only, no tools) */}
+                {/* Môra visible response */}
                 <AnimatePresence>
-                    {ambientState === 'idle' && moraText && !moraTools.length && (
+                    {((ambientState === 'idle' && moraText && !moraTools.length) || (ambientState === 'responding' && moraText)) && (
                         <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0 }}
-                            className="max-w-lg px-5 py-3 rounded-2xl text-sm text-white/60 leading-relaxed text-center italic"
-                            style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}
+                            className="w-full max-w-xl px-5 py-4 rounded-2xl text-sm text-white/75 leading-relaxed text-center"
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(210,235,255,0.10), rgba(127,94,255,0.09))',
+                                border: '1px solid rgba(186,220,255,0.20)',
+                                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 22px 70px rgba(38,112,160,0.12)',
+                                backdropFilter: 'blur(18px) saturate(135%)',
+                            }}
                         >
+                            <div className="mb-2 text-[10px] tracking-[0.28em] uppercase text-cyan-100/40">
+                                Môra
+                            </div>
                             {moraText}
                         </motion.div>
                     )}

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 /**
  * MoraShell - Main OS Shell Component
@@ -602,6 +602,9 @@ export const MoraShell: React.FC = () => {
         }, []),
         onOpenAmbient: useCallback(() => {
             useNavStore.getState().navigateToAmbient();
+        }, []),
+        onOpenLarry: useCallback(() => {
+            window.open('https://dash.saimor.world', '_blank');
         }, []),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();

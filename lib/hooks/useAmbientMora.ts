@@ -1,40 +1,29 @@
 "use client";
 
 /**
- * useAmbientMora — Phase A implementation.
+ * useAmbientMora - Phase C implementation.
  *
- * Single responsibility: talk to Môra AI and execute OS tools.
- *
- * Phase A:  moraAgentClient.chat + cursorBridge.parseAIResponse
- *           Maps CursorCommands → AmbientToolCalls
- *           Fallback: if no tools detected AND defaultFolderId exists → createNode
- *
- * Phase C (migration, drop-in):
- *           Replace sendToMora body → POST /v3/mora/field
- *           Same return type, same executeMoraTools — AmbientRoom never changes.
+ * Single responsibility: talk to Mora Field and execute OS UI tools.
+ * AmbientRoom stays stable because backend tool intents are mapped to the
+ * existing AmbientToolCall union here.
  */
 
 import { useCallback, useState } from 'react';
-import { moraAgentClient, buildChatContext } from '@/lib/api/moraAgentClient';
-import { parseAIResponse } from '@/lib/ai/cursorBridge';
+import { corePost } from '@/lib/api/http';
+import { buildChatContext, type ChatContext } from '@/lib/api/moraAgentClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 
-// ─── Public types ─────────────────────────────────────────────────────────────
-
 export type AmbientToolCall =
-    | { tool: 'createNode';            input: { title: string; content: string; folder_id: string } }
-    | { tool: 'openPane';              input: { type: string; title?: string; data?: Record<string, unknown> } }
-    | { tool: 'navigateToDepartment';  input: { departmentId: string } }
-    | { tool: 'searchGlobal';          input: { query: string } };
+    | { tool: 'createNode';           input: { title: string; content: string; folder_id: string } }
+    | { tool: 'openPane';             input: { type: string; title?: string; data?: Record<string, unknown> } }
+    | { tool: 'navigateToDepartment'; input: { departmentId: string } }
+    | { tool: 'searchGlobal';         input: { query: string } };
 
 export interface AmbientMoraResult {
-    /** Môra's verbal response (clean, no action tags) */
     text: string;
-    /** Parsed tool calls — may be empty */
     toolCalls: AmbientToolCall[];
-    /** Short human-readable intent summary */
     intent: string;
 }
 
@@ -45,13 +34,24 @@ export interface UseAmbientMoraReturn {
     error: string | null;
 }
 
-// ─── Hook ────────────────────────────────────────────────────────────────────
+type FieldToolCall = {
+    type: string;
+    label?: string;
+    payload?: Record<string, any>;
+    risk?: string;
+    requiresConfirmation?: boolean;
+};
+
+type FieldResponse = {
+    text?: string;
+    intent?: string;
+    toolCalls?: FieldToolCall[];
+};
 
 export function useAmbientMora(): UseAmbientMoraReturn {
     const [isLoading, setIsLoading] = useState(false);
-    const [error,     setError]     = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(null);
 
-    // ── sendToMora (Phase A) ─────────────────────────────────────────────────
     const sendToMora = useCallback(
         async (transcript: string, defaultFolderId?: string | null): Promise<AmbientMoraResult> => {
             if (!transcript.trim()) {
@@ -62,56 +62,22 @@ export function useAmbientMora(): UseAmbientMoraReturn {
             setError(null);
 
             try {
-                // 1. Call Môra AI
-                const response = await moraAgentClient.chat({
+                const response = await corePost('/v3/mora/field', {
                     message: transcript,
-                    context: buildChatContext(),
-                });
+                    context: buildFieldContext(buildChatContext(), defaultFolderId),
+                }) as FieldResponse | null;
 
-                const rawText = response.response ?? '';
-
-                // 2. Parse action tags from AI text
-                const { cleanContent, commands } = parseAIResponse(rawText);
-
-                // 3. Map CursorCommands → AmbientToolCalls
-                const toolCalls: AmbientToolCall[] = [];
-
-                for (const cmd of commands) {
-                    if (cmd.type === 'navigate' && cmd.target) {
-                        toolCalls.push({
-                            tool:  'navigateToDepartment',
-                            input: { departmentId: cmd.target },
-                        });
-                    } else if (cmd.type === 'pane' && cmd.paneType) {
-                        toolCalls.push({
-                            tool:  'openPane',
-                            input: {
-                                type:  cmd.paneType,
-                                title: cmd.message ?? cmd.paneType,
-                                data:  cmd.data ?? {},
-                            },
-                        });
-                    }
+                if (!response) {
+                    throw new Error('Mora Field ist nicht erreichbar.');
                 }
 
-                // 4. Fallback: if no tool commands detected AND we have a folder → createNode
-                if (toolCalls.length === 0 && defaultFolderId) {
-                    const title = transcript.trim().slice(0, 100);
-                    toolCalls.push({
-                        tool:  'createNode',
-                        input: {
-                            title,
-                            content:   transcript.trim(),
-                            folder_id: defaultFolderId,
-                        },
-                    });
-                }
+                const toolCalls = mapFieldToolCalls(response.toolCalls ?? [], transcript, defaultFolderId);
 
-                // 5. Build intent summary
-                const intent = buildIntent(toolCalls, transcript);
-
-                return { text: cleanContent || rawText, toolCalls, intent };
-
+                return {
+                    text: response.text ?? '',
+                    toolCalls,
+                    intent: response.intent || buildIntent(toolCalls, transcript),
+                };
             } catch (err) {
                 const msg = err instanceof Error ? err.message : 'Unbekannter Fehler';
                 setError(msg);
@@ -123,18 +89,31 @@ export function useAmbientMora(): UseAmbientMoraReturn {
         [],
     );
 
-    // ── executeMoraTools ─────────────────────────────────────────────────────
     const executeMoraTools = useCallback(
         async (calls: AmbientToolCall[]): Promise<void> => {
-            for (const call of calls) {
+            const response = await corePost('/v3/mora/field/execute', {
+                tools: calls.map(call => ({ tool: call.tool, input: call.input })),
+                context: buildFieldContext(buildChatContext()),
+            }) as { results?: Array<{ ok: boolean; error?: string }>; uiActions?: AmbientToolCall[] } | null;
+
+            if (!response) {
+                throw new Error('Mora Field konnte die Aktion nicht ausführen.');
+            }
+
+            const failed = (response.results ?? []).find(result => !result.ok);
+            if (failed) {
+                throw new Error(failed.error || 'Mora Field Aktion fehlgeschlagen.');
+            }
+
+            for (const call of response.uiActions ?? []) {
                 switch (call.tool) {
                     case 'createNode': {
                         const addNode = useMoraStore.getState().addNode;
                         await addNode({
-                            title:     call.input.title,
-                            content:   call.input.content,
+                            title: call.input.title,
+                            content: call.input.content,
                             folder_id: call.input.folder_id,
-                            type:      'note',
+                            type: 'note',
                         });
                         break;
                     }
@@ -142,11 +121,11 @@ export function useAmbientMora(): UseAmbientMoraReturn {
                     case 'openPane': {
                         const { openPane } = usePaneStore.getState();
                         openPane({
-                            id:    `ambient-${call.input.type}-${Date.now()}`,
-                            type:  call.input.type as any,
+                            id: `ambient-${call.input.type}-${Date.now()}`,
+                            type: call.input.type as any,
                             title: call.input.title ?? call.input.type,
-                            size:  { width: 900, height: 650 },
-                            data:  call.input.data ?? {},
+                            size: { width: 900, height: 650 },
+                            data: call.input.data ?? {},
                         });
                         break;
                     }
@@ -160,11 +139,11 @@ export function useAmbientMora(): UseAmbientMoraReturn {
                     case 'searchGlobal': {
                         const { openPane } = usePaneStore.getState();
                         openPane({
-                            id:    `ambient-search-${Date.now()}`,
-                            type:  'search' as any,
+                            id: `ambient-search-${Date.now()}`,
+                            type: 'search' as any,
                             title: 'Suche',
-                            size:  { width: 860, height: 620 },
-                            data:  { query: call.input.query },
+                            size: { width: 860, height: 620 },
+                            data: { query: call.input.query },
                         });
                         break;
                     }
@@ -177,7 +156,79 @@ export function useAmbientMora(): UseAmbientMoraReturn {
     return { sendToMora, executeMoraTools, isLoading, error };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+function buildFieldContext(context: ChatContext | undefined, defaultFolderId?: string | null): Record<string, unknown> {
+    return {
+        level: context?.view_level,
+        entityId: context?.node_id || context?.folder_id || context?.space_id || context?.department_id || context?.company_id,
+        entityType: context?.node_id ? 'node' : context?.folder_id ? 'folder' : context?.space_id ? 'space' : context?.department_id ? 'department' : context?.company_id ? 'company' : undefined,
+        companyId: context?.company_id,
+        departmentId: context?.department_id,
+        spaceId: context?.space_id,
+        folderId: context?.folder_id || defaultFolderId || undefined,
+        source: 'ambient-room',
+        surface: context?.route_path,
+        metadata: {
+            layer: context?.layer,
+            routePath: context?.route_path,
+            defaultFolderId: defaultFolderId || undefined,
+        },
+    };
+}
+
+function mapFieldToolCalls(
+    calls: FieldToolCall[],
+    transcript: string,
+    defaultFolderId?: string | null,
+): AmbientToolCall[] {
+    return calls.flatMap((call): AmbientToolCall[] => {
+        const payload = call.payload ?? {};
+
+        if (call.type === 'search') {
+            return [{ tool: 'searchGlobal', input: { query: String(payload.query ?? transcript) } }];
+        }
+
+        if (call.type === 'open_pane') {
+            return [{
+                tool: 'openPane',
+                input: {
+                    type: String(payload.paneType ?? payload.pane_type ?? 'finder'),
+                    title: call.label,
+                    data: payload.data ?? payload,
+                },
+            }];
+        }
+
+        if (call.type === 'navigate') {
+            const target = payload.target ?? {};
+            const departmentId = payload.departmentId ?? target.departmentId ?? (
+                target.entityType === 'department' ? target.entityId : undefined
+            );
+
+            if (departmentId) {
+                return [{ tool: 'navigateToDepartment', input: { departmentId: String(departmentId) } }];
+            }
+
+            return [{
+                tool: 'openPane',
+                input: { type: 'finder', title: call.label ?? 'Finder', data: target },
+            }];
+        }
+
+        if (call.type === 'create_note') {
+            const content = String(payload.content ?? transcript);
+            return [{
+                tool: 'createNode',
+                input: {
+                    title: content.trim().slice(0, 100),
+                    content,
+                    folder_id: defaultFolderId || '',
+                },
+            }];
+        }
+
+        return [];
+    });
+}
 
 function buildIntent(calls: AmbientToolCall[], transcript: string): string {
     if (calls.length === 0) return transcript.slice(0, 80);
@@ -185,13 +236,13 @@ function buildIntent(calls: AmbientToolCall[], transcript: string): string {
     const first = calls[0];
     switch (first.tool) {
         case 'createNode':
-            return `Node erstellen: „${first.input.title}"`;
+            return `Node erstellen: "${first.input.title}"`;
         case 'openPane':
-            return `${first.input.type} öffnen`;
+            return `${first.input.type} oeffnen`;
         case 'navigateToDepartment':
             return `Navigiere zu Department ${first.input.departmentId}`;
         case 'searchGlobal':
-            return `Suche nach „${first.input.query}"`;
+            return `Suche nach "${first.input.query}"`;
         default:
             return transcript.slice(0, 80);
     }

@@ -101,6 +101,7 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'team',     label: 'Team',     description: 'Teammitglieder',        shortcutSuffix: 'U' },
         { action: 'notes',    label: 'Notizen',  description: 'Persoenliche Notizen',  shortcutSuffix: 'N' },
         { action: 'ambient',  label: 'Field',    description: 'Môra Field – Sprachraum',  shortcutSuffix: null },
+        { action: 'larry',    label: 'Larry',    description: 'Larry Dashboard',       shortcutSuffix: 'L' },
         { action: 'settings', label: 'System',   description: 'Einstellungen',         shortcutSuffix: ',' },
     ];
 }

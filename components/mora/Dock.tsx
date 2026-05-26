@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -634,6 +634,7 @@ export const Dock = () => {
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen',  size: { width: 720, height: 640 } }); break;
+            case 'larry':    window.open('https://dash.saimor.world', '_blank'); break;
             default: break;
         }
     }, [navigateToCore, openPane]);
@@ -659,6 +660,7 @@ export const Dock = () => {
         notes:    FileText,
         settings: Settings,
         ambient:  Mic,
+        larry:    Sparkles,
     }), []);
 
     // Single source of truth — order, labels, shortcuts come from surfaceRegistry.

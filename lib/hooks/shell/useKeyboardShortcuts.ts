@@ -20,6 +20,7 @@ export function getKeyboardShortcuts(mod?: string) {
         { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
         { keys: ['Alt', 'A'], label: 'Ambient', description: 'Môra Field öffnen' },
+        { keys: [m, 'L'], label: 'Larry', description: 'Larry Dashboard oeffnen' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
     ];
@@ -33,6 +34,7 @@ interface UseKeyboardShortcutsOptions {
     onOpenSettings?: () => void;
     onGoHome?: () => void;
     onOpenAmbient?: () => void;
+    onOpenLarry?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
 }
@@ -45,6 +47,7 @@ export function useKeyboardShortcuts({
     onOpenSettings,
     onGoHome,
     onOpenAmbient,
+    onOpenLarry,
     onCloseTopPane,
     onShowShortcuts,
 }: UseKeyboardShortcutsOptions) {
@@ -103,6 +106,12 @@ export function useKeyboardShortcuts({
                 return;
             }
 
+            if (meta && key === 'l') {
+                e.preventDefault();
+                onOpenLarry?.();
+                return;
+            }
+
             if (e.key === 'Escape') {
                 e.preventDefault();
                 onCloseTopPane?.();
@@ -125,6 +134,7 @@ export function useKeyboardShortcuts({
         onOpenSettings,
         onGoHome,
         onOpenAmbient,
+        onOpenLarry,
         onCloseTopPane,
         onShowShortcuts,
     ]);
