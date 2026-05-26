@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles, Brain, X
+    Music2, Pause, Play, SkipForward, Sparkles, Brain, X, Mic
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -628,6 +628,7 @@ export const Dock = () => {
         switch (action) {
             // ── Core Work surfaces ──────────────────────────────────────
             case 'home':     navigateToCore(); break;
+            case 'ambient':  useNavStore.getState().navigateToAmbient(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'Mora',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
@@ -657,6 +658,7 @@ export const Dock = () => {
         team:     Users,
         notes:    FileText,
         settings: Settings,
+        ambient:  Mic,
     }), []);
 
     // Single source of truth — order, labels, shortcuts come from surfaceRegistry.

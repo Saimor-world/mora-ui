@@ -100,6 +100,7 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'finder',   label: 'Finder',   description: 'Dateien & Ordner',      shortcutSuffix: 'F' },
         { action: 'team',     label: 'Team',     description: 'Teammitglieder',        shortcutSuffix: 'U' },
         { action: 'notes',    label: 'Notizen',  description: 'Persoenliche Notizen',  shortcutSuffix: 'N' },
+        { action: 'ambient',  label: 'Field',    description: 'Môra Field – Sprachraum',  shortcutSuffix: null },
         { action: 'settings', label: 'System',   description: 'Einstellungen',         shortcutSuffix: ',' },
     ];
 }

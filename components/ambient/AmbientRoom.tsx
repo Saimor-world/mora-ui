@@ -286,6 +286,47 @@ export const AmbientRoom: React.FC = () => {
                     />
                 </div>
 
+                {/* Push-to-talk Mic Button */}
+                <AnimatePresence mode="wait">
+                    {ambientState !== 'cards' && !fallbackMode && (
+                        <motion.button
+                            key="mic-btn"
+                            initial={{ opacity: 0, scale: 0.85 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            transition={{ duration: 0.25 }}
+                            onPointerDown={(e) => { e.preventDefault(); startListening(); }}
+                            onPointerUp={(e)   => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
+                            onPointerLeave={(e) => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
+                            className="relative flex items-center justify-center rounded-full transition-all focus:outline-none"
+                            style={{
+                                width: 64, height: 64,
+                                background: ambientState === 'listening'
+                                    ? 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, rgba(16,185,129,0.12) 100%)'
+                                    : 'rgba(124,58,237,0.18)',
+                                border: ambientState === 'listening'
+                                    ? '2px solid rgba(52,211,153,0.55)'
+                                    : '2px solid rgba(139,92,246,0.3)',
+                                boxShadow: ambientState === 'listening'
+                                    ? '0 0 32px rgba(16,185,129,0.4)'
+                                    : '0 0 16px rgba(109,40,217,0.2)',
+                            }}
+                        >
+                            {ambientState === 'listening'
+                                ? <MicOff className="w-6 h-6 text-emerald-300" />
+                                : <Mic    className="w-6 h-6 text-violet-300" />
+                            }
+                            {ambientState === 'listening' && (
+                                <motion.div
+                                    className="absolute inset-[-6px] rounded-full border border-emerald-400/30"
+                                    animate={{ scale: [1, 1.18, 1], opacity: [0.5, 0, 0.5] }}
+                                    transition={{ duration: 1.2, repeat: Infinity }}
+                                />
+                            )}
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+
                 {/* Status hint */}
                 <AnimatePresence mode="wait">
                     <motion.div
@@ -296,9 +337,9 @@ export const AmbientRoom: React.FC = () => {
                         transition={{ duration: 0.25 }}
                         className="text-[11px] tracking-[0.25em] uppercase text-white/30 font-medium h-5 text-center"
                     >
-                        {ambientState === 'idle' && !fallbackMode   && 'Leertaste halten · Orb klicken'}
+                        {ambientState === 'idle' && !fallbackMode   && 'Drücken & halten · oder Leertaste'}
                         {ambientState === 'idle' && fallbackMode    && 'Eingabe unten'}
-                        {ambientState === 'listening'               && 'Hört zu …'}
+                        {ambientState === 'listening'               && 'Hört zu … loslassen zum Beenden'}
                         {ambientState === 'thinking'                && 'Verarbeitet …'}
                         {ambientState === 'cards'                   && 'Bereit zum Speichern'}
                     </motion.div>
