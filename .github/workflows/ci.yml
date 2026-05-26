@@ -47,7 +47,7 @@ jobs:
         run: npm run verify:os:smoke
 
       - name: Unit tests
-        run: npm test -- --runInBand
+        run: npm test -- --runInBand --json --outputFile=/tmp/jest-results.json || (node -e "const r=require('/tmp/jest-results.json'); r.testResults.filter(s=>s.status==='failed').forEach(s=>{console.log('FAIL:',s.testFilePath.split('/').pop()); s.testResults.filter(t=>t.status==='failed').forEach(t=>console.log('  x',t.fullName, '-', t.failureMessages[0]?.slice(0,200)))})" && exit 1)
 
       - name: Production build
         run: npm run build
