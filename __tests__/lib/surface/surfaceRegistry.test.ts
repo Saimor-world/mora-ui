@@ -144,11 +144,11 @@ describe('surfaceRegistry', () => {
     });
 
     describe('getCoreDockItems', () => {
-        it('returns exactly 6 Dock entries in the correct order', () => {
+        it('returns exactly 7 Dock entries in the correct order', () => {
             const items = getCoreDockItems();
-            expect(items).toHaveLength(6);
+            expect(items).toHaveLength(7);
             expect(items.map(i => i.action)).toEqual([
-                'home', 'chat', 'finder', 'team', 'notes', 'settings',
+                'home', 'chat', 'finder', 'team', 'notes', 'ambient', 'settings',
             ]);
         });
 

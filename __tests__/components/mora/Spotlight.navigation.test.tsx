@@ -102,7 +102,7 @@ describe('Spotlight core navigation contract', () => {
         const onClose = jest.fn();
         renderWithProviders(<Spotlight isOpen={true} onClose={onClose} />, { queryClient: qc });
 
-        fireEvent.change(screen.getByPlaceholderText('Resonanz erzeugen...'), { target: { value: 'home' } });
+        fireEvent.change(screen.getByPlaceholderText(/Frage Mora/i), { target: { value: 'home' } });
         const homeButton = screen.getAllByRole('button').find((button) => button.textContent?.includes('Home'));
         expect(homeButton).toBeDefined();
         fireEvent.click(homeButton!);
