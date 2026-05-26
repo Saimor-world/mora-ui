@@ -85,6 +85,15 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
     const navigateToSpace = useNavStore((s) => s.navigateToSpace);
 
     const { openPane, panes, minimizePane } = usePaneStore();
+    const contextLabel = activeFolderId
+        ? 'Ordner-Kontext'
+        : activeSpaceId
+            ? 'Bereich-Kontext'
+            : activeDepartmentId
+                ? 'Abteilungs-Kontext'
+                : activeCompanyId
+                    ? 'Organisations-Kontext'
+                    : 'OS-Kontext';
 
     const spacesByDepartment = useMemo(() => {
         const derived: Record<string, Array<{ id: string; name: string }>> = {};
@@ -165,6 +174,59 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             setIsMoraThinking(false);
         }
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, viewLevel]);
+
+    const handleUniversalSubmit = useCallback((rawValue: string) => {
+        const value = rawValue.trim();
+        if (!value) return false;
+
+        const localMatch = value.match(/^@local\s+(.+)/i);
+        if (localMatch?.[1]) {
+            openPane({
+                id: 'search-main',
+                type: 'search',
+                title: 'Lokale Suche',
+                size: { width: 780, height: 560 },
+                data: {
+                    query: localMatch[1].trim(),
+                    companyId: activeCompanyId || undefined,
+                    departmentId: activeDepartmentId || undefined,
+                    spaceId: activeSpaceId || undefined,
+                    folderId: activeFolderId || undefined,
+                },
+            });
+            onClose();
+            return true;
+        }
+
+        const teamMatch = value.match(/^@team\s+(.+)/i);
+        if (teamMatch?.[1]) {
+            openPane({
+                id: 'team-main',
+                type: 'team',
+                title: 'Team',
+                size: { width: 900, height: 680 },
+                data: {
+                    draft: teamMatch[1].trim(),
+                    context: {
+                        companyId: activeCompanyId || undefined,
+                        departmentId: activeDepartmentId || undefined,
+                        spaceId: activeSpaceId || undefined,
+                        folderId: activeFolderId || undefined,
+                    },
+                },
+            });
+            onClose();
+            return true;
+        }
+
+        const moraMessage = value.replace(/^@mora\s*/i, '').trim();
+        if (moraMessage) {
+            void handleMoraChat(moraMessage);
+            return true;
+        }
+
+        return false;
+    }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, handleMoraChat, onClose, openPane]);
 
     // Helper to open/focus pane
     const openFromSpotlight = useCallback((type: string, id: string, title: string, size = { width: 700, height: 500 }) => {
@@ -427,16 +489,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 break;
             case "Enter":
                 e.preventDefault();
-                // Check if user is chatting with Mora
-                if (query.trim().toLowerCase().startsWith("@mora")) {
-                    const message = query.replace(/^@mora\s*/i, "").trim();
-                    if (message) {
-                        if (message) {
-                            handleMoraChat(message);
-                            return;
-                        }
-                    }
-                }
+                if (handleUniversalSubmit(query)) return;
 
                 if (filteredActions[selectedIndex]) {
                     filteredActions[selectedIndex].onSelect();
@@ -447,7 +500,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 onClose();
                 break;
         }
-    }, [filteredActions, handleMoraChat, onClose, query, selectedIndex]);
+    }, [filteredActions, handleUniversalSubmit, onClose, query, selectedIndex]);
 
     // Reset selection when results change
     useEffect(() => {
@@ -534,7 +587,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                                 value={query}
                                 onChange={e => setQuery(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder="Resonanz erzeugen..."
+                                placeholder={`Frage Mora, @local suchen, @team senden - ${contextLabel}`}
                                 className="flex-1 bg-transparent text-emerald-50 text-xl font-light placeholder:text-emerald-500/20 focus:outline-none tracking-wide"
                                 autoComplete="off"
                                 spellCheck={false}
@@ -542,14 +595,20 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
                             <div className="flex items-center gap-2">
                                 {/* Interaction Mode Indicator */}
-                                {query.trim().toLowerCase().startsWith("@mora") && (
+                                {query.trim().length > 0 && (
                                     <motion.div
                                         initial={{ opacity: 0, x: 10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         className="flex items-center gap-2 px-3 py-1 bg-emerald-500/20 rounded-full border border-emerald-500/30"
                                     >
                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                                        <span className="text-xs text-emerald-300 font-medium tracking-wide">Direkter Draht</span>
+                                        <span className="text-xs text-emerald-300 font-medium tracking-wide">
+                                            {query.trim().toLowerCase().startsWith('@team')
+                                                ? 'Teamraum'
+                                                : query.trim().toLowerCase().startsWith('@local')
+                                                    ? 'Lokale Dateien'
+                                                    : 'Mora Kontext'}
+                                        </span>
                                     </motion.div>
                                 )}
 

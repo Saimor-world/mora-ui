@@ -77,7 +77,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
     return (
         <button
             aria-label={item.label}
-            className={`w-[54px] h-[54px] flex items-center justify-center rounded-2xl transition-all relative group duration-75 ease-out will-change-transform ${item.disabled
+            className={`w-[50px] h-[50px] flex items-center justify-center rounded-[18px] transition-all relative group duration-75 ease-out will-change-transform ${item.disabled
                 ? isStandardMode
                     ? 'text-gray-300 cursor-not-allowed'
                     : 'text-white/20 cursor-not-allowed'
@@ -85,12 +85,12 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15 hover:scale-110 active:scale-95'
                     : isStandardMode
                         ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
-                        : 'text-white/62 hover:text-cyan-200 hover:bg-cyan-400/[0.10] hover:scale-110 active:scale-95'
+                        : 'text-cyan-50/64 hover:text-cyan-100 hover:bg-cyan-200/[0.075] hover:shadow-[0_0_24px_rgba(34,211,238,0.12)] hover:scale-110 active:scale-95'
                 }`}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
         >
-            <item.icon size={26} strokeWidth={1.5} />
+            <item.icon size={23} strokeWidth={1.45} />
 
             {/* Badge */}
             {item.badge && item.badge > 0 && (
@@ -339,7 +339,7 @@ const DockPod: React.FC<DockPodProps> = ({
     <div
         className={`rounded-[24px] border ${isStandardMode
             ? 'border-gray-200 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
-            : 'border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(9,8,24,0.38))] shadow-[0_18px_70px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-2xl'
+            : 'border-cyan-200/[0.10] bg-[linear-gradient(180deg,rgba(123,233,255,0.055),rgba(83,65,160,0.055)_48%,rgba(2,10,14,0.20))] shadow-[0_18px_70px_rgba(0,0,0,0.20),0_0_34px_rgba(34,211,238,0.055),inset_0_1px_0_rgba(255,255,255,0.075)] backdrop-blur-[22px]'
             } ${className}`}
     >
         {children}
@@ -1231,7 +1231,7 @@ export const Dock = () => {
     }, [ritualSettings.autoTime, updateUserSettings]);
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-[740] flex flex-col items-center pointer-events-none">
+        <div className="fixed bottom-4 left-4 right-4 z-[740] flex flex-col items-center pointer-events-none">
             <RunningWindowsBar
                 panes={runningPanes}
                 activePaneId={activePaneId}
@@ -1241,7 +1241,13 @@ export const Dock = () => {
             />
 
             {/* MAIN DOCK BAR */}
-            <div className="w-[calc(100vw-20px)] max-w-none mx-auto mb-3 px-2 pointer-events-auto">
+            <div className="relative w-full max-w-[1480px] mx-auto pointer-events-auto">
+                {!isStandardMode && (
+                    <>
+                        <div className="pointer-events-none absolute inset-x-[7%] bottom-[-14px] h-px bg-gradient-to-r from-transparent via-cyan-200/40 to-transparent" />
+                        <div className="pointer-events-none absolute inset-x-[15%] bottom-[-26px] h-16 rounded-full bg-cyan-300/[0.055] blur-[34px]" />
+                    </>
+                )}
                 <AnimatePresence>
                     {isCommandDeckOpen && (
                         <div
@@ -1288,21 +1294,31 @@ export const Dock = () => {
                 </AnimatePresence>
 
                 <div
-                    className={`relative flex flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2.5 ${isStandardMode
+                    className={`relative flex flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2 ${isStandardMode
                         ? 'rounded-xl bg-white border-gray-200'
-                        : 'rounded-3xl backdrop-blur-2xl'
+                        : 'rounded-[30px] backdrop-blur-[30px]'
                         }`}
                     style={isStandardMode ? {
                         background: '#FFFFFF',
                         border: '1px solid #E1E1E1',
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
-                        background: 'linear-gradient(180deg, rgba(8, 22, 16, 0.86) 0%, rgba(3, 10, 8, 0.94) 100%)',
-                        border: '1px solid rgba(124, 58, 237, 0.26)',
-                        boxShadow: `0 -8px 32px rgba(124, 58, 237, 0.10), 0 16px 48px rgba(0, 0, 0, 0.72), 0 0 64px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.4)`,
+                        background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.46) 0%, rgba(10, 13, 28, 0.36) 54%, rgba(2, 7, 10, 0.48) 100%)',
+                        border: '1px solid rgba(125, 224, 255, 0.14)',
+                        boxShadow: `0 22px 80px rgba(0, 0, 0, 0.55), 0 0 70px ${accent}14, inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(34,211,238,0.08)`,
                         willChange: 'transform',
                     }}
                 >
+                    {!isStandardMode && (
+                        <div
+                            className="pointer-events-none absolute inset-[1px] rounded-[29px] opacity-55"
+                            style={{
+                                background: 'linear-gradient(90deg, rgba(125,224,255,0.05) 1px, transparent 1px), linear-gradient(180deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
+                                backgroundSize: '44px 44px',
+                                maskImage: 'linear-gradient(90deg, transparent, black 14%, black 86%, transparent)',
+                            }}
+                        />
+                    )}
                     {/* TOP GLOW LINE - Premium animated */}
                     {!isStandardMode && (
                         <>
@@ -1312,17 +1328,16 @@ export const Dock = () => {
                                 style={{ background: 'rgba(255,255,255,0.10)' }}
                             />
                             <div
-                                className="dock-glow-line absolute inset-x-0 top-0 h-[2px] rounded-full"
-                                style={{ background: `linear-gradient(90deg, transparent 10%, ${accent}80, transparent 90%)` }}
+                                className="dock-glow-line absolute inset-x-8 top-0 h-[2px] rounded-full"
+                                style={{ background: `linear-gradient(90deg, transparent 8%, rgba(34,211,238,0.65), ${accent}66, transparent 92%)` }}
                             />
-                            {/* Corner accents */}
-                            <div className="absolute top-0 left-6 w-12 h-[2px] bg-gradient-to-r from-emerald-400/70 to-transparent rounded-full" />
-                            <div className="absolute top-0 right-6 w-12 h-[2px] bg-gradient-to-l from-emerald-400/70 to-transparent rounded-full" />
+                            <div className="absolute left-8 top-2 h-10 w-px bg-gradient-to-b from-cyan-200/38 to-transparent" />
+                            <div className="absolute right-8 top-2 h-10 w-px bg-gradient-to-b from-cyan-200/38 to-transparent" />
                         </>
                     )}
 
-                    {/* LEFT: IDENTITY POD */}
-                    <DockPod className="flex shrink-0 items-center gap-2 px-2 py-2" isStandardMode={isStandardMode}>
+                    {/* LEFT: Identity stays out of the primary hologram on normal screens. */}
+                    <DockPod className="hidden shrink-0 items-center gap-2 px-2 py-2 min-[2200px]:flex" isStandardMode={isStandardMode}>
                         <AccountIdentityPod
                             name={websiteEntryContext?.companyName || user?.name || 'Benutzer'}
                             role={user?.role}
@@ -1344,7 +1359,7 @@ export const Dock = () => {
                                     title="Privater Bereich"
                                     aria-label="Privaten Bereich öffnen"
                                     data-interaction-sound="soft"
-                                    className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-black/20 px-3 text-white/62 transition-all duration-200 hover:border-white/18 hover:bg-white/[0.08] hover:text-white/88"
+                                    className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-cyan-200/12 bg-cyan-200/[0.04] px-3 text-white/62 transition-all duration-200 hover:border-cyan-200/24 hover:bg-cyan-200/[0.08] hover:text-white/88"
                                 >
                                     <FolderHeart size={16} />
                                     <span className="hidden 2xl:inline text-[10px] uppercase tracking-[0.16em]">Privat</span>
@@ -1354,8 +1369,8 @@ export const Dock = () => {
                         {!websiteEntryContext && <AdminModeSwitcher />}
                     </DockPod>
 
-                    <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-                        {!websiteEntryContext && <DockPod className="hidden min-w-0 max-w-[560px] items-center gap-2 px-3 py-2 min-[1700px]:flex" isStandardMode={isStandardMode}>
+                    <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
+                        {!websiteEntryContext && <DockPod className="hidden min-w-0 max-w-[560px] items-center gap-2 px-3 py-2" isStandardMode={isStandardMode}>
                             <DockSearchLauncher
                                 isStandardMode={isStandardMode}
                                 shortcutLabel={`${mod}+K`}
@@ -1396,8 +1411,8 @@ export const Dock = () => {
                                             ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
                                             : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
                                         : isCommandDeckOpen
-                                            ? 'border-cyan-300/30 bg-cyan-400/[0.12] text-cyan-100'
-                                            : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-cyan-300/24 hover:bg-cyan-400/[0.08] hover:text-cyan-100'
+                                            ? 'border-cyan-200/34 bg-cyan-300/[0.12] text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,0.12)]'
+                                            : 'border-cyan-200/12 bg-cyan-100/[0.04] text-white/72 hover:border-cyan-200/28 hover:bg-cyan-300/[0.075] hover:text-cyan-100'
                                         }`}
                                 >
                                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
@@ -1406,7 +1421,7 @@ export const Dock = () => {
                                             : 'border-[#0078D4]/15 bg-white text-[#0078D4]'
                                         : isCommandDeckOpen
                                             ? 'border-cyan-300/30 bg-cyan-400/16 text-cyan-50'
-                                            : 'border-cyan-300/22 bg-cyan-400/10 text-cyan-100'
+                                            : 'border-cyan-200/22 bg-cyan-300/10 text-cyan-100'
                                         }`}>
                                         <Sparkles size={15} />
                                     </div>
@@ -1425,7 +1440,7 @@ export const Dock = () => {
                             </div>
                         </DockPod>}
 
-                        <DockPod className="flex min-w-0 flex-1 items-center justify-center gap-3 px-3 py-2.5" isStandardMode={isStandardMode}>
+                        <DockPod className="flex shrink-0 items-center justify-center gap-2 px-2.5 py-1.5" isStandardMode={isStandardMode}>
                             <div className="flex min-w-0 items-center gap-1 xl:gap-2">
                                 {dockItems.map((item) => (
                                     <MagneticDockIconMemo
@@ -1438,9 +1453,9 @@ export const Dock = () => {
                             </div>
                         </DockPod>
 
-                        <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'flex shrink-0 items-center gap-3 px-3 py-2.5'} isStandardMode={isStandardMode}>
+                        <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'hidden shrink-0 items-center gap-2 px-2.5 py-2 xl:flex'} isStandardMode={isStandardMode}>
                     {/* RIGHT SECTION: Status + Context */}
-                    {!websiteEntryContext && <div className="flex items-center gap-2">
+                    {!websiteEntryContext && <div className="flex items-center gap-1.5">
                         <FocusModeWidget />
                         <NotificationCenter />
                         {activePlanId && (
@@ -1455,7 +1470,7 @@ export const Dock = () => {
                     {/* RIGHT: COMPANY BADGE - Enhanced */}
                     {!websiteEntryContext && <div className="relative">
                         <button
-                            className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl transition-all group ${isStandardMode
+                            className={`flex items-center gap-2 px-2.5 py-2.5 rounded-2xl transition-all group ${isStandardMode
                                 ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
                                 : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
                                 }`}
@@ -1469,7 +1484,7 @@ export const Dock = () => {
                                 }`}>
                                 <Building2 size={16} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
                             </div>
-                            <div className="hidden 2xl:flex flex-col items-start">
+                            <div className="hidden min-[2200px]:flex flex-col items-start">
                                 <span className={`text-xs font-medium max-w-[90px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
                                     }`}>
                                     {displayCompany?.name || surfaceProfile.fallbackCompanyName}
@@ -1534,12 +1549,12 @@ export const Dock = () => {
                     </div>}
 
                     {/* DIVIDER - Glowing */}
-                    {!websiteEntryContext && <div className={`h-10 w-[1px] ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
+                    {!websiteEntryContext && <div className={`hidden h-10 w-[1px] min-[2200px]:block ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
                         }`} />
                     }
 
                     {/* RIGHT: MORA ORB - HERO ELEMENT */}
-                    <div className="flex items-center gap-3 pl-1">
+                    <div className="flex items-center gap-2 pl-0">
                         <motion.div
                             animate={{ scale: [1, 1.018, 1] }}
                             transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
@@ -1549,7 +1564,7 @@ export const Dock = () => {
                         <button
                             onClick={() => handleDockClick('chat')}
                             data-mora-home="true"
-                            className={`relative w-14 h-14 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
+                            className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
                                 ? 'bg-white shadow-lg'
                                 : 'bg-transparent'
                                 }`}
@@ -1583,12 +1598,12 @@ export const Dock = () => {
                             <PlasmaOrb
                                 color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
                                 state={orbState as any}
-                                size={54}
+                                size={48}
                             />
                         </button>
                         </motion.div>
                         <div className="hidden 2xl:flex flex-col items-start leading-tight">
-                            <span className={`text-sm font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
+                            <span className={`text-xs font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
                                 }`}>
                                 MORA
                             </span>

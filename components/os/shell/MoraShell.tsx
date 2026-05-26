@@ -110,7 +110,7 @@ import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
 // 1.0 gated (future-tier: memory sidebar)
 // import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
-import { Upload, Sparkles, FolderOpen, History, X, Search, FileText, LayoutList } from 'lucide-react';
+import { Upload, Sparkles, FolderOpen, History, X, Search, FileText, LayoutList, Music2 } from 'lucide-react';
 import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 import {
     MYCELIUM_BATCH_COMPLETE_EVENT,
@@ -833,6 +833,29 @@ export const MoraShell: React.FC = () => {
                     contextLabelOverride={websiteEntryContext ? 'Dossier' : undefined}
                     contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
+
+                {!hasFullscreenPane && (
+                    <div className="pointer-events-auto absolute right-8 top-32 z-[48] hidden items-center gap-2 lg:flex">
+                        <button
+                            type="button"
+                            onClick={() => setIsSpotlightOpen(true)}
+                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-200/12 bg-cyan-100/[0.045] text-cyan-50/62 shadow-[0_14px_48px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[18px] transition-all hover:border-cyan-200/28 hover:bg-cyan-200/[0.09] hover:text-cyan-50"
+                            title="Suche öffnen"
+                            aria-label="Suche öffnen"
+                        >
+                            <Search size={17} strokeWidth={1.6} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 }, data: { section: 'audio' } })}
+                            className="flex h-11 w-11 items-center justify-center rounded-2xl border border-violet-200/12 bg-violet-100/[0.045] text-violet-50/62 shadow-[0_14px_48px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[18px] transition-all hover:border-violet-200/28 hover:bg-violet-200/[0.09] hover:text-violet-50"
+                            title="Audio öffnen"
+                            aria-label="Audio öffnen"
+                        >
+                            <Music2 size={17} strokeWidth={1.6} />
+                        </button>
+                    </div>
+                )}
 
                 {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
 

@@ -106,7 +106,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             b: parseInt(hex.substr(4, 2), 16)
         };
     }, [color]);
-    const useStaticOrb = size <= 50; // Use static orb only for very small sizes
+    const useStaticOrb = size <= 20; // Use static orb only for very small sizes
 
     // State-based parameters - POLISHED for smoother animations
     const params = useMemo(() => {

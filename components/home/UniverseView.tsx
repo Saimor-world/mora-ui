@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,9 +11,10 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles } from 'lucide-react';
+import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse } from '@/lib/api/coreClient';
+import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
+import { openSearchResult } from '@/lib/utils/searchOpen';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
@@ -260,9 +261,60 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [lockedTooltipDeptId, setLockedTooltipDeptId] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+
+    useEffect(() => {
+        if (!searchQuery.trim()) {
+            setSearchResults([]);
+            setIsSearching(false);
+            return;
+        }
+
+        setIsSearching(true);
+        const timer = setTimeout(async () => {
+            try {
+                const response = await searchGlobal(searchQuery, activeCompanyId || undefined);
+                setSearchResults(response.results || []);
+            } catch (err) {
+                console.error('[UniverseView] search error:', err);
+                const matches = safeDepartments.filter(d => 
+                    d.name.toLowerCase().includes(searchQuery.toLowerCase())
+                ).map(d => ({
+                    id: d.id,
+                    title: d.name,
+                    type: 'department',
+                    departmentId: d.id
+                }));
+                setSearchResults(matches);
+            } finally {
+                setIsSearching(false);
+            }
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, activeCompanyId, safeDepartments]);
+
+    const matchedDepartmentIds = useMemo(() => {
+        if (!searchQuery.trim()) return null;
+        const ids = new Set<string>();
+        searchResults.forEach(r => {
+            if (r.departmentId) ids.add(r.departmentId);
+            else if (r.department_id) ids.add(r.department_id);
+            else if (r.type === 'department' && r.id) ids.add(r.id);
+        });
+        safeDepartments.forEach(d => {
+            if (d.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                ids.add(d.id);
+            }
+        });
+        return ids;
+    }, [searchResults, searchQuery, safeDepartments]);
 
     // ─── FETCH REAL DEPARTMENT STATS FROM BACKEND ───
     useEffect(() => {
@@ -610,10 +662,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 intensity: Math.max(0.16, Math.min(1, loadSignal / Math.max(1, maxNodes * 0.45 + 12))),
                 highlighted:
                     hoverPlanetId === planet.id ||
-                    semanticPreviewPlanetIds.has(planet.id),
+                    semanticPreviewPlanetIds.has(planet.id) ||
+                    (matchedDepartmentIds ? matchedDepartmentIds.has(planet.id) : false),
             };
         })
-    ), [visiblePlanets, departmentMetrics, hoverPlanetId, maxNodes, semanticPreviewPlanetIds]);
+    ), [visiblePlanets, departmentMetrics, hoverPlanetId, maxNodes, semanticPreviewPlanetIds, matchedDepartmentIds]);
 
     const focusedPlanet = useMemo(() => {
         if (!focusedPlanetId) return null;
@@ -803,13 +856,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         []
     );
 
-    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered);
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
         semanticPreviewPlanetIds.forEach((id) => ids.add(id));
+        if (matchedDepartmentIds) {
+            matchedDepartmentIds.forEach((id) => ids.add(id));
+        }
         return ids;
-    }, [focusedPlanetId, semanticPreviewPlanetIds]);
+    }, [focusedPlanetId, semanticPreviewPlanetIds, matchedDepartmentIds]);
     const visibleSemanticPaths = useMemo(() => {
         if (isHomeUniversePreview) {
             return semanticPaths.filter((path) => semanticPreviewPathId === path.id);
@@ -1348,6 +1404,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const folderCount = deptStats?.folders || 0;
                     const healthFromAPI = deptStats?.health;
 
+                    // Find department children/spaces from treeData
+                    const deptTreeNode = safeTreeData.find((d: any) => d.id === p.id);
+                    const spacesList = deptTreeNode?.children?.filter((c: any) => c.type === 'space') || [];
+
                     // Capacity: % of nodes relative to largest department
                     const capacity = nodeCount > 0 && maxNodes > 0
                         ? Math.round((nodeCount / maxNodes) * 100)
@@ -1358,11 +1418,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const health = healthFromAPI ?? Math.min(100, (spaceCount > 0 ? 40 : 0) + (folderCount > 0 ? 30 : 0) + (nodeCount > 0 ? 30 : 0));
 
                     const locked = isLocked(p);
+                    const isMatched = matchedDepartmentIds ? matchedDepartmentIds.has(p.id) : false;
+                    const isDimmed = matchedDepartmentIds && !isMatched;
+
                     const isSemanticPreviewPlanet = semanticPreviewPlanetIds.has(p.id);
                     const shouldShowPlanetLabel = !isHomeUniversePreview && (
-                        focusedPlanetId === p.id ||
-                        isSemanticPreviewPlanet ||
-                        activeDepartmentId === p.id
+                        matchedDepartmentIds ? isMatched : (
+                            focusedPlanetId === p.id ||
+                            isSemanticPreviewPlanet ||
+                            activeDepartmentId === p.id
+                        )
                     );
                     const planetSize = isHomeUniversePreview
                         ? 'sm'
@@ -1376,6 +1441,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     style={{
                                         left: `${p.x}%`,
                                         top: `${p.y}%`,
+                                        opacity: isDimmed ? 0.15 : 1,
+                                        transition: 'opacity 0.3s ease',
                                     }}
                                 >
                                     {p.name}
@@ -1393,12 +1460,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         clearHoverRelease();
                                         setLockedTooltipDeptId(p.id);
                                     }}
-                                    style={{ opacity: 0.4, cursor: 'pointer', filter: 'grayscale(0.6)' }}
+                                    style={{ opacity: isDimmed ? 0.15 : 0.4, cursor: 'pointer', filter: 'grayscale(0.6)', transition: 'opacity 0.3s ease' }}
                                 >
                                     <Planet
                                         department={p as any}
+                                        spaces={spacesList}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
+                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
                                         showLabel={shouldShowPlanetLabel}
                                         labelSide={p.x > 57 ? 'left' : 'right'}
@@ -1414,32 +1482,35 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     />
                                 </div>
                             ) : (
-                                <Planet
-                                    department={p as any}
-                                    position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                    isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet}
-                                    size={planetSize}
-                                    showLabel={shouldShowPlanetLabel}
-                                    labelSide={p.x > 57 ? 'left' : 'right'}
-                                    onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
-                                    onClick={() => {
-                                        if (isHomeUniversePreview) {
-                                            clearUniverseInteractionState();
+                                <div style={{ opacity: isDimmed ? 0.15 : 1, transition: 'opacity 0.3s ease' }} className="pointer-events-auto">
+                                    <Planet
+                                        department={p as any}
+                                        spaces={spacesList}
+                                        position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
+                                        size={planetSize}
+                                        showLabel={shouldShowPlanetLabel}
+                                        labelSide={p.x > 57 ? 'left' : 'right'}
+                                        onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
+                                        onClick={() => {
+                                            if (isHomeUniversePreview) {
+                                                clearUniverseInteractionState();
+                                                clearHoverRelease();
+                                                setCoreMode('explore');
+                                                return;
+                                            }
                                             clearHoverRelease();
-                                            setCoreMode('explore');
-                                            return;
-                                        }
-                                        clearHoverRelease();
-                                        setHoverPlanetId(null);
-                                        setActivePlanetId(p.id);
-                                        setSemanticPreviewPathId(null);
-                                        setLockedTooltipDeptId(null);
-                                        navigateToDepartment(p.id);
-                                    }}
-                                    health={health}
-                                    activity={activity}
-                                    capacity={capacity}
-                                />
+                                            setHoverPlanetId(null);
+                                            setActivePlanetId(p.id);
+                                            setSemanticPreviewPathId(null);
+                                            setLockedTooltipDeptId(null);
+                                            navigateToDepartment(p.id);
+                                        }}
+                                        health={health}
+                                        activity={activity}
+                                        capacity={capacity}
+                                    />
+                                </div>
                             )}
                             {lockedTooltipDeptId === p.id && (
                                 <div
@@ -1583,6 +1654,111 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 </div>
                             </div>
                         </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Top-Center Search Input */}
+            {!isHomeUniversePreview && (
+                <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[45] pointer-events-auto w-[360px] md:w-[480px]">
+                    <div className="relative flex items-center rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-[20px] shadow-[0_8px_32px_rgba(0,0,0,0.3)] transition-all hover:border-cyan-400/30 focus-within:border-cyan-400/50">
+                        <Search className="absolute left-4 w-4 h-4 text-white/35" />
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Suche in Saimor..."
+                            className="w-full pl-12 pr-10 py-3 bg-transparent text-sm text-white placeholder-white/30 border-0 outline-none rounded-2xl focus:ring-0 focus:outline-none"
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                className="absolute right-4 text-white/35 hover:text-white/80 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Floating Search Results Panel (Left Side) */}
+            <AnimatePresence>
+                {!isHomeUniversePreview && searchQuery.trim() && (
+                    <motion.div
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -30 }}
+                        className="absolute top-24 left-6 z-[45] pointer-events-auto w-[320px] max-h-[calc(100vh-220px)] overflow-hidden flex flex-col rounded-[24px] border border-white/[0.08] bg-[#0B0F10]/75 backdrop-blur-[24px] shadow-[0_24px_80px_rgba(0,0,0,0.5)]"
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-black/20">
+                            <div className="flex items-center gap-2">
+                                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/80">
+                                    Ergebnisse
+                                </span>
+                            </div>
+                            <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-white/40">
+                                {isSearching ? 'Suche...' : `${searchResults.length} Treffer`}
+                            </span>
+                        </div>
+
+                        {/* List */}
+                        <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-1.5 scrollbar-thin">
+                            {isSearching ? (
+                                <div className="text-center py-10 text-xs text-white/40 flex flex-col items-center gap-3">
+                                    <div className="w-6 h-6 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
+                                    <span>Suche in Mora...</span>
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <div className="text-center py-10 text-xs text-white/45 flex flex-col items-center gap-2">
+                                    <Search className="w-8 h-8 text-white/20 mb-1" />
+                                    <span>Keine Treffer für "{searchQuery}"</span>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col gap-1">
+                                    {searchResults.map((result) => {
+                                        const typeLabel = result.type === 'department' ? 'Abteilung' 
+                                            : result.type === 'space' ? 'Bereich' 
+                                            : result.type === 'folder' ? 'Ordner' 
+                                            : 'Dokument';
+                                        const pathText = result.subtitle || result.path || typeLabel;
+
+                                        return (
+                                            <button
+                                                key={`${result.type}-${result.id}`}
+                                                onClick={() => {
+                                                    if (result.type === 'department') {
+                                                        navigateToDepartment(result.id);
+                                                        setSearchQuery('');
+                                                    } else {
+                                                        openSearchResult(result, openPane, { companyId: activeCompanyId || result.companyId || undefined });
+                                                        setSearchQuery('');
+                                                    }
+                                                }}
+                                                className="w-full text-left p-2.5 rounded-xl border border-transparent hover:border-white/[0.06] hover:bg-white/[0.03] transition-all flex items-start gap-3 group"
+                                            >
+                                                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/5 flex items-center justify-center text-white/60 group-hover:text-cyan-300 group-hover:border-cyan-500/20 shrink-0 transition-colors">
+                                                    {result.type === 'department' ? <Cpu size={14} /> 
+                                                        : result.type === 'space' ? <Folder size={14} className="text-cyan-400" />
+                                                        : result.type === 'folder' ? <Folder size={14} className="text-amber-400" />
+                                                        : <Database size={14} className="text-emerald-400" />}
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="text-[11px] font-semibold text-white/80 group-hover:text-white truncate">
+                                                        {result.title}
+                                                    </div>
+                                                    <div className="text-[8px] uppercase tracking-wider text-white/30 group-hover:text-white/45 truncate mt-0.5">
+                                                        {pathText}
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -668,6 +668,64 @@ export const DepartmentLayer: React.FC = () => {
                 )}
             </LayerInsightRail>
 
+            <motion.div
+                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden rounded-[28px] border border-cyan-200/10 bg-[linear-gradient(155deg,rgba(10,22,28,0.62),rgba(8,10,24,0.42))] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[24px] xl:block"
+                initial={{ opacity: 0, x: 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.45, delay: 0.08 }}
+            >
+                <div
+                    className="pointer-events-none absolute inset-x-0 top-0 h-28 opacity-70"
+                    style={{ background: `radial-gradient(circle at 70% 0%, ${deptColor}40 0%, transparent 70%)` }}
+                />
+                <div className="relative">
+                    <div className="flex items-center justify-between gap-3">
+                        <div>
+                            <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-100/45">Datenlage</div>
+                            <div className="mt-1 text-lg font-light text-white/88">{deptTitle || 'Abteilung'}</div>
+                        </div>
+                        <div className="rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.16em] text-white/42">
+                            Manager
+                        </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-3 gap-2">
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.18em] text-white/34">Bereiche</div>
+                            <div className="mt-1 text-lg text-emerald-100">{spaces.length}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.18em] text-white/34">Ordner</div>
+                            <div className="mt-1 text-lg text-cyan-100">{totalFolders}</div>
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3">
+                            <div className="text-[9px] uppercase tracking-[0.18em] text-white/34">Docs</div>
+                            <div className="mt-1 text-lg text-violet-100">{docsCount}</div>
+                        </div>
+                    </div>
+
+                    <div className="mt-4 space-y-2">
+                        {spaces.slice(0, 4).map((space) => {
+                            const signal = spaceSignals[space.id] ?? { intensity: 0.12, folderTotal: space.folder_count ?? 0, docTotal: 0 };
+                            return (
+                                <div key={space.id} className="rounded-2xl border border-white/8 bg-black/15 px-3 py-2.5">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0 truncate text-xs text-white/76">{space.name}</div>
+                                        <div className="text-[10px] text-cyan-100/52">{signal.folderTotal} Ordner</div>
+                                    </div>
+                                    <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.05]">
+                                        <div
+                                            className="h-full rounded-full bg-gradient-to-r from-cyan-300/70 to-emerald-300/65"
+                                            style={{ width: `${Math.max(8, Math.round(signal.intensity * 100))}%` }}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            </motion.div>
+
             <div className="absolute inset-0 flex items-center justify-center z-10">
                 {isLoadingSpaces ? (
                     <LoadingState message="Department wird geladen..." />

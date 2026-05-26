@@ -172,7 +172,7 @@ export const HomeSurface: React.FC = () => {
         const leftInset = vw >= 1440 ? 300 : 24;
         const rightInset = vw >= 1440 ? 320 : 24;
         const topInset = vh >= 760 ? 86 : 52;
-        const bottomInset = vh >= 760 ? 150 : 96;
+        const bottomInset = vh >= 760 ? 190 : 128;
         const workspaceWidth = Math.max(360, vw - leftInset - rightInset);
         const workspaceHeight = Math.max(360, vh - topInset - bottomInset);
         const cx = req.size.width <= workspaceWidth
@@ -599,7 +599,11 @@ export const HomeSurface: React.FC = () => {
     }, [openFinder, revealPane]);
 
     // ── display values ─────────────────────────────────────────────────────
-    const firstName = user?.name?.split(' ')[0] ?? null;
+    const firstName = (() => {
+        const rawName = user?.name?.trim();
+        if (!rawName) return null;
+        return rawName.includes('@') ? rawName.split('@')[0] : rawName.split(' ')[0];
+    })();
 
     const greeting = (() => {
         const h = new Date().getHours();
@@ -627,16 +631,16 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20" />
 
-            <div className="absolute left-8 top-24 w-[318px]">
+            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)]">
                 <div
                     data-testid="briefing-strip"
-                    className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(160deg,rgba(18,16,38,0.78),rgba(10,9,25,0.42)_54%,rgba(7,18,24,0.34))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[26px]"
+                    className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(160deg,rgba(12,18,26,0.82),rgba(10,12,24,0.50)_54%,rgba(5,27,24,0.34))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[26px]"
                 >
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
                     <div className="flex items-start justify-between gap-4">
-                        <div>
+                        <div className="min-w-0">
                             <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Mission Control</div>
-                            <h1 className="mt-2 text-[28px] font-light leading-tight tracking-[-0.02em] text-white/92">
+                            <h1 className="mt-2 max-w-[18rem] truncate text-[clamp(22px,2vw,28px)] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
                                     ? `${websiteEntryContext.companyName} · Preview`
                                     : firstName
@@ -707,11 +711,11 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </div>
 
-            <section className="absolute left-[370px] right-[360px] xl:right-[400px] 2xl:right-[680px] top-[150px] bottom-[140px] flex items-center justify-center">
-                <div className="pointer-events-auto relative w-full max-w-[760px]">
+            <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center xl:flex 2xl:right-[390px]">
+                <div className="pointer-events-auto relative w-full max-w-[690px]">
                     <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
-                    <div className="relative overflow-hidden rounded-[30px] border border-white/[0.095] bg-[linear-gradient(145deg,rgba(20,18,42,0.82),rgba(10,9,25,0.56)_48%,rgba(7,28,34,0.40))] px-8 py-7 shadow-[0_44px_160px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[30px]">
+                    <div className="relative overflow-hidden rounded-[28px] border border-white/[0.09] bg-[linear-gradient(145deg,rgba(18,20,34,0.72),rgba(9,12,23,0.46)_48%,rgba(5,30,34,0.34))] px-6 py-6 shadow-[0_34px_130px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[28px]">
                         <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/60 via-cyan-200/70 to-violet-300/65" />
                         <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-cyan-300/[0.13] blur-[72px]" />
                         <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-violet-400/[0.12] blur-[82px]" />
@@ -731,7 +735,7 @@ export const HomeSurface: React.FC = () => {
                                         <BriefingStack briefings={stackBriefings} />
                                     </div>
                                 ) : (
-                                    <h2 className="mt-3 max-w-[34rem] text-[44px] font-light leading-[1.02] tracking-[-0.04em] text-white/94">
+                                    <h2 className="mt-3 max-w-[30rem] text-[clamp(30px,3vw,38px)] font-light leading-[1.03] tracking-[-0.03em] text-white/94">
                                         {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
                                             ? <>Weiter in <span style={{ color: 'rgba(167,139,250,0.95)' }}>{overlayRecentActivityItems[0].label}</span>.</>
                                             : focusTitle}
@@ -812,7 +816,7 @@ export const HomeSurface: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="relative mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                        <div className="relative mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
                             <HomeCommandButton dataTestId="qa-finder" label="Finder öffnen" detail="Dateien & Ordner" onClick={openFinder} tone="emerald" />
                             <HomeCommandButton dataTestId="qa-universe" label="Universe" detail="Topographie" onClick={openUniverse} tone="cyan" />
                             <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
@@ -820,7 +824,7 @@ export const HomeSurface: React.FC = () => {
                         </div>
 
                         {featuredDeptTiles.length > 0 && (
-                            <div className="relative mt-6">
+                            <div className="relative mt-5">
                                 <div className="mb-2 flex items-center justify-between">
                                     <div className="text-[10px] uppercase tracking-[0.22em] text-white/36">Planetenverbindungen</div>
                                     <button
@@ -866,7 +870,7 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </section>
 
-            <aside className="absolute bottom-[9.2rem] right-8 w-[330px] 2xl:right-[21rem]">
+            <aside className="absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10">
                 <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(155deg,rgba(18,16,38,0.74),rgba(8,14,26,0.34))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-[26px]">
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">
