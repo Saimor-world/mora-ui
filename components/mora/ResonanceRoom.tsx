@@ -370,7 +370,7 @@ export const ResonanceRoom: React.FC<Props> = ({
             >
                 {/* Glass Container */}
                 <div
-                    className="relative w-full h-full bg-[#030806]/95 backdrop-blur-2xl border border-emerald-500/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col transition-colors duration-300"
+                    className="relative w-full h-full bg-[#0d0921]/95 backdrop-blur-2xl border border-emerald-500/10 rounded-2xl shadow-2xl shadow-black/50 overflow-hidden flex flex-col transition-colors duration-300"
                 >
 
                     {/* Ambient Glow */}

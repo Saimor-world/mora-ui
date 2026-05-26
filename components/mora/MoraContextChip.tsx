@@ -104,7 +104,7 @@ export const MoraContextChip: React.FC<MoraContextChipProps> = ({
                 >
                     <span
                         className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse"
-                        style={{ boxShadow: '0 0 6px rgba(52,211,153,0.62)' }}
+                        style={{ boxShadow: '0 0 6px rgba(124,58,237,0.62)' }}
                     />
                     <Layers size={10} className="text-emerald-400/70 shrink-0" />
                     <span className="text-[11px] text-white/70 font-light leading-none">

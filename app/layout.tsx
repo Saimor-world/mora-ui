@@ -95,7 +95,7 @@ export default function RootLayout({
         <title>SAIMÔR OS</title>
         <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
       </head>
-      <body className="font-sans antialiased bg-[#030806] overflow-hidden" suppressHydrationWarning>
+      <body className="font-sans antialiased overflow-hidden" suppressHydrationWarning>
         <QueryProvider>
           <ErrorBoundary>
             <MoraSessionProvider>

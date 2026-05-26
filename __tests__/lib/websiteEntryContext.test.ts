@@ -25,16 +25,28 @@ describe('website entry context', () => {
             domain: 'acme.de',
             score: 42,
             level: 'kritisch',
-            title: 'Digital Risk Check aus der Website',
+            title: 'Nightwatch Security Signal aus WORLD',
         });
         expect(context?.rooms[0]).toMatchObject({
             name: 'Security',
             tone: 'risk',
         });
         expect(context?.tasks[0]).toMatchObject({
-            title: 'Kritische Befunde zuerst klaeren',
+            title: 'Nightwatch-Befunde zuerst klaeren',
             priority: 'hoch',
         });
+    });
+
+    it('accepts token as an alias for entry_token', () => {
+        const context = buildWebsiteEntryContext({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-token',
+            company: 'Token GmbH',
+            token: 'signed-entry-token',
+        });
+
+        expect(context?.entryToken).toBe('signed-entry-token');
     });
 
     it('derives a readable company name from the domain when no company is present', () => {
@@ -48,7 +60,7 @@ describe('website entry context', () => {
 
         expect(context?.companyName).toBe('Green Tools');
         expect(context?.score).toBe(100);
-        expect(context?.title).toBe('Digital AI Self Blueprint aus der Website');
+        expect(context?.title).toBe('Digital AI Self Blueprint aus WORLD');
         expect(context?.rooms[0]).toMatchObject({
             name: 'Security',
             tone: 'setup',

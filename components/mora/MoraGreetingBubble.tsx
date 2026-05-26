@@ -79,19 +79,19 @@ export const MoraGreetingBubble: React.FC = () => {
                         style={{
                             maxWidth: 320,
                             background: 'linear-gradient(135deg, rgba(8,20,16,0.92), rgba(4,12,11,0.86))',
-                            borderColor: 'rgba(52,211,153,0.30)',
+                            borderColor: 'rgba(124,58,237,0.30)',
                         }}
                     >
                         {/* Smaragd glow accent */}
                         <span
                             className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full"
-                            style={{ background: 'rgba(52,211,153,0.85)', boxShadow: '0 0 8px rgba(52,211,153,0.6)' }}
+                            style={{ background: 'rgba(124,58,237,0.85)', boxShadow: '0 0 8px rgba(124,58,237,0.6)' }}
                         />
                         <div
                             className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
                             style={{
-                                background: 'rgba(52,211,153,0.14)',
-                                border: '1px solid rgba(52,211,153,0.32)',
+                                background: 'rgba(124,58,237,0.14)',
+                                border: '1px solid rgba(124,58,237,0.32)',
                             }}
                         >
                             <Sparkles size={14} className="text-emerald-300" strokeWidth={1.8} />
@@ -123,8 +123,8 @@ export const MoraGreetingBubble: React.FC = () => {
                                 width: 14,
                                 height: 14,
                                 background: 'linear-gradient(135deg, rgba(8,20,16,0.92), rgba(4,12,11,0.86))',
-                                borderRight: '1px solid rgba(52,211,153,0.30)',
-                                borderBottom: '1px solid rgba(52,211,153,0.30)',
+                                borderRight: '1px solid rgba(124,58,237,0.30)',
+                                borderBottom: '1px solid rgba(124,58,237,0.30)',
                                 transform: 'rotate(45deg)',
                             }}
                         />

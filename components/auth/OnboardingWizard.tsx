@@ -203,7 +203,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
 
     return (
         <motion.div
-            className="fixed inset-0 bg-[#030806] z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-[#0d0921] z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
         >

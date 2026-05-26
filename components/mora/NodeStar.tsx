@@ -28,7 +28,7 @@ interface NodeStarProps {
 // ── Type → color ─────────────────────────────────────────────────────────────
 function getNodeColor(type?: string): string {
     switch (type?.toLowerCase()) {
-        case 'document': return '#10B981'; // Emerald
+        case 'document': return '#7C3AED'; // Emerald
         case 'note': return '#3B82F6'; // Blue
         case 'link': return '#8B5CF6'; // Purple
         case 'folder': return '#F59E0B'; // Amber

@@ -32,7 +32,7 @@ export default function TunnelLayout({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <div className="tunnel-root fixed inset-0 z-[200] overflow-y-auto overflow-x-hidden bg-[#030806]">
+    <div className="tunnel-root fixed inset-0 z-[200] overflow-y-auto overflow-x-hidden bg-[#0d0921]">
       {children}
     </div>
   );

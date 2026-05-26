@@ -77,7 +77,7 @@ export const GhostOverlay: React.FC = () => {
         switch (mode) {
             case 'thinking': return { core: '#60A5FA', glow: 'rgba(96, 165, 250, 0.6)' }; // Blue
             case 'acting': return { core: '#F59E0B', glow: 'rgba(245, 158, 11, 0.6)' }; // Amber
-            case 'observing': return { core: '#10B981', glow: 'rgba(16, 185, 129, 0.6)' }; // Emerald
+            case 'observing': return { core: '#7C3AED', glow: 'rgba(124, 58, 237, 0.6)' }; // Emerald
             default: return { core: '#FFFFFF', glow: 'rgba(255, 255, 255, 0.4)' }; // White ghost
         }
     };

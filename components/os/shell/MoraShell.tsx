@@ -116,7 +116,7 @@ import {
     MYCELIUM_BATCH_COMPLETE_EVENT,
     MYCELIUM_REVIEW_READY_EVENT,
     type MyceliumShellSummary,
-    // 1.0 gated — work-session surface is future-tier:
+    // Work-session surface is promoted; shell banner remains optional until the stream is polished:
     // WORK_SESSION_PLAN_EVENT,
     // type WorkSessionShellSummary,
     // getSessionBodyText,
@@ -187,7 +187,7 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
     };
 
     return (
-        <div className="w-full h-screen bg-gradient-to-b from-[#0a0f0d] to-[#030806] flex items-center justify-center">
+        <div className="w-full h-screen bg-gradient-to-b from-[#0d0921] to-[#080618] flex items-center justify-center">
             <div className="flex flex-col items-center gap-6 text-center px-6 max-w-lg">
                 {/* Error Orb */}
                 <div className="relative">
@@ -450,7 +450,7 @@ export const MoraShell: React.FC = () => {
     const isShellDropActive = shellDrop.phase === 'dragging';
     const myceliumDropBatch  = shellDrop.phase === 'batch_ready' ? shellDrop : null;
     const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
-    // workSessionSummary — 1.0 gated (work-session surface is future-tier)
+    // workSessionSummary — banner wiring is still parked; pane opening is live through work-session.
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
@@ -569,7 +569,7 @@ export const MoraShell: React.FC = () => {
         return () => window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
     }, []);
 
-    // WORK_SESSION_PLAN_EVENT listener — 1.0 gated with work-session surface
+    // WORK_SESSION_PLAN_EVENT listener — parked until the shell banner is product-polished.
 
     // Hooks
     const apiOrbState = useAwareness();
@@ -1146,7 +1146,7 @@ export const MoraShell: React.FC = () => {
                 </div>
             )}
 
-            {/* WorkSession banner — 1.0 gated with work-session surface
+            {/* WorkSession banner — parked while the promoted work-session pane carries the product surface
             {workSessionSummary && !isShellDropActive && (
                 <div className={`fixed left-1/2 z-[929] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[31rem]' : navigationOutcome ? 'bottom-[14.5rem]' : 'bottom-24'}`}>
                     {(() => {

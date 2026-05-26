@@ -57,11 +57,11 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     integrations:    'app',
     terminal:        'app',
 
+    actions:         'app',       // legacy alias opened by shell/action tray
     'action-center': 'app',
 
-    // Future / gated (no working backend or in forbidden scope)
-    actions:         'future',
-    'work-session':  'future',
+    // Promoted operational surfaces
+    'work-session':  'app',
 };
 
 /** All future-tier pane types for quick inclusion checks. */

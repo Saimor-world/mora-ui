@@ -89,8 +89,8 @@ export const MoraInsightPopup: React.FC<MoraInsightPopupProps> = ({
 
     // Confidence → color signal
     const getConfidenceColor = (c?: number) => {
-        if (!c) return '#10B981';
-        if (c > 0.85) return '#10B981'; // Emerald — strong
+        if (!c) return '#7C3AED';
+        if (c > 0.85) return '#7C3AED'; // Emerald — strong
         if (c > 0.6) return '#3B82F6';  // Blue — medium
         return '#6B7280';               // Gray — weak
     };

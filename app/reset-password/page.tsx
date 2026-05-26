@@ -119,7 +119,7 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
     return (
-        <div className="fixed inset-0 bg-[#030806] flex items-center justify-center overflow-hidden">
+        <div className="fixed inset-0 bg-[#0d0921] flex items-center justify-center overflow-hidden">
             {/* Ambient glow */}
             <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-emerald-500/15 rounded-full blur-[120px] pointer-events-none" />
 

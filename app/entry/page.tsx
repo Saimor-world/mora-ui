@@ -35,12 +35,12 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
     const surface = firstQueryValue(resolved.surface);
     const entity = firstQueryValue(resolved.entity);
     const id = firstQueryValue(resolved.id);
-    const token = firstQueryValue(resolved.token);
+    const token = firstQueryValue(resolved.token) || firstQueryValue(resolved.entry_token);
     const websiteContext = buildWebsiteEntryContext(resolved);
     const contextLabel = surface === 'website' ? labelForContext(entity, id) : null;
 
     return (
-        <main className="min-h-screen bg-[#040908] text-white">
+        <main className="min-h-screen bg-[#0d0921] text-white">
             {token ? <WebsiteEntryTokenLogin token={token} /> : null}
             <WebsiteEntryPersistence context={websiteContext} />
             <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">

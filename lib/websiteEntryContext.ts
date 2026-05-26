@@ -35,7 +35,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
     const level = firstQueryValue(query.level);
     const grade = firstQueryValue(query.grade);
     const summary = firstQueryValue(query.summary);
-    const entryToken = firstQueryValue(query.entry_token);
+    const entryToken = firstQueryValue(query.entry_token) || firstQueryValue(query.token);
     const actions = parseActions(firstQueryValue(query.actions));
     const companyName = normalizeCompanyName(companyParam, domain);
     const isAudit = entity === 'security-audit';
@@ -52,7 +52,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
         grade,
         summary,
         entryToken,
-        title: isAudit ? 'Digital Risk Check aus der Website' : 'Digital AI Self Blueprint aus der Website',
+        title: isAudit ? 'Nightwatch Security Signal aus WORLD' : 'Digital AI Self Blueprint aus WORLD',
         rooms: [
             {
                 name: 'Security',
@@ -63,19 +63,19 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             },
             {
                 name: 'Betrieb',
-                description: 'Mora bereitet Dokumente, Verantwortlichkeiten und Routinen als isolierten Arbeitsraum vor.',
+                description: 'Mora bereitet Finder-Kontext, Verantwortlichkeiten und Routinen als isolierten Arbeitsraum vor.',
                 tone: 'setup',
             },
             {
                 name: 'Wachstum',
-                description: 'Naechste Automationen und Kundenkontakt-Flaechen werden als erste Aufgaben angelegt.',
+                description: 'Dashboard-Gedaechtnis und OS-Aufgaben werden getrennt, aber verbunden angelegt.',
                 tone: 'growth',
             },
         ],
         documents: [
             {
-                title: `${companyName} - Security Dossier`,
-                description: summary || (domain ? `Audit-Kontext fuer ${domain}` : 'Audit-Kontext aus dem Website-Einstieg'),
+                title: `${companyName} - Nightwatch Dossier`,
+                description: summary || (domain ? `Oeffentlicher Nightwatch-Kontext fuer ${domain}` : 'Nightwatch-Kontext aus WORLD'),
             },
             {
                 title: '14-Tage Massnahmenplan',
@@ -83,7 +83,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             },
             {
                 title: 'Betriebsmappe',
-                description: email ? `Lead und Kontaktkontext: ${email}` : 'Platzhalter fuer echte Dokumente, sobald Tools verbunden werden.',
+                description: email ? `Dashboard merkt Lead und Kontaktkontext: ${email}` : 'Platzhalter fuer echte Dokumente, sobald Tools verbunden werden.',
             },
         ],
         tasks: actions.length > 0 ? actions.slice(0, 4).map((title, index) => ({
@@ -91,15 +91,15 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             priority: index === 0 && score !== undefined && score < 70 ? 'hoch' : 'mittel',
         })) : [
             {
-                title: score !== undefined && score < 70 ? 'Kritische Befunde zuerst klaeren' : 'Audit-Ergebnis validieren',
+                title: score !== undefined && score < 70 ? 'Nightwatch-Befunde zuerst klaeren' : 'Nightwatch-Ergebnis validieren',
                 priority: score !== undefined && score < 70 ? 'hoch' : 'mittel',
             },
             {
-                title: 'Verantwortliche Person fuer Security festlegen',
+                title: 'Finder-Dossier mit Verantwortlicher Person verbinden',
                 priority: 'mittel',
             },
             {
-                title: 'Echte Tools verbinden',
+                title: 'Echte Tools erst nach Freigabe verbinden',
                 priority: 'niedrig',
             },
         ],
@@ -135,8 +135,8 @@ function normalizeCompanyName(company?: string, domain?: string) {
 }
 
 function riskRoomDescription(score?: number) {
-    if (score === undefined) return 'Security-Aufgaben werden aus dem Website-Kontext vorbereitet.';
-    if (score < 50) return 'Hohe Risiken werden als erste HQ-Aufgaben markiert.';
-    if (score < 80) return 'Mittlere Risiken werden in konkrete Verbesserungen uebersetzt.';
+    if (score === undefined) return 'Nightwatch-Signale werden aus dem WORLD-Kontext vorbereitet.';
+    if (score < 50) return 'Hohe Risiken werden als erste OS-Aufgaben markiert.';
+    if (score < 80) return 'Mittlere Risiken werden in konkrete Verbesserungen und Finder-Kontext uebersetzt.';
     return 'Solide Basis: Mora bereitet Monitoring und saubere Dokumentation vor.';
 }

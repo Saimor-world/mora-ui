@@ -85,7 +85,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15 hover:scale-110 active:scale-95'
                     : isStandardMode
                         ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
-                        : 'text-white/60 hover:text-emerald-300 hover:bg-emerald-500/10 hover:scale-110 active:scale-95'
+                        : 'text-white/62 hover:text-cyan-200 hover:bg-cyan-400/[0.10] hover:scale-110 active:scale-95'
                 }`}
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
@@ -339,7 +339,7 @@ const DockPod: React.FC<DockPodProps> = ({
     <div
         className={`rounded-[24px] border ${isStandardMode
             ? 'border-gray-200 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
-            : 'border-white/7 bg-[linear-gradient(180deg,rgba(255,255,255,0.022),rgba(0,0,0,0.08))] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl'
+            : 'border-white/[0.085] bg-[linear-gradient(180deg,rgba(255,255,255,0.045),rgba(9,8,24,0.38))] shadow-[0_18px_70px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-2xl'
             } ${className}`}
     >
         {children}
@@ -386,7 +386,7 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
                                         ? 'border-gray-200 bg-gray-50 text-gray-500 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
                                         : 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
                                 : isActive
-                                    ? 'border-emerald-400/35 bg-emerald-500/14 text-emerald-100 shadow-[0_0_20px_rgba(16,185,129,0.12)]'
+                                    ? 'border-emerald-400/35 bg-emerald-500/14 text-emerald-100 shadow-[0_0_20px_rgba(124,58,237,0.12)]'
                                     : pane.minimized
                                         ? 'border-white/8 bg-white/[0.025] text-white/42 hover:border-emerald-400/20 hover:text-emerald-200'
                                         : 'border-white/10 bg-white/[0.055] text-white/72 hover:border-emerald-400/20 hover:text-emerald-200'
@@ -620,7 +620,7 @@ export const Dock = () => {
             case 'thinking': return '#3B82F6';
             case 'insight': return '#F59E0B';
             case 'demo': return '#14B8A6';
-            default: return '#10B981';
+            default: return '#7C3AED';
         }
     }, [orbState]);
 
@@ -1298,8 +1298,8 @@ export const Dock = () => {
                         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
                     } : {
                         background: 'linear-gradient(180deg, rgba(8, 22, 16, 0.86) 0%, rgba(3, 10, 8, 0.94) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.26)',
-                        boxShadow: `0 -8px 32px rgba(16, 185, 129, 0.10), 0 16px 48px rgba(0, 0, 0, 0.72), 0 0 64px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.4)`,
+                        border: '1px solid rgba(124, 58, 237, 0.26)',
+                        boxShadow: `0 -8px 32px rgba(124, 58, 237, 0.10), 0 16px 48px rgba(0, 0, 0, 0.72), 0 0 64px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.07), inset 0 -1px 0 rgba(0,0,0,0.4)`,
                         willChange: 'transform',
                     }}
                 >
@@ -1396,8 +1396,8 @@ export const Dock = () => {
                                             ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
                                             : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
                                         : isCommandDeckOpen
-                                            ? 'border-emerald-400/28 bg-emerald-500/[0.12] text-emerald-200'
-                                            : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'
+                                            ? 'border-cyan-300/30 bg-cyan-400/[0.12] text-cyan-100'
+                                            : 'border-white/10 bg-white/[0.04] text-white/72 hover:border-cyan-300/24 hover:bg-cyan-400/[0.08] hover:text-cyan-100'
                                         }`}
                                 >
                                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
@@ -1405,8 +1405,8 @@ export const Dock = () => {
                                             ? 'border-[#0078D4]/22 bg-[#0078D4]/10 text-[#0078D4]'
                                             : 'border-[#0078D4]/15 bg-white text-[#0078D4]'
                                         : isCommandDeckOpen
-                                            ? 'border-emerald-400/28 bg-emerald-500/16 text-emerald-100'
-                                            : 'border-emerald-400/20 bg-emerald-500/10 text-emerald-200'
+                                            ? 'border-cyan-300/30 bg-cyan-400/16 text-cyan-50'
+                                            : 'border-cyan-300/22 bg-cyan-400/10 text-cyan-100'
                                         }`}>
                                         <Sparkles size={15} />
                                     </div>
@@ -1581,7 +1581,7 @@ export const Dock = () => {
                                 />
                             )}
                             <PlasmaOrb
-                                color={viewMode === 'demo' ? '#0D9488' : '#10B981'}
+                                color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
                                 state={orbState as any}
                                 size={54}
                             />

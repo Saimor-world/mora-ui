@@ -47,8 +47,8 @@ export function MoraOrb({
     const getStateParams = () => {
         // Use custom accentColor if provided (e.g. from company branding)
         // while maintaining the characteristic glow for specific states.
-        const baseColor = accentColor || '#0D9488';
-        
+        const baseColor = accentColor || '#7C3AED';
+
         switch (state) {
             case 'alert':
                 return { color: '#EF4444', glowIntensity: 60, pulse: 1.0 };
@@ -57,7 +57,7 @@ export function MoraOrb({
             case 'thinking':
                 return { color: '#3B82F6', glowIntensity: 45, pulse: 2.5 };
             case 'focus':
-                return { color: accentColor || '#10B981', glowIntensity: 40, pulse: 1.5 };
+                return { color: accentColor || '#7C3AED', glowIntensity: 40, pulse: 1.5 };
             case 'watch':
                 return { color: accentColor || '#06B6D4', glowIntensity: 35, pulse: 2.5 };
             case 'demo':

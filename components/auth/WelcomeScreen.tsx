@@ -715,7 +715,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-[#030806] flex items-center justify-center z-critical overflow-hidden"
+            className="fixed inset-0 bg-[#0d0921] flex items-center justify-center z-critical overflow-hidden"
         >
             {/* Layered Ambient Background - Breathing Effect */}
             <motion.div

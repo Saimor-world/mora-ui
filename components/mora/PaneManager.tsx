@@ -29,6 +29,8 @@ import { TimelinePane }    from '@/components/panes/TimelinePane';
 import { CanvasPane }      from '@/components/panes/CanvasPane';
 import { AppLibraryPane }  from '@/components/panes/AppLibraryPane';
 import { WebsiteDossierPane } from '@/components/panes/WebsiteDossierPane';
+import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
+import { WorkSessionPane } from '@/components/panes/WorkSessionPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -85,6 +87,11 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <MoraHubPane id={pane.id} data={pane.data} />;
         case 'apps':
             return <AppLibraryPane id={pane.id} data={pane.data} />;
+        case 'actions':
+        case 'action-center':
+            return <ActionCenterPane id={pane.id} data={pane.data} />;
+        case 'work-session':
+            return <WorkSessionPane id={pane.id} data={pane.data} />;
         case 'timeline':
             return <TimelinePane id={pane.id} data={pane.data} />;
         case 'tasks':

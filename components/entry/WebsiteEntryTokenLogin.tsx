@@ -62,7 +62,7 @@ export function WebsiteEntryTokenLogin({ token }: { token: string }) {
     if (status === 'idle') return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#040908] p-6 text-center">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0d0921] p-6 text-center">
             <div className="relative mb-8 h-24 w-24">
                 <div className="absolute inset-0 animate-pulse rounded-full bg-emerald-500/20 blur-xl" />
                 <div className="flex h-full w-full items-center justify-center rounded-full border border-emerald-500/30 bg-black/40">

@@ -2277,6 +2277,27 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
+                    <div className="border-b border-cyan-200/[0.06] bg-[linear-gradient(90deg,rgba(6,182,212,0.08),rgba(16,185,129,0.035),rgba(168,85,247,0.055))] px-3 py-2 md:px-6">
+                        <div className="grid gap-2 text-[11px] sm:grid-cols-2 xl:grid-cols-4">
+                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
+                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Du bist hier</p>
+                                <p className="mt-1 truncate font-medium text-white/72">{currentPathLabel}</p>
+                            </div>
+                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
+                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Sicht</p>
+                                <p className="mt-1 truncate font-medium text-cyan-100/76">{isDeepView ? 'Gesamtsicht der Instanz' : 'Nur aktueller Pfad'}</p>
+                            </div>
+                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
+                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Suche</p>
+                                <p className="mt-1 truncate font-medium text-emerald-100/76">{searchQuery.trim() || 'Kein Filter aktiv'}</p>
+                            </div>
+                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
+                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Inhalte</p>
+                                <p className="mt-1 truncate font-medium text-white/72">{filteredFolders.length} Ordner / {displayFiles.length} Dateien</p>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Content Container with Animation */}
                     <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_16%_0%,rgba(16,185,129,0.2),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(180deg,rgba(1,13,11,0.82),rgba(1,7,7,0.95))] px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <AnimatePresence mode="popLayout">

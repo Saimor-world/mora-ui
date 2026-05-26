@@ -152,6 +152,12 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 // ── rendering ──────────────────────────────────────────────────────────────
 
 describe('HomeSurface — rendering', () => {
+    it('frames Home as immersive Universe Mission Control', () => {
+        renderWithDepts();
+        expect(screen.getByTestId('home-universe-mission-control')).toBeInTheDocument();
+        expect(screen.getByText('Mission Control')).toBeInTheDocument();
+    });
+
     it('renders a personalised greeting with first name', async () => {
         renderWithDepts();
         await waitFor(() => {

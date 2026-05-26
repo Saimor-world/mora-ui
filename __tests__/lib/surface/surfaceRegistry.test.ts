@@ -26,7 +26,7 @@ describe('surfaceRegistry', () => {
                 'settings', 'apps', 'grid', 'space', 'document', 'search',
                 'team', 'mail', 'integrations', 'calendar', 'terminal',
                 'notes', 'finder', 'scanner', 'users', 'company-detail',
-                'chat', 'mora-hub', 'actions', 'work-session', 'meine-dateien',
+                'chat', 'mora-hub', 'actions', 'action-center', 'work-session', 'meine-dateien',
                 'timeline', 'tasks', 'canvas',  // ← new app-platform types
             ];
 
@@ -56,8 +56,8 @@ describe('surfaceRegistry', () => {
             expect(SURFACE_TIERS['integrations']).toBe('app');
             expect(SURFACE_TIERS['terminal']).toBe('app');
             // mora-hub is 'app' in registry — pre-existing state, skip
-            expect(SURFACE_TIERS['actions']).toBe('future');
-            expect(SURFACE_TIERS['work-session']).toBe('future');
+            expect(SURFACE_TIERS['actions']).toBe('app');
+            expect(SURFACE_TIERS['work-session']).toBe('app');
             // apps is now 'app' tier — AppLibrary promoted
         });
 
@@ -98,9 +98,13 @@ describe('surfaceRegistry', () => {
             expect(isPaneEnabled('terminal')).toBe(true);
         });
 
-        it('returns false for future-tier panes', () => {
-            expect(isPaneEnabled('actions')).toBe(false);
-            expect(isPaneEnabled('work-session')).toBe(false);
+        it('enables the operational action surfaces', () => {
+            expect(isPaneEnabled('actions')).toBe(true);
+            expect(isPaneEnabled('action-center')).toBe(true);
+        });
+
+        it('enables work-session as a promoted app pane', () => {
+            expect(isPaneEnabled('work-session')).toBe(true);
         });
 
         it('returns true for new app-platform types', () => {
@@ -121,8 +125,8 @@ describe('surfaceRegistry', () => {
             // calendar promoted — no longer future
             expect(FUTURE_PANE_TYPES).not.toContain('integrations');
             expect(FUTURE_PANE_TYPES).not.toContain('terminal');
-            expect(FUTURE_PANE_TYPES).toContain('actions');
-            expect(FUTURE_PANE_TYPES).toContain('work-session');
+            expect(FUTURE_PANE_TYPES).not.toContain('actions');
+            expect(FUTURE_PANE_TYPES).not.toContain('work-session');
             // promoted types no longer in future:
             expect(FUTURE_PANE_TYPES).not.toContain('apps');
             expect(FUTURE_PANE_TYPES).not.toContain('calendar');

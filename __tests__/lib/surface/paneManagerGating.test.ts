@@ -17,7 +17,7 @@ describe('PaneManager gating contract', () => {
         'settings', 'apps', 'grid', 'space', 'document', 'search',
         'team', 'mail', 'integrations', 'calendar', 'terminal',
         'notes', 'finder', 'scanner', 'users', 'company-detail',
-        'chat', 'actions', 'work-session', 'meine-dateien',
+        'chat', 'actions', 'action-center', 'work-session', 'meine-dateien',
         'calendar', 'timeline', 'tasks', 'canvas',
         // NOTE: 'mora-hub' removed — pre-existing registry/test discrepancy
         // mora-hub is 'app' in registry but the case exists — omit from contract test
