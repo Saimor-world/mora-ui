@@ -6,7 +6,7 @@ import type { OrbState as OrbStateValue } from '@/lib/api/awarenessClient';
 export type { OrbStateValue };
 export type { OperationalState } from '@/lib/types/session';
 
-export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder';
+export type ViewLevel = 'company' | 'core' | 'department' | 'space' | 'folder' | 'ambient';
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
 /**

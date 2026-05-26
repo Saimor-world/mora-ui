@@ -38,6 +38,7 @@ interface NavState {
   cancelNameConflict(): void;
   navigateToCore(): void;
   navigateToExplore(): void;
+  navigateToAmbient(): void;
   navigateToDepartment(deptId: string): void;
   navigateToSpace(spaceId: string): void;
   navigateToFolder(folderId: string | null): void;
@@ -107,6 +108,13 @@ export const useNavStore = create<NavState>((set, get) => ({
   navigateToExplore: () => set({
     viewLevel: 'core',
     coreMode: 'explore',
+    activeDepartmentId: null,
+    activeSpaceId: null,
+    activeFolderId: null,
+  }),
+
+  navigateToAmbient: () => set({
+    viewLevel: 'ambient',
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,

@@ -6,7 +6,7 @@ import { PlasmaOrb } from './PlasmaOrb';
 
 interface MoraOrbProps {
     role?: 'admin' | 'member' | 'manager';
-    state?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching';
+    state?: 'idle' | 'watch' | 'focus' | 'thinking' | 'alert' | 'insight' | 'demo' | 'curious' | 'learning' | 'watching' | 'listening';
     demoMode?: boolean;
     onClick?: () => void;
     interactive?: boolean;
@@ -24,10 +24,17 @@ interface MoraOrbProps {
  * Now breathes in sync with the ForestLightCanopy.
  * Enhanced Steam Deck x Organic aesthetics.
  */
+const SIZE_CLASSES: Record<NonNullable<MoraOrbProps['size']>, { wrapper: string; hub: string; plasma: number }> = {
+    sm: { wrapper: 'w-[80px] h-[80px]',  hub: 'w-16 h-16 p-1.5', plasma: 52 },
+    md: { wrapper: 'w-[140px] h-[140px]', hub: 'w-28 h-28 p-2',   plasma: 92 },
+    lg: { wrapper: 'w-[220px] h-[220px]', hub: 'w-44 h-44 p-3',   plasma: 148 },
+};
+
 export function MoraOrb({
     role = 'admin',
     state = 'idle',
     demoMode = false,
+    size = 'md',
     companyLogo,
     accentColor,
     notifications = [],
@@ -54,6 +61,8 @@ export function MoraOrb({
                 return { color: '#EF4444', glowIntensity: 60, pulse: 1.0 };
             case 'insight':
                 return { color: '#F59E0B', glowIntensity: 50, pulse: 2.0 };
+            case 'listening':
+                return { color: '#10B981', glowIntensity: 55, pulse: 1.2 };
             case 'thinking':
                 return { color: '#3B82F6', glowIntensity: 45, pulse: 2.5 };
             case 'focus':
@@ -70,12 +79,13 @@ export function MoraOrb({
 
     const params = getStateParams();
     const { color, glowIntensity, pulse } = params;
+    const sz = SIZE_CLASSES[size ?? 'md'];
 
     if (!mounted) return null;
 
     return (
         <div
-            className="relative select-none pointer-events-auto w-[140px] h-[140px] flex items-center justify-center"
+            className={`relative select-none pointer-events-auto ${sz.wrapper} flex items-center justify-center`}
             ref={orbRef}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
@@ -95,7 +105,7 @@ export function MoraOrb({
 
             {/* V10 STEAM DECK GLASS BORDER - THE HUB */}
                 <motion.div
-                    className="relative w-28 h-28 flex items-center justify-center p-2 rounded-full border border-white/10 backdrop-blur-[40px] cursor-pointer"
+                    className={`relative ${sz.hub} flex items-center justify-center rounded-full border border-white/10 backdrop-blur-[40px] cursor-pointer`}
                 style={{
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,20,15,0.8) 100%)',
                         boxShadow: `0 20px 60px rgba(0,0,0,0.8), 0 0 50px ${color}60, inset 0 0 30px ${color}30`,
@@ -109,7 +119,7 @@ export function MoraOrb({
                     <PlasmaOrb
                         color={color}
                         state={state as any}
-                        size={92}
+                        size={sz.plasma}
                     />
                 </div>
 
@@ -137,7 +147,7 @@ export function MoraOrb({
                         >
                             <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 text-[9px] tracking-[0.3em] uppercase font-bold text-white shadow-2xl flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
-                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo', curious: 'Neugierig', learning: 'Lernt', watching: 'Beobachtet' }[state ?? ''] || state}
+                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo', curious: 'Neugierig', learning: 'Lernt', watching: 'Beobachtet', listening: 'Hört zu' }[state ?? ''] || state}
                             </div>
                         </motion.div>
                     )}

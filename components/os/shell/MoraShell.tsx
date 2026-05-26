@@ -600,6 +600,9 @@ export const MoraShell: React.FC = () => {
         onGoHome: useCallback(() => {
             useNavStore.getState().navigateToCore();
         }, []),
+        onOpenAmbient: useCallback(() => {
+            useNavStore.getState().navigateToAmbient();
+        }, []),
         onCloseTopPane: useCallback(() => {
             const { panes, removePane: rp } = usePaneStore.getState();
             const visiblePanes = panes.filter(p => !p.minimized);

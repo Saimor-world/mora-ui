@@ -19,6 +19,7 @@ export function getKeyboardShortcuts(mod?: string) {
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen oeffnen' },
         { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
+        { keys: ['Alt', 'A'], label: 'Ambient', description: 'Môra Field öffnen' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
     ];
@@ -31,6 +32,7 @@ interface UseKeyboardShortcutsOptions {
     onOpenNotes?: () => void;
     onOpenSettings?: () => void;
     onGoHome?: () => void;
+    onOpenAmbient?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
 }
@@ -42,6 +44,7 @@ export function useKeyboardShortcuts({
     onOpenNotes,
     onOpenSettings,
     onGoHome,
+    onOpenAmbient,
     onCloseTopPane,
     onShowShortcuts,
 }: UseKeyboardShortcutsOptions) {
@@ -94,6 +97,12 @@ export function useKeyboardShortcuts({
                 return;
             }
 
+            if (e.altKey && !meta && key === 'a') {
+                e.preventDefault();
+                onOpenAmbient?.();
+                return;
+            }
+
             if (e.key === 'Escape') {
                 e.preventDefault();
                 onCloseTopPane?.();
@@ -115,6 +124,7 @@ export function useKeyboardShortcuts({
         onOpenNotes,
         onOpenSettings,
         onGoHome,
+        onOpenAmbient,
         onCloseTopPane,
         onShowShortcuts,
     ]);
