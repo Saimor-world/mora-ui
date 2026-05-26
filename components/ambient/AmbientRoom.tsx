@@ -1,19 +1,18 @@
 "use client";
 
 /**
- * AmbientRoom — Môra Field v0.1
+ * AmbientRoom — Môra Field v0.2
  *
- * A voice-driven, reactive workspace inside Saimôr OS.
- * Accessed via Alt+A from anywhere in the OS.
+ * Voice interface of Saimôr OS. A presence, not a form.
  *
- * Interaction model:
- *   • Hold SPACEBAR   → start listening  (release → trigger card generation)
- *   • Click Orb       → toggle listening
- *   • Text fallback   → if Web Speech API unavailable or denied
+ * State machine:
+ *   idle → listening → thinking → responding → executing → done → idle (loop)
+ *                                                                  ↓ error
  *
- * Card flow:
- *   idle → listening → thinking → cards spawned (Capture / Context / Action / Next)
- *   Save action → confirmation overlay (waldgrün/gold) → addNode → back to core
+ * Key rules:
+ *   - The room NEVER auto-navigates. User decides when to leave (ESC / Zurück).
+ *   - done state: 1.5 s success flash → auto-resets to idle.
+ *   - error state: Môra explains verbally + retry option.
  */
 
 import React, {
@@ -23,34 +22,41 @@ import React, {
     useState,
 } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Mic, MicOff, Save, X } from 'lucide-react';
+import { ArrowLeft, Mic, MicOff, RotateCcw } from 'lucide-react';
 
-import { MoraOrb } from '@/components/mora/MoraOrb';
-import { AmbientDust } from '@/components/organic/AmbientDust';
-import { useNavStore } from '@/lib/store/navStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
-import { useMoraStore } from '@/lib/store/moraState';
-import { useTree } from '@/lib/queries/useTree';
+import { MoraOrb }             from '@/components/mora/MoraOrb';
+import { AmbientDust }          from '@/components/organic/AmbientDust';
+import { AmbientIntentCard }    from '@/components/ambient/AmbientIntentCard';
+import { useAmbientMora }       from '@/lib/hooks/useAmbientMora';
+import { useSpeechSynthesis }   from '@/lib/hooks/useSpeechSynthesis';
+import { useNavStore }          from '@/lib/store/navStore';
+import { useTree }              from '@/lib/queries/useTree';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type AmbientState = 'idle' | 'listening' | 'thinking' | 'cards';
+type AmbientState =
+    | 'idle'
+    | 'listening'
+    | 'thinking'
+    | 'responding'   // Môra replied — intent card visible
+    | 'executing'    // tool running
+    | 'done'         // success flash
+    | 'error';       // failure
 
 interface FlatFolder { id: string; name: string; spaceName: string; deptName: string }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Walk the CoreTreeNode tree and collect all folders as a flat list. */
 function flattenFolders(tree: any[]): FlatFolder[] {
     const result: FlatFolder[] = [];
     for (const dept of tree) {
         for (const space of dept.children ?? []) {
             for (const folder of space.children ?? []) {
                 result.push({
-                    id: folder.id,
-                    name: folder.name ?? folder.title ?? '',
-                    spaceName: space.name ?? space.title ?? '',
-                    deptName: dept.name ?? dept.title ?? '',
+                    id:        folder.id,
+                    name:      folder.name ?? folder.title ?? '',
+                    spaceName: space.name  ?? space.title  ?? '',
+                    deptName:  dept.name   ?? dept.title   ?? '',
                 });
             }
         }
@@ -58,7 +64,6 @@ function flattenFolders(tree: any[]): FlatFolder[] {
     return result;
 }
 
-/** Try to auto-select a folder whose name appears in the transcript. */
 function matchFolder(transcript: string, folders: FlatFolder[]): string | null {
     const lower = transcript.toLowerCase();
     const match = folders.find(f => lower.includes(f.name.toLowerCase()) && f.name.length > 2);
@@ -68,30 +73,32 @@ function matchFolder(transcript: string, folders: FlatFolder[]): string | null {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const AmbientRoom: React.FC = () => {
-    const navigateToCore    = useNavStore(s => s.navigateToCore);
-    const user              = useSessionStore(s => s.user);
-    const activeCompanyId   = useNavStore(s => s.activeCompanyId);
-    const addNode           = useMoraStore(s => s.addNode);
+    const navigateToCore  = useNavStore(s => s.navigateToCore);
+    const activeCompanyId = useNavStore(s => s.activeCompanyId);
 
-    const { data: tree = [] } = useTree(activeCompanyId);
-    const folders = flattenFolders(tree);
+    const { data: tree = [] }                                = useTree(activeCompanyId);
+    const folders                                            = flattenFolders(tree);
+    const { sendToMora, executeMoraTools, isLoading }        = useAmbientMora();
+    const { speak }                                          = useSpeechSynthesis();
 
     // ── UI state ──────────────────────────────────────────────────────────────
-    const [ambientState, setAmbientState] = useState<AmbientState>('idle');
-    const [transcript, setTranscript]     = useState('');
-    const [liveText, setLiveText]         = useState('');       // interim speech text
-    const [editedText, setEditedText]     = useState('');       // editable in Capture card
-    const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
-    const [showConfirm, setShowConfirm]   = useState(false);
-    const [isSaving, setIsSaving]         = useState(false);
+    const [ambientState,   setAmbientState]  = useState<AmbientState>('idle');
+    const [transcript,     setTranscript]    = useState('');
+    const [liveText,       setLiveText]      = useState('');
     const [speechSupported, setSpeechSupported] = useState(true);
-    const [fallbackMode, setFallbackMode] = useState(false);
-    const [fallbackInput, setFallbackInput] = useState('');
+    const [fallbackMode,   setFallbackMode]  = useState(false);
+    const [fallbackInput,  setFallbackInput] = useState('');
+    const [errorMsg,       setErrorMsg]      = useState('');
+
+    // Môra's response — drives AmbientIntentCard
+    const [moraText,    setMoraText]    = useState('');
+    const [moraIntent,  setMoraIntent]  = useState('');
+    const [moraTools,   setMoraTools]   = useState<ReturnType<typeof useAmbientMora>['executeMoraTools'] extends (calls: infer T) => any ? T : never>([]);
 
     const recognitionRef = useRef<any>(null);
     const spaceHeldRef   = useRef(false);
 
-    // ── Speech init ───────────────────────────────────────────────────────────
+    // ── Speech recognition init ───────────────────────────────────────────────
     const SpeechAPI = typeof window !== 'undefined'
         ? ((window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition)
         : null;
@@ -107,9 +114,9 @@ export const AmbientRoom: React.FC = () => {
     const startListening = useCallback(() => {
         if (!SpeechAPI || ambientState === 'listening') return;
         const recognition = new SpeechAPI();
-        recognition.lang              = 'de-DE';
-        recognition.continuous        = true;
-        recognition.interimResults    = true;
+        recognition.lang           = 'de-DE';
+        recognition.continuous     = true;
+        recognition.interimResults = true;
 
         recognition.onresult = (e: any) => {
             let interim = '';
@@ -141,7 +148,7 @@ export const AmbientRoom: React.FC = () => {
     const stopListening = useCallback((abort = false) => {
         recognitionRef.current?.stop();
         recognitionRef.current = null;
-        spaceHeldRef.current = false;
+        spaceHeldRef.current   = false;
         if (!abort) {
             setAmbientState('thinking');
             setLiveText('');
@@ -151,19 +158,79 @@ export const AmbientRoom: React.FC = () => {
         }
     }, []);
 
-    // Transition thinking → cards after a brief delay (simulate processing)
+    // ── thinking → sendToMora ─────────────────────────────────────────────────
     useEffect(() => {
         if (ambientState !== 'thinking') return;
-        const t = setTimeout(() => {
-            const finalText = (transcript + ' ' + liveText).trim();
-            if (!finalText) { setAmbientState('idle'); return; }
-            setEditedText(finalText);
-            const autoFolder = matchFolder(finalText, folders);
-            setSelectedFolderId(autoFolder ?? (folders[0]?.id ?? null));
-            setAmbientState('cards');
-        }, 900);
-        return () => clearTimeout(t);
+
+        const finalText = (transcript + ' ' + liveText).trim();
+        if (!finalText) {
+            setAmbientState('idle');
+            return;
+        }
+
+        const defaultFolder = matchFolder(finalText, folders) ?? (folders[0]?.id ?? null);
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const result = await sendToMora(finalText, defaultFolder);
+                if (cancelled) return;
+
+                if (!result.text && result.toolCalls.length === 0) {
+                    setAmbientState('idle');
+                    return;
+                }
+
+                setMoraText(result.text);
+                setMoraIntent(result.intent);
+                setMoraTools(result.toolCalls as any);
+
+                // Môra speaks
+                if (result.text) speak(result.text);
+
+                if (result.toolCalls.length === 0) {
+                    // Text-only response — loop back to idle after 3 s
+                    setTimeout(() => {
+                        if (!cancelled) setAmbientState('idle');
+                    }, 3000);
+                } else {
+                    setAmbientState('responding');
+                }
+            } catch {
+                if (cancelled) return;
+                setErrorMsg('Ich konnte das nicht verarbeiten.');
+                speak('Ich konnte das nicht verarbeiten. Bitte versuche es erneut.');
+                setAmbientState('error');
+            }
+        })();
+
+        return () => { cancelled = true; };
     }, [ambientState]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ── done → idle (1.5 s) ───────────────────────────────────────────────────
+    useEffect(() => {
+        if (ambientState !== 'done') return;
+        const t = setTimeout(() => setAmbientState('idle'), 1500);
+        return () => clearTimeout(t);
+    }, [ambientState]);
+
+    // ── Execute confirmed tools ───────────────────────────────────────────────
+    const handleExecute = useCallback(async () => {
+        setAmbientState('executing');
+        try {
+            await executeMoraTools(moraTools as any);
+            speak('Erledigt.');
+            setAmbientState('done');
+        } catch {
+            setErrorMsg('Ausführung fehlgeschlagen.');
+            speak('Die Ausführung ist fehlgeschlagen.');
+            setAmbientState('error');
+        }
+    }, [executeMoraTools, moraTools, speak]);
+
+    const handleDismiss = useCallback(() => {
+        setAmbientState('idle');
+    }, []);
 
     // ── Spacebar global binding ────────────────────────────────────────────────
     useEffect(() => {
@@ -171,6 +238,7 @@ export const AmbientRoom: React.FC = () => {
             const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
             if (e.code === 'Space' && !spaceHeldRef.current) {
+                if (ambientState === 'responding' || ambientState === 'executing' || ambientState === 'done') return;
                 e.preventDefault();
                 spaceHeldRef.current = true;
                 startListening();
@@ -178,7 +246,8 @@ export const AmbientRoom: React.FC = () => {
             if (e.code === 'Escape') {
                 e.preventDefault();
                 if (ambientState === 'listening') stopListening(true);
-                else if (ambientState === 'cards') setAmbientState('idle');
+                else if (ambientState === 'responding') setAmbientState('idle');
+                else if (ambientState === 'error') setAmbientState('idle');
                 else navigateToCore();
             }
         };
@@ -204,7 +273,7 @@ export const AmbientRoom: React.FC = () => {
         else if (ambientState === 'idle')  startListening();
     };
 
-    // ── Fallback submit ───────────────────────────────────────────────────────
+    // ── Fallback text submit ──────────────────────────────────────────────────
     const handleFallbackSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!fallbackInput.trim()) return;
@@ -213,37 +282,31 @@ export const AmbientRoom: React.FC = () => {
         setAmbientState('thinking');
     };
 
-    // ── Save node ─────────────────────────────────────────────────────────────
-    const handleSave = async () => {
-        if (!selectedFolderId || !editedText.trim()) return;
-        setIsSaving(true);
-        try {
-            await addNode({
-                title:     editedText.trim().slice(0, 100),
-                content:   editedText.trim(),
-                folder_id: selectedFolderId,
-                type:      'note',
-            });
-            setShowConfirm(false);
-            navigateToCore();
-        } catch {
-            // toast handled by addNode
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
     // ── Orb state mapping ─────────────────────────────────────────────────────
-    const orbState = ambientState === 'listening' ? 'listening'
-        : ambientState === 'thinking' ? 'thinking'
+    const orbState =
+        ambientState === 'listening'  ? 'listening'
+        : ambientState === 'thinking' || isLoading ? 'thinking'
+        : ambientState === 'done'     ? 'idle'
         : 'idle';
+
+    // ── Status hint text ──────────────────────────────────────────────────────
+    const statusHint =
+        ambientState === 'idle'       && !fallbackMode ? 'Drücken & halten · oder Leertaste'
+        : ambientState === 'idle'     && fallbackMode  ? 'Eingabe unten'
+        : ambientState === 'listening'                 ? 'Hört zu … loslassen zum Beenden'
+        : ambientState === 'thinking' || isLoading     ? 'Môra verarbeitet …'
+        : ambientState === 'responding'                ? 'Bereit zur Ausführung'
+        : ambientState === 'executing'                 ? 'Führt aus …'
+        : ambientState === 'done'                      ? '✓ Erledigt'
+        : ambientState === 'error'                     ? errorMsg
+        : '';
 
     // ─────────────────────────────────────────────────────────────────────────
     return (
-        <div className="absolute inset-0 flex flex-col items-center justify-start overflow-hidden select-none"
-             style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 30%, rgba(109,40,217,0.22) 0%, transparent 70%), #0a0618' }}>
-
-            {/* Ambient particle layer */}
+        <div
+            className="absolute inset-0 flex flex-col items-center justify-start overflow-hidden select-none"
+            style={{ background: 'radial-gradient(ellipse 80% 70% at 50% 30%, rgba(109,40,217,0.22) 0%, transparent 70%), #0a0618' }}
+        >
             <AmbientDust count={35} color="rgba(124,58,237,0.12)" durationRange={[18, 38]} />
 
             {/* Back button */}
@@ -255,16 +318,16 @@ export const AmbientRoom: React.FC = () => {
                 <span>Zurück</span>
             </button>
 
-            {/* Header label */}
+            {/* Header */}
             <div className="mt-16 mb-2 text-[10px] tracking-[0.35em] uppercase text-violet-300/40 font-medium">
                 Môra Field
             </div>
 
-            {/* Central orb section */}
-            <div className="flex flex-col items-center gap-6 mt-6 z-10">
+            {/* Orb section */}
+            <div className="flex flex-col items-center gap-6 mt-6 z-10 w-full px-8">
 
-                {/* Ripple rings when listening */}
                 <div className="relative flex items-center justify-center">
+                    {/* Ripple rings */}
                     <AnimatePresence>
                         {ambientState === 'listening' && [0, 1, 2].map(i => (
                             <motion.div
@@ -278,6 +341,21 @@ export const AmbientRoom: React.FC = () => {
                         ))}
                     </AnimatePresence>
 
+                    {/* Done flash */}
+                    <AnimatePresence>
+                        {ambientState === 'done' && (
+                            <motion.div
+                                key="done-flash"
+                                className="absolute rounded-full"
+                                style={{ width: 220, height: 220, background: 'radial-gradient(circle, rgba(52,211,153,0.22) 0%, transparent 70%)' }}
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1.1 }}
+                                exit={{ opacity: 0, scale: 1.2 }}
+                                transition={{ duration: 0.4 }}
+                            />
+                        )}
+                    </AnimatePresence>
+
                     <MoraOrb
                         state={orbState}
                         size="lg"
@@ -286,21 +364,22 @@ export const AmbientRoom: React.FC = () => {
                     />
                 </div>
 
-                {/* Push-to-talk Mic Button */}
+                {/* Push-to-talk mic button */}
                 <AnimatePresence mode="wait">
-                    {ambientState !== 'cards' && !fallbackMode && (
+                    {(ambientState === 'idle' || ambientState === 'listening') && !fallbackMode && (
                         <motion.button
                             key="mic-btn"
                             initial={{ opacity: 0, scale: 0.85 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.25 }}
-                            onPointerDown={(e) => { e.preventDefault(); startListening(); }}
-                            onPointerUp={(e)   => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
-                            onPointerLeave={(e) => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
+                            onPointerDown={e => { e.preventDefault(); startListening(); }}
+                            onPointerUp={e => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
+                            onPointerLeave={e => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
                             className="relative flex items-center justify-center rounded-full transition-all focus:outline-none"
                             style={{
-                                width: 64, height: 64,
+                                width:      64,
+                                height:     64,
                                 background: ambientState === 'listening'
                                     ? 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, rgba(16,185,129,0.12) 100%)'
                                     : 'rgba(124,58,237,0.18)',
@@ -330,18 +409,19 @@ export const AmbientRoom: React.FC = () => {
                 {/* Status hint */}
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={ambientState}
+                        key={ambientState + (isLoading ? '-loading' : '')}
                         initial={{ opacity: 0, y: 6 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.25 }}
-                        className="text-[11px] tracking-[0.25em] uppercase text-white/30 font-medium h-5 text-center"
+                        className="text-[11px] tracking-[0.25em] uppercase font-medium h-5 text-center"
+                        style={{
+                            color: ambientState === 'done'  ? 'rgba(52,211,153,0.8)'
+                                 : ambientState === 'error' ? 'rgba(239,68,68,0.7)'
+                                 : 'rgba(255,255,255,0.3)',
+                        }}
                     >
-                        {ambientState === 'idle' && !fallbackMode   && 'Drücken & halten · oder Leertaste'}
-                        {ambientState === 'idle' && fallbackMode    && 'Eingabe unten'}
-                        {ambientState === 'listening'               && 'Hört zu … loslassen zum Beenden'}
-                        {ambientState === 'thinking'                && 'Verarbeitet …'}
-                        {ambientState === 'cards'                   && 'Bereit zum Speichern'}
+                        {statusHint}
                     </motion.div>
                 </AnimatePresence>
 
@@ -361,8 +441,67 @@ export const AmbientRoom: React.FC = () => {
                     )}
                 </AnimatePresence>
 
+                {/* Môra verbal response (text-only, no tools) */}
+                <AnimatePresence>
+                    {ambientState === 'idle' && moraText && !moraTools.length && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            className="max-w-lg px-5 py-3 rounded-2xl text-sm text-white/60 leading-relaxed text-center italic"
+                            style={{ background: 'rgba(109,40,217,0.08)', border: '1px solid rgba(139,92,246,0.15)' }}
+                        >
+                            {moraText}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* Executing progress line */}
+                <AnimatePresence>
+                    {ambientState === 'executing' && (
+                        <motion.div
+                            initial={{ opacity: 0, scaleX: 0 }}
+                            animate={{ opacity: 1, scaleX: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.6, ease: 'easeOut' }}
+                            className="w-full max-w-md h-0.5 rounded-full origin-left"
+                            style={{ background: 'linear-gradient(90deg, rgba(139,92,246,0.6) 0%, rgba(52,211,153,0.4) 100%)' }}
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Intent card (responding state) */}
+                <AnimatePresence>
+                    {(ambientState === 'responding') && (
+                        <AmbientIntentCard
+                            intent={moraIntent}
+                            toolCalls={moraTools as any}
+                            onExecute={handleExecute}
+                            onDismiss={handleDismiss}
+                            disabled={false}
+                        />
+                    )}
+                </AnimatePresence>
+
+                {/* Error retry */}
+                <AnimatePresence>
+                    {ambientState === 'error' && (
+                        <motion.button
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setAmbientState('idle')}
+                            className="flex items-center gap-2 px-4 py-2 rounded-full text-xs text-red-300/70 hover:text-red-300 transition-colors"
+                            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)' }}
+                        >
+                            <RotateCcw className="w-3 h-3" />
+                            Erneut versuchen
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+
                 {/* Fallback text input */}
-                {fallbackMode && ambientState !== 'cards' && (
+                {fallbackMode && (ambientState === 'idle' || ambientState === 'error') && (
                     <form onSubmit={handleFallbackSubmit} className="flex gap-2 mt-2">
                         <input
                             type="text"
@@ -384,206 +523,6 @@ export const AmbientRoom: React.FC = () => {
                     </form>
                 )}
             </div>
-
-            {/* ── CARDS ──────────────────────────────────────────────────────── */}
-            <AnimatePresence>
-                {ambientState === 'cards' && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 40 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 20 }}
-                        transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
-                        className="grid grid-cols-2 gap-3 mt-8 px-8 w-full max-w-3xl z-10"
-                    >
-                        {/* Capture Card */}
-                        <AmbientCard delay={0} title="Aufnahme" icon="🎙">
-                            <textarea
-                                value={editedText}
-                                onChange={e => setEditedText(e.target.value)}
-                                rows={3}
-                                className="w-full resize-none bg-transparent text-sm text-white/80 leading-relaxed outline-none placeholder-white/20"
-                                placeholder="Transkript …"
-                            />
-                            <div className="text-[10px] text-white/20 mt-1 tracking-widest">
-                                {new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                        </AmbientCard>
-
-                        {/* Context Card */}
-                        <AmbientCard delay={0.08} title="Kontext" icon="🌐">
-                            <div className="text-[11px] text-white/40 space-y-1.5">
-                                <div>
-                                    <span className="text-violet-300/60">Erkannte Entitäten: </span>
-                                    {folders.filter(f => editedText.toLowerCase().includes(f.name.toLowerCase()) && f.name.length > 2)
-                                        .slice(0, 3)
-                                        .map(f => (
-                                            <span key={f.id} className="mr-1.5 px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-200/60 text-[10px]">
-                                                {f.name}
-                                            </span>
-                                        ))}
-                                    {folders.filter(f => editedText.toLowerCase().includes(f.name.toLowerCase()) && f.name.length > 2).length === 0 && (
-                                        <span className="text-white/20">–</span>
-                                    )}
-                                </div>
-                                <div>
-                                    <span className="text-violet-300/60">Zeichen: </span>
-                                    <span>{editedText.length}</span>
-                                </div>
-                            </div>
-                        </AmbientCard>
-
-                        {/* Action Card */}
-                        <AmbientCard delay={0.16} title="Aktion" icon="📁">
-                            <div className="text-[11px] text-white/40 mb-2">Ordner auswählen:</div>
-                            <select
-                                value={selectedFolderId ?? ''}
-                                onChange={e => setSelectedFolderId(e.target.value || null)}
-                                className="w-full text-sm text-white/70 bg-transparent outline-none rounded-lg px-2 py-1.5 cursor-pointer"
-                                style={{ background: 'rgba(124,58,237,0.15)', border: '1px solid rgba(139,92,246,0.2)' }}
-                            >
-                                <option value="" style={{ background: '#1a0a3a' }}>— kein Ordner —</option>
-                                {folders.map(f => (
-                                    <option key={f.id} value={f.id} style={{ background: '#1a0a3a' }}>
-                                        {f.deptName} / {f.spaceName} / {f.name}
-                                    </option>
-                                ))}
-                            </select>
-                            <button
-                                onClick={() => setShowConfirm(true)}
-                                disabled={!selectedFolderId || !editedText.trim()}
-                                className="mt-3 w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold tracking-wider transition-all disabled:opacity-30"
-                                style={{ background: 'rgba(109,40,217,0.55)', border: '1px solid rgba(167,139,250,0.25)', color: '#e9d5ff' }}
-                            >
-                                <Save className="w-3.5 h-3.5" />
-                                Als Node speichern
-                            </button>
-                        </AmbientCard>
-
-                        {/* Next Step Card */}
-                        <AmbientCard delay={0.24} title="Nächster Schritt" icon="✨">
-                            <div className="text-[11px] text-white/40 leading-relaxed">
-                                {editedText.length > 20
-                                    ? `Môra kann diesen Gedanken mit bestehenden Nodes verknüpfen. Öffne den Finder nach dem Speichern.`
-                                    : `Noch wenig Kontext. Kannst du noch mehr hinzufügen?`
-                                }
-                            </div>
-                        </AmbientCard>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── CONFIRMATION OVERLAY (waldgrün / gold) ──────────────────────── */}
-            <AnimatePresence>
-                {showConfirm && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 z-50 flex items-center justify-center"
-                        style={{ background: 'rgba(0, 20, 8, 0.85)', backdropFilter: 'blur(16px)' }}
-                        onClick={() => setShowConfirm(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.92, opacity: 0, y: 20 }}
-                            animate={{ scale: 1, opacity: 1, y: 0 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            transition={{ type: 'spring', damping: 20, stiffness: 260 }}
-                            onClick={e => e.stopPropagation()}
-                            className="relative max-w-sm w-full mx-6 rounded-3xl p-7 flex flex-col gap-5"
-                            style={{
-                                background: 'linear-gradient(145deg, #0f2010 0%, #0a1a0c 100%)',
-                                border: '1px solid rgba(134,179,85,0.30)',
-                                boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 60px rgba(40,100,20,0.18)',
-                            }}
-                        >
-                            <button
-                                onClick={() => setShowConfirm(false)}
-                                className="absolute top-4 right-4 text-white/20 hover:text-white/50 transition-colors"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl"
-                                     style={{ background: 'rgba(134,179,85,0.12)', border: '1px solid rgba(134,179,85,0.2)' }}>
-                                    🌿
-                                </div>
-                                <div>
-                                    <div className="text-sm font-semibold" style={{ color: '#d4e8a0' }}>Als Node speichern</div>
-                                    <div className="text-[11px] text-white/30">Neuer Node wird erstellt</div>
-                                </div>
-                            </div>
-
-                            <div className="rounded-xl px-4 py-3 text-[12px] text-white/50 leading-relaxed line-clamp-3"
-                                 style={{ background: 'rgba(134,179,85,0.06)', border: '1px solid rgba(134,179,85,0.12)' }}>
-                                {editedText.slice(0, 160)}{editedText.length > 160 ? '…' : ''}
-                            </div>
-
-                            {selectedFolderId && (
-                                <div className="text-[11px]" style={{ color: '#b5cc80' }}>
-                                    Ziel: <span className="font-medium">
-                                        {folders.find(f => f.id === selectedFolderId)?.name ?? selectedFolderId}
-                                    </span>
-                                </div>
-                            )}
-
-                            <div className="flex gap-2 pt-1">
-                                <button
-                                    onClick={() => setShowConfirm(false)}
-                                    className="flex-1 py-2.5 rounded-xl text-xs text-white/30 hover:text-white/50 transition-colors"
-                                    style={{ background: 'rgba(255,255,255,0.04)' }}
-                                >
-                                    Abbrechen
-                                </button>
-                                <button
-                                    onClick={handleSave}
-                                    disabled={isSaving}
-                                    className="flex-1 py-2.5 rounded-xl text-xs font-semibold tracking-wide transition-all disabled:opacity-50"
-                                    style={{
-                                        background: isSaving
-                                            ? 'rgba(134,179,85,0.25)'
-                                            : 'linear-gradient(135deg, rgba(134,179,85,0.45) 0%, rgba(180,134,40,0.35) 100%)',
-                                        border: '1px solid rgba(180,160,60,0.35)',
-                                        color: '#e8d990',
-                                    }}
-                                >
-                                    {isSaving ? 'Speichert …' : 'Ja, als Node speichern'}
-                                </button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 };
-
-// ── Sub-component: AmbientCard ─────────────────────────────────────────────────
-
-interface AmbientCardProps {
-    title: string;
-    icon: string;
-    delay?: number;
-    children: React.ReactNode;
-}
-
-const AmbientCard: React.FC<AmbientCardProps> = ({ title, icon, delay = 0, children }) => (
-    <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 10 }}
-        transition={{ duration: 0.4, delay, ease: [0.4, 0, 0.2, 1] }}
-        className="rounded-2xl p-4 flex flex-col gap-2.5"
-        style={{
-            background: 'rgba(124,58,237,0.08)',
-            border: '1px solid rgba(139,92,246,0.18)',
-            backdropFilter: 'blur(12px)',
-        }}
-    >
-        <div className="flex items-center gap-2 text-[11px] font-semibold tracking-widest uppercase text-violet-300/50">
-            <span>{icon}</span>
-            <span>{title}</span>
-        </div>
-        {children}
-    </motion.div>
-);
