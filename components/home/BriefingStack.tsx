@@ -46,7 +46,7 @@ export const BriefingStack: React.FC<BriefingStackProps> = ({ briefings, autoCyc
                         {active.title}
                     </h2>
                     <div className="mt-3 flex items-center gap-2">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
                         <span className="text-[13px] text-white/58">{active.detail}</span>
                     </div>
                 </motion.div>

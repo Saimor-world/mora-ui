@@ -180,7 +180,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         )}
                     </>
                 ) : (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-400/20 bg-emerald-500/[0.10] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-emerald-100">
+                    <div className="flex items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.10] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-violet-100">
                         <LayoutGrid size={13} />
                         <span>{contextModeLabel}</span>
                     </div>

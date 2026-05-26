@@ -89,7 +89,7 @@ function normalizePrivateAreaLabel(value?: string | null): string {
 
 function kindIcon(kind: RecentKind): React.ReactNode {
     switch (kind) {
-        case 'document': return <FileText size={13} className="text-emerald-400/60" />;
+        case 'document': return <FileText size={13} className="text-violet-400/60" />;
         case 'finder':   return <FolderOpen size={13} className="text-white/40" />;
         case 'notes':    return <StickyNote size={13} className="text-white/40" />;
         case 'chat':     return <MessageCircle size={13} className="text-white/40" />;
@@ -617,15 +617,25 @@ export const HomeSurface: React.FC = () => {
 
     // ── render ─────────────────────────────────────────────────────────────
     return (
-        <div className="pointer-events-none absolute inset-0 z-[44] overflow-hidden">
-            <div className="absolute left-8 top-28 w-[310px]">
+        <div
+            data-testid="home-universe-mission-control"
+            className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
+        >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(124,58,237,0.12),transparent_32%),radial-gradient(circle_at_78%_28%,rgba(34,211,238,0.09),transparent_24%),linear-gradient(180deg,rgba(5,4,16,0.04),rgba(5,4,16,0.26))]" />
+            <div className="absolute left-1/2 top-1/2 h-[min(86vw,86vh)] w-[min(86vw,86vh)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100/[0.045]" />
+            <div className="absolute left-1/2 top-1/2 h-[min(58vw,58vh)] w-[min(58vw,58vh)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-200/[0.06]" />
+            <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent" />
+            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20" />
+
+            <div className="absolute left-8 top-24 w-[318px]">
                 <div
                     data-testid="briefing-strip"
-                    className="pointer-events-auto rounded-[28px] border border-white/[0.055] bg-[linear-gradient(155deg,rgba(19,10,42,0.40),rgba(13,9,33,0.12))] p-4 shadow-[0_18px_70px_rgba(0,0,0,0.20)] backdrop-blur-[22px]"
+                    className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(160deg,rgba(18,16,38,0.78),rgba(10,9,25,0.42)_54%,rgba(7,18,24,0.34))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[26px]"
                 >
+                    <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <div className="text-[10px] uppercase tracking-[0.28em] text-violet-200/65">Home</div>
+                            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Mission Control</div>
                             <h1 className="mt-2 text-[28px] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
                                     ? `${websiteEntryContext.companyName} · Preview`
@@ -665,10 +675,10 @@ export const HomeSurface: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="mt-4 rounded-[22px] border border-white/[0.05] bg-violet-950/[0.18] p-3" style={{ borderTop: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="mt-4 rounded-[18px] border border-white/[0.075] bg-black/[0.18] p-3" style={{ borderTop: '1px solid rgba(34,211,238,0.16)' }}>
                         <div className="flex items-center justify-between gap-3">
                             <div>
-                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-violet-200/55">
+                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100/48">
                                     <Lock size={9} className="opacity-60" />
                                     Privater Bereich
                                 </div>
@@ -677,7 +687,7 @@ export const HomeSurface: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={openPrivateArea}
-                                className="rounded-full border border-violet-400/20 bg-violet-500/[0.12] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-violet-100/75 transition-colors hover:border-violet-300/30 hover:bg-violet-500/[0.18]"
+                                className="rounded-full border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-cyan-50/75 transition-colors hover:border-cyan-200/32 hover:bg-cyan-400/[0.16]"
                             >
                                 Öffnen
                             </button>
@@ -697,20 +707,23 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </div>
 
-            <section className="absolute left-[390px] right-[380px] xl:right-[420px] 2xl:right-[700px] top-[180px] bottom-[150px] flex items-center justify-center">
-                <div className="pointer-events-auto relative w-full max-w-[700px]">
-                    <div className="absolute inset-x-[8%] top-1/2 h-64 -translate-y-1/2 rounded-full bg-violet-500/[0.22] blur-[120px]" />
-                    <div className="relative overflow-hidden rounded-[44px] border border-violet-300/[0.14] bg-[linear-gradient(145deg,rgba(25,12,55,0.55),rgba(13,9,33,0.14)_52%,rgba(20,10,55,0.28))] px-8 py-7 shadow-[0_40px_160px_rgba(0,0,0,0.36)] backdrop-blur-[28px]">
-                        <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-violet-400/[0.14] blur-[72px]" />
-                        <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-amber-400/[0.12] blur-[82px]" />
+            <section className="absolute left-[370px] right-[360px] xl:right-[400px] 2xl:right-[680px] top-[150px] bottom-[140px] flex items-center justify-center">
+                <div className="pointer-events-auto relative w-full max-w-[760px]">
+                    <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
+                    <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
+                    <div className="relative overflow-hidden rounded-[30px] border border-white/[0.095] bg-[linear-gradient(145deg,rgba(20,18,42,0.82),rgba(10,9,25,0.56)_48%,rgba(7,28,34,0.40))] px-8 py-7 shadow-[0_44px_160px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[30px]">
+                        <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/60 via-cyan-200/70 to-violet-300/65" />
+                        <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-cyan-300/[0.13] blur-[72px]" />
+                        <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-violet-400/[0.12] blur-[82px]" />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.055),transparent_22%),repeating-linear-gradient(115deg,rgba(255,255,255,0.025)_0_1px,transparent_1px_28px)] opacity-70" />
 
                         <div className="relative flex items-start justify-between gap-6">
                             <div className="min-w-0 flex-1">
-                                <div className="inline-block text-[10px] uppercase tracking-[0.28em] text-violet-200/65 relative">
-                                    Heute
+                                <div className="inline-block text-[10px] uppercase tracking-[0.24em] text-cyan-100/62 relative">
+                                    Universe aktiv
                                     <span
                                         className="absolute left-0 bottom-[-3px] rounded-full"
-                                        style={{ width: 24, height: 1, background: 'rgba(167,139,250,0.80)' }}
+                                        style={{ width: 28, height: 1, background: 'rgba(103,232,249,0.80)' }}
                                     />
                                 </div>
                                 {stackBriefings.length > 0 ? (
@@ -718,13 +731,13 @@ export const HomeSurface: React.FC = () => {
                                         <BriefingStack briefings={stackBriefings} />
                                     </div>
                                 ) : (
-                                    <h2 className="mt-3 max-w-[32rem] text-[40px] font-light leading-[1.04] tracking-[-0.04em] text-white/92">
+                                    <h2 className="mt-3 max-w-[34rem] text-[44px] font-light leading-[1.02] tracking-[-0.04em] text-white/94">
                                         {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
                                             ? <>Weiter in <span style={{ color: 'rgba(167,139,250,0.95)' }}>{overlayRecentActivityItems[0].label}</span>.</>
                                             : focusTitle}
                                     </h2>
                                 )}
-                                <p className="mt-4 flex max-w-[29rem] items-start gap-1.5 text-[13px] leading-relaxed text-white/58">
+                                <p className="mt-4 flex max-w-[31rem] items-start gap-1.5 text-[13px] leading-relaxed text-white/60">
                                     {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage && (
                                         <span className="mt-1.5 inline-block w-1.5 h-1.5 shrink-0 rounded-full bg-violet-400 animate-pulse" />
                                     )}
@@ -782,7 +795,8 @@ export const HomeSurface: React.FC = () => {
                                     }
                                 }}
                             >
-                                <div className="absolute inset-[-1.1rem] rounded-full border border-cyan-200/[0.08] bg-cyan-300/[0.035]" />
+                                <div className="absolute inset-[-1.3rem] rounded-full border border-cyan-200/[0.11] bg-cyan-300/[0.045]" />
+                                <div className="absolute inset-[-2.6rem] rounded-full border border-violet-200/[0.06]" />
                                 <CompanyLogo
                                     src={currentCompany?.logo_url}
                                     companyName={displayCompanyName}
@@ -790,7 +804,7 @@ export const HomeSurface: React.FC = () => {
                                     animated
                                 />
                                 {isUniversePortalHovered ? (
-                                    <div className="absolute right-0 top-[calc(100%+0.9rem)] w-[220px] rounded-[20px] border border-cyan-200/14 bg-violet-950/60 px-4 py-3 text-left shadow-[0_20px_70px_rgba(0,0,0,0.34)] backdrop-blur-[24px]">
+                                    <div className="absolute right-0 top-[calc(100%+0.9rem)] w-[220px] rounded-[16px] border border-cyan-200/16 bg-slate-950/70 px-4 py-3 text-left shadow-[0_20px_70px_rgba(0,0,0,0.34)] backdrop-blur-[24px]">
                                         <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/54">Universe</div>
                                         <div className="mt-1 text-[12px] leading-relaxed text-white/68">Organisation als Topographie öffnen.</div>
                                     </div>
@@ -808,7 +822,7 @@ export const HomeSurface: React.FC = () => {
                         {featuredDeptTiles.length > 0 && (
                             <div className="relative mt-6">
                                 <div className="mb-2 flex items-center justify-between">
-                                    <div className="text-[10px] uppercase tracking-[0.24em] text-white/34">Arbeitsbereiche</div>
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/36">Planetenverbindungen</div>
                                     <button
                                         type="button"
                                         onClick={openUniverse}
@@ -829,10 +843,10 @@ export const HomeSurface: React.FC = () => {
                                                 data: { departmentId: dept.id, departmentName: dept.name },
                                             })}
                                             className={[
-                                                'min-w-0 rounded-[18px] border px-3 py-3 text-left transition-all',
+                                                'min-w-0 rounded-[16px] border px-3 py-3 text-left transition-all',
                                                 active
-                                                    ? 'border-violet-400/22 bg-violet-400/[0.10] hover:border-violet-300/35 hover:bg-violet-400/[0.16]'
-                                                    : 'border-white/[0.08] bg-white/[0.04] hover:border-white/16 hover:bg-white/[0.07]',
+                                                    ? 'border-cyan-300/24 bg-cyan-400/[0.10] hover:border-cyan-200/38 hover:bg-cyan-400/[0.15]'
+                                                    : 'border-white/[0.08] bg-white/[0.035] hover:border-white/16 hover:bg-white/[0.06]',
                                             ].join(' ')}
                                         >
                                             <div className="truncate text-[12px] font-medium text-white/78">{dept.name}</div>
@@ -852,11 +866,12 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </section>
 
-            <aside className="absolute bottom-[9.5rem] right-8 w-[320px] 2xl:right-[22rem]">
-                <div data-tageslage-panel className="pointer-events-auto rounded-[28px] border border-white/[0.055] bg-[linear-gradient(155deg,rgba(18,9,40,0.36),rgba(13,9,33,0.10))] p-4 shadow-[0_22px_80px_rgba(0,0,0,0.20)] backdrop-blur-[22px]">
+            <aside className="absolute bottom-[9.2rem] right-8 w-[330px] 2xl:right-[21rem]">
+                <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(155deg,rgba(18,16,38,0.74),rgba(8,14,26,0.34))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-[26px]">
+                    <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">
                         <div>
-                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.26em] text-violet-200/58">
+                            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-100/52">
                                 Tageslage
                                 <span className="text-violet-200/35">›</span>
                             </div>
@@ -869,7 +884,7 @@ export const HomeSurface: React.FC = () => {
                         <button
                             type="button"
                             onClick={openIntegrations}
-                            className="rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:border-violet-400/22 hover:bg-violet-500/[0.10] hover:text-violet-100/80"
+                            className="rounded-xl border border-white/[0.08] bg-white/[0.035] px-3 py-1.5 text-[10px] text-white/50 transition-colors hover:border-cyan-300/22 hover:bg-cyan-500/[0.08] hover:text-cyan-100/80"
                         >
                             Quellen
                         </button>
@@ -877,7 +892,7 @@ export const HomeSurface: React.FC = () => {
 
                     <div className="mt-4 grid gap-2">
                         {latestMail && (
-                            <HomeSignalCard icon={<Mail size={14} />} label="Postfach" title={latestMail.subject} detail={latestMail.from} tone="emerald" onClick={openMail} />
+                            <HomeSignalCard icon={<Mail size={14} />} label="Postfach" title={latestMail.subject} detail={latestMail.from} tone="violet" onClick={openMail} />
                         )}
                         {nextCalendarEvent && (
                             <HomeSignalCard icon={<CalendarDays size={14} />} label="Kalender" title={nextCalendarEvent.title} detail={nextCalendarEvent.time || nextCalendarEvent.date} tone="amber" onClick={openCalendarSetup} />
@@ -891,12 +906,12 @@ export const HomeSurface: React.FC = () => {
                                 label="Teamraum"
                                 title={latestTeamMessage ? latestTeamMessage.content : teamActivityTitle ?? `${onlineTeamCount} online`}
                                 detail={latestTeamMessage ? latestTeamMessage.sender_name || 'Team' : teamActivityDetail ?? 'Teamchat und Präsenz'}
-                                tone="emerald"
+                                tone="violet"
                                 onClick={openTeam}
                             />
                         )}
                         <div
-                            className="rounded-[18px] border border-violet-400/15 bg-amber-400/[0.06] p-2.5"
+                            className="rounded-[16px] border border-cyan-300/14 bg-black/[0.16] p-2.5"
                             data-testid="recent-items-section"
                         >
                             <div className="mb-1.5 flex items-center gap-2 px-1 text-[10px] uppercase tracking-[0.18em] text-cyan-100/45">
@@ -984,8 +999,8 @@ const HomeChip: React.FC<{ label: string; value: number }> = ({ label, value }) 
 
 const commandToneClass: Record<string, { card: string; accent: string }> = {
     emerald: {
-        card: 'border-emerald-400/30 bg-emerald-400/[0.18] hover:border-emerald-300/45 hover:bg-emerald-400/[0.26]',
-        accent: 'bg-emerald-400',
+        card: 'border-violet-400/30 bg-violet-400/[0.18] hover:border-violet-300/45 hover:bg-violet-400/[0.26]',
+        accent: 'bg-violet-400',
     },
     cyan: {
         card: 'border-cyan-400/28 bg-cyan-400/[0.15] hover:border-cyan-300/42 hover:bg-cyan-400/[0.22]',
@@ -1028,14 +1043,16 @@ const HomeCommandButton: React.FC<{
 };
 
 const signalToneClass: Record<string, string> = {
-    emerald: 'border-emerald-300/[0.10] bg-emerald-500/[0.035] text-emerald-100 hover:border-emerald-200/20 hover:bg-emerald-500/[0.065]',
+    emerald: 'border-violet-300/[0.10] bg-violet-500/[0.035] text-violet-100 hover:border-violet-200/20 hover:bg-violet-500/[0.065]',
+    violet:  'border-violet-300/[0.10] bg-violet-500/[0.035] text-violet-100 hover:border-violet-200/20 hover:bg-violet-500/[0.065]',
     cyan: 'border-cyan-300/[0.10] bg-cyan-500/[0.032] text-cyan-100 hover:border-cyan-200/18 hover:bg-cyan-500/[0.06]',
     amber: 'border-amber-300/[0.10] bg-amber-500/[0.032] text-amber-100 hover:border-amber-200/18 hover:bg-amber-500/[0.06]',
     muted: 'border-white/[0.045] bg-white/[0.012] text-white/56 hover:border-white/9 hover:bg-white/[0.028]',
 };
 
 const SIGNAL_CARD_BORDER: Record<string, string> = {
-    emerald: 'rgba(52,211,153,0.55)',
+    emerald: 'rgba(139,92,246,0.55)',
+    violet:  'rgba(139,92,246,0.55)',
     amber:   'rgba(251,191,36,0.55)',
     cyan:    'rgba(56,189,248,0.55)',
     muted:   'rgba(100,116,139,0.28)',
@@ -1046,7 +1063,7 @@ const HomeSignalCard: React.FC<{
     label: string;
     title: string;
     detail?: string | null;
-    tone: 'emerald' | 'cyan' | 'amber' | 'muted';
+    tone: 'emerald' | 'violet' | 'cyan' | 'amber' | 'muted';
     onClick: () => void;
 }> = ({ icon, label, title, detail, tone, onClick }) => (
     <button
@@ -1074,7 +1091,7 @@ const HomeMiniAction: React.FC<{
     <button
         type="button"
         onClick={onClick}
-        className="inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/48 transition-colors hover:border-emerald-300/16 hover:bg-emerald-500/[0.07] hover:text-emerald-100/74"
+        className="inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.025] px-3 py-1.5 text-[10px] text-white/48 transition-colors hover:border-violet-300/16 hover:bg-violet-500/[0.07] hover:text-violet-100/74"
     >
         {icon}
         <span className="max-w-[9rem] truncate">{label}</span>
