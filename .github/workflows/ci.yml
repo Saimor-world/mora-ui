@@ -47,7 +47,25 @@ jobs:
         run: npm run verify:os:smoke
 
       - name: Unit tests
-        run: npm test -- --runInBand --verbose 2>&1 | tee /tmp/jest-out.txt; exit ${PIPESTATUS[0]}
+        run: |
+          npm test -- --runInBand --json --outputFile=/tmp/jest.json || {
+            echo "## ❌ Failing Tests" >> $GITHUB_STEP_SUMMARY
+            node -e "
+              const r = JSON.parse(require('fs').readFileSync('/tmp/jest.json','utf8'));
+              r.testResults.forEach(suite => {
+                const failed = suite.testResults.filter(t => t.status === 'failed');
+                if (!failed.length) return;
+                const file = suite.testFilePath.split('/').pop();
+                console.log('### ' + file);
+                failed.forEach(t => {
+                  const msg = (t.failureMessages[0] || '').split('\n').slice(0,3).join(' | ');
+                  console.log('- **' + t.fullName + '**');
+                  console.log('  \`' + msg.slice(0,300) + '\`');
+                });
+              });
+            " >> $GITHUB_STEP_SUMMARY 2>/dev/null || true
+            exit 1
+          }
 
       - name: Production build
         run: npm run build
