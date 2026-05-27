@@ -47,6 +47,40 @@ interface FlatFolder { id: string; name: string; spaceName: string; deptName: st
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const getBackgroundStyle = (state: AmbientState) => {
+    const baseGradients = [
+        'radial-gradient(circle at 24% 38%, rgba(33,211,184,0.08), transparent 32%)',
+        'radial-gradient(circle at 76% 45%, rgba(82,197,255,0.06), transparent 35%)',
+        'linear-gradient(145deg, #02050a 0%, #070a14 42%, #05040d 100%)',
+    ];
+
+    let stateGradient = '';
+    switch (state) {
+        case 'listening':
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(16,185,129,0.18) 0%, rgba(16,185,129,0.04) 42%, transparent 72%)';
+            break;
+        case 'thinking':
+        case 'executing':
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.04) 42%, transparent 72%)';
+            break;
+        case 'responding':
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.04) 42%, transparent 72%)';
+            break;
+        case 'done':
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(52,211,153,0.22) 0%, rgba(52,211,153,0.05) 42%, transparent 72%)';
+            break;
+        case 'error':
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(239,68,68,0.20) 0%, rgba(239,68,68,0.05) 42%, transparent 72%)';
+            break;
+        case 'idle':
+        default:
+            stateGradient = 'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(178,142,255,0.20) 0%, rgba(83,54,159,0.06) 42%, transparent 72%)';
+            break;
+    }
+
+    return [stateGradient, ...baseGradients].join(', ');
+};
+
 function flattenFolders(tree: any[]): FlatFolder[] {
     const result: FlatFolder[] = [];
     for (const dept of tree) {
@@ -188,13 +222,12 @@ export const AmbientRoom: React.FC = () => {
                 // Môra speaks
                 if (result.text) speak(result.text);
 
+                setAmbientState('responding');
                 if (result.toolCalls.length === 0) {
-                    // Text-only response — loop back to idle after 3 s
+                    // Text-only response — loop back to idle after 4 s
                     setTimeout(() => {
                         if (!cancelled) setAmbientState('idle');
-                    }, 3000);
-                } else {
-                    setAmbientState('responding');
+                    }, 4000);
                 }
             } catch {
                 if (cancelled) return;
@@ -286,6 +319,8 @@ export const AmbientRoom: React.FC = () => {
     const orbState =
         ambientState === 'listening'  ? 'listening'
         : ambientState === 'thinking' || isLoading ? 'thinking'
+        : ambientState === 'responding' ? 'insight'
+        : ambientState === 'executing'  ? 'thinking'
         : ambientState === 'done'     ? 'idle'
         : 'idle';
 
@@ -306,12 +341,7 @@ export const AmbientRoom: React.FC = () => {
         <div
             className="absolute inset-0 flex flex-col items-center justify-start overflow-hidden select-none"
             style={{
-                background: [
-                    'radial-gradient(ellipse 55% 45% at 50% 25%, rgba(178,142,255,0.22) 0%, rgba(83,54,159,0.08) 42%, transparent 72%)',
-                    'radial-gradient(circle at 24% 38%, rgba(33,211,184,0.12), transparent 32%)',
-                    'radial-gradient(circle at 76% 45%, rgba(82,197,255,0.10), transparent 35%)',
-                    'linear-gradient(145deg, #04080d 0%, #0b1020 42%, #080613 100%)',
-                ].join(', '),
+                background: getBackgroundStyle(ambientState),
             }}
         >
             <AmbientDust count={56} color="rgba(150,220,255,0.16)" durationRange={[20, 44]} />
@@ -434,7 +464,7 @@ export const AmbientRoom: React.FC = () => {
 
                 {/* Live transcript bubble */}
                 <AnimatePresence>
-                    {ambientState === 'listening' && (liveText || transcript) && (
+                    {(ambientState === 'listening' || ambientState === 'thinking') && (liveText || transcript) && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
