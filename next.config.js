@@ -1,5 +1,15 @@
 /** @type {import('next').NextConfig} */
 const path = require('path');
+const fs = require('fs');
+
+// Keep Next on one physical path. This workspace can be reached via C:\ and
+// E:\; mixing those paths breaks Next Dev manifests and Webpack chunks.
+const startedRoot = path.resolve(process.cwd());
+const realStartedRoot = fs.realpathSync(startedRoot);
+if (startedRoot.toLowerCase() !== realStartedRoot.toLowerCase()) {
+  process.chdir(realStartedRoot);
+}
+const projectRoot = path.resolve(process.cwd());
 
 const coreApiUrl = process.env.NEXT_PUBLIC_CORE_API_URL;
 const shouldRewriteCore = typeof coreApiUrl === 'string' && /^https?:\/\//.test(coreApiUrl);
@@ -20,7 +30,7 @@ const nextConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      '@': path.resolve(__dirname),
+      '@': projectRoot,
     };
     return config;
   },

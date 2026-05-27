@@ -5,7 +5,6 @@ import { HomeSurface } from '@/components/home/HomeSurface';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { useActivityStore } from '@/lib/store/activityStore';
-import * as coreClient from '@/lib/api/coreClient';
 import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
 import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
@@ -92,7 +91,6 @@ const STABLE_TREE = [
 ];
 const STABLE_USER = { id: 'u-1', name: 'Anna Mueller', role: 'member' as const, email: 'anna@example.com' };
 
-const mockAuthLogout    = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockClearArtifacts = sessionLifecycle.clearClientSessionArtifacts as jest.MockedFunction<typeof sessionLifecycle.clearClientSessionArtifacts>;
 
 const openPane     = jest.fn();
@@ -116,7 +114,6 @@ const treeWithActivity = STABLE_TREE;
 beforeEach(() => {
     resetAllStores();
     jest.clearAllMocks();
-    mockAuthLogout.mockResolvedValue({ success: true } as any);
     localStorage.clear();
 
     useNavStore.setState({
@@ -293,9 +290,10 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getAllByTestId('recent-item')).toHaveLength(2);
+            const items = screen.getAllByTestId('recent-item');
+            expect(items).toHaveLength(2);
             expect(screen.getByText('Projektplan Q2.md')).toBeInTheDocument();
-            expect(screen.getByText('Finder')).toBeInTheDocument();
+            expect(items[1]).toHaveTextContent('Finder');
         });
     });
 
@@ -343,7 +341,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
         } as any);
 
         renderWithDepts();
-        await waitFor(() => screen.getByText('Finder'));
+        await waitFor(() => expect(screen.getByTestId('recent-item')).toHaveTextContent('Finder'));
         fireEvent.click(screen.getByTestId('recent-item').querySelector('button')!);
 
         expect(openPane).toHaveBeenCalledWith(
@@ -401,12 +399,15 @@ describe('HomeSurface — Quick Actions', () => {
 // ── logout ─────────────────────────────────────────────────────────────────
 
 describe('HomeSurface — logout', () => {
-    it('calls server logout and clears client state on button click', async () => {
+    it('uses same-origin logout link and clears client state on click', async () => {
         renderWithDepts();
-        fireEvent.click(screen.getByTestId('home-logout'));
+        const logoutLink = screen.getByTestId('home-logout');
+
+        expect(logoutLink.closest('form')).toHaveAttribute('action', '/api/auth/logout');
+        logoutLink.closest('form')?.addEventListener('submit', (event) => event.preventDefault(), { once: true });
+        fireEvent.click(logoutLink);
 
         await waitFor(() => {
-            expect(mockAuthLogout).toHaveBeenCalled();
             expect(mockClearArtifacts).toHaveBeenCalled();
             expect(accountLogout).toHaveBeenCalled();
             expect(resetStore).toHaveBeenCalled();

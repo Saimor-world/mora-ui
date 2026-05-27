@@ -1,7 +1,7 @@
-﻿'use client';
+'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, StickyNote, Users, Wrench } from 'lucide-react';
+import { Activity, CalendarDays, ExternalLink, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, StickyNote, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -9,7 +9,7 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
-import { authLogout, coreGet, fetchMyContent } from '@/lib/api/coreClient';
+import { coreGet, fetchMyContent } from '@/lib/api/coreClient';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
@@ -160,7 +160,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -307,17 +307,6 @@ export const HomeSurface: React.FC = () => {
     const openUniverse = useCallback(() => {
         setCoreMode('explore');
     }, [setCoreMode]);
-
-    // ── logout ────────────────────────────────────────────────────────────
-    const handleLogout = useCallback(async () => {
-        await authLogout();
-        clearClientSessionArtifacts();
-        logoutAccount();
-        resetUserState();
-        setUser(null);
-        resetStore();
-        if (typeof window !== 'undefined') window.location.assign('/');
-    }, [logoutAccount, resetStore, setUser]);
 
     // ── derived data ───────────────────────────────────────────────────────
     const briefing = useMemo(
@@ -634,7 +623,7 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)]">
                 <div
                     data-testid="briefing-strip"
-                    className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(160deg,rgba(12,18,26,0.82),rgba(10,12,24,0.50)_54%,rgba(5,27,24,0.34))] p-5 shadow-[0_24px_80px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-[26px]"
+                    className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
                 >
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
                     <div className="flex items-start justify-between gap-4">
@@ -651,15 +640,28 @@ export const HomeSurface: React.FC = () => {
                         </div>
                         {/* Hide logout in unauthenticated website preview — no real session to end */}
                         {(!websiteEntryContext || user) && (
-                            <button
-                                type="button"
-                                data-testid="home-logout"
-                                onClick={() => void handleLogout()}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/46 transition-all hover:border-white/14 hover:bg-white/[0.055] hover:text-white/74"
+                            <form
+                                action="/api/auth/logout"
+                                method="get"
+                                onSubmit={() => {
+                                    window.setTimeout(() => {
+                                        clearClientSessionArtifacts();
+                                        logoutAccount();
+                                        resetUserState();
+                                        setUser(null);
+                                        resetStore();
+                                    }, 0);
+                                }}
                             >
-                                <LogOut size={13} />
-                                Abmelden
-                            </button>
+                                <button
+                                    type="submit"
+                                    data-testid="home-logout"
+                                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/46 transition-all hover:border-white/14 hover:bg-white/[0.055] hover:text-white/74"
+                                >
+                                    <LogOut size={13} />
+                                    Abmelden
+                                </button>
+                            </form>
                         )}
                     </div>
 
@@ -715,7 +717,7 @@ export const HomeSurface: React.FC = () => {
                 <div className="pointer-events-auto relative w-full max-w-[690px]">
                     <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
-                    <div className="relative overflow-hidden rounded-[28px] border border-white/[0.09] bg-[linear-gradient(145deg,rgba(18,20,34,0.72),rgba(9,12,23,0.46)_48%,rgba(5,30,34,0.34))] px-6 py-6 shadow-[0_34px_130px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[28px]">
+                    <div className="relative overflow-hidden glass-card px-6 py-6 shadow-[0_34px_130px_rgba(0,0,0,0.4)]">
                         <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/60 via-cyan-200/70 to-violet-300/65" />
                         <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-cyan-300/[0.13] blur-[72px]" />
                         <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-violet-400/[0.12] blur-[82px]" />
@@ -817,7 +819,7 @@ export const HomeSurface: React.FC = () => {
                         </div>
 
                         <div className="relative mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
-                            <HomeCommandButton dataTestId="qa-finder" label="Finder öffnen" detail="Dateien & Ordner" onClick={openFinder} tone="emerald" />
+                            <HomeCommandButton dataTestId="qa-finder" label="Finder" detail="Dateien & Ordner" onClick={openFinder} tone="emerald" />
                             <HomeCommandButton dataTestId="qa-universe" label="Universe" detail="Topographie" onClick={openUniverse} tone="cyan" />
                             <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
                             <HomeCommandButton dataTestId="qa-upload" label="Upload" detail="Datei ablegen" onClick={openUpload} tone="violet" />
@@ -825,43 +827,32 @@ export const HomeSurface: React.FC = () => {
 
                         {featuredDeptTiles.length > 0 && (
                             <div className="relative mt-5">
-                                <div className="mb-2 flex items-center justify-between">
-                                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/36">Planetenverbindungen</div>
+                                <div className="mb-2.5 flex items-center justify-between">
+                                    <div className="text-[10px] uppercase tracking-[0.22em] text-white/28">Planetenverbindungen</div>
                                     <button
                                         type="button"
                                         onClick={openUniverse}
-                                        className="text-[10px] uppercase tracking-[0.16em] text-violet-200/50 transition-colors hover:text-violet-100/80"
+                                        className="text-[10px] uppercase tracking-[0.14em] text-violet-200/40 transition-colors hover:text-violet-100/72"
                                     >
-                                        alle ansehen
+                                        alle →
                                     </button>
                                 </div>
-                                <div data-testid="dept-pulse-tiles" className="grid grid-cols-2 gap-2 lg:grid-cols-4">
-                                    {featuredDeptTiles.map(({ dept, count, active, loaded }) => (
-                                        <button
+                                <div data-testid="dept-pulse-tiles" className="grid grid-cols-2 gap-1.5 lg:grid-cols-4">
+                                    {featuredDeptTiles.map(({ dept, count, active, loaded }, tileIdx) => (
+                                        <DeptPlanetTile
                                             key={dept.id}
-                                            data-testid={`dept-tile-${dept.id}`}
+                                            dept={dept}
+                                            count={count}
+                                            active={active}
+                                            loaded={loaded}
+                                            colorIdx={tileIdx}
                                             onClick={() => revealPane(`finder-dept-${dept.id}`, {
                                                 type: 'finder',
                                                 title: dept.name,
                                                 size: { width: 900, height: 620 },
                                                 data: { departmentId: dept.id, departmentName: dept.name },
                                             })}
-                                            className={[
-                                                'min-w-0 rounded-[16px] border px-3 py-3 text-left transition-all',
-                                                active
-                                                    ? 'border-cyan-300/24 bg-cyan-400/[0.10] hover:border-cyan-200/38 hover:bg-cyan-400/[0.15]'
-                                                    : 'border-white/[0.08] bg-white/[0.035] hover:border-white/16 hover:bg-white/[0.06]',
-                                            ].join(' ')}
-                                        >
-                                            <div className="truncate text-[12px] font-medium text-white/78">{dept.name}</div>
-                                            <div className="mt-1 text-[10px] text-white/38">
-                                                {active
-                                                    ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
-                                                    : loaded
-                                                        ? 'ruhig'
-                                                        : 'lädt...'}
-                                            </div>
-                                        </button>
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -871,7 +862,7 @@ export const HomeSurface: React.FC = () => {
             </section>
 
             <aside className="absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10">
-                <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden rounded-[24px] border border-white/[0.08] bg-[linear-gradient(155deg,rgba(18,16,38,0.74),rgba(8,14,26,0.34))] p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30),inset_0_1px_0_rgba(255,255,255,0.055)] backdrop-blur-[26px]">
+                <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden glass-card p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30)]">
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">
                         <div>
@@ -968,10 +959,69 @@ export const HomeSurface: React.FC = () => {
                         <HomeMiniAction icon={<Mail size={13} />} label="Mail" onClick={openMail} />
                         <HomeMiniAction icon={<Wrench size={13} />} label={localTruthStatusLabel} onClick={openLocalTruth} />
                         <HomeMiniAction icon={<Globe size={13} />} label={browserStatusLabel} onClick={openBrowserConnect} />
+                        <HomeMiniAction
+                            icon={<ExternalLink size={13} />}
+                            label="Larry"
+                            onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
+                        />
                     </div>
                 </div>
             </aside>
         </div>
+    );
+};
+
+// ─── Planet tile color palette (deterministic, not random) ───────────────────
+const DEPT_PALETTES = [
+    { border: 'rgba(103,232,249,0.22)', bg: 'rgba(34,211,238,0.07)', dot: 'rgba(103,232,249,0.75)', hover: 'rgba(34,211,238,0.13)' },
+    { border: 'rgba(167,139,250,0.22)', bg: 'rgba(139,92,246,0.07)', dot: 'rgba(167,139,250,0.75)', hover: 'rgba(139,92,246,0.13)' },
+    { border: 'rgba(251,191,36,0.22)',  bg: 'rgba(245,158,11,0.07)', dot: 'rgba(251,191,36,0.75)',  hover: 'rgba(245,158,11,0.13)' },
+    { border: 'rgba(52,211,153,0.22)',  bg: 'rgba(16,185,129,0.07)', dot: 'rgba(52,211,153,0.75)',  hover: 'rgba(16,185,129,0.13)' },
+    { border: 'rgba(248,113,113,0.22)', bg: 'rgba(239,68,68,0.07)',  dot: 'rgba(248,113,113,0.75)', hover: 'rgba(239,68,68,0.13)'  },
+    { border: 'rgba(147,197,253,0.22)', bg: 'rgba(59,130,246,0.07)', dot: 'rgba(147,197,253,0.75)', hover: 'rgba(59,130,246,0.13)' },
+];
+
+const DeptPlanetTile: React.FC<{
+    dept: { id: string; name: string };
+    count: number;
+    active: boolean;
+    loaded: boolean;
+    colorIdx: number;
+    onClick: () => void;
+}> = ({ dept, count, active, loaded, colorIdx, onClick }) => {
+    const palette = DEPT_PALETTES[colorIdx % DEPT_PALETTES.length];
+    return (
+        <button
+            data-testid={`dept-tile-${dept.id}`}
+            onClick={onClick}
+            className="group relative min-w-0 overflow-hidden rounded-2xl px-3 py-3 text-left transition-all"
+            style={{
+                border: `1px solid ${active ? palette.border : 'rgba(255,255,255,0.07)'}`,
+                background: active ? palette.bg : 'rgba(255,255,255,0.025)',
+            }}
+            onMouseEnter={(e) => { if (active) e.currentTarget.style.background = palette.hover; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = active ? palette.bg : 'rgba(255,255,255,0.025)'; }}
+        >
+            {/* subtle top shimmer on active */}
+            {active && (
+                <div
+                    className="pointer-events-none absolute left-0 top-0 h-[1px] w-full"
+                    style={{ background: `linear-gradient(90deg, transparent, ${palette.dot.replace('0.75', '0.45')}, transparent)` }}
+                />
+            )}
+            <div className="flex items-center gap-1.5">
+                <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: active ? palette.dot : 'rgba(255,255,255,0.18)' }}
+                />
+                <span className="truncate text-[11px] font-medium text-white/76 group-hover:text-white/90">{dept.name}</span>
+            </div>
+            <div className="mt-1.5 text-[10px]" style={{ color: active ? palette.dot.replace('0.75', '0.55') : 'rgba(255,255,255,0.30)' }}>
+                {active
+                    ? `${count} ${count === 1 ? 'Inhalt' : 'Inhalte'}`
+                    : loaded ? 'ruhig' : '…'}
+            </div>
+        </button>
     );
 };
 
@@ -1001,26 +1051,41 @@ const HomeChip: React.FC<{ label: string; value: number }> = ({ label, value }) 
     );
 };
 
-const commandToneClass: Record<string, { card: string; accent: string }> = {
+const commandToneClass: Record<string, { border: string; bg: string; hoverBg: string; accent: string; label: string }> = {
     emerald: {
-        card: 'border-violet-400/30 bg-violet-400/[0.18] hover:border-violet-300/45 hover:bg-violet-400/[0.26]',
-        accent: 'bg-violet-400',
+        border: 'rgba(52,211,153,0.22)',
+        bg: 'rgba(16,185,129,0.07)',
+        hoverBg: 'rgba(16,185,129,0.12)',
+        accent: '#34d399',
+        label: 'rgba(167,243,208,0.86)',
     },
     cyan: {
-        card: 'border-cyan-400/28 bg-cyan-400/[0.15] hover:border-cyan-300/42 hover:bg-cyan-400/[0.22]',
-        accent: 'bg-cyan-400',
+        border: 'rgba(103,232,249,0.22)',
+        bg: 'rgba(34,211,238,0.06)',
+        hoverBg: 'rgba(34,211,238,0.11)',
+        accent: '#67e8f9',
+        label: 'rgba(207,250,254,0.86)',
     },
     amber: {
-        card: 'border-amber-400/30 bg-amber-400/[0.16] hover:border-amber-300/44 hover:bg-amber-400/[0.24]',
-        accent: 'bg-amber-400',
+        border: 'rgba(251,191,36,0.22)',
+        bg: 'rgba(245,158,11,0.06)',
+        hoverBg: 'rgba(245,158,11,0.11)',
+        accent: '#fbbf24',
+        label: 'rgba(254,243,199,0.86)',
     },
     violet: {
-        card: 'border-violet-400/30 bg-violet-400/[0.18] hover:border-violet-300/44 hover:bg-violet-400/[0.26]',
-        accent: 'bg-violet-400',
+        border: 'rgba(167,139,250,0.22)',
+        bg: 'rgba(139,92,246,0.07)',
+        hoverBg: 'rgba(139,92,246,0.12)',
+        accent: '#a78bfa',
+        label: 'rgba(237,233,254,0.86)',
     },
     muted: {
-        card: 'border-white/[0.10] bg-white/[0.05] hover:border-white/20 hover:bg-white/[0.09]',
-        accent: 'bg-white/40',
+        border: 'rgba(255,255,255,0.08)',
+        bg: 'rgba(255,255,255,0.03)',
+        hoverBg: 'rgba(255,255,255,0.06)',
+        accent: 'rgba(255,255,255,0.40)',
+        label: 'rgba(255,255,255,0.55)',
     },
 };
 
@@ -1031,35 +1096,34 @@ const HomeCommandButton: React.FC<{
     tone: 'emerald' | 'cyan' | 'amber' | 'violet' | 'muted';
     dataTestId?: string;
 }> = ({ label, detail, onClick, tone, dataTestId }) => {
-    const toneStyle = commandToneClass[tone];
+    const t = commandToneClass[tone];
     return (
         <button
             type="button"
             data-testid={dataTestId}
             onClick={onClick}
-            className={`relative overflow-hidden rounded-[20px] border pl-5 pr-4 py-3 text-left transition-all ${toneStyle.card}`}
+            className="group relative overflow-hidden rounded-2xl px-4 py-3 text-left transition-all"
+            style={{ border: `1px solid ${t.border}`, background: t.bg }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = t.hoverBg; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = t.bg; }}
         >
-            <span className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-full opacity-70 ${toneStyle.accent}`} />
-            <span className="block text-[13px] font-medium text-white/84">{label}</span>
-            <span className="mt-1 block text-[10px] uppercase tracking-[0.14em] text-white/34">{detail}</span>
+            {/* top shimmer */}
+            <div
+                className="pointer-events-none absolute left-0 top-0 h-[1px] w-full opacity-60"
+                style={{ background: `linear-gradient(90deg, transparent, ${t.accent}, transparent)` }}
+            />
+            <span className="block text-[12px] font-medium" style={{ color: t.label }}>{label}</span>
+            <span className="mt-0.5 block text-[10px] uppercase tracking-[0.14em] text-white/28">{detail}</span>
         </button>
     );
 };
 
-const signalToneClass: Record<string, string> = {
-    emerald: 'border-violet-300/[0.10] bg-violet-500/[0.035] text-violet-100 hover:border-violet-200/20 hover:bg-violet-500/[0.065]',
-    violet:  'border-violet-300/[0.10] bg-violet-500/[0.035] text-violet-100 hover:border-violet-200/20 hover:bg-violet-500/[0.065]',
-    cyan: 'border-cyan-300/[0.10] bg-cyan-500/[0.032] text-cyan-100 hover:border-cyan-200/18 hover:bg-cyan-500/[0.06]',
-    amber: 'border-amber-300/[0.10] bg-amber-500/[0.032] text-amber-100 hover:border-amber-200/18 hover:bg-amber-500/[0.06]',
-    muted: 'border-white/[0.045] bg-white/[0.012] text-white/56 hover:border-white/9 hover:bg-white/[0.028]',
-};
-
-const SIGNAL_CARD_BORDER: Record<string, string> = {
-    emerald: 'rgba(139,92,246,0.55)',
-    violet:  'rgba(139,92,246,0.55)',
-    amber:   'rgba(251,191,36,0.55)',
-    cyan:    'rgba(56,189,248,0.55)',
-    muted:   'rgba(100,116,139,0.28)',
+const SIGNAL_CARD_PALETTE: Record<string, { border: string; accent: string; bg: string }> = {
+    emerald: { border: 'rgba(52,211,153,0.18)',  accent: 'rgba(52,211,153,0.60)',  bg: 'rgba(16,185,129,0.05)' },
+    violet:  { border: 'rgba(139,92,246,0.18)',  accent: 'rgba(167,139,250,0.60)', bg: 'rgba(139,92,246,0.05)' },
+    cyan:    { border: 'rgba(34,211,238,0.18)',  accent: 'rgba(103,232,249,0.60)', bg: 'rgba(34,211,238,0.04)' },
+    amber:   { border: 'rgba(245,158,11,0.18)',  accent: 'rgba(251,191,36,0.60)',  bg: 'rgba(245,158,11,0.04)' },
+    muted:   { border: 'rgba(255,255,255,0.07)', accent: 'rgba(255,255,255,0.28)', bg: 'rgba(255,255,255,0.02)' },
 };
 
 const HomeSignalCard: React.FC<{
@@ -1069,23 +1133,28 @@ const HomeSignalCard: React.FC<{
     detail?: string | null;
     tone: 'emerald' | 'violet' | 'cyan' | 'amber' | 'muted';
     onClick: () => void;
-}> = ({ icon, label, title, detail, tone, onClick }) => (
-    <button
-        type="button"
-        onClick={onClick}
-        className={`group relative flex w-full items-start gap-2.5 rounded-[18px] border px-3 py-2.5 text-left transition-all overflow-hidden ${signalToneClass[tone]}`}
-        style={{ borderLeftColor: SIGNAL_CARD_BORDER[tone] }}
-    >
-        <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20">
-            {icon}
-        </span>
-        <span className="min-w-0 flex-1">
-            <span className="block text-[10px] uppercase tracking-[0.18em] text-white/34">{label}</span>
-            <span className="mt-1 block truncate text-[12px] font-medium text-white/78">{title}</span>
-            {detail ? <span className="mt-1 block truncate text-[11px] text-white/42">{detail}</span> : null}
-        </span>
-    </button>
-);
+}> = ({ icon, label, title, detail, tone, onClick }) => {
+    const p = SIGNAL_CARD_PALETTE[tone];
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="group relative flex w-full items-center gap-2.5 overflow-hidden rounded-2xl px-3 py-2 text-left transition-all"
+            style={{ border: `1px solid ${p.border}`, background: p.bg, borderLeftColor: p.accent.replace('0.60', '0.42') }}
+        >
+            <span
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                style={{ background: p.accent.replace('0.60', '0.10'), border: `1px solid ${p.accent.replace('0.60', '0.20')}` }}
+            >
+                {icon}
+            </span>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[12px] font-medium text-white/76 group-hover:text-white/90">{title}</span>
+                {detail ? <span className="block truncate text-[10px]" style={{ color: p.accent.replace('0.60', '0.55') }}>{detail}</span> : null}
+            </span>
+        </button>
+    );
+};
 
 const HomeMiniAction: React.FC<{
     icon: React.ReactNode;

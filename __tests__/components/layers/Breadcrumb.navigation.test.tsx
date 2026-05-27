@@ -76,11 +76,17 @@ jest.mock('framer-motion', () => {
             React.createElement(tag, { ref, ...props }, children)
         );
 
+    const motion = new Proxy({}, {
+        get: (_target, prop) => {
+            if (typeof prop === 'string') {
+                return passthrough(prop);
+            }
+            return undefined;
+        }
+    });
+
     return {
-        motion: {
-            div: passthrough('div'),
-            button: passthrough('button'),
-        },
+        motion,
         useReducedMotion: () => true,
     };
 });

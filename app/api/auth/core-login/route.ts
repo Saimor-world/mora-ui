@@ -1,8 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 
-const CORE_BASE_URL =
-  process.env.SAIMOR_CORE_URL ||
-  (process.env.NODE_ENV === "development" ? "http://127.0.0.1:8081" : "http://core:8081");
+import { CORE_BASE_URL } from '@/lib/api/coreBase';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -21,7 +19,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        detail: "Mora Core ist lokal nicht erreichbar. Starte CORE auf Port 8081 oder nutze den lokalen Demo-Zugang.",
+        detail: "Mora Core ist lokal nicht erreichbar. Starte CORE auf dem konfigurierten Port (SAIMOR_CORE_URL) oder nutze den lokalen Demo-Zugang.",
       },
       { status: 503 }
     );

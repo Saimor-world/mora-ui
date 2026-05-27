@@ -29,15 +29,20 @@ export const RssIntegration: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [fetchErrors, setFetchErrors] = useState<Array<{ url: string; message: string }>>([]);
+
     const load = useCallback(async () => {
         setIsLoading(true);
         try {
             const [status, feedItems] = await Promise.all([
                 coreGet("/v3/integrations/rss", { isOptional: true }),
-                coreGet("/v3/integrations/rss/items?limit=5", { isOptional: true }),
+                coreGet("/v3/integrations/rss/items?limit=10&per_feed=5", { isOptional: true }),
             ]);
             setFeeds(Array.isArray(status?.feeds) ? status.feeds : []);
             setItems(Array.isArray(feedItems?.items) ? feedItems.items : []);
+            setFetchErrors(Array.isArray(feedItems?.errors) ? feedItems.errors : []);
+        } catch {
+            // isOptional already handles this; belt-and-suspenders
         } finally {
             setIsLoading(false);
         }
@@ -158,8 +163,25 @@ export const RssIntegration: React.FC = () => {
                 </div>
 
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                    <div className="mb-3 text-xs font-medium uppercase tracking-[0.18em] text-white/40">Aktuelle Signale</div>
-                    {items.length === 0 ? (
+                    <div className="mb-3 flex items-center justify-between">
+                        <div className="text-xs font-medium uppercase tracking-[0.18em] text-white/40">Aktuelle Signale</div>
+                        {fetchErrors.length > 0 && (
+                            <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] text-red-300/70">
+                                {fetchErrors.length} Fehler
+                            </span>
+                        )}
+                    </div>
+                    {fetchErrors.length > 0 && items.length === 0 && (
+                        <div className="mb-3 space-y-1.5">
+                            {fetchErrors.slice(0, 2).map((err) => (
+                                <div key={err.url} className="rounded-xl border border-red-500/15 bg-red-500/[0.05] px-3 py-2">
+                                    <div className="truncate text-[10px] text-red-300/60">{new URL(err.url).hostname}</div>
+                                    <div className="mt-0.5 text-[11px] text-red-200/50">{err.message.slice(0, 80)}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {items.length === 0 && fetchErrors.length === 0 ? (
                         <p className="text-xs leading-relaxed text-white/42">
                             Nach dem Verbinden erscheinen hier die neuesten Einträge. Fehlerhafte Feeds werden isoliert, damit der Rest weiterläuft.
                         </p>

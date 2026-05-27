@@ -123,6 +123,7 @@ export const AmbientRoom: React.FC = () => {
     const [fallbackMode,   setFallbackMode]  = useState(false);
     const [fallbackInput,  setFallbackInput] = useState('');
     const [errorMsg,       setErrorMsg]      = useState('');
+    const [micPermission,  setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
 
     // Môra's response — drives AmbientIntentCard
     const [moraText,    setMoraText]    = useState('');
@@ -141,16 +142,42 @@ export const AmbientRoom: React.FC = () => {
         if (!SpeechAPI) {
             setSpeechSupported(false);
             setFallbackMode(true);
+            return;
         }
-    }, [SpeechAPI]);
+        // Proactively check mic permission so the UI can reflect it before first tap.
+        if (navigator.permissions) {
+            navigator.permissions.query({ name: 'microphone' as PermissionName })
+                .then((result) => {
+                    setMicPermission(result.state as 'prompt' | 'granted' | 'denied');
+                    result.onchange = () => {
+                        setMicPermission(result.state as 'prompt' | 'granted' | 'denied');
+                        if (result.state === 'denied') {
+                            setFallbackMode(true);
+                            setSpeechSupported(false);
+                        }
+                    };
+                })
+                .catch(() => { /* permissions API not available — no-op */ });
+        }
+    }, [SpeechAPI]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Start / Stop listening ─────────────────────────────────────────────────
     const startListening = useCallback(() => {
         if (!SpeechAPI || ambientState === 'listening') return;
+
+        // If mic was explicitly denied, go straight to text fallback
+        if (micPermission === 'denied') {
+            setFallbackMode(true);
+            setSpeechSupported(false);
+            return;
+        }
+
         const recognition = new SpeechAPI();
         recognition.lang           = 'de-DE';
         recognition.continuous     = true;
         recognition.interimResults = true;
+        // maxAlternatives helps accuracy; lang fallback ensures English content also works
+        recognition.maxAlternatives = 1;
 
         recognition.onresult = (e: any) => {
             let interim = '';
@@ -165,19 +192,55 @@ export const AmbientRoom: React.FC = () => {
         };
 
         recognition.onerror = (e: any) => {
-            if (e.error === 'not-allowed') {
+            const err = e.error as string;
+            if (err === 'not-allowed' || err === 'service-not-allowed') {
+                setMicPermission('denied');
                 setFallbackMode(true);
                 setSpeechSupported(false);
+                setErrorMsg('Mikrofon-Zugriff verweigert. Bitte in Browser-Einstellungen erlauben.');
+            } else if (err === 'no-speech') {
+                // Timeout without input — soft abort, don't show error
+                recognitionRef.current = null;
+                setAmbientState('idle');
+                setLiveText('');
+                return;
+            } else if (err === 'network') {
+                setErrorMsg('Netzwerkfehler bei der Spracherkennung.');
+            } else if (err === 'audio-capture') {
+                setErrorMsg('Kein Mikrofon gefunden oder nicht erreichbar.');
+                setFallbackMode(true);
             }
-            stopListening(true);
+            recognitionRef.current = null;
+            spaceHeldRef.current = false;
+            setAmbientState(err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' ? 'error' : 'idle');
+            setLiveText('');
+        };
+
+        recognition.onend = () => {
+            // If recognition ends while we're still "listening" (e.g. browser auto-stop),
+            // transition to thinking if we have content, otherwise back to idle.
+            setAmbientState(prev => {
+                if (prev !== 'listening') return prev;
+                return 'thinking';
+            });
+            recognitionRef.current = null;
         };
 
         recognitionRef.current = recognition;
-        recognition.start();
+        try {
+            recognition.start();
+        } catch {
+            // start() can throw if called twice — guard silently
+            recognitionRef.current = null;
+            return;
+        }
         setAmbientState('listening');
         setTranscript('');
         setLiveText('');
-    }, [SpeechAPI, ambientState]); // eslint-disable-line react-hooks/exhaustive-deps
+        setMoraText('');
+        setMoraIntent('');
+        setMoraTools([]);
+    }, [SpeechAPI, ambientState, micPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stopListening = useCallback((abort = false) => {
         recognitionRef.current?.stop();
@@ -226,7 +289,10 @@ export const AmbientRoom: React.FC = () => {
                 if (result.toolCalls.length === 0) {
                     // Text-only response — loop back to idle after 4 s
                     setTimeout(() => {
-                        if (!cancelled) setAmbientState('idle');
+                        if (!cancelled) {
+                            setAmbientState('idle');
+                            setMoraText('');
+                        }
                     }, 4000);
                 }
             } catch {
@@ -344,7 +410,47 @@ export const AmbientRoom: React.FC = () => {
                 background: getBackgroundStyle(ambientState),
             }}
         >
-            <AmbientDust count={56} color="rgba(150,220,255,0.16)" durationRange={[20, 44]} />
+            {/* Animated cosmic background glow circles */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                <motion.div
+                    className="absolute w-[80vw] h-[80vw] rounded-full filter blur-[120px] opacity-40"
+                    style={{
+                        background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)',
+                        left: '-10%',
+                        top: '10%',
+                    }}
+                    animate={{
+                        x: [0, 50, -30, 0],
+                        y: [0, -40, 50, 0],
+                        scale: [1, 1.15, 0.9, 1],
+                    }}
+                    transition={{
+                        duration: 30,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                    }}
+                />
+                <motion.div
+                    className="absolute w-[75vw] h-[75vw] rounded-full filter blur-[100px] opacity-30"
+                    style={{
+                        background: 'radial-gradient(circle, rgba(34,211,238,0.08) 0%, transparent 70%)',
+                        right: '-5%',
+                        bottom: '10%',
+                    }}
+                    animate={{
+                        x: [0, -40, 30, 0],
+                        y: [0, 50, -40, 0],
+                        scale: [1, 0.95, 1.1, 1],
+                    }}
+                    transition={{
+                        duration: 25,
+                        repeat: Infinity,
+                        ease: 'easeInOut',
+                    }}
+                />
+            </div>
+
+            <AmbientDust count={56} color="rgba(150,220,255,0.16)" durationRange={[25, 55]} />
 
             {/* Back button */}
             <button
@@ -364,6 +470,35 @@ export const AmbientRoom: React.FC = () => {
             <div className="flex flex-col items-center gap-6 mt-6 z-10 w-full px-8">
 
                 <div className="relative flex items-center justify-center">
+                    {/* Glowing state-responsive halo circle directly behind orb */}
+                    <motion.div
+                        className="absolute rounded-full filter blur-[60px] pointer-events-none"
+                        style={{
+                            width: 260,
+                            height: 260,
+                        }}
+                        animate={
+                            ambientState === 'listening'
+                                ? { background: 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%)', scale: [1, 1.15, 1] }
+                                : ambientState === 'thinking' || ambientState === 'executing' || isLoading
+                                ? { background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)', scale: [1, 1.1, 1] }
+                                : ambientState === 'responding'
+                                ? { background: 'radial-gradient(circle, rgba(245,158,11,0.28) 0%, transparent 70%)', scale: [1, 1.05, 1] }
+                                : ambientState === 'done'
+                                ? { background: 'radial-gradient(circle, rgba(52,211,153,0.4) 0%, transparent 70%)', scale: [1, 1.25, 1] }
+                                : ambientState === 'error'
+                                ? { background: 'radial-gradient(circle, rgba(239,68,68,0.35) 0%, transparent 70%)', scale: [1, 1.15, 1] }
+                                : { background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)', scale: [1, 1.05, 1] }
+                        }
+                        transition={
+                            ambientState === 'listening'
+                                ? { duration: 1.5, repeat: Infinity, ease: 'easeInOut' }
+                                : ambientState === 'thinking' || ambientState === 'executing' || isLoading
+                                ? { duration: 1.0, repeat: Infinity, ease: 'easeInOut' }
+                                : { duration: 4.0, repeat: Infinity, ease: 'easeInOut' }
+                        }
+                    />
+
                     {/* Ripple rings */}
                     <AnimatePresence>
                         {ambientState === 'listening' && [0, 1, 2].map(i => (
@@ -515,9 +650,9 @@ export const AmbientRoom: React.FC = () => {
                     )}
                 </AnimatePresence>
 
-                {/* Intent card (responding state) */}
+                {/* Intent card (responding state - only if there are toolcalls) */}
                 <AnimatePresence>
-                    {(ambientState === 'responding') && (
+                    {(ambientState === 'responding' && moraTools.length > 0) && (
                         <AmbientIntentCard
                             intent={moraIntent}
                             toolCalls={moraTools as any}
@@ -545,23 +680,38 @@ export const AmbientRoom: React.FC = () => {
                     )}
                 </AnimatePresence>
 
+                {/* Mic permission denied — guide user */}
+                {micPermission === 'denied' && speechSupported && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-xs rounded-2xl px-4 py-3 text-center text-xs leading-relaxed text-red-200/70"
+                        style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.16)' }}
+                    >
+                        Mikrofon-Zugriff verweigert.{' '}
+                        <span className="text-white/50">
+                            In Chrome: Adressleiste → 🔒 → Mikrofon → Erlauben, dann Seite neu laden.
+                        </span>
+                    </motion.div>
+                )}
+
                 {/* Fallback text input */}
                 {fallbackMode && (ambientState === 'idle' || ambientState === 'error') && (
-                    <form onSubmit={handleFallbackSubmit} className="flex gap-2 mt-2">
+                    <form onSubmit={handleFallbackSubmit} className="flex w-full max-w-md gap-2 mt-2 px-4">
                         <input
                             type="text"
                             value={fallbackInput}
                             onChange={e => setFallbackInput(e.target.value)}
                             placeholder="Gedanken eingeben …"
                             autoFocus
-                            className="w-72 px-4 py-2 rounded-full text-sm text-white/80 placeholder-white/25 outline-none"
-                            style={{ background: 'rgba(124,58,237,0.14)', border: '1px solid rgba(139,92,246,0.25)' }}
+                            className="flex-1 px-4 py-2.5 rounded-full text-sm text-white/80 placeholder-white/25 outline-none"
+                            style={{ background: 'rgba(124,58,237,0.12)', border: '1px solid rgba(139,92,246,0.22)' }}
                         />
                         <button
                             type="submit"
                             disabled={!fallbackInput.trim()}
-                            className="px-4 py-2 rounded-full text-xs font-medium text-violet-200 disabled:opacity-30 transition-opacity"
-                            style={{ background: 'rgba(109,40,217,0.5)', border: '1px solid rgba(139,92,246,0.3)' }}
+                            className="px-4 py-2.5 rounded-full text-xs font-medium text-violet-200 disabled:opacity-30 transition-opacity"
+                            style={{ background: 'rgba(109,40,217,0.45)', border: '1px solid rgba(139,92,246,0.28)' }}
                         >
                             ↵
                         </button>

@@ -10,6 +10,7 @@ interface TourStep {
     title: string;
     body: string;
     target: { selector: string; offsetX?: number; offsetY?: number };
+    accent: string;
 }
 
 const STEPS: TourStep[] = [
@@ -17,26 +18,29 @@ const STEPS: TourStep[] = [
         id: 'universe',
         icon: Compass,
         title: 'Dein Universe',
-        body: 'Hier siehst du alle Bereiche und ihre Verbindungen — wie eine Karte deiner Arbeit.',
+        body: 'Alle Bereiche und ihre Verbindungen — als Karte deiner Arbeit.',
         target: { selector: '[data-testid="universe-toggle"]', offsetY: -8 },
+        accent: 'rgba(103,232,249,0.70)',
     },
     {
         id: 'mora',
         icon: Sparkles,
         title: 'Mora hört zu',
-        body: 'Der Smaragd-Orb unten rechts ist Mora. Klick drauf oder frag sie was — sie kennt deinen Workspace.',
+        body: 'Der Smaragd-Orb unten rechts ist Mora. Klick drauf oder frag sie etwas.',
         target: { selector: '[data-mora-orb]', offsetY: -16 },
+        accent: 'rgba(167,139,250,0.70)',
     },
     {
         id: 'tageslage',
         icon: Activity,
         title: 'Tageslage',
-        body: 'Hier zeigt Mora dir was wirklich wichtig ist — ohne Lärm, nur echte Signale.',
+        body: 'Nur echte Signale — kein Lärm, kein Padding.',
         target: { selector: '[data-tageslage-panel]', offsetX: -16 },
+        accent: 'rgba(251,191,36,0.70)',
     },
 ];
 
-const APPEAR_DELAY_MS = 9000; // After greeting bubble dismissed
+const APPEAR_DELAY_MS = 9000;
 
 export const FirstRunTour: React.FC = () => {
     const [active, setActive] = useState(false);
@@ -53,19 +57,13 @@ export const FirstRunTour: React.FC = () => {
         if (!active) return;
         const step = STEPS[stepIdx];
         const el = document.querySelector(step.target.selector);
-        if (el) {
-            setTargetRect(el.getBoundingClientRect());
-        } else {
-            setTargetRect(null);
-        }
+        if (el) setTargetRect(el.getBoundingClientRect());
+        else setTargetRect(null);
     }, [active, stepIdx]);
 
     const handleNext = () => {
-        if (stepIdx < STEPS.length - 1) {
-            setStepIdx(stepIdx + 1);
-        } else {
-            handleDismiss();
-        }
+        if (stepIdx < STEPS.length - 1) setStepIdx(stepIdx + 1);
+        else handleDismiss();
     };
 
     const handleDismiss = () => {
@@ -77,13 +75,13 @@ export const FirstRunTour: React.FC = () => {
     const step = STEPS[stepIdx];
     const Icon = step.icon;
 
-    // Card position: prefer right side of target, fallback to center
+    // Card position: prefer right side of target, fallback to center-bottom
     const cardLeft = targetRect
-        ? Math.min(targetRect.right + 24, window.innerWidth - 360)
-        : window.innerWidth / 2 - 160;
+        ? Math.min(targetRect.right + 20, window.innerWidth - 360)
+        : window.innerWidth / 2 - 170;
     const cardTop = targetRect
-        ? Math.max(20, targetRect.top + (step.target.offsetY ?? 0))
-        : window.innerHeight / 2 - 100;
+        ? Math.max(16, targetRect.top + (step.target.offsetY ?? 0))
+        : window.innerHeight / 2 - 80;
 
     return (
         <AnimatePresence>
@@ -92,80 +90,137 @@ export const FirstRunTour: React.FC = () => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.32 }}
+                transition={{ duration: 0.28 }}
                 className="fixed inset-0 z-[7500] pointer-events-none"
             >
-                {/* Spotlight ring around target */}
+                {/* Subtle target indicator — thin ring only, no glow */}
                 {targetRect && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.96 }}
-                        animate={{ opacity: 1, scale: [1, 1.04, 1] }}
-                        transition={{ scale: { duration: 2.2, repeat: Infinity, ease: 'easeInOut' } }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         className="absolute pointer-events-none rounded-2xl"
                         style={{
-                            left: targetRect.left - 8,
-                            top: targetRect.top - 8,
-                            width: targetRect.width + 16,
-                            height: targetRect.height + 16,
-                            border: '2px solid rgba(52,211,153,0.62)',
-                            boxShadow: '0 0 32px rgba(52,211,153,0.42), inset 0 0 12px rgba(52,211,153,0.18)',
+                            left: targetRect.left - 6,
+                            top: targetRect.top - 6,
+                            width: targetRect.width + 12,
+                            height: targetRect.height + 12,
+                            border: `1px solid ${step.accent.replace('0.70', '0.38')}`,
                         }}
                     />
                 )}
 
                 {/* Tooltip card */}
                 <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.28, delay: 0.12 }}
-                    className="absolute pointer-events-auto rounded-[20px] border p-4 shadow-[0_24px_60px_rgba(0,0,0,0.45)] backdrop-blur-[24px]"
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    transition={{ duration: 0.24, delay: 0.08 }}
+                    className="absolute pointer-events-auto"
                     style={{
                         left: cardLeft,
                         top: cardTop,
-                        width: 340,
-                        background: 'linear-gradient(135deg, rgba(8,20,16,0.94), rgba(4,12,11,0.88))',
-                        borderColor: 'rgba(52,211,153,0.30)',
+                        width: 320,
                     }}
                 >
-                    <div className="flex items-start gap-3">
+                    {/* Connector line from ring to card */}
+                    {targetRect && (
                         <div
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                            style={{ background: 'rgba(52,211,153,0.14)', border: '1px solid rgba(52,211,153,0.32)' }}
-                        >
-                            <Icon size={16} className="text-emerald-300" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                            <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/72">
-                                Schritt {stepIdx + 1} von {STEPS.length}
+                            className="absolute pointer-events-none"
+                            style={{
+                                right: '100%',
+                                top: 20,
+                                width: 20,
+                                height: 1,
+                                background: `linear-gradient(90deg, transparent, ${step.accent.replace('0.70', '0.28')})`,
+                            }}
+                        />
+                    )}
+
+                    <div
+                        className="relative overflow-hidden rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
+                        style={{
+                            background: 'linear-gradient(150deg, rgba(10,14,24,0.96), rgba(6,9,18,0.94))',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            backdropFilter: 'blur(32px)',
+                        }}
+                    >
+                        {/* Accent top line */}
+                        <div
+                            className="absolute left-0 top-0 h-[1px] w-full"
+                            style={{ background: `linear-gradient(90deg, transparent, ${step.accent}, transparent)` }}
+                        />
+
+                        <div className="p-4">
+                            <div className="flex items-start gap-3">
+                                {/* Icon */}
+                                <div
+                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+                                    style={{
+                                        background: step.accent.replace('0.70', '0.10'),
+                                        border: `1px solid ${step.accent.replace('0.70', '0.22')}`,
+                                    }}
+                                >
+                                    <Icon size={14} style={{ color: step.accent.replace('0.70', '0.90') }} />
+                                </div>
+
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-[13px] font-medium text-white/90 leading-tight">{step.title}</h3>
+                                    <p className="mt-1 text-[12px] leading-snug text-white/52">{step.body}</p>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={handleDismiss}
+                                    aria-label="Überspringen"
+                                    className="shrink-0 rounded-lg p-1 text-white/25 transition-colors hover:bg-white/[0.05] hover:text-white/50"
+                                >
+                                    <X size={11} />
+                                </button>
                             </div>
-                            <h3 className="mt-1 text-[15px] font-medium text-white/92">{step.title}</h3>
-                            <p className="mt-1.5 text-[13px] leading-snug text-white/64">{step.body}</p>
+
+                            <div className="mt-3.5 flex items-center justify-between gap-2">
+                                {/* Step dots */}
+                                <div className="flex items-center gap-1.5">
+                                    {STEPS.map((s, i) => (
+                                        <div
+                                            key={s.id}
+                                            className="rounded-full transition-all"
+                                            style={{
+                                                width: i === stepIdx ? 16 : 4,
+                                                height: 4,
+                                                background: i === stepIdx
+                                                    ? step.accent.replace('0.70', '0.75')
+                                                    : i < stepIdx
+                                                        ? step.accent.replace('0.70', '0.35')
+                                                        : 'rgba(255,255,255,0.12)',
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={handleDismiss}
+                                        className="text-[10px] uppercase tracking-[0.16em] text-white/28 transition-colors hover:text-white/52"
+                                    >
+                                        Überspringen
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleNext}
+                                        className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all"
+                                        style={{
+                                            background: step.accent.replace('0.70', '0.12'),
+                                            border: `1px solid ${step.accent.replace('0.70', '0.30')}`,
+                                            color: step.accent.replace('0.70', '0.92'),
+                                        }}
+                                    >
+                                        {stepIdx === STEPS.length - 1 ? 'Fertig' : 'Weiter'}
+                                        <ArrowRight size={11} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleDismiss}
-                            aria-label="Überspringen"
-                            className="shrink-0 rounded-full p-1 text-white/30 transition-colors hover:bg-white/[0.05] hover:text-white/60"
-                        >
-                            <X size={12} />
-                        </button>
-                    </div>
-                    <div className="mt-4 flex items-center justify-between gap-3">
-                        <button
-                            type="button"
-                            onClick={handleDismiss}
-                            className="text-[11px] uppercase tracking-[0.18em] text-white/40 transition-colors hover:text-white/65"
-                        >
-                            Überspringen
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleNext}
-                            className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/14 border border-emerald-400/32 px-3 py-1.5 text-[12px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/22"
-                        >
-                            {stepIdx === STEPS.length - 1 ? 'Fertig' : 'Weiter'}
-                            <ArrowRight size={12} />
-                        </button>
                     </div>
                 </motion.div>
             </motion.div>

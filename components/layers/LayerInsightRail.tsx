@@ -49,7 +49,7 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
 
     return (
         <motion.div
-            className={`pointer-events-auto absolute w-[336px] overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(160deg,rgba(4,16,16,0.9),rgba(4,10,13,0.76))] shadow-[0_24px_80px_rgba(0,0,0,0.38)] backdrop-blur-2xl ${className}`}
+            className={`pointer-events-auto absolute w-[336px] overflow-hidden glass-panel ${className}`}
             initial={{ opacity: 0, x: -16 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.24, ease: 'easeOut' }}

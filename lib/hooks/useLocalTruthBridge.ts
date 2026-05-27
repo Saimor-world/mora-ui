@@ -24,7 +24,9 @@ const withDefaultUiCandidates = (overview?: IntegrationsOverview | null) => {
     if (Array.isArray(candidates) && candidates.length > 0) {
         return candidates;
     }
+    const currentOrigin = typeof window !== 'undefined' ? window.location.origin : null;
     return [
+        ...(currentOrigin ? [currentOrigin + '/', currentOrigin + '/home'] : []),
         'http://127.0.0.1:3000/',
         'http://localhost:3000/',
         'http://127.0.0.1:3000/home',

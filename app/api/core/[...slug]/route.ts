@@ -13,10 +13,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-
-const CORE_BASE_URL =
-  process.env.SAIMOR_CORE_URL ||
-  (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8081' : 'http://core:8081');
+import { CORE_BASE_URL } from '@/lib/api/coreBase';
 
 const REMOTE_AGENT_URL = process.env.NEXT_PUBLIC_MORA_AGENT_URL || 'https://api.saimor.world/api';
 

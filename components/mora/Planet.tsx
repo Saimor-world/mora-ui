@@ -253,7 +253,7 @@ export const Planet: React.FC<PlanetProps> = ({
                     <>
                         {/* Moon 1 */}
                         <motion.div
-                            className="absolute"
+                            className="absolute border border-dashed border-white/5"
                             style={{
                                 width: planetSize.diameter * 1.4,
                                 height: planetSize.diameter * 1.4,
@@ -285,7 +285,7 @@ export const Planet: React.FC<PlanetProps> = ({
                         </motion.div>
                         {/* Moon 2 */}
                         <motion.div
-                            className="absolute"
+                            className="absolute border border-dashed border-white/5"
                             style={{
                                 width: planetSize.diameter * 1.8,
                                 height: planetSize.diameter * 1.8,
@@ -319,21 +319,25 @@ export const Planet: React.FC<PlanetProps> = ({
                 )}
 
                 <motion.div
-                    className="flex items-center justify-center relative z-10 pointer-events-auto"
+                    className="flex items-center justify-center relative z-10 pointer-events-auto overflow-hidden"
                     style={{
                         width: planetSize.diameter,
                         height: planetSize.diameter,
                         borderRadius: '9999px',
                         transformOrigin: '50% 50%',
-                        // Solid sphere — bright color, dark edge for depth
-                        background: `
-                            radial-gradient(ellipse 48% 36% at 32% 24%, rgba(255,255,255,0.65) 0%, transparent 48%),
-                            radial-gradient(circle at 50% 50%, ${style.border} 0%, ${style.glow} 40%, ${style.core} 75%, rgba(0,0,0,0.55) 100%)
-                        `,
-                        border: `2px solid ${style.border}`,
+                        // Semi-transparent holographic glass sphere with refraction
+                        background: isStandardMode
+                            ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0.05) 100%)'
+                            : `
+                                radial-gradient(ellipse 55% 45% at 30% 20%, rgba(255,255,255,0.20) 0%, transparent 60%),
+                                radial-gradient(circle at 50% 50%, ${style.border}15 0%, ${style.glow}08 40%, rgba(13, 9, 33, 0.45) 85%, ${style.core}22 100%)
+                            `,
+                        backdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
+                        WebkitBackdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
+                        border: `2.5px solid ${style.border}`,
                         boxShadow: isActive || isHovered
-                            ? `0 0 35px ${style.glow}, 0 0 70px ${style.glow}BB, 0 0 120px ${style.glow}66, inset 0 0 20px rgba(255,255,255,0.15)`
-                            : `0 0 20px ${style.glow}CC, 0 0 45px ${style.glow}88, 0 0 80px ${style.glow}44, inset 0 0 12px rgba(255,255,255,0.08)`,
+                            ? `0 0 35px ${style.glow}88, 0 0 70px ${style.glow}55, inset 0 0 25px ${style.glow}44`
+                            : `0 0 20px ${style.glow}44, 0 0 45px ${style.glow}22, inset 0 0 15px ${style.glow}22`,
                     } as React.CSSProperties}
                     whileHover={{ scale: 1.1 }}
                     initial={{ scale: 1 }}
@@ -343,8 +347,35 @@ export const Planet: React.FC<PlanetProps> = ({
                     {/* Bottom rim light */}
                     <div style={{
                         position: 'absolute', inset: 0, borderRadius: '9999px', pointerEvents: 'none',
-                        background: `radial-gradient(ellipse 60% 30% at 50% 88%, ${style.border}55 0%, transparent 60%)`,
+                        background: `radial-gradient(ellipse 60% 30% at 50% 88%, ${style.border}44 0%, transparent 60%)`,
                     }} />
+
+                    {/* Holographic Scanlines / Grid overlay */}
+                    {!isStandardMode && (
+                        <div
+                            className="absolute inset-0 rounded-full overflow-hidden pointer-events-none opacity-[0.14] mix-blend-overlay"
+                            style={{
+                                background: `
+                                    linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
+                                    linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)
+                                `,
+                                backgroundSize: '8px 8px',
+                            }}
+                        />
+                    )}
+
+                    {/* Scanline sweep effect */}
+                    {!isStandardMode && (isHovered || isActive) && (
+                        <motion.div
+                            className="absolute inset-x-0 h-0.5 pointer-events-none opacity-[0.25]"
+                            style={{
+                                background: `linear-gradient(90deg, transparent, ${style.border}, transparent)`,
+                            }}
+                            animate={{ y: [0, planetSize.diameter, 0] }}
+                            transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
+                        />
+                    )}
+
                     {/* Icon */}
                     <div className="relative z-10">
                         <Icon
@@ -390,10 +421,10 @@ export const Planet: React.FC<PlanetProps> = ({
                             initial={{ opacity: 0, scale: 0.95, y: 10, x: labelSide === 'left' ? 10 : -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10, x: labelSide === 'left' ? 10 : -10 }}
-                            className={`flex flex-col gap-3 p-4 rounded-2xl border backdrop-blur-[20px] shadow-[0_12px_40px_rgba(0,0,0,0.5)] min-w-[240px] max-w-[280px] ${
+                            className={`flex flex-col gap-3 p-4 rounded-2xl border backdrop-blur-[24px] shadow-[0_16px_50px_rgba(0,0,0,0.65)] min-w-[240px] max-w-[280px] ${
                                 isStandardMode
                                     ? 'bg-white/92 border-gray-200/80 text-gray-800'
-                                    : 'bg-[#0B0F10]/85 border-white/[0.08] text-white'
+                                    : 'glass-card text-white'
                             }`}
                         >
                             {/* Department Info & Badge */}

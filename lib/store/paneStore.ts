@@ -56,7 +56,7 @@ const normalizeFrontmost = (panes: PaneConfig[], activePaneId: string | null) =>
 const getCenteredPosition = (size: { width: number; height: number }, offset: number = 0) => {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1920;
     const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 1080;
-    const leftInset = windowWidth >= 1440 ? 300 : 20;
+    const leftInset = windowWidth >= 1440 ? 420 : windowWidth >= 1180 ? 400 : windowWidth >= 1024 ? 280 : 20;
     const rightInset = windowWidth >= 1440 ? 320 : 20;
     const topInset = windowHeight >= 760 ? 86 : 48;
     const bottomInset = windowHeight >= 760 ? 150 : 96;
@@ -68,7 +68,7 @@ const getCenteredPosition = (size: { width: number; height: number }, offset: nu
 
     let x = size.width <= workspaceWidth
         ? leftInset + Math.floor((workspaceWidth - size.width) / 2) + cascadeOffset
-        : Math.floor((windowWidth - size.width) / 2) + cascadeOffset;
+        : Math.max(leftInset, Math.floor((windowWidth - size.width) / 2) + cascadeOffset);
     let y = size.height <= workspaceHeight
         ? topInset + Math.floor((workspaceHeight - size.height) / 2) + cascadeOffset
         : Math.max(48, topInset - 34) + cascadeOffset;

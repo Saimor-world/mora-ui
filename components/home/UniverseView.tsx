@@ -130,6 +130,8 @@ const stableUniverseHash = (value: string) => {
     return hash >>> 0;
 };
 
+const EMPTY_UNIVERSE_ITEMS: any[] = [];
+
 const buildOrganicUniverseLayout = (
     departments: Array<any>,
     metricsMap: Record<string, { nodes: number; spaces: number; folders: number; health: number }>,
@@ -233,9 +235,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment } = useNavStore();
     const user = useSessionStore(s => s.user);
 
-    const { data: departments = [] } = useDepartments(activeCompanyId);
-    const { data: companies = [] }   = useCompanies();
-    const { data: treeData = [] }    = useTree(activeCompanyId);
+    const { data: departmentsData } = useDepartments(activeCompanyId);
+    const { data: companiesData }   = useCompanies();
+    const { data: treeDataRaw }     = useTree(activeCompanyId);
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
     const openPane = usePaneStore((s) => s.openPane);
@@ -265,25 +267,28 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
-    const safeCompanies = useMemo(() => (Array.isArray(companies) ? companies : []), [companies]);
-    const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
-    const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
+    const safeCompanies = useMemo(() => (Array.isArray(companiesData) ? companiesData : EMPTY_UNIVERSE_ITEMS), [companiesData]);
+    const safeDepartments = useMemo(() => (Array.isArray(departmentsData) ? departmentsData : EMPTY_UNIVERSE_ITEMS), [departmentsData]);
+    const safeTreeData = useMemo(() => (Array.isArray(treeDataRaw) ? treeDataRaw : EMPTY_UNIVERSE_ITEMS), [treeDataRaw]);
+
+    const departmentsRef = useRef(safeDepartments);
+    departmentsRef.current = safeDepartments;
 
     useEffect(() => {
         if (!searchQuery.trim()) {
-            setSearchResults([]);
-            setIsSearching(false);
+            setSearchResults((previous) => previous.length === 0 ? previous : []);
+            setIsSearching((previous) => previous ? false : previous);
             return;
         }
 
-        setIsSearching(true);
+        setIsSearching((previous) => previous ? previous : true);
         const timer = setTimeout(async () => {
             try {
                 const response = await searchGlobal(searchQuery, activeCompanyId || undefined);
                 setSearchResults(response.results || []);
             } catch (err) {
                 console.error('[UniverseView] search error:', err);
-                const matches = safeDepartments.filter(d => 
+                const matches = departmentsRef.current.filter(d => 
                     d.name.toLowerCase().includes(searchQuery.toLowerCase())
                 ).map(d => ({
                     id: d.id,
@@ -293,12 +298,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 }));
                 setSearchResults(matches);
             } finally {
-                setIsSearching(false);
+                setIsSearching((previous) => previous ? false : previous);
             }
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [searchQuery, activeCompanyId, safeDepartments]);
+    }, [searchQuery, activeCompanyId]);
 
     const matchedDepartmentIds = useMemo(() => {
         if (!searchQuery.trim()) return null;
@@ -1035,16 +1040,40 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         onMouseEnter={() => setIsCoreLogoHovered(true)}
                         onMouseLeave={() => setIsCoreLogoHovered(false)}
                     >
-                        {/* Glow Behind Logo — emerald core presence */}
-                        <div className="absolute inset-0 rounded-full scale-[2.2] pointer-events-none" style={{
-                            background: 'radial-gradient(circle, rgba(16,185,129,0.24) 0%, rgba(6,182,212,0.12) 45%, transparent 75%)',
-                            filter: 'blur(28px)',
+                        {/* Glow Behind Logo — liquid glass / hologram ripples */}
+                        <div className="absolute inset-0 rounded-full scale-[2.4] pointer-events-none" style={{
+                            background: 'radial-gradient(circle, rgba(6,182,212,0.20) 0%, rgba(139,92,246,0.12) 50%, transparent 75%)',
+                            filter: 'blur(24px)',
                             transition: 'all 0.7s ease',
                         }} />
-                        <div className="absolute inset-0 rounded-full scale-[3.5] pointer-events-none group-hover:scale-[4] transition-all duration-700" style={{
-                            background: 'radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 65%)',
-                            filter: 'blur(40px)',
+                        <div className="absolute inset-0 rounded-full scale-[3.8] pointer-events-none group-hover:scale-[4.5] transition-all duration-1000" style={{
+                            background: 'radial-gradient(circle, rgba(6,182,212,0.08) 0%, rgba(139,92,246,0.04) 40%, transparent 70%)',
+                            filter: 'blur(36px)',
                         }} />
+
+                        {/* Scanning / Hologram Rings */}
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            {[0, 1, 2].map((i) => (
+                                <motion.div
+                                    key={i}
+                                    className="absolute rounded-full border border-cyan-500/20"
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                    }}
+                                    animate={{
+                                        scale: [1, 2.2 + i * 0.6],
+                                        opacity: [0.4, 0],
+                                    }}
+                                    transition={{
+                                        duration: 4.5,
+                                        repeat: Infinity,
+                                        delay: i * 1.5,
+                                        ease: 'easeOut',
+                                    }}
+                                />
+                            ))}
+                        </div>
 
                         <CompanyLogo
                             src={websiteEntryContext ? undefined : currentCompany?.logo_url}
@@ -1197,24 +1226,49 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 }}
                                 filter="url(#silkGlow)"
                             />
-                            {/* Core line — no infinite loop for FPS */}
+                            {/* Base connection line */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.055 + path.strength * 0.085}
+                                strokeWidth={0.04 + path.strength * 0.05}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity,
+                                    opacity: baseOpacity * 0.5,
                                 }}
                                 transition={{
                                     pathLength: { duration: 1.8, ease: "easeInOut" },
                                     opacity: { duration: 0.4, ease: "easeOut" }
                                 }}
-                                filter={isActive ? "url(#accentGlow)" : "url(#silkGlow)"}
+                                filter="url(#silkGlow)"
+                            />
+                            {/* Flowing laser energy beam overlay */}
+                            <motion.path
+                                d={path.d}
+                                fill="none"
+                                stroke={driverMeta.accent}
+                                strokeWidth={0.065 + path.strength * 0.09}
+                                strokeDasharray="5 15"
+                                strokeLinecap="round"
+                                initial={{ pathLength: 0, strokeDashoffset: 0 }}
+                                animate={{
+                                    pathLength: 1,
+                                    strokeDashoffset: -40,
+                                    opacity: baseOpacity * (isActive ? 1.0 : 0.7),
+                                }}
+                                transition={{
+                                    pathLength: { duration: 1.8, ease: "easeInOut" },
+                                    strokeDashoffset: {
+                                        repeat: Infinity,
+                                        duration: 3.5,
+                                        ease: "linear",
+                                    },
+                                    opacity: { duration: 0.4, ease: "easeOut" }
+                                }}
+                                filter="url(#accentGlow)"
                             />
                         </g>
                     );
@@ -1618,9 +1672,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<Cpu className="w-4 h-4" />}
                                     label="Abteilungen"
-                                    value={`${departments.length}`}
+                                    value={`${safeDepartments.length}`}
                                     status="optimal"
-                                    progress={Math.min(departments.length * 10, 100)}
+                                    progress={Math.min(safeDepartments.length * 10, 100)}
                                 />
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}

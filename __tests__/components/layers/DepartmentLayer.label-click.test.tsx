@@ -86,13 +86,27 @@ jest.mock('@/lib/utils/deptStyle', () => ({
     getDeptStyle: () => ({ glow: '#10b981' }),
 }));
 
-jest.mock('framer-motion', () => ({
-    motion: {
-        div: ({ children, initial, animate, exit, transition, whileHover, whileTap, ...props }: any) => <div {...props}>{children}</div>,
-        button: ({ children, initial, animate, exit, transition, whileHover, whileTap, ...props }: any) => <button {...props}>{children}</button>,
-    },
-    useReducedMotion: () => false,
-}));
+jest.mock('framer-motion', () => {
+    const React = require('react');
+    const passthrough = (tag: string) =>
+        React.forwardRef(({ children, initial, animate, exit, transition, whileHover, whileTap, ...props }: any, ref: React.Ref<any>) =>
+            React.createElement(tag, { ref, ...props }, children)
+        );
+
+    const motion = new Proxy({}, {
+        get: (_target, prop) => {
+            if (typeof prop === 'string') {
+                return passthrough(prop);
+            }
+            return undefined;
+        }
+    });
+
+    return {
+        motion,
+        useReducedMotion: () => false,
+    };
+});
 
 describe('DepartmentLayer space-label navigation', () => {
     beforeEach(() => {

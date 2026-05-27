@@ -187,4 +187,17 @@ describe('UniverseView membership-scoped rendering', () => {
             expect(screen.queryByTestId('planet-dept-hr')).not.toBeInTheDocument();
         });
     });
+
+    it('does not loop when query data is still unavailable', async () => {
+        mockFetchUserMemberships.mockResolvedValue(null);
+        const qc = createTestQueryClient();
+
+        expect(() => {
+            renderWithProviders(<UniverseView />, { queryClient: qc });
+        }).not.toThrow();
+
+        await waitFor(() => {
+            expect(mockFetchUserMemberships).toHaveBeenCalled();
+        });
+    });
 });

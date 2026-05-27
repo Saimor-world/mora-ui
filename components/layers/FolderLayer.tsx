@@ -440,7 +440,7 @@ export const FolderLayer: React.FC = () => {
                                                         <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.1" />
                                                     </linearGradient>
                                                 </defs>
-                                                {safeGraphLinks.map((link, index) => {
+                                                {safeGraphLinks.map((link) => {
                                                     const isActive = hoveredGraphNodeId
                                                         ? (link.sourceId === hoveredGraphNodeId || link.targetId === hoveredGraphNodeId)
                                                         : false;
@@ -452,11 +452,21 @@ export const FolderLayer: React.FC = () => {
                                                             x2={link.x2}
                                                             y2={link.y2}
                                                             stroke="url(#folder-graph-gradient)"
-                                                            strokeWidth={isActive ? 0.9 : 0.5}
-                                                            opacity={isActive ? 0.55 : 0.18}
+                                                            strokeWidth={isActive ? 1.2 : 0.6}
+                                                            strokeDasharray="4 8"
+                                                            animate={{
+                                                                strokeDashoffset: [0, -12],
+                                                                opacity: isActive ? 0.65 : 0.22,
+                                                            }}
+                                                            transition={{
+                                                                strokeDashoffset: {
+                                                                    repeat: Infinity,
+                                                                    duration: 2,
+                                                                    ease: "linear",
+                                                                },
+                                                                opacity: { duration: 0.25 }
+                                                            }}
                                                             initial={{ opacity: 0 }}
-                                                            animate={{ opacity: isActive ? 0.52 : 0.18 }}
-                                                            transition={{ duration: 0.25, delay: index * 0.02, ease: 'easeOut' }}
                                                         />
                                                     );
                                                 })}

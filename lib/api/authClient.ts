@@ -40,6 +40,20 @@ export async function authLogin(payload: AuthPayload): Promise<AuthSession> {
 }
 
 export async function authLogout(): Promise<{ success?: boolean; message?: string } | null> {
+    if (typeof window !== 'undefined') {
+        try {
+            const response = await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}',
+                credentials: 'include',
+            });
+            return await response.json().catch(() => null);
+        } catch {
+            return null;
+        }
+    }
+
     return corePost('/v3/auth/logout', {}, { skipAuth: true, isOptional: true });
 }
 

@@ -1,8 +1,6 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 
-const CORE_BASE_URL =
-  process.env.SAIMOR_CORE_URL ||
-  (process.env.NODE_ENV === 'development' ? 'http://127.0.0.1:8081' : 'http://core:8081');
+import { CORE_BASE_URL } from '@/lib/api/coreBase';
 
 function buildHealthUrl(): string {
   return `${CORE_BASE_URL.replace(/\/+$/, '')}/v1/health`;

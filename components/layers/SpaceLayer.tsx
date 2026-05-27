@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { CoreFolder } from '@/lib/types/core';
@@ -605,7 +605,7 @@ export const SpaceLayer: React.FC = () => {
             </LayerInsightRail>
 
             <motion.div
-                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden rounded-[28px] border border-cyan-200/10 bg-[linear-gradient(155deg,rgba(9,22,24,0.62),rgba(8,10,24,0.42))] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[24px] xl:block"
+                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden p-4 glass-panel xl:block"
                 initial={{ opacity: 0, x: 18 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, delay: 0.08 }}
@@ -658,7 +658,7 @@ export const SpaceLayer: React.FC = () => {
 
             {inspectedFolder && (
                 <motion.div
-                    className="absolute bottom-28 left-8 z-40 w-[312px] overflow-hidden rounded-[26px] border border-white/10 bg-[linear-gradient(160deg,rgba(12,18,26,0.9),rgba(3,6,10,0.78))] p-4 shadow-[0_18px_60px_rgba(0,0,0,0.35)] backdrop-blur-2xl"
+                    className="absolute bottom-28 left-8 z-40 w-[312px] overflow-hidden p-4 glass-panel"
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, delay: 0.14 }}
@@ -729,31 +729,53 @@ export const SpaceLayer: React.FC = () => {
                                         <stop offset="100%" stopColor={LANE_CONFIG[lane].accent} stopOpacity="0.08" />
                                     </linearGradient>
                                 ))}
+                                <filter id="spaceRailGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="0.8" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
                             </defs>
 
                             {(['focus', 'flow', 'archive'] as LaneKey[]).map((lane) => (
-                                <path
+                                <motion.path
                                     key={`lane-arc-${lane}`}
                                     d={describeLaneArc(lane)}
                                     fill="none"
                                     stroke={`url(#space-lane-${lane})`}
-                                    strokeWidth={lane === 'focus' ? 1.6 : 1.2}
-                                    strokeDasharray={lane === 'focus' ? '6 10' : '5 11'}
-                                    opacity={inspectedFolder?.lane === lane ? 0.75 : 0.34}
+                                    strokeWidth={lane === 'focus' ? 1.8 : 1.4}
+                                    strokeDasharray={lane === 'focus' ? '8 12' : '6 14'}
+                                    filter="url(#spaceRailGlow)"
+                                    animate={{
+                                        strokeDashoffset: [0, 40],
+                                    }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: lane === 'focus' ? 10 : 12,
+                                        ease: "linear",
+                                    }}
+                                    opacity={inspectedFolder?.lane === lane ? 0.85 : 0.4}
                                 />
                             ))}
 
                             {positionedFolders.map((entry) => (
-                                <line
+                                <motion.line
                                     key={`beam-${entry.folder.id}`}
                                     x1="0"
                                     y1="0"
                                     x2={entry.x}
                                     y2={entry.y}
                                     stroke={entry.resolvedColor}
-                                    strokeWidth={entry.isActive ? 2 : 0.8 + entry.intensity * 1.15}
-                                    strokeDasharray={entry.isActive ? 'none' : '4 8'}
-                                    opacity={entry.isActive ? 0.54 : 0.14 + entry.intensity * 0.26}
+                                    strokeWidth={entry.isActive ? 2.2 : 0.8 + entry.intensity * 1.15}
+                                    strokeDasharray="4 8"
+                                    filter="url(#spaceRailGlow)"
+                                    animate={{
+                                        strokeDashoffset: [0, -24],
+                                    }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: 3,
+                                        ease: "linear",
+                                    }}
+                                    opacity={entry.isActive ? 0.85 : 0.18 + entry.intensity * 0.28}
                                 />
                             ))}
 

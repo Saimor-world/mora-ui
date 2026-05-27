@@ -17,7 +17,7 @@ export default defineConfig({
     retries: 1,
     reporter: 'list',
     use: {
-        baseURL: process.env.BASE_URL || 'http://127.0.0.1:3000',
+        baseURL: process.env.BASE_URL || 'http://localhost:3000',
         headless: true,
         viewport: { width: 1280, height: 800 },
         // Accept self-signed certs in dev if needed

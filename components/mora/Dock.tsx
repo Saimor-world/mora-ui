@@ -77,7 +77,9 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
     return (
         <button
             aria-label={item.label}
-            className={`w-[50px] h-[50px] flex items-center justify-center rounded-[18px] transition-all relative group duration-75 ease-out will-change-transform ${item.disabled
+            data-testid={`dock-${item.action}`}
+            data-app-id={item.action}
+            className={`w-12 h-12 flex items-center justify-center rounded-full transition-all relative group duration-75 ease-out will-change-transform ${item.disabled
                 ? isStandardMode
                     ? 'text-gray-300 cursor-not-allowed'
                     : 'text-white/20 cursor-not-allowed'
@@ -90,7 +92,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             onClick={() => !item.disabled && onAction(item.action)}
             disabled={item.disabled}
         >
-            <item.icon size={23} strokeWidth={1.45} />
+            <item.icon size={20} strokeWidth={1.45} />
 
             {/* Badge */}
             {item.badge && item.badge > 0 && (
@@ -136,6 +138,93 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 };
 // ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
+
+// ─── Capsule Dock Icon (Unified rounded icon with custom tooltips) ────────────────────────
+interface CapsuleDockIconProps {
+    icon: React.ComponentType<any>;
+    label: string;
+    description: string;
+    shortcut?: string | null;
+    active?: boolean;
+    onClick: () => void;
+    onDoubleClick?: () => void;
+    onContextMenu?: (e: React.MouseEvent) => void;
+    badge?: number;
+    isStandardMode: boolean;
+    pulse?: boolean;
+    children?: React.ReactNode;
+}
+
+const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
+    icon: Icon,
+    label,
+    description,
+    shortcut,
+    active = false,
+    onClick,
+    onDoubleClick,
+    onContextMenu,
+    badge,
+    isStandardMode,
+    pulse = false,
+    children,
+}) => {
+    return (
+        <button
+            type="button"
+            aria-label={label}
+            className={`w-12 h-12 flex items-center justify-center rounded-full transition-all relative group duration-75 ease-out will-change-transform ${
+                active
+                    ? isStandardMode
+                        ? 'bg-[#0078D4]/10 text-[#0078D4]'
+                        : 'bg-cyan-400/16 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.15)] border border-cyan-300/30'
+                    : isStandardMode
+                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
+                        : 'text-cyan-50/64 hover:text-cyan-100 hover:bg-cyan-200/[0.075] hover:shadow-[0_0_24px_rgba(34,211,238,0.12)] hover:scale-110 active:scale-95'
+            }`}
+            onClick={onClick}
+            onDoubleClick={onDoubleClick}
+            onContextMenu={onContextMenu}
+        >
+            <Icon size={20} strokeWidth={1.45} className={pulse ? 'animate-pulse' : ''} />
+            {children}
+
+            {/* Badge */}
+            {badge && badge > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
+                        {badge > 9 ? '!' : badge}
+                    </span>
+                </span>
+            )}
+
+            {/* Tooltip */}
+            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 ease-out pointer-events-none z-[9999]">
+                <div className={`rounded-lg px-3 py-2 min-w-[140px] text-center shadow-2xl ${
+                    isStandardMode
+                        ? 'bg-gray-800 border border-gray-700'
+                        : 'bg-black/95 backdrop-blur-xl border border-white/10'
+                }`}>
+                    <div className="text-white text-xs font-medium">{label}</div>
+                    <div className="text-white/50 text-[10px] mt-0.5">{description}</div>
+                    {shortcut && (
+                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
+                            isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
+                        }`}>
+                            {shortcut}
+                        </kbd>
+                    )}
+                </div>
+                <div className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 ${
+                    isStandardMode
+                        ? 'bg-gray-800 border-r border-b border-gray-700'
+                        : 'bg-black/95 border-r border-b border-white/10'
+                }`} />
+            </div>
+        </button>
+    );
+};
 
 // ─── Session Chip ─────────────────────────────────────────────────────────────
 // Quiet ambient indicator: renders only when a work-session plan is active.
@@ -1297,343 +1386,231 @@ export const Dock = () => {
                     )}
                 </AnimatePresence>
 
-                <div
-                    className={`relative flex flex-nowrap items-center justify-between gap-2 overflow-visible px-3 py-2 ${isStandardMode
-                        ? 'rounded-xl bg-white border-gray-200'
-                        : 'rounded-[30px] backdrop-blur-[30px]'
-                        }`}
-                    style={isStandardMode ? {
-                        background: '#FFFFFF',
-                        border: '1px solid #E1E1E1',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)',
-                    } : {
-                        background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.46) 0%, rgba(10, 13, 28, 0.36) 54%, rgba(2, 7, 10, 0.48) 100%)',
-                        border: '1px solid rgba(125, 224, 255, 0.14)',
-                        boxShadow: `0 22px 80px rgba(0, 0, 0, 0.55), 0 0 70px ${accent}14, inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -1px 0 rgba(34,211,238,0.08)`,
-                        willChange: 'transform',
-                    }}
-                >
-                    {!isStandardMode && (
-                        <div
-                            className="pointer-events-none absolute inset-[1px] rounded-[29px] opacity-55"
-                            style={{
-                                background: 'linear-gradient(90deg, rgba(125,224,255,0.05) 1px, transparent 1px), linear-gradient(180deg, rgba(255,255,255,0.035) 1px, transparent 1px)',
-                                backgroundSize: '44px 44px',
-                                maskImage: 'linear-gradient(90deg, transparent, black 14%, black 86%, transparent)',
-                            }}
-                        />
-                    )}
-                    {/* TOP GLOW LINE - Premium animated */}
-                    {!isStandardMode && (
-                        <>
-                            {/* White separation line — always visible */}
                             <div
-                                className="absolute inset-x-0 top-0 h-[1px] rounded-full pointer-events-none"
-                                style={{ background: 'rgba(255,255,255,0.10)' }}
-                            />
-                            <div
-                                className="dock-glow-line absolute inset-x-8 top-0 h-[2px] rounded-full"
-                                style={{ background: `linear-gradient(90deg, transparent 8%, rgba(34,211,238,0.65), ${accent}66, transparent 92%)` }}
-                            />
-                            <div className="absolute left-8 top-2 h-10 w-px bg-gradient-to-b from-cyan-200/38 to-transparent" />
-                            <div className="absolute right-8 top-2 h-10 w-px bg-gradient-to-b from-cyan-200/38 to-transparent" />
-                        </>
-                    )}
-
-                    {/* LEFT: Identity stays out of the primary hologram on normal screens. */}
-                    <DockPod className="hidden shrink-0 items-center gap-2 px-2 py-2 min-[2200px]:flex" isStandardMode={isStandardMode}>
-                        <AccountIdentityPod
-                            name={websiteEntryContext?.companyName || user?.name || 'Benutzer'}
-                            role={user?.role}
-                            roleLabel={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Kundenaccount' : 'Preview') : viewMode === 'demo' ? surfaceProfile.roleBadgeLabel : roleLabel(user?.role)}
-                            subtitle={websiteEntryContext ? (isClaimedWebsiteEntry ? 'Verbundenes Website-Dossier' : 'Website-Dossier und HQ-Workspace') : 'Konto, Privatbereich und Dateien'}
-                            preferInitials
-                            compact
-                            embedded
-                            variant="dock"
-                            className={websiteEntryContext ? 'min-w-[248px] max-w-[340px] px-0 py-0' : 'min-w-[272px] px-0 py-0'}
-                            actionSlot={websiteEntryContext ? undefined : (
-                                <button
-                                    onClick={() => openPane({
-                                        id: 'meine-dateien',
-                                        type: 'meine-dateien',
-                                        title: 'Privater Bereich',
-                                        size: { width: 920, height: 720 },
-                                    })}
-                                    title="Privater Bereich"
-                                    aria-label="Privaten Bereich öffnen"
-                                    data-interaction-sound="soft"
-                                    className="flex h-10 items-center justify-center gap-2 rounded-2xl border border-cyan-200/12 bg-cyan-200/[0.04] px-3 text-white/62 transition-all duration-200 hover:border-cyan-200/24 hover:bg-cyan-200/[0.08] hover:text-white/88"
-                                >
-                                    <FolderHeart size={16} />
-                                    <span className="hidden 2xl:inline text-[10px] uppercase tracking-[0.16em]">Privat</span>
-                                </button>
-                            )}
-                        />
-                        {!websiteEntryContext && <AdminModeSwitcher />}
-                    </DockPod>
-
-                    <div className="flex min-w-0 flex-1 items-center justify-center gap-3">
-                        {!websiteEntryContext && <DockPod className="hidden min-w-0 max-w-[560px] items-center gap-2 px-3 py-2" isStandardMode={isStandardMode}>
-                            <DockSearchLauncher
-                                isStandardMode={isStandardMode}
-                                shortcutLabel={`${mod}+K`}
-                                isActive={searchPopupOpen}
-                                onOpen={() => setSearchPopupOpen(true)}
-                            />
-
-                            {!isCommandDeckOpen && (
-                                <>
-                                    <div className={`hidden xl:block h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
-                                    <DockNowPlaying
-                                        isStandardMode={isStandardMode}
-                                        isDeckOpen={isCommandDeckOpen}
-                                        trackName={activeTrack?.name || null}
-                                        trackCount={ambientTracks.length}
-                                        isPlaying={ambientAudio.enabled}
-                                        onToggle={handleAmbientToggle}
-                                        onNext={handleAmbientNext}
-                                        onOpen={openAudioSettings}
-                                    />
-                                </>
-                            )}
-
-                            <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
-
-                            <div
-                                data-dock-command-center="true"
-                                className="relative shrink-0"
+                                data-testid="dock"
+                                className={`relative flex flex-nowrap items-center justify-center gap-3 overflow-visible px-4 py-2 mx-auto w-fit rounded-full transition-all ${
+                                    isStandardMode
+                                        ? 'bg-white border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
+                                        : 'backdrop-blur-3xl'
+                                }`}
+                                style={isStandardMode ? {} : {
+                                    background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.55) 0%, rgba(10, 13, 28, 0.45) 54%, rgba(2, 7, 10, 0.6) 100%)',
+                                    border: '1px solid rgba(125, 224, 255, 0.16)',
+                                    boxShadow: `0 24px 80px rgba(0, 0, 0, 0.65), 0 0 60px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(34,211,238,0.08)`,
+                                    willChange: 'transform',
+                                }}
                             >
-                                <button
-                                    type="button"
-                                    aria-expanded={isCommandDeckOpen}
-                                    aria-pressed={isCommandDeckOpen}
-                                    title={isCommandDeckOpen ? 'Control Center schließen' : 'Control Center öffnen'}
-                                    onClick={toggleCommandDeck}
-                                    className={`flex items-center gap-3 rounded-2xl border px-3 py-2.5 transition-all ${isStandardMode
-                                        ? isCommandDeckOpen
-                                            ? 'border-[#0078D4]/35 bg-white text-[#0078D4]'
-                                            : 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                        : isCommandDeckOpen
-                                            ? 'border-cyan-200/34 bg-cyan-300/[0.12] text-cyan-50 shadow-[0_0_26px_rgba(34,211,238,0.12)]'
-                                            : 'border-cyan-200/12 bg-cyan-100/[0.04] text-white/72 hover:border-cyan-200/28 hover:bg-cyan-300/[0.075] hover:text-cyan-100'
-                                        }`}
-                                >
-                                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
-                                        ? isCommandDeckOpen
-                                            ? 'border-[#0078D4]/22 bg-[#0078D4]/10 text-[#0078D4]'
-                                            : 'border-[#0078D4]/15 bg-white text-[#0078D4]'
-                                        : isCommandDeckOpen
-                                            ? 'border-cyan-300/30 bg-cyan-400/16 text-cyan-50'
-                                            : 'border-cyan-200/22 bg-cyan-300/10 text-cyan-100'
-                                        }`}>
-                                        <Sparkles size={15} />
-                                    </div>
-                                    <div className="min-w-0 text-left">
-                                        <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                            Control Center
-                                        </div>
-                                        <div className={`mt-1 truncate text-sm ${isStandardMode ? 'text-gray-800' : 'text-white/84'}`}>
-                                            {controlCenterNextMove.label}
-                                        </div>
-                                        <div className={`mt-1 text-[11px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'}`}>
-                                            {shellContext.scopeLabel}
-                                        </div>
-                                    </div>
-                                </button>
-                            </div>
-                        </DockPod>}
+                                {!isStandardMode && (
+                                    <>
+                                        <div
+                                            className="pointer-events-none absolute inset-[1px] rounded-full opacity-40 animate-[pulse_6s_infinite]"
+                                            style={{
+                                                background: 'linear-gradient(90deg, rgba(125,224,255,0.04) 1px, transparent 1px), linear-gradient(180deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+                                                backgroundSize: '32px 32px',
+                                            }}
+                                        />
+                                        <div
+                                            className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none"
+                                            style={{ background: `linear-gradient(90deg, transparent 10%, rgba(34,211,238,0.7), ${accent}60, transparent 90%)` }}
+                                        />
+                                    </>
+                                )}
 
-                        <DockPod className="flex shrink-0 items-center justify-center gap-2 px-2.5 py-1.5" isStandardMode={isStandardMode}>
-                            <div className="flex min-w-0 items-center gap-1 xl:gap-2">
-                                {dockItems.map((item) => (
-                                    <MagneticDockIconMemo
-                                        key={item.action}
-                                        item={item}
+                                {/* LEFT: Search, Control Center, Audio */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    <CapsuleDockIcon
+                                        icon={Search}
+                                        label="Suche"
+                                        description="Saimôr OS durchsuchen"
+                                        shortcut={`${mod}+K`}
+                                        active={searchPopupOpen}
+                                        onClick={() => setSearchPopupOpen(true)}
                                         isStandardMode={isStandardMode}
-                                        onAction={handleDockClick}
                                     />
-                                ))}
-                            </div>
-                        </DockPod>
 
-                        <DockPod className={websiteEntryContext ? 'flex shrink-0 items-center gap-2 px-2 py-2' : 'hidden shrink-0 items-center gap-2 px-2.5 py-2 xl:flex'} isStandardMode={isStandardMode}>
-                    {/* RIGHT SECTION: Status + Context */}
-                    {!websiteEntryContext && <div className="flex items-center gap-1.5">
-                        <FocusModeWidget />
-                        <NotificationCenter />
-                        {activePlanId && (
-                            <SessionChip
-                                planId={activePlanId}
-                                openPane={openPane}
-                                isStandardMode={isStandardMode}
-                            />
-                        )}
-                    </div>}
+                                    <CapsuleDockIcon
+                                        icon={Sparkles}
+                                        label="Control Center"
+                                        description={controlCenterNextMove.label}
+                                        active={isCommandDeckOpen}
+                                        onClick={toggleCommandDeck}
+                                        isStandardMode={isStandardMode}
+                                    />
 
-                    {/* RIGHT: COMPANY BADGE - Enhanced */}
-                    {!websiteEntryContext && <div className="relative">
-                        <button
-                            className={`flex items-center gap-2 px-2.5 py-2.5 rounded-2xl transition-all group ${isStandardMode
-                                ? 'bg-gray-100 border border-gray-200 hover:border-[#0078D4]'
-                                : 'bg-white/[0.05] border border-white/[0.1] hover:border-emerald-500/40 hover:bg-white/[0.08]'
-                                }`}
-                            onClick={() => {
-                                if (!surfaceProfile.companySwitcherEnabled || websiteEntryContext) return;
-                                setShowCompanySwitcher(!showCompanySwitcher);
-                            }}
-                            type="button"
-                        >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isStandardMode ? 'bg-[#0078D4]/10' : 'bg-emerald-500/20'
-                                }`}>
-                                <Building2 size={16} className={isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'} />
-                            </div>
-                            <div className="hidden min-[2200px]:flex flex-col items-start">
-                                <span className={`text-xs font-medium max-w-[90px] truncate ${isStandardMode ? 'text-gray-800' : 'text-white/80'
-                                    }`}>
-                                    {displayCompany?.name || surfaceProfile.fallbackCompanyName}
-                                </span>
-                                {!websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
-                                    <span className={`text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/40'
-                                        }`}>
-                                        {companyContextLabel}
-                                            </span>
+                                    <CapsuleDockIcon
+                                        icon={Music2}
+                                        label={activeTrack?.name || 'Mora Ambient'}
+                                        description={`${ambientAudio.enabled ? 'Spielt' : 'Pausiert'} · ${ambientTracks.length} Tracks (Rechtsklick: Nächster | Doppelkick: Settings)`}
+                                        active={ambientAudio.enabled}
+                                        onClick={handleAmbientToggle}
+                                        onContextMenu={(e) => {
+                                            e.preventDefault();
+                                            handleAmbientNext();
+                                        }}
+                                        onDoubleClick={openAudioSettings}
+                                        isStandardMode={isStandardMode}
+                                    >
+                                        {ambientAudio.enabled && (
+                                            <div className="absolute right-1.5 bottom-1.5 flex items-end gap-[1.5px] pointer-events-none">
+                                                {[6, 12, 8].map((h, i) => (
+                                                    <motion.span
+                                                        key={i}
+                                                        className="w-[1.5px] bg-emerald-400 rounded-full"
+                                                        animate={{ height: [h * 0.3, h, h * 0.3] }}
+                                                        transition={{
+                                                            duration: 0.6 + i * 0.15,
+                                                            repeat: Infinity,
+                                                            ease: 'easeInOut',
+                                                        }}
+                                                        style={{ height: h }}
+                                                    />
+                                                ))}
+                                            </div>
                                         )}
-                            </div>
-                            <ChevronUp
-                                size={14}
-                                className={`text-white/40 transition-transform ${showCompanySwitcher && surfaceProfile.companySwitcherEnabled && !websiteEntryContext ? '' : 'rotate-180'}`}
-                            />
-                        </button>
+                                    </CapsuleDockIcon>
+                                </div>
 
-                        {/* COMPANY SWITCHER POPUP */}
-                        <AnimatePresence>
-                            {showCompanySwitcher && !websiteEntryContext && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: 10 }}
-                                    className="absolute bottom-full mb-2 right-0 w-56 bg-black/95 backdrop-blur-xl rounded-xl border border-white/10 shadow-2xl overflow-hidden"
-                                >
-                                    <div className="p-2 border-b border-white/5">
-                                        <span className="text-[10px] text-white/30 uppercase tracking-wider px-2">
-                                            Organisation wechseln
-                                        </span>
-                                    </div>
-                                    <div className="p-1">
-                                        {safeCompanies.map(company => (
-                                            <button
-                                                key={company.id}
+                                {/* Divider */}
+                                <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+
+                                {/* CENTER: App Icons */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {dockItems.map((item) => (
+                                        <MagneticDockIconMemo
+                                            key={item.action}
+                                            item={item}
+                                            isStandardMode={isStandardMode}
+                                            onAction={handleDockClick}
+                                        />
+                                    ))}
+                                </div>
+
+                                {/* Divider */}
+                                <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+
+                                {/* RIGHT: Status, Company Badge, Mora Orb */}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                    {!websiteEntryContext && (
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            <FocusModeWidget />
+                                            <NotificationCenter />
+                                            {activePlanId && (
+                                                <SessionChip
+                                                    planId={activePlanId}
+                                                    openPane={openPane}
+                                                    isStandardMode={isStandardMode}
+                                                />
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {!websiteEntryContext && (
+                                        <div className="relative shrink-0">
+                                            <CapsuleDockIcon
+                                                icon={Building2}
+                                                label={displayCompany?.name || surfaceProfile.fallbackCompanyName}
+                                                description={`${companyContextLabel} · Klicken zum Wechseln`}
+                                                active={showCompanySwitcher}
                                                 onClick={() => {
-                                                    setActiveCompany(company.id);
-                                                    setShowCompanySwitcher(false);
+                                                    if (surfaceProfile.companySwitcherEnabled) {
+                                                        setShowCompanySwitcher(!showCompanySwitcher);
+                                                    }
                                                 }}
-                                                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${company.id === activeCompanyId
-                                                    ? 'bg-emerald-500/20 text-emerald-300'
-                                                    : 'text-white/70 hover:bg-white/5 hover:text-white'
-                                                    }`}
-                                            >
-                                                <Building2 size={14} className={company.id === activeCompanyId ? 'text-emerald-400' : 'text-white/40'} />
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-xs font-medium truncate">{company.name}</div>
-                                                    {company.is_demo && (
-                                                        <div className="text-[9px] text-amber-400/60">Demo</div>
-                                                    )}
-                                                </div>
-                                                {company.id === activeCompanyId && (
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                isStandardMode={isStandardMode}
+                                            />
+
+                                            <AnimatePresence>
+                                                {showCompanySwitcher && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: 10 }}
+                                                        className="absolute bottom-full mb-3 right-1/2 translate-x-1/2 w-56 bg-black/95 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden z-[9999]"
+                                                    >
+                                                        <div className="p-2.5 border-b border-white/5">
+                                                            <span className="text-[10px] text-white/30 uppercase tracking-wider px-2 block">
+                                                                Organisation wechseln
+                                                            </span>
+                                                        </div>
+                                                        <div className="p-1">
+                                                            {safeCompanies.map(company => (
+                                                                <button
+                                                                    key={company.id}
+                                                                    onClick={() => {
+                                                                        setActiveCompany(company.id);
+                                                                        setShowCompanySwitcher(false);
+                                                                    }}
+                                                                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-left transition-all ${
+                                                                        company.id === activeCompanyId
+                                                                            ? 'bg-emerald-500/20 text-emerald-300'
+                                                                            : 'text-white/70 hover:bg-white/5 hover:text-white'
+                                                                    }`}
+                                                                >
+                                                                    <Building2 size={14} className={company.id === activeCompanyId ? 'text-emerald-400' : 'text-white/40'} />
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <div className="text-xs font-medium truncate">{company.name}</div>
+                                                                        {company.is_demo && (
+                                                                            <div className="text-[9px] text-amber-400/60">Demo</div>
+                                                                        )}
+                                                                    </div>
+                                                                    {company.id === activeCompanyId && (
+                                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </motion.div>
                                                 )}
+                                            </AnimatePresence>
+                                        </div>
+                                    )}
+
+                                    <div className="flex items-center shrink-0" data-mora-orb>
+                                        <motion.div
+                                            animate={{ scale: [1, 1.02, 1] }}
+                                            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                                            style={{ transformOrigin: 'center' }}
+                                        >
+                                            <button
+                                                onClick={() => handleDockClick('chat')}
+                                                data-mora-home="true"
+                                                className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${
+                                                    isStandardMode ? 'bg-white shadow-lg' : 'bg-transparent'
+                                                }`}
+                                                title="Mora öffnen"
+                                                style={!isStandardMode ? { filter: `drop-shadow(0 0 25px ${accent}45)` } : {}}
+                                            >
+                                                {!isStandardMode && (
+                                                    <>
+                                                        <div
+                                                            className="absolute inset-[-8px] rounded-full pointer-events-none"
+                                                            style={{
+                                                                background: `radial-gradient(circle at 35% 30%, ${accent}40 0%, transparent 64%)`,
+                                                                filter: 'blur(16px)',
+                                                            }}
+                                                        />
+                                                        <div className="absolute inset-[-4px] rounded-full border border-emerald-400/30 dock-ring-pulse pointer-events-none" />
+                                                        <div className="absolute inset-[2px] rounded-full border border-white/15 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/40'}`} />
+                                                {!isStandardMode && (
+                                                    <div
+                                                        className="absolute inset-[4px] rounded-full pointer-events-none"
+                                                        style={{
+                                                            background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.2) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.3) 0%, transparent 35%)',
+                                                        }}
+                                                    />
+                                                )}
+                                                <PlasmaOrb
+                                                    color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
+                                                    state={orbState as any}
+                                                    size={48}
+                                                />
                                             </button>
-                                        ))}
+                                        </motion.div>
                                     </div>
-                                    {/* Integrationen — 1.0 gated (future-tier: no backend) */}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>}
-
-                    {/* DIVIDER - Glowing */}
-                    {!websiteEntryContext && <div className={`hidden h-10 w-[1px] min-[2200px]:block ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-emerald-500/30 to-transparent'
-                        }`} />
-                    }
-
-                    {/* RIGHT: MORA ORB - HERO ELEMENT */}
-                    <div className="flex items-center gap-2 pl-0">
-                        <motion.div
-                            animate={{ scale: [1, 1.018, 1] }}
-                            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
-                            style={{ transformOrigin: 'center' }}
-                            data-mora-orb
-                        >
-                        <button
-                            onClick={() => handleDockClick('chat')}
-                            data-mora-home="true"
-                            className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${isStandardMode
-                                ? 'bg-white shadow-lg'
-                                : 'bg-transparent'
-                                }`}
-                            title="Mora öffnen"
-                            style={!isStandardMode ? {
-                                filter: `drop-shadow(0 0 30px ${accent}40)`
-                            } : {}}
-                        >
-                            {/* Outer glow ring */}
-                            {!isStandardMode && (
-                                <>
-                                    <div className="absolute inset-[-8px] rounded-full pointer-events-none" style={{
-                                        background: `radial-gradient(circle at 35% 30%, ${accent}35 0%, transparent 64%)`,
-                                        filter: 'blur(20px)'
-                                    }} />
-                                    <div className="absolute inset-[-4px] rounded-full border-2 border-emerald-400/26 dock-ring-pulse" />
-                                    <div className="absolute inset-[2px] rounded-full border border-white/12 pointer-events-none" />
-                                </>
-                            )}
-                            {/* Inner border */}
-                            <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/50'
-                                }`} />
-                            {!isStandardMode && (
-                                <div
-                                    className="absolute inset-[4px] rounded-full pointer-events-none"
-                                    style={{
-                                        background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.18) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.24) 0%, transparent 35%)'
-                                    }}
-                                />
-                            )}
-                            <PlasmaOrb
-                                color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
-                                state={orbState as any}
-                                size={48}
-                            />
-                        </button>
-                        </motion.div>
-                        <div className="hidden 2xl:flex flex-col items-start leading-tight">
-                            <span className={`text-xs font-bold tracking-wide ${isStandardMode ? 'text-[#0078D4]' : 'text-emerald-300'
-                                }`}>
-                                MORA
-                            </span>
-                            <span className={`text-xs ${isStandardMode ? 'text-gray-500' : 'text-white/60'
-                                }`}>
-                                {orbState === 'thinking'
-                                    ? 'Kontext lesen'
-                                    : orbState === 'alert'
-                                        ? 'Rueckfrage offen'
-                                        : viewMode === 'demo'
-                                            ? 'Beispiel aktiv'
-                                            : assistantRuntime.title}
-                            </span>
-                            <div className="hidden">
-                                <span className={`rounded-full border px-2 py-0.5 text-[10px] ${isStandardMode ? 'border-gray-200 text-gray-500 bg-gray-100' : 'border-white/10 text-white/55 bg-white/[0.04]'}`}>
-                                    {orbState === 'thinking'
-                                        ? 'Mora liest Kontext'
-                                        : orbState === 'alert'
-                                            ? 'Mora wartet auf Klaerung'
-                                            : 'Mora ist bereit'}
-                                </span>
-                                {/* pendingCount chip — 1.0 gated with MemorySidebar */}
-                            </div>
-                        </div>
-                    </div>
-                </DockPod>
+                                </div>
                 </div>
             </div>
 
@@ -1645,7 +1622,6 @@ export const Dock = () => {
                 onQueryChange={setChatInput}
                 onMoraChat={() => { }}
             />
-        </div>
         </div>
     );
 };

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import { useNavStore } from '@/lib/store/navStore';
@@ -669,7 +669,7 @@ export const DepartmentLayer: React.FC = () => {
             </LayerInsightRail>
 
             <motion.div
-                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden rounded-[28px] border border-cyan-200/10 bg-[linear-gradient(155deg,rgba(10,22,28,0.62),rgba(8,10,24,0.42))] p-4 shadow-[0_24px_90px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[24px] xl:block"
+                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden p-4 glass-panel xl:block"
                 initial={{ opacity: 0, x: 18 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, delay: 0.08 }}
@@ -731,9 +731,9 @@ export const DepartmentLayer: React.FC = () => {
                     <LoadingState message="Department wird geladen..." />
                 ) : (
                     <div ref={orbitContainerRef} className="relative w-full h-full max-w-6xl max-h-[800px] mx-auto">
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-25 z-0">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-30 z-0">
                             {moonPositions.map(({ space, radiusX, radiusY }) => (
-                                <ellipse
+                                <motion.ellipse
                                     key={`orbit-${space.id}`}
                                     cx="50%"
                                     cy="50%"
@@ -741,42 +741,64 @@ export const DepartmentLayer: React.FC = () => {
                                     ry={radiusY}
                                     fill="none"
                                     stroke="url(#orbitGradient)"
-                                    strokeWidth="1"
-                                    strokeDasharray="4 8"
+                                    strokeWidth="1.2"
+                                    strokeDasharray="6 12"
+                                    filter="url(#railGlow)"
+                                    animate={{
+                                        strokeDashoffset: [0, 36],
+                                    }}
+                                    transition={{
+                                        repeat: Infinity,
+                                        duration: 8 + radiusX * 0.05,
+                                        ease: "linear",
+                                    }}
                                 />
                             ))}
                             <defs>
                                 <linearGradient id="orbitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
-                                    <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.16" />
-                                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.28" />
+                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.45" />
+                                    <stop offset="50%" stopColor="#06b6d4" stopOpacity="0.25" />
+                                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.35" />
                                 </linearGradient>
+                                <filter id="railGlow" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="0.8" result="blur" />
+                                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                                </filter>
                             </defs>
                         </svg>
 
-                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-40">
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-50">
                             {moonPositions.map(({ space, x, y }) => {
                                 const signal = spaceSignals[space.id] ?? { intensity: 0.18 };
                                 const isFocused = hoveredSpaceId === space.id;
 
                                 return (
-                                    <line
+                                    <motion.line
                                         key={`beam-${space.id}`}
                                         x1="50%"
                                         y1="50%"
                                         x2={`calc(50% + ${x}px)`}
                                         y2={`calc(50% + ${y}px)`}
                                         stroke="url(#deptBeamGradient)"
-                                        strokeWidth={1 + signal.intensity * 1.8}
-                                        strokeDasharray={isFocused ? undefined : '4 10'}
-                                        opacity={isFocused ? 0.95 : 0.24 + signal.intensity * 0.48}
+                                        strokeWidth={isFocused ? 1.6 + signal.intensity * 2.2 : 0.8 + signal.intensity * 1.2}
+                                        strokeDasharray="4 8"
+                                        filter="url(#railGlow)"
+                                        animate={{
+                                            strokeDashoffset: [0, -24],
+                                        }}
+                                        transition={{
+                                            repeat: Infinity,
+                                            duration: 3.5,
+                                            ease: "linear",
+                                        }}
+                                        opacity={isFocused ? 0.95 : 0.28 + signal.intensity * 0.35}
                                     />
                                 );
                             })}
                             <defs>
                                 <linearGradient id="deptBeamGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                    <stop offset="0%" stopColor="rgba(6,182,212,0.55)" />
-                                    <stop offset="100%" stopColor="rgba(16,185,129,0.12)" />
+                                    <stop offset="0%" stopColor="rgba(6,182,212,0.65)" />
+                                    <stop offset="100%" stopColor="rgba(16,185,129,0.20)" />
                                 </linearGradient>
                             </defs>
                         </svg>
