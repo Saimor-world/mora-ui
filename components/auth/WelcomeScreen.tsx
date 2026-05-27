@@ -90,28 +90,28 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Beispielinstanz erkunden oder mit Zugangsdaten weiter'
         : surfaceProfile.isHqSurface
-            ? 'HQ-Zugang mit deinen Anmeldedaten Ã¶ffnen'
+            ? 'HQ-Zugang mit deinen Anmeldedaten öffnen'
             : surfaceProfile.isLocalTruthSurface
                 ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
                 : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Private Instanz ausserhalb der Demo vorbereiten'
         : websiteEntryContext
-            ? 'Kundenaccount erstellen und dieses Dossier Ã¼bernehmen'
+            ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
             : surfaceProfile.isHqSurface
             ? 'HQ-Zugang einrichten'
             : surfaceProfile.isLocalTruthSurface
-            ? 'Lokale oder interne Instanz fÃ¼r echte Produktionsregeln vorbereiten'
+            ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
             : 'Neue Organisation einrichten';
     const demoEntryTitle = websiteEntryContext
-        ? `${websiteEntryContext.companyName} als HQ-Workspace Ã¶ffnen`
+        ? `${websiteEntryContext.companyName} als HQ-Workspace öffnen`
         : surfaceProfile.isLocalTruthSurface
-            ? 'Mit Zugangsdaten Ã¶ffnen'
-            : 'Zugang prÃ¼fen';
+            ? 'Mit Zugangsdaten öffnen'
+            : 'Zugang prüfen';
     const demoEntrySubtitle = websiteEntryContext
         ? 'Isolierten Preview-Tenant aus dem Website-Check erzeugen'
         : surfaceProfile.isLocalTruthSurface
-            ? 'Kein Ã¶ffentlicher Demo-Account: bitte bewusst anmelden.'
+            ? 'Kein öffentlicher Demo-Account: bitte bewusst anmelden.'
             : 'Kein geteilter Demo-Account: Zugriff nur mit Kontext oder Login.';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
@@ -126,7 +126,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setTokenValid(null);
         setReAuthPassword('');
         if (showToast) {
-            toast.info("Sitzung wurde vollstÃ¤ndig bereinigt");
+            toast.info("Sitzung wurde vollständig bereinigt");
         }
     }, []);
 
@@ -194,7 +194,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
     }, [mode, websiteEntryContext]);
 
-    // Mora Erwachen â€” consciousness-gradient session check
+    // Mora Erwachen — consciousness-gradient session check
     useEffect(() => {
         let cancelled = false;
 
@@ -256,20 +256,20 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             };
 
             if (tier === 'sofort') {
-                // 0â€“4h: auto-resume, zero friction
+                // 0–4h: auto-resume, zero friction
                 setSessionInfo(info);
                 setSessionTier('sofort');
                 return;
             }
 
             if (tier === 'erwachen') {
-                // 4â€“24h: one-click continue
+                // 4–24h: one-click continue
                 setSessionInfo(info);
                 setSessionTier('erwachen');
                 return;
             }
 
-            // erkennung (24â€“72h): validate token silently, fall back to password on any failure
+            // erkennung (24–72h): validate token silently, fall back to password on any failure
             let serverValid = false;
             try {
                 const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true });
@@ -281,7 +281,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                     info.lastWorkspace = info.lastWorkspace || serverSession.active_company_name || undefined;
                 }
             } catch {
-                // Backend unreachable â€” degrade gracefully to password prompt
+                // Backend unreachable — degrade gracefully to password prompt
             }
             if (cancelled) return;
             setSessionInfo(info);
@@ -311,7 +311,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setCompanyName('');
     }, [mode]);
 
-    // Fetch instance policy once on mount â€” public endpoint, no auth required.
+    // Fetch instance policy once on mount — public endpoint, no auth required.
     // Controls whether the "Account Erstellen" button is shown.
     useEffect(() => {
         void coreGet('/v3/auth/instance-policy', { skipAuth: true, isOptional: true })
@@ -374,11 +374,11 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 void queryClient.invalidateQueries({ queryKey: queryKeys.departments(targetCompany.id) });
             } else {
                 if (process.env.NODE_ENV === 'development') {
-                    console.warn('Keine Firma fÃ¼r Benutzer gefunden.');
+                    console.warn('Keine Firma für Benutzer gefunden.');
                 }
             }
 
-            toast.success("Willkommen zurÃ¼ck!");
+            toast.success("Willkommen zurück!");
             touchSessionActivity();
             onAuthenticated();
         } catch (error) {
@@ -386,7 +386,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 console.error('Sitzungswiederherstellung fehlgeschlagen:', error);
             }
             if (sessionTier === 'sofort') {
-                // Auto-resume failed silently â€” degrade to erwachen
+                // Auto-resume failed silently — degrade to erwachen
                 setSessionTier('erwachen');
                 setIsLoading(false);
                 return;
@@ -412,7 +412,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             // Re-authenticate through the normal login flow
             await handleLogin({ email: userEmail, password: reAuthPassword });
         } catch {
-            toast.error('Passwort ungÃ¼ltig');
+            toast.error('Passwort ungültig');
         } finally {
             setIsLoading(false);
         }
@@ -479,7 +479,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 ({ response, data } = await attemptCoreLogin('demo123'));
             }
             if (!response.ok || !data?.success) {
-                throw new Error(data?.detail || data?.message || "UngÃ¼ltige Zugangsdaten");
+                throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
             }
 
             if (!isLocalhost) {
@@ -549,7 +549,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             setViewMode('workspace');
             window.location.assign('/home');
         } catch (error: any) {
-            toast.error(error?.message || 'Preview-Workspace konnte nicht geÃ¶ffnet werden');
+            toast.error(error?.message || 'Preview-Workspace konnte nicht geöffnet werden');
         } finally {
             setIsLoading(false);
         }
@@ -570,7 +570,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            toast.error('UngÃ¼ltige E-Mail-Adresse');
+            toast.error('Ungültige E-Mail-Adresse');
             return;
         }
 
@@ -580,7 +580,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         if (!usingInvite && selectedRole === 'owner' && !claimingWebsitePreview && (!companyName || !companyName.trim())) {
-            toast.error('Organisationsname ist fÃ¼r Owner-Accounts erforderlich');
+            toast.error('Organisationsname ist für Owner-Accounts erforderlich');
             return;
         }
 
@@ -657,7 +657,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 role: role
             } as any);
 
-            // Load Initial Data for new user â€” invalidate + refetch companies
+            // Load Initial Data for new user — invalidate + refetch companies
             await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
             const freshCompanies = await queryClient.fetchQuery({
                 queryKey: queryKeys.companies(),
@@ -692,7 +692,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 setViewMode('workspace');
                 navigateToCore();
                 localStorage.setItem('last_workspace', 'Eigene Organisation');
-                toast.success("Account erstellt! Willkommen bei SAIMÃ”R.", { id: toastId });
+                toast.success("Account erstellt! Willkommen bei SAIMÔR.", { id: toastId });
             }
 
             onAuthenticated();
@@ -841,7 +841,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     transition={{ duration: 1.5, ease: "easeOut" }}
                                     className="text-6xl font-extralight text-emerald-50 drop-shadow-[0_0_30px_rgba(16,185,129,0.3)]"
                                 >
-                                    SAIMÃ”R OS
+                                    SAIMÔR OS
                                 </motion.h1>
                                 <motion.div
                                     initial={{ opacity: 0, y: 10 }}
@@ -868,7 +868,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </div>
                         </motion.div>
 
-                        {/* --- Tier: sofort â€” auto-resuming indicator --- */}
+                        {/* --- Tier: sofort — auto-resuming indicator --- */}
                         {sessionTier === 'sofort' && (
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -885,7 +885,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* --- Tier: erwachen â€” Mora wakes up, one-click continue --- */}
+                        {/* --- Tier: erwachen — Mora wakes up, one-click continue --- */}
                         {sessionTier === 'erwachen' && sessionInfo && (
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
@@ -908,7 +908,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 Mora erwacht
                                             </div>
                                             <div className="text-lg font-light text-emerald-100 tracking-wide">
-                                                Willkommen zurÃ¼ck, {sessionInfo.userName || 'Benutzer'}
+                                                Willkommen zurück, {sessionInfo.userName || 'Benutzer'}
                                             </div>
                                             <div className="text-xs text-emerald-500/40 mt-1 tracking-wider">
                                                 {formatAbsenceText(sessionInfo.lastActivity)}
@@ -967,7 +967,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* --- Tier: erkennung â€” Mora tries to recognize you --- */}
+                        {/* --- Tier: erkennung — Mora tries to recognize you --- */}
                         {sessionTier === 'erkennung' && sessionInfo && (
                             <motion.div
                                 initial={{ opacity: 0, y: 15 }}
@@ -1023,7 +1023,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         transition={{ duration: 1.5, repeat: Infinity }}
                                                         className="text-xs text-emerald-500/50 tracking-widest"
                                                     >
-                                                        IdentitÃ¤t wird geprueft...
+                                                        Identität wird geprueft...
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -1044,7 +1044,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                             className="flex-1 py-3.5 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-[0_0_20px_0_rgba(16,185,129,0.1)] disabled:opacity-50"
                                                         >
                                                             <Sparkles className="w-4 h-4 text-emerald-400" />
-                                                            <span className="font-medium tracking-wide">IdentitÃ¤t bestÃ¤tigt - Fortsetzen</span>
+                                                            <span className="font-medium tracking-wide">Identität bestätigt - Fortsetzen</span>
                                                         </motion.button>
                                                         <button
                                                             onClick={() => void handleLogout()}
@@ -1110,7 +1110,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                             </motion.div>
                         )}
 
-                        {/* --- Tier: neustart â€” remembered name greeting --- */}
+                        {/* --- Tier: neustart — remembered name greeting --- */}
                         {sessionTier === 'neustart' && sessionInfo?.userName && (
                             <motion.div
                                 initial={{ opacity: 0 }}
@@ -1138,7 +1138,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             Interne Instanz
                                         </div>
                                         <div className="mt-2 text-xs leading-relaxed text-emerald-100/75">
-                                            Hier gelten die echten lokalen Regeln. Diese OberflÃ¤che ist fÃ¼r reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
+                                            Hier gelten die echten lokalen Regeln. Diese Oberfläche ist für reale Workflows, Integrationen und Produktionslogik gedacht; die Demo spiegelt nur den stabilen Stand.
                                         </div>
                                     </div>
                                 )}
@@ -1156,14 +1156,14 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     </div>
                                     <div className="flex-1 text-left relative z-10">
                                         <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz Ã¶ffnen' : 'Anmelden'}
+                                            {surfaceProfile.isLocalTruthSurface ? 'Interne Instanz öffnen' : 'Anmelden'}
                                         </div>
                                         <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-emerald-400/80 transition-colors">{loginSubtitle}</div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Account Erstellen Button â€” hidden when instance policy disables public registration */}
+                                {/* Account Erstellen Button — hidden when instance policy disables public registration */}
                                 {allowPublicRegistration && <motion.button
                                     onClick={() => {
                                         if (websiteEntryContext) {
@@ -1317,7 +1317,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? ZurÃ¼ck zum Einstieg'}
+                                            {'? Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1434,7 +1434,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     >
                                                         {selectedRole === 'owner' && <div className="absolute inset-0 bg-mora-gold/5 animate-pulse" />}
                                                         <Building2 className={`w-5 h-5 ${selectedRole === 'owner' ? 'drop-shadow-[0_0_8px_rgba(206,182,118,0.5)]' : ''}`} />
-                                                        <span className="text-xs font-medium relative z-10">EigentÃ¼mer</span>
+                                                        <span className="text-xs font-medium relative z-10">Eigentümer</span>
                                                         <span className="text-[10px] opacity-50 relative z-10">Team verwalten</span>
                                                     </button>
                                                     <button
@@ -1468,7 +1468,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? ZurÃ¼ck zum Einstieg'}
+                                            {'? Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1494,7 +1494,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         PASSWORT RESET
                                     </h2>
                                     <p className="text-xs text-emerald-500/50 text-center mb-8 leading-relaxed tracking-wide">
-                                        Gib deine E-Mail-Adresse ein. Falls ein Konto existiert, erhÃ¤ltst du einen Reset-Link.
+                                        Gib deine E-Mail-Adresse ein. Falls ein Konto existiert, erhältst du einen Reset-Link.
                                     </p>
                                     <div className="space-y-5">
                                         <div>
@@ -1524,7 +1524,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('login')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? ZurÃ¼ck zum Login'}
+                                            {'? Zurück zum Login'}
                                         </button>
                                     </div>
                                 </div>
@@ -1554,7 +1554,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     E-Mail Gesendet
                                 </h2>
                                 <p className="text-xs text-emerald-500/60 leading-relaxed mb-8 max-w-xs mx-auto">
-                                    Falls diese E-Mail-Adresse mit einem Konto verknÃ¼pft ist, wurde ein Reset-Link gesendet. Bitte prÃ¼fe deinen Posteingang.
+                                    Falls diese E-Mail-Adresse mit einem Konto verknüpft ist, wurde ein Reset-Link gesendet. Bitte prüfe deinen Posteingang.
                                 </p>
                                 <button
                                     onClick={() => {
@@ -1563,7 +1563,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     }}
                                     className="text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                 >
-                                    {'? ZurÃ¼ck zum Login'}
+                                    {'? Zurück zum Login'}
                                 </button>
                             </div>
                         </div>
