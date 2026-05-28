@@ -593,9 +593,11 @@ export const HomeSurface: React.FC = () => {
             : 'Ruhiger Start';
     const focusTitle = activeMode === 'public_playground'
         ? "Saimôr Public HQ"
-        : websiteEntryContext
-            ? 'Dein Workspace ist bereit.'
-            : latestTeamMessage
+        : activeMode === 'personal_demo'
+            ? 'So sieht dein Unternehmen von innen aus.'
+            : websiteEntryContext
+                ? 'Dein Workspace ist bereit.'
+                : latestTeamMessage
                 ? 'Team-Signal wartet.'
                 : overlayRecentActivityItems[0]
                     ? `Weiter in ${overlayRecentActivityItems[0].label}.`
@@ -604,9 +606,11 @@ export const HomeSurface: React.FC = () => {
                         : 'Bereit wenn du es bist.';
     const focusDetail = activeMode === 'public_playground'
         ? "Erkunde die Myzel-Struktur des Systems. Teile dein Feedback an der Wall oder teste freie Experimente im Sandbox-Bereich."
-        : websiteEntryContext
-            ? 'Erkunde Finder, Universe und Môra — so würde SAIMÔR OS in deiner Organisation aussehen.'
-            : latestTeamMessage
+        : activeMode === 'personal_demo'
+            ? 'Öffne Finder, Universe oder Môra — und erlebe, wie SAIMÔR OS deine Organisation als lebendes System abbildet.'
+            : websiteEntryContext
+                ? 'Erkunde Finder, Universe und Môra — so würde SAIMÔR OS in deiner Organisation aussehen.'
+                : latestTeamMessage
                 ? `${latestTeamMessage.sender_name || 'Team'}: ${latestTeamMessage.content}`
                 : overlayRecentActivityItems[0]
                     ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
@@ -810,11 +814,13 @@ export const HomeSurface: React.FC = () => {
                                 </div>
                             )}
                             <h1 className="mt-2 max-w-[18rem] truncate text-[clamp(22px,2vw,28px)] font-light leading-tight tracking-[-0.02em] text-white/92">
-                                {websiteEntryContext
+                                {activeMode === 'personal_demo'
                                     ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
-                                    : firstName
-                                        ? <><span className="text-white/95">{greeting}</span><span className="text-white/50">, {firstName}.</span></>
-                                        : 'Arbeitsplatz'}
+                                    : websiteEntryContext
+                                        ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
+                                        : firstName
+                                            ? <><span className="text-white/95">{greeting}</span><span className="text-white/50">, {firstName}.</span></>
+                                            : 'Arbeitsplatz'}
                             </h1>
                             <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/30">{todayLabel}</div>
                         </div>

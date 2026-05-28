@@ -4,6 +4,7 @@ import { buildWebsiteEntryContext, firstQueryValue, type WebsiteEntryContext } f
 import { WebsiteEntryPersistence } from '@/components/entry/WebsiteEntryPersistence';
 import { WebsiteEntryTokenLogin } from '@/components/entry/WebsiteEntryTokenLogin';
 import { DemoWelcomeCardClient } from '@/components/entry/DemoWelcomeCardClient';
+import { DemoDirectEntry } from '@/components/entry/DemoDirectEntry';
 
 type EntryPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -24,9 +25,15 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
     const surface = firstQueryValue(resolved.surface);
     const entity = firstQueryValue(resolved.entity);
     const id = firstQueryValue(resolved.id);
+    const mode = firstQueryValue(resolved.mode);
     const token = firstQueryValue(resolved.token) || firstQueryValue(resolved.entry_token);
     const websiteContext = buildWebsiteEntryContext(resolved);
     const contextLabel = surface === 'website' ? labelForContext(entity, id) : null;
+
+    // Pure product demo (no dossier context): marketing landing + silent auth → /home
+    if (mode === 'demo' && token && !websiteContext) {
+        return <DemoDirectEntry token={token} />;
+    }
 
     // Demo-Flow: if we have a website context, show the guided welcome card first
     if (websiteContext) {

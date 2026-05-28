@@ -24,7 +24,7 @@ async function detectRealSession(): Promise<string | null> {
     }
 }
 
-export function WebsiteEntryTokenLogin({ token }: { token: string }) {
+export function WebsiteEntryTokenLogin({ token, onSuccess }: { token: string; onSuccess?: () => void }) {
     const router = useRouter();
     const [status, setStatus] = useState<'idle' | 'checking' | 'confirm' | 'logging-in' | 'success' | 'error'>('idle');
     const [realEmail, setRealEmail] = useState<string | null>(null);
@@ -85,8 +85,11 @@ export function WebsiteEntryTokenLogin({ token }: { token: string }) {
                 if (res && (res as any).success) {
                     setStatus('success');
                     toast.success('HQ Preview bereit. Myzel-Struktur wird geladen...');
-                    
-                    // Force a full refresh/redirect to ensure all stores (authStore, etc.) 
+
+                    // Let the caller do any pre-redirect setup (e.g. set activeMode).
+                    onSuccess?.();
+
+                    // Force a full refresh/redirect to ensure all stores (authStore, etc.)
                     // pick up the new session from the cookie.
                     window.location.href = '/home';
                 } else {
