@@ -14,6 +14,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
@@ -197,6 +198,9 @@ const SuggestionCard: React.FC<{
  *   4. Three quick actions
  */
 export const HomeSurface: React.FC = () => {
+    // ── surface profile ────────────────────────────────────────────────────
+    const { isPublicDemoSurface } = useSurfaceProfile();
+
     // ── store selectors ────────────────────────────────────────────────────
     const user        = useSessionStore((s) => s.user);
     const resetStore  = useSessionStore((s) => s.resetStore);
@@ -673,6 +677,19 @@ export const HomeSurface: React.FC = () => {
     const moraSuggestions = useMemo((): SuggestionItem[] => {
         const suggestions: SuggestionItem[] = [];
 
+        // 0. Larry Dashboard — pinned first in demo mode
+        if (isPublicDemoSurface) {
+            suggestions.push({
+                id: 'larry-dashboard',
+                title: 'Larry Dashboard',
+                description: 'Echtzeit-Überblick über alle KI-Agenten, Infrastruktur und Systemstatus.',
+                icon: <Activity size={15} />,
+                onClick: () => window.open('https://larry.saimor.world', '_blank'),
+                actionText: 'Dashboard öffnen',
+                tone: 'amber',
+            });
+        }
+
         // 1. Website Dossier
         if (websiteEntryContext) {
             suggestions.push({
@@ -781,6 +798,15 @@ export const HomeSurface: React.FC = () => {
                     <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">
                             <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Mission Control</div>
+                            {isPublicDemoSurface && (
+                                <div
+                                    data-testid="demo-mode-chip"
+                                    className="mb-2 mt-1 inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-300/80"
+                                >
+                                    <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                                    Demo-Modus
+                                </div>
+                            )}
                             <h1 className="mt-2 max-w-[18rem] truncate text-[clamp(22px,2vw,28px)] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
                                     ? `${websiteEntryContext.companyName} · Preview`

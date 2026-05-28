@@ -8,6 +8,12 @@ import { useActivityStore } from '@/lib/store/activityStore';
 import * as sessionLifecycle from '@/lib/auth/sessionLifecycle';
 import { renderWithProviders, resetAllStores, createTestQueryClient, testFixtures } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
+import { DEFAULT_SURFACE_PROFILE } from '@/lib/os/surfaceProfile';
+import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+
+jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
+    useSurfaceProfile: jest.fn(),
+}));
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
@@ -114,6 +120,7 @@ const treeWithActivity = STABLE_TREE;
 beforeEach(() => {
     resetAllStores();
     jest.clearAllMocks();
+    (useSurfaceProfile as jest.Mock).mockReturnValue(DEFAULT_SURFACE_PROFILE);
     localStorage.clear();
 
     useNavStore.setState({
@@ -199,6 +206,17 @@ describe('HomeSurface — rendering', () => {
             expect(screen.getByTestId('website-entry-home-card')).toBeInTheDocument();
             expect(screen.getByText('Acme GmbH: Dossier im HQ.')).toBeInTheDocument();
             expect(screen.getByText('acme.de')).toBeInTheDocument();
+        });
+    });
+
+    it('shows Demo-Modus chip when isPublicDemoSurface', async () => {
+        (useSurfaceProfile as jest.Mock).mockReturnValue({
+            ...DEFAULT_SURFACE_PROFILE,
+            isPublicDemoSurface: true,
+        });
+        renderWithDepts();
+        await waitFor(() => {
+            expect(screen.getByTestId('demo-mode-chip')).toBeInTheDocument();
         });
     });
 });
