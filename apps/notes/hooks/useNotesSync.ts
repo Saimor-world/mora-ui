@@ -20,7 +20,7 @@ export function useNotesSync() {
       if (note === null || note === undefined) {
         setLoadState('no-server');
       } else {
-        const text = typeof note === 'string' ? note : (note as any).content ?? '';
+        const text = typeof note === 'string' ? note : (note as any).content ?? (note as any).note?.content ?? '';
         setContent(text);
         lastSavedRef.current = text;
         setLoadState('ready');

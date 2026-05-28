@@ -132,6 +132,18 @@ export const AmbientRoom: React.FC = () => {
 
     const recognitionRef = useRef<any>(null);
     const spaceHeldRef   = useRef(false);
+    const stopModeRef    = useRef<'stop' | 'abort' | null>(null);
+    const transcriptRef  = useRef('');
+    const liveTextRef    = useRef('');
+
+    // Keep refs updated to avoid stale closures inside event handlers
+    useEffect(() => {
+        transcriptRef.current = transcript;
+    }, [transcript]);
+
+    useEffect(() => {
+        liveTextRef.current = liveText;
+    }, [liveText]);
 
     // ── Speech recognition init ───────────────────────────────────────────────
     const SpeechAPI = typeof window !== 'undefined'
@@ -165,6 +177,8 @@ export const AmbientRoom: React.FC = () => {
     const startListening = useCallback(() => {
         if (!SpeechAPI || ambientState === 'listening') return;
 
+        stopModeRef.current = null;
+
         // If mic was explicitly denied, go straight to text fallback
         if (micPermission === 'denied') {
             setFallbackMode(true);
@@ -187,8 +201,12 @@ export const AmbientRoom: React.FC = () => {
                 if (e.results[i].isFinal) final += t;
                 else interim += t;
             }
+            liveTextRef.current = interim;
             setLiveText(interim);
-            if (final) setTranscript(prev => prev + final);
+            if (final) {
+                transcriptRef.current += final;
+                setTranscript(prev => prev + final);
+            }
         };
 
         recognition.onerror = (e: any) => {
@@ -217,13 +235,16 @@ export const AmbientRoom: React.FC = () => {
         };
 
         recognition.onend = () => {
-            // If recognition ends while we're still "listening" (e.g. browser auto-stop),
-            // transition to thinking if we have content, otherwise back to idle.
+            const hasContent = (transcriptRef.current + ' ' + liveTextRef.current).trim().length > 0;
             setAmbientState(prev => {
+                if (stopModeRef.current === 'abort') {
+                    return 'idle';
+                }
                 if (prev !== 'listening') return prev;
-                return 'thinking';
+                return hasContent ? 'thinking' : 'idle';
             });
             recognitionRef.current = null;
+            stopModeRef.current = null;
         };
 
         recognitionRef.current = recognition;
@@ -243,15 +264,20 @@ export const AmbientRoom: React.FC = () => {
     }, [SpeechAPI, ambientState, micPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stopListening = useCallback((abort = false) => {
-        recognitionRef.current?.stop();
-        recognitionRef.current = null;
-        spaceHeldRef.current   = false;
-        if (!abort) {
-            setAmbientState('thinking');
-            setLiveText('');
-        } else {
+        if (abort) {
+            stopModeRef.current = 'abort';
+            recognitionRef.current?.abort();
+            recognitionRef.current = null;
+            spaceHeldRef.current   = false;
             setAmbientState('idle');
             setLiveText('');
+            setTranscript('');
+            liveTextRef.current = '';
+            transcriptRef.current = '';
+        } else {
+            stopModeRef.current = 'stop';
+            recognitionRef.current?.stop();
+            spaceHeldRef.current   = false;
         }
     }, []);
 
@@ -599,7 +625,7 @@ export const AmbientRoom: React.FC = () => {
 
                 {/* Live transcript bubble */}
                 <AnimatePresence>
-                    {(ambientState === 'listening' || ambientState === 'thinking') && (liveText || transcript) && (
+                    {(ambientState !== 'idle') && (liveText || transcript) && (
                         <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}

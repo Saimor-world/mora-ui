@@ -26,6 +26,14 @@ describe('useNotesSync', () => {
     expect(result.current.content).toBe('Hello notes');
   });
 
+  it('loads note content from v3 response envelope', async () => {
+    mockFetch.mockResolvedValue({ note: { content: 'Envelope notes' } });
+    const { result } = renderHook(() => useNotesSync());
+    await act(async () => {});
+    expect(result.current.loadState).toBe('ready');
+    expect(result.current.content).toBe('Envelope notes');
+  });
+
   it('transitions to no-server when fetch returns null', async () => {
     mockFetch.mockResolvedValue(null);
     const { result } = renderHook(() => useNotesSync());
