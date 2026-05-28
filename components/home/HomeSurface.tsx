@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ExternalLink, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, StickyNote, Users, Wrench } from 'lucide-react';
+import { Activity, CalendarDays, ExternalLink, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, Mic, StickyNote, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -105,6 +105,83 @@ function kindLabel(kind: RecentKind): string {
         case 'chat':     return 'Mora';
         default:         return 'Aktivität';
     }
+}
+
+// ─── Suggestions Card Component ─────────────────────────────────────────────
+
+interface SuggestionItem {
+    id: string;
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    actionText: string;
+    tone: 'cyan' | 'violet' | 'amber' | 'emerald';
+}
+
+const SuggestionCard: React.FC<{
+    title: string;
+    description: string;
+    icon: React.ReactNode;
+    onClick: () => void;
+    actionText: string;
+    tone: 'cyan' | 'violet' | 'amber' | 'emerald';
+}> = ({ title, description, icon, onClick, actionText, tone }) => {
+    const toneStyles = {
+        cyan: {
+            border: 'border-cyan-500/20 hover:border-cyan-400/40',
+            bg: 'bg-cyan-500/[0.04] hover:bg-cyan-500/[0.08]',
+            glow: 'shadow-[0_0_20px_rgba(34,211,238,0.1)]',
+            iconBg: 'bg-cyan-500/10 text-cyan-400',
+            btnBg: 'bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border-cyan-400/20'
+        },
+        violet: {
+            border: 'border-violet-500/20 hover:border-violet-400/40',
+            bg: 'bg-violet-500/[0.04] hover:bg-violet-500/[0.08]',
+            glow: 'shadow-[0_0_20px_rgba(139,92,246,0.1)]',
+            iconBg: 'bg-violet-500/10 text-violet-400',
+            btnBg: 'bg-violet-500/20 hover:bg-violet-500/30 text-violet-200 border-violet-400/20'
+        },
+        amber: {
+            border: 'border-amber-500/20 hover:border-amber-400/40',
+            bg: 'bg-amber-500/[0.04] hover:bg-amber-500/[0.08]',
+            glow: 'shadow-[0_0_20px_rgba(245,158,11,0.1)]',
+            iconBg: 'bg-amber-500/10 text-amber-400',
+            btnBg: 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border-amber-400/20'
+        },
+        emerald: {
+            border: 'border-emerald-500/20 hover:border-emerald-400/40',
+            bg: 'bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08]',
+            glow: 'shadow-[0_0_20px_rgba(16,185,129,0.1)]',
+            iconBg: 'bg-emerald-500/10 text-emerald-400',
+            btnBg: 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 border-emerald-400/20'
+        }
+    }[tone];
+
+    return (
+        <div className={`group relative overflow-hidden rounded-2xl border ${toneStyles.border} ${toneStyles.bg} p-4 transition-all duration-300 hover:-translate-y-0.5 ${toneStyles.glow}`}>
+            <div className="absolute -inset-px bg-gradient-to-r from-transparent via-white/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+            <div className="flex items-start gap-3">
+                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${toneStyles.iconBg}`}>
+                    {icon}
+                </div>
+                <div className="min-w-0 flex-1">
+                    <h4 className="text-[13px] font-medium text-white/90">{title}</h4>
+                    <p className="mt-1 text-[11px] font-light leading-relaxed text-white/60">{description}</p>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onClick();
+                        }}
+                        className={`mt-3 flex items-center gap-1 rounded-xl border px-3 py-1.5 text-[10px] uppercase tracking-wider font-semibold transition-all ${toneStyles.btnBg}`}
+                    >
+                        {actionText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -587,6 +664,77 @@ export const HomeSurface: React.FC = () => {
         openFinder();
     }, [openFinder, revealPane]);
 
+    const navigateToAmbient = useNavStore((s) => s.navigateToAmbient);
+    const isSpeechSupported = useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        return !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
+    }, []);
+
+    const moraSuggestions = useMemo((): SuggestionItem[] => {
+        const suggestions: SuggestionItem[] = [];
+
+        // 1. Website Dossier
+        if (websiteEntryContext) {
+            suggestions.push({
+                id: 'website-dossier',
+                title: 'Dossier analysieren',
+                description: `Website-Check für ${websiteEntryContext.companyName} ist bereit. Schau dir das Dossier an.`,
+                icon: <Globe size={15} />,
+                onClick: openWebsiteDossier,
+                actionText: 'Dossier öffnen',
+                tone: 'amber',
+            });
+        }
+
+        // 2. Recent Activity
+        if (overlayRecentActivityItems[0]) {
+            const firstRecent = overlayRecentActivityItems[0];
+            suggestions.push({
+                id: 'recent-activity',
+                title: 'Arbeit fortsetzen',
+                description: `Zuletzt geöffnet: "${firstRecent.label}". Klicke hier, um nahtlos weiterzuarbeiten.`,
+                icon: <Activity size={15} />,
+                onClick: () => openRecentActivity(firstRecent),
+                actionText: 'Fortsetzen',
+                tone: 'violet',
+            });
+        }
+
+        // 3. Voice Room
+        suggestions.push({
+            id: 'voice-room',
+            title: 'Môra Voice aktivieren',
+            description: isSpeechSupported
+                ? 'Steuere Saimôr OS per Sprachbefehl und unterhalte dich direkt mit Môra.'
+                : 'Spracherkennung wird in diesem Browser nicht unterstützt (nur Chromium).',
+            icon: <Mic size={15} />,
+            onClick: () => {
+                if (isSpeechSupported) {
+                    navigateToAmbient();
+                } else {
+                    alert('Spracherkennung wird von Ihrem Browser leider nicht unterstützt.');
+                }
+            },
+            actionText: isSpeechSupported ? 'Voice Room' : 'Nicht unterstützt',
+            tone: 'cyan',
+        });
+
+        // 4. Universe (if not already saturated)
+        if (suggestions.length < 3) {
+            suggestions.push({
+                id: 'universe',
+                title: 'Topographie erkunden',
+                description: 'Wechsle in den Explore-Modus, um die gesamte Organisation visualisiert zu betrachten.',
+                icon: <Globe size={15} />,
+                onClick: openUniverse,
+                actionText: 'Explore',
+                tone: 'emerald',
+            });
+        }
+
+        return suggestions;
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse]);
+
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {
         const rawName = user?.name?.trim();
@@ -620,7 +768,11 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20" />
 
-            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)]">
+            {/* Glowing backing orbs for premium wow effect */}
+            <div className="absolute left-[-120px] top-[15%] h-[380px] w-[380px] rounded-full bg-violet-600/[0.11] blur-[110px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
+            <div className="absolute left-[160px] top-[35%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.08] blur-[95px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }} />
+
+            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 flex flex-col gap-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                 <div
                     data-testid="briefing-strip"
                     className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
@@ -709,6 +861,29 @@ export const HomeSurface: React.FC = () => {
                                 Noch leer. Dateien oder Notizen erscheinen erst, wenn echte private Inhalte vorhanden sind.
                             </div>
                         )}
+                    </div>
+                </div>
+
+                {/* Môras Vorschläge & Tipps */}
+                <div className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 flex flex-col gap-3">
+                    <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
+                    <div>
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Môras Vorschläge & Tipps</div>
+                        <h2 className="mt-1 text-[14px] font-medium text-white/80">Kontextbezogene Aktionen</h2>
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                        {moraSuggestions.map((suggestion) => (
+                            <SuggestionCard
+                                key={suggestion.id}
+                                title={suggestion.title}
+                                description={suggestion.description}
+                                icon={suggestion.icon}
+                                onClick={suggestion.onClick}
+                                actionText={suggestion.actionText}
+                                tone={suggestion.tone}
+                            />
+                        ))}
                     </div>
                 </div>
             </div>
