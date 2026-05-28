@@ -2,19 +2,55 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
-import { corePost } from '@/lib/api/coreClient';
+import { Loader2, LogOut, Play } from 'lucide-react';
+import { corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
+
+/**
+ * Checks if there is an active real (non-preview) CORE session.
+ * Returns the user's email if logged in as a real user, null otherwise.
+ */
+async function detectRealSession(): Promise<string | null> {
+    try {
+        const profile = await coreGet('/v3/auth/me', { isOptional: true }) as any;
+        if (!profile) return null;
+        const email: string = profile?.email ?? profile?.data?.email ?? '';
+        // Preview sessions use the internal @preview.saimor.local domain
+        if (email.endsWith('@preview.saimor.local')) return null;
+        if (!email) return null;
+        return email;
+    } catch {
+        return null;
+    }
+}
 
 export function WebsiteEntryTokenLogin({ token }: { token: string }) {
     const router = useRouter();
-    const [status, setStatus] = useState<'idle' | 'logging-in' | 'success' | 'error'>('idle');
+    const [status, setStatus] = useState<'idle' | 'checking' | 'confirm' | 'logging-in' | 'success' | 'error'>('idle');
+    const [realEmail, setRealEmail] = useState<string | null>(null);
 
     useEffect(() => {
         if (!token || status !== 'idle') return;
 
-        async function login() {
-            setStatus('logging-in');
+        async function check() {
+            setStatus('checking');
+            const email = await detectRealSession();
+            if (email) {
+                // Real user is logged in — show confirmation screen before destroying session
+                setRealEmail(email);
+                setStatus('confirm');
+            } else {
+                setStatus('logging-in');
+                void runLogin();
+            }
+        }
+
+        void check();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [token]);
+
+    async function runLogin() {
+        setStatus('logging-in');
             try {
                 // HARD RESET: Clear all existing session indicators to avoid collisions
                 // 1. Server-side logout (removes session from DB/cookie)
@@ -24,9 +60,16 @@ export function WebsiteEntryTokenLogin({ token }: { token: string }) {
                     // Ignore logout errors (e.g. if already logged out)
                 }
 
-                // 2. Client-side purge
-                document.cookie = 'mora_auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                document.cookie = 'mora_session=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                // 2. Client-side purge — clear with both path-only AND domain variants
+                // to handle cookies set with domain=.saimor.world in production.
+                const cookieClearFull = (name: string) => {
+                    const base = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;`;
+                    document.cookie = base;
+                    document.cookie = base + ' domain=.saimor.world;';
+                    document.cookie = base + ' domain=saimor.world;';
+                };
+                cookieClearFull('mora_auth_token');
+                cookieClearFull('mora_session');
                 localStorage.removeItem('saimor_dev_token');
                 localStorage.removeItem('saimor_auth_token');
                 localStorage.removeItem('last_company_id');
@@ -56,10 +99,42 @@ export function WebsiteEntryTokenLogin({ token }: { token: string }) {
             }
         }
 
-        void login();
-    }, [token, status, router]);
+    if (status === 'idle' || status === 'checking') return null;
 
-    if (status === 'idle') return null;
+    // Confirmation screen — shown when a real user is already logged in
+    if (status === 'confirm' && realEmail) {
+        return (
+            <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0d0921]/95 backdrop-blur-xl p-6 text-center">
+                <div className="max-w-sm w-full rounded-2xl border border-white/10 bg-white/[0.04] p-8 space-y-6">
+                    <div className="space-y-2">
+                        <p className="text-[10px] uppercase tracking-[0.28em] text-amber-300/70">Bereits eingeloggt</p>
+                        <h3 className="text-xl font-light text-white">Du bist als</h3>
+                        <p className="text-sm font-mono text-emerald-300 bg-emerald-400/10 rounded-lg px-3 py-2">{realEmail}</p>
+                        <h3 className="text-xl font-light text-white">eingeloggt.</h3>
+                    </div>
+                    <p className="text-sm text-white/45 leading-relaxed">
+                        Der Demo-Flow öffnet einen isolierten Preview-Workspace und loggt dich aus deinem echten HQ aus.
+                    </p>
+                    <div className="grid gap-3">
+                        <button
+                            onClick={() => { void runLogin(); }}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-semibold text-black hover:bg-amber-400 transition-all"
+                        >
+                            <Play size={14} />
+                            Demo trotzdem öffnen (ausloggen)
+                        </button>
+                        <button
+                            onClick={() => { router.push('/home'); }}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 px-6 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 transition-all"
+                        >
+                            <LogOut size={14} />
+                            In meinem echten HQ bleiben
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0d0921] p-6 text-center">
@@ -69,7 +144,7 @@ export function WebsiteEntryTokenLogin({ token }: { token: string }) {
                     <Loader2 className="animate-spin text-emerald-400" size={32} />
                 </div>
             </div>
-            
+
             <div className="space-y-3">
                 <h3 className="text-xl font-medium text-white">SAIMÔR HQ</h3>
                 <p className="max-w-xs text-sm leading-relaxed text-white/45">
