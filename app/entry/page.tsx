@@ -3,6 +3,7 @@ import { ArrowRight, Bot, Building2, ClipboardList, FileText, Gauge, Home, Shiel
 import { buildWebsiteEntryContext, firstQueryValue, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { WebsiteEntryPersistence } from '@/components/entry/WebsiteEntryPersistence';
 import { WebsiteEntryTokenLogin } from '@/components/entry/WebsiteEntryTokenLogin';
+import { DemoWelcomeCardClient } from '@/components/entry/DemoWelcomeCardClient';
 
 type EntryPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -38,6 +39,19 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
     const token = firstQueryValue(resolved.token) || firstQueryValue(resolved.entry_token);
     const websiteContext = buildWebsiteEntryContext(resolved);
     const contextLabel = surface === 'website' ? labelForContext(entity, id) : null;
+
+    // Demo-Flow: if we have a website context, show the guided welcome card first
+    if (websiteContext) {
+        return (
+            <main className="min-h-screen bg-[#05040d] text-white">
+                {token ? <WebsiteEntryTokenLogin token={token} /> : null}
+                <WebsiteEntryPersistence context={websiteContext} />
+                <div className="flex min-h-screen items-center justify-center px-6 py-10">
+                    <DemoWelcomeCardClient context={websiteContext} />
+                </div>
+            </main>
+        );
+    }
 
     return (
         <main className="min-h-screen bg-[#0d0921] text-white">
