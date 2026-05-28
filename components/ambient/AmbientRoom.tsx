@@ -117,6 +117,11 @@ export const AmbientRoom: React.FC = () => {
 
     // ── UI state ──────────────────────────────────────────────────────────────
     const [ambientState,   setAmbientState]  = useState<AmbientState>('idle');
+    // Ref mirrors ambientState synchronously so key-handler closures never go stale
+    // between setState() call and the React re-render that updates the closure.
+    const ambientStateRef = useRef<AmbientState>('idle');
+    useEffect(() => { ambientStateRef.current = ambientState; }, [ambientState]);
+
     const [transcript,     setTranscript]    = useState('');
     const [liveText,       setLiveText]      = useState('');
     const [speechSupported, setSpeechSupported] = useState(true);
@@ -362,17 +367,19 @@ export const AmbientRoom: React.FC = () => {
         const onKeyDown = (e: KeyboardEvent) => {
             const target = e.target as HTMLElement;
             if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
+            // Read from ref — always current, even before React re-renders
+            const state = ambientStateRef.current;
             if (e.code === 'Space' && !spaceHeldRef.current) {
-                if (ambientState === 'responding' || ambientState === 'executing' || ambientState === 'done') return;
+                if (state === 'responding' || state === 'executing' || state === 'done') return;
                 e.preventDefault();
                 spaceHeldRef.current = true;
                 startListening();
             }
             if (e.code === 'Escape') {
                 e.preventDefault();
-                if (ambientState === 'listening') stopListening(true);
-                else if (ambientState === 'responding') setAmbientState('idle');
-                else if (ambientState === 'error') setAmbientState('idle');
+                if (state === 'listening') stopListening(true);
+                else if (state === 'responding') setAmbientState('idle');
+                else if (state === 'error') setAmbientState('idle');
                 else navigateToCore();
             }
         };
@@ -380,7 +387,8 @@ export const AmbientRoom: React.FC = () => {
             if (e.code === 'Space' && spaceHeldRef.current) {
                 e.preventDefault();
                 spaceHeldRef.current = false;
-                if (ambientState === 'listening') stopListening();
+                // Use ref so this works even when React hasn't re-rendered yet
+                if (ambientStateRef.current === 'listening') stopListening();
             }
         };
         window.addEventListener('keydown', onKeyDown);
@@ -389,7 +397,7 @@ export const AmbientRoom: React.FC = () => {
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup',   onKeyUp);
         };
-    }, [ambientState, startListening, stopListening, navigateToCore]);
+    }, [startListening, stopListening, navigateToCore]); // ambientState read via ref — no stale closure
 
     // ── Orb click toggle ──────────────────────────────────────────────────────
     const handleOrbClick = () => {
