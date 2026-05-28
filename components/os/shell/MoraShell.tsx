@@ -816,7 +816,7 @@ export const MoraShell: React.FC = () => {
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
             <QuickTips />
-            <MoraGreeting />
+            {activeMode !== 'public_playground' && <MoraGreeting />}
             <SystemStats />
 
             {/* ================================================================
@@ -931,10 +931,10 @@ export const MoraShell: React.FC = () => {
             {!hasFullscreenPane && <Dock />}
 
             {/* First-visit Mora greeting (one-time, localStorage-gated) */}
-            {!hasFullscreenPane && <MoraGreetingBubble />}
+            {!hasFullscreenPane && activeMode !== 'public_playground' && <MoraGreetingBubble />}
 
             {/* First-run tour: 3-step spotlight, appears 9s after first login */}
-            {!hasFullscreenPane && <FirstRunTour />}
+            {!hasFullscreenPane && activeMode !== 'public_playground' && <FirstRunTour />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight

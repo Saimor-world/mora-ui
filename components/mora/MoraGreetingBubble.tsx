@@ -15,6 +15,7 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
 
 const STORAGE_KEY = 'saimor_mora_greeted_v1';
 const APPEAR_DELAY_MS = 1500;
@@ -22,6 +23,7 @@ const AUTO_DISMISS_MS = 7000;
 
 export const MoraGreetingBubble: React.FC = () => {
     const user = useSessionStore((s) => s.user);
+    const activeMode = useNavStore((s) => s.activeMode);
     const [visible, setVisible] = useState(false);
     const [dismissing, setDismissing] = useState(false);
 
@@ -56,6 +58,8 @@ export const MoraGreetingBubble: React.FC = () => {
         const local = user.email.split('@')[0];
         return local.charAt(0).toUpperCase() + local.slice(1);
     })();
+
+    if (activeMode === 'public_playground') return null;
 
     return (
         <AnimatePresence>

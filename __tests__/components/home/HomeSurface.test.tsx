@@ -204,8 +204,10 @@ describe('HomeSurface — rendering', () => {
 
         await waitFor(() => {
             expect(screen.getByTestId('website-entry-home-card')).toBeInTheDocument();
-            expect(screen.getByText('Acme GmbH: Dossier im HQ.')).toBeInTheDocument();
+            // Shows the domain from the stored context
             expect(screen.getByText('acme.de')).toBeInTheDocument();
+            // Shows task titles from the context
+            expect(screen.getByText('Audit-Ergebnis validieren')).toBeInTheDocument();
         });
     });
 

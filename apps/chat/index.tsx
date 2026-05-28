@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 /**
  * ChatApp - Mora AI Conversation Interface (App Module)
@@ -970,6 +970,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     return { type: 'navigate', target: dept.id };
                 }
             }
+            const target = text
+                .replace(/^(zeige mir|zeig mir|zeige|zeig|go to|geh zu|show me|show)\s+/i, '')
+                .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
+                .trim();
+            if (target) {
+                return { type: 'search', target };
+            }
         }
 
         // Search commands
@@ -997,11 +1004,23 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 source: 'ai',
             });
             useNavStore.getState().navigateToDepartment(deptId);
+            openPane({
+                id: 'finder-main',
+                type: 'finder',
+                title: dept.name,
+                data: {
+                    departmentId: dept.id,
+                    departmentName: dept.name,
+                    companyId: activeCompanyId || dept.company_id || undefined,
+                    showUpload: true
+                },
+                size: { width: 1280, height: 820 }
+            });
 
-            return `✨ Ich navigiere zu **${dept.name}**! Schau auf die Planeten links.`;
+            return `✨ Ich navigiere zu **${dept.name}** und öffne den Finder!`;
         }
         return 'Department nicht gefunden.';
-    }, [safeDepartments]);
+    }, [safeDepartments, activeCompanyId, openPane]);
 
     // Execute search
     const executeSearch = useCallback((query: string, global: boolean = false) => {

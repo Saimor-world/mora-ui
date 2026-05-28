@@ -586,6 +586,7 @@ export const Dock = () => {
     const viewMode = useNavStore((s) => s.viewMode);
     const viewLevel = useNavStore((s) => s.viewLevel);
     const isStandardMode = useNavStore((s) => s.isStandardMode);
+    const activeMode = useNavStore((s) => s.activeMode);
     const updateUserSettings = useSessionStore((s) => s.updateUserSettings);
 
     const panes = usePaneStore((s) => s.panes);
@@ -765,15 +766,23 @@ export const Dock = () => {
     }), []);
 
     // Single source of truth — order, labels, shortcuts come from surfaceRegistry.
-    const dockItems: DockItem[] = useMemo(() =>
-        getCoreDockItems().map(entry => ({
+    const dockItems: DockItem[] = useMemo(() => {
+        let items = getCoreDockItems().map(entry => ({
             icon:        DOCK_ICON_MAP[entry.action] ?? Minus,
             label:       entry.label,
             description: entry.description,
             shortcut:    entry.action === 'notes' ? 'Alt+N' : entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
             action:      entry.action,
-        }))
-    , [mod, DOCK_ICON_MAP]);
+        }));
+
+        if (activeMode === 'public_playground') {
+            items = items.filter(
+                (item) => item.action !== 'chat' && item.action !== 'ambient' && item.action !== 'larry'
+            );
+        }
+
+        return items;
+    }, [mod, DOCK_ICON_MAP, activeMode]);
 
     const orbStateLabel = useMemo(() => {
         switch (orbState) {
@@ -1577,51 +1586,53 @@ export const Dock = () => {
                                         </div>
                                     )}
 
-                                    <div className="flex items-center shrink-0" data-mora-orb>
-                                        <motion.div
-                                            animate={{ scale: [1, 1.02, 1] }}
-                                            transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
-                                            style={{ transformOrigin: 'center' }}
-                                        >
-                                            <button
-                                                onClick={() => handleDockClick('chat')}
-                                                data-mora-home="true"
-                                                className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${
-                                                    isStandardMode ? 'bg-white shadow-lg' : 'bg-transparent'
-                                                }`}
-                                                title="Mora öffnen"
-                                                style={!isStandardMode ? { filter: `drop-shadow(0 0 25px ${accent}45)` } : {}}
+                                    {activeMode !== 'public_playground' && (
+                                        <div className="flex items-center shrink-0" data-mora-orb>
+                                            <motion.div
+                                                animate={{ scale: [1, 1.02, 1] }}
+                                                transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
+                                                style={{ transformOrigin: 'center' }}
                                             >
-                                                {!isStandardMode && (
-                                                    <>
+                                                <button
+                                                    onClick={() => handleDockClick('chat')}
+                                                    data-mora-home="true"
+                                                    className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${
+                                                        isStandardMode ? 'bg-white shadow-lg' : 'bg-transparent'
+                                                    }`}
+                                                    title="Mora öffnen"
+                                                    style={!isStandardMode ? { filter: `drop-shadow(0 0 25px ${accent}45)` } : {}}
+                                                >
+                                                    {!isStandardMode && (
+                                                        <>
+                                                            <div
+                                                                className="absolute inset-[-8px] rounded-full pointer-events-none"
+                                                                style={{
+                                                                    background: `radial-gradient(circle at 35% 30%, ${accent}40 0%, transparent 64%)`,
+                                                                    filter: 'blur(16px)',
+                                                                }}
+                                                            />
+                                                            <div className="absolute inset-[-4px] rounded-full border border-emerald-400/30 dock-ring-pulse pointer-events-none" />
+                                                            <div className="absolute inset-[2px] rounded-full border border-white/15 pointer-events-none" />
+                                                        </>
+                                                    )}
+                                                    <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/40'}`} />
+                                                    {!isStandardMode && (
                                                         <div
-                                                            className="absolute inset-[-8px] rounded-full pointer-events-none"
+                                                            className="absolute inset-[4px] rounded-full pointer-events-none"
                                                             style={{
-                                                                background: `radial-gradient(circle at 35% 30%, ${accent}40 0%, transparent 64%)`,
-                                                                filter: 'blur(16px)',
+                                                                background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.2) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.3) 0%, transparent 35%)',
                                                             }}
                                                         />
-                                                        <div className="absolute inset-[-4px] rounded-full border border-emerald-400/30 dock-ring-pulse pointer-events-none" />
-                                                        <div className="absolute inset-[2px] rounded-full border border-white/15 pointer-events-none" />
-                                                    </>
-                                                )}
-                                                <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/40'}`} />
-                                                {!isStandardMode && (
-                                                    <div
-                                                        className="absolute inset-[4px] rounded-full pointer-events-none"
-                                                        style={{
-                                                            background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.2) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.3) 0%, transparent 35%)',
-                                                        }}
+                                                    )}
+                                                    <PlasmaOrb
+                                                        color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
+                                                        state={orbState as any}
+                                                        size={48}
                                                     />
-                                                )}
-                                                <PlasmaOrb
-                                                    color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
-                                                    state={orbState as any}
-                                                    size={48}
-                                                />
-                                            </button>
-                                        </motion.div>
-                                    </div>
+                                                </button>
+                                            </motion.div>
+                                        </div>
+                                    )}
                                 </div>
                 </div>
             </div>

@@ -124,6 +124,9 @@ describe('DepartmentLayer space-label navigation', () => {
 
         expect(mockSetActiveSpace).toHaveBeenCalledWith('space-1');
         expect(mockNavigateToSpace).toHaveBeenCalledWith('space-1');
-        expect(mockOpenPane).not.toHaveBeenCalled();
+        // Space label click now also opens the finder pane for the selected space
+        expect(mockOpenPane).toHaveBeenCalledWith(
+            expect.objectContaining({ id: 'finder-main', type: 'finder' })
+        );
     });
 });

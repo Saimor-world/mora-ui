@@ -1559,6 +1559,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                             setSemanticPreviewPathId(null);
                                             setLockedTooltipDeptId(null);
                                             navigateToDepartment(p.id);
+                                            openPane({
+                                                id: 'finder-main',
+                                                type: 'finder',
+                                                title: p.name || 'Bereich',
+                                                data: {
+                                                    departmentId: p.id,
+                                                    departmentName: p.name,
+                                                    companyId: activeCompanyId || p.company_id || undefined,
+                                                    showUpload: true
+                                                },
+                                                size: { width: 1280, height: 820 }
+                                            });
                                         }}
                                         health={health}
                                         activity={activity}

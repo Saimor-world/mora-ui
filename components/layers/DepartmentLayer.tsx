@@ -847,6 +847,17 @@ export const DepartmentLayer: React.FC = () => {
                                 setActiveSpace(space.id);
                                 if (!shiftOpenPane) {
                                     navigateToSpace(space.id);
+                                    openPane({
+                                        id: 'finder-main',
+                                        type: 'finder',
+                                        title: displayName || 'Bereich',
+                                        data: {
+                                            spaceId: space.id,
+                                            departmentId: activeDepartmentId,
+                                            companyId: activeCompanyId || undefined
+                                        },
+                                        size: { width: 1280, height: 820 }
+                                    });
                                     return;
                                 }
                                 openPane({
