@@ -89,10 +89,19 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     };
 
     if (!options.skipAuth) {
-        const token = readCookie(AUTH_COOKIE);
-        // Only use devToken if NO cookie is present - gives priority to fresh sessions
-        const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
-        const finalToken = token || devToken;
+        let finalToken: string | null = null;
+        const activeMode = typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') : null;
+
+        if (activeMode === 'public_playground') {
+            const publicCookieToken = readCookie('mora_public_token');
+            const playgroundSessionToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_playground_session') : null;
+            finalToken = publicCookieToken || playgroundSessionToken;
+        } else {
+            const token = readCookie(AUTH_COOKIE);
+            // Only use devToken if NO cookie is present - gives priority to fresh sessions
+            const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
+            finalToken = token || devToken;
+        }
 
         if (finalToken) {
             // Check if token is expired BEFORE making request
@@ -100,8 +109,13 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
                 // Clear stale readable tokens, but still continue the request.
                 // A valid HttpOnly core session may still exist server-side.
                 if (typeof window !== 'undefined') {
-                    localStorage.removeItem('saimor_dev_token');
-                    document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+                    if (activeMode === 'public_playground') {
+                        localStorage.removeItem('saimor_playground_session');
+                        document.cookie = `mora_public_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+                    } else {
+                        localStorage.removeItem('saimor_dev_token');
+                        document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
+                    }
                 }
             } else {
                 headers['Authorization'] = `Bearer ${finalToken}`;

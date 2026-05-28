@@ -152,6 +152,19 @@ export function useAuthBootstrapper() {
         if (profile.role) localStorage.setItem('saimor_role', profile.role);
         if (profile.tenant_id) localStorage.setItem('saimor_tenant', profile.tenant_id);
 
+        // Resolve and set active mode in navStore
+        let determinedMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' = 'real_hq';
+        if (profile.tenant_id === 'tenant-public-playground') {
+            determinedMode = 'public_playground';
+        } else if (profile.tenant_id?.startsWith('tenant-demo-')) {
+            determinedMode = 'personal_demo';
+        } else if (profile.tenant_id?.startsWith('tenant-preview-')) {
+            determinedMode = 'private_preview';
+        } else {
+            determinedMode = 'real_hq';
+        }
+        useNavStore.getState().setActiveMode(determinedMode);
+
         // Normalize view mode for demo tenants
         const tenantId = profile.tenant_id || sessionTenantId;
         const isLocalhost =

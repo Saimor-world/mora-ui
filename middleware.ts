@@ -12,6 +12,7 @@ import { getToken } from "next-auth/jwt";
 const PUBLIC_PATHS = [
     "/",
     "/login",
+    "/playground",     // Public playground entry
     "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
     "/home",           // Website entry preview — needs to render so localStorage bridge works
     "/reset-password", // Token-based password reset — unauthenticated by design

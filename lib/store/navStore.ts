@@ -25,6 +25,7 @@ interface NavState {
   activeFolderId: string | null;
   isStandardMode: boolean;
   nameConflict: NameConflictState | null;
+  activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview';
 
   setViewLevel(level: ViewLevel): void;
   setCoreMode(mode: CoreMode): void;
@@ -42,6 +43,7 @@ interface NavState {
   navigateToDepartment(deptId: string): void;
   navigateToSpace(spaceId: string): void;
   navigateToFolder(folderId: string | null): void;
+  setActiveMode(mode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview'): void;
 }
 
 export const useNavStore = create<NavState>((set, get) => ({
@@ -54,6 +56,7 @@ export const useNavStore = create<NavState>((set, get) => ({
   activeFolderId: null,
   isStandardMode: false,
   nameConflict: null,
+  activeMode: (typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') as any : null) || 'real_hq',
 
   setViewLevel: (level) => set({ viewLevel: level }),
   setCoreMode: (mode) => set({ coreMode: mode }),
@@ -64,6 +67,13 @@ export const useNavStore = create<NavState>((set, get) => ({
     set({ viewMode: mode });
     if (mode === 'owner') set({ viewLevel: 'company' });
     else if (mode === 'demo' || mode === 'workspace') set({ viewLevel: 'core' });
+  },
+
+  setActiveMode: (mode) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('saimor_active_mode', mode);
+    }
+    set({ activeMode: mode });
   },
 
   setActiveCompany: (id) => {
