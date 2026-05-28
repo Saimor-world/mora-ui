@@ -50,6 +50,7 @@ import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
+import { filterCompaniesForSurface } from '@/lib/os/companySurfaceFilter';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
@@ -661,9 +662,20 @@ export const Dock = () => {
         () => ambientTracks.find((track) => track.id === ambientAudio.trackId) ?? null,
         [ambientTracks, ambientAudio.trackId]
     );
+    const switcherCompanies = useMemo(
+        () => filterCompaniesForSurface(safeCompanies, {
+            surfaceProfile,
+            role: user?.role,
+            tenantId: user?.tenant_id,
+            viewMode,
+            websiteEntryActive: Boolean(websiteEntryContext),
+            displayCompany,
+        }),
+        [displayCompany, safeCompanies, surfaceProfile, user?.role, user?.tenant_id, viewMode, websiteEntryContext]
+    );
     const operationalCompanyCount = useMemo(
-        () => (surfaceProfile.isLocalTruthSurface || websiteEntryContext ? 1 : (displayCompany ? 1 : safeCompanies.length)),
-        [displayCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface, websiteEntryContext]
+        () => switcherCompanies.length || (displayCompany ? 1 : 0),
+        [displayCompany, switcherCompanies.length]
     );
     const companyContextLabel = useMemo(
         () => formatCompanyContextLabel(surfaceProfile, operationalCompanyCount),
@@ -1520,7 +1532,7 @@ export const Dock = () => {
                                             />
 
                                             <AnimatePresence>
-                                                {showCompanySwitcher && companies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                                {showCompanySwitcher && switcherCompanies.length > 1 && surfaceProfile.companySwitcherEnabled && (
                                                     <motion.div
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
@@ -1533,7 +1545,7 @@ export const Dock = () => {
                                                             </span>
                                                         </div>
                                                         <div className="p-1">
-                                                            {safeCompanies.map(company => (
+                                                            {switcherCompanies.map(company => (
                                                                 <button
                                                                     key={company.id}
                                                                     onClick={() => {

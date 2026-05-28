@@ -36,7 +36,8 @@ import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
-import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
+import { TENANT_DEMO } from '@/lib/constants/tenants';
+import { filterCompaniesForSurface, getPrimaryOperationalCompany } from '@/lib/os/companySurfaceFilter';
 
 // Shell Hooks
 import {
@@ -304,39 +305,19 @@ export const MoraShell: React.FC = () => {
     const isWebsiteEntrySurface = Boolean(websiteEntryContext);
     const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !isWebsiteEntrySurface;
 
-    const preferredLocalCompany = React.useMemo(() => {
-        if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return null;
-
-        return safeCompanies.find((company) => !company.is_demo && company.tenant_id === TENANT_HQ)
-            || safeCompanies.find((company) => !company.is_demo)
-            || safeCompanies[0]
-            || null;
-    }, [safeCompanies, surfaceProfile.isLocalTruthSurface]);
+    const preferredSurfaceCompany = React.useMemo(
+        () => getPrimaryOperationalCompany(safeCompanies),
+        [safeCompanies]
+    );
 
     const filteredCompanies = React.useMemo(() => {
-        if (!safeCompanies.length) return [];
-        if (surfaceProfile.isLocalTruthSurface) {
-            return preferredLocalCompany ? [preferredLocalCompany] : [];
-        }
-        if (isPublicDemoSurface) {
-            const demoCompanies = safeCompanies.filter((c) => c.is_demo);
-            return demoCompanies.length ? demoCompanies : safeCompanies;
-        }
-        if (tenantId === TENANT_DEMO) {
-            return safeCompanies.filter((c) => c.is_demo || c.tenant_id === TENANT_HQ);
-        }
-        if (viewMode === 'demo') {
-            return safeCompanies.filter((c) => c.is_demo);
-        }
-        if (viewMode === 'workspace') {
-            if (role === 'system_owner') {
-                return safeCompanies.filter((c) => !c.is_demo);
-            }
-            return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
-        }
-        if (role === 'system_owner') return safeCompanies;
-        return tenantId ? safeCompanies.filter((c) => c.tenant_id === tenantId) : safeCompanies;
-    }, [safeCompanies, viewMode, role, tenantId, isPublicDemoSurface, surfaceProfile.isLocalTruthSurface, preferredLocalCompany]);
+        return filterCompaniesForSurface(safeCompanies, {
+            surfaceProfile,
+            role,
+            tenantId,
+            viewMode,
+        });
+    }, [safeCompanies, surfaceProfile, viewMode, role, tenantId]);
 
     const activeCompanyForView = React.useMemo(() => {
         if (filteredCompanies.length === 0) return activeCompany;
@@ -413,16 +394,17 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
 
     useEffect(() => {
-        if (!surfaceProfile.isLocalTruthSurface || !safeCompanies.length) return;
+        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface;
+        if (!isSingleCompanySurface || !safeCompanies.length) return;
 
         if (viewMode !== 'workspace') {
             useNavStore.getState().setViewMode('workspace');
         }
 
-        if (preferredLocalCompany && activeCompanyId !== preferredLocalCompany.id) {
-            useNavStore.getState().setActiveCompany(preferredLocalCompany.id);
+        if (preferredSurfaceCompany && activeCompanyId !== preferredSurfaceCompany.id) {
+            useNavStore.getState().setActiveCompany(preferredSurfaceCompany.id);
         }
-    }, [activeCompanyId, preferredLocalCompany, safeCompanies.length, surfaceProfile.isLocalTruthSurface, viewMode]);
+    }, [activeCompanyId, preferredSurfaceCompany, safeCompanies.length, surfaceProfile.isHqSurface, surfaceProfile.isLocalTruthSurface, viewMode]);
 
     useEffect(() => {
         if (isPublicDemoSurface && isAdminMode) {

@@ -1,0 +1,58 @@
+import { filterCompaniesForSurface } from '@/lib/os/companySurfaceFilter';
+import { DEFAULT_SURFACE_PROFILE, resolveSurfaceProfile } from '@/lib/os/surfaceProfile';
+import { TENANT_HQ } from '@/lib/constants/tenants';
+import type { CoreCompany } from '@/lib/types/core';
+
+const company = (id: string, name: string, tenantId: string, isDemo = false): CoreCompany => ({
+    id,
+    name,
+    tenant_id: tenantId,
+    owner_id: `owner-${id}`,
+    slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    is_demo: isDemo,
+});
+
+describe('filterCompaniesForSurface', () => {
+    const companies = [
+        company('preview-1', 'Live Claim mok8dpfl GmbH', 'tenant-preview-dfe6560ee3a9'),
+        company('preview-2', 'Codex Audit GmbH', 'tenant-preview-e830c6f28bde'),
+        company('hq', 'Saimôr HQ', TENANT_HQ),
+    ];
+
+    it('shows only the HQ company on localhost/local-truth surfaces', () => {
+        const result = filterCompaniesForSurface(companies, {
+            surfaceProfile: resolveSurfaceProfile('127.0.0.1'),
+            role: 'system_owner',
+            tenantId: TENANT_HQ,
+            viewMode: 'workspace',
+        });
+
+        expect(result.map((item) => item.name)).toEqual(['Saimôr HQ']);
+    });
+
+    it('shows only the HQ company on HQ surfaces', () => {
+        const result = filterCompaniesForSurface(companies, {
+            surfaceProfile: resolveSurfaceProfile('hq.saimor.world'),
+            role: 'system_owner',
+            tenantId: TENANT_HQ,
+            viewMode: 'workspace',
+        });
+
+        expect(result.map((item) => item.name)).toEqual(['Saimôr HQ']);
+    });
+
+    it('keeps system-owner portfolio behavior on standard surfaces', () => {
+        const result = filterCompaniesForSurface(companies, {
+            surfaceProfile: DEFAULT_SURFACE_PROFILE,
+            role: 'system_owner',
+            tenantId: TENANT_HQ,
+            viewMode: 'workspace',
+        });
+
+        expect(result.map((item) => item.name)).toEqual([
+            'Live Claim mok8dpfl GmbH',
+            'Codex Audit GmbH',
+            'Saimôr HQ',
+        ]);
+    });
+});
