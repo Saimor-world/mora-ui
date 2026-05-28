@@ -205,7 +205,7 @@ export const HomeSurface: React.FC = () => {
     const user        = useSessionStore((s) => s.user);
     const resetStore  = useSessionStore((s) => s.resetStore);
     const setUser     = useSessionStore((s) => s.setUser);
-    const { activeCompanyId, setCoreMode } = useNavStore();
+    const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
     const { data: companies = [] }   = useCompanies();
     const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
     const { data: departments = [] } = useDepartments(resolvedCompanyId);
@@ -591,26 +591,28 @@ export const HomeSurface: React.FC = () => {
         : hasCommunicationSignal || hasTeamSignal
             ? 'Eingang aktiv'
             : 'Ruhiger Start';
-    const focusTitle = websiteEntryContext
-        ? `${websiteEntryContext.companyName}: Dossier im HQ.`
-        : latestTeamMessage
-            ? 'Team-Signal wartet.'
-            : overlayRecentActivityItems[0]
-                ? `Weiter in ${overlayRecentActivityItems[0].label}.`
-                : hasCommunicationSignal
-                    ? 'Eingang bereit.'
-                    : 'Bereit wenn du es bist.';
-    const focusDetail = websiteEntryContext
-        ? websiteEntryContext.score !== undefined
-            ? `Board-Signal ${websiteEntryContext.score}. Dossier, Aufgaben und Arbeitsraeume sind aus dem Website-Check geladen.`
-            : 'Dossier, Aufgaben und Arbeitsraeume sind aus dem Website-Check geladen.'
-        : latestTeamMessage
-            ? `${latestTeamMessage.sender_name || 'Team'}: ${latestTeamMessage.content}`
-            : overlayRecentActivityItems[0]
-                ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
-                : hasCommunicationSignal
-                    ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
-                    : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
+    const focusTitle = activeMode === 'public_playground'
+        ? "Saimôr Public HQ"
+        : websiteEntryContext
+            ? 'Dein Workspace ist bereit.'
+            : latestTeamMessage
+                ? 'Team-Signal wartet.'
+                : overlayRecentActivityItems[0]
+                    ? `Weiter in ${overlayRecentActivityItems[0].label}.`
+                    : hasCommunicationSignal
+                        ? 'Eingang bereit.'
+                        : 'Bereit wenn du es bist.';
+    const focusDetail = activeMode === 'public_playground'
+        ? "Erkunde die Myzel-Struktur des Systems. Teile dein Feedback an der Wall oder teste freie Experimente im Sandbox-Bereich."
+        : websiteEntryContext
+            ? 'Erkunde Finder, Universe und Môra — so würde SAIMÔR OS in deiner Organisation aussehen.'
+            : latestTeamMessage
+                ? `${latestTeamMessage.sender_name || 'Team'}: ${latestTeamMessage.content}`
+                : overlayRecentActivityItems[0]
+                    ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
+                    : hasCommunicationSignal
+                        ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
+                        : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
     const displayCompanyName = websiteEntryContext?.companyName || currentCompany?.name || user?.active_company_name || 'Organisation';
 
     const stackBriefings = useMemo((): Briefing[] => {
@@ -809,7 +811,7 @@ export const HomeSurface: React.FC = () => {
                             )}
                             <h1 className="mt-2 max-w-[18rem] truncate text-[clamp(22px,2vw,28px)] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {websiteEntryContext
-                                    ? `${websiteEntryContext.companyName} · Preview`
+                                    ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
                                     : firstName
                                         ? <><span className="text-white/95">{greeting}</span><span className="text-white/50">, {firstName}.</span></>
                                         : 'Arbeitsplatz'}
@@ -859,59 +861,63 @@ export const HomeSurface: React.FC = () => {
                         </div>
                     )}
 
-                    <div className="mt-4 rounded-[18px] border border-white/[0.075] bg-black/[0.18] p-3" style={{ borderTop: '1px solid rgba(34,211,238,0.16)' }}>
-                        <div className="flex items-center justify-between gap-3">
-                            <div>
-                                <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100/48">
-                                    <Lock size={9} className="opacity-60" />
-                                    Privater Bereich
+                    {activeMode !== 'public_playground' && (
+                        <div className="mt-4 rounded-[18px] border border-white/[0.075] bg-black/[0.18] p-3" style={{ borderTop: '1px solid rgba(34,211,238,0.16)' }}>
+                            <div className="flex items-center justify-between gap-3">
+                                <div>
+                                    <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100/48">
+                                        <Lock size={9} className="opacity-60" />
+                                        Privater Bereich
+                                    </div>
+                                    <div className="mt-1 text-[12px] text-white/62">{privateArea?.label || 'Eigene Daten'}</div>
                                 </div>
-                                <div className="mt-1 text-[12px] text-white/62">{privateArea?.label || 'Eigene Daten'}</div>
+                                <button
+                                    type="button"
+                                    onClick={openPrivateArea}
+                                    className="rounded-full border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-cyan-50/75 transition-colors hover:border-cyan-200/32 hover:bg-cyan-400/[0.16]"
+                                >
+                                    Öffnen
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={openPrivateArea}
-                                className="rounded-full border border-cyan-300/20 bg-cyan-400/[0.10] px-3 py-1.5 text-[10px] uppercase tracking-[0.12em] text-cyan-50/75 transition-colors hover:border-cyan-200/32 hover:bg-cyan-400/[0.16]"
-                            >
-                                Öffnen
-                            </button>
+                            {privateContentCount > 0 || (privateArea?.folderCount ?? 0) > 0 ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    <HomeChip label="Ordner" value={privateArea?.folderCount ?? 0} />
+                                    <HomeChip label="Inhalte" value={privateArea?.documentCount ?? 0} />
+                                    <HomeChip label="Dateien" value={privateArea?.fileCount ?? 0} />
+                                </div>
+                            ) : (
+                                <div className="mt-3 rounded-2xl border border-white/[0.045] bg-white/[0.018] px-3 py-2 text-[11px] text-white/38">
+                                    Noch leer. Dateien oder Notizen erscheinen erst, wenn echte private Inhalte vorhanden sind.
+                                </div>
+                            )}
                         </div>
-                        {privateContentCount > 0 || (privateArea?.folderCount ?? 0) > 0 ? (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                                <HomeChip label="Ordner" value={privateArea?.folderCount ?? 0} />
-                                <HomeChip label="Inhalte" value={privateArea?.documentCount ?? 0} />
-                                <HomeChip label="Dateien" value={privateArea?.fileCount ?? 0} />
-                            </div>
-                        ) : (
-                            <div className="mt-3 rounded-2xl border border-white/[0.045] bg-white/[0.018] px-3 py-2 text-[11px] text-white/38">
-                                Noch leer. Dateien oder Notizen erscheinen erst, wenn echte private Inhalte vorhanden sind.
-                            </div>
-                        )}
-                    </div>
+                    )}
                 </div>
 
                 {/* Môras Vorschläge & Tipps */}
-                <div className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 flex flex-col gap-3">
-                    <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
-                    <div>
-                        <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Môras Vorschläge & Tipps</div>
-                        <h2 className="mt-1 text-[14px] font-medium text-white/80">Kontextbezogene Aktionen</h2>
-                    </div>
+                {activeMode !== 'public_playground' && (
+                    <div className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 flex flex-col gap-3">
+                        <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
+                        <div>
+                            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Môras Vorschläge & Tipps</div>
+                            <h2 className="mt-1 text-[14px] font-medium text-white/80">Kontextbezogene Aktionen</h2>
+                        </div>
 
-                    <div className="flex flex-col gap-3">
-                        {moraSuggestions.map((suggestion) => (
-                            <SuggestionCard
-                                key={suggestion.id}
-                                title={suggestion.title}
-                                description={suggestion.description}
-                                icon={suggestion.icon}
-                                onClick={suggestion.onClick}
-                                actionText={suggestion.actionText}
-                                tone={suggestion.tone}
-                            />
-                        ))}
+                        <div className="flex flex-col gap-3">
+                            {moraSuggestions.map((suggestion) => (
+                                <SuggestionCard
+                                    key={suggestion.id}
+                                    title={suggestion.title}
+                                    description={suggestion.description}
+                                    icon={suggestion.icon}
+                                    onClick={suggestion.onClick}
+                                    actionText={suggestion.actionText}
+                                    tone={suggestion.tone}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center xl:flex 2xl:right-[390px]">
@@ -1019,10 +1025,12 @@ export const HomeSurface: React.FC = () => {
                             </div>
                         </div>
 
-                        <div className="relative mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
+                        <div className={`relative mt-6 grid grid-cols-2 gap-2 ${activeMode === 'public_playground' ? 'lg:grid-cols-3' : 'lg:grid-cols-4'}`}>
                             <HomeCommandButton dataTestId="qa-finder" label="Finder" detail="Dateien & Ordner" onClick={openFinder} tone="emerald" />
                             <HomeCommandButton dataTestId="qa-universe" label="Universe" detail="Topographie" onClick={openUniverse} tone="cyan" />
-                            <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
+                            {activeMode !== 'public_playground' && (
+                                <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
+                            )}
                             <HomeCommandButton dataTestId="qa-upload" label="Upload" detail="Datei ablegen" onClick={openUpload} tone="violet" />
                         </div>
 

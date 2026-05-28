@@ -3,6 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Sparkles, Activity, ArrowRight, X, type LucideIcon } from 'lucide-react';
 import { isFirstRunTourDone, markFirstRunTourDone } from '@/lib/onboarding/firstRunStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
 interface TourStep {
     id: string;
@@ -43,6 +45,7 @@ const STEPS: TourStep[] = [
 const APPEAR_DELAY_MS = 9000;
 
 export const FirstRunTour: React.FC = () => {
+    const activeMode = useNavStore((s) => s.activeMode);
     const [active, setActive] = useState(false);
     const [stepIdx, setStepIdx] = useState(0);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -71,6 +74,10 @@ export const FirstRunTour: React.FC = () => {
         setActive(false);
     };
 
+    // Suppress in playground mode AND in any website-entry preview session.
+    // The tour is meant to onboard users to THEIR OWN workspace, not a demo.
+    if (activeMode === 'public_playground') return null;
+    if (typeof window !== 'undefined' && loadWebsiteEntryContext()) return null;
     if (!active) return null;
     const step = STEPS[stepIdx];
     const Icon = step.icon;
