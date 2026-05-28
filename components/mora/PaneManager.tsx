@@ -4,33 +4,12 @@ import React from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
+import { AppLoader } from '@/lib/apps/AppLoader';
 
-import { SettingsPane } from '@/components/panes/SettingsPane';
-import { DocumentPane } from '@/components/panes/DocumentPane';
-import { TeamPane } from '@/components/panes/TeamPane';
-import { NotesPane } from '@/components/panes/NotesPane';
-import { FinderPane } from '@/components/panes/FinderPane';
-import { ChatPane } from '@/components/panes/ChatPane';
-import { MeineDateienPane } from '@/components/panes/MeineDateienPane';
-
-import { GridPane } from '@/components/panes/GridPane';
-import { SearchPane } from '@/components/panes/SearchPane';
-import { ScannerPane } from '@/components/panes/ScannerPane';
-import { UsersPane } from '@/components/panes/UsersPane';
+// ── Legacy panes without a matching apps/ module ──────────────────────────────
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
 import { MoraHubPane } from '@/components/panes/MoraHubPane';
-import { MailPane } from '@/components/panes/MailPane';
-import { CalendarPane } from '@/components/panes/CalendarPane';
-import { IntegrationsPane } from '@/components/panes/IntegrationsPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
-import { TerminalPane } from '@/components/panes/TerminalPane';
-import { TasksPane }       from '@/components/panes/TasksPane';
-import { TimelinePane }    from '@/components/panes/TimelinePane';
-import { CanvasPane }      from '@/components/panes/CanvasPane';
-import { AppLibraryPane }  from '@/components/panes/AppLibraryPane';
-import { WebsiteDossierPane } from '@/components/panes/WebsiteDossierPane';
-import { ActionCenterPane } from '@/components/panes/ActionCenterPane';
-import { WorkSessionPane } from '@/components/panes/WorkSessionPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -38,43 +17,55 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     }
 
     switch (pane.type) {
-        case 'settings':
-            return <SettingsPane id={pane.id} />;
-        case 'document':
-            return <DocumentPane id={pane.id} data={pane.data} />;
-        case 'team':
-            return <TeamPane id={pane.id} />;
-        case 'notes':
-            return <NotesPane id={pane.id} />;
+        // ── Migrated to App Platform ─────────────────────────────────────────
         case 'finder':
-            return <FinderPane id={pane.id} data={pane.data} />;
         case 'space':
-            return <FinderPane id={pane.id} data={pane.data} />;
+            return <AppLoader appId="finder" paneId={pane.id} initialData={pane.data} />;
+        case 'document':
+            return <AppLoader appId="document" paneId={pane.id} initialData={pane.data} />;
+        case 'notes':
+            return <AppLoader appId="notes" paneId={pane.id} initialData={pane.data} />;
         case 'chat':
-            return <ChatPane id={pane.id} data={pane.data} />;
-        case 'meine-dateien':
-            return <MeineDateienPane id={pane.id} />;
-
-        case 'grid':
-            return <GridPane id={pane.id} />;
+            return <AppLoader appId="chat" paneId={pane.id} initialData={pane.data} />;
         case 'search':
-            return <SearchPane id={pane.id} data={pane.data} />;
+            return <AppLoader appId="search" paneId={pane.id} initialData={pane.data} />;
         case 'scanner':
-            return <ScannerPane id={pane.id} data={pane.data} />;
+            return <AppLoader appId="scanner" paneId={pane.id} initialData={pane.data} />;
         case 'users':
-            return <UsersPane id={pane.id} />;
-        case 'mail':
-            return <MailPane id={pane.id} />;
+            return <AppLoader appId="users" paneId={pane.id} initialData={pane.data} />;
+        case 'settings':
+            return <AppLoader appId="settings" paneId={pane.id} initialData={pane.data} />;
         case 'calendar':
-            return <CalendarPane id={pane.id} />;
-        case 'integrations':
-            return <IntegrationsPane id={pane.id} />;
-        case 'browser':
-            return <BrowserPane id={pane.id} />;
-        case 'website-dossier':
-            return <WebsiteDossierPane id={pane.id} data={pane.data} />;
+            return <AppLoader appId="calendar" paneId={pane.id} initialData={pane.data} />;
+        case 'team':
+            return <AppLoader appId="team" paneId={pane.id} initialData={pane.data} />;
         case 'terminal':
-            return <TerminalPane id={pane.id} />;
+            return <AppLoader appId="terminal" paneId={pane.id} initialData={pane.data} />;
+        case 'grid':
+            return <AppLoader appId="grid" paneId={pane.id} initialData={pane.data} />;
+        case 'tasks':
+            return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
+        case 'timeline':
+            return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
+        case 'canvas':
+            return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
+        case 'apps':
+            return <AppLoader appId="apps" paneId={pane.id} initialData={pane.data} />;
+        case 'meine-dateien':
+            return <AppLoader appId="meine-dateien" paneId={pane.id} initialData={pane.data} />;
+        case 'integrations':
+            return <AppLoader appId="integrations" paneId={pane.id} initialData={pane.data} />;
+        case 'mail':
+            return <AppLoader appId="mail" paneId={pane.id} initialData={pane.data} />;
+        case 'website-dossier':
+            return <AppLoader appId="website-dossier" paneId={pane.id} initialData={pane.data} />;
+        case 'actions':
+        case 'action-center':
+            return <AppLoader appId="action-center" paneId={pane.id} initialData={pane.data} />;
+        case 'work-session':
+            return <AppLoader appId="work-session" paneId={pane.id} initialData={pane.data} />;
+
+        // ── No apps/ module yet — keep legacy pane ───────────────────────────
         case 'company-detail':
             return (
                 <CompanyDetailPane
@@ -85,19 +76,9 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             );
         case 'mora-hub':
             return <MoraHubPane id={pane.id} data={pane.data} />;
-        case 'apps':
-            return <AppLibraryPane id={pane.id} data={pane.data} />;
-        case 'actions':
-        case 'action-center':
-            return <ActionCenterPane id={pane.id} data={pane.data} />;
-        case 'work-session':
-            return <WorkSessionPane id={pane.id} data={pane.data} />;
-        case 'timeline':
-            return <TimelinePane id={pane.id} data={pane.data} />;
-        case 'tasks':
-            return <TasksPane    id={pane.id} data={pane.data} />;
-        case 'canvas':
-            return <CanvasPane   id={pane.id} data={pane.data} />;
+        case 'browser':
+            return <BrowserPane id={pane.id} />;
+
         default:
             return null;
     }
