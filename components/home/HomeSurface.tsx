@@ -491,6 +491,44 @@ export const HomeSurface: React.FC = () => {
         return () => window.clearTimeout(timer);
     }, [revealPane, websiteEntryContext]);
 
+    // ── open_node / open_pane: URL params from audit_session redirect ─────────
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        const nodeId = params.get('open_node');
+        const openPaneParam = params.get('open_pane');
+
+        if (nodeId) {
+            // Clear param from URL so it doesn't re-fire on back-navigation
+            window.history.replaceState({}, '', window.location.pathname);
+            const timer = setTimeout(() => {
+                openPane({
+                    id: 'dossier-main',
+                    type: 'document',
+                    title: 'Mein Dossier',
+                    size: { width: 760, height: 620 },
+                    data: { nodeId },
+                });
+            }, 600);
+            return () => clearTimeout(timer);
+        }
+
+        if (openPaneParam === 'wall') {
+            window.history.replaceState({}, '', window.location.pathname);
+            const timer = setTimeout(() => {
+                openPane({
+                    id: 'wall-main',
+                    // @ts-expect-error wall type added in Task 6
+                    type: 'wall',
+                    title: 'Community Wall',
+                    size: { width: 900, height: 680 },
+                });
+            }, 600);
+            return () => clearTimeout(timer);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     useEffect(() => {
         let cancelled = false;
 
@@ -700,7 +738,26 @@ export const HomeSurface: React.FC = () => {
     const moraSuggestions = useMemo((): SuggestionItem[] => {
         const suggestions: SuggestionItem[] = [];
 
-        // 0. Larry Dashboard — pinned first in demo mode
+        // 0a. Community Wall — pinned first in demo mode
+        if (isPublicDemoSurface) {
+            suggestions.push({
+                id: 'community-wall',
+                title: 'Community Wall',
+                description: 'Sieh, was andere Unternehmen über ihren Security-Check sagen — und was Mora dazu analysiert.',
+                icon: <Users size={15} />,
+                onClick: () => openPane({
+                    id: 'wall-main',
+                    // @ts-expect-error wall type added in Task 6
+                    type: 'wall',
+                    title: 'Community Wall',
+                    size: { width: 900, height: 680 },
+                }),
+                actionText: 'Wall öffnen',
+                tone: 'cyan' as const,
+            });
+        }
+
+        // 0b. Larry Dashboard — pinned first in demo mode
         if (isPublicDemoSurface) {
             suggestions.push({
                 id: 'larry-dashboard',
