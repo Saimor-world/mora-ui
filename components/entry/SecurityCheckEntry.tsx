@@ -176,7 +176,7 @@ export function SecurityCheckEntry({ context }: Props) {
                         </div>
                         <p className="text-[12px] leading-relaxed text-white/40">
                             <span className="font-medium text-violet-300/85">Môra kennt bereits dein Ergebnis.</span>
-                            <br />Frag sie: „Was sind meine drei dringendsten Maßnahmen?"
+                            <br />Frag sie: &#x201E;Was sind meine drei dringendsten Maßnahmen?&#x201D;
                         </p>
                     </div>
                 </div>
