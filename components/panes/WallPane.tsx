@@ -90,7 +90,7 @@ function WallEntryCard({ entry, onMora, onSelect }: WallEntryCardProps) {
             </div>
 
             {entry.message && (
-                <p className="text-xs text-white/50 italic line-clamp-2">"{entry.message}"</p>
+                <p className="text-xs text-white/50 italic line-clamp-2">&ldquo;{entry.message}&rdquo;</p>
             )}
 
             <div className="flex items-center justify-between mt-auto pt-2 border-t border-white/5">
@@ -220,7 +220,7 @@ export function WallPane() {
                             )}
                             {selected.message && (
                                 <blockquote className="border-l-2 border-white/15 pl-3 text-sm text-white/55 italic">
-                                    "{selected.message}"
+                                    &ldquo;{selected.message}&rdquo;
                                 </blockquote>
                             )}
                             <button
