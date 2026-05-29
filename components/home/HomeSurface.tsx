@@ -501,6 +501,8 @@ export const HomeSurface: React.FC = () => {
         if (nodeId) {
             // Clear param from URL so it doesn't re-fire on back-navigation
             window.history.replaceState({}, '', window.location.pathname);
+            // Persist so the curated demo dock's "Dossier" button can reopen it.
+            try { localStorage.setItem('saimor_dossier_node', nodeId); } catch {}
             const timer = setTimeout(() => {
                 openPane({
                     id: 'dossier-main',

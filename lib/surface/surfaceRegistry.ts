@@ -107,3 +107,17 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'settings', label: 'System',   description: 'Einstellungen',         shortcutSuffix: ',' },
     ];
 }
+
+/**
+ * Curated dock for the public playground demo. NOT the employee OS dock — this
+ * is the demo's four designed destinations (see demo-experience-rethink spec).
+ * The visitor never sees finder/terminal/calendar/settings noise.
+ */
+export function getPlaygroundDockItems(): CoreDockItem[] {
+    return [
+        { action: 'dossier',   label: 'Dossier',   description: 'Dein Sicherheits-Report',          shortcutSuffix: null },
+        { action: 'chat',      label: 'Môra',      description: 'Frag Môra zu deinem Ergebnis',     shortcutSuffix: null },
+        { action: 'wall',      label: 'Wall',      description: 'Community Security Signals',        shortcutSuffix: null },
+        { action: 'workspace', label: 'Workspace', description: 'So arbeitet ein Team auf SAIMÔR',  shortcutSuffix: null },
+    ];
+}

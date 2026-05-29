@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
-    Music2, Pause, Play, SkipForward, Sparkles, Brain, X, Mic
+    Music2, Pause, Play, SkipForward, Sparkles, Brain, X, Mic,
+    ShieldCheck, LayoutGrid, Compass
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -16,7 +17,7 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
-import { getCoreDockItems } from '@/lib/surface/surfaceRegistry';
+import { getCoreDockItems, getPlaygroundDockItems } from '@/lib/surface/surfaceRegistry';
 
 // Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
@@ -737,6 +738,18 @@ export const Dock = () => {
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen',  size: { width: 720, height: 640 } }); break;
             case 'larry':    window.open('https://dash.saimor.world', '_blank'); break;
+            // ── Curated demo destinations (public_playground only) ──────
+            case 'dossier': {
+                const nodeId = typeof window !== 'undefined' ? localStorage.getItem('saimor_dossier_node') : null;
+                if (nodeId) {
+                    openPane({ id: 'dossier-main', type: 'document', title: 'Mein Dossier', size: { width: 760, height: 620 }, data: { nodeId } });
+                } else {
+                    navigateToCore(); // falls back to Home, which auto-opens the dossier
+                }
+                break;
+            }
+            case 'wall':      openPane({ id: 'wall-main', type: 'wall', title: 'Community Wall', size: { width: 900, height: 680 } }); break;
+            case 'workspace': useNavStore.getState().navigateToExplore(); break;
             default: break;
         }
     }, [navigateToCore, openPane]);
@@ -763,23 +776,26 @@ export const Dock = () => {
         settings: Settings,
         ambient:  Mic,
         larry:    Sparkles,
+        dossier:   ShieldCheck,
+        wall:      LayoutGrid,
+        workspace: Compass,
     }), []);
 
     // Single source of truth — order, labels, shortcuts come from surfaceRegistry.
     const dockItems: DockItem[] = useMemo(() => {
-        let items = getCoreDockItems().map(entry => ({
+        // Public playground gets the CURATED demo dock (4 designed destinations),
+        // not the employee OS dock minus a few items. See demo-experience-rethink.
+        const source = activeMode === 'public_playground'
+            ? getPlaygroundDockItems()
+            : getCoreDockItems();
+
+        let items = source.map(entry => ({
             icon:        DOCK_ICON_MAP[entry.action] ?? Minus,
             label:       entry.label,
             description: entry.description,
             shortcut:    entry.action === 'notes' ? 'Alt+N' : entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
             action:      entry.action,
         }));
-
-        if (activeMode === 'public_playground') {
-            items = items.filter(
-                (item) => item.action !== 'chat' && item.action !== 'ambient' && item.action !== 'larry'
-            );
-        }
 
         // Larry Dashboard is OWNER ONLY (sensitive infra/agent data). Remove it
         // from the dock for everyone except the owner, in every mode.
