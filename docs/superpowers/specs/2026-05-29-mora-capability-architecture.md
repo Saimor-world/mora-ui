@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-29
 **Author:** Opus 4.8 (synthesis from read-only server audit)
-**Status:** Decision needed (§5 fork)
+**Status:** ✅ DECIDED 2026-05-29 — **Option C (Hybrid)**. OpenClaw as agent execution engine; CORE owns multi-tenancy boundary, capability gate, and memory partition. A separate isolated gateway for SAIMÔR (never Larry's owner gateway). Next concrete step: the §6 spike.
 **Feeds:** Roadmap workstream 4.3 (Chat/Mora rethink), 4.8 (Integrations), Department view (§2)
 
 ---
