@@ -66,8 +66,13 @@ This is the spine. Everything else hangs off it.
 3. **Department view is a distinct surface** that must be designed from scratch — not the current file-browser reuse.
 4. **The Playground/Demo is a separate world** rendered *inside* the OS platform but with its own expressive design language. A visitor must never see the internal company file structure (no "Wall & Guestbook" bubble in a Universe file tree).
 
-**Open question for user (blocks Universe + Department workstreams):**
-> When a team member enters their department, what are the 3-4 things they need *first*? (e.g. "today's tasks · my team online · recent docs · ask Mora"?) This defines the Department view layout.
+**Department view — ANSWERED by user (2026-05-29). The four pillars on entry:**
+1. **Team online** — presence: who is here right now (ties to aura-color-per-user concept)
+2. **Letzte Dokumente** — recent docs in this department
+3. **Mora-Vorschläge** — contextual suggestions
+4. **Externe Daten-Anbindungen** — ERP / CRM connections. *This is the strategic direction* — the department view is where connected business systems (ERP/CRM) surface. Integrations (4.8) feed this.
+
+This makes the Department view the heart of daily use: presence + recent work + Mora + live external business data.
 
 ---
 
@@ -142,8 +147,9 @@ A **design-tokens pass** (NEEDS SPEC) should formalize the type scale, the per-m
 - **Current (verified):** Dock = 8 real items (home, chat/Mora, finder, team, notes, ambient/Field, larry, settings) — all functional, larry owner/non-playground gated. Behind the dock, app reality:
   - **Real:** chat, finder, scanner, terminal (631l), team, notes, settings, document, mail-client, integrations-UI, ambient.
   - **Partial/stub:** tasks (256l, "API not yet live" — optimistic only), calendar (110l, UI shell, no real events), canvas (207l, draws but no persistence), timeline (170l, reads API — verify payload).
-- **Action:** Decide per app: **promote** (finish it), **demote** (hide from registry until real), or **keep as honest stub**. For the **demo specifically**, decide the minimal dock — a visitor doesn't need terminal/integrations. Likely demo dock = Home · Dossier · Wall · Mora · (Finder?).
-- **Executor:** small spec → Sonnet. Registry-driven (`surfaceRegistry.ts`), so demoting = tier change to `future`.
+- **Action:** Decide per app: **promote** (finish it), **demote** (hide from registry until real), or **keep as honest stub**.
+- **Demo dock — user decision (2026-05-29): NOT minimal.** "Wir haben viel mehr Platz, das kann besser gelöst werden." The demo should feel rich, not stripped. So: keep an expressive, full-feeling dock for demo visitors; the rule is *no broken/placeholder apps exposed*, not *fewer apps*. Finish or convincingly fake the demo-relevant ones rather than hiding them.
+- **Executor:** small spec → Sonnet. Registry-driven (`surfaceRegistry.ts`).
 
 ---
 
