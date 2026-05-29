@@ -15,6 +15,7 @@ import { resetUserState } from '@/lib/hooks/useUser';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { useCreateDossierNode } from '@/lib/hooks/useCreateDossierNode';
 import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
@@ -227,6 +228,8 @@ export const HomeSurface: React.FC = () => {
     const [teamMessages, setTeamMessages] = useState<TeamMessageSurface[]>([]);
     const [teamPresence, setTeamPresence] = useState<TeamPresenceSurface | null>(null);
     const [websiteEntryContext, setWebsiteEntryContext] = useState<StoredWebsiteEntryContext | null>(null);
+    // Auto-create a private dossier Node once per context.id (20-day TTL).
+    const { nodeId: dossierNodeId } = useCreateDossierNode(websiteEntryContext);
     const {
         overview: integrationsOverview,
         summary: communicationSummary,
@@ -988,13 +991,26 @@ export const HomeSurface: React.FC = () => {
                                                 </div>
                                             ))}
                                         </div>
-                                        <button
-                                            type="button"
-                                            onClick={openWebsiteDossier}
-                                            className="mt-3 rounded-full border border-amber-300/16 bg-amber-400/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-amber-50/75 transition-colors hover:border-amber-200/26 hover:bg-amber-400/[0.12]"
-                                        >
-                                            Dossier öffnen
-                                        </button>
+                                        <div className="mt-3 flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={openWebsiteDossier}
+                                                className="rounded-full border border-amber-300/16 bg-amber-400/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-amber-50/75 transition-colors hover:border-amber-200/26 hover:bg-amber-400/[0.12]"
+                                            >
+                                                Dossier öffnen
+                                            </button>
+                                            <button
+                                                type="button"
+                                                data-testid="dossier-wall-btn"
+                                                onClick={() => {
+                                                    // Phase 2: will save to Wall queue. Stub for now.
+                                                    console.log('[Wall] queued dossier node:', dossierNodeId);
+                                                }}
+                                                className="rounded-full border border-violet-300/16 bg-violet-400/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/60 transition-colors hover:border-violet-200/26 hover:bg-violet-400/[0.10]"
+                                            >
+                                                Auf die Wall
+                                            </button>
+                                        </div>
                                     </div>
                                 ) : null}
                             </div>

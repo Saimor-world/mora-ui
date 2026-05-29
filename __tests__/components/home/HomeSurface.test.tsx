@@ -14,6 +14,11 @@ import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 jest.mock('@/lib/hooks/useSurfaceProfile', () => ({
     useSurfaceProfile: jest.fn(),
 }));
+
+jest.mock('@/lib/hooks/useCreateDossierNode', () => ({
+    useCreateDossierNode: jest.fn().mockReturnValue({ nodeId: 'mock-node-99', isCreating: false }),
+}));
+
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
@@ -208,6 +213,25 @@ describe('HomeSurface — rendering', () => {
             expect(screen.getByText('acme.de')).toBeInTheDocument();
             // Shows task titles from the context
             expect(screen.getByText('Audit-Ergebnis validieren')).toBeInTheDocument();
+        });
+    });
+
+    it('shows "Auf die Wall" button when website entry context is present', async () => {
+        localStorage.setItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY, JSON.stringify({
+            surface: 'website',
+            entity: 'security-audit',
+            id: 'audit-wall-test',
+            companyName: 'Wall Corp',
+            domain: 'wall.de',
+            score: 55,
+            title: 'Test',
+            rooms: [],
+            documents: [],
+            tasks: [{ title: 'Fix it', priority: 'hoch' }],
+        }));
+        renderWithDepts();
+        await waitFor(() => {
+            expect(screen.getByTestId('dossier-wall-btn')).toBeInTheDocument();
         });
     });
 
