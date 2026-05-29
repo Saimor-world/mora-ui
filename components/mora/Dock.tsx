@@ -1438,8 +1438,9 @@ export const Dock = () => {
                                 }`}
                                 style={isStandardMode ? {} : {
                                     background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.55) 0%, rgba(10, 13, 28, 0.45) 54%, rgba(2, 7, 10, 0.6) 100%)',
-                                    border: '1px solid rgba(125, 224, 255, 0.16)',
-                                    boxShadow: `0 24px 80px rgba(0, 0, 0, 0.65), 0 0 60px ${accent}18, inset 0 1px 0 rgba(255,255,255,0.1), inset 0 -1px 0 rgba(34,211,238,0.08)`,
+                                    border: `1px solid var(--scene-border, rgba(125,224,255,0.28))`,
+                                    boxShadow: `0 24px 80px rgba(0,0,0,0.65), 0 0 80px var(--scene-accent, rgba(34,211,238,0.3)), inset 0 1px 0 rgba(255,255,255,0.1)`,
+                                    transition: 'border-color 1.2s ease, box-shadow 1.2s ease',
                                     willChange: 'transform',
                                 }}
                             >
@@ -1454,7 +1455,10 @@ export const Dock = () => {
                                         />
                                         <div
                                             className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none"
-                                            style={{ background: `linear-gradient(90deg, transparent 10%, rgba(34,211,238,0.7), ${accent}60, transparent 90%)` }}
+                                            style={{
+                                                background: `linear-gradient(90deg, transparent 10%, var(--scene-accent, rgba(34,211,238,0.7)), var(--scene-accent, rgba(34,211,238,0.4)), transparent 90%)`,
+                                                transition: 'background 1.2s ease',
+                                            }}
                                         />
                                     </>
                                 )}

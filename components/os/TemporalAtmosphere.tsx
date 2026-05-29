@@ -158,25 +158,23 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     willChange: 'transform, opacity',
                 }}
                 animate={paused ? {
-                    opacity: 0.50 * baseOpacity,
+                    opacity: 0.70 * baseOpacity,
                     scale: 1,
                     x: '0%',
                     y: '0%',
                 } : liveAudio ? {
-                    // Audio on: wider drift, vivid
-                    opacity: [0.80 * baseOpacity, 1.0 * baseOpacity, 0.86 * baseOpacity],
+                    opacity: [0.95 * baseOpacity, 1.0 * baseOpacity, 0.97 * baseOpacity],
                     scale: [1, 1.10 * sceneProfile.motionScale, 1],
                     x: ['-3%', '3%', '-1.5%'],
                     y: ['0%', '-2%', '0%'],
                 } : isFocused ? {
-                    // Focus mode: contained, centered, minimal drift
-                    opacity: [0.72 * baseOpacity, 0.92 * baseOpacity, 0.76 * baseOpacity],
+                    opacity: [0.88 * baseOpacity, 0.98 * baseOpacity, 0.90 * baseOpacity],
                     scale: [1, 1.03 * sceneProfile.motionScale, 1],
                     x: ['-0.5%', '0.5%', '0%'],
                     y: ['0%', '-0.5%', '0%'],
                 } : {
-                    opacity: [0.68 * baseOpacity, 0.96 * baseOpacity, 0.72 * baseOpacity],
-                    scale: [1, 1.06 * sceneProfile.motionScale, 1],
+                    opacity: [0.88 * baseOpacity, 1.0 * baseOpacity, 0.92 * baseOpacity],
+                    scale: [1, 1.08 * sceneProfile.motionScale, 1],
                     x: ['-2%', '2%', '-1%'],
                     y: ['0%', '-1%', '0%'],
                 }}
