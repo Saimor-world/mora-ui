@@ -755,8 +755,9 @@ export const HomeSurface: React.FC = () => {
             });
         }
 
-        // 0b. Larry Dashboard — pinned first in demo mode
-        if (isPublicDemoSurface) {
+        // 0b. Larry Dashboard — OWNER ONLY. Contains sensitive infra/agent data.
+        // MUST NOT be exposed to public playground / demo visitors.
+        if (user?.role === 'owner') {
             suggestions.push({
                 id: 'larry-dashboard',
                 title: 'Larry Dashboard',
@@ -828,7 +829,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         return suggestions;
-    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse, isPublicDemoSurface]);
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse, isPublicDemoSurface, user?.role]);
 
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {
