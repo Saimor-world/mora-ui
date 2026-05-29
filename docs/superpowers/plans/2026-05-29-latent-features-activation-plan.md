@@ -25,7 +25,31 @@ The scenes, colors, audio gain, auto-time switching, persistence, and cycle logi
 
 ## 1. Propagate Ritual Scene colors across the OS
 
-**Current state:** `RITUAL_SCENES[sceneId].accent/aura` defined; consumed mainly in `DockCommandDeck` (scene wash) + audio gain. The shell at large still uses static accents. So switching Flow→Night changes the command deck but not the felt atmosphere of the whole OS.
+### 🐛 ROOT CAUSE (confirmed 2026-05-29) — why the color change NEVER worked
+
+The color switch has never worked because **there is no global color-application pipeline**. Three disconnected pieces:
+
+1. **`lib/hooks/useAccentColor.ts`** computes a color and exposes `getCssVars()` (`--accent-color`, `--accent-glow`, …) — but `getCssVars()` is **never applied to any root element**. Only `accentColor` (the raw value) is read, in 2 spots (LockScreen, TemporalAtmosphere). The CSS vars are orphaned.
+2. **No CSS anywhere uses `var(--accent-color)`** — grep returns zero hits. So even if the vars were set, nothing consumes them.
+3. **The ritual scene change never calls `setAccentColor` and never sets any global CSS variable.** `RITUAL_SCENES[id].accent/aura` is read only locally in `Dock`/`DockCommandDeck` (the small scene-wash). Switching Flow→Night updates that local wash and `audioGain`, nothing else.
+
+So the scene selector persists + fires `RITUAL_MODE_UPDATED_EVENT`, but no global consumer re-tints the OS. The pieces were built; the pipe was never connected.
+
+### THE FIX (precise — for Sonnet)
+1. **One global scene-color applier.** New `lib/os/RitualSceneStyler.tsx` (or fold into MoraShell): a client component mounted once high in the shell. On mount AND on `RITUAL_MODE_UPDATED_EVENT` AND on an interval if `autoTime` (to cross the time boundaries), compute `getEffectiveRitualScene()` and write its colors to the document root:
+   ```ts
+   const s = RITUAL_SCENES[getEffectiveRitualScene(resolveRitualSettings(userSettings))];
+   const root = document.documentElement.style;
+   root.setProperty('--scene-accent', s.accent);
+   root.setProperty('--scene-aura', s.aura);
+   root.setProperty('--scene-glow', `0 0 24px ${s.accent}`);
+   ```
+2. **Consume it.** Make the shell read these vars: MoraOrb glow, ambient/aura layer, dock active-state, HomeSurface accent, pane accents → `var(--scene-accent)` / `var(--scene-aura)`. Add a base definition in `globals.css` (`:root { --scene-accent: rgba(16,185,129,0.34); … }`) so there's always a fallback (flow).
+3. **Add a smooth transition:** put `transition: background-color .6s, box-shadow .6s` on the elements that consume the vars so a scene switch cross-fades.
+4. **Unify with `useAccentColor`.** Either retire `useAccentColor` (it's effectively orphaned) or make it the company/website-branding overlay that *composes* over the scene base. Decide one source of truth; don't keep two dead pipes.
+5. **Verify in-browser:** switch scenes in the Command Center → orb + ambient + accents visibly cross-fade. (This is the acceptance test — it has never passed before.)
+
+**Current state (for context):** `RITUAL_SCENES[sceneId].accent/aura` defined; consumed only in `DockCommandDeck` (local scene wash) + `audioGain`. The shell at large uses static/orphaned accents.
 
 **Target:** selecting a scene visibly re-tints the entire OS — orb, ambient glow, surface accents, dock active-state — smoothly. The OS *feels* like Flow vs Night.
 
