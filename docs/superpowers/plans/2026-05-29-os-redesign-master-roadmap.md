@@ -151,6 +151,21 @@ A **design-tokens pass** (NEEDS SPEC) should formalize the type scale, the per-m
 - **Demo dock — user decision (2026-05-29): NOT minimal.** "Wir haben viel mehr Platz, das kann besser gelöst werden." The demo should feel rich, not stripped. So: keep an expressive, full-feeling dock for demo visitors; the rule is *no broken/placeholder apps exposed*, not *fewer apps*. Finish or convincingly fake the demo-relevant ones rather than hiding them.
 - **Executor:** small spec → Sonnet. Registry-driven (`surfaceRegistry.ts`).
 
+**Per-app audit + recommendation (2026-05-29):**
+| App | State | Recommendation |
+|---|---|---|
+| chat, finder, scanner, terminal, team, notes, settings, document, mail-UI, integrations-UI, ambient | Real | **Keep** |
+| `tasks` (256l) | "API not yet live" — optimistic-only, no persistence | **Promote** (wire to CORE `/v3/tasks` when it exists) OR demo-seed with believable data; do NOT ship as silently-broken |
+| `calendar` (110l) | UI shell, no real events | Ties to 4.8 (Google OAuth). Until wired: **demo-seed** with plausible events so the demo feels alive (user wants rich, not empty) |
+| `canvas` (207l) | Draws but no save | **Honest stub** acceptable short-term (drawing works in-session); add persistence later |
+| `timeline` (170l) | Reads API — verify payload returns data | Verify; if empty, **demo-seed** |
+
+**Guiding principle (user, 2026-05-29):** demo must feel rich, NOT minimal. So prefer *seed-with-believable-data* over *hide* for demo-facing apps. The only hard rule: nothing that visibly dead-ends (error toast, "not implemented", empty void) may be exposed to a visitor. Seed it or finish it.
+
+**Done in this Workstream (2026-05-29):**
+- ✅ P0 Larry grep audit complete — all 3 runtime entry points (Dock item, HomeSurface mini-button, suggestion card) now owner-gated (`e660268`). WORLD clean. Server ports already closed.
+- Remaining: the per-app promote/demote/seed pass above.
+
 ---
 
 ## 5. Server / Dashboard audit (P0-security + P3-enabler) · NEEDS SSH SESSION
