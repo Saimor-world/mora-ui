@@ -4,11 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useNavStore } from '@/lib/store/navStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
 import {
-    getEffectiveRitualScene,
-    RITUAL_SCENES,
-    resolveRitualSettings,
     type RitualSceneId,
 } from '@/lib/os/ritualMode';
 import {
@@ -17,6 +13,7 @@ import {
 } from '@/lib/audio/ambientAudio';
 
 import { useAccentColor } from '@/lib/hooks/useAccentColor';
+import { useActiveRitualScene } from '@/lib/hooks/useActiveRitualScene';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 
 type TimeBand = 'morning' | 'day' | 'evening' | 'night';
@@ -90,7 +87,6 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     const orbState = useOrbStore((state) => state.orbState);
     const viewLevel = useNavStore((state) => state.viewLevel);
     const isStandardMode = useNavStore((state) => state.isStandardMode);
-    const userSettings = useSessionStore((state) => state.user?.settings);
     const [now, setNow] = useState(() => new Date());
     // Reactive ambient audio state — updates when user toggles audio in settings
     const [audioActive, setAudioActive] = useState(() => {
@@ -110,10 +106,10 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     }, []);
 
     const timeBand = useMemo(() => getTimeBand(now), [now]);
-    const ritualSettings = useMemo(() => resolveRitualSettings(userSettings), [userSettings]);
-    const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings, now), [ritualSettings, now]);
+    // Reactive scene — re-tints live on RITUAL_MODE_UPDATED_EVENT (was the missing link).
+    const sceneDefinition = useActiveRitualScene();
+    const ritualSceneId = sceneDefinition.id;
     const sceneProfile = SCENE_PROFILES[ritualSceneId];
-    const sceneDefinition = RITUAL_SCENES[ritualSceneId];
     const baseOpacity = viewLevel === 'core' ? 1 : viewLevel === 'space' ? 0.7 : 0.62;
     const orbAccent = ORB_ACCENTS[orbState] || sceneProfile.orbAccent || ORB_ACCENTS.idle;
     // Amplify atmosphere when ambient audio is playing (not paused)

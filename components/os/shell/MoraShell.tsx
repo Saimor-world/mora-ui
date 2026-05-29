@@ -108,6 +108,7 @@ import { AmbientAudioController } from '@/components/os/AmbientAudioController';
 import { InteractionAudioController } from '@/components/os/InteractionAudioController';
 import { MoraPulsePanel } from '@/components/os/MoraPulsePanel';
 import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
+import { RitualSceneStyler } from '@/components/os/RitualSceneStyler';
 // 1.0 gated (future-tier: memory sidebar)
 // import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
@@ -830,6 +831,7 @@ export const MoraShell: React.FC = () => {
                     background: 'radial-gradient(ellipse 140% 80% at 50% 0%, hsl(248 45% 12%) 0%, hsl(248 48% 7%) 55%, hsl(248 52% 4%) 100%)',
                 }}
             />
+            <RitualSceneStyler />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground} />
 

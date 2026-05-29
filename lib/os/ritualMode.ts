@@ -17,7 +17,8 @@ export interface RitualSceneDefinition {
     label: string;
     shortLabel: string;
     description: string;
-    accent: string;
+    accent: string;      // rgba — soft gradients / auras
+    accentHex: string;   // solid hex — consumers needing hex (orb, canvas)
     aura: string;
     audioGain: number;
 }
@@ -40,6 +41,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         shortLabel: 'Flow',
         description: 'Ruhig und offen für Schreiben, Lesen und entspannte Navigation.',
         accent: 'rgba(16,185,129,0.34)',
+        accentHex: '#10B981',
         aura: 'rgba(34,211,238,0.22)',
         audioGain: 0.92,
     },
@@ -49,6 +51,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         shortLabel: 'Build',
         description: 'Klarer Kontrast für Umsetzung, Struktur und schnelle Entscheidungen.',
         accent: 'rgba(56,189,248,0.40)',
+        accentHex: '#38BDF8',
         aura: 'rgba(251,191,36,0.22)',
         audioGain: 1.05,
     },
@@ -58,6 +61,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         shortLabel: 'Lounge',
         description: 'Wärmer und weicher für Review, Lesen und ruhigere Sessions.',
         accent: 'rgba(251,146,60,0.32)',
+        accentHex: '#FB923C',
         aura: 'rgba(244,114,182,0.18)',
         audioGain: 0.86,
     },
@@ -67,6 +71,7 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         shortLabel: 'Nacht',
         description: 'Dunkler und stiller für späte, lange Arbeitsphasen.',
         accent: 'rgba(99,102,241,0.34)',
+        accentHex: '#6366F1',
         aura: 'rgba(34,211,238,0.18)',
         audioGain: 0.76,
     },

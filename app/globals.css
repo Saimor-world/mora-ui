@@ -550,6 +550,12 @@
     --accent: 188 86% 53%;
     --accent-foreground: 262 50% 8%;
 
+    /* Ritual scene colors — applied live by RitualSceneStyler. Defaults = flow. */
+    --scene-accent: rgba(16,185,129,0.34);
+    --scene-accent-hex: #10B981;
+    --scene-aura: rgba(34,211,238,0.22);
+    --scene-glow: 0 0 28px rgba(16,185,129,0.34);
+
     /* Destruktiv - gedämpftes Rot */
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 96%;

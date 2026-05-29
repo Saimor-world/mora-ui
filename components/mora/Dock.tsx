@@ -1647,7 +1647,7 @@ export const Dock = () => {
                                                         />
                                                     )}
                                                     <PlasmaOrb
-                                                        color={viewMode === 'demo' ? '#6D28D9' : '#7C3AED'}
+                                                        color={viewMode === 'demo' ? '#6D28D9' : ritualScene.accentHex}
                                                         state={orbState as any}
                                                         size={48}
                                                     />
