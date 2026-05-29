@@ -10,6 +10,7 @@ import { AppLoader } from '@/lib/apps/AppLoader';
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
 import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
+import { WallPane } from '@/components/panes/WallPane';
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
@@ -78,6 +79,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <MoraHubPane id={pane.id} data={pane.data} />;
         case 'browser':
             return <BrowserPane id={pane.id} />;
+        case 'wall':
+            return <WallPane />;
 
         default:
             return null;

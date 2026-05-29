@@ -518,7 +518,6 @@ export const HomeSurface: React.FC = () => {
             const timer = setTimeout(() => {
                 openPane({
                     id: 'wall-main',
-                    // @ts-expect-error wall type added in Task 6
                     type: 'wall',
                     title: 'Community Wall',
                     size: { width: 900, height: 680 },
@@ -747,7 +746,6 @@ export const HomeSurface: React.FC = () => {
                 icon: <Users size={15} />,
                 onClick: () => openPane({
                     id: 'wall-main',
-                    // @ts-expect-error wall type added in Task 6
                     type: 'wall',
                     title: 'Community Wall',
                     size: { width: 900, height: 680 },
