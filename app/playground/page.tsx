@@ -16,10 +16,29 @@ export default function PlaygroundPage() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
-        try {
-            clearWebsiteEntryActiveContext();
-        } catch (err) {
-            console.error('[PlaygroundPage] Failed to clear website context:', err);
+
+        try { clearWebsiteEntryActiveContext(); } catch {}
+
+        // ── Audit session fast-path ──────────────────────────────────────────
+        // When arriving from saimor.world after a security scan, the URL contains
+        // audit_session (the playground token) and node (the dossier node ID).
+        // We skip the email form entirely and set the session directly.
+        const params = new URLSearchParams(window.location.search);
+        const auditSession = params.get('audit_session');
+        const nodeId = params.get('node');
+
+        if (auditSession) {
+            useNavStore.getState().setActiveMode('public_playground');
+            localStorage.setItem('saimor_playground_session', auditSession);
+            localStorage.setItem('saimor_tenant', 'tenant-public-playground');
+            localStorage.setItem('saimor_role', 'demo');
+            localStorage.removeItem('last_company_id');
+
+            const destination = nodeId
+                ? `/home?open_node=${encodeURIComponent(nodeId)}`
+                : '/home';
+            router.push(destination);
+            return;
         }
     }, []);
 
