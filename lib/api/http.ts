@@ -91,10 +91,13 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     if (!options.skipAuth) {
         let finalToken: string | null = null;
         const activeMode = typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') : null;
+        const publicCookieToken = readCookie('mora_public_token');
+        const playgroundSessionToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_playground_session') : null;
 
-        if (activeMode === 'public_playground') {
-            const publicCookieToken = readCookie('mora_public_token');
-            const playgroundSessionToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_playground_session') : null;
+        // Use playground token if: mode is explicitly playground, OR if the
+        // mora_public_token cookie is present (set by ingest-audit before the
+        // redirect — activeMode may not be set yet on first load).
+        if (activeMode === 'public_playground' || publicCookieToken || playgroundSessionToken) {
             finalToken = publicCookieToken || playgroundSessionToken;
         } else {
             const token = readCookie(AUTH_COOKIE);
