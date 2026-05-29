@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { Lock, ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Lock, ExternalLink, ShieldAlert, ShieldCheck, AlertTriangle, Globe } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { semanticColor } from '@/lib/design/tokens';
 
 interface Finding {
     title: string;
@@ -28,7 +30,15 @@ interface Props {
     metadata: {
         audit?: AuditMeta;
         playground?: { expires_at?: string };
+        wall_status?: string;
     };
+}
+
+function moraInsight(score: number, findings: Finding[]): string {
+    const first = findings[0]?.title;
+    if (score < 40) return first ? `Dringend: ${first} ist dein kritischster Punkt.` : 'Kritische Sicherheitslücken — sofortiger Handlungsbedarf.';
+    if (score <= 70) return `Mittleres Risiko — ${findings.length} Lücken, die heute schließbar sind.`;
+    return first ? `Gute Basis — fokussiere dich auf ${first}.` : 'Solide Basis — kleine Optimierungen möglich.';
 }
 
 // ─── Score ring ──────────────────────────────────────────────────────────────
@@ -213,8 +223,30 @@ export function AuditDossierView({ name: _name, nodeId, metadata }: Props) {
         });
     };
 
+    const ai = semanticColor('ai');
+    const wallStatus = metadata?.wall_status;
+    const insight = moraInsight(score, findings);
+
     return (
         <div className="flex flex-col h-full overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+
+            {/* ── Mora strip ───────────────────────────────────────────────── */}
+            <button
+                type="button"
+                onClick={handleMora}
+                className="flex items-center gap-3 px-6 py-3 text-left transition-opacity hover:opacity-80"
+                style={{ background: ai.bg, borderBottom: `1px solid ${ai.border}` }}
+            >
+                <div className="relative shrink-0 flex items-center justify-center w-5 h-5">
+                    <span className="absolute inline-flex h-full w-full rounded-full opacity-60 animate-ping" style={{ background: ai.accent }} />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: ai.accent }} />
+                </div>
+                <div className="min-w-0">
+                    <div className="text-[11px] font-medium" style={{ color: ai.chipText }}>✦ Môra hat deinen Befund analysiert</div>
+                    <div className="text-[11px] text-white/45 truncate">{insight}</div>
+                </div>
+            </button>
+
             {/* ── Hero section ─────────────────────────────────────────────── */}
             <div
                 className="relative overflow-hidden px-6 pt-6 pb-5"
@@ -296,12 +328,16 @@ export function AuditDossierView({ name: _name, nodeId, metadata }: Props) {
                                 {findings.length}
                             </span>
                         </div>
+                        <AnimatePresence>
                         <div className="flex flex-col gap-2">
                             {findings.map((f, i) => {
                                 const cfg = severityConfig(f.severity);
                                 return (
-                                    <div
+                                    <motion.div
                                         key={i}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.12, duration: 0.3 }}
                                         className="rounded-xl px-4 py-3 border-l-2"
                                         style={{ background: cfg.bg, borderLeftColor: cfg.border }}
                                     >
@@ -322,10 +358,11 @@ export function AuditDossierView({ name: _name, nodeId, metadata }: Props) {
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
+                                    </motion.div>
                                 );
                             })}
                         </div>
+                        </AnimatePresence>
                     </div>
                 )}
 
@@ -350,6 +387,34 @@ export function AuditDossierView({ name: _name, nodeId, metadata }: Props) {
                                 </div>
                             ))}
                         </div>
+                    </div>
+                )}
+
+                {/* ── Wall CTA ─────────────────────────────────────────────── */}
+                {wallStatus === 'confirmed' ? (
+                    <div className="mb-4 rounded-xl px-4 py-3 flex items-center gap-3"
+                        style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.25)' }}>
+                        <ShieldCheck size={16} className="text-emerald-400 shrink-0" />
+                        <span className="text-[13px] text-emerald-300">✓ Du bist auf der Community Wall</span>
+                    </div>
+                ) : (
+                    <div className="mb-4 rounded-xl px-4 py-4 flex items-start justify-between gap-4"
+                        style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                        <div className="flex items-start gap-3">
+                            <Globe size={16} className="text-violet-400 shrink-0 mt-0.5" />
+                            <div>
+                                <div className="text-[13px] font-medium text-white/85">Auf die Wall</div>
+                                <div className="text-[11px] text-white/45 mt-0.5">Mach dein Ergebnis sichtbar — werde Teil des SAIMÔR-Netzwerks.</div>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => openPane({ id: 'wall-main', type: 'wall', title: 'Community Wall', size: { width: 900, height: 680 } })}
+                            className="shrink-0 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium transition-opacity hover:opacity-80"
+                            style={{ background: 'rgba(139,92,246,0.25)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.4)' }}
+                        >
+                            Jetzt →
+                        </button>
                     </div>
                 )}
 
