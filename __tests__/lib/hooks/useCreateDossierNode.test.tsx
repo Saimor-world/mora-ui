@@ -28,7 +28,7 @@ const mockContext = {
 beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
-    (useNavStore as jest.Mock).mockReturnValue({ activeCompanyId: 'company-1' });
+    (useNavStore as unknown as jest.Mock).mockReturnValue({ activeCompanyId: 'company-1' });
     (createNode as jest.Mock).mockResolvedValue({ id: 'node-created-123' });
 });
 
