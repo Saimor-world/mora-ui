@@ -19,6 +19,10 @@ jest.mock('@/lib/hooks/useCreateDossierNode', () => ({
     useCreateDossierNode: jest.fn().mockReturnValue({ nodeId: 'mock-node-99', isCreating: false }),
 }));
 
+jest.mock('@/lib/hooks/useAutoOpenDossier', () => ({
+    useAutoOpenDossier: jest.fn(),
+}));
+
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';

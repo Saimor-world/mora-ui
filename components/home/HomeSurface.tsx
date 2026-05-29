@@ -16,6 +16,7 @@ import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { buildBriefing } from '@/lib/home/briefing';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useCreateDossierNode } from '@/lib/hooks/useCreateDossierNode';
+import { useAutoOpenDossier } from '@/lib/hooks/useAutoOpenDossier';
 import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
@@ -230,6 +231,8 @@ export const HomeSurface: React.FC = () => {
     const [websiteEntryContext, setWebsiteEntryContext] = useState<StoredWebsiteEntryContext | null>(null);
     // Auto-create a private dossier Node once per context.id (20-day TTL).
     const { nodeId: dossierNodeId } = useCreateDossierNode(websiteEntryContext);
+    // On first OS visit after Security Check: open dossier pane + Môra automatically.
+    useAutoOpenDossier(websiteEntryContext, dossierNodeId);
     const {
         overview: integrationsOverview,
         summary: communicationSummary,
@@ -289,13 +292,24 @@ export const HomeSurface: React.FC = () => {
 
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;
-        revealPane('website-dossier-current', {
-            type: 'website-dossier',
-            title: `${websiteEntryContext.companyName} Dossier`,
-            size: { width: 1040, height: 720 },
-            data: { context: websiteEntryContext },
-        });
-    }, [revealPane, websiteEntryContext]);
+        if (dossierNodeId) {
+            // Node exists — open the real dossier document
+            revealPane('dossier-main', {
+                type: 'document',
+                title: `${websiteEntryContext.companyName} — Dossier`,
+                size: { width: 760, height: 620 },
+                data: { nodeId: dossierNodeId },
+            });
+        } else if (websiteEntryContext.domain) {
+            // Fallback — live URL check while node is still being created
+            revealPane('website-dossier-current', {
+                type: 'website-dossier',
+                title: `${websiteEntryContext.companyName} Dossier`,
+                size: { width: 1040, height: 720 },
+                data: { url: `https://${websiteEntryContext.domain}` },
+            });
+        }
+    }, [revealPane, websiteEntryContext, dossierNodeId]);
 
     const openTeam = useCallback(() => {
         revealPane('team-main', {
