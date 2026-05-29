@@ -189,14 +189,16 @@ export function useAuthBootstrapper() {
 
     // ---------------------------------------------------------------------------
     // Website entry preview boot
-    // When there is no profile (unauthenticated preview), boot the OS so it does
-    // not stay in the loading state indefinitely.
+    // When there is no profile (unauthenticated preview or playground session),
+    // boot the OS so it does not stay in the loading state indefinitely.
     // ---------------------------------------------------------------------------
     useEffect(() => {
         if (typeof window === 'undefined') return;
         if (status === 'loading') return;
         if (profile) return; // Normal boot path handles this
-        if (!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY)) return;
+        const hasWebsiteEntry = !!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+        const hasPlaygroundSession = !!localStorage.getItem('saimor_playground_session');
+        if (!hasWebsiteEntry && !hasPlaygroundSession) return;
         setHasBooted(true);
     }, [status, profile, setHasBooted]);
 

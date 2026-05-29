@@ -7,6 +7,7 @@ import { corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 import { clearWebsiteEntryActiveContext } from '@/lib/websiteEntryStorage';
 import { useNavStore } from '@/lib/store/navStore';
+import { getQueryClient } from '@/lib/queryClient';
 
 export default function PlaygroundPage() {
     const router = useRouter();
@@ -29,7 +30,10 @@ export default function PlaygroundPage() {
 
         if (auditSession) {
             useNavStore.getState().setActiveMode('public_playground');
+            localStorage.setItem('saimor_active_mode', 'public_playground');
             localStorage.setItem('saimor_playground_session', auditSession);
+            // Clear any cached 401 from a previous unauthenticated profile fetch
+            try { getQueryClient().clear(); } catch {}
             localStorage.setItem('saimor_tenant', 'tenant-public-playground');
             localStorage.setItem('saimor_role', 'demo');
             localStorage.removeItem('last_company_id');
@@ -67,10 +71,8 @@ export default function PlaygroundPage() {
             }, { skipAuth: true });
 
             if (res && res.session_token) {
-                // Update navStore (updates both in-memory state AND localStorage).
-                // Direct localStorage.setItem would be missed by the store if it
-                // was already initialised in this SPA session.
                 useNavStore.getState().setActiveMode('public_playground');
+                localStorage.setItem('saimor_active_mode', 'public_playground');  // ← CRITICAL: coreRequest reads this
                 localStorage.setItem('saimor_playground_session', res.session_token);
                 localStorage.setItem('saimor_tenant', res.tenant_id);
                 localStorage.setItem('saimor_role', res.role);
