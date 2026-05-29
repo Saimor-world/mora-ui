@@ -18,7 +18,7 @@ export function useAutoOpenDossier(
     context: StoredWebsiteEntryContext | null,
     dossierNodeId: string | null
 ): void {
-    const { revealPane } = usePaneStore();
+    const { openPane } = usePaneStore();
     const fired = useRef(false);
 
     useEffect(() => {
@@ -36,7 +36,8 @@ export function useAutoOpenDossier(
         const moraMessage = `Was sind meine drei dringendsten Maßnahmen für ${domain}?${taskHint}`;
 
         const t1 = setTimeout(() => {
-            revealPane('dossier-main', {
+            openPane({
+                id: 'dossier-main',
                 type: 'document',
                 title: `${context.companyName} — Dossier`,
                 size: { width: 760, height: 620 },
@@ -45,7 +46,8 @@ export function useAutoOpenDossier(
         }, 800);
 
         const t2 = setTimeout(() => {
-            revealPane('chat-main', {
+            openPane({
+                id: 'chat-main',
                 type: 'chat',
                 title: 'Môra',
                 size: { width: 860, height: 680 },
