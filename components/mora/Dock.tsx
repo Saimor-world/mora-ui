@@ -781,8 +781,14 @@ export const Dock = () => {
             );
         }
 
+        // Larry Dashboard is OWNER ONLY (sensitive infra/agent data). Remove it
+        // from the dock for everyone except the owner, in every mode.
+        if (user?.role !== 'owner') {
+            items = items.filter((item) => item.action !== 'larry');
+        }
+
         return items;
-    }, [mod, DOCK_ICON_MAP, activeMode]);
+    }, [mod, DOCK_ICON_MAP, activeMode, user?.role]);
 
     const orbStateLabel = useMemo(() => {
         switch (orbState) {

@@ -1260,11 +1260,14 @@ export const HomeSurface: React.FC = () => {
                         <HomeMiniAction icon={<Mail size={13} />} label="Mail" onClick={openMail} />
                         <HomeMiniAction icon={<Wrench size={13} />} label={localTruthStatusLabel} onClick={openLocalTruth} />
                         <HomeMiniAction icon={<Globe size={13} />} label={browserStatusLabel} onClick={openBrowserConnect} />
-                        <HomeMiniAction
-                            icon={<ExternalLink size={13} />}
-                            label="Larry"
-                            onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
-                        />
+                        {/* Larry Dashboard — OWNER ONLY (sensitive infra/agent data). */}
+                        {user?.role === 'owner' && (
+                            <HomeMiniAction
+                                icon={<ExternalLink size={13} />}
+                                label="Larry"
+                                onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
+                            />
+                        )}
                     </div>
                 </div>
             </aside>
