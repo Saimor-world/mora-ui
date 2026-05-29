@@ -274,8 +274,8 @@ export function WallPane() {
     useEffect(() => {
         let cancelled = false;
         setLoading(true);
-        coreGet<{ entries: WallEntry[] }>('/v3/playground/wall-entries', { skipAuth: true })
-            .then(res => { if (!cancelled) setEntries(res?.entries ?? []); })
+        coreGet('/v3/playground/wall-entries', { skipAuth: true })
+            .then((res: { entries?: WallEntry[] } | null) => { if (!cancelled) setEntries(res?.entries ?? []); })
             .catch(() => { if (!cancelled) setEntries([]); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
