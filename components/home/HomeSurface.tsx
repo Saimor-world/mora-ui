@@ -972,8 +972,8 @@ export const HomeSurface: React.FC = () => {
                     )}
                 </div>
 
-                {/* Môras Vorschläge & Tipps */}
-                {activeMode !== 'public_playground' && (
+                {/* Môras Vorschläge & Tipps — shown in all modes incl. public_playground */}
+                {moraSuggestions.length > 0 && (
                     <div className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 flex flex-col gap-3">
                         <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
                         <div>

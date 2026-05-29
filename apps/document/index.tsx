@@ -14,6 +14,7 @@ import { toast } from '@/lib/toast';
 import { openNavigationOutcome, type DocumentNavigationContext } from '@/lib/utils/searchOpen';
 import { getNodeSourceFileId, getNodeSourceFileName, openSourceFileForNode } from '@/lib/utils/contentOpen';
 import type { AppProps } from '@/lib/apps/types';
+import { AuditDossierView } from '@/components/panes/AuditDossierView';
 
 interface NodeRelation {
     type?: string;
@@ -106,7 +107,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
 
     const fileExtension = useMemo(() => name?.split('.').pop()?.toLowerCase() || '', [name]);
     const isPDF = fileExtension === 'pdf' || type === 'pdf';
-    const isMarkdown = ['md', 'markdown'].includes(fileExtension) || type === 'markdown';
+    const isMarkdown = ['md', 'markdown'].includes(fileExtension) || type === 'markdown' || type === 'document';
     const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(fileExtension);
     const isVideo = ['mp4', 'webm', 'mov'].includes(fileExtension);
     const canEditCoreDocument = Boolean(nodeId) && !isPDF && !isImage && !isVideo;
@@ -237,6 +238,10 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     };
 
     const renderContent = () => {
+        // Audit dossier: rich visual view when metadata.audit is present
+        if (!isLoading && !loadError && metadata?.audit) {
+            return <AuditDossierView name={name} nodeId={nodeId} metadata={metadata} />;
+        }
         if (isLoading) {
             return (
                 <div className="flex items-center justify-center h-full p-6">
