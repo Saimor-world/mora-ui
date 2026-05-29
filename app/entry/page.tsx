@@ -5,6 +5,7 @@ import { WebsiteEntryPersistence } from '@/components/entry/WebsiteEntryPersiste
 import { WebsiteEntryTokenLogin } from '@/components/entry/WebsiteEntryTokenLogin';
 import { DemoWelcomeCardClient } from '@/components/entry/DemoWelcomeCardClient';
 import { DemoDirectEntry } from '@/components/entry/DemoDirectEntry';
+import { SecurityCheckEntry } from '@/components/entry/SecurityCheckEntry';
 
 type EntryPageProps = {
     searchParams?: Promise<Record<string, string | string[] | undefined>>;
@@ -35,7 +36,12 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
         return <DemoDirectEntry token={token} />;
     }
 
-    // Demo-Flow: if we have a website context, show the guided welcome card first
+    // Security Check: full immersive entry — handles its own auth via SecurityCheckPlaygroundLogin
+    if (websiteContext && websiteContext.entity === 'security-audit') {
+        return <SecurityCheckEntry context={websiteContext} />;
+    }
+
+    // Other website contexts (digital-blueprint etc): guided welcome card
     if (websiteContext) {
         return (
             <main className="min-h-screen bg-[#05040d] text-white">
