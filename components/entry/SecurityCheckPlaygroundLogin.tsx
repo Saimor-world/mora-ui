@@ -15,7 +15,7 @@ interface Props {
 /**
  * Silently authenticates the visitor as a playground guest.
  * Uses /v3/playground/guest-session (shared playground tenant — real data, live OS).
- * Saves websiteEntryContext to localStorage, sets activeMode = 'personal_demo'.
+ * Saves websiteEntryContext to localStorage, sets activeMode = 'visitor'.
  * Calls onReady on success, onError on failure.
  * Renders nothing — invisible auth layer that runs in background while visitor reads.
  */
