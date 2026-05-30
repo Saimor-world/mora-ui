@@ -25,7 +25,7 @@ interface NavState {
   activeFolderId: string | null;
   isStandardMode: boolean;
   nameConflict: NameConflictState | null;
-  activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview';
+  activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor';
 
   setViewLevel(level: ViewLevel): void;
   setCoreMode(mode: CoreMode): void;
@@ -43,7 +43,7 @@ interface NavState {
   navigateToDepartment(deptId: string): void;
   navigateToSpace(spaceId: string): void;
   navigateToFolder(folderId: string | null): void;
-  setActiveMode(mode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview'): void;
+  setActiveMode(mode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor'): void;
 }
 
 export const useNavStore = create<NavState>((set, get) => ({

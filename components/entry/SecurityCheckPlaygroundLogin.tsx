@@ -52,8 +52,8 @@ export function SecurityCheckPlaygroundLogin({ context, onReady, onError }: Prop
                 // Persist scan context so HomeSurface can read it on /home
                 saveWebsiteEntryContext(context, { openOnHome: true });
 
-                // Mark this session as personal demo (not generic playground)
-                useNavStore.getState().setActiveMode('personal_demo');
+                // Mark this session as visitor (identity from scan context — no API company)
+                useNavStore.getState().setActiveMode('visitor');
 
                 onReady();
             } catch {

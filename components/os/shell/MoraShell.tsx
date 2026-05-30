@@ -254,7 +254,7 @@ const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
 // MODE INDICATOR BANNER
 // =============================================================================
 
-const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' }> = ({ activeMode }) => {
+const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor' }> = ({ activeMode }) => {
     if (activeMode === 'real_hq') return null;
 
     let borderClass = '';
@@ -281,16 +281,22 @@ const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_playground
         glowColor = 'shadow-[0_0_20px_rgba(245,158,11,0.15)]';
         badgeText = 'Private Preview';
         modeText = 'Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden geloescht.';
+    } else if (activeMode === 'visitor') {
+        borderClass = 'border-emerald-500/30';
+        bgClass = 'bg-emerald-500/5';
+        glowColor = 'shadow-[0_0_20px_rgba(16,185,129,0.15)]';
+        badgeText = 'Visitor';
+        modeText = 'Deine personalisierte Ansicht basierend auf deinem Security Scan.';
     }
 
     return (
         <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[49] flex items-center gap-3 px-4 py-2 rounded-full border ${borderClass} ${bgClass} backdrop-blur-xl ${glowColor} transition-all pointer-events-auto`}>
             <span className="flex h-2 w-2 relative">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    activeMode === 'public_playground' ? 'bg-cyan-400' : activeMode === 'personal_demo' ? 'bg-violet-400' : 'bg-amber-400'
+                    activeMode === 'public_playground' ? 'bg-cyan-400' : activeMode === 'personal_demo' ? 'bg-violet-400' : activeMode === 'visitor' ? 'bg-emerald-400' : 'bg-amber-400'
                 }`} />
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                    activeMode === 'public_playground' ? 'bg-cyan-500' : activeMode === 'personal_demo' ? 'bg-violet-500' : 'bg-amber-500'
+                    activeMode === 'public_playground' ? 'bg-cyan-500' : activeMode === 'personal_demo' ? 'bg-violet-500' : activeMode === 'visitor' ? 'bg-emerald-500' : 'bg-amber-500'
                 }`} />
             </span>
             <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
@@ -344,7 +350,7 @@ export const MoraShell: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const storeOrbState = useOrbStore((s) => s.orbState);
-    const { data: companiesData = [] } = useCompanies();
+    const { data: companiesData = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
     const companies = companiesData;
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
@@ -381,8 +387,25 @@ export const MoraShell: React.FC = () => {
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
     const displayCompany = React.useMemo(() => {
+        // Visitor mode: identity comes only from websiteEntryContext — no API company
+        if (activeMode === 'visitor' && websiteEntryContext?.companyName) {
+            return {
+                id: `visitor-${websiteEntryContext.id || 'scan'}`,
+                tenant_id: 'visitor',
+                owner_id: 'visitor',
+                name: websiteEntryContext.companyName,
+                slug: websiteEntryContext.companyName.toLowerCase().replace(/\s+/g, '-'),
+                description: websiteEntryContext.summary || '',
+                logo_url: null,
+                settings: null,
+                is_demo: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            };
+        }
+
         const baseCompany = activeCompanyForView || activeCompany;
-        
+
         // If we have a website context, it should dominate the UI experience in demo mode
         if (websiteEntryContext?.companyName) {
             const contextId = websiteEntryContext.id || 'current-scan';
@@ -412,7 +435,7 @@ export const MoraShell: React.FC = () => {
         }
         
         return baseCompany;
-    }, [activeCompany, activeCompanyForView, user?.id, user?.tenant_id, websiteEntryContext]);
+    }, [activeMode, activeCompany, activeCompanyForView, user?.id, user?.tenant_id, websiteEntryContext]);
     const displayCompanies = React.useMemo(() => {
         if (!displayCompany || !websiteEntryContext?.companyName) return filteredCompanies;
         return [
