@@ -453,19 +453,13 @@ export const useMoraStore = create<MoraState>((set, get) => ({
                 || viewMode === 'demo';
             let data = asArray<any>(await fetchCompanies(includeDemo));
 
-            // Use DB name if available, only fallback to defaults if empty/null
+            // Use DB name if available, empty string if not
             data = asArray<any>(data).map((company: any) => {
                 let name = company?.name?.trim();
 
-                // Only use fallback names if DB name is empty/null
+                // No fallback names - empty string means nothing renders
                 if (!name) {
-                    if (company?.tenant_id === TENANT_HQ) {
-                        name = 'Saimor HQ';
-                    } else if (company?.is_demo || company?.tenant_id === TENANT_DEMO || checkDemoTenant(company?.tenant_id)) {
-                        name = 'Simple Coffee Group';
-                    } else {
-                        name = 'Workspace';
-                    }
+                    name = '';
                 }
 
                 return { ...company, name };
