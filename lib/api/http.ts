@@ -89,36 +89,16 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     };
 
     if (!options.skipAuth) {
-        let finalToken: string | null = null;
-        const activeMode = typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') : null;
-        const publicCookieToken = readCookie('mora_public_token');
-        const playgroundSessionToken = typeof window !== 'undefined' ? localStorage.getItem('saimor_playground_session') : null;
-
-        // Use playground token if: mode is explicitly playground, OR if the
-        // mora_public_token cookie is present (set by ingest-audit before the
-        // redirect — activeMode may not be set yet on first load).
-        if (activeMode === 'public_playground' || publicCookieToken || playgroundSessionToken) {
-            finalToken = publicCookieToken || playgroundSessionToken;
-        } else {
-            const token = readCookie(AUTH_COOKIE);
-            // Only use devToken if NO cookie is present - gives priority to fresh sessions
-            const devToken = !token && isLocalhost() ? localStorage.getItem('saimor_dev_token') : null;
-            finalToken = token || devToken;
-        }
+        const token = readCookie(AUTH_COOKIE) || readCookie('mora_session');
+        const devToken = !token && isLocalhost()
+            ? (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null)
+            : null;
+        const finalToken = token || devToken;
 
         if (finalToken) {
-            // Check if token is expired BEFORE making request
             if (isTokenExpired(finalToken)) {
-                // Clear stale readable tokens, but still continue the request.
-                // A valid HttpOnly core session may still exist server-side.
                 if (typeof window !== 'undefined') {
-                    if (activeMode === 'public_playground') {
-                        localStorage.removeItem('saimor_playground_session');
-                        document.cookie = `mora_public_token=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-                    } else {
-                        localStorage.removeItem('saimor_dev_token');
-                        document.cookie = `${AUTH_COOKIE}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT`;
-                    }
+                    localStorage.removeItem('saimor_dev_token');
                 }
             } else {
                 headers['Authorization'] = `Bearer ${finalToken}`;
