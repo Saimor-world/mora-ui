@@ -139,7 +139,7 @@ function FeaturedCard({ entry, onMora }: { entry: WallEntry; onMora: (e: WallEnt
                         className="rounded-xl px-4 py-3 text-[13px] text-white/65 italic leading-relaxed"
                         style={{ background: 'rgba(255,255,255,0.04)', borderLeft: `2px solid ${p.border}` }}
                     >
-                        „{entry.message}"
+                        &bdquo;{entry.message}&ldquo;
                     </div>
                 )}
             </div>
@@ -208,7 +208,7 @@ function CompactCard({ entry, onMora }: { entry: WallEntry; onMora: (e: WallEntr
 
             {entry.message && (
                 <p className="text-[11px] text-white/45 italic leading-relaxed line-clamp-2">
-                    „{entry.message}"
+                    &bdquo;{entry.message}&ldquo;
                 </p>
             )}
 

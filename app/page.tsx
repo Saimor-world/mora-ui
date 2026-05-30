@@ -136,7 +136,7 @@ function RootPageContent() {
                         window.location.reload();
                     }}
                     userName={userName}
-                    companyName=””
+                    companyName=""
                 />
             ) : (
                 <WelcomeScreen onAuthenticated={handleAuthenticated} />
