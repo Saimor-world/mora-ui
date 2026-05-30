@@ -1,3 +1,12 @@
+export function decodeCtParam(ct: string): Record<string, unknown> | null {
+    try {
+        const [encoded] = ct.split('.');
+        return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+    } catch {
+        return null;
+    }
+}
+
 export type WebsiteEntryContext = {
     surface?: string;
     entity?: string;
@@ -23,20 +32,41 @@ export function firstQueryValue(value: string | string[] | undefined) {
 }
 
 export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | null {
-    const surface = firstQueryValue(query.surface);
-    const entity = firstQueryValue(query.entity);
-    const id = firstQueryValue(query.id);
+    // Prefer signed context token over loose params
+    const ctParam = firstQueryValue(query.ct);
+    const decoded = ctParam ? decodeCtParam(ctParam) : null;
+
+    const surface = firstQueryValue(query.surface) ?? (decoded ? 'website' : undefined);
+    const entity = firstQueryValue(query.entity) ?? (decoded ? 'security-audit' : undefined);
+    const id = firstQueryValue(query.id) ?? (decoded ? String(decoded.id ?? '') : undefined);
+
     if (surface !== 'website' || !entity || !id) return null;
 
-    const companyParam = firstQueryValue(query.company);
-    const email = firstQueryValue(query.email);
-    const domain = firstQueryValue(query.domain);
-    const score = parseScore(firstQueryValue(query.score));
-    const level = firstQueryValue(query.level);
-    const grade = firstQueryValue(query.grade);
-    const summary = firstQueryValue(query.summary);
-    const entryToken = firstQueryValue(query.entry_token) || firstQueryValue(query.token);
-    const actions = parseActions(firstQueryValue(query.actions));
+    const companyParam = decoded
+        ? String(decoded.company ?? '')
+        : firstQueryValue(query.company);
+    const email = decoded
+        ? String(decoded.email ?? '')
+        : firstQueryValue(query.email);
+    const domain = decoded
+        ? String(decoded.domain ?? '')
+        : firstQueryValue(query.domain);
+    const score = decoded
+        ? parseScore(String(decoded.score ?? ''))
+        : parseScore(firstQueryValue(query.score));
+    const level = decoded
+        ? String(decoded.level ?? '')
+        : firstQueryValue(query.level);
+    const grade = decoded
+        ? String(decoded.grade ?? '')
+        : firstQueryValue(query.grade);
+    const summary = decoded
+        ? String(decoded.summary ?? '')
+        : firstQueryValue(query.summary);
+    const entryToken = firstQueryValue(query.ct) || firstQueryValue(query.entry_token) || firstQueryValue(query.token);
+    const actions = decoded
+        ? (decoded.actions as string[] | undefined) ?? []
+        : parseActions(firstQueryValue(query.actions));
     const companyName = normalizeCompanyName(companyParam, domain);
     const isAudit = entity === 'security-audit';
 
