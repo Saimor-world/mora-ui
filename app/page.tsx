@@ -49,13 +49,6 @@ function RootPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { data: session, status } = useRuntimeSession();
-    // DEV BACKDOOR
-    useEffect(() => {
-        if (searchParams.get('dev_login') === 'true') {
-            writeCookie('mora_session', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJocS1hZG1pbiIsInJvbGUiOiJvd25lciIsInRlbmFudCI6InNhaW1vciIsImlzcyI6InNhaW1vci5tb3JhIiwiYXVkIjoic2FpbW9yLmNsaWVudHMiLCJleHAiOjE4MTA3MTc5NjYsImlhdCI6MTc3OTE4MTk2Nn0.Ak2QD9idCZ5XDrcs8he1aplceNxwBkFfyPwCxt7ohic');
-            router.push('/home');
-        }
-    }, [searchParams, router]);
 
     const [showLockScreen, setShowLockScreen] = useState(false);
     const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
