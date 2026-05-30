@@ -22,7 +22,7 @@ export const DEFAULT_SURFACE_PROFILE: SurfaceProfileSnapshot = {
     isLocalTruthSurface: false,
     isHqSurface: false,
     workspaceTabLabel: 'Organisation',
-    fallbackCompanyName: 'Organisation',
+    fallbackCompanyName: '',
     roleBadgeLabel: 'Arbeitsmodus',
     companySwitcherEnabled: true,
 };
@@ -37,7 +37,7 @@ const PUBLIC_DEMO_PROFILE: SurfaceProfileSnapshot = {
     isLocalTruthSurface: false,
     isHqSurface: false,
     workspaceTabLabel: 'Demo',
-    fallbackCompanyName: 'Simple Coffee Group',
+    fallbackCompanyName: '',
     roleBadgeLabel: 'Demo',
     companySwitcherEnabled: false,
 };
@@ -52,7 +52,7 @@ const LOCAL_TRUTH_PROFILE: SurfaceProfileSnapshot = {
     isLocalTruthSurface: true,
     isHqSurface: false,
     workspaceTabLabel: 'Instanz',
-    fallbackCompanyName: 'Interne Instanz',
+    fallbackCompanyName: '',
     roleBadgeLabel: 'Intern',
     companySwitcherEnabled: true,
 };
@@ -68,7 +68,7 @@ const HQ_PROFILE: SurfaceProfileSnapshot = {
     isLocalTruthSurface: false,
     isHqSurface: true,
     workspaceTabLabel: 'HQ',
-    fallbackCompanyName: 'Workspace',
+    fallbackCompanyName: '',
     roleBadgeLabel: 'HQ-Modus',
     companySwitcherEnabled: false,
 };
@@ -112,18 +112,11 @@ export const formatCompanyContextLabel = (
     profile: SurfaceProfileSnapshot,
     companyCount: number
 ) => {
-    if (profile.isPublicDemoSurface) {
-        return 'Beispielsystem';
+    if (profile.isPublicDemoSurface) return 'Beispielsystem';
+    if (profile.isHqSurface || profile.isLocalTruthSurface) {
+        if (companyCount <= 0) return '';
+        return companyCount === 1 ? '1 Organisation' : `${companyCount} Organisationen`;
     }
-
-    if (profile.isHqSurface) {
-        return 'Saimor HQ';
-    }
-
-    if (profile.isLocalTruthSurface) {
-        return 'Interne Instanz';
-    }
-
     if (companyCount <= 0) return 'Keine Organisation';
     return companyCount === 1 ? '1 Organisation' : `${companyCount} Organisationen`;
 };

@@ -781,8 +781,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             const sessionCompanyName = user?.active_company_name?.trim();
             if (sessionCompanyName) return sessionCompanyName;
             if (isPublicDemoSurface && (isDemo || tenantId === TENANT_DEMO)) return 'Demo-Instanz';
-            if (isDemo || tenantId === TENANT_DEMO) return 'Simple Coffee Group';
-            if (tenantId === TENANT_HQ) return 'Interne Instanz';
+            if (isDemo || tenantId === TENANT_DEMO) return '';
+            if (tenantId === TENANT_HQ) return '';
             return 'Organisation nicht verfügbar';
         }
         return raw;
