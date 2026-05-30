@@ -19,7 +19,7 @@ import type { PerceptionBundle, PerceptionRequest } from '@/lib/types/perception
  *
  * See: docs/superpowers/specs/2026-04-25-real-mora-design.md §2.2
  */
-export function useMoraPerception(req: PerceptionRequest = {}) {
+export function useMoraPerception(req: PerceptionRequest = {}, options?: { enabled?: boolean }) {
   const key = JSON.stringify(req);
   return useQuery<PerceptionBundle>({
     queryKey: queryKeys.perception(key),
@@ -27,5 +27,6 @@ export function useMoraPerception(req: PerceptionRequest = {}) {
     staleTime: STALE_TIMES.perception,
     refetchOnWindowFocus: false,
     retry: 1,
+    enabled: options?.enabled !== false,
   });
 }

@@ -53,8 +53,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const { removePane, minimizePane, focusPane, getPane, updatePane, updatePanePosition, updatePaneSize } = usePaneStore();
     const pane = getPane(id);
     const isActive = usePaneStore((state) => state.activePaneId === id);
-    const { viewLevel, activeCompanyId } = useNavStore();
-    const { data: companies = [] } = useCompanies();
+    const { viewLevel, activeCompanyId, activeMode } = useNavStore();
+    const { data: companies = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
     const safeCompanies = Array.isArray(companies) ? companies : [];
     const resolvedCompanyId = activeCompanyId || safeCompanies[0]?.id || null;
     const surfaceProfile = useSurfaceProfile();

@@ -142,9 +142,9 @@ export default function SettingsApp({ paneId }: AppProps) {
     const { data: session } = useRuntimeSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
-    const { activeCompanyId, isStandardMode, setIsStandardMode } = useNavStore();
+    const { activeCompanyId, isStandardMode, setIsStandardMode, activeMode } = useNavStore();
     const { user, updateUserSettings } = useSessionStore();
-    const { data: companies = [] } = useCompanies();
+    const { data: companies = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const { data: treeData = [] } = useTree(activeCompanyId);
     const queryClient = useQueryClient();

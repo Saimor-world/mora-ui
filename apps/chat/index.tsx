@@ -653,6 +653,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         activeSpaceId,
         activeFolderId,
         viewLevel,
+        activeMode,
     } = useNavStore();
     const { data: departments } = useDepartments(activeCompanyId);
     const pane = getPane(paneId);
@@ -753,7 +754,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 folder_id: activeFolderId ?? undefined,
             },
         },
-    });
+    }, { enabled: activeMode !== 'visitor' });
 
     const communicationContextMessage = useMemo(
         () => buildCommunicationOperationalContextMessage(
