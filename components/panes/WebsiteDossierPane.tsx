@@ -5,6 +5,7 @@ import { ExternalLink, FileText, Mail, ShieldCheck, SquareCheckBig } from 'lucid
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
+import { useDossierView } from '@/lib/queries/useDossierView';
 
 type Props = {
     id: string;
@@ -21,6 +22,15 @@ const priorityClass: Record<string, string> = {
 
 export const WebsiteDossierPane: React.FC<Props> = ({ id, data }) => {
     const context = data?.context;
+
+    // Backend-verified facts take precedence over URL-derived context.
+    // Rooms/documents/tasks still come from context (next migration step).
+    const { data: view } = useDossierView(context?.id);
+    const companyName = view?.company?.name || context?.companyName || '';
+    const score = view?.audit?.score ?? context?.score;
+    const domain = view?.audit?.domain || context?.domain;
+    const level = view?.audit?.level || context?.level || context?.grade;
+
     const pane = usePaneStore((s) => s.panes.find((p) => p.id === id));
     const activePaneId = usePaneStore((s) => s.activePaneId);
     const updatePanePosition = usePaneStore((s) => s.updatePanePosition);
@@ -57,10 +67,10 @@ export const WebsiteDossierPane: React.FC<Props> = ({ id, data }) => {
                         <div>
                             <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/55">Website Dossier</div>
                             <h2 className="mt-2 text-3xl font-light tracking-[-0.03em] text-white/92">
-                                {context?.companyName || 'Website-Check'}
+                                {companyName || 'Website-Check'}
                             </h2>
                             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/45">
-                                {context?.domain ? <span>{context.domain}</span> : null}
+                                {domain ? <span>{domain}</span> : null}
                                 {context?.email ? (
                                     <span className="inline-flex items-center gap-1">
                                         <Mail size={12} />
@@ -71,8 +81,8 @@ export const WebsiteDossierPane: React.FC<Props> = ({ id, data }) => {
                         </div>
                         <div className="rounded-2xl border border-emerald-300/14 bg-emerald-400/[0.07] px-5 py-4 text-right">
                             <div className="text-[10px] uppercase tracking-[0.2em] text-emerald-100/45">Board-Signal</div>
-                            <div className="mt-1 text-3xl font-light text-emerald-50">{context?.score ?? '--'}</div>
-                            <div className="text-xs text-emerald-100/44">{context?.grade || context?.level || 'bereit'}</div>
+                            <div className="mt-1 text-3xl font-light text-emerald-50">{score ?? '--'}</div>
+                            <div className="text-xs text-emerald-100/44">{level || 'bereit'}</div>
                         </div>
                     </div>
                 </div>
