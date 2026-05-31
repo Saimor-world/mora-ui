@@ -26,6 +26,7 @@ const MOCK_ENTRIES = [
 describe('WallPane', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        usePaneStore.getState().reset();
         (coreGet as jest.Mock).mockResolvedValue({ entries: MOCK_ENTRIES });
     });
 
@@ -59,6 +60,8 @@ describe('WallPane', () => {
         const moraButtons = screen.getAllByRole('button', { name: /môra/i });
         fireEvent.click(moraButtons[0]);
 
-        expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'chat' }));
+        // Assert against the real store: a chat pane now exists.
+        const chatPane = usePaneStore.getState().panes.find(p => p.type === 'chat');
+        expect(chatPane).toBeDefined();
     });
 });
