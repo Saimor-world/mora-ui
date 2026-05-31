@@ -2,20 +2,20 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
-// Mock coreGet
+// Mock only the HTTP boundary — never the store.
 jest.mock('@/lib/api/http', () => ({
     coreGet: jest.fn(),
 }));
 import { coreGet } from '@/lib/api/http';
 
-// Mock paneStore openPane
-const mockOpenPane = jest.fn();
-jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: (sel?: any) => {
-        const state = { openPane: mockOpenPane };
-        return typeof sel === 'function' ? sel(state) : state;
-    },
-}));
+// Real paneStore — no mock. Read actual state through the real hook.
+import { usePaneStore } from '@/lib/store/paneStore';
+
+// Tiny probe that surfaces the live pane list from the real store.
+function PaneProbe() {
+    const panes = usePaneStore((s) => s.panes);
+    return <div data-testid="pane-types">{panes.map((p) => p.type).join(',')}</div>;
+}
 
 const MOCK_ENTRIES = [
     { id: 'entry-1', domain: 'acme.de', score: 28, grade: 'D', level: 'Kritisch', industry: 'Handwerk', message: 'War schockierend', confirmed_at: '2026-05-29T10:00:00Z' },
@@ -52,16 +52,21 @@ describe('WallPane', () => {
         expect(screen.queryByText('good.de')).not.toBeInTheDocument();
     });
 
-    it('opens chat pane with pre-seeded prompt when Mora button clicked', async () => {
+    it('opens a chat pane when the Mora button is clicked', async () => {
         const { WallPane } = await import('@/components/panes/WallPane');
-        render(<WallPane />);
+        render(
+            <>
+                <WallPane />
+                <PaneProbe />
+            </>
+        );
         await waitFor(() => expect(screen.getAllByRole('button', { name: /môra/i }).length).toBeGreaterThan(0));
 
-        const moraButtons = screen.getAllByRole('button', { name: /môra/i });
-        fireEvent.click(moraButtons[0]);
+        fireEvent.click(screen.getAllByRole('button', { name: /môra/i })[0]);
 
-        // Assert against the real store: a chat pane now exists.
-        const chatPane = usePaneStore.getState().panes.find(p => p.type === 'chat');
-        expect(chatPane).toBeDefined();
+        // Real store updated → probe reflects a chat pane.
+        await waitFor(() => {
+            expect(screen.getByTestId('pane-types').textContent).toContain('chat');
+        });
     });
 });
