@@ -7,6 +7,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { resolveCompanyName } from '@/lib/home/resolveCompanyName';
+import { HomeViewHighlights } from '@/components/home/HomeViewHighlights';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -977,6 +978,9 @@ export const HomeSurface: React.FC = () => {
                         </div>
                     )}
                 </div>
+
+                {/* View-Highlights: Aufmerksamkeit + Nächste Aufgaben aus dem Backend */}
+                <HomeViewHighlights view={homeView} />
 
                 {/* Môras Vorschläge & Tipps — shown in all modes incl. public_playground */}
                 {moraSuggestions.length > 0 && (
