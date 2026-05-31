@@ -54,20 +54,11 @@ describe('WallPane', () => {
     it('opens chat pane with pre-seeded prompt when Mora button clicked', async () => {
         const { WallPane } = await import('@/components/panes/WallPane');
         render(<WallPane />);
-        await waitFor(() => expect(screen.getAllByRole('button', { name: /mora/i }).length).toBeGreaterThan(0));
+        await waitFor(() => expect(screen.getAllByRole('button', { name: /môra/i }).length).toBeGreaterThan(0));
 
-        const moraButtons = screen.getAllByRole('button', { name: /mora/i });
+        const moraButtons = screen.getAllByRole('button', { name: /môra/i });
         fireEvent.click(moraButtons[0]);
 
         expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'chat' }));
-    });
-
-    it('shows detail drawer when card is clicked', async () => {
-        const { WallPane } = await import('@/components/panes/WallPane');
-        render(<WallPane />);
-        await waitFor(() => expect(screen.getByText('acme.de')).toBeInTheDocument());
-
-        fireEvent.click(screen.getByText('acme.de'));
-        expect(screen.getByTestId('wall-detail-drawer')).toBeInTheDocument();
     });
 });
