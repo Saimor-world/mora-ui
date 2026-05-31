@@ -48,6 +48,8 @@ export const STALE_TIMES = {
 export const queryKeys = {
   companies: () => ['companies'] as const,
   company: (id: string) => ['companies', id] as const,
+  viewHome: () => ['view', 'home'] as const,
+  viewHomeInsight: () => ['view', 'home', 'insight'] as const,
 
   departments: (companyId?: string | null) =>
     companyId ? ['departments', companyId] : ['departments'],

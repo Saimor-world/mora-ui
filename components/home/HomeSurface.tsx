@@ -5,6 +5,8 @@ import { Activity, CalendarDays, ExternalLink, FileText, FolderOpen, Globe, Lock
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
+import { useHomeView } from '@/lib/queries/useHomeView';
+import { resolveCompanyName } from '@/lib/home/resolveCompanyName';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -209,6 +211,7 @@ export const HomeSurface: React.FC = () => {
     const setUser     = useSessionStore((s) => s.setUser);
     const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
     const { data: companies = [] }   = useCompanies();
+    const { data: homeView }         = useHomeView();
     const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
     const { data: departments = [] } = useDepartments(resolvedCompanyId);
     const { data: treeData = [] }    = useTree(resolvedCompanyId);
@@ -673,7 +676,7 @@ export const HomeSurface: React.FC = () => {
                     : hasCommunicationSignal
                         ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
                         : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
-    const displayCompanyName = websiteEntryContext?.companyName || currentCompany?.name || user?.active_company_name || 'Organisation';
+    const displayCompanyName = resolveCompanyName(homeView, websiteEntryContext);
 
     const stackBriefings = useMemo((): Briefing[] => {
         const items: Briefing[] = [];
