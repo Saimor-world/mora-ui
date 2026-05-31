@@ -11,7 +11,10 @@ import { coreGet } from '@/lib/api/http';
 // Mock paneStore openPane
 const mockOpenPane = jest.fn();
 jest.mock('@/lib/store/paneStore', () => ({
-    usePaneStore: (sel: any) => sel({ openPane: mockOpenPane }),
+    usePaneStore: (sel?: any) => {
+        const state = { openPane: mockOpenPane };
+        return typeof sel === 'function' ? sel(state) : state;
+    },
 }));
 
 const MOCK_ENTRIES = [
