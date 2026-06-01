@@ -46,6 +46,26 @@ const view: Lagebild = {
       relatedRelationIds: [],
       suggestedActions: [{ id: 'flow', label: 'Als Flow oeffnen', kind: 'open_flow' }],
     },
+    {
+      id: 'setup-mail',
+      source: 'mail',
+      title: 'Mail verbinden',
+      summary: 'Mail ist noch nicht verbunden.',
+      priority: 'high',
+      status: 'new',
+      trustScope: 'personal',
+      relatedNodeIds: [],
+      relatedRelationIds: [],
+      suggestedActions: [
+        {
+          id: 'mail-connect',
+          label: 'Mail verbinden',
+          kind: 'connect_source',
+          paneType: 'integrations',
+          paneData: { focus: 'mail' },
+        },
+      ],
+    },
   ],
   initiatives: [
     {
@@ -99,6 +119,21 @@ describe('OpenFlowLagebild', () => {
       title: 'Mail',
       size: { width: 960, height: 680 },
       data: {},
+    });
+  });
+
+  it('opens integrations for connector setup prompts', () => {
+    const onOpenPane = jest.fn();
+    render(<OpenFlowLagebild view={view} onOpenPane={onOpenPane} onGoExplore={jest.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mail verbinden' }));
+
+    expect(onOpenPane).toHaveBeenCalledWith({
+      id: 'integrations-main',
+      type: 'integrations',
+      title: 'Integrationen',
+      size: { width: 860, height: 680 },
+      data: { focus: 'mail' },
     });
   });
 });

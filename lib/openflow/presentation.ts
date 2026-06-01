@@ -213,7 +213,36 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
   ];
 }
 
+function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSignal[] {
+  return connectors
+    .filter((connector) => connector.status === 'needs_setup' || connector.status === 'offline' || connector.status === 'degraded')
+    .slice(0, 3)
+    .map((connector) =>
+      signal({
+        id: `setup-${connector.id}`,
+        source: connector.source,
+        title: `${connector.label} verbinden`,
+        summary: connector.detail,
+        priority: connector.id === 'mail' ? 'high' : 'normal',
+        status: 'new',
+        trustScope: 'personal',
+        suggestedActions: [
+          {
+            id: `${connector.id}-connect`,
+            label: connector.actionLabel || 'Setup oeffnen',
+            kind: 'connect_source',
+            paneType: 'integrations',
+            paneData: { focus: connector.id },
+          },
+        ],
+      })
+    );
+}
+
 export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFlowLagebild {
+  const connectors = buildConnectorStatuses(input.communicationSummary);
+  const setupSignals = buildConnectorSetupSignals(connectors);
+
   const homeChanges = (input.homeView?.changes || []).map((item) =>
     signal({
       id: buildSignalId('home-change', item.id),
@@ -322,7 +351,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   const allChanged = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals];
   const changed = allChanged.slice(0, 8);
   const attention = [...homeAttention, ...allChanged.filter((item) => item.priority === 'urgent' || item.priority === 'high')].slice(0, 5);
-  const nextSteps = [...homeNextSteps, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
+  const nextSteps = [...homeNextSteps, ...setupSignals, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
   const initiativeSignals = uniqueSignalsById([...changed, ...attention, ...nextSteps]);
 
   return {
@@ -330,6 +359,6 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     attention,
     nextSteps,
     initiatives: deriveInitiativesFromSignals(initiativeSignals).slice(0, 4),
-    connectors: buildConnectorStatuses(input.communicationSummary),
+    connectors,
   };
 }

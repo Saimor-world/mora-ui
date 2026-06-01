@@ -256,4 +256,30 @@ describe('openflow presentation', () => {
     expect(view.changed.map((item) => item.id)).not.toContain('mail-late-mail');
     expect(view.attention.map((item) => item.id)).toContain('mail-late-mail');
   });
+
+  it('promotes missing connectors into next steps so MORA can learn the user', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: null,
+      communicationSummary: {
+        mailConfigured: false,
+        calendarConfigured: false,
+        browserPermission: 'default',
+        mailStatusLabel: 'Mail nicht eingerichtet',
+        calendarStatusLabel: 'Kalender nicht eingerichtet',
+        browserStatusLabel: 'Browser freigeben',
+        localTruthStatusLabel: 'Desktop Bridge getrennt',
+      },
+    });
+
+    expect(view.nextSteps.map((item) => item.title)).toEqual(
+      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
+    );
+    expect(view.nextSteps[0].suggestedActions[0]).toEqual(
+      expect.objectContaining({ kind: 'connect_source', paneType: 'integrations' })
+    );
+  });
 });
