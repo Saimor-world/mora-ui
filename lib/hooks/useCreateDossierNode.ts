@@ -21,7 +21,6 @@ export function useCreateDossierNode(
     const { activeCompanyId } = useNavStore();
     const contextId = context?.id ?? null;
 
-    // Initialise from localStorage so we don't flash null on remount.
     const [nodeId, setNodeId] = useState<string | null>(() =>
         contextId ? getDossierNodeId(contextId) : null
     );
@@ -30,7 +29,6 @@ export function useCreateDossierNode(
     useEffect(() => {
         if (!context || !contextId || !activeCompanyId) return;
 
-        // Dedup: already created for this context.
         const existing = getDossierNodeId(contextId);
         if (existing) {
             setNodeId(existing);
@@ -44,15 +42,39 @@ export function useCreateDossierNode(
 
         createNode({
             company_id: activeCompanyId,
-            title: `${context.companyName} — Nightwatch Dossier`,
+            title: `${context.companyName} - Nightwatch Dossier`,
             type: 'document',
             content: buildDossierContent(context),
             metadata: {
-                source: 'website-entry',
+                source: 'website-security-check',
                 context_id: contextId,
+                website_entry_id: contextId,
                 domain: context.domain,
                 score: context.score,
                 expires_at: expiresAt,
+                wall_eligible: true,
+                wall_status: 'none',
+                playground: {
+                    status: 'temporary',
+                    author_type: 'visitor',
+                    visitor_id: typeof window !== 'undefined' ? window.localStorage.getItem('saimor_visitor_id') : null,
+                    visitor_only: true,
+                    expires_at: expiresAt,
+                    moderation: 'auto',
+                },
+                audit: {
+                    audit_id: contextId,
+                    domain: context.domain,
+                    score: context.score,
+                    grade: context.grade,
+                    level: context.level,
+                    summary: context.summary,
+                    findings: context.tasks.map((task) => ({
+                        title: task.title,
+                        severity: task.priority,
+                        desc: 'Aus dem Security-Check als Aufgabe vorbereitet.',
+                    })),
+                },
             },
         })
             .then(node => {
@@ -61,7 +83,7 @@ export function useCreateDossierNode(
                 setNodeId(node.id);
             })
             .catch(() => {
-                // Silent failure — demo still works without the node.
+                // Silent failure: the visitor preview still works from local scan context.
             })
             .finally(() => {
                 if (!cancelled) setIsCreating(false);

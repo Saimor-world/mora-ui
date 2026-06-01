@@ -28,6 +28,7 @@ const mockContext = {
 beforeEach(() => {
     localStorage.clear();
     jest.clearAllMocks();
+    localStorage.setItem('saimor_visitor_id', 'visitor_test');
     (useNavStore as unknown as jest.Mock).mockReturnValue({ activeCompanyId: 'company-1' });
     (createNode as jest.Mock).mockResolvedValue({ id: 'node-created-123' });
 });
@@ -43,6 +44,29 @@ it('creates a node when context has an id and company is available', async () =>
             title: expect.stringContaining('Acme GmbH'),
         })
     );
+});
+
+it('creates wall-eligible audit metadata for visitor dossiers', async () => {
+    renderHook(() => useCreateDossierNode(mockContext));
+    await waitFor(() => expect(createNode).toHaveBeenCalled());
+
+    const payload = (createNode as jest.Mock).mock.calls[0][0];
+    expect(payload.metadata).toEqual(expect.objectContaining({
+        source: 'website-security-check',
+        context_id: 'ctx-001',
+        website_entry_id: 'ctx-001',
+        wall_eligible: true,
+        wall_status: 'none',
+        playground: expect.objectContaining({
+            visitor_id: 'visitor_test',
+            visitor_only: true,
+        }),
+        audit: expect.objectContaining({
+            audit_id: 'ctx-001',
+            domain: 'acme.de',
+            score: 72,
+        }),
+    }));
 });
 
 it('stores the nodeId in localStorage after creation', async () => {

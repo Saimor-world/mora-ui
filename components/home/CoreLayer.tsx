@@ -4,6 +4,7 @@ import React from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useNavStore } from '@/lib/store/navStore';
 import { HomeSurface } from '@/components/home/HomeSurface';
+import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
 import UniverseView from '@/components/home/UniverseView';
 
 /**
@@ -25,6 +26,7 @@ import UniverseView from '@/components/home/UniverseView';
  */
 export const CoreLayer: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
+    const activeMode = useNavStore((s) => s.activeMode);
     const prefersReducedMotion = useReducedMotion();
 
     const homeVariants = {
@@ -116,7 +118,7 @@ export const CoreLayer: React.FC = () => {
                                 }}
                             />
                         </div>
-                        <HomeSurface />
+                        {activeMode === 'visitor' ? <VisitorHomeSurface /> : <HomeSurface />}
                     </motion.div>
                 ) : (
                     <motion.div

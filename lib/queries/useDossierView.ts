@@ -13,7 +13,13 @@ export interface DossierViewAudit {
     title: string;
     score: number | null;
     level: string | null;
+    grade: string | null;
     domain: string | null;
+    summary: string | null;
+    logo_url: string | null;
+    expires_at: string | null;
+    findings: Array<{ title?: string; severity?: string; desc?: string; description?: string }>;
+    recommendations: Array<{ title?: string; description?: string }>;
     created_at: string;
 }
 
