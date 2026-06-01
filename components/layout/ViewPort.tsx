@@ -3,7 +3,7 @@
 import React from 'react';
 import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
-import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
+import { DepartmentSurface } from '@/components/layers/DepartmentSurface';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
 import { AmbientRoom } from '@/components/ambient/AmbientRoom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
@@ -64,7 +64,7 @@ export const ViewPort: React.FC = () => {
                         transition={rmVariants?.transition ?? { duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
                     >
-                        <DepartmentLayer />
+                        <DepartmentSurface />
                     </motion.div>
                 )}
 
