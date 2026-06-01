@@ -11,6 +11,8 @@ import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
 import type { CoreTreeNode, NodeVisibility } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
+import { FinderInitiativeLane } from '@/components/panes/FinderInitiativeLane';
+import { deriveFolderInitiatives } from '@/lib/openflow/finderContext';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { SemanticItem } from '@/components/organic/SemanticItem';
 import {
@@ -1728,6 +1730,10 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
     const filteredFiles = filteredContent.files;
     const filteredFolders = filteredContent.folders;
+    const folderInitiatives = useMemo(
+        () => deriveFolderInitiatives([...filteredFolders, ...filteredFiles]),
+        [filteredFolders, filteredFiles],
+    );
     const unavailableCompanyFiles = useMemo(
         () => companyFiles.filter((file) => !isSourceFileAvailable(file)),
         [companyFiles],
@@ -2300,6 +2306,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
                     {/* Content Container with Animation */}
                     <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_16%_0%,rgba(16,185,129,0.2),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(180deg,rgba(1,13,11,0.82),rgba(1,7,7,0.95))] px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
+                        <FinderInitiativeLane
+                            initiatives={folderInitiatives}
+                            onOpenInUniverse={handleOpenInUniverse}
+                            onAddToInitiative={(id) => toast.success(`Zu Initiative hinzugefügt: ${folderInitiatives.find((i) => i.id === id)?.title ?? id}`)}
+                        />
                         <AnimatePresence mode="popLayout">
                             {/* Loading State */}
                             {(isLoading || isLoadingTree) && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
