@@ -170,4 +170,90 @@ describe('openflow presentation', () => {
       expect.objectContaining({ id: 'local-truth', status: 'offline' }),
     ]);
   });
+
+  it('does not derive KI initiatives from words that merely contain ai', () => {
+    const initiatives = deriveInitiativesFromSignals([
+      {
+        id: 'sig-daily-mail',
+        source: 'mail',
+        title: 'Daily Mail status available',
+        summary: 'Routine delivery status.',
+        priority: 'normal',
+        status: 'new',
+        trustScope: 'personal',
+        relatedNodeIds: [],
+        relatedRelationIds: [],
+        suggestedActions: [],
+      },
+    ]);
+
+    expect(initiatives.map((item) => item.id)).not.toContain('initiative-ki-einfuehrung');
+  });
+
+  it('deduplicates signals before deriving initiative counts from lagebild buckets', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [
+        {
+          id: 'website-mail',
+          from: 'kunde@example.com',
+          subject: 'Website Relaunch Launch Termin dringend',
+          snippet: 'Bitte Termin entscheiden.',
+          date: '2026-06-01T08:00:00.000Z',
+        },
+      ],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: null,
+      communicationSummary: {
+        mailConfigured: true,
+        calendarConfigured: true,
+        browserPermission: 'granted',
+        localTruthStatusLabel: 'Local Truth bereit',
+      },
+    });
+
+    expect(view.initiatives).toEqual([
+      expect.objectContaining({
+        id: 'initiative-website-relaunch',
+        signalCount: 1,
+        riskCount: 1,
+      }),
+    ]);
+  });
+
+  it('keeps high-priority signals in attention even when they are beyond the changed display limit', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [
+        {
+          id: 'late-mail',
+          from: 'kunde@example.com',
+          subject: 'Launch Problem dringend',
+          snippet: 'Risiko fuer Website Relaunch.',
+          date: '2026-06-01T08:00:00.000Z',
+        },
+      ],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: {
+        changes: Array.from({ length: 8 }, (_, index) => ({
+          id: `change-${index}`,
+          title: `Routine Aenderung ${index}`,
+          scope: 'Betrieb',
+          severity: 0.1,
+        })),
+      },
+      communicationSummary: {
+        mailConfigured: true,
+        calendarConfigured: true,
+        browserPermission: 'granted',
+        localTruthStatusLabel: 'Local Truth bereit',
+      },
+    });
+
+    expect(view.changed).toHaveLength(8);
+    expect(view.changed.map((item) => item.id)).not.toContain('mail-late-mail');
+    expect(view.attention.map((item) => item.id)).toContain('mail-late-mail');
+  });
 });

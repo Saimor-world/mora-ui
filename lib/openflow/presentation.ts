@@ -82,7 +82,7 @@ interface BuildOpenFlowLagebildInput {
 
 const INITIATIVE_PATTERNS = [
   { id: 'initiative-website-relaunch', title: 'Website Relaunch', match: /website|relaunch|launch/i },
-  { id: 'initiative-ki-einfuehrung', title: 'KI Einfuehrung', match: /\bki\b|ai|automation|agent/i },
+  { id: 'initiative-ki-einfuehrung', title: 'KI Einfuehrung', match: /\bki\b|\bai\b|artificial intelligence|automation|agent/i },
   { id: 'initiative-security-check', title: 'Security Check', match: /security|audit|ssl|risk|risiko/i },
   { id: 'initiative-kundenprojekt', title: 'Kundenprojekt', match: /kunde|customer|client|projekt/i },
 ];
@@ -117,6 +117,16 @@ function signal(
 
 function uniqueSourceKinds(values: OpenFlowSourceKind[]): OpenFlowSourceKind[] {
   return values.filter((value, index) => values.indexOf(value) === index);
+}
+
+function uniqueSignalsById(signals: OpenFlowSignal[]): OpenFlowSignal[] {
+  const seen = new Set<string>();
+
+  return signals.filter((item) => {
+    if (seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
 }
 
 export function deriveInitiativesFromSignals(signals: OpenFlowSignal[]): InitiativeSummary[] {
@@ -309,15 +319,17 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     })
   );
 
-  const changed = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals].slice(0, 8);
-  const attention = [...homeAttention, ...changed.filter((item) => item.priority === 'urgent' || item.priority === 'high')].slice(0, 5);
-  const nextSteps = [...homeNextSteps, ...changed.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
+  const allChanged = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals];
+  const changed = allChanged.slice(0, 8);
+  const attention = [...homeAttention, ...allChanged.filter((item) => item.priority === 'urgent' || item.priority === 'high')].slice(0, 5);
+  const nextSteps = [...homeNextSteps, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
+  const initiativeSignals = uniqueSignalsById([...changed, ...attention, ...nextSteps]);
 
   return {
     changed,
     attention,
     nextSteps,
-    initiatives: deriveInitiativesFromSignals([...changed, ...attention, ...nextSteps]).slice(0, 4),
+    initiatives: deriveInitiativesFromSignals(initiativeSignals).slice(0, 4),
     connectors: buildConnectorStatuses(input.communicationSummary),
   };
 }
