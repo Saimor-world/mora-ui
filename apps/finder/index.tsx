@@ -1124,7 +1124,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         }
         if (!UUID_RE.test(currentFolderId)) {
             setFolderContext(null);
-            setContextHint('Kontext konnte nicht eindeutig aufgeloest werden.');
+            setContextHint(null);
             return;
         }
 
@@ -1178,15 +1178,15 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             counts: { nodes: 0, subfolders: 0 },
                         }, null);
                     } else if (ec && (!ec.resolved || (ec.context_lookup && !ec.context_lookup.resolved))) {
-                        const hintReason = ec.reason || ec.context_lookup?.reason || 'Kontext-ID nicht aufloesbar';
-                        storeCache(null, `${hintReason}, Inhalte bleiben verfügbar.`);
+                        const hintReason = ec.reason || ec.context_lookup?.reason || 'Serverpfad fehlt';
+                        storeCache(null, `${hintReason}. Finder nutzt den lokalen Pfad weiter.`);
                     } else {
-                        storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
+                        storeCache(null, 'Serverpfad fehlt. Finder nutzt den lokalen Pfad weiter.');
                     }
                 })
                 .catch(() => {
                     if (!cancelled) {
-                        storeCache(null, 'Kontext konnte nicht aufgeloest werden.');
+                        storeCache(null, 'Serverpfad gerade nicht erreichbar. Finder nutzt den lokalen Pfad weiter.');
                     }
                 });
         }

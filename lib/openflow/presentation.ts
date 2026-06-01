@@ -99,6 +99,11 @@ function buildSignalId(prefix: string, value: string | number) {
   return `${prefix}-${String(value).replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase()}`;
 }
 
+function cleanTitle(value: string | null | undefined, fallback: string): string {
+  const title = (value || '').trim();
+  return title || fallback;
+}
+
 function inferInitiativeId(title: string): string | undefined {
   return INITIATIVE_PATTERNS.find((pattern) => pattern.match.test(title))?.id;
 }
@@ -221,15 +226,15 @@ function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSign
       signal({
         id: `setup-${connector.id}`,
         source: connector.source,
-        title: `${connector.label} verbinden`,
-        summary: connector.detail,
+        title: `${connector.label} fuer OpenClaw vorbereiten`,
+        summary: 'Setup gehoert in den OS-Bereich des Dashboards. SAIMOR OS nutzt danach nur verdichtete Signale fuer Orientierung.',
         priority: connector.id === 'mail' ? 'high' : 'normal',
         status: 'new',
         trustScope: 'personal',
         suggestedActions: [
           {
             id: `${connector.id}-connect`,
-            label: connector.actionLabel || 'Setup oeffnen',
+            label: 'Dashboard oeffnen',
             kind: 'connect_source',
             paneType: 'integrations',
             paneData: { focus: connector.id },
@@ -243,19 +248,21 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   const connectors = buildConnectorStatuses(input.communicationSummary);
   const setupSignals = buildConnectorSetupSignals(connectors);
 
-  const homeChanges = (input.homeView?.changes || []).map((item) =>
-    signal({
+  const homeChanges = (input.homeView?.changes || []).map((item) => {
+    const title = cleanTitle(item.title, 'Tageslage aktualisiert');
+
+    return signal({
       id: buildSignalId('home-change', item.id),
       source: 'os',
-      title: item.title,
+      title,
       summary: item.scope || 'Aenderung im Organisationskontext.',
       priority: priorityFromSeverity(item.severity),
       status: 'new',
       trustScope: 'organization',
       occurredAt: item.occurred_at,
-      relatedInitiativeId: inferInitiativeId(`${item.title} ${item.scope || ''}`),
-    })
-  );
+      relatedInitiativeId: inferInitiativeId(`${title} ${item.scope || ''}`),
+    });
+  });
 
   const mailSignals = input.mailPreview.map((item) =>
     signal({
@@ -320,33 +327,37 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     })
   );
 
-  const homeAttention = (input.homeView?.attention || []).map((item) =>
-    signal({
+  const homeAttention = (input.homeView?.attention || []).map((item) => {
+    const title = cleanTitle(item.title, 'Aufmerksamkeit erforderlich');
+
+    return signal({
       id: buildSignalId('home-attention', item.id),
       source: 'os',
-      title: item.title,
+      title,
       summary: item.scope || item.category || 'Braucht Aufmerksamkeit.',
       priority: priorityFromSeverity(item.severity),
       status: 'new',
       trustScope: 'organization',
-      relatedInitiativeId: inferInitiativeId(`${item.title} ${item.scope || ''}`),
+      relatedInitiativeId: inferInitiativeId(`${title} ${item.scope || ''}`),
       suggestedActions: [{ id: `${item.id}-ask`, label: 'MORA fragen', kind: 'ask_user', paneType: 'chat' }],
-    })
-  );
+    });
+  });
 
-  const homeNextSteps = (input.homeView?.next_steps || []).map((item) =>
-    signal({
+  const homeNextSteps = (input.homeView?.next_steps || []).map((item) => {
+    const title = cleanTitle(item.title, 'Naechsten Schritt pruefen');
+
+    return signal({
       id: buildSignalId('home-next', item.id),
       source: 'os',
-      title: item.title,
+      title,
       summary: item.source || 'Vorgeschlagener naechster Schritt.',
       priority: 'normal',
       status: 'new',
       trustScope: 'organization',
-      relatedInitiativeId: inferInitiativeId(`${item.title} ${item.source || ''}`),
+      relatedInitiativeId: inferInitiativeId(`${title} ${item.source || ''}`),
       suggestedActions: [{ id: `${item.id}-open`, label: 'Oeffnen', kind: 'open_flow' }],
-    })
-  );
+    });
+  });
 
   const allChanged = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals];
   const changed = allChanged.slice(0, 8);

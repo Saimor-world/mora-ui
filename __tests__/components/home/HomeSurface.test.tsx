@@ -120,6 +120,7 @@ const updatePaneSize     = jest.fn();
 const accountLogout = jest.fn();
 const resetStore    = jest.fn();
 const setUser       = jest.fn();
+const navigateToAmbient = jest.fn();
 
 // ── fixtures ───────────────────────────────────────────────────────────────
 
@@ -139,6 +140,7 @@ beforeEach(() => {
         coreMode: 'home',
         isStandardMode: false,
         setCoreMode: jest.fn(),
+        navigateToAmbient,
     } as any);
 
     useSessionStore.setState({
@@ -169,6 +171,7 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 describe('HomeSurface — rendering', () => {
     it('frames Home as immersive OpenFlow Lagebild', () => {
         renderWithDepts();
+        expect(screen.getByTestId('openflow-workspace')).toHaveClass('lg:left-[392px]');
         expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
         expect(screen.getByText('Lagebild')).toBeInTheDocument();
     });
@@ -193,6 +196,12 @@ describe('HomeSurface — rendering', () => {
     it('renders the logout button', () => {
         renderWithDepts();
         expect(screen.getByTestId('home-logout')).toBeInTheDocument();
+    });
+
+    it('opens Mora Field from the Voice Room suggestion even when browser speech support is unavailable', () => {
+        renderWithDepts();
+        fireEvent.click(screen.getByRole('button', { name: 'Voice Room' }));
+        expect(navigateToAmbient).toHaveBeenCalled();
     });
 
     it('surfaces stored website entry context as the current OS focus', async () => {

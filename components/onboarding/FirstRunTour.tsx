@@ -35,9 +35,9 @@ const STEPS: TourStep[] = [
     {
         id: 'tageslage',
         icon: Activity,
-        title: 'Tageslage',
+        title: 'Lagebild',
         body: 'Nur echte Signale — kein Lärm, kein Padding.',
-        target: { selector: '[data-tageslage-panel]', offsetX: -16 },
+        target: { selector: '[data-testid="openflow-lagebild"]', offsetX: -16 },
         accent: 'rgba(251,191,36,0.70)',
     },
 ];
@@ -85,7 +85,7 @@ export const FirstRunTour: React.FC = () => {
     // Card position: prefer right side of target, fallback to center-bottom
     const cardLeft = targetRect
         ? Math.min(targetRect.right + 20, window.innerWidth - 360)
-        : window.innerWidth / 2 - 170;
+        : window.innerWidth - 360 - 24;
     const cardTop = targetRect
         ? Math.max(16, targetRect.top + (step.target.offsetY ?? 0))
         : window.innerHeight / 2 - 80;

@@ -49,8 +49,8 @@ const view: Lagebild = {
     {
       id: 'setup-mail',
       source: 'mail',
-      title: 'Mail verbinden',
-      summary: 'Mail ist noch nicht verbunden.',
+      title: 'Mail fuer OpenClaw vorbereiten',
+      summary: 'Setup gehoert in den OS-Bereich des Dashboards.',
       priority: 'high',
       status: 'new',
       trustScope: 'personal',
@@ -59,7 +59,7 @@ const view: Lagebild = {
       suggestedActions: [
         {
           id: 'mail-connect',
-          label: 'Mail verbinden',
+          label: 'Dashboard oeffnen',
           kind: 'connect_source',
           paneType: 'integrations',
           paneData: { focus: 'mail' },
@@ -124,16 +124,14 @@ describe('OpenFlowLagebild', () => {
 
   it('opens integrations for connector setup prompts', () => {
     const onOpenPane = jest.fn();
+    const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
     render(<OpenFlowLagebild view={view} onOpenPane={onOpenPane} onGoExplore={jest.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Mail verbinden' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dashboard oeffnen' }));
 
-    expect(onOpenPane).toHaveBeenCalledWith({
-      id: 'integrations-main',
-      type: 'integrations',
-      title: 'Integrationen',
-      size: { width: 860, height: 680 },
-      data: { focus: 'mail' },
-    });
+    expect(onOpenPane).not.toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith('https://dash.saimor.world', '_blank', 'noopener,noreferrer');
+
+    openSpy.mockRestore();
   });
 });

@@ -276,10 +276,42 @@ describe('openflow presentation', () => {
     });
 
     expect(view.nextSteps.map((item) => item.title)).toEqual(
-      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
+      expect.arrayContaining(['Mail fuer OpenClaw vorbereiten', 'Kalender fuer OpenClaw vorbereiten'])
     );
     expect(view.nextSteps[0].suggestedActions[0]).toEqual(
       expect.objectContaining({ kind: 'connect_source', paneType: 'integrations' })
+    );
+  });
+
+  it('normalizes empty backend change titles before rendering OS cards', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: {
+        changes: [
+          {
+            id: 'blank-change',
+            title: '',
+            scope: 'Aenderung im Organisationskontext.',
+            severity: 0.4,
+          },
+        ],
+      },
+      communicationSummary: {
+        mailConfigured: true,
+        calendarConfigured: true,
+        browserPermission: 'granted',
+        localTruthStatusLabel: 'Local Truth bereit',
+      },
+    });
+
+    expect(view.changed[0]).toEqual(
+      expect.objectContaining({
+        id: 'home-change-blank-change',
+        title: 'Tageslage aktualisiert',
+      })
     );
   });
 });

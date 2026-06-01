@@ -48,6 +48,7 @@ import {
 import { SAIMOR_COMMAND_DECK_EVENT, publishCommandDeckState } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
+import { useAccentColor } from '@/lib/hooks/useAccentColor';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
@@ -623,6 +624,7 @@ export const Dock = () => {
     const ritualSettings = useMemo(() => resolveRitualSettings(user?.settings), [user?.settings]);
     const ritualSceneId = useMemo(() => getEffectiveRitualScene(ritualSettings), [ritualSettings]);
     const ritualScene = RITUAL_SCENES[ritualSceneId];
+    const { accentColor } = useAccentColor();
 
     const activeCompany = useMemo(
         () => safeCompanies.find(c => c.id === activeCompanyId),
@@ -1651,7 +1653,7 @@ export const Dock = () => {
                                                         />
                                                     )}
                                                     <PlasmaOrb
-                                                        color={viewMode === 'demo' ? '#6D28D9' : ritualScene.accentHex}
+                                                        color={viewMode === 'demo' ? '#6D28D9' : accentColor}
                                                         state={orbState as any}
                                                         size={48}
                                                     />

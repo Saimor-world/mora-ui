@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, AlertTriangle, ArrowRight, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, Bot, BrainCircuit, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
 
@@ -59,6 +59,13 @@ function paneSize(type: string) {
 }
 
 function openActionPane(action: OpenFlowSignal['suggestedActions'][number], onOpenPane: OpenFlowLagebildProps['onOpenPane']) {
+  if (action.kind === 'connect_source') {
+    if (typeof window !== 'undefined') {
+      window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer');
+    }
+    return;
+  }
+
   if (!action.paneType) return;
 
   onOpenPane({
@@ -75,10 +82,10 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
   const isHot = signal.priority === 'urgent' || signal.priority === 'high';
 
   return (
-    <article className="rounded-2xl border border-white/[0.08] bg-white/[0.045] p-4 shadow-[0_18px_50px_rgba(0,0,0,0.18)]">
+    <article className="rounded-xl border border-white/[0.08] bg-white/[0.045] p-3 shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-cyan-100/45">
+          <div className="mb-1.5 flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-cyan-100/45">
             <span>{SOURCE_LABEL[signal.source] || signal.source}</span>
             <span className="h-1 w-1 rounded-full bg-white/25" />
             <span>{signal.trustScope}</span>
@@ -100,7 +107,7 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
       {action ? (
         <button
           type="button"
-          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-2 text-xs text-emerald-50/78 transition-colors hover:bg-emerald-400/[0.14]"
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1.5 text-xs text-emerald-50/78 transition-colors hover:bg-emerald-400/[0.14]"
           onClick={() => openActionPane(action, onOpenPane)}
         >
           {action.label}
@@ -111,24 +118,104 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
   );
 }
 
+function MyceliumField() {
+  const strands = [
+    'left-[2%] top-[16%] w-[44%] rotate-[7deg] from-emerald-300/0 via-emerald-300/24 to-cyan-200/0',
+    'left-[20%] top-[52%] w-[48%] -rotate-[13deg] from-amber-200/0 via-amber-200/20 to-rose-200/0',
+    'right-[8%] top-[30%] w-[36%] rotate-[22deg] from-violet-200/0 via-violet-200/22 to-emerald-200/0',
+    'left-[10%] bottom-[18%] w-[58%] rotate-[3deg] from-cyan-200/0 via-cyan-200/18 to-amber-200/0',
+    'right-[0%] bottom-[28%] w-[40%] -rotate-[18deg] from-rose-200/0 via-rose-200/18 to-violet-200/0',
+  ];
+  const nodes = [
+    'left-[8%] top-[22%] bg-emerald-200/55 shadow-emerald-300/40',
+    'left-[34%] top-[38%] bg-cyan-200/55 shadow-cyan-300/40',
+    'left-[52%] top-[18%] bg-amber-200/55 shadow-amber-300/40',
+    'right-[22%] top-[44%] bg-violet-200/55 shadow-violet-300/40',
+    'right-[9%] bottom-[24%] bg-rose-200/50 shadow-rose-300/35',
+    'left-[28%] bottom-[18%] bg-emerald-200/45 shadow-emerald-300/35',
+  ];
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[22px]" aria-hidden="true">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(16,185,129,0.18),transparent_28%),radial-gradient(circle_at_74%_22%,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_80%_76%,rgba(244,114,182,0.10),transparent_24%),radial-gradient(circle_at_34%_86%,rgba(34,211,238,0.12),transparent_30%)]" />
+      {strands.map((className) => (
+        <div key={className} className={`absolute h-px bg-gradient-to-r ${className}`} />
+      ))}
+      {nodes.map((className) => (
+        <div key={className} className={`absolute h-1.5 w-1.5 rounded-full shadow-[0_0_22px] ${className}`} />
+      ))}
+    </div>
+  );
+}
+
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm leading-relaxed text-white/42">
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.03] p-3 text-sm leading-relaxed text-white/42">
       {children}
     </div>
   );
 }
 
+function connectorCopy(connector: ConnectorStatus) {
+  if (connector.status === 'connected' || connector.status === 'local') {
+    return {
+      state: connector.status === 'local' ? 'lokal bereit' : 'liest Signale',
+      detail: connector.status === 'local'
+        ? 'Lokale OS-Bruecke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
+        : 'OpenClaw kann diese Quelle als persoenlichen Scout auswerten.',
+    };
+  }
+
+  return {
+    state: 'im Dashboard einrichten',
+    detail: 'Diese Quelle wird nicht hier konfiguriert. Das gehoert in den OS-Bereich des Dashboards.',
+  };
+}
+
 function ConnectorPill({ connector }: { connector: ConnectorStatus }) {
   const good = connector.status === 'connected' || connector.status === 'local';
+  const copy = connectorCopy(connector);
 
   return (
-    <div className="rounded-2xl border border-white/[0.08] bg-black/18 px-3 py-2">
+    <div className="rounded-xl border border-white/[0.08] bg-black/18 px-3 py-2">
       <div className="flex items-center justify-between gap-3">
         <span className="text-xs font-medium text-white/75">{connector.label}</span>
         <span className={good ? 'h-2 w-2 rounded-full bg-emerald-300' : 'h-2 w-2 rounded-full bg-amber-300'} />
       </div>
-      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/40">{connector.detail}</p>
+      <div className="mt-1 text-[10px] uppercase tracking-[0.13em] text-white/34">{copy.state}</div>
+      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/42">{copy.detail}</p>
+    </div>
+  );
+}
+
+function SystemTile({
+  icon: Icon,
+  label,
+  title,
+  detail,
+  tone,
+}: {
+  icon: React.ElementType;
+  label: string;
+  title: string;
+  detail: string;
+  tone: 'emerald' | 'cyan' | 'amber' | 'rose';
+}) {
+  const tones = {
+    emerald: 'border-emerald-200/12 bg-emerald-300/[0.055] text-emerald-100/82',
+    cyan: 'border-cyan-200/12 bg-cyan-300/[0.055] text-cyan-100/82',
+    amber: 'border-amber-200/12 bg-amber-300/[0.055] text-amber-100/82',
+    rose: 'border-rose-200/12 bg-rose-300/[0.055] text-rose-100/82',
+  };
+
+  return (
+    <div className={`rounded-xl border p-3 ${tones[tone]}`}>
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.17em] opacity-70">
+        <Icon size={13} />
+        {label}
+      </div>
+      <div className="mt-2 text-sm font-medium text-white/86">{title}</div>
+      <p className="mt-1 text-xs leading-relaxed text-white/46">{detail}</p>
     </div>
   );
 }
@@ -141,34 +228,35 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
   return (
     <section
       data-testid="openflow-lagebild"
-      className="relative mx-auto flex h-full w-full max-w-[1500px] flex-col gap-5 px-6 pb-28 pt-24"
+      className="relative mx-auto flex min-h-full w-full max-w-[1340px] flex-col gap-4 px-1 pb-8"
     >
+      <MyceliumField />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-emerald-50/58">
+          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-emerald-50/58">
             <Sparkles size={12} />
             SAIMOR OpenFlow
           </div>
-          <h1 className="max-w-3xl text-3xl font-light text-white">
+          <h1 className="max-w-3xl text-2xl font-light text-white">
             Lagebild
           </h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-white/54">
-            Veraenderungen, Quellen, Initiativen und naechste Schritte entstehen aus demselben Organisationsgedaechtnis.
+          <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/58">
+            Veraenderungen, Menschen, Quellen und OpenClaw-Agenten wachsen zu einem lebenden Organisationsgedaechtnis.
           </p>
         </div>
         <button
           type="button"
           onClick={onGoExplore}
-          className="inline-flex items-center gap-2 rounded-2xl border border-cyan-300/16 bg-cyan-300/[0.07] px-4 py-3 text-sm text-cyan-50/75 hover:bg-cyan-300/[0.12]"
+          className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/16 bg-cyan-300/[0.07] px-4 py-2.5 text-sm text-cyan-50/75 hover:bg-cyan-300/[0.12]"
         >
           <Network size={16} />
           Karte oeffnen
         </button>
       </div>
 
-      <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.9fr_0.9fr]">
-        <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
-          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
+      <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(340px,1.08fr)_minmax(290px,0.92fr)_minmax(300px,0.92fr)]">
+        <div className="rounded-xl border border-emerald-200/[0.10] bg-black/24 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
+          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
             <Activity size={16} className="text-cyan-200/70" />
             Was hat sich veraendert?
           </div>
@@ -176,14 +264,14 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             {changed.length > 0 ? (
               changed.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
             ) : (
-              <EmptyState>Noch keine neuen Signale. Verbinde Mail, Cloud oder Kalender, damit die Karte wachsen kann.</EmptyState>
+              <EmptyState>Noch keine neuen Signale. Sobald Dashboard, Dateien oder Teamarbeit Quellen freigeben, waechst hier die Karte.</EmptyState>
             )}
           </div>
         </div>
 
         <div className="grid gap-4">
-          <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
+          <div className="rounded-xl border border-amber-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
               <AlertTriangle size={16} className="text-amber-200/70" />
               Was braucht Aufmerksamkeit?
             </div>
@@ -196,8 +284,8 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
+          <div className="rounded-xl border border-cyan-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
               <ArrowRight size={16} className="text-emerald-200/70" />
               Naechster sinnvoller Schritt
             </div>
@@ -212,15 +300,15 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
         </div>
 
         <aside className="grid gap-4">
-          <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
+          <div className="rounded-xl border border-violet-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
               <FolderOpen size={16} className="text-violet-200/70" />
               Initiativen
             </div>
             <div className="grid gap-3">
               {view.initiatives.length > 0 ? (
                 view.initiatives.map((initiative) => (
-                  <div key={initiative.id} className="rounded-2xl border border-violet-200/10 bg-violet-300/[0.06] p-4">
+                  <div key={initiative.id} className="rounded-xl border border-violet-200/10 bg-violet-300/[0.06] p-3">
                     <h3 className="text-sm font-medium text-white/86">{initiative.title}</h3>
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/46">
                       <span>{initiative.signalCount} Signale</span>
@@ -235,16 +323,60 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
-              <Plug size={16} className="text-emerald-200/70" />
-              Quellen
+          <div className="rounded-xl border border-emerald-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-white/82">
+                <Plug size={16} className="text-emerald-200/70" />
+                OpenClaw Infrastruktur
+              </div>
+              <button
+                type="button"
+                onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
+                className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/45 hover:border-emerald-200/22 hover:text-emerald-100/80"
+              >
+                Dashboard
+                <ExternalLink size={11} />
+              </button>
             </div>
+            <p className="mb-3 text-xs leading-relaxed text-white/44">
+              Das Dashboard bleibt das eigenstaendige Produkt fuer Setup, Accounts und Quellen. Das OS nutzt daraus nur die Signale, die fuer Orientierung relevant sind.
+            </p>
             <div className="grid gap-2">
               {view.connectors.map((connector) => <ConnectorPill key={connector.id} connector={connector} />)}
             </div>
           </div>
         </aside>
+      </div>
+
+      <div className="grid gap-3 xl:grid-cols-4">
+        <SystemTile
+          icon={Bot}
+          label="Persoenlicher Agent"
+          title="arbeitet zuerst fuer dich"
+          detail="Private Quellen bleiben private Scouts. MORA bekommt nur verdichtete Hinweise."
+          tone="emerald"
+        />
+        <SystemTile
+          icon={BrainCircuit}
+          label="Department-Agent"
+          title="erkennt Reibung im Team"
+          detail="Aus Einzelspuren entstehen Team-Signale, ohne Rohdaten unnoetig hochzureichen."
+          tone="cyan"
+        />
+        <SystemTile
+          icon={Network}
+          label="Myzelium"
+          title="verbindet Arbeit mit Kontext"
+          detail="Nodes und Relations bleiben unter der Oberflaeche das Wurzelnetz des OS."
+          tone="amber"
+        />
+        <SystemTile
+          icon={Sparkles}
+          label="MORA"
+          title="navigiert Veraenderung"
+          detail="Nicht Dashboard, nicht Ablage: Orientierung ueber das, was sich wirklich bewegt."
+          tone="rose"
+        />
       </div>
     </section>
   );

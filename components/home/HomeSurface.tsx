@@ -827,16 +827,10 @@ export const HomeSurface: React.FC = () => {
             title: 'Môra Voice aktivieren',
             description: isSpeechSupported
                 ? 'Steuere Saimôr OS per Sprachbefehl und unterhalte dich direkt mit Môra.'
-                : 'Spracherkennung wird in diesem Browser nicht unterstützt (nur Chromium).',
+                : 'Oeffnet Môra Field. Wenn Sprache blockiert ist, zeigt der Raum die konkrete Mikrofon- oder Browser-Ursache.',
             icon: <Mic size={15} />,
-            onClick: () => {
-                if (isSpeechSupported) {
-                    navigateToAmbient();
-                } else {
-                    alert('Spracherkennung wird von Ihrem Browser leider nicht unterstützt.');
-                }
-            },
-            actionText: isSpeechSupported ? 'Voice Room' : 'Nicht unterstützt',
+            onClick: navigateToAmbient,
+            actionText: 'Voice Room',
             tone: 'cyan',
         });
 
@@ -894,7 +888,10 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute left-[160px] top-[35%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.08] blur-[95px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }} />
 
             {!websiteEntryContext && (
-                <div className="pointer-events-auto absolute inset-0 z-[1]">
+                <div
+                    data-testid="openflow-workspace"
+                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-36 z-[1] overflow-y-auto pr-1 lg:left-[392px] lg:right-6 lg:top-44"
+                >
                     <OpenFlowLagebild
                         view={openFlowView}
                         onOpenPane={openPane}
@@ -1037,7 +1034,7 @@ export const HomeSurface: React.FC = () => {
                 )}
             </div>
 
-            <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center xl:flex 2xl:right-[390px]">
+            <section className={`absolute left-[400px] right-[360px] top-[148px] bottom-[184px] items-center justify-center 2xl:right-[390px] ${websiteEntryContext ? 'hidden xl:flex' : 'hidden'}`}>
                 <div className="pointer-events-auto relative w-full max-w-[690px]">
                     <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
@@ -1200,7 +1197,7 @@ export const HomeSurface: React.FC = () => {
                 </div>
             </section>
 
-            <aside className="absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10">
+            <aside className={`absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10 ${websiteEntryContext ? '' : 'hidden'}`}>
                 <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden glass-card p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30)]">
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">

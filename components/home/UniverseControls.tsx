@@ -258,6 +258,7 @@ const CoreSurfaceButton: React.FC<{
     <button
         type="button"
         onClick={onClick}
+        data-testid={label === 'Universe' ? 'universe-toggle' : undefined}
         className={`flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] uppercase tracking-[0.18em] transition-all ${
             isActive
                 ? 'border border-cyan-400/22 bg-cyan-500/[0.10] text-cyan-100'
