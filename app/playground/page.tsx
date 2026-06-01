@@ -26,7 +26,7 @@ export default function PlaygroundPage() {
         // We skip the email form entirely and set the session directly.
         const params = new URLSearchParams(window.location.search);
         const auditSession = params.get('audit_session');
-        const nodeId = params.get('node');
+        const nodeId = params.get('node') || params.get('open_node');
 
         if (auditSession) {
             useNavStore.getState().setActiveMode('public_playground');
