@@ -44,6 +44,8 @@ jest.mock('@/lib/hooks/useCommunicationLiveData', () => ({
     useCommunicationLiveData: () => ({
         mailPreview: [],
         calendarPreview: [],
+        feedPreview: [],
+        cloudPreview: [],
         isLoading: false,
         refresh: jest.fn(),
     }),
@@ -165,25 +167,26 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 // ── rendering ──────────────────────────────────────────────────────────────
 
 describe('HomeSurface — rendering', () => {
-    it('frames Home as immersive Universe Mission Control', () => {
+    it('frames Home as immersive OpenFlow Lagebild', () => {
         renderWithDepts();
-        expect(screen.getByTestId('home-universe-mission-control')).toBeInTheDocument();
-        expect(screen.getByText('Mission Control')).toBeInTheDocument();
+        expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
+        expect(screen.getByText('Lagebild')).toBeInTheDocument();
     });
 
-    it('renders a personalised greeting with first name', async () => {
+    it('renders OpenFlow Lagebild for normal OS home', async () => {
         renderWithDepts();
         await waitFor(() => {
             // Overlay renders greeting in two spots (portal + left card) — use getAllByText
-            expect(screen.getAllByText(/Anna/).length).toBeGreaterThan(0);
+            expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
+            expect(screen.getByText('Lagebild')).toBeInTheDocument();
         });
     });
 
-    it('renders "Arbeitsplatz" heading when no user', async () => {
+    it('renders Lagebild when no user', async () => {
         useSessionStore.setState({ user: null, resetStore, setUser } as any);
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getByText('Arbeitsplatz')).toBeInTheDocument();
+            expect(screen.getByText('Lagebild')).toBeInTheDocument();
         });
     });
 

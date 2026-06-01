@@ -24,6 +24,8 @@ import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
+import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 
@@ -245,7 +247,24 @@ export const HomeSurface: React.FC = () => {
         mailPreview = [],
         calendarPreview = [],
         feedPreview = [],
+        cloudPreview = [],
     } = useCommunicationLiveData();
+
+    const openFlowView = useMemo(() => buildOpenFlowLagebild({
+        mailPreview,
+        calendarPreview,
+        feedPreview,
+        cloudPreview,
+        homeView: homeView ?? null,
+        communicationSummary,
+    }), [
+        mailPreview,
+        calendarPreview,
+        feedPreview,
+        cloudPreview,
+        homeView,
+        communicationSummary,
+    ]);
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -873,6 +892,16 @@ export const HomeSurface: React.FC = () => {
             {/* Glowing backing orbs for premium wow effect */}
             <div className="absolute left-[-120px] top-[15%] h-[380px] w-[380px] rounded-full bg-violet-600/[0.11] blur-[110px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
             <div className="absolute left-[160px] top-[35%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.08] blur-[95px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }} />
+
+            {!websiteEntryContext && (
+                <div className="pointer-events-auto absolute inset-0 z-[1]">
+                    <OpenFlowLagebild
+                        view={openFlowView}
+                        onOpenPane={openPane}
+                        onGoExplore={() => setCoreMode('explore')}
+                    />
+                </div>
+            )}
 
             <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 flex flex-col gap-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
                 <div
