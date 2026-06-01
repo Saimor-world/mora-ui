@@ -1,5 +1,6 @@
 import { APP_REGISTRY, getAppManifest } from '@/lib/apps/appRegistry';
 import type { AppManifest } from '@/lib/apps/types';
+import { getAppUniverseGroups } from '@/lib/openflow/appUniverse';
 
 describe('appRegistry', () => {
   it('contains exactly 22 app entries', () => {
@@ -47,5 +48,14 @@ describe('appRegistry', () => {
     for (const app of gated) {
       expect(app.requiresRole!.length).toBeGreaterThan(0);
     }
+  });
+
+  it('app universe groups do not reference missing app ids', () => {
+    const appIds = new Set(APP_REGISTRY.map((app) => app.id));
+    const groupedIds = getAppUniverseGroups().flatMap((group) => group.appIds);
+
+    groupedIds.forEach((id) => {
+      expect(appIds.has(id)).toBe(true);
+    });
   });
 });

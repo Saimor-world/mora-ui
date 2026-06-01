@@ -11,7 +11,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { APP_REGISTRY } from '@/lib/apps/appRegistry';
-import type { AppCategory, AppColor } from '@/lib/apps/types';
+import { getAppUniverseGroups } from '@/lib/openflow/appUniverse';
+import type { AppColor } from '@/lib/apps/types';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import type { AppProps } from '@/lib/apps/types';
@@ -57,17 +58,6 @@ const LAUNCHER_EXCLUDE = new Set<string>([
 
 // ─── Category display order + labels ─────────────────────────────────────────
 
-const CATEGORY_ORDER: AppCategory[] = ['core', 'intelligence', 'workspace', 'people', 'creative', 'system'];
-
-const CATEGORY_LABELS: Record<AppCategory, string> = {
-    core:         'Kern',
-    intelligence: 'Intelligenz',
-    workspace:    'Arbeitsbereich',
-    people:       'Team',
-    creative:     'Kreativ',
-    system:       'System',
-};
-
 // ─── Color → icon text + background class ────────────────────────────────────
 
 const COLOR_CLASS: Record<AppColor, { icon: string; bg: string; border: string }> = {
@@ -100,6 +90,15 @@ export default function AppLibraryApp({ paneId }: AppProps) {
         return true;
     });
 
+    const universeGroups = getAppUniverseGroups()
+        .map((group) => ({
+            ...group,
+            apps: group.appIds
+                .map((appId) => visibleApps.find((app) => app.id === appId))
+                .filter(Boolean) as typeof visibleApps,
+        }))
+        .filter((group) => group.apps.length > 0);
+
     const handleAppClick = (id: string, name: string, size: { width: number; height: number }) => {
         openPane({
             id: `${id}-main`,
@@ -131,46 +130,45 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             resizable
         >
             <div className="overflow-y-auto p-4 space-y-5">
-                {CATEGORY_ORDER.map(category => {
-                    const section = visibleApps.filter(a => a.category === category);
-                    if (!section.length) return null;
-                    return (
-                        <div key={category}>
-                            <p className="text-[10px] uppercase tracking-widest text-white/25 pb-2.5 pl-0.5">
-                                {CATEGORY_LABELS[category]}
+                {universeGroups.map(group => (
+                    <div key={group.id}>
+                        <div className="pb-2.5 pl-0.5">
+                            <p className="text-[10px] uppercase tracking-widest text-white/30">
+                                {group.label}
                             </p>
-                            <div className="grid grid-cols-4 gap-3">
-                                {section.map(app => {
-                                    const IconComp = ICON_MAP[app.icon] ?? Grid;
-                                    const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
-                                    return (
-                                        <button
-                                            key={app.id}
-                                            type="button"
-                                            onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
-                                            title={app.description}
-                                            className="relative flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 pt-4 pb-3 hover:bg-white/[0.07] hover:border-white/15 transition-all group cursor-pointer text-left"
-                                        >
-                                            {app.isNew && (
-                                                <span className="absolute top-2 right-2 text-[8px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 leading-none uppercase tracking-wide">
-                                                    Neu
-                                                </span>
-                                            )}
-                                            {/* Icon */}
-                                            <div className={`w-12 h-12 rounded-2xl border flex items-center justify-center ${colors.bg} ${colors.border}`}>
-                                                <IconComp size={22} className={colors.icon} />
-                                            </div>
-                                            {/* Label */}
-                                            <span className="text-[11px] font-medium text-white/65 group-hover:text-white/90 transition-colors text-center leading-tight">
-                                                {app.name}
-                                            </span>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            <p className="mt-1 text-[11px] text-white/36">
+                                {group.description}
+                            </p>
                         </div>
-                    );
-                })}
+                        <div className="grid grid-cols-4 gap-3">
+                            {group.apps.map(app => {
+                                const IconComp = ICON_MAP[app.icon] ?? Grid;
+                                const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
+                                return (
+                                    <button
+                                        key={app.id}
+                                        type="button"
+                                        onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
+                                        title={app.description}
+                                        className="relative flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 pb-3 pt-4 text-left transition-all hover:border-white/15 hover:bg-white/[0.07] group cursor-pointer"
+                                    >
+                                        {app.isNew && (
+                                            <span className="absolute right-2 top-2 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-wide text-emerald-300">
+                                                Neu
+                                            </span>
+                                        )}
+                                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${colors.bg} ${colors.border}`}>
+                                            <IconComp size={22} className={colors.icon} />
+                                        </div>
+                                        <span className="text-center text-[11px] font-medium leading-tight text-white/65 transition-colors group-hover:text-white/90">
+                                            {app.name}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                ))}
             </div>
         </GlassPanel>
     );
