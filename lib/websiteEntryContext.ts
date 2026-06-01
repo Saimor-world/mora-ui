@@ -1,7 +1,9 @@
 export function decodeCtParam(ct: string): Record<string, unknown> | null {
     try {
         const [encoded] = ct.split('.');
-        return JSON.parse(Buffer.from(encoded, 'base64url').toString('utf8'));
+        const padded = encoded + '='.repeat((4 - (encoded.length % 4)) % 4);
+        const base64 = padded.replace(/-/g, '+').replace(/_/g, '/');
+        return JSON.parse(Buffer.from(base64, 'base64').toString('utf8'));
     } catch {
         return null;
     }
