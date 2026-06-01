@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ExternalLink, FileText, FolderOpen, Globe, Lock, LogOut, Mail, MessageCircle, MessageSquare, Mic, StickyNote, Users, Wrench } from 'lucide-react';
+import { Activity, CalendarDays, ExternalLink, Globe, Lock, LogOut, Mail, MessageSquare, Mic, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -28,24 +28,9 @@ import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
-
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-function relativeTime(isoStr: string): string {
-    const diff = Date.now() - new Date(isoStr).getTime();
-    const min = Math.floor(diff / 60000);
-    if (min < 1) return 'gerade eben';
-    if (min < 60) return `vor ${min} Min.`;
-    const h = Math.floor(min / 60);
-    if (h < 24) return `vor ${h} Std.`;
-    const days = Math.floor(h / 24);
-    if (days <= 14) return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
-    return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'short' }).format(new Date(isoStr));
-}
+import { relativeTime, normalizePrivateAreaLabel, kindIcon, kindLabel, type RecentKind } from '@/components/home/homeSurfaceFormat';
 
 // ─── types ───────────────────────────────────────────────────────────────────
-
-type RecentKind = 'document' | 'finder' | 'notes' | 'chat' | 'other';
 
 interface RecentActivityItem {
     id: string;
@@ -81,38 +66,6 @@ interface TeamMessageSurface {
 interface TeamPresenceSurface {
     online_count?: number;
     unread_messages?: number;
-}
-
-function normalizePrivateAreaLabel(value?: string | null): string {
-    const next = (value || '').trim();
-    if (!next) return 'Privater Bereich';
-    const normalized = next.toLowerCase();
-    if (['my space', 'personal space', 'private space'].includes(normalized)) {
-        return 'Privater Bereich';
-    }
-    return next;
-}
-
-// ─── small UI helpers ─────────────────────────────────────────────────────────
-
-function kindIcon(kind: RecentKind): React.ReactNode {
-    switch (kind) {
-        case 'document': return <FileText size={13} className="text-violet-400/60" />;
-        case 'finder':   return <FolderOpen size={13} className="text-white/40" />;
-        case 'notes':    return <StickyNote size={13} className="text-white/40" />;
-        case 'chat':     return <MessageCircle size={13} className="text-white/40" />;
-        default:         return <FileText size={13} className="text-white/40" />;
-    }
-}
-
-function kindLabel(kind: RecentKind): string {
-    switch (kind) {
-        case 'document': return 'Dokument';
-        case 'finder':   return 'Finder';
-        case 'notes':    return 'Notizen';
-        case 'chat':     return 'Mora';
-        default:         return 'Aktivität';
-    }
 }
 
 // ─── Suggestions Card Component ─────────────────────────────────────────────
