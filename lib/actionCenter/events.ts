@@ -105,3 +105,88 @@ export function getIntakeRouteReason(evt: ActionEvent): string | null {
 export function canActOnPendingEvent(evt: ActionEvent): boolean {
     return evt.status === 'pending_confirmation' && !!getConfirmationToken(evt);
 }
+
+export interface IntakeBatch {
+    batchKey: string;
+    events: ActionEvent[];
+    timestamp: string;
+    confirmed: number;
+    rejected: number;
+    failed: number;
+    pending: number;
+    routes: string[];
+}
+
+/**
+ * Groups file-intake events into batches: first by explicit batch_id/session_id,
+ * then time-windowing the remainder into 90s clusters. Each batch carries status
+ * counts and the unique set of target routes. Pure. Extracted from action-center.
+ */
+export function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
+    const intake = events.filter(isIntakeEvent);
+    const sorted = [...intake].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const batchMap = new Map<string, ActionEvent[]>();
+    const noBatch: ActionEvent[] = [];
+    sorted.forEach((evt) => {
+        const key = evt.batch_id ?? evt.session_id;
+        if (key) {
+            const g = batchMap.get(key) ?? [];
+            g.push(evt);
+            batchMap.set(key, g);
+        } else {
+            noBatch.push(evt);
+        }
+    });
+
+    const batchedGroups: ActionEvent[][] = [];
+    const unbatchedEvents: ActionEvent[] = [];
+    batchMap.forEach((evts) => {
+        const evtBatchId = evts[0].batch_id;
+        if (evtBatchId || evts.length > 1) {
+            batchedGroups.push(evts);
+        } else {
+            unbatchedEvents.push(...evts);
+        }
+    });
+
+    const timeWindowCandidates = [...unbatchedEvents, ...noBatch].sort(
+        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    const timeGroups: ActionEvent[][] = [];
+    timeWindowCandidates.forEach((evt) => {
+        const ts = new Date(evt.timestamp).getTime();
+        const last = timeGroups[timeGroups.length - 1];
+        if (last && ts - new Date(last[last.length - 1].timestamp).getTime() < 90_000) {
+            last.push(evt);
+        } else {
+            timeGroups.push([evt]);
+        }
+    });
+
+    return [...batchedGroups, ...timeGroups]
+        .map((evts) => {
+            const routes: string[] = [];
+            evts.forEach((evt) => {
+                const r = getIntakeRoute(evt);
+                if (r && !routes.includes(r)) routes.push(r);
+            });
+            const sortedEvts = [...evts].sort(
+                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+            );
+            const first = sortedEvts[0];
+            return {
+                batchKey: first.batch_id ?? first.session_id ?? first.action_id,
+                events: sortedEvts,
+                timestamp: sortedEvts[0].timestamp,
+                confirmed: evts.filter((e) => e.status === 'done').length,
+                rejected: evts.filter((e) => e.status === 'rejected' || e.status === 'expired').length,
+                failed: evts.filter((e) => e.status === 'failed').length,
+                pending: evts.filter((e) => e.status === 'proposed' || e.status === 'running' || e.status === 'pending_confirmation').length,
+                routes,
+            };
+        })
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+}

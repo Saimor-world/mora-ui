@@ -13,7 +13,6 @@ import { toast } from '@/lib/toast';
 import type { AppProps } from '@/lib/apps/types';
 import {
     navigationOutcomeToActionEvent,
-    isIntakeEvent,
     getWorkSessionPlanId,
     getNavigationOutcome,
     getIntakeRoute,
@@ -23,6 +22,7 @@ import {
     getIntakeRouteMode,
     getIntakeRouteReason,
     canActOnPendingEvent,
+    groupIntakeBatches,
 } from '@/lib/actionCenter/events';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
@@ -30,86 +30,6 @@ type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
 type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo' | 'work_session_plan';
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
-
-interface IntakeBatch {
-    batchKey: string;
-    events: ActionEvent[];
-    timestamp: string;
-    confirmed: number;
-    rejected: number;
-    failed: number;
-    pending: number;
-    routes: string[];
-}
-
-function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
-    const intake = events.filter(isIntakeEvent);
-    const sorted = [...intake].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-
-    const batchMap = new Map<string, ActionEvent[]>();
-    const noBatch: ActionEvent[] = [];
-    sorted.forEach((evt) => {
-        const key = evt.batch_id ?? evt.session_id;
-        if (key) {
-            const g = batchMap.get(key) ?? [];
-            g.push(evt);
-            batchMap.set(key, g);
-        } else {
-            noBatch.push(evt);
-        }
-    });
-
-    const batchedGroups: ActionEvent[][] = [];
-    const unbatchedEvents: ActionEvent[] = [];
-    batchMap.forEach((evts) => {
-        const evtBatchId = evts[0].batch_id;
-        if (evtBatchId || evts.length > 1) {
-            batchedGroups.push(evts);
-        } else {
-            unbatchedEvents.push(...evts);
-        }
-    });
-
-    const timeWindowCandidates = [...unbatchedEvents, ...noBatch].sort(
-        (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-    );
-    const timeGroups: ActionEvent[][] = [];
-    timeWindowCandidates.forEach((evt) => {
-        const ts = new Date(evt.timestamp).getTime();
-        const last = timeGroups[timeGroups.length - 1];
-        if (last && ts - new Date(last[last.length - 1].timestamp).getTime() < 90_000) {
-            last.push(evt);
-        } else {
-            timeGroups.push([evt]);
-        }
-    });
-
-    return [...batchedGroups, ...timeGroups]
-        .map((evts) => {
-            const routes: string[] = [];
-            evts.forEach((evt) => {
-                const r = getIntakeRoute(evt);
-                if (r && !routes.includes(r)) routes.push(r);
-            });
-            const sortedEvts = [...evts].sort(
-                (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-            );
-            const first = sortedEvts[0];
-            return {
-                batchKey: first.batch_id ?? first.session_id ?? first.action_id,
-                events: sortedEvts,
-                timestamp: sortedEvts[0].timestamp,
-                confirmed: evts.filter((e) => e.status === 'done').length,
-                rejected: evts.filter((e) => e.status === 'rejected' || e.status === 'expired').length,
-                failed: evts.filter((e) => e.status === 'failed').length,
-                pending: evts.filter((e) => e.status === 'proposed' || e.status === 'running' || e.status === 'pending_confirmation').length,
-                routes,
-            };
-        })
-        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-}
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
