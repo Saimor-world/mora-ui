@@ -6,6 +6,7 @@ import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, S
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
+import { isDevLoginEnabled, getDevLoginCredentials } from '@/lib/auth/devLogin';
 import { toast } from 'sonner';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -73,7 +74,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     // Default true so the button is visible while the policy loads (no CLS/flash)
     const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     // Dev login available when NODE_ENV=development OR when DEV_LOGIN_EMAIL is explicitly set
-    const devLoginEnabled = process.env.NODE_ENV === 'development' || Boolean(process.env.NEXT_PUBLIC_DEV_LOGIN_EMAIL);
+    const devLoginEnabled = isDevLoginEnabled();
     const prefersReducedMotion = useReducedMotion();
     const surfaceProfile = useSurfaceProfile();
     const [isDocumentVisible, setIsDocumentVisible] = useState(
@@ -131,8 +132,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     }, []);
 
     const handleDevMasterLogin = async () => {
-        const email    = process.env.NEXT_PUBLIC_DEV_LOGIN_EMAIL    ?? '';
-        const password = process.env.NEXT_PUBLIC_DEV_LOGIN_PASSWORD ?? '';
+        // Defense in depth: never allow the dev bypass outside development,
+        // even if this handler is somehow reached.
+        if (!isDevLoginEnabled()) return;
+        const { email, password } = getDevLoginCredentials();
         if (!email || !password) {
             toast.error('DEV_LOGIN_EMAIL / DEV_LOGIN_PASSWORD nicht in .env.local gesetzt.');
             return;
