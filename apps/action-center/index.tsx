@@ -8,29 +8,26 @@ import { coreGet, corePost } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
 import { confirmCreateNodeFromFile, rejectCreateNodeFromFile } from '@/lib/api/filesClient';
 import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
-import { NAVIGATION_ACTION_INTENT, NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
 import { toast } from '@/lib/toast';
 import type { AppProps } from '@/lib/apps/types';
+import {
+    navigationOutcomeToActionEvent,
+    isIntakeEvent,
+    getWorkSessionPlanId,
+    getNavigationOutcome,
+    getIntakeRoute,
+    getIntakeFileName,
+    getConfirmationToken,
+    getPendingFileId,
+    getIntakeRouteMode,
+    getIntakeRouteReason,
+    canActOnPendingEvent,
+} from '@/lib/actionCenter/events';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
 type IntentFilter = 'all' | 'intake' | 'create_folder' | 'move_node' | 'rename_node' | 'create_note' | 'create_draft' | 'update_note_content' | 'confirm_action' | 'undo' | 'work_session_plan';
-
-function navigationOutcomeToActionEvent(detail: NavigationOutcome): ActionEvent {
-    return {
-        action_id: `nav-${Date.now()}-${detail.targetType}-${detail.nodeId || detail.folderId || detail.spaceId || detail.departmentId || detail.label || 'target'}`,
-        status: 'done',
-        intent: NAVIGATION_ACTION_INTENT,
-        actor_role: 'system',
-        message: detail.message,
-        error: null,
-        payload: {
-            ...detail,
-            tool_name: NAVIGATION_ACTION_INTENT,
-        },
-        timestamp: new Date().toISOString(),
-    };
-}
 
 // ─── Intake batch grouping ────────────────────────────────────────────────────
 
@@ -43,89 +40,6 @@ interface IntakeBatch {
     failed: number;
     pending: number;
     routes: string[];
-}
-
-function isIntakeEvent(evt: ActionEvent): boolean {
-    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
-    return tool === 'create_node_from_file' || evt.intent === 'create_node_from_file';
-}
-
-function getWorkSessionPlanId(evt: ActionEvent): string | null {
-    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
-    const isWorkSession = tool === 'work_session_plan' || evt.intent === 'work_session_plan';
-    if (!isWorkSession) return null;
-    const id = evt.payload?.plan_id;
-    return typeof id === 'string' && id.length > 0 ? id : null;
-}
-
-function getNavigationOutcome(evt: ActionEvent): NavigationOutcome | null {
-    const tool = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : '';
-    const intent = tool || evt.intent || '';
-    if (intent !== NAVIGATION_ACTION_INTENT) return null;
-    return evt.payload as unknown as NavigationOutcome;
-}
-
-function getIntakeRoute(evt: ActionEvent): string | null {
-    const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
-    if (ic) {
-        const path = [ic.target_department_name, ic.target_space_name, ic.target_folder_name]
-            .filter(Boolean)
-            .join(' > ');
-        if (path) return path;
-        if (typeof ic.suggested_location === 'string') return ic.suggested_location;
-    }
-    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
-    if (rs) {
-        const path = [rs.department_name, rs.space_name, rs.folder_name]
-            .filter(Boolean)
-            .join(' > ');
-        if (path) return path;
-        if (typeof rs.location === 'string') return rs.location;
-    }
-    return null;
-}
-
-function getIntakeFileName(evt: ActionEvent): string | null {
-    const p = evt.payload;
-    if (typeof p?.filename === 'string') return p.filename;
-    if (typeof p?.file_name === 'string') return p.file_name;
-    if (typeof p?.name === 'string') return p.name;
-    const ic = p?.intake_context as Record<string, unknown> | undefined;
-    if (typeof ic?.filename === 'string') return ic.filename;
-    return null;
-}
-
-function getConfirmationToken(evt: ActionEvent): string | null {
-    return typeof evt.payload?.confirmation_token === 'string' ? evt.payload.confirmation_token : null;
-}
-
-function getPendingFileId(evt: ActionEvent): string | null {
-    return typeof evt.payload?.file_id === 'string' ? evt.payload.file_id : null;
-}
-
-function getIntakeRouteMode(evt: ActionEvent): string | null {
-    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
-    if (typeof rs?.route_mode === 'string') return rs.route_mode;
-    const ic = evt.payload?.intake_context as Record<string, unknown> | undefined;
-    if (typeof ic?.route_mode === 'string') return ic.route_mode;
-    return null;
-}
-
-function getIntakeRouteReason(evt: ActionEvent): string | null {
-    const rs = evt.payload?.route_suggestion as Record<string, unknown> | undefined;
-    const icRaw = evt.payload?.intake_context as Record<string, unknown> | undefined;
-    const raw = (typeof rs?.route_reason === 'string' && rs.route_reason.trim())
-        ? rs.route_reason
-        : (typeof icRaw?.route_reason === 'string' && icRaw.route_reason.trim())
-            ? icRaw.route_reason
-            : null;
-    if (!raw) return null;
-    const MAX = 70;
-    return raw.length > MAX ? `${raw.slice(0, MAX)}…` : raw;
-}
-
-function canActOnPendingEvent(evt: ActionEvent): boolean {
-    return evt.status === 'pending_confirmation' && !!getConfirmationToken(evt);
 }
 
 function groupIntakeBatches(events: ActionEvent[]): IntakeBatch[] {
