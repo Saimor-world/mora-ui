@@ -18,6 +18,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -199,30 +200,6 @@ function extractPlanId(agentResponse: import('@/lib/api/cognitionClient').AgentR
     return null;
 }
 
-function isLikelyFileOperationIntent(text: string): boolean {
-    const lower = text.toLowerCase();
-    return [
-        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(ordner|folder)\b/,
-        /\b(verschiebe|move)\b.*\b(datei|dateien|dokument|dokumente|node|nodes|file|files|ordner|folder)\b/,
-        /\b(benenne|umbenennen|rename)\b.*\b(datei|dokument|node|file)\b/,
-        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(notiz|note)\b/,
-        /\b(erstelle|erzeuge|anlegen|lege an|create)\b.*\b(entwurf|draft|briefing)\b/,
-        /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|schreibe um)\b.*\b(notiz|note|entwurf|draft|dokument)\b/,
-    ].some((pattern) => pattern.test(lower));
-}
-
-function shouldPreferAgenticLoop(text: string): boolean {
-    const lower = text.toLowerCase();
-    return [
-        /\b(erstelle|erzeuge|anlegen|lege an|create)\b/,
-        /\b(aktualisiere|update|ändere|aendere|überarbeite|ueberarbeite|rewrite|schreib um)\b/,
-        /\b(verschiebe|move|sortiere|ordne|organisiere)\b/,
-        /\b(lösche|loesche|entferne|delete|archive)\b/,
-        /\b(teile|share|veröffentliche|veröffentliche)\b/,
-        /\b(fasse zusammen|zusammenfassen|review|prüfe|pruefe|analysiere|compare|vergleiche)\b/,
-        /\b(starte|setze fort|continue|mach weiter|plane|bereite vor|arbeite aus)\b/,
-    ].some((pattern) => pattern.test(lower));
-}
 
 function toChatOpenableResult(candidate: import('@/lib/api/coreClient').OpenIntentCandidate): OpenableSearchResult {
     const normalizedType = (
