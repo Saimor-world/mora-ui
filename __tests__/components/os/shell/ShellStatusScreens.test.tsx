@@ -1,0 +1,25 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { LoadingScreen, ErrorScreen } from '@/components/os/shell/ShellStatusScreens';
+
+describe('LoadingScreen', () => {
+  it('shows the OS booting state', () => {
+    render(<LoadingScreen />);
+    expect(screen.getByText('SAIMÔR OS')).toBeInTheDocument();
+    expect(screen.getByText('Mora erwacht...')).toBeInTheDocument();
+  });
+});
+
+describe('ErrorScreen', () => {
+  it('shows the connection error and the passed message', () => {
+    render(<ErrorScreen message="Backend nicht erreichbar" />);
+    expect(screen.getByText('Verbindung unterbrochen')).toBeInTheDocument();
+    expect(screen.getByText('Backend nicht erreichbar')).toBeInTheDocument();
+  });
+
+  it('offers a retry button', () => {
+    render(<ErrorScreen message="x" />);
+    expect(screen.getByRole('button', { name: /Erneut verbinden/ })).toBeEnabled();
+  });
+});
