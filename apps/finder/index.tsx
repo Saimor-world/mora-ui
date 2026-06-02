@@ -69,6 +69,7 @@ import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
 import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
+import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 
@@ -97,21 +98,6 @@ interface IntakeContext {
     };
 }
 
-interface FileIntakeDestinationSummary {
-    company_name?: string;
-    department_name?: string;
-    space_name?: string;
-    folder_name?: string;
-    label?: string;
-}
-
-interface FileIntakeRouteDecision {
-    mode?: 'accepted' | 'changed' | 'rejected' | string;
-    label?: string;
-    message?: string;
-    suggested_destination?: FileIntakeDestinationSummary;
-    selected_destination?: FileIntakeDestinationSummary;
-}
 
 interface PendingAction {
     tool_name: string;
