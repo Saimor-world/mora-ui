@@ -87,6 +87,16 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 540, height: 620 },
     isNew: true,
   },
+  {
+    id: 'nightwatch',
+    name: 'Nightwatch',
+    description: 'MÔRA beobachtet deine Infrastruktur',
+    icon: 'ShieldCheck',
+    color: 'amber',
+    category: 'intelligence',
+    defaultSize: { width: 720, height: 640 },
+    isNew: true,
+  },
 
   // ── Workspace ─────────────────────────────────────────────────────────────
   {

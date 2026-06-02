@@ -9,3 +9,16 @@ export async function fetchNightwatchIncidents(): Promise<NightwatchIncidentItem
     const data = await coreGet('/v3/nightwatch/incidents', { isOptional: true });
     return Array.isArray(data) ? (data as NightwatchIncidentItem[]) : [];
 }
+
+export interface NightwatchMonitorItem {
+    id: string;
+    name?: string;
+    host?: string;
+    target_type?: string;
+}
+
+/** Read Nightwatch monitors for the current tenant (read-only). [] when unavailable. */
+export async function fetchNightwatchMonitors(): Promise<NightwatchMonitorItem[]> {
+    const data = await coreGet('/v3/nightwatch/monitors', { isOptional: true });
+    return Array.isArray(data) ? (data as NightwatchMonitorItem[]) : [];
+}

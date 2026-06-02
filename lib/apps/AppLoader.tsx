@@ -53,6 +53,7 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   'work-session':  dynamic(() => import('@/apps/work-session'),  { ssr: false, loading: () => <AppSkeleton /> }),
   tasks:           dynamic(() => import('@/apps/tasks'),         { ssr: false, loading: () => <AppSkeleton /> }),
   timeline:        dynamic(() => import('@/apps/timeline'),      { ssr: false, loading: () => <AppSkeleton /> }),
+  nightwatch:      dynamic(() => import('@/apps/nightwatch'),    { ssr: false, loading: () => <AppSkeleton /> }),
   canvas:          dynamic(() => import('@/apps/canvas'),        { ssr: false, loading: () => <AppSkeleton /> }),
   grid:            dynamic(() => import('@/apps/grid'),          { ssr: false, loading: () => <AppSkeleton /> }),
   apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),

@@ -48,6 +48,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
         case 'timeline':
             return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
+        case 'nightwatch':
+            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
         case 'canvas':
             return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
         case 'apps':

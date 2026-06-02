@@ -16,7 +16,7 @@ export type PaneType =
     | 'scanner' | 'users' | 'company-detail' | 'grid' | 'search' | 'space'
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
     | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
-    | 'timeline' | 'tasks' | 'canvas'
+    | 'timeline' | 'tasks' | 'canvas' | 'nightwatch'
     | 'wall';
 
 /**
@@ -51,6 +51,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
 
     // ── App Platform additions ──────────────────────────────────────────────
     timeline:        'app',       // Activity feed
+    nightwatch:      'app',       // MÔRA infra observation (read-only)
     tasks:           'app',       // Kanban board
     canvas:          'app',       // Whiteboard
     wall:            'app',       // Community Wall — Security Signals
