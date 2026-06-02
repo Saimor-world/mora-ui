@@ -67,6 +67,7 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 import { useTree } from '@/lib/queries/useTree';
 import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
+import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
 import type { AppProps } from '@/lib/apps/types';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 
@@ -177,59 +178,6 @@ function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex
     };
 }
 
-function deriveFinderMaps(tree: CoreTreeNode[]) {
-    const spacesByDepartment: Record<string, any[]> = {};
-    const foldersBySpace: Record<string, any[]> = {};
-    const nodesByFolder: Record<string, any[]> = {};
-
-    const walk = (nodes: CoreTreeNode[], context: { departmentId?: string; spaceId?: string } = {}) => {
-        nodes.forEach((node) => {
-            if (node.type === 'department') {
-                const spaces = (node.children || []).filter((child) => child.type === 'space');
-                spacesByDepartment[node.id] = spaces.map((space) => ({
-                    id: space.id,
-                    type: space.type,
-                    name: space.name,
-                    color: space.color,
-                    folder_count: (space.children || []).filter((child) => child.type === 'folder').length,
-                }));
-                walk(node.children || [], { departmentId: node.id });
-                return;
-            }
-
-            if (node.type === 'space') {
-                const folders = (node.children || []).filter((child) => child.type === 'folder');
-                foldersBySpace[node.id] = folders.map((folder) => ({
-                    id: folder.id,
-                    type: folder.type,
-                    name: folder.name,
-                    color: folder.color,
-                    node_count: (folder.children || []).filter((child) => child.type === 'node').length,
-                }));
-                walk(node.children || [], { ...context, spaceId: node.id });
-                return;
-            }
-
-            if (node.type === 'folder') {
-                nodesByFolder[node.id] = (node.children || [])
-                    .filter((child) => child.type === 'node')
-                    .map((child) => ({
-                        id: child.id,
-                        type: child.nodeType || 'document',
-                        title: child.name,
-                        name: child.name,
-                        folder_id: node.id,
-                        space_id: context.spaceId,
-                        department_id: context.departmentId,
-                    }));
-                walk(node.children || [], context);
-            }
-        });
-    };
-
-    walk(tree);
-    return { spacesByDepartment, foldersBySpace, nodesByFolder };
-}
 
 
 
