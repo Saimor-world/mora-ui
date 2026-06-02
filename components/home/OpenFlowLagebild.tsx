@@ -4,6 +4,7 @@ import React from 'react';
 import { Activity, AlertTriangle, ArrowRight, Bot, BrainCircuit, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
+import { TONES, toneForPriority } from '@/lib/ui/status';
 
 interface OpenFlowLagebildProps {
   view: Lagebild;
@@ -80,6 +81,8 @@ function openActionPane(action: OpenFlowSignal['suggestedActions'][number], onOp
 function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane: OpenFlowLagebildProps['onOpenPane'] }) {
   const action = signal.suggestedActions[0];
   const isHot = signal.priority === 'urgent' || signal.priority === 'high';
+  const HOT_TONE = TONES[toneForPriority(signal.priority)];
+  const HOT_TONE_BG = HOT_TONE.bg;
 
   return (
     <article className="rounded-xl border border-white/[0.08] bg-white/[0.045] p-3 shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
@@ -96,7 +99,7 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
         <span
           className={
             isHot
-              ? 'rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-1 text-[10px] font-semibold text-amber-100'
+              ? `rounded-full border px-2 py-1 text-[10px] font-semibold ${HOT_TONE.border} ${HOT_TONE_BG} ${HOT_TONE.text}`
               : 'rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-white/48'
           }
         >

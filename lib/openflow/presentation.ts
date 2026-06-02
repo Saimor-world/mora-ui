@@ -6,6 +6,7 @@ import type {
   OpenFlowSignal,
   OpenFlowSourceKind,
 } from '@/lib/openflow/types';
+import { priorityFromSeverity } from '@/lib/ui/status';
 
 interface MailPreviewItem {
   id: string;
@@ -86,14 +87,6 @@ const INITIATIVE_PATTERNS = [
   { id: 'initiative-security-check', title: 'Security Check', match: /security|audit|ssl|risk|risiko/i },
   { id: 'initiative-kundenprojekt', title: 'Kundenprojekt', match: /kunde|customer|client|projekt/i },
 ];
-
-function priorityFromSeverity(severity?: number | null) {
-  if (typeof severity !== 'number') return 'normal' as const;
-  if (severity >= 0.86) return 'urgent' as const;
-  if (severity >= 0.66) return 'high' as const;
-  if (severity >= 0.33) return 'normal' as const;
-  return 'low' as const;
-}
 
 function buildSignalId(prefix: string, value: string | number) {
   return `${prefix}-${String(value).replace(/[^a-zA-Z0-9_-]+/g, '-').toLowerCase()}`;

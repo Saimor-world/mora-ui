@@ -1,21 +1,20 @@
 import type { ActionEvent, ActionStatus } from '@/lib/hooks/useActionEvents';
 import { getWorkSessionPlanId } from '@/lib/actionCenter/events';
+import { actionStatusLabel } from '@/lib/ui/status';
 
 /**
  * Pure presentational formatters + label maps for the Action Center.
- * Extracted verbatim from apps/action-center/index.tsx — behavior-neutral.
+ * Status labels now come from the single source lib/ui/status.ts.
  * (statusIconMap stays in the component because it carries JSX icons.)
  */
 
-export const statusLabelMap: Record<ActionStatus, string> = {
-    proposed: 'Vorgeschlagen',
-    running: 'Läuft',
-    pending_confirmation: 'Wartet auf Bestätigung',
-    done: 'Abgeschlossen',
-    failed: 'Fehlgeschlagen',
-    rejected: 'Verworfen',
-    expired: 'Abgelaufen',
-};
+const _ACTION_STATUSES: ActionStatus[] = [
+    'proposed', 'running', 'pending_confirmation', 'done', 'failed', 'rejected', 'expired',
+];
+
+export const statusLabelMap: Record<ActionStatus, string> = Object.fromEntries(
+    _ACTION_STATUSES.map((s) => [s, actionStatusLabel(s)]),
+) as Record<ActionStatus, string>;
 
 export const intentLabelMap: Record<string, string> = {
     create_folder: 'Ordner erstellen',
