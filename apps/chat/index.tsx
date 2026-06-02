@@ -20,6 +20,8 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
+import { toToolTrace, type ToolTraceStep } from '@/lib/chat/toolTrace';
+import { ToolTrace } from '@/components/chat/ToolTrace';
 import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
@@ -81,6 +83,8 @@ interface Message {
     frames?: MoraFrame[];
     /** Sprint 3: IDs of mora_memories recalled for this response */
     recalledMemoryIds?: string[];
+    /** Phase 1 "visible agency": safe trace of what Mora did (searched/read/acted) */
+    toolTrace?: ToolTraceStep[];
 }
 
 
@@ -817,6 +821,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             timestamp: new Date(),
                             planId,
                             recalledMemoryIds: recalledMemoryIds && recalledMemoryIds.length > 0 ? recalledMemoryIds : undefined,
+                            toolTrace: toToolTrace(agentResponse.tools_executed),
                         }]);
                         setIsLoading(false);
                         return;
@@ -1130,10 +1135,15 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                             ))}
                                         </div>
                                     ) : (
-                                        <div
-                                            className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
-                                            dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div
+                                                className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
+                                                dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
+                                            />
+                                            {msg.role === 'assistant' && msg.toolTrace && msg.toolTrace.length > 0 && (
+                                                <ToolTrace steps={msg.toolTrace} />
+                                            )}
+                                        </div>
                                     )}
                                     {msg.role === 'user' && (
                                         <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
