@@ -79,6 +79,11 @@ export interface OpenFlowRun {
 }
 
 export interface OpenFlowLagebild {
+  /**
+   * The single most important thing right now — the dynamic "situation" headline
+   * (smartphone-home style). null = calm state (nothing needs the operator).
+   */
+  headline: OpenFlowSignal | null;
   changed: OpenFlowSignal[];
   attention: OpenFlowSignal[];
   nextSteps: OpenFlowSignal[];

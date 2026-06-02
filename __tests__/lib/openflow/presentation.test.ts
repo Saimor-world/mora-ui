@@ -8,7 +8,62 @@ import {
   buildConnectorStatuses,
   buildOpenFlowLagebild,
   deriveInitiativesFromSignals,
+  selectHeadline,
 } from '@/lib/openflow/presentation';
+
+function sig(over: Partial<OpenFlowSignal> & Pick<OpenFlowSignal, 'id' | 'priority'>): OpenFlowSignal {
+  return {
+    source: 'os',
+    title: over.id,
+    summary: '',
+    status: 'new',
+    trustScope: 'organization',
+    relatedNodeIds: [],
+    relatedRelationIds: [],
+    suggestedActions: [],
+    ...over,
+  } as OpenFlowSignal;
+}
+
+describe('openflow headline (dynamic Home situation)', () => {
+  it('picks the highest-priority attention signal as the headline', () => {
+    const head = selectHeadline(
+      [sig({ id: 'a-normal', priority: 'normal' }), sig({ id: 'a-urgent', priority: 'urgent' })],
+      [sig({ id: 'c-high', priority: 'high' })],
+    );
+    expect(head?.id).toBe('a-urgent');
+  });
+
+  it('prefers attention over a same-priority change', () => {
+    const head = selectHeadline(
+      [sig({ id: 'a-high', priority: 'high' })],
+      [sig({ id: 'c-high', priority: 'high' })],
+    );
+    expect(head?.id).toBe('a-high');
+  });
+
+  it('returns null (calm) when nothing but low-priority noise exists', () => {
+    expect(selectHeadline([], [sig({ id: 'c-low', priority: 'low' })])).toBeNull();
+    expect(selectHeadline([], [])).toBeNull();
+  });
+
+  it('exposes a headline on the built lagebild and null when calm', () => {
+    const calm = buildOpenFlowLagebild({
+      mailPreview: [], calendarPreview: [], feedPreview: [], cloudPreview: [],
+      homeView: null,
+      communicationSummary: { mailConfigured: true, calendarConfigured: true, browserPermission: 'granted', localTruthStatusLabel: 'Local Truth bereit' },
+    });
+    expect(calm.headline).toBeNull();
+
+    const withIncident = buildOpenFlowLagebild({
+      mailPreview: [], calendarPreview: [], feedPreview: [], cloudPreview: [],
+      homeView: null,
+      communicationSummary: { mailConfigured: true, calendarConfigured: true, browserPermission: 'granted', localTruthStatusLabel: 'Local Truth bereit' },
+      nightwatchSignals: [sig({ id: 'nw-1', priority: 'high', source: 'server', title: 'api.saimor.world degraded' })],
+    });
+    expect(withIncident.headline?.id).toBe('nw-1');
+  });
+});
 
 describe('openflow types', () => {
   it('allows the core OS signal shape used by Home and Dashboard presenters', () => {

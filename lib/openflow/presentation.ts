@@ -129,6 +129,43 @@ function uniqueSignalsById(signals: OpenFlowSignal[]): OpenFlowSignal[] {
   });
 }
 
+const PRIORITY_RANK: Record<OpenFlowSignal['priority'], number> = {
+  urgent: 3,
+  high: 2,
+  normal: 1,
+  low: 0,
+};
+
+/**
+ * Pick the single most important signal — the dynamic Home headline.
+ * Operator-first: attention (open friction / incidents) outranks mere changes;
+ * within that, higher priority and more recent wins. Returns null for the calm
+ * state (nothing but low-priority noise), so Home can say "Alles ruhig".
+ */
+export function selectHeadline(
+  attention: OpenFlowSignal[],
+  changed: OpenFlowSignal[],
+): OpenFlowSignal | null {
+  const score = (s: OpenFlowSignal, attentionBoost: number) =>
+    PRIORITY_RANK[s.priority] * 10 + attentionBoost;
+
+  const pool = [
+    ...attention.map((s) => ({ s, w: score(s, 5) })),
+    ...changed.map((s) => ({ s, w: score(s, 0) })),
+  ];
+  if (pool.length === 0) return null;
+
+  pool.sort((a, b) => {
+    if (b.w !== a.w) return b.w - a.w;
+    return String(b.s.occurredAt || '').localeCompare(String(a.s.occurredAt || ''));
+  });
+
+  const top = pool[0].s;
+  // Purely low-priority noise → stay calm, no headline.
+  if (PRIORITY_RANK[top.priority] === 0) return null;
+  return top;
+}
+
 export function deriveInitiativesFromSignals(signals: OpenFlowSignal[]): InitiativeSummary[] {
   const buckets = new Map<string, InitiativeSummary>();
 
@@ -363,6 +400,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   const initiativeSignals = uniqueSignalsById([...changed, ...attention, ...nextSteps]);
 
   return {
+    headline: selectHeadline(attention, changed),
     changed,
     attention,
     nextSteps,

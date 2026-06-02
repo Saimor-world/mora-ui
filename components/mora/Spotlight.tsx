@@ -20,6 +20,8 @@ import {
     ScanLine,
     Wrench,
     Brain,
+    LayoutGrid,
+    ShieldCheck,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
 import { useDepartments } from "@/lib/queries/useDepartments";
@@ -246,6 +248,17 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         const result: SpotlightAction[] = [];
 
         // === QUICK ACTIONS ===
+        // App library first — the one visible door to every registered app.
+        result.push({
+            id: "action-apps",
+            label: "Apps",
+            description: "App-Bibliothek – alle Apps öffnen",
+            icon: <LayoutGrid size={16} className="text-cyan-300" />,
+            category: "action",
+            keywords: ["apps", "bibliothek", "library", "alle", "launcher", "programme"],
+            onSelect: () => openFromSpotlight("apps", "apps-main", "Apps", { width: 900, height: 680 })
+        });
+
         result.push({
             id: "action-settings",
             label: "Settings",
@@ -329,6 +342,46 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["team", "presence", "chat"],
             onSelect: () => openFromSpotlight("team", "team-main", "Team", { width: 780, height: 620 })
+        });
+
+        result.push({
+            id: "action-nightwatch",
+            label: "Nightwatch",
+            description: "MÔRA beobachtet deine Infrastruktur",
+            icon: <ShieldCheck size={16} className="text-amber-300" />,
+            category: "action",
+            keywords: ["nightwatch", "infrastruktur", "infra", "server", "monitor", "vorfall", "incident"],
+            onSelect: () => openFromSpotlight("nightwatch", "nightwatch-main", "Nightwatch", { width: 720, height: 640 })
+        });
+
+        result.push({
+            id: "action-mail",
+            label: "Mail",
+            description: "E-Mail-Postfach",
+            icon: <Mail size={16} className="text-sky-300" />,
+            category: "action",
+            keywords: ["mail", "email", "postfach", "inbox"],
+            onSelect: () => openFromSpotlight("mail", "mail-main", "Mail", { width: 960, height: 680 })
+        });
+
+        result.push({
+            id: "action-calendar",
+            label: "Kalender",
+            description: "Termine und Ereignisse",
+            icon: <Calendar size={16} className="text-emerald-300" />,
+            category: "action",
+            keywords: ["kalender", "calendar", "termine", "events"],
+            onSelect: () => openFromSpotlight("calendar", "calendar-main", "Kalender", { width: 840, height: 620 })
+        });
+
+        result.push({
+            id: "action-terminal",
+            label: "Terminal",
+            description: "Kommandozeile",
+            icon: <Terminal size={16} className="text-white/60" />,
+            category: "action",
+            keywords: ["terminal", "konsole", "shell", "command"],
+            onSelect: () => openFromSpotlight("terminal", "terminal-main", "Terminal", { width: 720, height: 480 })
         });
 
         result.push({

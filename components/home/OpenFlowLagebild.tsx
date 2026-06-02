@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, AlertTriangle, ArrowRight, Bot, BrainCircuit, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowRight, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
 import { TONES, toneForPriority } from '@/lib/ui/status';
@@ -191,42 +191,64 @@ function ConnectorPill({ connector }: { connector: ConnectorStatus }) {
   );
 }
 
-function SystemTile({
-  icon: Icon,
-  label,
-  title,
-  detail,
-  tone,
+function HeadlineHero({
+  signal,
+  onOpenPane,
 }: {
-  icon: React.ElementType;
-  label: string;
-  title: string;
-  detail: string;
-  tone: 'emerald' | 'cyan' | 'amber' | 'rose';
+  signal: OpenFlowSignal | null;
+  onOpenPane: OpenFlowLagebildProps['onOpenPane'];
 }) {
-  const tones = {
-    emerald: 'border-emerald-200/12 bg-emerald-300/[0.055] text-emerald-100/82',
-    cyan: 'border-cyan-200/12 bg-cyan-300/[0.055] text-cyan-100/82',
-    amber: 'border-amber-200/12 bg-amber-300/[0.055] text-amber-100/82',
-    rose: 'border-rose-200/12 bg-rose-300/[0.055] text-rose-100/82',
-  };
+  // Calm state — nothing needs the operator right now.
+  if (!signal) {
+    const calm = TONES.success;
+    const CalmIcon = calm.icon;
+    return (
+      <div className={`flex items-center gap-3 rounded-2xl border ${calm.border} ${calm.bg} px-5 py-4`}>
+        <CalmIcon size={20} className={calm.text} />
+        <div>
+          <div className="text-base font-medium text-white/88">Alles ruhig</div>
+          <div className="text-sm text-white/50">Keine offenen Vorfälle. MÔRA beobachtet weiter.</div>
+        </div>
+      </div>
+    );
+  }
+
+  const tone = TONES[toneForPriority(signal.priority)];
+  const Icon = tone.icon;
+  const action = signal.suggestedActions[0];
 
   return (
-    <div className={`rounded-xl border p-3 ${tones[tone]}`}>
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.17em] opacity-70">
-        <Icon size={13} />
-        {label}
+    <div className={`rounded-2xl border ${tone.border} ${tone.bg} p-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]`}>
+      <div className="mb-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/45">
+        <Icon size={14} className={tone.text} />
+        Jetzt wichtig · {SOURCE_LABEL[signal.source] || signal.source}
       </div>
-      <div className="mt-2 text-sm font-medium text-white/86">{title}</div>
-      <p className="mt-1 text-xs leading-relaxed text-white/46">{detail}</p>
+      <h2 className="text-xl font-light leading-snug text-white">{signal.title}</h2>
+      {signal.summary ? <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/60">{signal.summary}</p> : null}
+      {action ? (
+        <button
+          type="button"
+          className={`mt-4 inline-flex items-center gap-2 rounded-xl border px-4 py-2 text-sm ${tone.border} ${tone.bg} ${tone.text} transition-colors hover:brightness-125`}
+          onClick={() => openActionPane(action, onOpenPane)}
+        >
+          {action.label}
+          <ArrowRight size={14} />
+        </button>
+      ) : null}
     </div>
   );
 }
 
 export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLagebildProps) {
-  const changed = view.changed.slice(0, 3);
-  const attention = view.attention.slice(0, 2);
-  const nextSteps = view.nextSteps.slice(0, 2);
+  // The headline is shown once, big. Everything below excludes it (and attention
+  // is not repeated inside "changed") — one signal, one place.
+  const headlineId = view.headline?.id;
+  const attention = view.attention.filter((s) => s.id !== headlineId).slice(0, 3);
+  const attentionIds = new Set(attention.map((s) => s.id));
+  const changed = view.changed
+    .filter((s) => s.id !== headlineId && !attentionIds.has(s.id))
+    .slice(0, 3);
+  const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
 
   return (
     <section
@@ -256,6 +278,8 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
           Karte oeffnen
         </button>
       </div>
+
+      <HeadlineHero signal={view.headline} onOpenPane={onOpenPane} />
 
       <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(340px,1.08fr)_minmax(290px,0.92fr)_minmax(300px,0.92fr)]">
         <div className="rounded-xl border border-emerald-200/[0.10] bg-black/24 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
@@ -303,14 +327,14 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
         </div>
 
         <aside className="grid gap-4">
-          <div className="rounded-xl border border-violet-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
-              <FolderOpen size={16} className="text-violet-200/70" />
-              Initiativen
-            </div>
-            <div className="grid gap-3">
-              {view.initiatives.length > 0 ? (
-                view.initiatives.map((initiative) => (
+          {view.initiatives.length > 0 ? (
+            <div className="rounded-xl border border-violet-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
+                <FolderOpen size={16} className="text-violet-200/70" />
+                Initiativen
+              </div>
+              <div className="grid gap-3">
+                {view.initiatives.map((initiative) => (
                   <div key={initiative.id} className="rounded-xl border border-violet-200/10 bg-violet-300/[0.06] p-3">
                     <h3 className="text-sm font-medium text-white/86">{initiative.title}</h3>
                     <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/46">
@@ -319,12 +343,10 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
                       <span>{initiative.decisionCount} Entscheidungen</span>
                     </div>
                   </div>
-                ))
-              ) : (
-                <EmptyState>Initiativen entstehen, sobald Quellen und Arbeit zusammenhaengen.</EmptyState>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
+          ) : null}
 
           <div className="rounded-xl border border-emerald-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
             <div className="mb-3 flex items-center justify-between gap-3">
@@ -351,36 +373,6 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
         </aside>
       </div>
 
-      <div className="grid gap-3 xl:grid-cols-4">
-        <SystemTile
-          icon={Bot}
-          label="Persoenlicher Agent"
-          title="arbeitet zuerst fuer dich"
-          detail="Private Quellen bleiben private Scouts. MORA bekommt nur verdichtete Hinweise."
-          tone="emerald"
-        />
-        <SystemTile
-          icon={BrainCircuit}
-          label="Department-Agent"
-          title="erkennt Reibung im Team"
-          detail="Aus Einzelspuren entstehen Team-Signale, ohne Rohdaten unnoetig hochzureichen."
-          tone="cyan"
-        />
-        <SystemTile
-          icon={Network}
-          label="Myzelium"
-          title="verbindet Arbeit mit Kontext"
-          detail="Nodes und Relations bleiben unter der Oberflaeche das Wurzelnetz des OS."
-          tone="amber"
-        />
-        <SystemTile
-          icon={Sparkles}
-          label="MORA"
-          title="navigiert Veraenderung"
-          detail="Nicht Dashboard, nicht Ablage: Orientierung ueber das, was sich wirklich bewegt."
-          tone="rose"
-        />
-      </div>
     </section>
   );
 }

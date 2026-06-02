@@ -5,6 +5,7 @@ import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import type { OpenFlowLagebild as Lagebild } from '@/lib/openflow/types';
 
 const view: Lagebild = {
+  headline: null,
   changed: [
     {
       id: 'sig-mail-1',
@@ -120,6 +121,22 @@ describe('OpenFlowLagebild', () => {
       size: { width: 960, height: 680 },
       data: {},
     });
+  });
+
+  it('shows the calm hero when there is no headline', () => {
+    render(<OpenFlowLagebild view={view} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
+    expect(screen.getByText('Alles ruhig')).toBeInTheDocument();
+  });
+
+  it('renders the dynamic headline once and not again in the lists below', () => {
+    const headlineSignal = view.attention[0];
+    const withHeadline: Lagebild = { ...view, headline: headlineSignal };
+    render(<OpenFlowLagebild view={withHeadline} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
+
+    // Headline title appears exactly once (in the hero, not duplicated in attention list)
+    expect(screen.getAllByText('Owner fehlt')).toHaveLength(1);
+    // Hero context label present
+    expect(screen.getByText(/Jetzt wichtig/)).toBeInTheDocument();
   });
 
   it('opens integrations for connector setup prompts', () => {
