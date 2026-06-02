@@ -68,6 +68,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useCompanyNodes } from '@/lib/queries/useNodes';
 import { mergeUnique } from '@/lib/utils/collections';
 import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
+import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { AppProps } from '@/lib/apps/types';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 
@@ -133,50 +134,6 @@ interface PendingAction {
     next?: FileIntakeNext;
 }
 
-interface IntakeChoiceResult extends OpenableSearchResult {
-    route_destination?: {
-        company_name?: string;
-        department_name?: string;
-        space_name?: string;
-        folder_name?: string;
-        label?: string;
-    };
-    route_explanation?: {
-        headline?: string;
-        reason?: string;
-        signal_labels?: string[];
-        learning_summary?: string;
-    };
-    route_reason?: string;
-    route_signals?: string[];
-    route_confidence_label?: string;
-    route_confidence_score?: number;
-}
-
-function toIntakeChoiceResult(candidate: FileIntakeRouteCandidate, fallbackIndex: number): IntakeChoiceResult {
-    const folderId = candidate.target_folder_id || candidate.destination?.folder_id;
-    const base = toOpenableSearchResult({
-        id: folderId || candidate.target_space_id || candidate.target_department_id || `finder-intake-choice-${fallbackIndex}`,
-        title: candidate.label || candidate.target_folder_name || candidate.suggested_location || 'Ziel',
-        type: folderId ? 'folder' : candidate.target_space_id ? 'space' : candidate.target_department_id ? 'department' : 'folder',
-        scope_path: candidate.label || candidate.suggested_location,
-        path: candidate.label || candidate.suggested_location,
-        company_id: candidate.target_company_id || candidate.destination?.company_id,
-        department_id: candidate.target_department_id || candidate.destination?.department_id,
-        space_id: candidate.target_space_id || candidate.destination?.space_id,
-        folder_id: folderId,
-        score: candidate.route_confidence_score,
-    });
-    return {
-        ...base,
-        route_destination: candidate.destination || undefined,
-        route_explanation: candidate.route_explanation || undefined,
-        route_reason: candidate.route_reason,
-        route_signals: candidate.route_signals,
-        route_confidence_label: candidate.route_confidence_label,
-        route_confidence_score: candidate.route_confidence_score,
-    };
-}
 
 
 
@@ -2874,7 +2831,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 {pendingAction.route_resolution === 'choose' && (pendingAction.route_candidates?.length || 0) > 0 && (
                                     <AmbiguityChoiceSurface
                                         query={pendingAction.params?.filename}
-                                        results={(pendingAction.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index))}
+                                        results={(pendingAction.route_candidates || []).map((candidate, index) => toIntakeChoiceResult(candidate, index, 'finder-intake-choice'))}
                                         title={pendingAction.route_choice_headline || 'Mehrere plausible Ziele'}
                                         body={pendingAction.route_choice_reason || 'Mehrere Zielkontexte passen zur Datei. Wähle den richtigen Zielordner vor der Freigabe.'}
                                         onPick={(result) => {
