@@ -26,6 +26,7 @@ type CorePreviewLead = {
     is_demo?: boolean;
     status?: 'preview' | 'claimed';
     claimed?: boolean;
+    entry_token?: string;
 };
 
 export const WebsiteLeadLedger: React.FC = () => {
@@ -120,6 +121,35 @@ export const WebsiteLeadLedger: React.FC = () => {
             window.location.reload(); // Simple refresh for now
         } catch {
             toast.error('Fehler bei der Wall-Genehmigung.');
+        }
+    };
+
+    const handleEnterPreview = async (lead: CorePreviewLead) => {
+        const toastId = toast.loading('Preview-Zugang wird vorbereitet...');
+        try {
+            const res = await coreGet(`/v3/entry/website-previews/${lead.tenant_id}?raw=true`) as { dossier: any; company: any; entry_token?: string };
+            const entryToken = res?.entry_token;
+            if (!entryToken) {
+                toast.error('Kein Preview-Token vom Server erhalten (Bist du System-Owner?).', { id: toastId });
+                return;
+            }
+
+            const loginRes = await fetch('/api/auth/website-entry-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ entryToken }),
+            });
+
+            if (!loginRes.ok) {
+                const errPayload = await loginRes.json().catch(() => ({}));
+                throw new Error(errPayload?.detail || 'Login fehlgeschlagen');
+            }
+
+            toast.success('Login erfolgreich! Leite weiter...', { id: toastId });
+            window.location.href = '/home';
+        } catch (err: any) {
+            console.error('[handleEnterPreview] Failed:', err);
+            toast.error(`Fehler beim Betreten: ${err.message || err}`, { id: toastId });
         }
     };
 
@@ -232,6 +262,18 @@ export const WebsiteLeadLedger: React.FC = () => {
                                         {lead.wall_approved ? 'Live auf Website' : 'Jetzt freischalten'}
                                     </div>
                                 </button>
+                                {!isClaimed && (
+                                    <button
+                                        onClick={() => handleEnterPreview(lead)}
+                                        className="flex flex-col items-start rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-left transition-colors hover:bg-cyan-500/10"
+                                    >
+                                        <div className="flex items-center gap-2 text-xs text-cyan-200/90">
+                                            <ExternalLink size={10} className="text-cyan-400" />
+                                            Preview betreten
+                                        </div>
+                                        <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200/40">Als Lead einloggen</div>
+                                    </button>
+                                )}
                                 <a
                                     href="https://www.saimor.world/owner"
                                     target="_blank"

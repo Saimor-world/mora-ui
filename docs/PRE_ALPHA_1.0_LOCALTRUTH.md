@@ -14,8 +14,8 @@ Lokale URLs:
 - Core: `http://127.0.0.1:8081/v3/health`
 
 Lokale Testkonten:
-- `nextchaptergermany@gmail.com / nextchapter123`
-- `demo@saimor.io / demo123`
+- `nextchaptergermany@gmail.com / [CHECK_LOCAL_ENV_OR_DB]`
+- `demo@saimor.io / [CHECK_LOCAL_ENV_OR_DB]`
 
 Produktzustand:
 - localhost ist die Primärwahrheit
