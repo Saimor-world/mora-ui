@@ -20,6 +20,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
+import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -41,11 +42,11 @@ import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import type { MemoryCategory, MemorySearchResult } from '@/lib/types/memory';
 import { dispatchNavigationResult, openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
-import { fetchWorkSessionPlan, resolveOpenIntent, type OpenIntentResolution } from '@/lib/api/coreClient';
+import { fetchWorkSessionPlan, resolveOpenIntent } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan, WORK_SESSION_PLAN_EVENT, type WorkSessionShellSummary } from '@/lib/utils/moraExplanation';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
-import { CommandReceipt, type CommandReceiptChip } from '@/components/ui/CommandReceipt';
+import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextLabel';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { detectMemoryIntent, detectRecallIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
@@ -82,59 +83,7 @@ interface Message {
     recalledMemoryIds?: string[];
 }
 
-function buildOpenIntentReceipt(intent: OpenIntentResolution, query: string): {
-    label: string;
-    title: string;
-    body?: string;
-    chips: CommandReceiptChip[];
-    footer?: string;
-} {
-    const chips: CommandReceiptChip[] = [];
-    if (query.trim()) {
-        chips.push({ label: `"${query.trim()}"` });
-    }
-    if (intent.destination?.path) {
-        chips.push({ label: intent.destination.path });
-    } else if (intent.destination?.label) {
-        chips.push({ label: intent.destination.label });
-    }
-    if (intent.next?.label) {
-        chips.push({ label: intent.next.label, tone: intent.resolution === 'choose' ? 'amber' : intent.resolution === 'act' ? 'cyan' : 'slate' });
-    }
 
-    return {
-        label: intent.headline || 'Treffer',
-        title: intent.open_explanation?.headline || intent.reason || `Suche für "${query}"`,
-        body: intent.open_explanation?.reason || intent.reason || undefined,
-        chips,
-        footer: intent.next?.message,
-    };
-}
-
-
-
-function toChatOpenableResult(candidate: import('@/lib/api/coreClient').OpenIntentCandidate): OpenableSearchResult {
-    const normalizedType = (
-        candidate.type === 'department'
-        || candidate.type === 'space'
-        || candidate.type === 'folder'
-        || candidate.type === 'file'
-        || candidate.type === 'node'
-    ) ? candidate.type : 'node';
-
-    return {
-        id: candidate.id,
-        title: candidate.title,
-        type: normalizedType,
-        subtitle: candidate.scope_path || candidate.path,
-        path: candidate.scope_path || candidate.path,
-        companyId: candidate.company_id,
-        departmentId: candidate.department_id,
-        spaceId: candidate.space_id,
-        folderId: candidate.folder_id,
-        nodeId: candidate.node_id,
-    };
-}
 
 // Extracted memory components to components/MemoryComponents.tsx and components/ChatStatusCards.tsx
 
