@@ -56,7 +56,7 @@ import { filterCompaniesForSurface } from '@/lib/os/companySurfaceFilter';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
-import type { CoreTreeNode } from '@/lib/types/core';
+import { deriveDockStructure, type DockDerivedSpace, type DockDerivedFolder } from '@/lib/dock/deriveDockStructure';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -526,47 +526,6 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
         </div>
     );
 };
-
-type DockDerivedSpace = {
-    id: string;
-    name: string;
-    color?: string | null;
-    folder_count?: number | null;
-};
-
-type DockDerivedFolder = {
-    id: string;
-    name: string;
-    color?: string | null;
-    node_count?: number | null;
-};
-
-function deriveDockStructure(tree: CoreTreeNode[]) {
-    const spacesByDepartment: Record<string, DockDerivedSpace[]> = {};
-    const foldersBySpace: Record<string, DockDerivedFolder[]> = {};
-
-    tree.forEach((department) => {
-        if (department.type !== 'department') return;
-        const spaces = (department.children || []).filter((child) => child.type === 'space');
-        spacesByDepartment[department.id] = spaces.map((space) => {
-            const folders = (space.children || []).filter((child) => child.type === 'folder');
-            foldersBySpace[space.id] = folders.map((folder) => ({
-                id: folder.id,
-                name: folder.name,
-                color: folder.color,
-                node_count: (folder.children || []).filter((child) => child.type === 'node').length,
-            }));
-            return {
-                id: space.id,
-                name: space.name,
-                color: space.color,
-                folder_count: folders.length,
-            };
-        });
-    });
-
-    return { spacesByDepartment, foldersBySpace };
-}
 
 export const Dock = () => {
     const navigateToCore = useNavStore((s) => s.navigateToCore);
