@@ -2,6 +2,7 @@ import {
   TONES,
   STATUS_TONES,
   priorityFromSeverity,
+  priorityFromSeverityLabel,
   toneForPriority,
   toneForActionStatus,
   actionStatusLabel,
@@ -34,6 +35,19 @@ describe('priorityFromSeverity (preserves existing thresholds)', () => {
   it('defaults non-numbers to normal', () => {
     expect(priorityFromSeverity(undefined)).toBe('normal');
     expect(priorityFromSeverity(null)).toBe('normal');
+  });
+});
+
+describe('priorityFromSeverityLabel', () => {
+  it('maps textual severity → priority', () => {
+    expect(priorityFromSeverityLabel('critical')).toBe('urgent');
+    expect(priorityFromSeverityLabel('warning')).toBe('high');
+    expect(priorityFromSeverityLabel('info')).toBe('normal');
+    expect(priorityFromSeverityLabel('CRITICAL')).toBe('urgent');
+  });
+  it('defaults unknown/empty to normal', () => {
+    expect(priorityFromSeverityLabel(undefined)).toBe('normal');
+    expect(priorityFromSeverityLabel('weird')).toBe('normal');
   });
 });
 

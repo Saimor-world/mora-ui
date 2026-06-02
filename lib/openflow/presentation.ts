@@ -79,6 +79,8 @@ interface BuildOpenFlowLagebildInput {
   cloudPreview: CloudPreviewItem[];
   homeView: HomeViewLike | null;
   communicationSummary: CommunicationSummaryLike;
+  /** Real Nightwatch incidents (already-mapped OpenFlow signals) to surface as attention. */
+  nightwatchSignals?: OpenFlowSignal[];
 }
 
 const INITIATIVE_PATTERNS = [
@@ -352,9 +354,11 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     });
   });
 
+  const nightwatchSignals = input.nightwatchSignals || [];
   const allChanged = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals];
-  const changed = allChanged.slice(0, 8);
-  const attention = [...homeAttention, ...allChanged.filter((item) => item.priority === 'urgent' || item.priority === 'high')].slice(0, 5);
+  // Real infrastructure incidents lead "changed" + "attention" (not "nextSteps").
+  const changed = uniqueSignalsById([...nightwatchSignals, ...allChanged]).slice(0, 8);
+  const attention = uniqueSignalsById([...nightwatchSignals, ...homeAttention, ...allChanged.filter((item) => item.priority === 'urgent' || item.priority === 'high')]).slice(0, 5);
   const nextSteps = [...homeNextSteps, ...setupSignals, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
   const initiativeSignals = uniqueSignalsById([...changed, ...attention, ...nextSteps]);
 

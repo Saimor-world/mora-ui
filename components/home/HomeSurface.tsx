@@ -26,6 +26,9 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
+import { nightwatchIncidentsToSignals } from '@/lib/openflow/nightwatch';
+import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
+import type { OpenFlowSignal } from '@/lib/openflow/types';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { relativeTime, normalizePrivateAreaLabel, kindIcon, kindLabel, type RecentKind } from '@/components/home/homeSurfaceFormat';
@@ -139,6 +142,16 @@ export const HomeSurface: React.FC = () => {
         cloudPreview = [],
     } = useCommunicationLiveData();
 
+    // Real Nightwatch incidents → OpenFlow signals (read-only; empty on error).
+    const [nightwatchSignals, setNightwatchSignals] = useState<OpenFlowSignal[]>([]);
+    useEffect(() => {
+        let cancelled = false;
+        fetchNightwatchIncidents()
+            .then((incidents) => { if (!cancelled) setNightwatchSignals(nightwatchIncidentsToSignals(incidents)); })
+            .catch(() => { if (!cancelled) setNightwatchSignals([]); });
+        return () => { cancelled = true; };
+    }, []);
+
     const openFlowView = useMemo(() => buildOpenFlowLagebild({
         mailPreview,
         calendarPreview,
@@ -146,6 +159,7 @@ export const HomeSurface: React.FC = () => {
         cloudPreview,
         homeView: homeView ?? null,
         communicationSummary,
+        nightwatchSignals,
     }), [
         mailPreview,
         calendarPreview,
@@ -153,6 +167,7 @@ export const HomeSurface: React.FC = () => {
         cloudPreview,
         homeView,
         communicationSummary,
+        nightwatchSignals,
     ]);
 
     // ── pane helper ───────────────────────────────────────────────────────

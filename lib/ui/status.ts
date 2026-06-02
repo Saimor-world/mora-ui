@@ -56,6 +56,17 @@ export function priorityFromSeverity(severity?: number | null): Priority {
     return 'low';
 }
 
+const SEVERITY_LABEL_PRIORITY: Record<string, Priority> = {
+    critical: 'urgent',
+    warning: 'high',
+    info: 'normal',
+};
+
+/** Textual severity ('info'|'warning'|'critical') → priority band. Falls back to 'normal'. */
+export function priorityFromSeverityLabel(label?: string | null): Priority {
+    return SEVERITY_LABEL_PRIORITY[(label || '').toLowerCase()] ?? 'normal';
+}
+
 const PRIORITY_TONE: Record<Priority, StatusTone> = {
     urgent: 'critical',
     high: 'warning',
