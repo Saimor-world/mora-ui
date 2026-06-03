@@ -185,6 +185,18 @@ export async function fetchNodeRelations(nodeId: string): Promise<any[]> {
     return normalizeList<any>(result, ['relations', 'nodes']);
 }
 
+// P1: Real graph context (folder/space/department names + neighbours from stored relations)
+export interface NodeGraphNeighbour { id: string; title?: string; type?: string; }
+export interface NodeGraphContext {
+    folder?: string | null;
+    space?: string | null;
+    department?: string | null;
+    neighbours?: NodeGraphNeighbour[];
+}
+export async function fetchNodeGraphContext(nodeId: string): Promise<NodeGraphContext | null> {
+    return coreGet(`/v3/nodes/${nodeId}/context`, { isOptional: true }) as Promise<NodeGraphContext | null>;
+}
+
 // ========== TREE ==========
 
 export type TreeApiResponse = {

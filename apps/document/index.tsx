@@ -8,6 +8,8 @@ import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
+import { fetchNodeGraphContext, type NodeGraphContext } from '@/lib/api/orgClient';
+import { getSemanticallySimilarNodes } from '@/lib/api/signalsClient';
 import { updateNode } from '@/lib/api/orgClient';
 import { fetchCompanyFileBlob, getCompanyFileUrl } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
@@ -46,6 +48,8 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const [type, setType] = useState(initialType || '');
     const [metadata, setMetadata] = useState<Record<string, any>>(initialMetadata || {});
     const [relations, setRelations] = useState<NodeRelation[]>([]);
+    const [graphCtx, setGraphCtx] = useState<NodeGraphContext | null>(null);
+    const [similar, setSimilar] = useState<any[]>([]);
     const [draftContent, setDraftContent] = useState(initialContent || '');
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -104,6 +108,33 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         void loadDocument();
         return () => { cancelled = true; };
     }, [nodeId, reloadKey]);
+
+    // P1: load real graph context + semantic neighbours (fail-soft, endpoints now backed by P1.1 data)
+    useEffect(() => {
+        let cancelled = false;
+        if (!nodeId) return;
+        (async () => {
+            const [ctx, sim] = await Promise.all([
+                fetchNodeGraphContext(nodeId).catch(() => null),
+                getSemanticallySimilarNodes(nodeId).catch(() => [] as any[]),
+            ]);
+            if (cancelled) return;
+            setGraphCtx(ctx);
+            setSimilar(Array.isArray(sim) ? sim.filter((s: any) => s && s.id !== nodeId).slice(0, 6) : []);
+        })();
+        return () => { cancelled = true; };
+    }, [nodeId, reloadKey]);
+
+    const openNodePane = (n: { id: string; name?: string; title?: string }) => {
+        if (!n?.id) return;
+        openPane({
+            id: `node-${n.id}`,
+            type: 'document',
+            title: n.name || n.title || 'Dokument',
+            data: { nodeId: n.id },
+            size: { width: 800, height: 600 },
+        });
+    };
 
     const fileExtension = useMemo(() => name?.split('.').pop()?.toLowerCase() || '', [name]);
     const isPDF = fileExtension === 'pdf' || type === 'pdf';
@@ -484,24 +515,70 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
 
             <div className="flex-1 overflow-auto">{renderContent()}</div>
 
-            {relations.length > 0 && (
-                <div className="px-4 py-3 border-t border-white/5 bg-white/5">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Link size={14} className="text-emerald-400" />
-                        <span className="text-xs text-white/60 font-medium">Warum {relations.length} Verbindung{relations.length > 1 ? 'en' : ''}?</span>
+            {(() => {
+                const breadcrumb = [graphCtx?.department, graphCtx?.space, graphCtx?.folder].filter(Boolean) as string[];
+                const neighbours = (graphCtx?.neighbours || []).filter(n => n && n.id && n.id !== nodeId).slice(0, 8);
+                const hasAny = breadcrumb.length > 0 || neighbours.length > 0 || similar.length > 0 || relations.length > 0;
+                if (!hasAny) return null;
+                return (
+                    <div className="px-4 py-3 border-t border-white/5 bg-white/5 space-y-3">
+                        {breadcrumb.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <FolderOpen size={13} className="text-emerald-400/80 shrink-0" />
+                                <span className="text-[11px] text-white/40 uppercase tracking-wider">Gehört zu</span>
+                                <span className="text-xs text-white/60">{breadcrumb.join(' › ')}</span>
+                            </div>
+                        )}
+                        {neighbours.length > 0 && (
+                            <div>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <Link size={13} className="text-emerald-400" />
+                                    <span className="text-[11px] text-white/40 uppercase tracking-wider">Verknüpft mit</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {neighbours.map(n => (
+                                        <button key={n.id} onClick={() => openNodePane(n)}
+                                            className="px-2.5 py-1 rounded-lg bg-emerald-500/5 hover:bg-emerald-500/15 text-xs text-emerald-100/80 hover:text-white border border-emerald-400/15 hover:border-emerald-400/40 transition-colors max-w-[220px] truncate"
+                                            title={n.title || n.id}>
+                                            {n.title || 'Node'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {similar.length > 0 && (
+                            <div>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                    <Sparkles size={13} className="text-mora-gold" />
+                                    <span className="text-[11px] text-white/40 uppercase tracking-wider">Ähnliche Inhalte</span>
+                                    <span className="text-[10px] text-white/25">semantisch gefunden</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {similar.map((s: any) => (
+                                        <button key={s.id} onClick={() => openNodePane(s)}
+                                            className="px-2.5 py-1 rounded-lg bg-amber-500/5 hover:bg-amber-500/15 text-xs text-amber-100/80 hover:text-white border border-amber-400/15 hover:border-amber-400/40 transition-colors max-w-[220px] truncate"
+                                            title={s.name || s.title || s.id}>
+                                            {s.name || s.title || 'Node'}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                        {relations.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap pt-1">
+                                <span className="text-[10px] text-white/30">Auch:</span>
+                                {relations.slice(0, 4).map((relation, index) => (
+                                    <span key={`${relation.type || 'relation'}-${index}`}
+                                        className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-white/40 border border-white/10"
+                                        title={`Verbunden mit: ${relation.target_name || relation.source_name || 'Inhalt'}`}>
+                                        {getRelationExplanation(relation)}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {relations.slice(0, 5).map((relation, index) => (
-                            <span key={`${relation.type || 'relation'}-${index}`}
-                                className="px-2 py-1 rounded-lg bg-white/5 text-xs text-white/50 border border-white/10"
-                                title={`Verbunden mit: ${relation.target_name || relation.source_name || 'Inhalt'}`}>
-                                {getRelationExplanation(relation)}
-                            </span>
-                        ))}
-                        {relations.length > 5 && <span className="px-2 py-1 text-xs text-white/30">+{relations.length - 5} weitere</span>}
-                    </div>
-                </div>
-            )}
+                );
+            })()}
 
             {metadata && Object.keys(metadata).length > 0 && (
                 <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4 flex-wrap">
