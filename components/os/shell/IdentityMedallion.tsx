@@ -10,6 +10,7 @@ interface IdentityMedallionProps {
     className?: string;
     preferInitials?: boolean;
     showStatusDot?: boolean;
+    auraColor?: string;  // overrides role colors for non-owner
 }
 
 const getRoleColors = (role?: string | null) => {
@@ -50,6 +51,7 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
     className = "",
     preferInitials = true,
     showStatusDot = true,
+    auraColor,
 }) => {
     const label = name?.trim() || "Benutzer";
     const initials = label
@@ -59,6 +61,15 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
         .map((part) => part[0]?.toUpperCase() || "")
         .join("") || "B";
     const colors = getRoleColors(role);
+    const isOwner = role === 'owner' || role === 'system_owner';
+    const resolvedColors = (auraColor && !isOwner)
+        ? {
+              ...colors,
+              ring: `${auraColor}52`,
+              glow: `${auraColor}24`,
+              halo: `${auraColor}28`,
+          }
+        : colors;
     const showImage = Boolean(imageUrl) && !preferInitials;
 
     return (
@@ -70,14 +81,14 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
             <div
                 className="pointer-events-none absolute inset-[-28%] rounded-full opacity-80"
                 style={{
-                    background: `radial-gradient(circle at 50% 50%, ${colors.halo} 0%, transparent 68%)`,
+                    background: `radial-gradient(circle at 50% 50%, ${resolvedColors.halo} 0%, transparent 68%)`,
                     filter: "blur(22px)",
                 }}
             />
             <div
                 className="pointer-events-none absolute inset-[-14%] rounded-full animate-pulse"
                 style={{
-                    background: `radial-gradient(circle at 40% 35%, ${colors.glow} 0%, transparent 72%)`,
+                    background: `radial-gradient(circle at 40% 35%, ${resolvedColors.glow} 0%, transparent 72%)`,
                     filter: "blur(16px)",
                     animationDuration: '4.8s',
                 }}
@@ -87,16 +98,16 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
                 className="absolute inset-0 rounded-full"
                 style={{
                     background: "radial-gradient(circle at 50% 50%, rgba(255,255,255,0.04), rgba(255,255,255,0) 72%)",
-                    border: `1.5px solid ${colors.ring}`,
-                    boxShadow: `0 0 20px ${colors.glow}, inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.12)`,
+                    border: `1.5px solid ${resolvedColors.ring}`,
+                    boxShadow: `0 0 20px ${resolvedColors.glow}, inset 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.12)`,
                 }}
             />
 
             <div
                 className="absolute inset-[6%] rounded-full"
                 style={{
-                    border: `1px solid ${colors.glow}`,
-                    boxShadow: `inset 0 0 18px ${colors.glow}`,
+                    border: `1px solid ${resolvedColors.glow}`,
+                    boxShadow: `inset 0 0 18px ${resolvedColors.glow}`,
                 }}
             />
 
