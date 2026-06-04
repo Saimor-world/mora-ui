@@ -25,6 +25,7 @@ import { ToolTrace } from '@/components/chat/ToolTrace';
 import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { learnInsight, searchMemory } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
@@ -53,6 +54,7 @@ import { MoraContextLabel, type MoraScope } from '@/components/mora/MoraContextL
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
 import { detectMemoryIntent, detectRecallIntent, extractInsightFromRequest } from '@/lib/chat/memoryIntent';
 import type { AppProps } from '@/lib/apps/types';
+import { getUserColorHex } from '@/lib/utils/userColors';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { buildCommunicationOperationalContextMessage, useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 // Sprint 3: Mora episodic memory hooks
@@ -115,6 +117,12 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     const { data: departments } = useDepartments(activeCompanyId);
     const pane = getPane(paneId);
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
+    const user = useSessionStore(state => state.user);
+    const userAura = useMemo(() => {
+        const u = user as any;
+        if (u?.role === 'owner' || u?.role === 'system_owner') return '#d4af37';
+        return getUserColorHex(u?.email || u?.name || '');
+    }, [user]);
 
     // Scope derivation for MoraContextLabel
     const activeDepartment = useMemo(
@@ -1110,12 +1118,19 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         >
                             <div className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode
                                 ? msg.role === 'user'
-                                    ? 'bg-[#E5F3FF] border border-[#0078D4]/30 text-[#1F1F1F] rounded-lg'
+                                    ? 'border text-[#1F1F1F] rounded-lg'
                                     : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
                                 : msg.role === 'user'
-                                    ? 'bg-violet-500/20 border border-violet-500/30 text-white rounded-2xl'
+                                    ? 'border text-white rounded-2xl'
                                     : 'bg-white/5 border border-white/10 text-white/90 rounded-2xl'
-                                }`}>
+                                }`}
+                                style={msg.role === 'user' ? (isStandardMode ? {
+                                    background: '#E5F3FF',
+                                    borderColor: 'rgba(0, 120, 212, 0.188)',
+                                } : {
+                                    background: `${userAura}1a`,
+                                    borderColor: `${userAura}40`,
+                                }) : undefined}>
                                 {/* Sprint 3: "Mora erinnert sich" recall indicator */}
                                 {msg.role === 'assistant' && msg.recalledMemoryIds && msg.recalledMemoryIds.length > 0 && (
                                     <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-violet-300/72">
@@ -1146,8 +1161,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         </div>
                                     )}
                                     {msg.role === 'user' && (
-                                        <User size={16} className={`mt-0.5 shrink-0 ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
-                                            }`} />
+                                        <User
+                                            size={16}
+                                            className="mt-0.5 shrink-0"
+                                            style={{ color: isStandardMode ? '#0078D4' : userAura }}
+                                        />
                                     )}
                                 </div>
                                 <div className={`flex items-center text-[10px] mt-2 ${isStandardMode ? 'text-gray-400' : 'text-white/30'
