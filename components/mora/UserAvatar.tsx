@@ -34,6 +34,10 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
         ? "rgba(212,175,55,0.25)"
         : getUserColor(name || role).glow;
 
+    const personalAuraColor = isOwnerRole
+        ? undefined
+        : getUserColor(name || role).hex;
+
     return (
         <div className="relative" title={name || role}>
             {showAura ? (
@@ -51,6 +55,7 @@ export const UserAvatar: React.FC<UserAvatarProps> = ({
                 imageUrl={imageUrl}
                 size={size}
                 preferInitials
+                auraColor={personalAuraColor}
             />
         </div>
     );
