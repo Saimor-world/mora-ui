@@ -8,6 +8,11 @@ jest.mock('@/lib/api/coreClient', () => ({
 
 jest.mock('@/lib/api/orgClient', () => ({
   updateNode: jest.fn(),
+  fetchNodeGraphContext: jest.fn().mockResolvedValue(null),
+}));
+
+jest.mock('@/lib/api/signalsClient', () => ({
+  getSemanticallySimilarNodes: jest.fn().mockResolvedValue([]),
 }));
 
 jest.mock('@/lib/api/filesClient', () => ({
