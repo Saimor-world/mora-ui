@@ -78,6 +78,8 @@ function ResetPasswordForm() {
                 </label>
                 <input
                     type="password"
+                    name="new-password"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     autoFocus
@@ -91,6 +93,8 @@ function ResetPasswordForm() {
                 </label>
                 <input
                     type="password"
+                    name="confirm-password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && void handleReset()}
