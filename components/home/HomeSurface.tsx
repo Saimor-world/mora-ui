@@ -5,7 +5,7 @@ import { Activity, CalendarDays, ExternalLink, Globe, Lock, LogOut, Mail, Messag
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
-import { useHomeView } from '@/lib/queries/useHomeView';
+import { useHomeStatus, useHomeView } from '@/lib/queries/useHomeView';
 import { resolveCompanyName } from '@/lib/home/resolveCompanyName';
 import { HomeViewHighlights } from '@/components/home/HomeViewHighlights';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -107,6 +107,7 @@ export const HomeSurface: React.FC = () => {
     const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
     const { data: companies = [] }   = useCompanies();
     const { data: homeView }         = useHomeView();
+    const { data: homeStatus }       = useHomeStatus();
     const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
     const { data: departments = [] } = useDepartments(resolvedCompanyId);
     const { data: treeData = [] }    = useTree(resolvedCompanyId);
@@ -158,6 +159,7 @@ export const HomeSurface: React.FC = () => {
         feedPreview,
         cloudPreview,
         homeView: homeView ?? null,
+        homeStatus: homeStatus ?? null,
         communicationSummary,
         nightwatchSignals,
     }), [
@@ -166,9 +168,12 @@ export const HomeSurface: React.FC = () => {
         feedPreview,
         cloudPreview,
         homeView,
+        homeStatus,
         communicationSummary,
         nightwatchSignals,
     ]);
+    const hiddenHomePlaceholders = homeStatus?.placeholders_detected?.map((item) => item.label) ?? [];
+    const hidesLarryDashboard = hiddenHomePlaceholders.includes('Larry Dashboard');
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -686,7 +691,7 @@ export const HomeSurface: React.FC = () => {
 
         // 0b. Larry Dashboard — OWNER ONLY. Contains sensitive infra/agent data.
         // MUST NOT be exposed to public playground / demo visitors.
-        if (user?.role === 'owner') {
+        if (user?.role === 'owner' && !hidesLarryDashboard) {
             suggestions.push({
                 id: 'larry-dashboard',
                 title: 'Larry Dashboard',
@@ -752,7 +757,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         return suggestions;
-    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse, isPublicDemoSurface, user?.role]);
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
 
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {
@@ -1200,7 +1205,7 @@ export const HomeSurface: React.FC = () => {
                         <HomeMiniAction icon={<Wrench size={13} />} label={localTruthStatusLabel} onClick={openLocalTruth} />
                         <HomeMiniAction icon={<Globe size={13} />} label={browserStatusLabel} onClick={openBrowserConnect} />
                         {/* Larry Dashboard — OWNER ONLY (sensitive infra/agent data). */}
-                        {user?.role === 'owner' && (
+                        {user?.role === 'owner' && !hidesLarryDashboard && (
                             <HomeMiniAction
                                 icon={<ExternalLink size={13} />}
                                 label="Larry"

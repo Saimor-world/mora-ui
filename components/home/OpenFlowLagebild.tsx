@@ -165,7 +165,7 @@ function connectorCopy(connector: ConnectorStatus) {
       state: connector.status === 'local' ? 'lokal bereit' : 'liest Signale',
       detail: connector.status === 'local'
         ? 'Lokale OS-Bruecke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
-        : 'OpenClaw kann diese Quelle als persoenlichen Scout auswerten.',
+        : 'Diese Quelle liefert belegte Signale fuer MORA.',
     };
   }
 
@@ -249,6 +249,12 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
     .filter((s) => s.id !== headlineId && !attentionIds.has(s.id))
     .slice(0, 3);
   const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
+  const hiddenPlaceholders = view.truthState?.hiddenPlaceholders ?? [];
+  const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
+  const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);
+  const nextStepsUnknown = Boolean(view.truthState?.nextStepsUnknown);
+  const hideRuntimePlaceholder = hiddenPlaceholders.includes('OpenClaw Infrastruktur');
+  const hideDashboardPlaceholder = hiddenPlaceholders.includes('Larry Dashboard');
 
   return (
     <section
@@ -266,7 +272,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             Lagebild
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/58">
-            Veraenderungen, Menschen, Quellen und OpenClaw-Agenten wachsen zu einem lebenden Organisationsgedaechtnis.
+            Veraenderungen, Menschen und belegte Quellen wachsen zu einem lebenden Organisationsgedaechtnis.
           </p>
         </div>
         <button
@@ -319,6 +325,8 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             <div className="grid gap-3">
               {nextSteps.length > 0 ? (
                 nextSteps.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
+              ) : nextStepsUnknown ? (
+                <EmptyState>Noch kein belegter naechster Schritt.</EmptyState>
               ) : (
                 <EmptyState>MORA wartet auf neue Signale aus Quellen oder Arbeit.</EmptyState>
               )}
@@ -352,20 +360,29 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 text-sm font-medium text-white/82">
                 <Plug size={16} className="text-emerald-200/70" />
-                OpenClaw Infrastruktur
+                Quellenstatus
               </div>
-              <button
-                type="button"
-                onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
-                className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/45 hover:border-emerald-200/22 hover:text-emerald-100/80"
-              >
-                Dashboard
-                <ExternalLink size={11} />
-              </button>
+              {!hideDashboardPlaceholder && (
+                <button
+                  type="button"
+                  onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
+                  className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/45 hover:border-emerald-200/22 hover:text-emerald-100/80"
+                >
+                  Dashboard
+                  <ExternalLink size={11} />
+                </button>
+              )}
             </div>
             <p className="mb-3 text-xs leading-relaxed text-white/44">
-              Das Dashboard bleibt das eigenstaendige Produkt fuer Setup, Accounts und Quellen. Das OS nutzt daraus nur die Signale, die fuer Orientierung relevant sind.
+              {hideRuntimePlaceholder || runtimeUnknown
+                ? 'Status noch unbekannt. Home zeigt nur Quellen, fuer die CORE belegte Signale liefern kann.'
+                : 'Home nutzt nur die Signale, die fuer Orientierung belegbar sind.'}
             </p>
+            {connectorHandshakeUnknown ? (
+              <div className="mb-3 rounded-xl border border-amber-200/10 bg-amber-300/[0.05] px-3 py-2 text-xs text-amber-50/56">
+                Setup-Zustand nicht belegbar.
+              </div>
+            ) : null}
             <div className="grid gap-2">
               {view.connectors.map((connector) => <ConnectorPill key={connector.id} connector={connector} />)}
             </div>

@@ -49,6 +49,7 @@ export const queryKeys = {
   companies: () => ['companies'] as const,
   company: (id: string) => ['companies', id] as const,
   viewHome: () => ['view', 'home'] as const,
+  viewHomeStatus: () => ['view', 'home', 'status'] as const,
   viewHomeInsight: () => ['view', 'home', 'insight'] as const,
   viewDossier: (auditId: string) => ['view', 'dossier', auditId] as const,
 

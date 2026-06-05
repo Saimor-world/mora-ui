@@ -89,6 +89,12 @@ export interface OpenFlowLagebild {
   nextSteps: OpenFlowSignal[];
   initiatives: InitiativeSummary[];
   connectors: ConnectorStatus[];
+  truthState?: {
+    hiddenPlaceholders: string[];
+    nextStepsUnknown: boolean;
+    runtimeUnknown: boolean;
+    connectorHandshakeUnknown: boolean;
+  };
 }
 
 export type AppUniverseGroupId =

@@ -43,10 +43,60 @@ export interface HomeInsight {
     suggested_focus: string;
 }
 
+export interface HomeStatusEvidence {
+    source: string;
+    source_type: string;
+    status: string;
+    confidence?: string;
+    reason: string;
+    timestamp?: string;
+}
+
+export interface HomeStatusPlaceholder {
+    label: string;
+    reason: string;
+}
+
+export interface HomeStatusUnknown {
+    id: string;
+    label?: string;
+    reason: string;
+}
+
+export interface HomeStatus {
+    tenant_id: string;
+    user_role: string;
+    company: HomeViewCompany;
+    home_truth: {
+        changes: Array<HomeViewChange & { evidence?: HomeStatusEvidence[] }>;
+        attention: Array<HomeViewAttention & { evidence?: HomeStatusEvidence[] }>;
+        next_steps: Array<HomeViewNextStep & { evidence?: HomeStatusEvidence[] }>;
+    };
+    runtime: {
+        status: 'connected' | 'missing' | 'unknown' | string;
+        evidence?: HomeStatusEvidence[];
+    };
+    home_cards: {
+        verified: Array<{ id: string; label: string; source: string }>;
+        placeholder: HomeStatusPlaceholder[];
+        unknown: HomeStatusUnknown[];
+    };
+    placeholders_detected: HomeStatusPlaceholder[];
+    unknowns: HomeStatusUnknown[];
+}
+
 export function useHomeView() {
     return useQuery<HomeView>({
         queryKey: queryKeys.viewHome(),
         queryFn: () => coreGet('/v3/views/home'),
+    });
+}
+
+export function useHomeStatus() {
+    return useQuery<HomeStatus | null>({
+        queryKey: queryKeys.viewHomeStatus(),
+        queryFn: () => coreGet('/v3/views/home/status', { isOptional: true }),
+        staleTime: 30_000,
     });
 }
 
