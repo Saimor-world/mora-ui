@@ -317,15 +317,10 @@ export const AmbientRoom: React.FC = () => {
                 if (result.text) speak(result.text);
 
                 setAmbientState('responding');
-                if (result.toolCalls.length === 0) {
-                    // Text-only response — loop back to idle after 4 s
-                    setTimeout(() => {
-                        if (!cancelled) {
-                            setAmbientState('idle');
-                            setMoraText('');
-                        }
-                    }, 4000);
-                }
+                // Text-only settling is handled by a dedicated effect below, so the
+                // transition does not depend on THIS async effect's cancel flag
+                // (setting 'responding' here triggers this effect's cleanup, which
+                // would otherwise cancel an inline timeout and trap the room).
             } catch {
                 if (cancelled) return;
                 setErrorMsg('Ich konnte das nicht verarbeiten.');
@@ -343,6 +338,17 @@ export const AmbientRoom: React.FC = () => {
         const t = setTimeout(() => setAmbientState('idle'), 1500);
         return () => clearTimeout(t);
     }, [ambientState]);
+
+    // ── text-only response → talk-ready idle (keeps Môra's answer visible) ─────
+    // Lives in its own effect (not the thinking IIFE) so the transition is not
+    // cancelled by the thinking effect's cleanup. A text-only reply must settle
+    // back into idle — where the room stays continuable and the answer remains —
+    // instead of getting trapped in 'responding' (which blocks talking again).
+    useEffect(() => {
+        if (ambientState !== 'responding' || moraTools.length > 0) return;
+        const t = setTimeout(() => setAmbientState('idle'), 1200);
+        return () => clearTimeout(t);
+    }, [ambientState, moraTools.length]);
 
     // ── Execute confirmed tools ───────────────────────────────────────────────
     const handleExecute = useCallback(async () => {

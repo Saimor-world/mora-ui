@@ -312,7 +312,7 @@ describe('openflow presentation', () => {
     expect(view.attention.map((item) => item.id)).toContain('mail-late-mail');
   });
 
-  it('promotes missing connectors into next steps so MORA can learn the user', () => {
+  it('keeps legacy connector setup prompts when no Home status contract is present', () => {
     const view = buildOpenFlowLagebild({
       mailPreview: [],
       calendarPreview: [],
@@ -336,6 +336,55 @@ describe('openflow presentation', () => {
     expect(view.nextSteps[0].suggestedActions[0]).toEqual(
       expect.objectContaining({ kind: 'connect_source', paneType: 'integrations' })
     );
+  });
+
+  it('filters Home status placeholders out of normal next steps', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: null,
+      communicationSummary: {
+        mailConfigured: false,
+        calendarConfigured: false,
+        browserPermission: 'default',
+        mailStatusLabel: 'Mail nicht eingerichtet',
+        calendarStatusLabel: 'Kalender nicht eingerichtet',
+        browserStatusLabel: 'Browser freigeben',
+        localTruthStatusLabel: 'Desktop Bridge getrennt',
+      },
+      homeStatus: {
+        tenant_id: 'tenant-demo',
+        user_role: 'owner',
+        company: { id: 'c1', name: 'Simple Coffee Group', is_visitor: false },
+        home_truth: { changes: [], attention: [], next_steps: [] },
+        runtime: { status: 'unknown', evidence: [] },
+        home_cards: {
+          verified: [],
+          placeholder: [
+            { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+          ],
+          unknown: [{ id: 'next_steps', reason: 'No tenant-scoped task nodes' }],
+        },
+        placeholders_detected: [
+          { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+          { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+        ],
+        unknowns: [
+          { id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' },
+          { id: 'connector_handshake', reason: 'Stored connector config is not a live handshake' },
+        ],
+      },
+    });
+
+    expect(view.nextSteps.map((item) => item.title)).not.toEqual(
+      expect.arrayContaining(['Mail fuer OpenClaw vorbereiten', 'Kalender fuer OpenClaw vorbereiten'])
+    );
+    expect(view.truthState?.nextStepsUnknown).toBe(true);
+    expect(view.truthState?.runtimeUnknown).toBe(true);
+    expect(view.truthState?.connectorHandshakeUnknown).toBe(true);
   });
 
   it('normalizes empty backend change titles before rendering OS cards', () => {

@@ -163,6 +163,40 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
     qc.setQueryData(queryKeys.departments('co-1'), depsData);
     qc.setQueryData(queryKeys.tree('co-1'), treeData);
     qc.setQueryData(queryKeys.companies(), [{ id: 'co-1', name: 'Test Corp' }]);
+    qc.setQueryData(queryKeys.viewHome(), {
+        company: { id: 'co-1', name: 'Test Corp', is_visitor: false },
+        greeting: '',
+        changes: [{ id: 'change-1', title: 'Tageslage aktualisiert', scope: 'mindloop_events', occurred_at: '2026-06-05T10:00:00Z', severity: 0.4 }],
+        attention: [],
+        next_steps: [],
+    });
+    qc.setQueryData(queryKeys.viewHomeStatus(), {
+        tenant_id: 'tenant-demo',
+        user_role: 'owner',
+        company: { id: 'co-1', name: 'Test Corp', is_visitor: false },
+        home_truth: { changes: [], attention: [], next_steps: [] },
+        runtime: { status: 'unknown', evidence: [] },
+        home_cards: {
+            verified: [{ id: 'changes', label: 'Was hat sich veraendert?', source: 'mindloop_events' }],
+            placeholder: [
+                { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+                { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+                { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
+                { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
+            ],
+            unknown: [{ id: 'next_steps', label: 'Naechster echter Schritt', reason: 'No tenant-scoped task node is available' }],
+        },
+        placeholders_detected: [
+            { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
+            { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
+        ],
+        unknowns: [
+            { id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' },
+            { id: 'connector_handshake', reason: 'Stored connector config is not a live handshake' },
+        ],
+    });
     return renderWithProviders(<HomeSurface />, { queryClient: qc });
 }
 
@@ -183,6 +217,18 @@ describe('HomeSurface — rendering', () => {
             expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
             expect(screen.getByText('Lagebild')).toBeInTheDocument();
         });
+    });
+
+    it('does not render Home status placeholders as normal recommendations', async () => {
+        renderWithDepts();
+        await waitFor(() => expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument());
+
+        expect(screen.queryByText('Mail fuer OpenClaw vorbereiten')).not.toBeInTheDocument();
+        expect(screen.queryByText('Kalender fuer OpenClaw vorbereiten')).not.toBeInTheDocument();
+        expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
+        expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
+        expect(screen.getByText('Noch kein belegter naechster Schritt.')).toBeInTheDocument();
+        expect(screen.getByText('Setup-Zustand nicht belegbar.')).toBeInTheDocument();
     });
 
     it('renders Lagebild when no user', async () => {

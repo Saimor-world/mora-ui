@@ -7,6 +7,7 @@ import type {
   OpenFlowSourceKind,
 } from '@/lib/openflow/types';
 import { priorityFromSeverity } from '@/lib/ui/status';
+import type { HomeStatus } from '@/lib/queries/useHomeView';
 
 interface MailPreviewItem {
   id: string;
@@ -81,6 +82,7 @@ interface BuildOpenFlowLagebildInput {
   communicationSummary: CommunicationSummaryLike;
   /** Real Nightwatch incidents (already-mapped OpenFlow signals) to surface as attention. */
   nightwatchSignals?: OpenFlowSignal[];
+  homeStatus?: HomeStatus | null;
 }
 
 const INITIATIVE_PATTERNS = [
@@ -276,8 +278,20 @@ function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSign
     );
 }
 
+function hiddenPlaceholderLabels(homeStatus: HomeStatus | null | undefined): string[] {
+  return (homeStatus?.placeholders_detected || []).map((item) => item.label);
+}
+
+function hasUnknown(homeStatus: HomeStatus | null | undefined, id: string): boolean {
+  return Boolean(
+    homeStatus?.unknowns?.some((item) => item.id === id)
+    || homeStatus?.home_cards?.unknown?.some((item) => item.id === id)
+  );
+}
+
 export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFlowLagebild {
   const connectors = buildConnectorStatuses(input.communicationSummary);
+  const hiddenPlaceholders = hiddenPlaceholderLabels(input.homeStatus);
   const setupSignals = buildConnectorSetupSignals(connectors);
 
   const homeChanges = (input.homeView?.changes || []).map((item) => {
@@ -396,7 +410,10 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   // Real infrastructure incidents lead "changed" + "attention" (not "nextSteps").
   const changed = uniqueSignalsById([...nightwatchSignals, ...allChanged]).slice(0, 8);
   const attention = uniqueSignalsById([...nightwatchSignals, ...homeAttention, ...allChanged.filter((item) => item.priority === 'urgent' || item.priority === 'high')]).slice(0, 5);
-  const nextSteps = [...homeNextSteps, ...setupSignals, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
+  const visibleSetupSignals = input.homeStatus
+    ? []
+    : setupSignals.filter((item) => !hiddenPlaceholders.includes(item.title));
+  const nextSteps = [...homeNextSteps, ...visibleSetupSignals, ...allChanged.filter((item) => item.suggestedActions.length > 0)].slice(0, 5);
   const initiativeSignals = uniqueSignalsById([...changed, ...attention, ...nextSteps]);
 
   return {
@@ -406,5 +423,11 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     nextSteps,
     initiatives: deriveInitiativesFromSignals(initiativeSignals).slice(0, 4),
     connectors,
+    truthState: {
+      hiddenPlaceholders,
+      nextStepsUnknown: hasUnknown(input.homeStatus, 'next_steps'),
+      runtimeUnknown: input.homeStatus?.runtime?.status === 'unknown' || hasUnknown(input.homeStatus, 'runtime_larry_openclaw'),
+      connectorHandshakeUnknown: hasUnknown(input.homeStatus, 'connector_handshake'),
+    },
   };
 }

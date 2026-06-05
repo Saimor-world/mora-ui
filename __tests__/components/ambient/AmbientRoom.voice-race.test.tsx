@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, screen, act } from '@testing-library/react';
+import { fireEvent, screen, act, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AmbientRoom } from '@/components/ambient/AmbientRoom';
 import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
@@ -245,5 +245,40 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
 
         expect(mockSendToMora).not.toHaveBeenCalled();
         expect(screen.queryByText('Ungewollte Eingabe')).not.toBeInTheDocument();
+    });
+
+    it('does not artificially end: keeps Môra answer and returns to a talk-ready idle after a text-only reply', async () => {
+        jest.useFakeTimers();
+        try {
+            const qc = createTestQueryClient();
+            renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+            // Turn: speak → finalize → onend → thinking → sendToMora (text-only reply)
+            await act(async () => { fireEvent.keyDown(window, { code: 'Space' }); });
+            const inst = MockSpeechRecognition.lastInstance;
+            await act(async () => {
+                fireEvent.keyUp(window, { code: 'Space' });
+                inst!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Was ist neu' }], { isFinal: true })],
+                });
+                inst!.onend();
+            });
+            // Flush the thinking-effect IIFE + the resolved sendToMora continuation.
+            await act(async () => {
+                await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+            });
+            expect(mockSendToMora).toHaveBeenCalledWith('Was ist neu', null);
+            // Visible in the responding flash.
+            expect(screen.getByText('Antwort von Mora')).toBeInTheDocument();
+
+            // Short responding flash → idle, but the answer must NOT be erased
+            // (old code cleared it after 4 s; that was the one-shot end).
+            await act(async () => { jest.advanceTimersByTime(1300); });
+            expect(screen.getByText('Antwort von Mora')).toBeInTheDocument();
+            expect(screen.getByText(/Drücken & halten/i)).toBeInTheDocument();
+        } finally {
+            jest.useRealTimers();
+        }
     });
 });
