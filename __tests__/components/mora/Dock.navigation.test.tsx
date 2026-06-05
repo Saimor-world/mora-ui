@@ -28,6 +28,7 @@ jest.mock('@/lib/surface/surfaceRegistry', () => ({
     getCoreDockItems: () => [
         { action: 'home', label: 'Home', description: 'Go home', shortcutSuffix: 'H' },
         { action: 'chat', label: 'Chat', description: 'Open chat', shortcutSuffix: 'M' },
+        { action: 'map', label: 'Karte', description: 'Open map', shortcutSuffix: null },
     ],
 }));
 
@@ -137,5 +138,43 @@ describe('Dock core navigation contract', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Home' }));
 
         expect(navigateToCore).toHaveBeenCalledTimes(1);
+    });
+
+    it('Karte icon uses navigateToExplore instead of opening a competing pane', () => {
+        const navigateToExplore = jest.fn();
+
+        useNavStore.setState({
+            navigateToExplore,
+            activeCompanyId: 'co-1',
+            setActiveCompany: jest.fn(),
+            viewMode: 'workspace',
+            isStandardMode: false,
+            setIsSearchOpen: jest.fn(),
+        } as any);
+
+        useSessionStore.setState({
+            user: { role: 'member', name: 'User' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true,
+            isLoggingOut: false,
+            resetStore: jest.fn(),
+            setIsLoggingOut: jest.fn(),
+            updateUserSettings: jest.fn(),
+        } as any);
+
+        useOrbStore.setState({
+            orbState: 'idle',
+            setOrbState: jest.fn(),
+        } as any);
+
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+
+        renderWithProviders(<Dock />, { queryClient: qc });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Karte' }));
+
+        expect(navigateToExplore).toHaveBeenCalledTimes(1);
     });
 });

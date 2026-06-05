@@ -47,7 +47,8 @@ describe('surfaceRegistry', () => {
             expect(coreWork).toContain('chat');
             expect(coreWork).toContain('team');
             expect(coreWork).toContain('settings');
-            expect(coreWork).toContain('meine-dateien');
+            expect(coreWork).not.toContain('notes');
+            expect(coreWork).not.toContain('meine-dateien');
         });
 
         it('keeps only intentionally gated surfaces in future', () => {
@@ -73,7 +74,8 @@ describe('surfaceRegistry', () => {
         });
 
         it('assigns app to legitimate but non-Dock programs', () => {
-            expect(SURFACE_TIERS['notes']).toBe('core_work'); // Notes is Dock-first
+            expect(SURFACE_TIERS['notes']).toBe('app');
+            expect(SURFACE_TIERS['meine-dateien']).toBe('app');
             expect(SURFACE_TIERS['scanner']).toBe('app');
             expect(SURFACE_TIERS['users']).toBe('app');
             expect(SURFACE_TIERS['company-detail']).toBe('app');
@@ -144,11 +146,14 @@ describe('surfaceRegistry', () => {
     });
 
     describe('getCoreDockItems', () => {
-        it('returns exactly 8 Dock entries in the correct order', () => {
+        it('returns exactly the six OS 1.0 Dock entries in the correct order', () => {
             const items = getCoreDockItems();
-            expect(items).toHaveLength(8);
+            expect(items).toHaveLength(6);
             expect(items.map(i => i.action)).toEqual([
-                'home', 'chat', 'finder', 'team', 'notes', 'ambient', 'larry', 'settings',
+                'home', 'chat', 'finder', 'team', 'map', 'settings',
+            ]);
+            expect(items.map(i => i.label)).toEqual([
+                'Home', 'MORA', 'Finder', 'Team', 'Karte', 'Setup',
             ]);
         });
 

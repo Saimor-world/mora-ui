@@ -32,9 +32,9 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     document:        'core_work',
     chat:            'core_work',
     team:            'core_work',
-    notes:           'core_work',
+    notes:           'app',
     settings:        'core_work',
-    'meine-dateien': 'core_work',
+    'meine-dateien': 'app',
 
     // Mounted apps
     scanner:          'app',
@@ -98,14 +98,12 @@ export interface CoreDockItem {
 
 export function getCoreDockItems(): CoreDockItem[] {
     return [
-        { action: 'home',     label: 'Start',    description: 'Arbeitsplatz',          shortcutSuffix: 'H' },
-        { action: 'chat',     label: 'Mora',     description: 'Mit Mora sprechen',     shortcutSuffix: 'J' },
-        { action: 'finder',   label: 'Finder',   description: 'Dateien & Ordner',      shortcutSuffix: 'F' },
-        { action: 'team',     label: 'Team',     description: 'Teammitglieder',        shortcutSuffix: 'U' },
-        { action: 'notes',    label: 'Notizen',  description: 'Persoenliche Notizen',  shortcutSuffix: 'N' },
-        { action: 'ambient',  label: 'Field',    description: 'Môra Field – Sprachraum',  shortcutSuffix: null },
-        { action: 'larry',    label: 'Larry',    description: 'Larry Dashboard',       shortcutSuffix: 'L' },
-        { action: 'settings', label: 'System',   description: 'Einstellungen',         shortcutSuffix: ',' },
+        { action: 'home',     label: 'Home',     description: 'Lagebild',              shortcutSuffix: 'H' },
+        { action: 'chat',     label: 'MORA',     description: 'Mit MORA sprechen',     shortcutSuffix: 'J' },
+        { action: 'finder',   label: 'Finder',   description: 'Objekte und Dateien',   shortcutSuffix: 'F' },
+        { action: 'team',     label: 'Team',     description: 'Menschen und Rollen',   shortcutSuffix: 'U' },
+        { action: 'map',      label: 'Karte',    description: 'Organisation sehen',    shortcutSuffix: null },
+        { action: 'settings', label: 'Setup',    description: 'Verwaltung',            shortcutSuffix: ',' },
     ];
 }
 
