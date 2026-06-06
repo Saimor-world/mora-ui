@@ -692,12 +692,13 @@ export const Dock = () => {
         switch (action) {
             // ── Core Work surfaces ──────────────────────────────────────
             case 'home':     navigateToCore(); break;
+            case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  useNavStore.getState().navigateToAmbient(); break;
-            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'Mora',           size: { width: 860, height: 680 } }); break;
+            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
-            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen',  size: { width: 720, height: 640 } }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Setup',          size: { width: 720, height: 640 } }); break;
             case 'larry':    window.open('https://dash.saimor.world', '_blank'); break;
             // ── Curated demo destinations (public_playground only) ──────
             case 'dossier': {
@@ -733,6 +734,7 @@ export const Dock = () => {
         chat:     MessageCircle,
         finder:   FolderOpen,
         team:     Users,
+        map:      Compass,
         notes:    FileText,
         settings: Settings,
         ambient:  Mic,
