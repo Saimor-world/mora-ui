@@ -1,3 +1,5 @@
+import type { ContextualPanel } from '@/lib/panel/panelTypes';
+
 export type OpenFlowSourceKind =
   | 'mail'
   | 'calendar'
@@ -89,6 +91,7 @@ export interface OpenFlowLagebild {
   nextSteps: OpenFlowSignal[];
   initiatives: InitiativeSummary[];
   connectors: ConnectorStatus[];
+  incidentPanels?: ContextualPanel[];
   truthState?: {
     hiddenPlaceholders: string[];
     nextStepsUnknown: boolean;

@@ -29,6 +29,8 @@ import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToSignals } from '@/lib/openflow/nightwatch';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { OpenFlowSignal } from '@/lib/openflow/types';
+import { mapIncidentToPanel } from '@/lib/panel/incidentMapper';
+import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { relativeTime, normalizePrivateAreaLabel, kindIcon, kindLabel, type RecentKind } from '@/components/home/homeSurfaceFormat';
@@ -143,15 +145,23 @@ export const HomeSurface: React.FC = () => {
         cloudPreview = [],
     } = useCommunicationLiveData();
 
-    // Real Nightwatch incidents → OpenFlow signals (read-only; empty on error).
-    const [nightwatchSignals, setNightwatchSignals] = useState<OpenFlowSignal[]>([]);
+    // Real Nightwatch incidents → OpenFlow signals & Contextual panels.
+    const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
     useEffect(() => {
         let cancelled = false;
         fetchNightwatchIncidents()
-            .then((incidents) => { if (!cancelled) setNightwatchSignals(nightwatchIncidentsToSignals(incidents)); })
-            .catch(() => { if (!cancelled) setNightwatchSignals([]); });
+            .then((incidents) => { if (!cancelled) setNightwatchIncidents(incidents); })
+            .catch(() => { if (!cancelled) setNightwatchIncidents([]); });
         return () => { cancelled = true; };
     }, []);
+
+    const nightwatchSignals = useMemo(() => {
+        return nightwatchIncidentsToSignals(nightwatchIncidents);
+    }, [nightwatchIncidents]);
+
+    const incidentPanels = useMemo(() => {
+        return nightwatchIncidents.map(mapIncidentToPanel);
+    }, [nightwatchIncidents]);
 
     const openFlowView = useMemo(() => buildOpenFlowLagebild({
         mailPreview,
@@ -162,6 +172,7 @@ export const HomeSurface: React.FC = () => {
         homeStatus: homeStatus ?? null,
         communicationSummary,
         nightwatchSignals,
+        incidentPanels,
     }), [
         mailPreview,
         calendarPreview,
@@ -171,6 +182,7 @@ export const HomeSurface: React.FC = () => {
         homeStatus,
         communicationSummary,
         nightwatchSignals,
+        incidentPanels,
     ]);
     const hiddenHomePlaceholders = homeStatus?.placeholders_detected?.map((item) => item.label) ?? [];
     const hidesLarryDashboard = hiddenHomePlaceholders.includes('Larry Dashboard');

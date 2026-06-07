@@ -8,6 +8,7 @@ import type {
 } from '@/lib/openflow/types';
 import { priorityFromSeverity } from '@/lib/ui/status';
 import type { HomeStatus } from '@/lib/queries/useHomeView';
+import type { ContextualPanel } from '@/lib/panel/panelTypes';
 
 interface MailPreviewItem {
   id: string;
@@ -82,6 +83,7 @@ interface BuildOpenFlowLagebildInput {
   communicationSummary: CommunicationSummaryLike;
   /** Real Nightwatch incidents (already-mapped OpenFlow signals) to surface as attention. */
   nightwatchSignals?: OpenFlowSignal[];
+  incidentPanels?: ContextualPanel[];
   homeStatus?: HomeStatus | null;
 }
 
@@ -423,6 +425,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     nextSteps,
     initiatives: deriveInitiativesFromSignals(initiativeSignals).slice(0, 4),
     connectors,
+    incidentPanels: input.incidentPanels || [],
     truthState: {
       hiddenPlaceholders,
       nextStepsUnknown: hasUnknown(input.homeStatus, 'next_steps'),
