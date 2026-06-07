@@ -3,6 +3,7 @@
 import React from 'react';
 import { Activity, AlertTriangle, ArrowRight, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
+import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
 import { TONES, toneForPriority } from '@/lib/ui/status';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
@@ -160,6 +161,17 @@ function EmptyState({ children }: { children: React.ReactNode }) {
   );
 }
 
+function isVisibleIncidentPanel(panel: IncidentStatusPanelData): boolean {
+  return Boolean(
+    panel.type === 'incident_status'
+    && panel.state === 'verified'
+    && panel.source === 'nightwatch'
+    && panel.source_type === 'nightwatch.incident'
+    && panel.evidence?.length
+    && panel.evidence.every((item) => item.source && item.source_type && item.reason)
+  );
+}
+
 function connectorCopy(connector: ConnectorStatus) {
   if (connector.status === 'connected' || connector.status === 'local') {
     return {
@@ -251,7 +263,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
     .slice(0, 3);
   const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
   const incidentPanels = view.panels?.incidentStatus?.slice(0, 2) ?? [];
-  const visibleIncidentPanels = incidentPanels.filter((panel) => panel.state === 'verified');
+  const visibleIncidentPanels = incidentPanels.filter(isVisibleIncidentPanel);
   const hiddenPlaceholders = view.truthState?.hiddenPlaceholders ?? [];
   const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);

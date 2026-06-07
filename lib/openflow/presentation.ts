@@ -134,6 +134,18 @@ function uniqueSignalsById(signals: OpenFlowSignal[]): OpenFlowSignal[] {
   });
 }
 
+function isRenderableIncidentStatusPanel(panel: IncidentStatusPanel): boolean {
+  return Boolean(
+    panel.type === 'incident_status'
+    && panel.state === 'verified'
+    && panel.source === 'nightwatch'
+    && panel.source_type === 'nightwatch.incident'
+    && panel.payload?.incident_id
+    && panel.evidence?.length
+    && panel.evidence.every((item) => item.source && item.source_type && item.reason)
+  );
+}
+
 const PRIORITY_RANK: Record<OpenFlowSignal['priority'], number> = {
   urgent: 3,
   high: 2,
@@ -410,7 +422,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
 
   const verifiedIncidentIds = new Set(
     (input.incidentStatusPanels || [])
-      .filter((panel) => panel.state === 'verified')
+      .filter(isRenderableIncidentStatusPanel)
       .map((panel) => panel.payload.incident_id)
   );
 

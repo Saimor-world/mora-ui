@@ -218,6 +218,42 @@ describe('OpenFlowLagebild', () => {
     expect(screen.getByText('Keine offenen Reibungspunkte.')).toBeInTheDocument();
   });
 
+  it('does not treat evidence-less verified panels as visible attention', () => {
+    const withEvidenceLessPanel: Lagebild = {
+      ...view,
+      attention: [],
+      panels: {
+        incidentStatus: [
+          {
+            id: 'incident-status-n1',
+            type: 'incident_status',
+            state: 'verified',
+            source: 'nightwatch',
+            source_type: 'nightwatch.incident',
+            timestamp: '2026-06-02T10:00:00Z',
+            confidence: 'verified',
+            reason: 'Open tenant-scoped Nightwatch incident node exists in CORE.',
+            evidence: [],
+            payload: {
+              incident_id: 'n1',
+              title: 'Domain down',
+              summary: 'HTTP 502',
+              severity: 'critical',
+              status: 'open',
+              host: 'saimor.world',
+            },
+          },
+        ],
+      },
+    };
+
+    render(<OpenFlowLagebild view={withEvidenceLessPanel} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
+
+    expect(screen.queryByTestId('incident-status-panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Domain down')).not.toBeInTheDocument();
+    expect(screen.getByText('Keine offenen Reibungspunkte.')).toBeInTheDocument();
+  });
+
   it('opens integrations for connector setup prompts', () => {
     const onOpenPane = jest.fn();
     const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);

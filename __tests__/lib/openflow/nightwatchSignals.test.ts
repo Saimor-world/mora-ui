@@ -45,6 +45,8 @@ describe('nightwatchIncidentsToSignals', () => {
   it('handles empty / nullish input', () => {
     expect(nightwatchIncidentsToSignals([])).toEqual([]);
     expect(nightwatchIncidentsToSignals(undefined as any)).toEqual([]);
+    expect(nightwatchIncidentsToIncidentStatusPanels([])).toEqual([]);
+    expect(nightwatchIncidentsToIncidentStatusPanels(undefined as any)).toEqual([]);
   });
 
   it('maps open incidents into verified incident_status panels with evidence', () => {
