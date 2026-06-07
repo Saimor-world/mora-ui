@@ -5,6 +5,7 @@ import { Activity, AlertTriangle, ArrowRight, ExternalLink, FolderOpen, Network,
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
 import { TONES, toneForPriority } from '@/lib/ui/status';
+import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 
 interface OpenFlowLagebildProps {
   view: Lagebild;
@@ -249,6 +250,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
     .filter((s) => s.id !== headlineId && !attentionIds.has(s.id))
     .slice(0, 3);
   const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
+  const incidentPanels = view.panels?.incidentStatus?.slice(0, 2) ?? [];
   const hiddenPlaceholders = view.truthState?.hiddenPlaceholders ?? [];
   const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);
@@ -309,9 +311,12 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
               Was braucht Aufmerksamkeit?
             </div>
             <div className="grid gap-3">
+              {incidentPanels.map((panel) => (
+                <IncidentStatusPanel key={panel.id} panel={panel} />
+              ))}
               {attention.length > 0 ? (
                 attention.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
-              ) : (
+              ) : incidentPanels.length > 0 ? null : (
                 <EmptyState>Keine offenen Reibungspunkte.</EmptyState>
               )}
             </div>

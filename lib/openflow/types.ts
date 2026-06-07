@@ -1,3 +1,5 @@
+import type { IncidentStatusPanel } from '@/lib/panel/types';
+
 export type OpenFlowSourceKind =
   | 'mail'
   | 'calendar'
@@ -89,6 +91,9 @@ export interface OpenFlowLagebild {
   nextSteps: OpenFlowSignal[];
   initiatives: InitiativeSummary[];
   connectors: ConnectorStatus[];
+  panels?: {
+    incidentStatus: IncidentStatusPanel[];
+  };
   truthState?: {
     hiddenPlaceholders: string[];
     nextStepsUnknown: boolean;

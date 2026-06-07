@@ -1,4 +1,4 @@
-import { nightwatchIncidentsToSignals } from '@/lib/openflow/nightwatch';
+import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals } from '@/lib/openflow/nightwatch';
 
 const inc = (over: any = {}) => ({
   id: 'n1', title: 'Domain down', summary: 'HTTP 502', severity: 'critical',
@@ -45,5 +45,38 @@ describe('nightwatchIncidentsToSignals', () => {
   it('handles empty / nullish input', () => {
     expect(nightwatchIncidentsToSignals([])).toEqual([]);
     expect(nightwatchIncidentsToSignals(undefined as any)).toEqual([]);
+  });
+
+  it('maps open incidents into verified incident_status panels with evidence', () => {
+    const [panel] = nightwatchIncidentsToIncidentStatusPanels([inc()]);
+    expect(panel).toEqual(expect.objectContaining({
+      id: 'incident-status-n1',
+      type: 'incident_status',
+      state: 'verified',
+      source: 'nightwatch',
+      source_type: 'nightwatch.incident',
+      confidence: 'verified',
+      timestamp: '2026-06-02T10:00:00Z',
+      reason: expect.stringContaining('Nightwatch incident'),
+      payload: expect.objectContaining({
+        incident_id: 'n1',
+        title: 'Domain down',
+        summary: 'HTTP 502',
+        severity: 'critical',
+        status: 'open',
+      }),
+    }));
+    expect(panel.evidence[0]).toEqual(expect.objectContaining({
+      source: 'nightwatch',
+      source_type: 'nightwatch.incident',
+      status: 'verified',
+      reason: expect.any(String),
+    }));
+  });
+
+  it('does not create incident_status panels for resolved incidents', () => {
+    expect(nightwatchIncidentsToIncidentStatusPanels([inc({ status: 'resolved' })])).toEqual([]);
+    expect(nightwatchIncidentsToIncidentStatusPanels([inc({ status: 'dismissed' })])).toEqual([]);
+    expect(nightwatchIncidentsToIncidentStatusPanels([inc({ status: 'closed' })])).toEqual([]);
   });
 });

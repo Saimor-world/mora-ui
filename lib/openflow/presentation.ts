@@ -1,11 +1,12 @@
 import type {
   ConnectorHealth,
   ConnectorStatus,
+  OpenFlowLagebild as OpenFlowLagebildType,
   InitiativeSummary,
-  OpenFlowLagebild,
   OpenFlowSignal,
   OpenFlowSourceKind,
 } from '@/lib/openflow/types';
+import type { IncidentStatusPanel } from '@/lib/panel/types';
 import { priorityFromSeverity } from '@/lib/ui/status';
 import type { HomeStatus } from '@/lib/queries/useHomeView';
 
@@ -82,6 +83,8 @@ interface BuildOpenFlowLagebildInput {
   communicationSummary: CommunicationSummaryLike;
   /** Real Nightwatch incidents (already-mapped OpenFlow signals) to surface as attention. */
   nightwatchSignals?: OpenFlowSignal[];
+  /** Evidence-bound panel payloads derived from real Nightwatch incidents. */
+  incidentStatusPanels?: IncidentStatusPanel[];
   homeStatus?: HomeStatus | null;
 }
 
@@ -289,7 +292,7 @@ function hasUnknown(homeStatus: HomeStatus | null | undefined, id: string): bool
   );
 }
 
-export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFlowLagebild {
+export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFlowLagebildType {
   const connectors = buildConnectorStatuses(input.communicationSummary);
   const hiddenPlaceholders = hiddenPlaceholderLabels(input.homeStatus);
   const setupSignals = buildConnectorSetupSignals(connectors);
@@ -423,6 +426,9 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     nextSteps,
     initiatives: deriveInitiativesFromSignals(initiativeSignals).slice(0, 4),
     connectors,
+    panels: {
+      incidentStatus: input.incidentStatusPanels ?? [],
+    },
     truthState: {
       hiddenPlaceholders,
       nextStepsUnknown: hasUnknown(input.homeStatus, 'next_steps'),

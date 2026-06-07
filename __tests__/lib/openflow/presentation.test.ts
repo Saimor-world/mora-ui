@@ -387,6 +387,59 @@ describe('openflow presentation', () => {
     expect(view.truthState?.connectorHandshakeUnknown).toBe(true);
   });
 
+  it('carries evidence-bound incident_status panels separately from app surfaces', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: null,
+      communicationSummary: {
+        mailConfigured: true,
+        calendarConfigured: true,
+        browserPermission: 'granted',
+        localTruthStatusLabel: 'Local Truth bereit',
+      },
+      incidentStatusPanels: [
+        {
+          id: 'incident-status-n1',
+          type: 'incident_status',
+          state: 'verified',
+          source: 'nightwatch',
+          source_type: 'nightwatch.incident',
+          timestamp: '2026-06-02T10:00:00Z',
+          confidence: 'verified',
+          reason: 'Open tenant-scoped Nightwatch incident node exists in CORE.',
+          evidence: [
+            {
+              source: 'nightwatch',
+              source_type: 'nightwatch.incident',
+              status: 'verified',
+              confidence: 'verified',
+              reason: 'CORE returned this incident through the tenant-scoped Nightwatch incidents endpoint.',
+              timestamp: '2026-06-02T10:00:00Z',
+            },
+          ],
+          payload: {
+            incident_id: 'n1',
+            title: 'Domain down',
+            summary: 'HTTP 502',
+            severity: 'critical',
+            status: 'open',
+            host: 'saimor.world',
+          },
+        },
+      ],
+    });
+
+    expect(view.panels?.incidentStatus).toHaveLength(1);
+    expect(view.panels?.incidentStatus[0]).toEqual(expect.objectContaining({
+      type: 'incident_status',
+      source: 'nightwatch',
+      state: 'verified',
+    }));
+  });
+
   it('normalizes empty backend change titles before rendering OS cards', () => {
     const view = buildOpenFlowLagebild({
       mailPreview: [],

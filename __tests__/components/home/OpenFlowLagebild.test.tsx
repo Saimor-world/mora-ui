@@ -139,6 +139,49 @@ describe('OpenFlowLagebild', () => {
     expect(screen.getByText(/Jetzt wichtig/)).toBeInTheDocument();
   });
 
+  it('renders verified incident_status panels as contextual attention detail', () => {
+    const withIncidentPanel: Lagebild = {
+      ...view,
+      panels: {
+        incidentStatus: [
+          {
+            id: 'incident-status-n1',
+            type: 'incident_status',
+            state: 'verified',
+            source: 'nightwatch',
+            source_type: 'nightwatch.incident',
+            timestamp: '2026-06-02T10:00:00Z',
+            confidence: 'verified',
+            reason: 'Open tenant-scoped Nightwatch incident node exists in CORE.',
+            evidence: [
+              {
+                source: 'nightwatch',
+                source_type: 'nightwatch.incident',
+                status: 'verified',
+                confidence: 'verified',
+                reason: 'CORE returned this incident through the tenant-scoped Nightwatch incidents endpoint.',
+                timestamp: '2026-06-02T10:00:00Z',
+              },
+            ],
+            payload: {
+              incident_id: 'n1',
+              title: 'Domain down',
+              summary: 'HTTP 502',
+              severity: 'critical',
+              status: 'open',
+              host: 'saimor.world',
+            },
+          },
+        ],
+      },
+    };
+
+    render(<OpenFlowLagebild view={withIncidentPanel} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
+
+    expect(screen.getByTestId('incident-status-panel')).toBeInTheDocument();
+    expect(screen.getByText('Domain down')).toBeInTheDocument();
+  });
+
   it('opens integrations for connector setup prompts', () => {
     const onOpenPane = jest.fn();
     const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
