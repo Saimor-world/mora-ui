@@ -182,6 +182,42 @@ describe('OpenFlowLagebild', () => {
     expect(screen.getByText('Domain down')).toBeInTheDocument();
   });
 
+  it('does not render placeholder panels and falls back to empty state if attention is empty', () => {
+    const withPlaceholderPanel: Lagebild = {
+      ...view,
+      attention: [],
+      panels: {
+        incidentStatus: [
+          {
+            id: 'incident-status-n1',
+            type: 'incident_status',
+            state: 'placeholder',
+            source: 'nightwatch',
+            source_type: 'nightwatch.incident',
+            timestamp: '2026-06-02T10:00:00Z',
+            confidence: 'verified',
+            reason: 'Resolved incident node exists.',
+            evidence: [],
+            payload: {
+              incident_id: 'n1',
+              title: 'Domain down',
+              summary: 'HTTP 502',
+              severity: 'critical',
+              status: 'resolved',
+              host: 'saimor.world',
+            },
+          },
+        ],
+      },
+    };
+
+    render(<OpenFlowLagebild view={withPlaceholderPanel} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
+
+    expect(screen.queryByTestId('incident-status-panel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Domain down')).not.toBeInTheDocument();
+    expect(screen.getByText('Keine offenen Reibungspunkte.')).toBeInTheDocument();
+  });
+
   it('opens integrations for connector setup prompts', () => {
     const onOpenPane = jest.fn();
     const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);

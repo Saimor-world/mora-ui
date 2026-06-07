@@ -408,7 +408,19 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
     });
   });
 
-  const nightwatchSignals = input.nightwatchSignals || [];
+  const verifiedIncidentIds = new Set(
+    (input.incidentStatusPanels || [])
+      .filter((panel) => panel.state === 'verified')
+      .map((panel) => panel.payload.incident_id)
+  );
+
+  const nightwatchSignals = (input.nightwatchSignals || []).filter((sig) => {
+    if (sig.id.startsWith('nightwatch-')) {
+      const incidentId = sig.id.slice('nightwatch-'.length);
+      return !verifiedIncidentIds.has(incidentId);
+    }
+    return true;
+  });
   const allChanged = [...homeChanges, ...mailSignals, ...calendarSignals, ...feedSignals, ...cloudSignals];
   // Real infrastructure incidents lead "changed" + "attention" (not "nextSteps").
   const changed = uniqueSignalsById([...nightwatchSignals, ...allChanged]).slice(0, 8);

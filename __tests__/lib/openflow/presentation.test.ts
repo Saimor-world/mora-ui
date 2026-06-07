@@ -440,6 +440,55 @@ describe('openflow presentation', () => {
     }));
   });
 
+  it('filters out nightwatch signals from the signals pipeline when they appear as verified incident panels', () => {
+    const view = buildOpenFlowLagebild({
+      mailPreview: [],
+      calendarPreview: [],
+      feedPreview: [],
+      cloudPreview: [],
+      homeView: null,
+      communicationSummary: {
+        mailConfigured: true,
+        calendarConfigured: true,
+        browserPermission: 'granted',
+        localTruthStatusLabel: 'Local Truth bereit',
+      },
+      nightwatchSignals: [
+        sig({ id: 'nightwatch-n1', priority: 'high', source: 'server', title: 'Domain down' }),
+        sig({ id: 'nightwatch-n2', priority: 'high', source: 'server', title: 'Other down' }),
+      ],
+      incidentStatusPanels: [
+        {
+          id: 'incident-status-n1',
+          type: 'incident_status',
+          state: 'verified',
+          source: 'nightwatch',
+          source_type: 'nightwatch.incident',
+          timestamp: '2026-06-02T10:00:00Z',
+          confidence: 'verified',
+          reason: 'Open tenant-scoped Nightwatch incident node exists in CORE.',
+          evidence: [],
+          payload: {
+            incident_id: 'n1',
+            title: 'Domain down',
+            summary: 'HTTP 502',
+            severity: 'critical',
+            status: 'open',
+            host: 'saimor.world',
+          },
+        },
+      ],
+    });
+
+    // n1 is rendered as a panel, so it must be removed from changed/attention lists
+    expect(view.panels?.incidentStatus).toHaveLength(1);
+    expect(view.attention.map((item) => item.id)).not.toContain('nightwatch-n1');
+    expect(view.changed.map((item) => item.id)).not.toContain('nightwatch-n1');
+
+    // n2 is NOT rendered as a panel, so it should still be present in the signal list
+    expect(view.attention.map((item) => item.id)).toContain('nightwatch-n2');
+  });
+
   it('normalizes empty backend change titles before rendering OS cards', () => {
     const view = buildOpenFlowLagebild({
       mailPreview: [],

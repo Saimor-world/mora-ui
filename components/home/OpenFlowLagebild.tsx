@@ -251,6 +251,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
     .slice(0, 3);
   const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
   const incidentPanels = view.panels?.incidentStatus?.slice(0, 2) ?? [];
+  const visibleIncidentPanels = incidentPanels.filter((panel) => panel.state === 'verified');
   const hiddenPlaceholders = view.truthState?.hiddenPlaceholders ?? [];
   const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);
@@ -311,12 +312,12 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
               Was braucht Aufmerksamkeit?
             </div>
             <div className="grid gap-3">
-              {incidentPanels.map((panel) => (
+              {visibleIncidentPanels.map((panel) => (
                 <IncidentStatusPanel key={panel.id} panel={panel} />
               ))}
               {attention.length > 0 ? (
                 attention.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
-              ) : incidentPanels.length > 0 ? null : (
+              ) : visibleIncidentPanels.length > 0 ? null : (
                 <EmptyState>Keine offenen Reibungspunkte.</EmptyState>
               )}
             </div>
