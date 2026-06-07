@@ -91,6 +91,20 @@ describe('useAmbientMora', () => {
         });
     });
 
+    it('posts the transcript, context and sessionId to Mora Field when sessionId is provided', async () => {
+        const { result } = renderHook(() => useAmbientMora());
+        await act(async () => {
+            await result.current.sendToMora('Suche Bewerbungen', null, 'test-session-123');
+        });
+        expect(mockCorePost).toHaveBeenCalledWith('/v3/mora/field', {
+            message: 'Suche Bewerbungen',
+            session_id: 'test-session-123',
+            context: expect.objectContaining({
+                source: 'ambient-room',
+            }),
+        });
+    });
+
     it('returns backend text and intent', async () => {
         mockCorePost.mockResolvedValue({
             text: 'Ich suche fuer dich.',

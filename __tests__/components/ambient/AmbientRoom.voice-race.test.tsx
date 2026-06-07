@@ -38,6 +38,7 @@ jest.mock('@/components/ambient/AmbientIntentCard', () => ({
 
 const mockSendToMora = jest.fn();
 const mockExecuteMoraTools = jest.fn();
+const mockRandomUUID = jest.fn();
 jest.mock('@/lib/hooks/useAmbientMora', () => ({
     useAmbientMora: () => ({
         sendToMora: mockSendToMora,
@@ -86,6 +87,10 @@ class MockSpeechRecognition {
 beforeAll(() => {
     (window as any).SpeechRecognition = MockSpeechRecognition;
     (window as any).webkitSpeechRecognition = MockSpeechRecognition;
+    Object.defineProperty(window, 'crypto', {
+        value: { randomUUID: mockRandomUUID },
+        configurable: true,
+    });
 
     Object.defineProperty(navigator, 'permissions', {
         value: {
@@ -102,6 +107,7 @@ beforeEach(() => {
     jest.clearAllMocks();
     resetAllStores();
     MockSpeechRecognition.lastInstance = null;
+    mockRandomUUID.mockReturnValue('ambient-session-default');
     mockSendToMora.mockResolvedValue({
         text: 'Antwort von Mora',
         toolCalls: [],
@@ -165,7 +171,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
         });
 
         // 5. Verify it transitioned to thinking and processed correctly
-        expect(mockSendToMora).toHaveBeenCalledWith('Hallo Mora', null);
+        expect(mockSendToMora).toHaveBeenCalledWith('Hallo Mora', null, expect.any(String));
         
         // Wait for async processing in useEffect
         await act(async () => {
@@ -200,7 +206,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             instance!.onend();
         });
 
-        expect(mockSendToMora).toHaveBeenCalledWith('Direkt finalisiert', null);
+        expect(mockSendToMora).toHaveBeenCalledWith('Direkt finalisiert', null, expect.any(String));
     });
 
     it('immediately aborts and resets on cancel/abort stop', async () => {
@@ -268,7 +274,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             await act(async () => {
                 await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
             });
-            expect(mockSendToMora).toHaveBeenCalledWith('Was ist neu', null);
+            expect(mockSendToMora).toHaveBeenCalledWith('Was ist neu', null, expect.any(String));
             // Visible in the responding flash.
             expect(screen.getByText('Antwort von Mora')).toBeInTheDocument();
 
@@ -277,6 +283,75 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             await act(async () => { jest.advanceTimersByTime(1300); });
             expect(screen.getByText('Antwort von Mora')).toBeInTheDocument();
             expect(screen.getByText(/Drücken & halten/i)).toBeInTheDocument();
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('keeps one server-held session id across turns and rotates it on reset', async () => {
+        mockRandomUUID
+            .mockReturnValueOnce('ambient-session-a')
+            .mockReturnValueOnce('ambient-session-b');
+        jest.useFakeTimers();
+        try {
+            const qc = createTestQueryClient();
+            renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+            await act(async () => { await Promise.resolve(); });
+
+            await act(async () => { fireEvent.keyDown(window, { code: 'Space' }); });
+            let inst = MockSpeechRecognition.lastInstance;
+            await act(async () => {
+                fireEvent.keyUp(window, { code: 'Space' });
+                inst!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Erste Frage' }], { isFinal: true })],
+                });
+                inst!.onend();
+            });
+            await act(async () => {
+                await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+            });
+            await act(async () => { jest.advanceTimersByTime(1300); });
+
+            await act(async () => { fireEvent.keyDown(window, { code: 'Space' }); });
+            inst = MockSpeechRecognition.lastInstance;
+            await act(async () => {
+                fireEvent.keyUp(window, { code: 'Space' });
+                inst!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Bezug darauf' }], { isFinal: true })],
+                });
+                inst!.onend();
+            });
+            await act(async () => {
+                await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+            });
+
+            expect(mockSendToMora).toHaveBeenNthCalledWith(1, 'Erste Frage', null, 'ambient-session-a');
+            expect(mockSendToMora).toHaveBeenNthCalledWith(2, 'Bezug darauf', null, 'ambient-session-a');
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+            });
+            await act(async () => { jest.advanceTimersByTime(1300); });
+
+            await act(async () => { fireEvent.keyDown(window, { code: 'Space' }); });
+            inst = MockSpeechRecognition.lastInstance;
+            await act(async () => {
+                fireEvent.keyUp(window, { code: 'Space' });
+                inst!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Neue Session' }], { isFinal: true })],
+                });
+                inst!.onend();
+            });
+            await act(async () => {
+                await Promise.resolve(); await Promise.resolve(); await Promise.resolve();
+            });
+
+            expect(mockSendToMora).toHaveBeenNthCalledWith(3, 'Neue Session', null, 'ambient-session-b');
+            expect(mockSpeak).toHaveBeenCalledWith('Gesprächsverlauf zurückgesetzt.');
         } finally {
             jest.useRealTimers();
         }

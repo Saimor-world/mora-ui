@@ -28,7 +28,7 @@ export interface AmbientMoraResult {
 }
 
 export interface UseAmbientMoraReturn {
-    sendToMora: (transcript: string, defaultFolderId?: string | null) => Promise<AmbientMoraResult>;
+    sendToMora: (transcript: string, defaultFolderId?: string | null, sessionId?: string) => Promise<AmbientMoraResult>;
     executeMoraTools: (calls: AmbientToolCall[]) => Promise<void>;
     isLoading: boolean;
     error: string | null;
@@ -53,7 +53,7 @@ export function useAmbientMora(): UseAmbientMoraReturn {
     const [error, setError] = useState<string | null>(null);
 
     const sendToMora = useCallback(
-        async (transcript: string, defaultFolderId?: string | null): Promise<AmbientMoraResult> => {
+        async (transcript: string, defaultFolderId?: string | null, sessionId?: string): Promise<AmbientMoraResult> => {
             if (!transcript.trim()) {
                 return { text: '', toolCalls: [], intent: '' };
             }
@@ -62,10 +62,15 @@ export function useAmbientMora(): UseAmbientMoraReturn {
             setError(null);
 
             try {
-                const response = await corePost('/v3/mora/field', {
+                const requestBody: Record<string, unknown> = {
                     message: transcript,
                     context: buildFieldContext(buildChatContext(), defaultFolderId),
-                }) as FieldResponse | null;
+                };
+                if (sessionId) {
+                    requestBody.session_id = sessionId;
+                }
+
+                const response = await corePost('/v3/mora/field', requestBody) as FieldResponse | null;
 
                 if (!response) {
                     throw new Error('Mora Field ist nicht erreichbar.');

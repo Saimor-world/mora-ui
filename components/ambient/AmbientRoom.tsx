@@ -129,6 +129,11 @@ export const AmbientRoom: React.FC = () => {
     const [fallbackInput,  setFallbackInput] = useState('');
     const [errorMsg,       setErrorMsg]      = useState('');
     const [micPermission,  setMicPermission] = useState<'prompt' | 'granted' | 'denied'>('prompt');
+    const [sessionId,      setSessionId]     = useState<string>('');
+
+    useEffect(() => {
+        setSessionId(typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : `session-${Math.random().toString(36).substring(2, 15)}`);
+    }, []);
 
     // Môra's response — drives AmbientIntentCard
     const [moraText,    setMoraText]    = useState('');
@@ -301,7 +306,7 @@ export const AmbientRoom: React.FC = () => {
         let cancelled = false;
         (async () => {
             try {
-                const result = await sendToMora(finalText, defaultFolder);
+                const result = await sendToMora(finalText, defaultFolder, sessionId);
                 if (cancelled) return;
 
                 if (!result.text && result.toolCalls.length === 0) {
@@ -367,6 +372,22 @@ export const AmbientRoom: React.FC = () => {
     const handleDismiss = useCallback(() => {
         setAmbientState('idle');
     }, []);
+
+    const handleSessionReset = useCallback(() => {
+        setSessionId(typeof window !== 'undefined' && window.crypto?.randomUUID ? window.crypto.randomUUID() : `session-${Math.random().toString(36).substring(2, 15)}`);
+        setTranscript('');
+        setLiveText('');
+        setMoraText('');
+        setMoraIntent('');
+        setMoraTools([]);
+        setErrorMsg('');
+        if (ambientStateRef.current === 'listening') {
+            stopListening(true);
+        } else {
+            setAmbientState('idle');
+        }
+        speak('Gesprächsverlauf zurückgesetzt.');
+    }, [speak, stopListening]);
 
     // ── Spacebar global binding ────────────────────────────────────────────────
     useEffect(() => {
@@ -499,6 +520,16 @@ export const AmbientRoom: React.FC = () => {
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Zurück</span>
+            </button>
+
+            {/* Reset button */}
+            <button
+                onClick={handleSessionReset}
+                className="absolute top-6 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase"
+                title="Gesprächsverlauf zurücksetzen"
+            >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset</span>
             </button>
 
             {/* Header */}
