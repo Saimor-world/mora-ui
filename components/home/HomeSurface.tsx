@@ -819,7 +819,7 @@ export const HomeSurface: React.FC = () => {
                 </div>
             )}
 
-            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-13rem)] overflow-y-auto pr-1 flex flex-col gap-4 scrollbar-none" style={{ scrollbarWidth: 'none' }}>
+            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-11rem)] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.35) transparent' }}>
                 <div
                     data-testid="briefing-strip"
                     className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
