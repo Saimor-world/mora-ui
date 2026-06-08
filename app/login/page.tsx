@@ -23,7 +23,7 @@ export default function LoginRedirect() {
             <div className="relative rounded-3xl border border-emerald-300/15 bg-black/35 px-8 py-7 text-center shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
                 <div className="mx-auto h-10 w-10 rounded-full border-2 border-emerald-400/20 border-t-emerald-300 animate-spin" />
                 <div className="mt-4 text-[10px] uppercase tracking-[0.28em] text-emerald-300/60">Local Truth</div>
-                <p className="mt-2 text-sm text-emerald-50">Einstieg wird geoeffnet</p>
+                <p className="mt-2 text-sm text-emerald-50">Einstieg wird geöffnet</p>
             </div>
         </div>
     );

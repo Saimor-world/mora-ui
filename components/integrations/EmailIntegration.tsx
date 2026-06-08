@@ -181,7 +181,7 @@ export const EmailIntegration: React.FC<EmailIntegrationProps> = ({ overviewSnap
                             {mailSetup?.detail || 'Diese Verbindung wird direkt im OS gespeichert und danach von Mail, Home und Mora genutzt.'}
                         </p>
                         <p className="mt-2 text-[11px] text-emerald-100/60">
-                            Diese Mail-Verbindung wird pro Nutzer gespeichert. Das App-Passwort liegt verschluesselt im Nutzerkontext, nicht global im Core-Env.
+                            Diese Mail-Verbindung wird pro Nutzer gespeichert. Das App-Passwort liegt verschlüsselt im Nutzerkontext, nicht global im Core-Env.
                         </p>
                         {providerOptions.length > 0 && (
                             <p className="mt-2 text-emerald-100/70">

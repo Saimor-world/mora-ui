@@ -79,7 +79,7 @@ function formatBytes(size?: number | null) {
 
 function fileToLocalRecord(file: File): Promise<LocalFileRecord> {
     if (file.size > LOCAL_PRIVATE_FILE_LIMIT) {
-        return Promise.reject(new Error('Lokale Datei ist groesser als 8 MB. Bitte direkt auf dem SAIMOR-Server sichern.'));
+        return Promise.reject(new Error('Lokale Datei ist grösser als 8 MB. Bitte direkt auf dem SAIMOR-Server sichern.'));
     }
 
     const isText = file.type.startsWith('text/')
@@ -127,7 +127,7 @@ function isWorkspaceVisible(file?: UnifiedFile | null): boolean {
 function getFileLocationLabel(file?: UnifiedFile | null): string {
     if (!file) return '';
     return file.source === 'local'
-        ? 'Nur dieses Geraet'
+        ? 'Nur dieses Gerät'
         : getCoreFileVisibilityLabel(file.visibilityScope, file.linkedNodeId);
 }
 
@@ -428,7 +428,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             }
             toast.success('Dokument aus Datei erzeugt');
         } catch (error: any) {
-            toast.error(error?.message || 'Dokument konnte nicht geoeffnet werden');
+            toast.error(error?.message || 'Dokument konnte nicht geöffnet werden');
         }
     }, [activeCompanyId, loadContent, openPane, selectedFile]);
 
@@ -464,7 +464,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                 : 'Datei ist wieder nur fuer dich sichtbar');
             await loadContent();
         } catch (error: any) {
-            toast.error(error?.message || 'Sichtbarkeit konnte nicht geaendert werden');
+            toast.error(error?.message || 'Sichtbarkeit konnte nicht geändert werden');
         } finally {
             setIsSharing(false);
         }
@@ -525,11 +525,11 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <HardDrive size={17} className="shrink-0 text-emerald-100/60" />
                             </div>
                             <p className="mt-2 text-[11px] leading-relaxed text-white/42">
-                                Drei klare Orte: Geraet bleibt nur in diesem Browser, Privat liegt geschuetzt auf dem SAIMOR-Server, Workspace ist fuer berechtigte Kolleginnen und Kollegen sichtbar.
+                                Drei klare Orte: Gerät bleibt nur in diesem Browser, Privat liegt geschützt auf dem SAIMOR-Server, Workspace ist fuer berechtigte Kolleginnen und Kollegen sichtbar.
                             </p>
                         </div>
                         <div className="grid grid-cols-4 gap-2">
-                            <Metric icon={HardDrive} label="Geraet" value={localFiles.length} />
+                            <Metric icon={HardDrive} label="Gerät" value={localFiles.length} />
                             <Metric icon={Lock} label="Privat" value={privateCoreCount} />
                             <Metric icon={Users} label="Workspace" value={workspaceCoreCount} />
                             <Metric icon={Cloud} label="Cloud" value={cloudCount} />
@@ -550,7 +550,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <div className="min-w-0">
                                     <p className="text-sm font-medium text-white/85">Dateien hier ablegen</p>
                                     <p className="mt-1 text-[11px] leading-relaxed text-white/42">
-                                        {activeCompanyId ? 'Wird privat auf dem SAIMOR-Server gesichert: nur dein Account sieht sie, bis du sie bewusst teilst.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Geraet.'}
+                                        {activeCompanyId ? 'Wird privat auf dem SAIMOR-Server gesichert: nur dein Account sieht sie, bis du sie bewusst teilst.' : 'Ohne aktiven Workspace bleibt die Datei nur auf diesem Gerät.'}
                                     </p>
                                 </div>
                             </div>
@@ -598,7 +598,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
                             {([
                                 ['all', 'Alle'],
-                                ['local', 'Geraet'],
+                                ['local', 'Gerät'],
                                 ['private', 'Privat'],
                                 ['workspace', 'Workspace'],
                                 ['cloud', 'Cloud'],
@@ -615,7 +615,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         </div>
                         {sourceFilter === 'cloud' && (
                             <p className="mt-2 text-[11px] leading-relaxed text-white/35">
-                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Drive-, OneDrive- oder andere Quellen hier neben Geraet, Privat und Workspace.
+                                Cloud ist vorbereitet. Sobald ein Connector aktiv ist, erscheinen Drive-, OneDrive- oder andere Quellen hier neben Gerät, Privat und Workspace.
                             </p>
                         )}
                     </div>
@@ -629,7 +629,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                             <div className="px-3 py-10 text-center">
                                 <FileText size={24} className="mx-auto text-white/25" />
                                 <p className="mt-3 text-sm text-white/58">{sourceFilter === 'all' ? 'Noch keine Dateien' : 'Keine Dateien in dieser Ansicht'}</p>
-                                <p className="mt-1 text-xs text-white/32">{sourceFilter === 'cloud' ? 'Cloud-Connectoren kommen als naechster Schritt.' : 'Importiere PDFs, Texte oder Bilder.'}</p>
+                                <p className="mt-1 text-xs text-white/32">{sourceFilter === 'cloud' ? 'Cloud-Connectoren kommen als nächster Schritt.' : 'Importiere PDFs, Texte oder Bilder.'}</p>
                             </div>
                         ) : filteredFiles.map((file) => (
                             <button
@@ -653,7 +653,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                 <section className="flex min-w-0 flex-1 flex-col">
                     <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
                         <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewaehlt'}</p>
+                            <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewählt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
                                 {selectedFile ? `${getFileLocationLabel(selectedFile)} - ${selectedFile.mime || 'Datei'} - ${formatBytes(selectedFile.size)}` : 'Importiere eine Datei oder lege eine Notiz an.'}
                             </p>
@@ -669,7 +669,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <>
                                     <button type="button" onClick={() => void setSelectedCoreVisibility(selectedIsWorkspaceVisible ? 'personal' : 'company')} disabled={isSharing}
                                         className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium disabled:opacity-50 ${selectedIsWorkspaceVisible ? 'border-white/10 bg-white/[0.05] text-white/70 hover:bg-white/[0.08]' : 'border-amber-300/20 bg-amber-500/12 text-amber-50 hover:bg-amber-500/18'}`}
-                                        title={selectedIsWorkspaceVisible ? 'Zurueck auf privat setzen' : 'Im Workspace sichtbar machen'}>
+                                        title={selectedIsWorkspaceVisible ? 'Zurück auf privat setzen' : 'Im Workspace sichtbar machen'}>
                                         {isSharing ? <Loader2 size={14} className="animate-spin" /> : selectedIsWorkspaceVisible ? <Lock size={14} /> : <Users size={14} />}
                                         {selectedIsWorkspaceVisible ? 'Nur ich' : 'Workspace'}
                                     </button>
@@ -757,8 +757,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                         {corePreviewError
                                             ? corePreviewError
                                             : selectedFile.source === 'core'
-                                            ? 'Diese Datei liegt privat oder geteilt auf dem SAIMOR-Server. PDFs und Bilder werden hier direkt angezeigt; andere Dateitypen oeffnest du als Dokument oder laedst sie herunter.'
-                                            : 'Diese Datei liegt nur auf diesem Geraet. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
+                                            ? 'Diese Datei liegt privat oder geteilt auf dem SAIMOR-Server. PDFs und Bilder werden hier direkt angezeigt; andere Dateitypen öffnest du als Dokument oder lädst sie herunter.'
+                                            : 'Diese Datei liegt nur auf diesem Gerät. PDF und Bilder werden direkt angezeigt, Textdateien sind editierbar.'}
                                     </p>
                                 </div>
                             </div>
@@ -796,7 +796,7 @@ function EmptyPreview() {
                 <HardDrive size={30} className="mx-auto text-white/25" />
                 <h3 className="mt-4 text-lg font-medium text-white/78">Datei-Arbeitsplatz</h3>
                 <p className="mt-2 text-sm leading-relaxed text-white/40">
-                    Starte auf diesem Geraet, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
+                    Starte auf diesem Gerät, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
                 </p>
             </div>
         </div>

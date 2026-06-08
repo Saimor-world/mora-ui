@@ -100,7 +100,7 @@ describe('ConfirmationCard presence trigger', () => {
     expect(mockDispatchMoraPresence).toHaveBeenCalledWith({
       action: 'point',
       targetId: 'confirmation-card-action-2',
-      message: 'Bitte Einordnung pruefen',
+      message: 'Bitte Einordnung prüfen',
       duration: 2600,
       source: 'system',
     });

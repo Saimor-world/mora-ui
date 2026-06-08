@@ -705,7 +705,7 @@ export const SpaceLayer: React.FC = () => {
                         </div>
 
                         <p className="mt-4 text-[11px] leading-relaxed text-white/44">
-                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualitaet und Dokumentzahl kommen aus echten Ordnerdaten.
+                            Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualität und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>
                 </motion.div>

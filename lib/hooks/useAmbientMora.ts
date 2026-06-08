@@ -243,7 +243,7 @@ function buildIntent(calls: AmbientToolCall[], transcript: string): string {
         case 'createNode':
             return `Node erstellen: "${first.input.title}"`;
         case 'openPane':
-            return `${first.input.type} oeffnen`;
+            return `${first.input.type} öffnen`;
         case 'navigateToDepartment':
             return `Navigiere zu Department ${first.input.departmentId}`;
         case 'searchGlobal':

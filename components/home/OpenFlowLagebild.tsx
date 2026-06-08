@@ -177,7 +177,7 @@ function connectorCopy(connector: ConnectorStatus) {
     return {
       state: connector.status === 'local' ? 'lokal bereit' : 'liest Signale',
       detail: connector.status === 'local'
-        ? 'Lokale OS-Bruecke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
+        ? 'Lokale OS-Brücke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
         : 'Diese Quelle liefert belegte Signale für MORA.',
     };
   }
@@ -312,7 +312,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             {changed.length > 0 ? (
               changed.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
             ) : (
-              <EmptyState>Noch keine neuen Signale. Sobald Dashboard, Dateien oder Teamarbeit Quellen freigeben, waechst hier die Karte.</EmptyState>
+              <EmptyState>Noch keine neuen Signale. Sobald Dashboard, Dateien oder Teamarbeit Quellen freigeben, wächst hier die Karte.</EmptyState>
             )}
           </div>
         </div>

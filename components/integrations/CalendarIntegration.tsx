@@ -149,7 +149,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ overvi
                         <Calendar className="text-emerald-400" size={20} />
                     </div>
                     <div>
-                        <h4 className="text-white font-medium">Google Calendar persoenlich</h4>
+                        <h4 className="text-white font-medium">Google Calendar persönlich</h4>
                         <p className="text-xs text-white/40">Eigenes Google-Konto verbinden</p>
                     </div>
                 </div>
@@ -165,7 +165,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ overvi
             <div className="p-6 rounded-xl bg-white/5 border border-white/10 space-y-4">
                 {(!status?.configured || !oauthReady) && (
                     <div className="rounded-xl border border-cyan-500/15 bg-cyan-500/8 px-4 py-3 text-xs text-cyan-100/85">
-                        <div className="font-medium text-cyan-100">Persoenlichen Google-Kalender verbinden</div>
+                        <div className="font-medium text-cyan-100">Persönlichen Google-Kalender verbinden</div>
                         <p className="mt-1 leading-relaxed text-cyan-100/75">
                             {oauthReady
                                 ? 'Starte den OAuth-Flow direkt aus dem OS. Nach erfolgreichem Login erscheinen echte Events in Home, Kalender und Mora.'
@@ -247,7 +247,7 @@ export const CalendarIntegration: React.FC<CalendarIntegrationProps> = ({ overvi
                 {!oauthReady && !ownerManageable && (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs leading-relaxed text-white/60">
                         Die Google-OAuth-App fuer diesen Tenant muss zuerst von einem Eigentümer eingerichtet werden.
-                        Sobald das erfolgt ist, kannst du deinen persoenlichen Kalender direkt hier im OS verbinden.
+                        Sobald das erfolgt ist, kannst du deinen persönlichen Kalender direkt hier im OS verbinden.
                     </div>
                 )}
 

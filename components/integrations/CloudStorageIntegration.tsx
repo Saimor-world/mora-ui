@@ -221,7 +221,7 @@ export function CloudStorageIntegration() {
             });
             const authUrl = typeof payload?.auth_url === 'string' ? payload.auth_url : '';
             if (!/^https?:\/\//i.test(authUrl)) {
-                toast.error(payload?.detail || payload?.setup_required || 'OAuth-URL fehlt oder ist ungueltig');
+                toast.error(payload?.detail || payload?.setup_required || 'OAuth-URL fehlt oder ist ungültig');
                 return;
             }
             const result = await openCloudOAuthPopup(authUrl);
@@ -285,9 +285,9 @@ export function CloudStorageIntegration() {
                         <Cloud size={18} />
                     </div>
                     <div>
-                        <h5 className="text-sm font-medium text-white">Persoenliche Cloud im privaten Ordner</h5>
+                        <h5 className="text-sm font-medium text-white">Persönliche Cloud im privaten Ordner</h5>
                         <p className="mt-1 text-xs leading-relaxed text-white/58">
-                            Diese Verbindungen gehoeren nur deinem Nutzerkonto. Sie werden nicht tenant-global gesetzt und erscheinen im privaten Bereich als eigene Datenquelle.
+                            Diese Verbindungen gehören nur deinem Nutzerkonto. Sie werden nicht tenant-global gesetzt und erscheinen im privaten Bereich als eigene Datenquelle.
                         </p>
                     </div>
                 </div>
@@ -487,7 +487,7 @@ export function CloudStorageIntegration() {
                 <div className="mb-3 flex items-center justify-between">
                     <div>
                         <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">Aktive Quellen</p>
-                        <h5 className="mt-1 text-sm font-medium text-white">Persoenliche Cloud-Connectoren</h5>
+                        <h5 className="mt-1 text-sm font-medium text-white">Persönliche Cloud-Connectoren</h5>
                     </div>
                     <button
                         type="button"
@@ -506,7 +506,7 @@ export function CloudStorageIntegration() {
                     </div>
                 ) : connectors.length === 0 ? (
                     <div className="rounded-xl border border-white/10 bg-black/20 p-4 text-xs text-white/45">
-                        Noch keine Cloud angebunden. Nextcloud kann direkt ueber WebDAV verbunden werden.
+                        Noch keine Cloud angebunden. Nextcloud kann direkt über WebDAV verbunden werden.
                     </div>
                 ) : (
                     <div className="space-y-2">

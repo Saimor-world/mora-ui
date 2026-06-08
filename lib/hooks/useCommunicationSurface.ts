@@ -93,7 +93,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                     : localTruthBridge.state === 'ui_only'
                         ? 'UI lokal bereit'
                         : localTruthBridge.state === 'checking'
-                            ? 'Localhost pruefen'
+                            ? 'Localhost prüfen'
                             : localTruthBridge.isLocalSurface ? 'Local Truth starten' : 'Desktop Bridge getrennt';
 
         const localTruthUiOpenable =
@@ -112,7 +112,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                 mailConfigured
                     ? 'Das verbundene Postfach wird direkt im OS gelesen und von Mora mitverwendet.'
                     : mailLocalMode
-                        ? 'Der Server laeuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
+                        ? 'Der Server läuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
                         : (mailSetupDetail || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
@@ -210,7 +210,7 @@ export function buildCommunicationOperationalContextMessage(
     sections.push(`- Mail: ${summary.mailStatusLabel}${summary.mailStatusDetail ? ` | ${summary.mailStatusDetail}` : ''}`);
     sections.push(`- Kalender: ${summary.calendarStatusLabel}${summary.calendarStatusDetail ? ` | ${summary.calendarStatusDetail}` : ''}`);
     sections.push(`- Feeds: ${overview?.rss?.configured ? `${overview.rss.count || 0} Quellen verbunden` : 'Noch keine RSS/Atom-Quellen verbunden'}`);
-    sections.push(`- Cloud: ${overview?.cloud_storage?.configured ? `${overview.cloud_storage.count || 0} Quellen verbunden` : 'Noch keine persoenliche Cloud-Quelle verbunden'}`);
+    sections.push(`- Cloud: ${overview?.cloud_storage?.configured ? `${overview.cloud_storage.count || 0} Quellen verbunden` : 'Noch keine persönliche Cloud-Quelle verbunden'}`);
     sections.push(`- Browser: ${summary.browserStatusLabel}${summary.browserPermissionSummary ? ` | ${summary.browserPermissionSummary}` : ''}`);
     sections.push(`- Local Truth: ${summary.localTruthStatusLabel}`);
 
@@ -259,7 +259,7 @@ export function buildCommunicationOperationalContextMessage(
             sections.push(item.itemPath ? `- ${source} | ${label} | ${item.itemPath}` : `- ${source} | ${label}`);
         });
     } else if (!overview?.cloud_storage?.configured) {
-        sections.push('- Cloud hat derzeit keine Live-Daten, weil noch keine persoenliche Cloud-Quelle verbunden ist.');
+        sections.push('- Cloud hat derzeit keine Live-Daten, weil noch keine persönliche Cloud-Quelle verbunden ist.');
     }
 
     if (overview?.setup?.calendar?.missing_env?.length) {

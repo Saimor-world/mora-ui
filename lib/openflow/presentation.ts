@@ -262,7 +262,7 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
       source: 'os',
       status: localTruthStatus,
       detail: summary.localTruthStatusLabel || 'Desktop Bridge ist nicht verbunden.',
-      actionLabel: localTruthStatus === 'offline' ? 'Setup pruefen' : 'Oeffnen',
+      actionLabel: localTruthStatus === 'offline' ? 'Setup prüfen' : 'Oeffnen',
     },
   ];
 }
@@ -384,7 +384,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
       status: 'linked',
       trustScope: 'personal',
       relatedInitiativeId: inferInitiativeId(`${item.itemName} ${item.itemPath || ''}`),
-      suggestedActions: [{ id: `${item.itemId}-open-cloud`, label: 'Quelle pruefen', kind: 'open_pane', paneType: 'meine-dateien' }],
+      suggestedActions: [{ id: `${item.itemId}-open-cloud`, label: 'Quelle prüfen', kind: 'open_pane', paneType: 'meine-dateien' }],
     })
   );
 
@@ -405,7 +405,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   });
 
   const homeNextSteps = (input.homeView?.next_steps || []).map((item) => {
-    const title = cleanTitle(item.title, 'Nächsten Schritt pruefen');
+    const title = cleanTitle(item.title, 'Nächsten Schritt prüfen');
 
     return signal({
       id: buildSignalId('home-next', item.id),

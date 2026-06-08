@@ -130,7 +130,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
                     type="text"
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Gedaechtnis durchsuchen..."
+                    placeholder="Gedächtnis durchsuchen..."
                     className="w-full pl-8 pr-3 py-2 rounded-lg bg-black/30 border border-white/10 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/40 transition-colors"
                 />
                 {isSearching && (
@@ -141,7 +141,7 @@ export const MemorySearch: React.FC<MemorySearchProps> = ({ compact = false, com
             {/* Results */}
             {!isShowingSearch && (
                 <div className="flex items-center justify-between px-0.5">
-                    <span className="text-[10px] uppercase tracking-wider text-white/30">Kuerzlich gelernt</span>
+                    <span className="text-[10px] uppercase tracking-wider text-white/30">Kürzlich gelernt</span>
                     {isLoadingRecent && <RefreshCw className="h-3 w-3 text-emerald-400 animate-spin" />}
                 </div>
             )}
@@ -234,7 +234,7 @@ export const ReviewQueue: React.FC<ReviewQueueProps> = ({ compact = false, compa
         <div className="space-y-2">
             <div className="flex items-center justify-between">
                 <span className="text-[9px] uppercase tracking-wider text-white/30">
-                    {items.length} Insight{items.length !== 1 ? "s" : ""} zur Pruefung
+                    {items.length} Insight{items.length !== 1 ? "s" : ""} zur Prüfung
                 </span>
             </div>
 
@@ -306,7 +306,7 @@ export const MemoryStats: React.FC<MemoryStatsProps> = ({ compact = false, compa
     if (!companyId) {
         return (
             <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.06] text-xs text-white/35">
-                Kein Kontext aktiv. Konto-Gedaechtnis bleibt sichtbar, Organisationsmetriken sind ausgeblendet.
+                Kein Kontext aktiv. Konto-Gedächtnis bleibt sichtbar, Organisationsmetriken sind ausgeblendet.
             </div>
         );
     }
@@ -433,7 +433,7 @@ const MemoryLayerPanel: React.FC<MemoryLayerPanelProps> = ({ layer, accent, empt
                                     className="inline-flex items-center gap-1 rounded-lg border border-violet-500/20 bg-violet-500/10 px-2.5 py-1.5 text-[10px] text-violet-200 transition-colors hover:bg-violet-500/20"
                                 >
                                     <MessageCircle className="h-3 w-3" />
-                                    Mit Mora erklaeren
+                                    Mit Mora erklären
                                 </button>
                             </div>
                         </div>
@@ -505,7 +505,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
     }, [openPane, resolvedCompanyId]);
 
     const explainLayerItem = useCallback((item: NonNullable<MemoryOverviewLayer["items"]>[number]) => {
-        const prompt = `Erklaere mir diesen ${item.kind || 'Eintrag'} im Kontext ${surfaceProfile.isLocalTruthSurface ? 'der internen Instanz' : 'der aktiven Organisation'}: ${item.summary}`;
+        const prompt = `Erkläre mir diesen ${item.kind || 'Eintrag'} im Kontext ${surfaceProfile.isLocalTruthSurface ? 'der internen Instanz' : 'der aktiven Organisation'}: ${item.summary}`;
         openPane({
             id: 'chat-main',
             type: 'chat',
@@ -522,7 +522,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                 <div className="flex items-center gap-2">
                     <Brain className="h-4 w-4 text-violet-400" />
                     <span className="text-xs font-medium text-white/80">
-                        {resolvedCompanyId ? 'Organisations-Memory' : 'Konto-Gedaechtnis'}
+                        {resolvedCompanyId ? 'Organisations-Memory' : 'Konto-Gedächtnis'}
                     </span>
                 </div>
                 <div className="flex items-center gap-0.5 bg-black/20 rounded-lg p-0.5">
@@ -563,7 +563,7 @@ export const MoraMemory: React.FC<MoraMemoryProps> = ({
                 <MemoryLayerPanel
                     layer={surface?.layers?.personal}
                     accent="border-violet-500/20 bg-violet-500/10 text-violet-200"
-                    emptyText="Noch keine persoenlichen Erinnerungen in diesem Kontext sichtbar."
+                    emptyText="Noch keine persönlichen Erinnerungen in diesem Kontext sichtbar."
                     onInspect={inspectLayerItem}
                     onExplain={explainLayerItem}
                 />

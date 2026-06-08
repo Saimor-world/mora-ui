@@ -170,7 +170,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-gray-600 hover:border-[#0078D4]/40 hover:text-[#0078D4]' : 'border-white/10 bg-white/[0.04] text-white/55 hover:border-emerald-400/25 hover:text-emerald-200'}`}
                 >
                     {isPinned ? <PinOff size={13} /> : <Pin size={13} />}
-                    {isPinned ? 'Loesen' : 'Anheften'}
+                    {isPinned ? 'Lösen' : 'Anheften'}
                 </button>
             </div>
 

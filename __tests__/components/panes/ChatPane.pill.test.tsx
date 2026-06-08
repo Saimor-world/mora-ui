@@ -163,11 +163,11 @@ describe('ChatPane session pill', () => {
         return renderWithProviders(<ChatApp paneId="chat-main" initialData={{}} />, { queryClient: qc });
     }
 
-    it('renders "Laeuft: Mein Plan" pill when activePlanId is set and state is running', async () => {
+    it('renders "Läuft: Mein Plan" pill when activePlanId is set and state is running', async () => {
         renderPane();
 
         // Pill should be absent initially (title not yet set)
-        expect(screen.queryByText(/Laeuft: Mein Plan/)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Läuft: Mein Plan/)).not.toBeInTheDocument();
 
         // Simulate a dispatchWorkSessionPlan event (what the send flow calls after fetching plan)
         await act(async () => {
@@ -186,7 +186,7 @@ describe('ChatPane session pill', () => {
 
         // After title is set, pill should appear with state-aware label
         await waitFor(() => {
-            expect(screen.getByText(/Laeuft: Mein Plan/)).toBeInTheDocument();
+            expect(screen.getByText(/Läuft: Mein Plan/)).toBeInTheDocument();
         });
     });
 

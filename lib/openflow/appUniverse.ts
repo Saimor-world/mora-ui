@@ -30,7 +30,7 @@ const GROUPS: AppUniverseGroup[] = [
   {
     id: 'studio',
     label: 'Studio',
-    description: 'Canvas und kreative Arbeitsflaechen.',
+    description: 'Canvas und kreative Arbeitsflächen.',
     appIds: ['canvas'],
   },
   {

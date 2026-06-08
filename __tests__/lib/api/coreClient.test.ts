@@ -671,7 +671,7 @@ describe('resolveOpenIntent', () => {
             },
             next: {
                 mode: 'open',
-                label: 'Treffer oeffnen',
+                label: 'Treffer öffnen',
                 message: 'Der Treffer ist klar genug.',
             },
         });
@@ -694,7 +694,7 @@ describe('resolveOpenIntent', () => {
         });
         expect(result.next).toMatchObject({
             mode: 'open',
-            label: 'Treffer oeffnen',
+            label: 'Treffer öffnen',
         });
     });
 });

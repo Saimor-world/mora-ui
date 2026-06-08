@@ -103,7 +103,7 @@ describe('CalendarIntegration', () => {
 
         renderWithProviders(<CalendarIntegration />);
 
-        expect(await screen.findByText('Google Calendar persoenlich')).toBeInTheDocument();
+        expect(await screen.findByText('Google Calendar persönlich')).toBeInTheDocument();
         expect(screen.getByText(/Tenant-Konfiguration/i)).toBeInTheDocument();
         expect(screen.getByText(/tenant-c\.\.\.6789/i)).toBeInTheDocument();
         expect(screen.getByText(/http:\/\/127\.0\.0\.1:8081\/v3\/integrations\/calendar\/callback/i)).toBeInTheDocument();

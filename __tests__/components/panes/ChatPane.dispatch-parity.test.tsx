@@ -33,7 +33,7 @@ const POST_DECISION_PLAN = {
         last_transition_step_id: 'step-confirm-xyz',
         last_transition_type: 'confirmed',
         last_transition_message: 'Schritt bestaetigt. Mora kann den aktuellen Arbeitslauf direkt fortsetzen.',
-        next_message: 'Naechster Schritt: Inhalt analysieren.',
+        next_message: 'Nächster Schritt: Inhalt analysieren.',
     },
 };
 
@@ -197,7 +197,7 @@ describe('ChatPane dispatch parity — post-decision transition fields', () => {
 
     it('Site 1: does not dispatch last_transition_step_id when plan has no post-decision transition', async () => {
         mockExecuteAgenticLoop.mockResolvedValueOnce({
-            final_message: 'Laeuft.',
+            final_message: 'Läuft.',
             work_session_plan: { plan_id: 'plan-abc', state: 'running', session_id: 'sess-abc' },
         });
         mockFetchWorkSessionPlan.mockResolvedValueOnce({
@@ -223,7 +223,7 @@ describe('ChatPane dispatch parity — post-decision transition fields', () => {
                     last_transition_step_id: 'step-from-agent',
                     last_transition_type: 'skipped',
                     last_transition_message: 'Schritt uebersprungen.',
-                    next_message: 'Naechster Schritt wartet.',
+                    next_message: 'Nächster Schritt wartet.',
                 },
             },
         });

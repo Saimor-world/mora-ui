@@ -73,7 +73,7 @@ describe('useActionEvents', () => {
           targetType: 'folder',
           folderId: 'folder-1',
           label: 'Planung',
-          message: 'Geoeffnet',
+          message: 'Geöffnet',
         },
       }));
     });

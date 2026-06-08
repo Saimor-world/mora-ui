@@ -26,7 +26,7 @@ export const ConnectionBanner: React.FC = () => {
     };
 
     const title = surfaceProfile.isLocalTruthSurface
-        ? (status === 'offline' ? 'Interne Instanz offline' : 'Interne Instanz gestoert')
+        ? (status === 'offline' ? 'Interne Instanz offline' : 'Interne Instanz gestört')
         : status === 'offline'
             ? 'Keine Verbindung'
             : 'Verbindungsfehler';
@@ -37,7 +37,7 @@ export const ConnectionBanner: React.FC = () => {
         ? 'Oeffentliche Demo-Instanz'
         : surfaceProfile.isLocalTruthSurface
             ? 'Interne Instanz'
-            : 'Verbindung eingeschraenkt';
+            : 'Verbindung eingeschränkt';
 
     const helperText = websiteEntryContext
         ? 'Dieser Workspace stammt aus einem Website-Check. Echte Integrationen werden erst nach bewusster Verbindung genutzt.'
@@ -45,7 +45,7 @@ export const ConnectionBanner: React.FC = () => {
         ? 'Prüfe Core, lokale Integrationen und Modelle. Diese Oberfläche ist für die echte Arbeitslogik gedacht.'
         : surfaceProfile.isPublicDemoSurface
             ? 'Die Demo spiegelt nur den stabilen Stand. Lokale Regeln und Integrationen liegen ausserhalb dieser Instanz.'
-            : 'Die Organisation ist erreichbar, aber der aktuelle Datenpfad ist gestoert.';
+            : 'Die Organisation ist erreichbar, aber der aktuelle Datenpfad ist gestört.';
 
     return (
         <AnimatePresence>
@@ -89,7 +89,7 @@ export const ConnectionBanner: React.FC = () => {
                                 size={14}
                                 className="transition-transform duration-500 group-hover:rotate-180"
                             />
-                            Erneut pruefen
+                            Erneut prüfen
                         </span>
                     </button>
                 </div>

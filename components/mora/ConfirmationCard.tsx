@@ -178,7 +178,7 @@ const formatIntakeTargetLabel = (intake?: IntakeContext | null, fallback = 'Ziel
 
 /** Maps live Mycelium signal keys → human-readable German labels */
 const signalLabelMap: Record<string, string> = {
-    frueher_aehnlich_eingeordnet:   'Ähnliche Dateien eingeordnet',
+    frueher_ähnlich_eingeordnet:   'Ähnliche Dateien eingeordnet',
     manuell_korrigierter_verlauf:   'Manuell korrigierter Verlauf',
     wiederkehrendes_dateimuster:    'Wiederkehrendes Dateimuster',
     explizites_upload_ziel:         'Explizites Upload-Ziel',
@@ -340,7 +340,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 action: 'point',
                 targetId: cardTargetId,
                 message: isIntake
-                    ? 'Bitte Einordnung pruefen'
+                    ? 'Bitte Einordnung prüfen'
                     : isFileOp
                         ? 'Aktionsausführung bestätigen'
                         : 'Bestätigung erforderlich',
@@ -689,7 +689,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     <div className="text-xs text-white/55 italic leading-relaxed">
                         {isContentOnlyOp
                             ? isContentUpdateOnlyOp
-                                ? 'MORA aendert diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
+                                ? 'MORA ändert diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
                                 : 'MORA erstellt diesen Inhalt erst nach Ihrer Bestätigung. Der aktuelle Organisationskontext bleibt dabei verbindlich.'
                             : 'MORA führt diese Änderung erst nach Ihrer Bestätigung aus. Der aktuelle Organisationskontext bleibt dabei verbindlich.'}
                     </div>
@@ -889,7 +889,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
 
                         {intake.route_confidence_label === 'niedrig' && (
                             <div className="mt-3 rounded-md border border-amber-400/15 bg-amber-500/8 px-2.5 py-2 text-[11px] text-amber-100/90 leading-relaxed">
-                                Niedrige Sicherheit: Ziel und Begründung vor der Freigabe nochmal pruefen.
+                                Niedrige Sicherheit: Ziel und Begründung vor der Freigabe nochmal prüfen.
                             </div>
                         )}
 
@@ -935,7 +935,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                         disabled={isProcessing}
                         className="text-white/40 hover:text-white/60 text-xs font-medium transition-colors px-3 py-2"
                     >
-                        Spaeter
+                        Später
                     </button>
                     <div className="flex-1" />
                     <button

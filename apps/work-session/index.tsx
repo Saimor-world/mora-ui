@@ -549,7 +549,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                 {!isLoading && !error && !plan && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="slate" label="Arbeitsplan" title="Kein Plan geladen."
-                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geöffnet wurde, erscheint er in dieser Flaeche."
+                            body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geöffnet wurde, erscheint er in dieser Fläche."
                             chips={[{ label: 'Wartet auf Plan' }, { label: 'Universe bleibt aktiv' }]} className="w-full max-w-xl" />
                     </div>
                 )}

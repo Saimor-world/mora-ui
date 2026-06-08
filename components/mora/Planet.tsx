@@ -493,7 +493,7 @@ export const Planet: React.FC<PlanetProps> = ({
                             {hasCapacity && ringProgress > 0 && (
                                 <div className="flex flex-col gap-1 border-t border-white/[0.06] pt-2.5">
                                     <div className="flex justify-between items-center text-[7px] uppercase tracking-[0.1em]">
-                                        <span className={isStandardMode ? 'text-gray-400' : 'text-white/30'}>Kapazitaet</span>
+                                        <span className={isStandardMode ? 'text-gray-400' : 'text-white/30'}>Kapazität</span>
                                         <span className={`font-mono ${isStandardMode ? 'text-gray-800' : 'text-cyan-300'}`}>{ringProgress}%</span>
                                     </div>
                                     <div className={`h-[4px] w-full rounded-full overflow-hidden ${

@@ -1159,7 +1159,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
                     accent={focusedPlanet.color || '#34d399'}
                     collapsedHint={hoverPlanetId ? 'Signal gehalten.' : 'Department fokussieren für Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Beziehungen für ${focusedPlanet.name}. Hover previewt das Signal, die Rail haelt den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
+                    summary={`${focusedPlanetLinkCount} semantische Beziehungen für ${focusedPlanet.name}. Hover previewt das Signal, die Rail hält den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
                     alwaysExpanded
                     showToggle={false}
                     forceExpanded={Boolean(focusedPlanetId) || Boolean(semanticPreviewPathId) || isInsightRailHovered}
@@ -1190,7 +1190,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <span>{focusedPlanetLinkCount}</span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                            Verbindungen richten sich nach inhaltlicher, struktureller und operativer Naehe. Die Route erscheint erst dann stark, wenn du sie wirklich fokussierst.
+                            Verbindungen richten sich nach inhaltlicher, struktureller und operativer Nähe. Die Route erscheint erst dann stark, wenn du sie wirklich fokussierst.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
                             {Object.values(SEMANTIC_DRIVER_META).map((driver) => (
@@ -1504,7 +1504,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 <InsightCard
                                     icon={<ShieldCheck className="w-4 h-4" />}
                                     label="Kontext"
-                                    value={websiteEntryContext ? 'Dossier' : currentCompany?.is_demo ? 'Beispielsystem' : 'Geschuetzt'}
+                                    value={websiteEntryContext ? 'Dossier' : currentCompany?.is_demo ? 'Beispielsystem' : 'Geschützt'}
                                     status={websiteEntryContext ? 'stable' : currentCompany?.is_demo ? 'neutral' : 'secure'}
                                 />
                                 <InsightCard

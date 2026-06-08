@@ -288,7 +288,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                                 </h2>
 
                                 <p className="text-white/60 max-w-md mx-auto leading-relaxed mb-8">
-                                    Richten wir Ihre Organisation ein. Dies erstellt Môras erstes Verstaendnis Ihrer Struktur.
+                                    Richten wir Ihre Organisation ein. Dies erstellt Môras erstes Verständnis Ihrer Struktur.
                                 </p>
 
                                 <div className="flex items-center justify-center gap-4 text-sm text-white/40">

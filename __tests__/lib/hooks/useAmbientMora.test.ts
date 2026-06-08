@@ -122,7 +122,7 @@ describe('useAmbientMora', () => {
 
     it('maps backend search tool calls to searchGlobal', async () => {
         mockCorePost.mockResolvedValue({
-            text: 'Suche laeuft.',
+            text: 'Suche läuft.',
             intent: 'search',
             toolCalls: [{
                 type: 'search',

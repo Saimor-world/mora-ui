@@ -143,7 +143,7 @@ export const buildShellContextSnapshot = ({
             signalA: formatCount(activeFolder.node_count || 0, 'Dokument', 'Dokumente'),
             signalB: `${activeFolders.length} Ordner im Bereich`,
             accent: activeFolder.color || activeSpace.color || activeDepartment?.color || accent,
-            nextMoveLabel: `Zurueck in ${activeSpace.name}`,
+            nextMoveLabel: `Zurück in ${activeSpace.name}`,
             nextMoveHint: 'Der Bereich bleibt dein Arbeitskontext. Der Ordner ist hier der aktuelle Fokus.',
             nextTarget: { kind: 'space', id: activeSpace.id },
         };
@@ -156,14 +156,14 @@ export const buildShellContextSnapshot = ({
             contextLabel: 'Bereich',
             title: activeSpace.name,
             subtitle: activeDepartment?.name || companyTitle,
-            description: 'Hier siehst du die echte Struktur dieses Bereichs. Ordner, Dokumente und der naechste sinnvolle Einstieg sollen direkt sichtbar sein.',
+            description: 'Hier siehst du die echte Struktur dieses Bereichs. Ordner, Dokumente und der nächste sinnvolle Einstieg sollen direkt sichtbar sein.',
             signalA: formatCount(activeFolders.length, 'Ordner'),
             signalB: formatCount(docCount, 'Dokument', 'Dokumente'),
             accent: activeSpace.color || activeDepartment?.color || accent,
             nextMoveLabel: leadingFolder ? `Fokus auf ${leadingFolder.name}` : 'Finder für diesen Space',
             nextMoveHint: leadingFolder
-                ? 'Der sichtbar staerkste Ordner ist hier der sinnvollste naechste Schritt.'
-                : 'Wenn noch kein klarer Lead-Ordner sichtbar ist, oeffne die Struktur im Finder.',
+                ? 'Der sichtbar stärkste Ordner ist hier der sinnvollste nächste Schritt.'
+                : 'Wenn noch kein klarer Lead-Ordner sichtbar ist, öffne die Struktur im Finder.',
             nextTarget: leadingFolder
                 ? { kind: 'folder', id: leadingFolder.id }
                 : { kind: 'space', id: activeSpace.id },
@@ -184,8 +184,8 @@ export const buildShellContextSnapshot = ({
             accent: activeDepartment.color || accent,
             nextMoveLabel: leadingSpace ? `In ${leadingSpace.name} zoomen` : 'Abteilung im Finder öffnen',
             nextMoveHint: leadingSpace
-                ? 'Der staerkste Bereich ist der beste naechste Einstieg.'
-                : 'Wenn noch kein klarer Bereich vorne liegt, oeffne die Struktur im Finder.',
+                ? 'Der stärkste Bereich ist der beste nächste Einstieg.'
+                : 'Wenn noch kein klarer Bereich vorne liegt, öffne die Struktur im Finder.',
             nextTarget: leadingSpace
                 ? { kind: 'space', id: leadingSpace.id }
                 : { kind: 'department', id: activeDepartment.id },
@@ -208,8 +208,8 @@ export const buildShellContextSnapshot = ({
             : isLocalTruthSurface
                 ? 'Diese lokale Instanz arbeitet mit genau einer aktiven Organisation. Von hier aus gehst du direkt in Abteilungen und Struktur.'
             : companyCount > 1
-                ? 'Diese Instanz zeigt mehrere Organisationen. Waehle zuerst den richtigen Kontext und gehe dann tiefer.'
-                : 'Diese Instanz ist auf eine Organisation zugeschnitten. Waehle die passende Abteilung und gehe dann in die Struktur.',
+                ? 'Diese Instanz zeigt mehrere Organisationen. Wähle zuerst den richtigen Kontext und gehe dann tiefer.'
+                : 'Diese Instanz ist auf eine Organisation zugeschnitten. Wähle die passende Abteilung und gehe dann in die Struktur.',
         signalA: formatCount(departmentCount, 'Abteilung', 'Abteilungen'),
         signalB: isPublicDemoSurface
             ? 'Beispielstruktur'
@@ -223,10 +223,10 @@ export const buildShellContextSnapshot = ({
         nextMoveHint: isPublicDemoSurface
             ? 'Öffne die passende Abteilung und gehe von dort in die sichtbare Beispielstruktur.'
             : isLocalTruthSurface
-            ? 'Die lokale Instanz hat nur einen aktiven Organisationskontext. Waehle direkt die passende Abteilung.'
+            ? 'Die lokale Instanz hat nur einen aktiven Organisationskontext. Wähle direkt die passende Abteilung.'
             : companyCount > 1
-            ? 'Diese Instanz hat mehrere Organisationen. Waehle zuerst den richtigen Kontext und springe dann tiefer.'
-            : 'Waehle zuerst die passende Abteilung und geh dann in die operative Struktur.',
+            ? 'Diese Instanz hat mehrere Organisationen. Wähle zuerst den richtigen Kontext und springe dann tiefer.'
+            : 'Wähle zuerst die passende Abteilung und geh dann in die operative Struktur.',
         nextTarget: { kind: 'company', id: activeCompany?.id },
     };
 };

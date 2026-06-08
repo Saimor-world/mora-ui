@@ -117,7 +117,7 @@ export function useMemory(manualCompanyId?: string | null) {
     // Approve item
     const approve = useCallback(async (id: string) => {
         if (!scopedCompanyId) {
-            toast.error('Keine aktive Company ausgewaehlt');
+            toast.error('Keine aktive Company ausgewählt');
             return false;
         }
         try {
@@ -135,7 +135,7 @@ export function useMemory(manualCompanyId?: string | null) {
     // Reject item
     const reject = useCallback(async (id: string) => {
         if (!scopedCompanyId) {
-            toast.error('Keine aktive Company ausgewaehlt');
+            toast.error('Keine aktive Company ausgewählt');
             return false;
         }
         try {

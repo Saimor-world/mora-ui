@@ -19,19 +19,19 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
         bgClass = 'bg-cyan-500/5';
         glowColor = 'shadow-[0_0_20px_rgba(6,182,212,0.15)]';
         badgeText = 'Website-HQ / Public Playground';
-        modeText = 'Geteilte Umgebung. Du kannst Beitraege auf der Wall schreiben.';
+        modeText = 'Geteilte Umgebung. Du kannst Beiträge auf der Wall schreiben.';
     } else if (activeMode === 'personal_demo') {
         borderClass = 'border-violet-500/30';
         bgClass = 'bg-violet-500/5';
         glowColor = 'shadow-[0_0_20px_rgba(139,92,246,0.15)]';
         badgeText = 'Personal Demo';
-        modeText = 'Deine private Testumgebung. Experimente werden nicht veroeffentlicht.';
+        modeText = 'Deine private Testumgebung. Experimente werden nicht veröffentlicht.';
     } else if (activeMode === 'private_preview') {
         borderClass = 'border-amber-500/30';
         bgClass = 'bg-amber-500/5';
         glowColor = 'shadow-[0_0_20px_rgba(245,158,11,0.15)]';
         badgeText = 'Private Preview';
-        modeText = 'Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden geloescht.';
+        modeText = 'Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden gelöscht.';
     } else if (activeMode === 'visitor') {
         borderClass = 'border-emerald-500/30';
         bgClass = 'bg-emerald-500/5';

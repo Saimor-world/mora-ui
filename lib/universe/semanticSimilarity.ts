@@ -20,9 +20,9 @@ const metricAffinity = (left: number, right: number) => {
 };
 
 export const SEMANTIC_DRIVER_META: Record<SemanticDriver, SemanticDriverMeta> = {
-    content: { label: 'Dokumente', accent: '#7dd3fc', dashArray: '0 0', reason: 'aehnliche Doc-Dichte' },
+    content: { label: 'Dokumente', accent: '#7dd3fc', dashArray: '0 0', reason: 'ähnliche Doc-Dichte' },
     structure: { label: 'Struktur', accent: '#c4b5fd', dashArray: '7 5', reason: 'vergleichbare Spaces und Folder' },
-    health: { label: 'Health', accent: '#fbbf24', dashArray: '2 6', reason: 'aehnlicher Reifegrad' },
+    health: { label: 'Health', accent: '#fbbf24', dashArray: '2 6', reason: 'ähnlicher Reifegrad' },
 };
 
 export const buildSemanticEdgeKey = (leftId: string, rightId: string) => [leftId, rightId].sort().join(':');

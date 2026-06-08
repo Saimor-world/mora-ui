@@ -64,7 +64,7 @@ const statusLabel = (status?: string | null) => {
             return 'Lokal';
         case 'degraded':
         case 'partial':
-            return 'Eingeschraenkt';
+            return 'Eingeschränkt';
         case 'not_configured':
             return 'Offen';
         case 'owner_only':
@@ -113,14 +113,14 @@ const buildMailText = (overview?: IntegrationsOverview | null) => {
 
 const buildCalendarText = (overview?: IntegrationsOverview | null) => {
     if (overview?.calendar?.configured) return overview.calendar.email ? `Verbunden mit ${overview.calendar.email}` : 'Kalender ist verbunden.';
-    if (!overview?.capabilities?.calendar_oauth_enabled) return 'Google OAuth ist serverseitig noch nicht fertig. Owner-Setup pruefen.';
+    if (!overview?.capabilities?.calendar_oauth_enabled) return 'Google OAuth ist serverseitig noch nicht fertig. Owner-Setup prüfen.';
     return 'Noch kein Kalender verbunden. Starte Google OAuth, wenn du Termine im OS sehen willst.';
 };
 
 const buildCloudText = (overview?: IntegrationsOverview | null) => {
     const count = overview?.cloud_storage?.count || overview?.cloud_storage?.connectors?.length || 0;
     if (count > 0) return `${count} Cloud-Verbindung${count === 1 ? '' : 'en'} im privaten Bereich.`;
-    return 'Noch keine Cloud verbunden. Spaeter erscheinen hier Drive, OneDrive, Nextcloud und andere Quellen.';
+    return 'Noch keine Cloud verbunden. Später erscheinen hier Drive, OneDrive, Nextcloud und andere Quellen.';
 };
 
 const buildAssistantText = (overview?: IntegrationsOverview | null) => {
@@ -201,7 +201,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
 
     const requestBrowserNotifications = useCallback(async () => {
         if (typeof window === 'undefined' || typeof Notification === 'undefined') {
-            toast.error('Dieser Browser unterstuetzt Benachrichtigungen nicht.');
+            toast.error('Dieser Browser unterstützt Benachrichtigungen nicht.');
             return;
         }
         setIsRequestingNotifications(true);
@@ -210,7 +210,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             refreshBrowserBridge();
             if (permission === 'granted') {
                 toast.success('Browser ist verbunden');
-                new Notification('Môra ist verbunden', { body: 'Signale koennen jetzt direkt im Browser erscheinen.' });
+                new Notification('Môra ist verbunden', { body: 'Signale können jetzt direkt im Browser erscheinen.' });
             } else {
                 toast.info('Benachrichtigungen wurden nicht freigegeben.');
             }
@@ -402,7 +402,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                         subtitle="Postfach fuer Môra"
                                         status={overview?.mail?.status}
                                         body={buildMailText(overview)}
-                                        actions={[{ label: 'Mail oeffnen', onClick: openMailPane }]}
+                                        actions={[{ label: 'Mail öffnen', onClick: openMailPane }]}
                                     />
                                     <ConnectionCard
                                         icon={Calendar}
@@ -411,7 +411,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                         status={overview?.calendar?.status}
                                         body={buildCalendarText(overview)}
                                         actions={[
-                                            { label: 'Kalender oeffnen', onClick: openCalendarPane },
+                                            { label: 'Kalender öffnen', onClick: openCalendarPane },
                                             { label: isConnectingCalendar ? 'Verbinde...' : 'Google verbinden', onClick: connectGoogleCalendar, disabled: !overview?.capabilities?.calendar_oauth_enabled || isConnectingCalendar, ghost: true },
                                         ]}
                                     />
@@ -451,7 +451,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div>
                                                             <div className="text-sm font-medium text-white/85">{provider}</div>
-                                                            <div className="mt-1 text-[11px] text-white/42">Prioritaet {meta.priority ?? '-'}</div>
+                                                            <div className="mt-1 text-[11px] text-white/42">Priorität {meta.priority ?? '-'}</div>
                                                         </div>
                                                         <StatusPill status={meta.healthy ? 'available' : meta.available ? 'configured' : 'unavailable'} />
                                                     </div>
@@ -472,10 +472,10 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                         title="Desktop Bridge"
                                         subtitle={localTruthBridge.isLocalSurface ? 'Lokale Instanz' : 'HQ Web-Version'}
                                         status={localTruthBridge.state}
-                                        body={localTruthBridge.error || 'Lokale UI und lokaler Core werden nur in einer lokalen Session automatisch geprueft.'}
+                                        body={localTruthBridge.error || 'Lokale UI und lokaler Core werden nur in einer lokalen Session automatisch geprüft.'}
                                         meta={localTruthBridge.isLocalSurface ? summary.localTruthUrl : 'Remote-HQ scannt deinen Rechner nicht automatisch.'}
                                         actions={[
-                                            { label: 'Pruefen', onClick: () => void localTruthBridge.refresh({ force: true, announce: true }) },
+                                            { label: 'Prüfen', onClick: () => void localTruthBridge.refresh({ force: true, announce: true }) },
                                             { label: 'Oeffnen', onClick: () => safeOpen(summary.localTruthUrl), disabled: !summary.localTruthUiOpenable, ghost: true },
                                         ]}
                                     />
@@ -496,14 +496,14 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                                         disabled={!canControlRuntime || runtimeActionKey !== null}
                                                         className="rounded-xl border border-white/10 bg-white/[0.045] px-3 py-2 text-xs text-white/70 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-40"
                                                     >
-                                                        {runtimeActionKey === actionKey ? 'Laeuft...' : runtimeActionLabels[action]}
+                                                        {runtimeActionKey === actionKey ? 'Läuft...' : runtimeActionLabels[action]}
                                                     </button>
                                                 );
                                             })}
                                         </div>
                                         <p className="mt-3 text-[11px] leading-relaxed text-white/42">
                                             {canControlRuntime
-                                                ? 'Owner-Modus: Runtime-Aktionen werden ueber den Server eingereiht.'
+                                                ? 'Owner-Modus: Runtime-Aktionen werden über den Server eingereiht.'
                                                 : 'Runtime-Steuerung ist nur fuer den System-Owner freigegeben.'}
                                         </p>
                                     </div>

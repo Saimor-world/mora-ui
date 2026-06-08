@@ -70,11 +70,11 @@ export function SecurityCheckPlaygroundLogin({ context, onReady, onError }: Prop
                     findings: context.tasks.map((task) => ({
                         title: task.title,
                         severity: taskSeverity(task.priority),
-                        desc: 'Aus dem Security-Check als naechste Aufgabe vorbereitet.',
+                        desc: 'Aus dem Security-Check als nächste Aufgabe vorbereitet.',
                     })),
                     recommendations: context.tasks.map((task) => ({
                         title: task.title,
-                        description: 'Im persoenlichen OS-Raum pruefen und priorisieren.',
+                        description: 'Im persönlichen OS-Raum prüfen und priorisieren.',
                     })),
                 }) as PlaygroundAuditSession;
 

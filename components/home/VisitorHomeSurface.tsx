@@ -57,7 +57,7 @@ export function VisitorHomeSurface() {
         return (context?.tasks ?? []).slice(0, 4).map((task) => ({
             title: task.title,
             severity: task.priority,
-            desc: 'Aus dem Security-Check als naechste Aufgabe vorbereitet.',
+            desc: 'Aus dem Security-Check als nächste Aufgabe vorbereitet.',
         }));
     }, [audit?.findings, context?.tasks]);
 
@@ -79,7 +79,7 @@ export function VisitorHomeSurface() {
             await submitDossierToWall({
                 node_id: dossierNodeId,
                 visibility: 'domain-only',
-                message: `${companyName} prueft Security-Befunde aus dem SAIMOR Preview-Raum.`,
+                message: `${companyName} prüft Security-Befunde aus dem SAIMOR Preview-Raum.`,
             });
             setWallState('pending');
         } catch {
@@ -91,8 +91,8 @@ export function VisitorHomeSurface() {
     const wallButtonLabel = wallState === 'submitting'
         ? 'Signal wird vorbereitet'
         : wallState === 'pending'
-            ? 'Wartet auf Bestaetigung'
-            : 'Signal veroeffentlichen';
+            ? 'Wartet auf Bestätigung'
+            : 'Signal veröffentlichen';
 
     return (
         <main className="pointer-events-auto relative z-10 h-full overflow-y-auto px-5 pb-28 pt-24 text-white sm:px-8 lg:px-12">
@@ -148,7 +148,7 @@ export function VisitorHomeSurface() {
                                             {finding.severity || 'signal'}
                                         </span>
                                     </div>
-                                    <p className="mt-2 text-xs leading-relaxed text-white/46">{finding.desc || finding.description || 'Aus dem passiven Website-Check uebernommen.'}</p>
+                                    <p className="mt-2 text-xs leading-relaxed text-white/46">{finding.desc || finding.description || 'Aus dem passiven Website-Check übernommen.'}</p>
                                 </div>
                             )) : (
                                 <div className="rounded-2xl border border-white/[0.06] bg-white/[0.035] p-5 text-sm text-white/48">
@@ -165,7 +165,7 @@ export function VisitorHomeSurface() {
                                 <span className="text-[10px] uppercase tracking-[0.24em]">So sieht dein OS aus</span>
                             </div>
                             <p className="mt-4 text-sm leading-relaxed text-white/58">
-                                Die Demo-Struktur dient als Geruest. Deine Firmendaten, dein Scan und dein Dossier bleiben separat markiert.
+                                Die Demo-Struktur dient als Gerüst. Deine Firmendaten, dein Scan und dein Dossier bleiben separat markiert.
                             </p>
                             <div className="mt-4 grid grid-cols-2 gap-2 text-xs text-white/54">
                                 <div className="rounded-2xl border border-white/[0.055] bg-white/[0.032] p-3">Security</div>
@@ -178,9 +178,9 @@ export function VisitorHomeSurface() {
                         <section className="rounded-[1.5rem] border border-emerald-300/12 bg-emerald-400/[0.055] p-5 backdrop-blur-xl">
                             <div className="flex items-center gap-2 text-emerald-100/76">
                                 <Timer size={16} />
-                                <span className="text-[10px] uppercase tracking-[0.24em]">Dein persoenlicher Raum</span>
+                                <span className="text-[10px] uppercase tracking-[0.24em]">Dein persönlicher Raum</span>
                             </div>
-                            <p className="mt-4 text-sm text-white/64">Scan gespeichert. Dossier angelegt. Preview laeuft bis:</p>
+                            <p className="mt-4 text-sm text-white/64">Scan gespeichert. Dossier angelegt. Preview läuft bis:</p>
                             <p className="mt-2 text-lg font-light text-emerald-50">{expiresLabel}</p>
                         </section>
 
@@ -190,7 +190,7 @@ export function VisitorHomeSurface() {
                                 <span className="text-[10px] uppercase tracking-[0.24em]">Auf die Wall?</span>
                             </div>
                             <p className="mt-4 text-sm leading-relaxed text-white/52">
-                                Du entscheidest, ob dein Signal oeffentlich sichtbar wird. Ohne Freigabe bleibt es nur in deinem Preview-Raum.
+                                Du entscheidest, ob dein Signal öffentlich sichtbar wird. Ohne Freigabe bleibt es nur in deinem Preview-Raum.
                             </p>
                             <button
                                 type="button"
@@ -203,12 +203,12 @@ export function VisitorHomeSurface() {
                             </button>
                             {wallState === 'error' ? (
                                 <p className="mt-3 text-xs leading-relaxed text-red-100/58">
-                                    Wall-Freigabe konnte nicht vorbereitet werden. Dein Preview-Raum bleibt unveraendert privat.
+                                    Wall-Freigabe konnte nicht vorbereitet werden. Dein Preview-Raum bleibt unverändert privat.
                                 </p>
                             ) : null}
                             {wallState === 'pending' ? (
                                 <p className="mt-3 text-xs leading-relaxed text-emerald-100/58">
-                                    Wall-Signal ist vorgemerkt. Sichtbar wird es erst nach Bestaetigung.
+                                    Wall-Signal ist vorgemerkt. Sichtbar wird es erst nach Bestätigung.
                                 </p>
                             ) : null}
                         </section>

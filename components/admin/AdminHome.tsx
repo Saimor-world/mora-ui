@@ -54,7 +54,7 @@ export const AdminHome: React.FC = () => {
                         <div className="text-[10px] uppercase tracking-[0.22em] text-amber-200/70">Separat</div>
                         <div className="mt-2 text-sm text-white/88">Owner-Bereich</div>
                         <p className="mt-2 text-sm leading-relaxed text-white/50">
-                            Systemweite Organisations-, Benutzer-, Token-, Website-Lead- und Besucheruebersicht bleibt bewusst ausserhalb dieser Arbeitsoberflaeche.
+                            Systemweite Organisations-, Benutzer-, Token-, Website-Lead- und Besucherübersicht bleibt bewusst ausserhalb dieser Arbeitsoberfläche.
                         </p>
                         <div className="mt-4 flex flex-wrap gap-2">
                             <a
@@ -63,7 +63,7 @@ export const AdminHome: React.FC = () => {
                                 rel="noreferrer"
                                 className="inline-flex rounded-full border border-amber-400/20 bg-amber-500/10 px-3 py-2 text-[11px] uppercase tracking-[0.18em] text-amber-100 transition-colors hover:bg-amber-500/18"
                             >
-                                Owner Command oeffnen
+                                Owner Command öffnen
                             </a>
                             <a
                                 href={operationsConsoleUrl}

@@ -53,18 +53,18 @@ export function showMemoryLearnedToast(insight: string, category: string): void 
 }
 
 /**
- * Zeigt Toast mit Anzahl der Insights zur Pruefung
+ * Zeigt Toast mit Anzahl der Insights zur Prüfung
  * @param count - Anzahl der ausstehenden Reviews
  */
 export function showPendingReviewToast(count: number): void {
   if (count <= 0) return;
 
   const message = count === 1
-    ? '1 Insight zur Pruefung'
-    : `${count} Insights zur Pruefung`;
+    ? '1 Insight zur Prüfung'
+    : `${count} Insights zur Prüfung`;
 
   toast.info(message, {
-    description: 'Tippe um zu ueberpruefen',
+    description: 'Tippe um zu überprüfen',
     duration: 5000,
     position: 'bottom-right',
     style: {

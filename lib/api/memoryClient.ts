@@ -24,7 +24,7 @@ export async function learnInsight(payload: {
     return corePost('/v3/memory/learn', payload);
 }
 
-// GET /v3/memory/search - Gedaechtnis durchsuchen
+// GET /v3/memory/search - Gedächtnis durchsuchen
 export async function searchMemory(query: string, limit: number = 10, companyId: string): Promise<any[]> {
     const resolvedCompanyId = requireMemoryCompanyId(companyId);
     const companyQuery = `&company_id=${encodeURIComponent(resolvedCompanyId)}`;

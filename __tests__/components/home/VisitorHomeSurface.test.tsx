@@ -57,7 +57,7 @@ beforeEach(() => {
 it('submits the visitor dossier node to the Wall queue', async () => {
     render(<VisitorHomeSurface />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Signal veroeffentlichen/i }));
+    await userEvent.click(screen.getByRole('button', { name: /Signal veröffentlichen/i }));
 
     expect(submitDossierToWall).toHaveBeenCalledWith(expect.objectContaining({
         node_id: 'node-audit-1',

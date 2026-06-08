@@ -71,7 +71,7 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
         <div className="flex items-start gap-2">
           <ArrowRight size={13} className="mt-0.5 shrink-0 text-white/34" />
           <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-white/32">Naechster Schritt</p>
+            <p className="text-[10px] uppercase tracking-[0.16em] text-white/32">Nächster Schritt</p>
             <p className="mt-0.5 text-[11px] leading-relaxed text-white/58">{signal.next}</p>
           </div>
         </div>
@@ -114,49 +114,49 @@ function getSignalMeta(signalType: string, entityType?: string): {
     case 'stale_document':
       return {
         label: 'Dokument',
-        read: 'Ein Dokument liegt in einem aktiven Bereich, wurde selbst aber laenger nicht beruehrt.',
+        read: 'Ein Dokument liegt in einem aktiven Bereich, wurde selbst aber länger nicht berührt.',
         next: 'Oeffne es im Kontext und entscheide: aktualisieren, archivieren oder jemandem zuweisen.',
-        cta: entityType === 'folder' ? 'Ordner oeffnen' : 'Dokument oeffnen',
+        cta: entityType === 'folder' ? 'Ordner öffnen' : 'Dokument öffnen',
         targetIcon: FileText,
       };
     case 'inactive_space':
       return {
         label: 'Bereich',
         read: 'Ein Space wirkt still, obwohl er noch Teil der Arbeitsstruktur ist.',
-        next: 'Pruefe, ob der Bereich noch gebraucht wird oder als Archiv markiert werden sollte.',
-        cta: 'Bereich oeffnen',
+        next: 'Prüfe, ob der Bereich noch gebraucht wird oder als Archiv markiert werden sollte.',
+        cta: 'Bereich öffnen',
         targetIcon: Layers3,
       };
     case 'deadline_proximity':
       return {
         label: 'Termin',
-        read: 'Ein Titel enthaelt ein nahes Datum, aber es gibt kein aktuelles Update dazu.',
-        next: 'Oeffne das Dokument, klaere Status und naechste Verantwortung.',
+        read: 'Ein Titel enthält ein nahes Datum, aber es gibt kein aktuelles Update dazu.',
+        next: 'Oeffne das Dokument, kläre Status und nächste Verantwortung.',
         cta: 'Termin ansehen',
         targetIcon: FileText,
       };
     case 'duplicate_folder':
       return {
         label: 'Ordner',
-        read: 'Mora hat aehnliche Ordnernamen in getrennten Bereichen erkannt.',
-        next: 'Oeffne den neuen Ordner und klaere, ob zusammenfuehren oder sauber trennen sinnvoll ist.',
-        cta: 'Ordner oeffnen',
+        read: 'Mora hat ähnliche Ordnernamen in getrennten Bereichen erkannt.',
+        next: 'Oeffne den neuen Ordner und kläre, ob zusammenführen oder sauber trennen sinnvoll ist.',
+        cta: 'Ordner öffnen',
         targetIcon: FolderOpen,
       };
     case 'hot_document':
       return {
-        label: 'Aktivitaet',
-        read: 'Ein Dokument wurde auffaellig oft bearbeitet. Dort entsteht gerade Arbeit oder Reibung.',
-        next: 'Oeffne es und pruefe, ob eine Entscheidung, Zusammenfassung oder Aufgabe fehlt.',
-        cta: 'Dokument oeffnen',
+        label: 'Aktivität',
+        read: 'Ein Dokument wurde auffällig oft bearbeitet. Dort entsteht gerade Arbeit oder Reibung.',
+        next: 'Oeffne es und prüfe, ob eine Entscheidung, Zusammenfassung oder Aufgabe fehlt.',
+        cta: 'Dokument öffnen',
         targetIcon: FileText,
       };
     case 'missing_recurring_update':
       return {
         label: 'Routine',
         read: 'Ein Bereich hatte wiederkehrende Updates, diesmal fehlt dieses Muster.',
-        next: 'Pruefe kurz, ob die Routine ausgesetzt, vergessen oder abgeschlossen ist.',
-        cta: 'Routine pruefen',
+        next: 'Prüfe kurz, ob die Routine ausgesetzt, vergessen oder abgeschlossen ist.',
+        cta: 'Routine prüfen',
         targetIcon: Layers3,
       };
     default:
@@ -164,7 +164,7 @@ function getSignalMeta(signalType: string, entityType?: string): {
         label: normalized.replace(/_/g, ' '),
         read: 'Mora hat ein Signal aus deinem Workspace erkannt.',
         next: 'Oeffne den betroffenen Ort und entscheide, ob daraus eine Aufgabe wird.',
-        cta: entityType === 'folder' ? 'Ort oeffnen' : 'Ansehen',
+        cta: entityType === 'folder' ? 'Ort öffnen' : 'Ansehen',
         targetIcon: entityType === 'folder' ? FolderOpen : entityType === 'space' ? Layers3 : MapPin,
       };
   }

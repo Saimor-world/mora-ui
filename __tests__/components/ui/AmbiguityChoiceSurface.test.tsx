@@ -14,10 +14,10 @@ describe('AmbiguityChoiceSurface', () => {
                 label="Mehrere plausible Treffer"
                 body="Aus Dokumentinhalt erkannt"
                 description="Mehrere Ziele passen zum aktuellen Kontext."
-                footer="Waehle den passenden Treffer, bevor Mora etwas oeffnet."
+                footer="Wähle den passenden Treffer, bevor Mora etwas oeffnet."
                 chips={[
                     { label: '/Acme/Operations' },
-                    { label: 'Treffer auswaehlen' },
+                    { label: 'Treffer auswählen' },
                 ]}
                 results={[
                     {
@@ -43,7 +43,7 @@ describe('AmbiguityChoiceSurface', () => {
         expect(screen.getByText('Aus Dokumentinhalt erkannt')).toBeInTheDocument();
         expect(screen.getByText('Mehrere Ziele passen zum aktuellen Kontext.')).toBeInTheDocument();
         expect(screen.getAllByText('/Acme/Operations').length).toBeGreaterThan(0);
-        expect(screen.getByText('Treffer auswaehlen')).toBeInTheDocument();
-        expect(screen.getByText('Waehle den passenden Treffer, bevor Mora etwas oeffnet.')).toBeInTheDocument();
+        expect(screen.getByText('Treffer auswählen')).toBeInTheDocument();
+        expect(screen.getByText('Wähle den passenden Treffer, bevor Mora etwas oeffnet.')).toBeInTheDocument();
     });
 });

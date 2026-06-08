@@ -367,7 +367,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                         ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
                         }`}
-                    title="Naechsten Track waehlen"
+                    title="Nächsten Track wählen"
                 >
                     <SkipForward size={14} />
                 </button>
@@ -500,7 +500,7 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-xs font-medium">{pane.title}</span>
                                     <span className={`mt-0.5 block text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geoeffnet'}
+                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geöffnet'}
                                     </span>
                                 </span>
                             </button>
@@ -892,7 +892,7 @@ export const Dock = () => {
             return {
                 label: 'Bereich',
                 title: activeSpace.name,
-                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
+                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der nächste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
                 actionLabel: 'Im Finder öffnen',
@@ -927,15 +927,15 @@ export const Dock = () => {
             label: 'Universe',
             title: displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: websiteEntryContext
-                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus oeffnest du Dossier, Aufgaben und Arbeitsraeume.'
+                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus öffnest du Dossier, Aufgaben und Arbeitsräume.'
                 : surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
                 : surfaceProfile.isLocalTruthSurface
                     ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
-                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
+                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus wählst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: websiteEntryContext ? 'Dossier oeffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
+            actionLabel: websiteEntryContext ? 'Dossier öffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
             onOpen: () => openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -1140,7 +1140,7 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-team',
-                    label: 'Teamflaeche',
+                    label: 'Teamfläche',
                     description: 'Wechsle direkt zur Team-Oberfläche für diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
@@ -1148,7 +1148,7 @@ export const Dock = () => {
                 {
                     id: 'department-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen und Live-Signale der Abteilung gebuendelt ansehen.',
+                    description: 'Erinnerungen und Live-Signale der Abteilung gebündelt ansehen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },

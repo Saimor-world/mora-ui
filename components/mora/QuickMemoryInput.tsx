@@ -156,7 +156,7 @@ export const QuickMemoryInput: React.FC<Props> = ({ isOpen, onClose }) => {
                                                 value={input}
                                                 onChange={(e) => setInput(e.target.value)}
                                                 onKeyDown={handleKeyDown}
-                                                placeholder={isMissingCompany ? "Bitte erst eine Company auswaehlen" : "Was soll Mora sich merken?"}
+                                                placeholder={isMissingCompany ? "Bitte erst eine Company auswählen" : "Was soll Mora sich merken?"}
                                                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 transition-colors"
                                                 disabled={isSubmitting || isMissingCompany}
                                             />

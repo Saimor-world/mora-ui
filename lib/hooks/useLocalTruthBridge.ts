@@ -119,7 +119,7 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
             setSelectedCoreUrl(null);
             setLastCheckedAt(new Date().toISOString());
             setState('blocked');
-            setError('Lokale Desktop-Instanzen werden von HQ nicht automatisch abgefragt. Nutze eine lokale SAIMOR-Session oder verbinde spaeter den Desktop-Bridge-Agent.');
+            setError('Lokale Desktop-Instanzen werden von HQ nicht automatisch abgefragt. Nutze eine lokale SAIMOR-Session oder verbinde später den Desktop-Bridge-Agent.');
             return;
         }
 
@@ -188,7 +188,7 @@ export function useLocalTruthBridge(overview?: IntegrationsOverview | null): Loc
                 setState('ui_only');
                 setError(shouldProbeLocalCore
                     ? 'Lokale UI antwortet, aber der lokale Core ist noch nicht erreichbar.'
-                    : 'Lokale UI antwortet. Lokalen Core pruefen wir erst, wenn du es bewusst anstoesst.');
+                    : 'Lokale UI antwortet. Lokalen Core prüfen wir erst, wenn du es bewusst anstoesst.');
                 return;
             }
 

@@ -1163,7 +1163,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     }, [renameTarget, renameValue, resolvedCompanyId, queryClient, loadContent, orgUpdateSpace, orgUpdateFolder, orgUpdateNode]);
 
     const handleDelete = useCallback(async () => {
-        if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich loeschen?`)) return;
+        if (!contextMenu?.item || !confirm(`${contextMenu.item.name || contextMenu.item.title} wirklich löschen?`)) return;
         const companyId = resolvedCompanyId ?? '';
         try {
             if (contextMenu.item.type === 'space') {
@@ -1207,7 +1207,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                 // Move
                 if (clipboard.item.type === 'folder' || clipboard.item.type === 'space') {
                     // Folder move not fully supported in pure API yet without parent update
-                    toast.info("Ordner koennen hier noch nicht verschoben werden");
+                    toast.info("Ordner können hier noch nicht verschoben werden");
                 } else {
                     await orgUpdateNode(clipboard.id, { folder_id: targetFolderId || undefined });
                     toast.success('Element verschoben');
@@ -1215,7 +1215,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             } else {
                 // Copy (Duplicate) - Requires creating new node
                 if (['folder', 'space', 'department'].includes(clipboard.item.type)) {
-                    toast.info("Ordner koennen hier noch nicht dupliziert werden");
+                    toast.info("Ordner können hier noch nicht dupliziert werden");
                 } else {
                     if (!resolvedCompanyId) {
                         toast.error('Bitte zuerst eine Organisation wählen.');
@@ -1235,7 +1235,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             }
             void loadContent();
             setClipboard(null);
-        } catch (e: any) { toast.error(e.message || 'Einfuegen fehlgeschlagen'); }
+        } catch (e: any) { toast.error(e.message || 'Einfügen fehlgeschlagen'); }
         setContextMenu(null);
     }, [clipboard, currentFolderId, resolvedCompanyId, queryClient, loadContent, orgUpdateNode]);
 
@@ -1315,7 +1315,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                 ? 'Datei ist jetzt im Workspace sichtbar'
                 : 'Datei ist wieder nur fuer dich sichtbar');
         } catch (error: any) {
-            toast.error(error?.message || 'Sichtbarkeit konnte nicht geaendert werden');
+            toast.error(error?.message || 'Sichtbarkeit konnte nicht geändert werden');
         } finally {
             setContextMenu(null);
         }
@@ -1412,7 +1412,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         setIsUploading(true);
         setUploadProgress({ current: 0, total: fileList.length, filename: fileList[0]?.name || 'file' });
 
-        // P6: Orb reacts - thinking (lila) waehrend Upload
+        // P6: Orb reacts - thinking (lila) während Upload
         setThinking();
 
         // P6: Timeline event - intake started (P2-Pattern)
@@ -1956,7 +1956,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             <button
                                 onClick={navigateForward}
                                 disabled={forwardStack.length === 0}
-                                aria-label="Vorwaerts"
+                                aria-label="Vorwärts"
                                 className={`p-1.5 rounded-lg border transition-colors ${forwardStack.length > 0 ? 'border-white/10 text-white/60 hover:text-white hover:bg-white/5' : 'border-white/5 text-white/20 cursor-not-allowed'}`}
                                 title="Vorwärts (Alt+Rechts)"
                             >
@@ -2117,7 +2117,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                 ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20'
                                                 : 'text-white/45 hover:text-white/75'
                                         }`}
-                                        title={`Kartengroesse: ${label}`}
+                                        title={`Kartengrösse: ${label}`}
                                     >
                                         <span className={`rounded-sm border ${density === 'compact' ? 'h-2.5 w-2.5' : density === 'cozy' ? 'h-3 w-3' : 'h-3.5 w-3.5'} ${cardDensity === density ? 'border-black/30 bg-black/20' : 'border-white/20 bg-white/10'}`} />
                                         {label}
@@ -2839,7 +2839,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         tone={pendingAction.route_resolution === 'choose' ? 'amber' : 'cyan'}
                                         label={pendingAction.next.label || 'Nächster Schritt'}
                                         title={pendingAction.route_summary || buildRoutePath(pendingAction.intake_context)}
-                                        body={pendingAction.next.message || 'Pruefe die Einordnung und bestätige oder korrigiere das Ziel.'}
+                                        body={pendingAction.next.message || 'Prüfe die Einordnung und bestätige oder korrigiere das Ziel.'}
                                         className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
                                     />
                                 )}
@@ -2907,7 +2907,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         }
                                     }}
                                     onDismiss={() => {
-                                        // P6: "Spaeter" - dismiss UI without policy reject
+                                        // P6: "Später" - dismiss UI without policy reject
                                         // Pending stays pending (token still valid for 5 min)
                                         setPendingAction(null);
                                         setIdle();
@@ -3022,7 +3022,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     </button>
                                     {clipboard && (
                                         <button onClick={handlePaste} className="w-full text-left px-3 py-1.5 hover:bg-emerald-500/20 hover:text-emerald-400 flex items-center gap-2">
-                                            <Clipboard size={14} /> Element einfuegen
+                                            <Clipboard size={14} /> Element einfügen
                                         </button>
                                     )}
                                     {currentLevelType === 'space' && (

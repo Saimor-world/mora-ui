@@ -138,7 +138,7 @@ export const RssIntegration: React.FC = () => {
                     </div>
                     {feeds.length === 0 ? (
                         <p className="text-xs leading-relaxed text-white/42">
-                            Noch keine Feed-Quelle verbunden. Fuege zuerst einen RSS- oder Atom-Link hinzu.
+                            Noch keine Feed-Quelle verbunden. Füge zuerst einen RSS- oder Atom-Link hinzu.
                         </p>
                     ) : (
                         <div className="space-y-2">

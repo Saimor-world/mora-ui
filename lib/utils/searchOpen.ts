@@ -437,8 +437,8 @@ export async function openSearchResult(
     switch (result.type) {
         case 'department':
             surfaceNavigationOutcome({
-                title: 'Bereich geoeffnet',
-                message: `Ich habe ${result.title} im aktuellen Organisationskontext geoeffnet.`,
+                title: 'Bereich geöffnet',
+                message: `Ich habe ${result.title} im aktuellen Organisationskontext geöffnet.`,
                 targetType: 'department',
                 label: result.title,
                 path: result.path,
@@ -449,8 +449,8 @@ export async function openSearchResult(
             return;
         case 'space':
             surfaceNavigationOutcome({
-                title: 'Bereich geoeffnet',
-                message: `Ich habe ${result.title} im aktuellen Organisationskontext geoeffnet.`,
+                title: 'Bereich geöffnet',
+                message: `Ich habe ${result.title} im aktuellen Organisationskontext geöffnet.`,
                 targetType: 'space',
                 label: result.title,
                 path: result.path,
@@ -461,8 +461,8 @@ export async function openSearchResult(
             return;
         case 'folder':
             surfaceNavigationOutcome({
-                title: 'Ordner geoeffnet',
-                message: `Ich habe ${result.title} im Finder geoeffnet.`,
+                title: 'Ordner geöffnet',
+                message: `Ich habe ${result.title} im Finder geöffnet.`,
                 targetType: 'folder',
                 label: result.title,
                 path: result.path,
@@ -485,10 +485,10 @@ export async function openSearchResult(
                 }
             }
             surfaceNavigationOutcome({
-                title: 'Datei geoeffnet',
+                title: 'Datei geöffnet',
                 message: resolvedFolderId
-                    ? `Ich habe ${result.title} im Finder-Kontext und als Dokument geoeffnet.`
-                    : `Ich habe ${result.title} als Dokument geoeffnet.`,
+                    ? `Ich habe ${result.title} im Finder-Kontext und als Dokument geöffnet.`
+                    : `Ich habe ${result.title} als Dokument geöffnet.`,
                 targetType: 'node',
                 label: result.title,
                 path: result.path,

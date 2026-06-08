@@ -281,7 +281,7 @@ export default function UsersApp({ paneId }: AppProps) {
                             <Users size={34} className="mb-3 text-emerald-300/45" />
                             <p className="text-sm text-emerald-50/85">Keine passenden Benutzer</p>
                             <p className="mt-2 text-xs leading-relaxed text-white/40">
-                                Passe Suche oder Filter an. Admins koennen neue Mitglieder direkt in diese Instanz einladen.
+                                Passe Suche oder Filter an. Admins können neue Mitglieder direkt in diese Instanz einladen.
                             </p>
                             {isAdmin && (
                                 <button
