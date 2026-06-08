@@ -5,6 +5,8 @@ import { FileText, Plug, Sparkles, Users } from 'lucide-react';
 import { getUserColorHex } from '@/lib/utils/userColors';
 import type { PeerUser } from '@/lib/hooks/usePresence';
 import type { ConnectorStatus, OpenFlowSignal } from '@/lib/openflow/types';
+import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
+import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 
 export interface DepartmentRecentDoc {
   id: string;
@@ -18,6 +20,8 @@ interface DepartmentViewProps {
   recentDocs: DepartmentRecentDoc[];
   suggestions: OpenFlowSignal[];
   connectors: ConnectorStatus[];
+  incidentPanels?: IncidentStatusPanelData[];
+  hasUnscopedIncidents?: boolean;
   onOpenDoc?: (id: string) => void;
 }
 
@@ -41,14 +45,29 @@ function Empty({ children }: { children: React.ReactNode }) {
   );
 }
 
+function isVisibleIncidentPanel(panel: IncidentStatusPanelData): boolean {
+  return Boolean(
+    panel.type === 'incident_status'
+    && panel.state === 'verified'
+    && panel.source === 'nightwatch'
+    && panel.source_type === 'nightwatch.incident'
+    && panel.evidence?.length
+    && panel.evidence.every((item) => item.source && item.source_type && item.reason)
+  );
+}
+
 export function DepartmentView({
   departmentName,
   peers,
   recentDocs,
   suggestions,
   connectors,
+  incidentPanels = [],
+  hasUnscopedIncidents = false,
   onOpenDoc,
 }: DepartmentViewProps) {
+  const visibleIncidentPanels = incidentPanels.filter(isVisibleIncidentPanel).slice(0, 2);
+
   return (
     <section data-testid="department-view" className="relative mx-auto flex h-full w-full max-w-[1500px] flex-col gap-5 px-6 pb-28 pt-24">
       <header>
@@ -57,6 +76,20 @@ export function DepartmentView({
         </div>
         <h1 className="text-3xl font-light tracking-[-0.01em] text-white">{departmentName}</h1>
       </header>
+
+      {(visibleIncidentPanels.length > 0 || hasUnscopedIncidents) && (
+        <section data-testid="department-view-incident-context" className="grid gap-3">
+          {visibleIncidentPanels.length > 0 ? (
+            visibleIncidentPanels.map((panel) => (
+              <IncidentStatusPanel key={panel.id} panel={panel} />
+            ))
+          ) : (
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 text-sm leading-relaxed text-white/46">
+              Globale Systemsignale vorhanden, aber keinem Bereich belegbar zugeordnet.
+            </div>
+          )}
+        </section>
+      )}
 
       <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-2">
         <Pillar icon={<Users size={16} className="text-emerald-200/70" />} title="Team online">

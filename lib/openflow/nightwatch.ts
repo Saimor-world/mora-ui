@@ -12,6 +12,10 @@ export interface NightwatchIncidentItem {
     host?: string;
     detected_at?: string;
     updated_at?: string;
+    department_id?: string;
+    affected_department_id?: string;
+    node_id?: string;
+    relatedNodeIds?: string[];
 }
 
 const RESOLVED = new Set(['resolved', 'dismissed', 'closed']);

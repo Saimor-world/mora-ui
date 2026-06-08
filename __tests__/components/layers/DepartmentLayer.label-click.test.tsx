@@ -1,11 +1,42 @@
 import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
+import type { IncidentStatusPanel } from '@/lib/panel/types';
 
 const mockNavigateToSpace = jest.fn();
 const mockSetActiveSpace = jest.fn();
 const mockOpenPane = jest.fn();
 const mockInvalidateQueries = jest.fn();
+
+const incidentPanel = (overrides: Partial<IncidentStatusPanel> = {}): IncidentStatusPanel => ({
+    id: 'incident-status-incident-1',
+    type: 'incident_status',
+    state: 'verified',
+    source: 'nightwatch',
+    source_type: 'nightwatch.incident',
+    timestamp: '2026-06-08T08:00:00Z',
+    confidence: 'verified',
+    reason: 'Open tenant-scoped Nightwatch incident node exists in CORE.',
+    evidence: [
+        {
+            source: 'nightwatch',
+            source_type: 'nightwatch.incident',
+            status: 'verified',
+            confidence: 'verified',
+            reason: 'CORE returned this incident through the tenant-scoped Nightwatch incidents endpoint.',
+            timestamp: '2026-06-08T08:00:00Z',
+        },
+    ],
+    payload: {
+        incident_id: 'incident-1',
+        title: 'Operations incident',
+        summary: 'HTTP 502',
+        severity: 'critical',
+        status: 'open',
+        host: 'api.saimor.world',
+    },
+    ...overrides,
+});
 
 jest.mock('@/lib/store/navStore', () => ({
     useNavStore: () => ({
@@ -128,5 +159,28 @@ describe('DepartmentLayer space-label navigation', () => {
         expect(mockOpenPane).toHaveBeenCalledWith(
             expect.objectContaining({ id: 'finder-main', type: 'finder' })
         );
+    });
+
+    it('renders evidence-bound incident panels in the department context', () => {
+        render(<DepartmentLayer incidentPanels={[incidentPanel()]} />);
+
+        expect(screen.getByTestId('department-incident-context')).toBeTruthy();
+        expect(screen.getByTestId('incident-status-panel')).toBeTruthy();
+        expect(screen.getByText('Operations incident')).toBeTruthy();
+    });
+
+    it('does not render evidence-less incident panels as department truth', () => {
+        render(<DepartmentLayer incidentPanels={[incidentPanel({ evidence: [] })]} />);
+
+        expect(screen.queryByTestId('incident-status-panel')).toBeNull();
+        expect(screen.getByText('Keine belegten Bereichssignale.')).toBeTruthy();
+    });
+
+    it('shows an honest unscoped incident note without opening Nightwatch', () => {
+        render(<DepartmentLayer hasUnscopedIncidents />);
+
+        expect(screen.queryByTestId('incident-status-panel')).toBeNull();
+        expect(screen.getByText('Globale Systemsignale vorhanden, aber keinem Bereich belegbar zugeordnet.')).toBeTruthy();
+        expect(mockOpenPane).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'nightwatch' }));
     });
 });

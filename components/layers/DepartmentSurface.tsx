@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { LayoutGrid, Orbit } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -10,6 +10,9 @@ import { usePresence } from '@/lib/hooks/usePresence';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { DepartmentView } from '@/components/home/DepartmentView';
 import { selectRecentDepartmentDocs } from '@/lib/openflow/departmentContext';
+import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
+import { nightwatchIncidentsToIncidentStatusPanels, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { ConnectorStatus, OpenFlowSignal } from '@/lib/openflow/types';
 
 type SurfaceMode = 'map' | 'overview';
@@ -29,6 +32,23 @@ export const DepartmentSurface: React.FC = () => {
 
   const { data: departments = [] } = useDepartments(activeCompanyId);
   const { data: treeData = [] } = useTree(activeCompanyId);
+  const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetchNightwatchIncidents()
+      .then((incidents) => {
+        if (!cancelled) setNightwatchIncidents(incidents ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setNightwatchIncidents([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCompanyId]);
 
   const departmentName = useMemo(
     () => (Array.isArray(departments) ? departments : []).find((d) => d.id === activeDepartmentId)?.name || 'Abteilung',
@@ -39,6 +59,22 @@ export const DepartmentSurface: React.FC = () => {
     () => (activeDepartmentId ? selectRecentDepartmentDocs(Array.isArray(treeData) ? treeData : [], activeDepartmentId, 6) : []),
     [treeData, activeDepartmentId],
   );
+
+  const globalIncidentPanels = useMemo(
+    () => nightwatchIncidentsToIncidentStatusPanels(nightwatchIncidents),
+    [nightwatchIncidents],
+  );
+
+  const departmentIncidentPanels = useMemo(() => {
+    const scopedIncidents = filterIncidentsForDepartment(
+      nightwatchIncidents,
+      activeDepartmentId,
+      Array.isArray(treeData) ? treeData : [],
+    );
+    return nightwatchIncidentsToIncidentStatusPanels(scopedIncidents);
+  }, [activeDepartmentId, nightwatchIncidents, treeData]);
+
+  const hasGlobalIncidentsWithoutDepartmentEvidence = globalIncidentPanels.length > 0 && departmentIncidentPanels.length === 0;
 
   // Honest empty states until these sources are wired (project rule: no mock data).
   const suggestions: OpenFlowSignal[] = [];
@@ -68,7 +104,10 @@ export const DepartmentSurface: React.FC = () => {
       </div>
 
       {mode === 'map' ? (
-        <DepartmentLayer />
+        <DepartmentLayer
+          incidentPanels={departmentIncidentPanels}
+          hasUnscopedIncidents={hasGlobalIncidentsWithoutDepartmentEvidence}
+        />
       ) : (
         <div className="h-full w-full overflow-y-auto">
           <DepartmentView
@@ -77,6 +116,8 @@ export const DepartmentSurface: React.FC = () => {
             recentDocs={recentDocs}
             suggestions={suggestions}
             connectors={connectors}
+            incidentPanels={departmentIncidentPanels}
+            hasUnscopedIncidents={hasGlobalIncidentsWithoutDepartmentEvidence}
             onOpenDoc={(id) => {
               const doc = recentDocs.find((d) => d.id === id);
               openPane({

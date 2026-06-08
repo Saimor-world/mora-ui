@@ -16,8 +16,10 @@ import { Folder } from '@/components/mora/Folder';
 import { ArrowLeft, Plus, FileText } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
+import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
+import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
@@ -44,13 +46,32 @@ const getFreshnessWeight = (value?: string | null) => {
     return clamp(1 - days / 28, 0.18, 1);
 };
 
+interface DepartmentLayerProps {
+    incidentPanels?: IncidentStatusPanelData[];
+    hasUnscopedIncidents?: boolean;
+}
+
+function isVisibleIncidentPanel(panel: IncidentStatusPanelData): boolean {
+    return Boolean(
+        panel.type === 'incident_status'
+        && panel.state === 'verified'
+        && panel.source === 'nightwatch'
+        && panel.source_type === 'nightwatch.incident'
+        && panel.evidence?.length
+        && panel.evidence.every((item) => item.source && item.source_type && item.reason)
+    );
+}
+
 /**
  * DEPARTMENT LAYER (L2)
  * Visual language aligned with L1 while staying distinct from L3.
  * Background nebula derives from the active department's semantic colour
  * (via getDeptStyle) so HR looks pink, Tech looks cyan, Management green, etc.
  */
-export const DepartmentLayer: React.FC = () => {
+export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
+    incidentPanels = [],
+    hasUnscopedIncidents = false,
+}) => {
     // Granular store selectors — prevents rerender on unrelated store mutations
     const { activeDepartmentId, activeCompanyId, navigateToExplore, navigateToSpace, navigateToFolder, setActiveSpace } = useNavStore();
     const queryClient = useQueryClient();
@@ -495,6 +516,10 @@ export const DepartmentLayer: React.FC = () => {
         }
         return departmentDocs.length;
     }, [departmentDocsFromApi, departmentDocs.length]);
+    const visibleIncidentPanels = useMemo(
+        () => incidentPanels.filter(isVisibleIncidentPanel).slice(0, 2),
+        [incidentPanels],
+    );
 
     const handleNavigateToExplore = useCallback(() => {
         navigateToExplore();
@@ -666,6 +691,25 @@ export const DepartmentLayer: React.FC = () => {
                         Hover über einen Bereich, um seine wichtigsten Ordner zu sehen und direkt in die Struktur zu springen.
                     </p>
                 )}
+
+                <div data-testid="department-incident-context" className="mt-4 border-t border-white/8 pt-4">
+                    <div className="mb-2 text-[9px] uppercase tracking-[0.18em] text-white/35">
+                        Bereichssignale
+                    </div>
+                    <div className="grid gap-2">
+                        {visibleIncidentPanels.length > 0 ? (
+                            visibleIncidentPanels.map((panel) => (
+                                <IncidentStatusPanel key={panel.id} panel={panel} />
+                            ))
+                        ) : (
+                            <p className="rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[11px] leading-relaxed text-white/42">
+                                {hasUnscopedIncidents
+                                    ? 'Globale Systemsignale vorhanden, aber keinem Bereich belegbar zugeordnet.'
+                                    : 'Keine belegten Bereichssignale.'}
+                            </p>
+                        )}
+                    </div>
+                </div>
             </LayerInsightRail>
 
             <motion.div
