@@ -193,13 +193,12 @@ function ConnectorPill({ connector }: { connector: ConnectorStatus }) {
   const copy = connectorCopy(connector);
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-black/18 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.08] bg-black/18 px-3 py-2" title={copy.detail}>
+      <div className="flex min-w-0 items-baseline gap-2">
         <span className="text-xs font-medium text-white/75">{connector.label}</span>
-        <span className={good ? 'h-2 w-2 rounded-full bg-emerald-300' : 'h-2 w-2 rounded-full bg-amber-300'} />
+        <span className="truncate text-[10px] uppercase tracking-[0.12em] text-white/34">{copy.state}</span>
       </div>
-      <div className="mt-1 text-[10px] uppercase tracking-[0.13em] text-white/34">{copy.state}</div>
-      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/42">{copy.detail}</p>
+      <span className={good ? 'h-2 w-2 shrink-0 rounded-full bg-emerald-300' : 'h-2 w-2 shrink-0 rounded-full bg-amber-300'} />
     </div>
   );
 }
