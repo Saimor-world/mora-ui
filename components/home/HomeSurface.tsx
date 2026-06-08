@@ -809,7 +809,8 @@ export const HomeSurface: React.FC = () => {
             {!websiteEntryContext && (
                 <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-36 z-[1] overflow-y-auto pr-1 lg:left-[392px] lg:right-6 lg:top-44"
+                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-36 z-[1] overflow-y-auto pr-2 pb-4 lg:left-[392px] lg:right-6 lg:top-44"
+                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}
                 >
                     <OpenFlowLagebild
                         view={openFlowView}
@@ -819,7 +820,7 @@ export const HomeSurface: React.FC = () => {
                 </div>
             )}
 
-            <div className="absolute left-6 top-24 w-[min(360px,calc(100vw-2rem))] max-h-[calc(100vh-11rem)] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.35) transparent' }}>
+            <div className="pointer-events-auto absolute left-6 top-24 bottom-28 w-[min(360px,calc(100vw-2rem))] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}>
                 <div
                     data-testid="briefing-strip"
                     className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
