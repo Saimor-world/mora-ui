@@ -178,13 +178,13 @@ function connectorCopy(connector: ConnectorStatus) {
       state: connector.status === 'local' ? 'lokal bereit' : 'liest Signale',
       detail: connector.status === 'local'
         ? 'Lokale OS-Bruecke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
-        : 'Diese Quelle liefert belegte Signale fuer MORA.',
+        : 'Diese Quelle liefert belegte Signale für MORA.',
     };
   }
 
   return {
     state: 'im Dashboard einrichten',
-    detail: 'Diese Quelle wird nicht hier konfiguriert. Das gehoert in den OS-Bereich des Dashboards.',
+    detail: 'Diese Quelle wird nicht hier konfiguriert. Das gehört in den OS-Bereich des Dashboards.',
   };
 }
 
@@ -287,7 +287,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             Lagebild
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/58">
-            Veraenderungen, Menschen und belegte Quellen wachsen zu einem lebenden Organisationsgedaechtnis.
+            Veränderungen, Menschen und belegte Quellen wachsen zu einem lebenden Organisationsgedächtnis.
           </p>
         </div>
         <button
@@ -296,7 +296,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
           className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/16 bg-cyan-300/[0.07] px-4 py-2.5 text-sm text-cyan-50/75 hover:bg-cyan-300/[0.12]"
         >
           <Network size={16} />
-          Karte oeffnen
+          Karte öffnen
         </button>
       </div>
 
@@ -306,7 +306,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
         <div className="rounded-xl border border-emerald-200/[0.10] bg-black/24 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
           <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
             <Activity size={16} className="text-cyan-200/70" />
-            Was hat sich veraendert?
+            Was hat sich verändert?
           </div>
           <div className="grid gap-3">
             {changed.length > 0 ? (
@@ -338,13 +338,13 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
           <div className="rounded-xl border border-cyan-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
               <ArrowRight size={16} className="text-emerald-200/70" />
-              Naechster sinnvoller Schritt
+              Nächster sinnvoller Schritt
             </div>
             <div className="grid gap-3">
               {nextSteps.length > 0 ? (
                 nextSteps.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
               ) : nextStepsUnknown ? (
-                <EmptyState>Noch kein belegter naechster Schritt.</EmptyState>
+                <EmptyState>Noch kein belegter nächster Schritt.</EmptyState>
               ) : (
                 <EmptyState>MORA wartet auf neue Signale aus Quellen oder Arbeit.</EmptyState>
               )}
@@ -393,8 +393,8 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             </div>
             <p className="mb-3 text-xs leading-relaxed text-white/44">
               {hideRuntimePlaceholder || runtimeUnknown
-                ? 'Status noch unbekannt. Home zeigt nur Quellen, fuer die CORE belegte Signale liefern kann.'
-                : 'Home nutzt nur die Signale, die fuer Orientierung belegbar sind.'}
+                ? 'Status noch unbekannt. Home zeigt nur Quellen, für die CORE belegte Signale liefern kann.'
+                : 'Home nutzt nur die Signale, die für Orientierung belegbar sind.'}
             </p>
             {connectorHandshakeUnknown ? (
               <div className="mb-3 rounded-xl border border-amber-200/10 bg-amber-300/[0.05] px-3 py-2 text-xs text-amber-50/56">

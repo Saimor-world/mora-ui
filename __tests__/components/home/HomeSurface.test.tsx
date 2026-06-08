@@ -177,18 +177,18 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
         home_truth: { changes: [], attention: [], next_steps: [] },
         runtime: { status: 'unknown', evidence: [] },
         home_cards: {
-            verified: [{ id: 'changes', label: 'Was hat sich veraendert?', source: 'mindloop_events' }],
+            verified: [{ id: 'changes', label: 'Was hat sich verändert?', source: 'mindloop_events' }],
             placeholder: [
-                { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-                { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+                { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+                { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
                 { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
                 { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
             ],
-            unknown: [{ id: 'next_steps', label: 'Naechster echter Schritt', reason: 'No tenant-scoped task node is available' }],
+            unknown: [{ id: 'next_steps', label: 'Nächster echter Schritt', reason: 'No tenant-scoped task node is available' }],
         },
         placeholders_detected: [
-            { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-            { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
             { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
             { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
         ],
@@ -223,11 +223,11 @@ describe('HomeSurface — rendering', () => {
         renderWithDepts();
         await waitFor(() => expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument());
 
-        expect(screen.queryByText('Mail fuer OpenClaw vorbereiten')).not.toBeInTheDocument();
-        expect(screen.queryByText('Kalender fuer OpenClaw vorbereiten')).not.toBeInTheDocument();
+        expect(screen.queryByText('Mail für OpenClaw vorbereiten')).not.toBeInTheDocument();
+        expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
         expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
-        expect(screen.getByText('Noch kein belegter naechster Schritt.')).toBeInTheDocument();
+        expect(screen.getByText('Noch kein belegter nächster Schritt.')).toBeInTheDocument();
         expect(screen.getByText('Setup-Zustand nicht belegbar.')).toBeInTheDocument();
     });
 

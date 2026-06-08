@@ -613,7 +613,7 @@ export const HomeSurface: React.FC = () => {
                 : overlayRecentActivityItems[0]
                     ? `${kindLabel(overlayRecentActivityItems[0].kind)} · ${relativeTime(new Date(overlayRecentActivityItems[0].openedAt).toISOString())}`
                     : hasCommunicationSignal
-                        ? 'Post, Kalender oder Feeds haben neue Daten fuer dich vorbereitet.'
+                        ? 'Post, Kalender oder Feeds haben neue Daten für dich vorbereitet.'
                         : 'Home zeigt nur den Einstieg: was offen ist, wo du weiterarbeiten kannst und welche echten Signale warten.';
     const displayCompanyName = resolveCompanyName(homeView, websiteEntryContext);
 
@@ -1202,7 +1202,7 @@ export const HomeSurface: React.FC = () => {
                                 icon={<Activity size={14} />}
                                 label="Ruhig"
                                 title="Keine offenen Signale"
-                                detail="Home bleibt leer, bis echte Aktivitaet entsteht."
+                                detail="Home bleibt leer, bis echte Aktivität entsteht."
                                 tone="muted"
                                 onClick={openFinder}
                             />

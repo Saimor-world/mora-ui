@@ -45,13 +45,13 @@ const view: Lagebild = {
       trustScope: 'organization',
       relatedNodeIds: [],
       relatedRelationIds: [],
-      suggestedActions: [{ id: 'flow', label: 'Als Flow oeffnen', kind: 'open_flow' }],
+      suggestedActions: [{ id: 'flow', label: 'Als Flow öffnen', kind: 'open_flow' }],
     },
     {
       id: 'setup-mail',
       source: 'mail',
-      title: 'Mail fuer OpenClaw vorbereiten',
-      summary: 'Setup gehoert in den OS-Bereich des Dashboards.',
+      title: 'Mail für OpenClaw vorbereiten',
+      summary: 'Setup gehört in den OS-Bereich des Dashboards.',
       priority: 'high',
       status: 'new',
       trustScope: 'personal',
@@ -60,7 +60,7 @@ const view: Lagebild = {
       suggestedActions: [
         {
           id: 'mail-connect',
-          label: 'Dashboard oeffnen',
+          label: 'Dashboard öffnen',
           kind: 'connect_source',
           paneType: 'integrations',
           paneData: { focus: 'mail' },
@@ -85,7 +85,7 @@ const view: Lagebild = {
       source: 'mail',
       status: 'connected',
       detail: 'Postfach ist verbunden.',
-      actionLabel: 'Postfach oeffnen',
+      actionLabel: 'Postfach öffnen',
     },
   ],
 };
@@ -94,9 +94,9 @@ describe('OpenFlowLagebild', () => {
   it('renders the three OS questions', () => {
     render(<OpenFlowLagebild view={view} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
 
-    expect(screen.getByText('Was hat sich veraendert?')).toBeInTheDocument();
+    expect(screen.getByText('Was hat sich verändert?')).toBeInTheDocument();
     expect(screen.getByText('Was braucht Aufmerksamkeit?')).toBeInTheDocument();
-    expect(screen.getByText('Naechster sinnvoller Schritt')).toBeInTheDocument();
+    expect(screen.getByText('Nächster sinnvoller Schritt')).toBeInTheDocument();
     expect(screen.getByText('Launch Termin?')).toBeInTheDocument();
   });
 
@@ -259,7 +259,7 @@ describe('OpenFlowLagebild', () => {
     const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
     render(<OpenFlowLagebild view={view} onOpenPane={onOpenPane} onGoExplore={jest.fn()} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dashboard oeffnen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dashboard öffnen' }));
 
     expect(onOpenPane).not.toHaveBeenCalled();
     expect(openSpy).toHaveBeenCalledWith('https://dash.saimor.world', '_blank', 'noopener,noreferrer');
