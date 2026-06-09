@@ -1371,19 +1371,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                             setActivePlanetId(p.id);
                                             setSemanticPreviewPathId(null);
                                             setLockedTooltipDeptId(null);
+                                            // Navigate into the Department layer ONLY. Previously this also
+                                            // opened a 'finder-main' pane on top — which obscured the clean
+                                            // Department layer (the "two layers" bug). The DepartmentLayer
+                                            // renders its own spaces/files view; the finder is reachable by
+                                            // clicking a space inside it, so no redundant auto-pane is needed.
                                             navigateToDepartment(p.id);
-                                            openPane({
-                                                id: 'finder-main',
-                                                type: 'finder',
-                                                title: p.name || 'Bereich',
-                                                data: {
-                                                    departmentId: p.id,
-                                                    departmentName: p.name,
-                                                    companyId: activeCompanyId || p.company_id || undefined,
-                                                    showUpload: true
-                                                },
-                                                size: { width: 1280, height: 820 }
-                                            });
                                         }}
                                         health={health}
                                         activity={activity}
