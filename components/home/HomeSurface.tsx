@@ -881,52 +881,34 @@ export const HomeSurface: React.FC = () => {
 
             {websiteEntryContext && (
             <div className="pointer-events-auto absolute left-6 top-24 bottom-28 w-[min(360px,calc(100vw-2rem))] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}>
-                {/* MÔRA ambient greeting row */}
-                <motion.div
-                    className="flex items-center gap-3 px-1"
-                    initial={{ opacity: 0, y: -8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: 'easeOut' }}
-                >
-                    <MoraOrbSmall />
-                    <div className="min-w-0">
-                        <p className="text-[9px] uppercase tracking-[0.32em] text-violet-300/55">MÔRA</p>
-                        <p className="text-[12px] text-white/65">
-                            {greeting}{firstName ? `, ${firstName}` : '.'} — {absenceFocusLabel}.
-                        </p>
-                    </div>
-                </motion.div>
-
                 <motion.div
                     data-testid="briefing-strip"
-                    initial={{ opacity: 0, y: 14 }}
+                    initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.08, duration: 0.5, ease: 'easeOut' }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
                     className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
                 >
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Mission Control</div>
+                    <div className="flex items-center gap-3">
+                        <MoraOrbSmall />
+                        <div className="min-w-0 flex-1">
                             {isPublicDemoSurface && (
                                 <div
                                     data-testid="demo-mode-chip"
-                                    className="mb-2 mt-1 inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-300/80"
+                                    className="mb-1 inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-500/10 px-2 py-0.5 text-[9px] uppercase tracking-[0.18em] text-violet-300/80"
                                 >
-                                    <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
-                                    Demo-Modus
+                                    <span className="h-1 w-1 rounded-full bg-violet-400 animate-pulse" />
+                                    Demo
                                 </div>
                             )}
-                            <h1 className="mt-2 text-[clamp(18px,2vw,26px)] font-light leading-tight tracking-[-0.02em] text-white/92">
-                                {activeMode === 'personal_demo'
-                                    ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
-                                    : websiteEntryContext
-                                        ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
-                                        : firstName
-                                            ? <><span className="text-white/95">{greeting}</span><span className="text-white/50">, {firstName}.</span></>
-                                            : 'Arbeitsplatz'}
+                            <h1 className="text-[clamp(15px,1.8vw,20px)] font-light leading-tight tracking-[-0.02em] text-white/92">
+                                {websiteEntryContext
+                                    ? <span>{displayCompanyName}</span>
+                                    : firstName
+                                        ? <><span>{greeting}</span><span className="text-white/44">, {firstName}.</span></>
+                                        : 'Workspace'}
                             </h1>
-                            <div className="mt-2 text-[10px] uppercase tracking-[0.18em] text-white/30">{todayLabel}</div>
+                            <div className="mt-0.5 text-[10px] text-white/28">{todayLabel}</div>
                         </div>
                         {/* Hide logout in unauthenticated website preview — no real session to end */}
                         {(!websiteEntryContext || user) && (
