@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, CalendarDays, ExternalLink, Globe, Lock, LogOut, Mail, MessageSquare, Mic, Users, Wrench } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Activity, CalendarDays, ExternalLink, Globe, Lock, LogOut, Mail, MessageSquare, Mic, Sparkles, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
@@ -81,6 +82,32 @@ interface SuggestionItem {
     onClick: () => void;
     actionText: string;
     tone: 'cyan' | 'violet' | 'amber' | 'emerald';
+}
+
+// ─── MÔRA Orb ────────────────────────────────────────────────────────────────
+
+function MoraOrbSmall() {
+    return (
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+            <motion.div
+                className="absolute inset-0 rounded-full bg-violet-500/14"
+                animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+                className="absolute inset-0 rounded-full bg-emerald-400/10"
+                animate={{ scale: [1, 2.1, 1], opacity: [0.3, 0, 0.3] }}
+                transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.8 }}
+            />
+            <motion.div
+                className="relative z-10 flex h-7 w-7 items-center justify-center rounded-full border border-violet-300/24 bg-gradient-to-br from-violet-600/40 to-emerald-600/28"
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            >
+                <Sparkles size={13} className="text-violet-200/88" />
+            </motion.div>
+        </div>
+    );
 }
 
 // ─── component ───────────────────────────────────────────────────────────────
@@ -836,23 +863,45 @@ export const HomeSurface: React.FC = () => {
             )}
 
             {!websiteEntryContext && (
-                <div
+                <motion.div
                     data-testid="openflow-workspace"
                     className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] overflow-y-auto pr-2 pb-4 lg:left-6 lg:right-6 lg:top-36"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.6, ease: 'easeOut' }}
                 >
                     <OpenFlowLagebild
                         view={openFlowView}
                         onOpenPane={openPane}
                         onGoExplore={() => setCoreMode('explore')}
                     />
-                </div>
+                </motion.div>
             )}
 
             {websiteEntryContext && (
             <div className="pointer-events-auto absolute left-6 top-24 bottom-28 w-[min(360px,calc(100vw-2rem))] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}>
-                <div
+                {/* MÔRA ambient greeting row */}
+                <motion.div
+                    className="flex items-center gap-3 px-1"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                >
+                    <MoraOrbSmall />
+                    <div className="min-w-0">
+                        <p className="text-[9px] uppercase tracking-[0.32em] text-violet-300/55">MÔRA</p>
+                        <p className="text-[12px] text-white/65">
+                            {greeting}{firstName ? `, ${firstName}` : '.'} — {absenceFocusLabel}.
+                        </p>
+                    </div>
+                </motion.div>
+
+                <motion.div
                     data-testid="briefing-strip"
+                    initial={{ opacity: 0, y: 14 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.08, duration: 0.5, ease: 'easeOut' }}
                     className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
                 >
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
@@ -868,7 +917,7 @@ export const HomeSurface: React.FC = () => {
                                     Demo-Modus
                                 </div>
                             )}
-                            <h1 className="mt-2 max-w-[18rem] truncate text-[clamp(22px,2vw,28px)] font-light leading-tight tracking-[-0.02em] text-white/92">
+                            <h1 className="mt-2 text-[clamp(18px,2vw,26px)] font-light leading-tight tracking-[-0.02em] text-white/92">
                                 {activeMode === 'personal_demo'
                                     ? <><span className="text-white/95">Willkommen</span><span className="text-white/50"> im HQ.</span></>
                                     : websiteEntryContext
@@ -953,34 +1002,48 @@ export const HomeSurface: React.FC = () => {
                             )}
                         </div>
                     )}
-                </div>
+                </motion.div>
 
                 {/* View-Highlights: Aufmerksamkeit + Nächste Aufgaben aus dem Backend */}
                 <HomeViewHighlights view={homeView} />
 
-                {/* Môras Vorschläge & Tipps — shown in all modes incl. public_playground */}
+                {/* Schnellzugriff — compact icon-action grid replaces old suggestion cards */}
                 {moraSuggestions.length > 0 && (
-                    <div className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 flex flex-col gap-3">
+                    <motion.div
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.22, duration: 0.5, ease: 'easeOut' }}
+                        className="pointer-events-auto relative overflow-hidden glass-card p-4 z-10"
+                    >
                         <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
-                        <div>
-                            <div className="text-[10px] uppercase tracking-[0.22em] text-cyan-100/60">Môras Vorschläge & Tipps</div>
-                            <h2 className="mt-1 text-[14px] font-medium text-white/80">Kontextbezogene Aktionen</h2>
+                        <div className="mb-3 text-[10px] uppercase tracking-[0.24em] text-white/28">Schnellzugriff</div>
+                        <div className="grid grid-cols-3 gap-2">
+                            {moraSuggestions.map((suggestion, i) => {
+                                const toneClass = {
+                                    amber:   'border-amber-300/15 bg-amber-400/[0.07] hover:bg-amber-400/[0.14] hover:border-amber-300/28',
+                                    violet:  'border-violet-300/15 bg-violet-400/[0.07] hover:bg-violet-400/[0.14] hover:border-violet-300/28',
+                                    emerald: 'border-emerald-300/15 bg-emerald-400/[0.07] hover:bg-emerald-400/[0.14] hover:border-emerald-300/28',
+                                    cyan:    'border-cyan-300/15 bg-cyan-400/[0.07] hover:bg-cyan-400/[0.14] hover:border-cyan-300/28',
+                                }[suggestion.tone];
+                                return (
+                                    <motion.button
+                                        key={suggestion.id}
+                                        type="button"
+                                        onClick={suggestion.onClick}
+                                        initial={{ opacity: 0, scale: 0.88 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.28 + i * 0.05, duration: 0.3, ease: 'easeOut' }}
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.94 }}
+                                        className={`flex flex-col items-center gap-1.5 rounded-2xl border p-3 text-center transition-colors ${toneClass}`}
+                                    >
+                                        <span className="opacity-72">{suggestion.icon}</span>
+                                        <span className="text-[10px] leading-snug text-white/68">{suggestion.actionText}</span>
+                                    </motion.button>
+                                );
+                            })}
                         </div>
-
-                        <div className="flex flex-col gap-3">
-                            {moraSuggestions.map((suggestion) => (
-                                <SuggestionCard
-                                    key={suggestion.id}
-                                    title={suggestion.title}
-                                    description={suggestion.description}
-                                    icon={suggestion.icon}
-                                    onClick={suggestion.onClick}
-                                    actionText={suggestion.actionText}
-                                    tone={suggestion.tone}
-                                />
-                            ))}
-                        </div>
-                    </div>
+                    </motion.div>
                 )}
             </div>
             )}
