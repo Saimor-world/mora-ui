@@ -333,32 +333,23 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
         </main>
 
         <aside className="grid content-start gap-4">
-          <section className="rounded-xl border border-white/[0.07] bg-black/16 p-4 backdrop-blur-xl">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
-              <ArrowRight size={16} className="text-emerald-100/58" />
-              Nächster Schritt
-            </div>
-            <div className="grid gap-3">
-              {actionItems.length > 0 ? (
-                actionItems.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
-              ) : nextStepsUnknown ? (
-                <EmptyState>Noch kein belegter nächster Schritt.</EmptyState>
-              ) : (
-                <EmptyState>Keine Aktion nötig.</EmptyState>
-              )}
-            </div>
-          </section>
+          {actionItems.length > 0 && (
+            <section className="rounded-xl border border-white/[0.07] bg-black/16 p-4 backdrop-blur-xl">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
+                <Compass size={16} className="text-cyan-100/58" />
+                MÔRA
+              </div>
+              <div className="grid gap-3">
+                {actionItems.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)}
+              </div>
+            </section>
+          )}
 
           <section className="rounded-xl border border-white/[0.07] bg-black/16 p-4 backdrop-blur-xl">
             <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
               <Plug size={16} className="text-white/46" />
-              Quellen
+              System
             </div>
-            <p className="mb-3 text-xs leading-relaxed text-white/44">
-              {hideRuntimePlaceholder || runtimeUnknown
-                ? 'Einige Systemzustände sind noch nicht belegbar.'
-                : 'Nur belegte Quellen fließen in die Lage ein.'}
-            </p>
             {connectorHandshakeUnknown ? (
               <div className="mb-3 rounded-lg border border-amber-200/10 bg-amber-300/[0.04] px-3 py-2 text-xs text-amber-50/54">
                 Setup-Zustand nicht belegbar.
@@ -367,6 +358,14 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
             <div className="grid gap-2">
               {view.connectors.map((connector) => <ConnectorPill key={connector.id} connector={connector} />)}
             </div>
+            <button
+              type="button"
+              onClick={() => onOpenPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } })}
+              className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/34 transition-colors hover:text-white/58"
+            >
+              <ArrowRight size={11} />
+              Integrationen einrichten
+            </button>
           </section>
         </aside>
       </div>

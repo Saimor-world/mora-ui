@@ -231,7 +231,7 @@ describe('HomeSurface — rendering', () => {
         expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
         expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
-        expect(screen.getByText('Noch kein belegter nächster Schritt.')).toBeInTheDocument();
+        expect(screen.queryByText('Noch kein belegter nächster Schritt.')).not.toBeInTheDocument();
         expect(screen.getByText('Setup-Zustand nicht belegbar.')).toBeInTheDocument();
     });
 

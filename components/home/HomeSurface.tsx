@@ -796,7 +796,7 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
         >
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.04),rgba(5,4,16,0.20))]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.52),rgba(5,4,16,0.74))]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
             {!websiteEntryContext && (

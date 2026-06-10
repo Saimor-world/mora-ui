@@ -96,7 +96,7 @@ describe('OpenFlowLagebild', () => {
 
     expect(screen.getByText('MÔRA Orientierung')).toBeInTheDocument();
     expect(screen.getByText('Belegte Signale')).toBeInTheDocument();
-    expect(screen.getByText('Nächster Schritt')).toBeInTheDocument();
+    expect(screen.getByText('MÔRA')).toBeInTheDocument();
     expect(screen.getByText('Launch Termin?')).toBeInTheDocument();
   });
 
