@@ -796,20 +796,49 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
         >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_38%,rgba(124,58,237,0.12),transparent_32%),radial-gradient(circle_at_78%_28%,rgba(34,211,238,0.09),transparent_24%),linear-gradient(180deg,rgba(5,4,16,0.04),rgba(5,4,16,0.26))]" />
-            <div className="absolute left-1/2 top-1/2 h-[min(86vw,86vh)] w-[min(86vw,86vh)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100/[0.045]" />
-            <div className="absolute left-1/2 top-1/2 h-[min(58vw,58vh)] w-[min(58vw,58vh)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-violet-200/[0.06]" />
-            <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-cyan-100/12 to-transparent" />
-            <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.025)_1px,transparent_1px),linear-gradient(180deg,rgba(255,255,255,0.018)_1px,transparent_1px)] bg-[size:72px_72px] opacity-20" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.52),rgba(5,4,16,0.74))]" />
+            <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-            {/* Glowing backing orbs for premium wow effect */}
-            <div className="absolute left-[-120px] top-[15%] h-[380px] w-[380px] rounded-full bg-violet-600/[0.11] blur-[110px] pointer-events-none animate-pulse" style={{ animationDuration: '8s' }} />
-            <div className="absolute left-[160px] top-[35%] h-[320px] w-[320px] rounded-full bg-cyan-500/[0.08] blur-[95px] pointer-events-none animate-pulse" style={{ animationDuration: '12s' }} />
+            {!websiteEntryContext && (
+                <form
+                    action="/api/auth/logout"
+                    method="get"
+                    className="pointer-events-auto absolute right-4 top-24 z-[2] lg:right-6"
+                    onSubmit={() => {
+                        window.setTimeout(() => {
+                            clearClientSessionArtifacts();
+                            logoutAccount();
+                            resetUserState();
+                            setUser(null);
+                            resetStore();
+                        }, 0);
+                    }}
+                >
+                    <button
+                        type="submit"
+                        data-testid="home-logout"
+                        className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.07] bg-white/[0.025] px-2.5 py-1.5 text-[10px] text-white/46 transition-colors hover:border-white/14 hover:bg-white/[0.055] hover:text-white/74"
+                    >
+                        <LogOut size={13} />
+                        Abmelden
+                    </button>
+                </form>
+            )}
+
+            {!websiteEntryContext && isPublicDemoSurface && (
+                <div
+                    data-testid="demo-mode-chip"
+                    className="pointer-events-auto absolute right-4 top-[6.5rem] z-[2] lg:right-[7.5rem] inline-flex items-center gap-1.5 rounded-full border border-violet-400/25 bg-violet-500/10 px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] text-violet-300/80"
+                >
+                    <span className="h-1.5 w-1.5 rounded-full bg-violet-400 animate-pulse" />
+                    Demo-Modus
+                </div>
+            )}
 
             {!websiteEntryContext && (
                 <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-36 z-[1] overflow-y-auto pr-2 pb-4 lg:left-[392px] lg:right-6 lg:top-44"
+                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] overflow-y-auto pr-2 pb-4 lg:left-6 lg:right-6 lg:top-36"
                     style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}
                 >
                     <OpenFlowLagebild
@@ -820,6 +849,7 @@ export const HomeSurface: React.FC = () => {
                 </div>
             )}
 
+            {websiteEntryContext && (
             <div className="pointer-events-auto absolute left-6 top-24 bottom-28 w-[min(360px,calc(100vw-2rem))] overflow-y-auto pr-2 pb-4 flex flex-col gap-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}>
                 <div
                     data-testid="briefing-strip"
@@ -953,8 +983,10 @@ export const HomeSurface: React.FC = () => {
                     </div>
                 )}
             </div>
+            )}
 
-            <section className={`absolute left-[400px] right-[360px] top-[148px] bottom-[184px] items-center justify-center 2xl:right-[390px] ${websiteEntryContext ? 'hidden xl:flex' : 'hidden'}`}>
+            {websiteEntryContext && (
+            <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center 2xl:right-[390px] xl:flex">
                 <div className="pointer-events-auto relative w-full max-w-[690px]">
                     <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
@@ -1116,8 +1148,10 @@ export const HomeSurface: React.FC = () => {
                     </div>
                 </div>
             </section>
+            )}
 
-            <aside className={`absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10 ${websiteEntryContext ? '' : 'hidden'}`}>
+            {websiteEntryContext && (
+            <aside className="absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10">
                 <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden glass-card p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30)]">
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">
@@ -1226,6 +1260,7 @@ export const HomeSurface: React.FC = () => {
                     </div>
                 </div>
             </aside>
+            )}
         </div>
     );
 };

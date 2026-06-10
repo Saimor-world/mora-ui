@@ -94,6 +94,10 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
+jest.mock('@/lib/api/nightwatchClient', () => ({
+    fetchNightwatchIncidents: jest.fn().mockResolvedValue([]),
+}));
+
 // ── stable module-level refs ─────────────────────────────────────────────
 
 const STABLE_DEPTS = [
@@ -205,7 +209,7 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 describe('HomeSurface — rendering', () => {
     it('frames Home as immersive OpenFlow Lagebild', () => {
         renderWithDepts();
-        expect(screen.getByTestId('openflow-workspace')).toHaveClass('lg:left-[392px]');
+        expect(screen.getByTestId('openflow-workspace')).toHaveClass('lg:left-6');
         expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
         expect(screen.getByText('Lagebild')).toBeInTheDocument();
     });
@@ -227,7 +231,7 @@ describe('HomeSurface — rendering', () => {
         expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
         expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
-        expect(screen.getByText('Noch kein belegter nächster Schritt.')).toBeInTheDocument();
+        expect(screen.queryByText('Noch kein belegter nächster Schritt.')).not.toBeInTheDocument();
         expect(screen.getByText('Setup-Zustand nicht belegbar.')).toBeInTheDocument();
     });
 
@@ -244,10 +248,10 @@ describe('HomeSurface — rendering', () => {
         expect(screen.getByTestId('home-logout')).toBeInTheDocument();
     });
 
-    it('opens Mora Field from the Voice Room suggestion even when browser speech support is unavailable', () => {
+    it('does not render old Voice Room suggestions in the default Lagebild', () => {
         renderWithDepts();
-        fireEvent.click(screen.getByRole('button', { name: 'Voice Room' }));
-        expect(navigateToAmbient).toHaveBeenCalled();
+        expect(screen.queryByRole('button', { name: 'Voice Room' })).not.toBeInTheDocument();
+        expect(navigateToAmbient).not.toHaveBeenCalled();
     });
 
     it('surfaces stored website entry context as the current OS focus', async () => {
@@ -312,14 +316,14 @@ describe('HomeSurface — rendering', () => {
 // ── briefing strip ─────────────────────────────────────────────────────────
 
 describe('HomeSurface — Mora Briefing Strip', () => {
-    it('renders the briefing strip', () => {
+    it('does not render the old briefing strip in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('briefing-strip')).toBeInTheDocument();
+        expect(screen.queryByTestId('briefing-strip')).not.toBeInTheDocument();
     });
 
-    it('renders briefing text from buildBriefing()', () => {
+    it('does not render briefing text in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('briefing-text')).toHaveTextContent('R&D ist aktiv — 3 Inhalte.');
+        expect(screen.queryByTestId('briefing-text')).not.toBeInTheDocument();
     });
 
     it('calls buildBriefing with departments and treeData from store', () => {
@@ -332,15 +336,15 @@ describe('HomeSurface — Mora Briefing Strip', () => {
 // ── dept pulse tiles ───────────────────────────────────────────────────────
 
 describe('HomeSurface — Department Pulse Tiles', () => {
-    it('renders dept-pulse-tiles when departments are present', () => {
+    it('does not render dept-pulse-tiles in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('dept-pulse-tiles')).toBeInTheDocument();
+        expect(screen.queryByTestId('dept-pulse-tiles')).not.toBeInTheDocument();
     });
 
-    it('renders a tile per department (up to 6)', () => {
+    it('does not render a tile per department in default Home', () => {
         renderWithDepts();
         depts.forEach((d) => {
-            expect(screen.getByTestId(`dept-tile-${d.id}`)).toBeInTheDocument();
+            expect(screen.queryByTestId(`dept-tile-${d.id}`)).not.toBeInTheDocument();
         });
     });
 
@@ -349,44 +353,37 @@ describe('HomeSurface — Department Pulse Tiles', () => {
         expect(screen.queryByTestId('dept-pulse-tiles')).not.toBeInTheDocument();
     });
 
-    it('active dept tile shows Inhalte count', () => {
+    it('does not expose active dept pulse counts in default Home', () => {
         renderWithDepts();
-        const tile = screen.getByTestId('dept-tile-dept-rd');
-        expect(tile).toHaveTextContent('3 Inhalte');
+        expect(screen.queryByText('3 Inhalte')).not.toBeInTheDocument();
     });
 
-    it('quiet dept tile shows "ruhig"', () => {
+    it('does not expose quiet dept tile state in default Home', () => {
         renderWithDepts();
-        const tile = screen.getByTestId('dept-tile-dept-product');
-        expect(tile).toHaveTextContent('ruhig');
+        expect(screen.queryByTestId('dept-tile-dept-product')).not.toBeInTheDocument();
     });
 
-    it('clicking a dept tile opens finder with departmentId', () => {
+    it('cannot open finder through old dept tiles in default Home', () => {
         renderWithDepts();
-        fireEvent.click(screen.getByTestId('dept-tile-dept-rd'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'finder',
-                data: expect.objectContaining({ departmentId: 'dept-rd' }),
-            })
-        );
+        expect(screen.queryByTestId('dept-tile-dept-rd')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 });
 
 // ── zuletzt berührt ────────────────────────────────────────────────────────
 
 describe('HomeSurface — Zuletzt berührt', () => {
-    it('always renders the recent-items section', () => {
+    it('does not render the old recent-items section in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('recent-items-section')).toBeInTheDocument();
+        expect(screen.queryByTestId('recent-items-section')).not.toBeInTheDocument();
     });
 
-    it('shows empty state when activityStore is empty', () => {
+    it('does not render the old recent-items empty state in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('recent-items-empty')).toBeInTheDocument();
+        expect(screen.queryByTestId('recent-items-empty')).not.toBeInTheDocument();
     });
 
-    it('renders activity items from activityStore', async () => {
+    it('does not render activity items from activityStore in default Home', () => {
         useActivityStore.setState({
             recentItems: [
                 { id: 'doc-1', label: 'Projektplan Q2.md', openedAt: Date.now() - 7200000, paneType: 'document', paneData: { nodeId: 'doc-1' } },
@@ -395,15 +392,12 @@ describe('HomeSurface — Zuletzt berührt', () => {
         } as any);
 
         renderWithDepts();
-        await waitFor(() => {
-            const items = screen.getAllByTestId('recent-item');
-            expect(items).toHaveLength(2);
-            expect(screen.getByText('Projektplan Q2.md')).toBeInTheDocument();
-            expect(items[1]).toHaveTextContent('Finder');
-        });
+        expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
+        expect(screen.queryByText('Projektplan Q2.md')).not.toBeInTheDocument();
+        expect(screen.queryByText('Finder')).not.toBeInTheDocument();
     });
 
-    it('shows at most 3 recent items (overlay cap)', async () => {
+    it('does not expose recent item caps in default Home', () => {
         const manyItems = Array.from({ length: 8 }, (_, i) => ({
             id: `item-${i}`,
             label: `Item ${i}`,
@@ -414,13 +408,10 @@ describe('HomeSurface — Zuletzt berührt', () => {
         useActivityStore.setState({ recentItems: manyItems } as any);
 
         renderWithDepts();
-        await waitFor(() => {
-            // Overlay caps recent items at 3 (compact panel design)
-            expect(screen.getAllByTestId('recent-item')).toHaveLength(3);
-        });
+        expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
     });
 
-    it('clicking a document item opens a document pane', async () => {
+    it('cannot open a document pane through old recent items in default Home', () => {
         useActivityStore.setState({
             recentItems: [
                 { id: 'doc-1', label: 'Bericht Q1.md', openedAt: Date.now(), paneType: 'document', paneData: { nodeId: 'doc-1' } },
@@ -428,18 +419,11 @@ describe('HomeSurface — Zuletzt berührt', () => {
         } as any);
 
         renderWithDepts();
-        await waitFor(() => screen.getByText('Bericht Q1.md'));
-        fireEvent.click(screen.getByTestId('recent-item').querySelector('button')!);
-
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'document',
-                data: expect.objectContaining({ nodeId: 'doc-1' }),
-            })
-        );
+        expect(screen.queryByText('Bericht Q1.md')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 
-    it('clicking a finder item opens the finder pane', async () => {
+    it('cannot open the finder pane through old recent items in default Home', () => {
         useActivityStore.setState({
             recentItems: [
                 { id: 'finder-main', label: 'Finder', openedAt: Date.now(), paneType: 'finder' },
@@ -447,58 +431,45 @@ describe('HomeSurface — Zuletzt berührt', () => {
         } as any);
 
         renderWithDepts();
-        await waitFor(() => expect(screen.getByTestId('recent-item')).toHaveTextContent('Finder'));
-        fireEvent.click(screen.getByTestId('recent-item').querySelector('button')!);
-
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'finder' })
-        );
+        expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 });
 
 // ── quick actions ──────────────────────────────────────────────────────────
 
 describe('HomeSurface — Quick Actions', () => {
-    it('renders Finder öffnen button', () => {
+    it('does not render old Finder quick action in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('qa-finder')).toBeInTheDocument();
+        expect(screen.queryByTestId('qa-finder')).not.toBeInTheDocument();
     });
 
-    it('renders Mora fragen button', () => {
+    it('does not render old Mora quick action in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('qa-mora')).toBeInTheDocument();
+        expect(screen.queryByTestId('qa-mora')).not.toBeInTheDocument();
     });
 
-    it('renders Datei hochladen button', () => {
+    it('does not render old upload quick action in default Home', () => {
         renderWithDepts();
-        expect(screen.getByTestId('qa-upload')).toBeInTheDocument();
+        expect(screen.queryByTestId('qa-upload')).not.toBeInTheDocument();
     });
 
-    it('Finder öffnen opens finder-main pane', () => {
+    it('old Finder quick action cannot open a pane in default Home', () => {
         renderWithDepts();
-        fireEvent.click(screen.getByTestId('qa-finder'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'finder', id: 'finder-main' })
-        );
+        expect(screen.queryByTestId('qa-finder')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 
-    it('Mora fragen opens chat-main pane', () => {
+    it('old Mora quick action cannot open a pane in default Home', () => {
         renderWithDepts();
-        fireEvent.click(screen.getByTestId('qa-mora'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'chat', id: 'chat-main' })
-        );
+        expect(screen.queryByTestId('qa-mora')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 
-    it('Datei hochladen opens finder with showUpload: true', () => {
+    it('old upload quick action cannot open a pane in default Home', () => {
         renderWithDepts();
-        fireEvent.click(screen.getByTestId('qa-upload'));
-        expect(openPane).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'finder',
-                data: expect.objectContaining({ showUpload: true }),
-            })
-        );
+        expect(screen.queryByTestId('qa-upload')).not.toBeInTheDocument();
+        expect(openPane).not.toHaveBeenCalled();
     });
 });
 

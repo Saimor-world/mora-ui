@@ -331,7 +331,7 @@ describe('openflow presentation', () => {
     });
 
     expect(view.nextSteps.map((item) => item.title)).toEqual(
-      expect.arrayContaining(['Mail für OpenClaw vorbereiten', 'Kalender für OpenClaw vorbereiten'])
+      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
     );
     expect(view.nextSteps[0].suggestedActions[0]).toEqual(
       expect.objectContaining({ kind: 'connect_source', paneType: 'integrations' })
@@ -380,7 +380,7 @@ describe('openflow presentation', () => {
     });
 
     expect(view.nextSteps.map((item) => item.title)).not.toEqual(
-      expect.arrayContaining(['Mail für OpenClaw vorbereiten', 'Kalender für OpenClaw vorbereiten'])
+      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
     );
     expect(view.truthState?.nextStepsUnknown).toBe(true);
     expect(view.truthState?.runtimeUnknown).toBe(true);
