@@ -270,20 +270,20 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
 function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSignal[] {
   return connectors
     .filter((connector) => connector.status === 'needs_setup' || connector.status === 'offline' || connector.status === 'degraded')
-    .slice(0, 3)
+    .slice(0, 2)
     .map((connector) =>
       signal({
         id: `setup-${connector.id}`,
         source: connector.source,
-        title: `${connector.label} für OpenClaw vorbereiten`,
-        summary: 'Setup gehört in den OS-Bereich des Dashboards. SAIMOR OS nutzt danach nur verdichtete Signale für Orientierung.',
-        priority: connector.id === 'mail' ? 'high' : 'normal',
+        title: `${connector.label} verbinden`,
+        summary: 'Diese Quelle ist noch nicht belegbar verbunden.',
+        priority: 'normal',
         status: 'new',
         trustScope: 'personal',
         suggestedActions: [
           {
             id: `${connector.id}-connect`,
-            label: 'Dashboard öffnen',
+            label: 'Setup prüfen',
             kind: 'connect_source',
             paneType: 'integrations',
             paneData: { focus: connector.id },
