@@ -140,7 +140,7 @@ export function useLocalAI(): UseLocalAIReturn {
 💡 **Empfehlungen:**
 1. Lokale KI verbinden für tiefere Analyse
 2. Mehr Inhalte in die wichtigsten Bereiche legen
-3. MORA danach konkrete naechste Schritte ausarbeiten lassen
+3. MORA danach konkrete nächste Schritte ausarbeiten lassen
 
 *Verbinde Ollama unter localhost:11434 für KI-Features.*
                 `.trim();

@@ -262,7 +262,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     const handleOpenOriginal = async () => {
         try {
             const opened = await openSourceFileForNode({ metadata, name, title: name, id: nodeId || 'document' });
-            if (!opened) toast.info('Keine Originaldatei verknuepft');
+            if (!opened) toast.info('Keine Originaldatei verknüpft');
         } catch (error: any) {
             toast.error(error?.message || 'Originaldatei konnte nicht geöffnet werden');
         }
@@ -276,7 +276,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
         if (isLoading) {
             return (
                 <div className="flex items-center justify-center h-full p-6">
-                    <CommandReceipt tone="cyan" icon={Loader2} label="Dokument laedt" title={name}
+                    <CommandReceipt tone="cyan" icon={Loader2} label="Dokument lädt" title={name}
                         body="Der Inhalt wird aus dem Core geladen."
                         chips={[...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []), ...(folderId ? [{ label: `Ordner: ${folderId}` }] : [])]}
                         className="w-full max-w-xl" />
@@ -287,7 +287,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             return (
                 <div className="flex items-center justify-center h-full p-6">
                     <CommandReceipt tone="red" icon={X} label="Dokument nicht lesbar" title="Fehler beim Laden" body={loadError}
-                        chips={[...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []), { label: 'Inhalt bleibt unveraendert' }]}
+                        chips={[...(nodeId ? [{ label: `ID: ${nodeId.slice(0, 8)}...` }] : []), { label: 'Inhalt bleibt unverändert' }]}
                         actions={<button type="button" onClick={() => setReloadKey((p) => p + 1)}
                             className="inline-flex items-center gap-2 rounded-full border border-red-400/20 bg-red-500/14 px-3.5 py-2 text-[11px] font-medium text-red-50 transition-colors hover:border-red-300/35 hover:bg-red-500/22">
                             <RefreshCw size={13} />Erneut laden</button>}
@@ -349,7 +349,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                             {sourceFileId && (
                                 <button type="button" onClick={() => void handleOpenOriginal()}
                                     className="mt-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-3.5 py-2 text-[11px] font-medium text-white/70 transition-colors hover:border-white/25 hover:bg-white/[0.1] hover:text-white">
-                                    <Paperclip size={13} />Originaldatei oeffnen
+                                    <Paperclip size={13} />Originaldatei öffnen
                                 </button>
                             )}
                         </div>
@@ -445,7 +445,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                                 className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/14 px-3.5 py-2 text-[11px] font-medium text-cyan-50 transition-colors hover:border-cyan-300/35 hover:bg-cyan-500/22">
                                 <FolderOpen size={13} />Im Zielordner öffnen</button>
                         ) : null}
-                        footer="Geoeffnet aus dem OS-Kontext. Datei, Dokument und Zielordner bleiben gemeinsam auffindbar." />
+                        footer="Geöffnet aus dem OS-Kontext. Datei, Dokument und Zielordner bleiben gemeinsam auffindbar." />
                 </div>
             )}
 
@@ -582,7 +582,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
 
             {metadata && Object.keys(metadata).length > 0 && (
                 <div className="px-4 py-2 border-t border-white/5 text-[10px] text-white/30 flex items-center gap-4 flex-wrap">
-                    {metadata.size && <span>Groesse: {(metadata.size / 1024).toFixed(1)} KB</span>}
+                    {metadata.size && <span>Grösse: {(metadata.size / 1024).toFixed(1)} KB</span>}
                     {metadata.tags && Array.isArray(metadata.tags) && <span>Tags: {metadata.tags.join(', ')}</span>}
                     {sourceFileId && <span>Original: {sourceFileName}</span>}
                     {nodeId && <span className="font-mono">ID: {nodeId.slice(0, 8)}...</span>}

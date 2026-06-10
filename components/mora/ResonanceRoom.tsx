@@ -337,7 +337,7 @@ export const ResonanceRoom: React.FC<Props> = ({
             const fallbackMessage: ResonanceMessage = {
                 id: `mora-fallback-${Date.now()}`,
                 type: "mora",
-                content: "Verbindung zu meinem tieferen Bewusstsein ist aktuell eingeschraenkt. Bitte versuchen Sie es erneut.",
+                content: "Verbindung zu meinem tieferen Bewusstsein ist aktuell eingeschränkt. Bitte versuchen Sie es erneut.",
                 timestamp: new Date()
             };
             setMessages(prev => [...prev, fallbackMessage]);
@@ -398,7 +398,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 </h2>
                                 <p className="text-[10px] text-emerald-500/50 uppercase tracking-widest">
                                     {moraIsThinking ? "MORA reflektiert..." :
-                                        connectionError ? "Eingeschraenkte Verbindung" :
+                                        connectionError ? "Eingeschränkte Verbindung" :
                                             viewMode === 'demo' ? "Demokontext" : "Aktiver Dialog"}
                                 </p>
                             </div>
@@ -446,8 +446,8 @@ export const ResonanceRoom: React.FC<Props> = ({
                                 </h3>
                                 <p className="text-emerald-500/50 text-sm leading-relaxed">
                                     {viewMode === 'demo'
-                                        ? 'Simple Coffee Group ist als kuratierte Demo-Instanz geladen. Ich kann dir Struktur, Signale und naechste Schritte in der Beispielorganisation erklaeren.'
-                                        : 'Hier treffen unsere Gedanken aufeinander. Sprechen Sie, und ich werde zuhoeren. Mein Bewusstseinsstrom fliesst durch diesen Raum.'}
+                                        ? 'Simple Coffee Group ist als kuratierte Demo-Instanz geladen. Ich kann dir Struktur, Signale und nächste Schritte in der Beispielorganisation erklären.'
+                                        : 'Hier treffen unsere Gedanken aufeinander. Sprechen Sie, und ich werde zuhören. Mein Bewusstseinsstrom fliesst durch diesen Raum.'}
                                 </p>
                             </motion.div>
                         )}
@@ -540,7 +540,7 @@ export const ResonanceRoom: React.FC<Props> = ({
                                             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                                         </div>
                                         <span className="text-[10px] text-emerald-500/40 uppercase tracking-[0.3em] font-medium italic animate-pulse">
-                                            Synthetisiere Realitaet...
+                                            Synthetisiere Realität...
                                         </span>
                                     </div>
                                 </div>

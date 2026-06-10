@@ -203,20 +203,20 @@ describe('MoraShell mode indicator banner', () => {
         seedShellStores('public_playground');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Website-HQ \/ Public Playground/i)).toBeInTheDocument();
-        expect(screen.getByText(/Geteilte Umgebung. Du kannst Beitraege auf der Wall schreiben./i)).toBeInTheDocument();
+        expect(screen.getByText(/Geteilte Umgebung. Du kannst Beiträge auf der Wall schreiben./i)).toBeInTheDocument();
     });
 
     it('renders personal_demo banner correctly', () => {
         seedShellStores('personal_demo');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Personal Demo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Deine private Testumgebung. Experimente werden nicht veroeffentlicht./i)).toBeInTheDocument();
+        expect(screen.getByText(/Deine private Testumgebung. Experimente werden nicht veröffentlicht./i)).toBeInTheDocument();
     });
 
     it('renders private_preview banner correctly', () => {
         seedShellStores('private_preview');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Private Preview/i)).toBeInTheDocument();
-        expect(screen.getByText(/Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden geloescht./i)).toBeInTheDocument();
+        expect(screen.getByText(/Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden gelöscht./i)).toBeInTheDocument();
     });
 });

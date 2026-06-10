@@ -150,7 +150,7 @@ describe('surfaceNavigationOutcome — execution continuity', () => {
             execution: {
                 pending_confirmation_title: 'Inhalt aktualisieren',
                 next_label: 'Freigeben',
-                next_message: 'Naechster Schritt wartet auf Freigabe.',
+                next_message: 'Nächster Schritt wartet auf Freigabe.',
                 last_transition_message: 'Eine Navigation wurde als Teil des Arbeitsplans ausgefuehrt.',
             },
         });
@@ -160,8 +160,8 @@ describe('surfaceNavigationOutcome — execution continuity', () => {
         const openPane = jest.fn();
 
         surfaceNavigationOutcome({
-            title: 'Datei geoeffnet',
-            message: 'Ich habe das Dokument geoeffnet.',
+            title: 'Datei geöffnet',
+            message: 'Ich habe das Dokument geöffnet.',
             targetType: 'node',
             label: 'Dokument',
             companyId: 'c1',
@@ -193,12 +193,12 @@ describe('surfaceNavigationOutcome — execution continuity', () => {
                 last_transition_step_id: 'step-confirm-001',
                 last_transition_type: 'confirmed',
                 last_transition_message: 'Schritt bestaetigt. Mora setzt den Plan fort.',
-                next_message: 'Naechster Schritt: Dokument lesen.',
+                next_message: 'Nächster Schritt: Dokument lesen.',
             },
         });
 
         surfaceNavigationOutcome({
-            title: 'Datei geoeffnet',
+            title: 'Datei geöffnet',
             message: '',
             targetType: 'node',
             label: 'Dokument',
@@ -231,7 +231,7 @@ describe('surfaceNavigationOutcome — execution continuity', () => {
         });
 
         surfaceNavigationOutcome({
-            title: 'Datei geoeffnet',
+            title: 'Datei geöffnet',
             message: '',
             targetType: 'node',
             label: 'Dokument',

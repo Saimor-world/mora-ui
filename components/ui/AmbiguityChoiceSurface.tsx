@@ -85,7 +85,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
             tone={tone}
             label={label || (isAmbiguous ? 'Mehrere passende Treffer' : 'Treffer')}
             title={body || (isAmbiguous
-                ? `Ich sehe mehrere plausible Ziele${firstLabel}. Waehle eins.`
+                ? `Ich sehe mehrere plausible Ziele${firstLabel}. Wähle eins.`
                 : `Ich habe einen klaren Treffer${firstLabel}.`)}
             body={description}
             icon={isAmbiguous ? Search : undefined}
@@ -100,7 +100,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                     onClick={onReview}
                     className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
                 >
-                    Suche pruefen
+                    Suche prüfen
                 </button>
             ) : undefined}
             footer={footer}

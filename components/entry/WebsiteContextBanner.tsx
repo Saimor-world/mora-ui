@@ -50,7 +50,7 @@ export function WebsiteContextBanner() {
             size: { width: 1040, height: 720 },
             data: { context },
         });
-        toast.success('Dossier im Workspace geoeffnet');
+        toast.success('Dossier im Workspace geöffnet');
         setIsVisible(false);
     };
 
@@ -95,7 +95,7 @@ export function WebsiteContextBanner() {
                                     onClick={handleUseContext}
                                     className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-xs font-bold text-slate-950 transition-all hover:bg-emerald-300"
                                 >
-                                    Dossier oeffnen
+                                    Dossier öffnen
                                     <ArrowRight size={14} />
                                 </button>
                                 <button

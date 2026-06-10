@@ -55,7 +55,7 @@ export function HomeViewHighlights({ view }: Props) {
                     <div className="flex items-center gap-2 mb-3">
                         <CheckCircle2 size={13} className="text-emerald-300/70" />
                         <span className="text-[10px] uppercase tracking-[0.22em] text-emerald-100/60">
-                            Naechste Aufgaben
+                            Nächste Aufgaben
                         </span>
                     </div>
                     <div className="flex flex-col gap-2">

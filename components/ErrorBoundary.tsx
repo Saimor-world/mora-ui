@@ -174,7 +174,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
                         {/* Help Text */}
                         <p className="text-xs text-emerald-500/30 text-center mt-6 font-mono tracking-wider">
-                            Wenn das haeufig passiert, sollte dieser Bereich stabilisiert werden.
+                            Wenn das häufig passiert, sollte dieser Bereich stabilisiert werden.
                         </p>
                     </div>
                 </div>

@@ -108,7 +108,7 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
 
     expect((await screen.findAllByText('vertrag.pdf')).length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Geraet').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Gerät').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Privat').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Workspace').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);

@@ -94,7 +94,7 @@ describe('ConfirmationCard — signal humanization', () => {
         render(
             <ConfirmationCard
                 action={makeAction({
-                    route_signals: ['frueher_aehnlich_eingeordnet', 'wiederkehrendes_dateimuster'],
+                    route_signals: ['frueher_ähnlich_eingeordnet', 'wiederkehrendes_dateimuster'],
                 })}
                 onConfirmed={noop}
                 onRejected={noop}
@@ -104,7 +104,7 @@ describe('ConfirmationCard — signal humanization', () => {
         expect(document.body).toHaveTextContent('Ähnliche Dateien eingeordnet');
         expect(document.body).toHaveTextContent('Wiederkehrendes Dateimuster');
         // raw keys must NOT appear
-        expect(screen.queryByText('frueher_aehnlich_eingeordnet')).not.toBeInTheDocument();
+        expect(screen.queryByText('frueher_ähnlich_eingeordnet')).not.toBeInTheDocument();
         expect(screen.queryByText('wiederkehrendes_dateimuster')).not.toBeInTheDocument();
     });
 

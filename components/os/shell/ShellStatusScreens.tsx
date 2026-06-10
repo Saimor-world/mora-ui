@@ -94,13 +94,13 @@ export const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Netzwerkverbindung pruefen und Seite neu laden
+                                Netzwerkverbindung prüfen und Seite neu laden
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/40 mt-1.5 shrink-0" />
                             <div className="text-xs text-white/40">
-                                Haelt das Problem an, bitte Support kontaktieren
+                                Hält das Problem an, bitte Support kontaktieren
                             </div>
                         </div>
                     </div>

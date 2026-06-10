@@ -6,7 +6,7 @@ it('renders attention and next-step highlights with stable labels', () => {
         <HomeViewHighlights
             view={{
                 attention: [
-                    { id: 'a1', title: 'SSL klaeren', severity: 0.82 },
+                    { id: 'a1', title: 'SSL klären', severity: 0.82 },
                 ],
                 next_steps: [
                     { id: 'n1', title: 'Owner festlegen' },
@@ -16,7 +16,7 @@ it('renders attention and next-step highlights with stable labels', () => {
     );
 
     expect(screen.getByText('Was braucht Aufmerksamkeit')).toBeInTheDocument();
-    expect(screen.getByText('Naechste Aufgaben')).toBeInTheDocument();
-    expect(screen.getByText('SSL klaeren')).toBeInTheDocument();
+    expect(screen.getByText('Nächste Aufgaben')).toBeInTheDocument();
+    expect(screen.getByText('SSL klären')).toBeInTheDocument();
     expect(screen.getByText('Owner festlegen')).toBeInTheDocument();
 });

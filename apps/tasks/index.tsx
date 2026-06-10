@@ -195,7 +195,7 @@ export default function TasksApp({ paneId }: AppProps) {
                                     <button
                                         onClick={() => { setAddingColumn(col.key); setNewTitle(''); }}
                                         className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
-                                        title="Aufgabe hinzufuegen"
+                                        title="Aufgabe hinzufügen"
                                     >
                                         <Plus size={12} />
                                     </button>

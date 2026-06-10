@@ -154,7 +154,7 @@ describe('Chat extracted components tests', () => {
         it('renders memory basis message when isMemoryBasis is true', () => {
             renderWithProviders(<RelevantMemories memories={[]} isMemoryBasis={true} onDismiss={jest.fn()} />);
             expect(screen.getByText('Gedächtnisbasis dieser Antwort')).toBeInTheDocument();
-            expect(screen.getByText(/Mora hat diese Antwort auf gespeichertes Wissen gestuetzt/)).toBeInTheDocument();
+            expect(screen.getByText(/Mora hat diese Antwort auf gespeichertes Wissen gestützt/)).toBeInTheDocument();
         });
     });
 

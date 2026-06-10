@@ -31,7 +31,7 @@ const context: WebsiteEntryContext = {
     documents: [],
     tasks: [
         { title: 'CSP setzen', priority: 'hoch' },
-        { title: 'DNS pruefen', priority: 'mittel' },
+        { title: 'DNS prüfen', priority: 'mittel' },
     ],
 };
 

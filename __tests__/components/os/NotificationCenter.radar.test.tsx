@@ -142,7 +142,7 @@ describe('NotificationCenter radar integration', () => {
     useRadarStore.getState().setNotifications([makeRadar()], 1);
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /öffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;
@@ -176,7 +176,7 @@ describe('NotificationCenter radar integration', () => {
 
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /öffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;
@@ -209,7 +209,7 @@ describe('NotificationCenter radar integration', () => {
 
     renderCenter();
 
-    fireEvent.click(screen.getByRole('button', { name: /oeffnen|ansehen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /öffnen|ansehen/i }));
 
     await waitFor(() => {
       const panes = usePaneStore.getState().panes;
@@ -252,7 +252,7 @@ describe('NotificationCenter radar integration', () => {
 
     renderCenter();
 
-    fireEvent.click(screen.getByLabelText('Mora-Hinweis spaeter zeigen'));
+    fireEvent.click(screen.getByLabelText('Mora-Hinweis später zeigen'));
 
     expect(screen.queryByText('Mora sieht etwas')).toBeNull();
     expect(mockCorePatch).not.toHaveBeenCalled();

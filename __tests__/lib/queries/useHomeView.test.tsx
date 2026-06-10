@@ -40,7 +40,7 @@ it('returns the home status probe data from the endpoint', async () => {
         home_cards: {
             verified: [{ id: 'changes', label: 'Was hat sich veraendert?', source: 'mindloop_events' }],
             placeholder: [{ label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' }],
-            unknown: [{ id: 'next_steps', label: 'Naechster echter Schritt', reason: 'No tenant-scoped task node is available' }],
+            unknown: [{ id: 'next_steps', label: 'Nächster echter Schritt', reason: 'No tenant-scoped task node is available' }],
         },
         placeholders_detected: [{ label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' }],
         unknowns: [{ id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' }],

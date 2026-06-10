@@ -13,7 +13,7 @@ const SCOPE_CONFIG: Record<MoraScope, { color: string; bg: string; label: (src?:
     personal: {
         color: 'text-emerald-400',
         bg: 'bg-emerald-500/10',
-        label: () => 'persoenlicher Kontext',
+        label: () => 'persönlicher Kontext',
     },
     shared: {
         color: 'text-blue-400',

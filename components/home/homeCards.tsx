@@ -191,26 +191,26 @@ export const SuggestionCard: React.FC<{
     }[tone];
 
     return (
-        <div className={`group relative overflow-hidden rounded-2xl border ${toneStyles.border} ${toneStyles.bg} p-4 transition-all duration-300 hover:-translate-y-0.5 ${toneStyles.glow}`}>
+        <div className={`group relative overflow-hidden rounded-xl border ${toneStyles.border} ${toneStyles.bg} p-3 transition-all duration-300 hover:-translate-y-0.5 ${toneStyles.glow}`}>
             <div className="absolute -inset-px bg-gradient-to-r from-transparent via-white/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-            <div className="flex items-start gap-3">
-                <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${toneStyles.iconBg}`}>
+            <div className="flex items-center gap-3">
+                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${toneStyles.iconBg}`}>
                     {icon}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <h4 className="text-[13px] font-medium text-white/90">{title}</h4>
-                    <p className="mt-1 text-[11px] font-light leading-relaxed text-white/60">{description}</p>
-                    <button
-                        type="button"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onClick();
-                        }}
-                        className={`mt-3 flex items-center gap-1 rounded-xl border px-3 py-1.5 text-[10px] uppercase tracking-wider font-semibold transition-all ${toneStyles.btnBg}`}
-                    >
-                        {actionText}
-                    </button>
+                    <h4 className="truncate text-[13px] font-medium text-white/90">{title}</h4>
+                    <p className="truncate text-[11px] font-light leading-snug text-white/55">{description}</p>
                 </div>
+                <button
+                    type="button"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onClick();
+                    }}
+                    className={`shrink-0 rounded-lg border px-2.5 py-1 text-[10px] uppercase tracking-wider font-semibold transition-all ${toneStyles.btnBg}`}
+                >
+                    {actionText}
+                </button>
             </div>
         </div>
     );

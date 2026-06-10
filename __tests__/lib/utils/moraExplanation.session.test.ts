@@ -9,7 +9,7 @@ const base: WorkSessionShellSummary = {
 
 describe('getSessionBodyText', () => {
     it('returns pending fallback when state is pending', () => {
-        expect(getSessionBodyText(base)).toBe('Mora haelt den aktuellen Arbeitsplan im Scope bereit.');
+        expect(getSessionBodyText(base)).toBe('Mora hält den aktuellen Arbeitsplan im Scope bereit.');
     });
 
     it('returns singular confirmation copy for 1 pending step', () => {
@@ -71,12 +71,12 @@ describe('getSessionExtendedNote', () => {
 
     it('returns singular note when one step was added', () => {
         const s = { ...base, stats: { total_steps: 4, planned_steps: 3 } };
-        expect(getSessionExtendedNote(s)).toBe('Navigation hat einen Schritt zum Verlauf ergaenzt.');
+        expect(getSessionExtendedNote(s)).toBe('Navigation hat einen Schritt zum Verlauf ergänzt.');
     });
 
     it('returns plural note when multiple steps were added', () => {
         const s = { ...base, stats: { total_steps: 7, planned_steps: 3 } };
-        expect(getSessionExtendedNote(s)).toBe('Navigation hat 4 Schritte zum Verlauf ergaenzt.');
+        expect(getSessionExtendedNote(s)).toBe('Navigation hat 4 Schritte zum Verlauf ergänzt.');
     });
 
     it('returns null when stats is undefined', () => {
@@ -101,7 +101,7 @@ describe('getSessionExtendedNote', () => {
 
     it('Pre-V5 fallback: has_continuation absent, total > planned returns Navigation text', () => {
         const s = { ...base, stats: { total_steps: 7, planned_steps: 3 } };
-        expect(getSessionExtendedNote(s)).toBe('Navigation hat 4 Schritte zum Verlauf ergaenzt.');
+        expect(getSessionExtendedNote(s)).toBe('Navigation hat 4 Schritte zum Verlauf ergänzt.');
     });
 
     it('Pre-V5 fallback: has_continuation absent, total <= planned returns null', () => {

@@ -182,7 +182,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText(/Mora erkennt dich/i)).toBeInTheDocument();
             expect(screen.getByText(/Marco/)).toBeInTheDocument();
-            expect(screen.getByText(/Bestaetige kurz dein Passwort/i)).toBeInTheDocument();
+            expect(screen.getByText(/Bestätige kurz dein Passwort/i)).toBeInTheDocument();
             expect(screen.getByPlaceholderText('Passwort')).toBeInTheDocument();
         });
     });
@@ -270,7 +270,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
 
         // Type password and submit
         fireEvent.change(screen.getByPlaceholderText('Passwort'), { target: { value: 'secret123' } });
-        fireEvent.click(screen.getByText('Bestaetigen'));
+        fireEvent.click(screen.getByText('Bestätigen'));
 
         // Verify login was called with full email, not just username
         await waitFor(() => {

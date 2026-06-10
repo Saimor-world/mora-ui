@@ -162,12 +162,12 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
                 if (response.final_state === 'S4_CONFIRM' && response.pending_confirmations.length > 0) {
                     const pending = response.pending_confirmations[0];
-                    setMoraResponse(`${cleanContent}\n\nBestätigung noetig: ${pending.what_will_change}`);
+                    setMoraResponse(`${cleanContent}\n\nBestätigung nötig: ${pending.what_will_change}`);
                 } else {
                     setMoraResponse(cleanContent);
                 }
             } else {
-                setMoraResponse("Ich kann den Auftrag gerade nicht sauber ausfuehren. Versuche es erneut.");
+                setMoraResponse("Ich kann den Auftrag gerade nicht sauber ausführen. Versuche es erneut.");
             }
         } catch (error) {
             console.error("Mora Spotlight Error:", error);

@@ -13,14 +13,14 @@ import { getPlatformModifier } from '@/lib/hooks/usePlatformModifier';
 export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
-        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette oeffnen' },
-        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat oeffnen' },
+        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette öffnen' },
+        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
-        { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen oeffnen' },
-        { keys: [m, ','], label: 'System', description: 'Einstellungen oeffnen' },
+        { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
+        { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
         { keys: ['Alt', 'A'], label: 'Ambient', description: 'Môra Field öffnen' },
-        { keys: [m, 'L'], label: 'Larry', description: 'Larry Dashboard oeffnen' },
+        { keys: [m, 'L'], label: 'Larry', description: 'Larry Dashboard öffnen' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
     ];

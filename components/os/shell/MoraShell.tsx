@@ -1235,7 +1235,7 @@ export const MoraShell: React.FC = () => {
                                 Dateien hier fallen lassen
                             </h2>
                             <p className="mt-2 text-sm leading-relaxed text-white/65">
-                                Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschlaege vor
+                                Mora nimmt die Dateien im Universe auf, bereitet Einordnungsvorschläge vor
                                 und führt die bestätigte Ablage später im Dateibaum aus.
                             </p>
                         </div>

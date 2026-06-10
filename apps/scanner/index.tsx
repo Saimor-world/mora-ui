@@ -1228,7 +1228,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                             <div>
                                 <p className="text-sm text-emerald-50/85">Bereit fuer den ersten Intake</p>
                                 <p className="mt-2 text-xs leading-relaxed text-white/42">
-                                    Ziehe Dateien in den Scanner oder waehle Upload. Mora prueft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
+                                    Ziehe Dateien in den Scanner oder wähle Upload. Mora prüft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
                                 </p>
                             </div>
                         </div>

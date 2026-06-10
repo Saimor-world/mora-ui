@@ -32,7 +32,7 @@ describe('website entry context', () => {
             tone: 'risk',
         });
         expect(context?.tasks[0]).toMatchObject({
-            title: 'Nightwatch-Befunde zuerst klaeren',
+            title: 'Nightwatch-Befunde zuerst klären',
             priority: 'hoch',
         });
     });

@@ -179,7 +179,7 @@ export default function DirectCloudConnectClient({
                             className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-medium text-white/75 transition-colors hover:bg-white/[0.08]"
                         >
                             <ExternalLink size={13} />
-                            App-Passwort in {PROVIDER_LABEL[provider]} oeffnen
+                            App-Passwort in {PROVIDER_LABEL[provider]} öffnen
                         </a>
                     ) : null}
                 </div>

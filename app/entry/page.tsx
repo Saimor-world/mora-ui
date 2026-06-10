@@ -62,7 +62,7 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
                 <header className="flex items-center justify-between border-b border-white/10 pb-6">
                     <div>
                         <p className="text-[11px] uppercase tracking-[0.28em] text-emerald-300/70">SAIMOR HQ</p>
-                        <h1 className="mt-3 text-3xl font-medium text-white">Einstieg waehlen</h1>
+                        <h1 className="mt-3 text-3xl font-medium text-white">Einstieg wählen</h1>
                     </div>
                     <Link
                         href="/home"
@@ -82,7 +82,7 @@ export default async function EntryPage({ searchParams }: EntryPageProps) {
                             Website-Ergebnis ansehen, dann bewusst ins OS wechseln.
                         </h2>
                         <p className="max-w-lg text-sm leading-7 text-white/58">
-                            Diese Flaeche verbindet Website-Workflows mit dem OS. Sie zeigt Kontext aus Security Check oder Digital Self, ohne echte Team-, Cloud- oder Firmendaten vorzutaeuschen.
+                            Diese Fläche verbindet Website-Workflows mit dem OS. Sie zeigt Kontext aus Security Check oder Digital Self, ohne echte Team-, Cloud- oder Firmendaten vorzutäuschen.
                         </p>
                         {contextLabel ? (
                             <div className="rounded-2xl border border-cyan-300/15 bg-cyan-400/[0.06] p-4">
@@ -115,7 +115,7 @@ function DefaultEntryOptions() {
                         <div>
                             <h3 className="text-lg font-medium text-white">Security Check</h3>
                             <p className="mt-1 max-w-lg text-sm leading-6 text-white/52">
-                                Kostenloser Einstieg auf der Website, Ergebnis speichern und spaeter im Account wiederfinden.
+                                Kostenloser Einstieg auf der Website, Ergebnis speichern und später im Account wiederfinden.
                             </p>
                         </div>
                     </div>
@@ -155,7 +155,7 @@ function DefaultEntryOptions() {
                         <div>
                             <h3 className="text-lg font-medium text-white">Weiter ins OS</h3>
                             <p className="mt-1 max-w-lg text-sm leading-6 text-white/52">
-                                Arbeitsumgebung oeffnen. Echte Cloud-, Team- und Datenanbindungen werden dort separat eingerichtet.
+                                Arbeitsumgebung öffnen. Echte Cloud-, Team- und Datenanbindungen werden dort separat eingerichtet.
                             </p>
                         </div>
                     </div>

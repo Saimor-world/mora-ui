@@ -100,7 +100,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             },
             {
                 name: 'Wachstum',
-                description: 'Dashboard-Gedaechtnis und OS-Aufgaben werden getrennt, aber verbunden angelegt.',
+                description: 'Dashboard-Gedächtnis und OS-Aufgaben werden getrennt, aber verbunden angelegt.',
                 tone: 'growth',
             },
         ],
@@ -111,7 +111,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             },
             {
                 title: '14-Tage Massnahmenplan',
-                description: actions.length > 0 ? actions.slice(0, 3).join(' / ') : 'Prioritaeten fuer die ersten Verbesserungen im HQ.',
+                description: actions.length > 0 ? actions.slice(0, 3).join(' / ') : 'Prioritäten fuer die ersten Verbesserungen im HQ.',
             },
             {
                 title: 'Betriebsmappe',
@@ -123,7 +123,7 @@ export function buildWebsiteEntryContext(query: Query): WebsiteEntryContext | nu
             priority: index === 0 && score !== undefined && score < 70 ? 'hoch' : 'mittel',
         })) : [
             {
-                title: score !== undefined && score < 70 ? 'Nightwatch-Befunde zuerst klaeren' : 'Nightwatch-Ergebnis validieren',
+                title: score !== undefined && score < 70 ? 'Nightwatch-Befunde zuerst klären' : 'Nightwatch-Ergebnis validieren',
                 priority: score !== undefined && score < 70 ? 'hoch' : 'mittel',
             },
             {
@@ -169,6 +169,6 @@ function normalizeCompanyName(company?: string, domain?: string) {
 function riskRoomDescription(score?: number) {
     if (score === undefined) return 'Nightwatch-Signale werden aus dem WORLD-Kontext vorbereitet.';
     if (score < 50) return 'Hohe Risiken werden als erste OS-Aufgaben markiert.';
-    if (score < 80) return 'Mittlere Risiken werden in konkrete Verbesserungen und Finder-Kontext uebersetzt.';
+    if (score < 80) return 'Mittlere Risiken werden in konkrete Verbesserungen und Finder-Kontext übersetzt.';
     return 'Solide Basis: Mora bereitet Monitoring und saubere Dokumentation vor.';
 }

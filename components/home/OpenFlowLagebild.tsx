@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Activity, AlertTriangle, ArrowRight, ExternalLink, FolderOpen, Network, Plug, Sparkles } from 'lucide-react';
+import { ArrowRight, Compass, Network, Plug, ShieldCheck } from 'lucide-react';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
@@ -62,13 +62,6 @@ function paneSize(type: string) {
 }
 
 function openActionPane(action: OpenFlowSignal['suggestedActions'][number], onOpenPane: OpenFlowLagebildProps['onOpenPane']) {
-  if (action.kind === 'connect_source') {
-    if (typeof window !== 'undefined') {
-      window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer');
-    }
-    return;
-  }
-
   if (!action.paneType) return;
 
   onOpenPane({
@@ -87,7 +80,7 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
   const HOT_TONE_BG = HOT_TONE.bg;
 
   return (
-    <article className="rounded-xl border border-white/[0.08] bg-white/[0.045] p-3 shadow-[0_14px_36px_rgba(0,0,0,0.16)]">
+    <article className="rounded-lg border border-white/[0.07] bg-white/[0.035] p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="mb-1.5 flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-cyan-100/45">
@@ -112,7 +105,7 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
       {action ? (
         <button
           type="button"
-          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-emerald-300/18 bg-emerald-400/[0.08] px-3 py-1.5 text-xs text-emerald-50/78 transition-colors hover:bg-emerald-400/[0.14]"
+          className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.04] px-3 py-1.5 text-xs text-white/62 transition-colors hover:bg-white/[0.07] hover:text-white/82"
           onClick={() => openActionPane(action, onOpenPane)}
         >
           {action.label}
@@ -120,36 +113,6 @@ function SignalCard({ signal, onOpenPane }: { signal: OpenFlowSignal; onOpenPane
         </button>
       ) : null}
     </article>
-  );
-}
-
-function MyceliumField() {
-  const strands = [
-    'left-[2%] top-[16%] w-[44%] rotate-[7deg] from-emerald-300/0 via-emerald-300/24 to-cyan-200/0',
-    'left-[20%] top-[52%] w-[48%] -rotate-[13deg] from-amber-200/0 via-amber-200/20 to-rose-200/0',
-    'right-[8%] top-[30%] w-[36%] rotate-[22deg] from-violet-200/0 via-violet-200/22 to-emerald-200/0',
-    'left-[10%] bottom-[18%] w-[58%] rotate-[3deg] from-cyan-200/0 via-cyan-200/18 to-amber-200/0',
-    'right-[0%] bottom-[28%] w-[40%] -rotate-[18deg] from-rose-200/0 via-rose-200/18 to-violet-200/0',
-  ];
-  const nodes = [
-    'left-[8%] top-[22%] bg-emerald-200/55 shadow-emerald-300/40',
-    'left-[34%] top-[38%] bg-cyan-200/55 shadow-cyan-300/40',
-    'left-[52%] top-[18%] bg-amber-200/55 shadow-amber-300/40',
-    'right-[22%] top-[44%] bg-violet-200/55 shadow-violet-300/40',
-    'right-[9%] bottom-[24%] bg-rose-200/50 shadow-rose-300/35',
-    'left-[28%] bottom-[18%] bg-emerald-200/45 shadow-emerald-300/35',
-  ];
-
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[22px]" aria-hidden="true">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_18%,rgba(16,185,129,0.18),transparent_28%),radial-gradient(circle_at_74%_22%,rgba(251,191,36,0.12),transparent_24%),radial-gradient(circle_at_80%_76%,rgba(244,114,182,0.10),transparent_24%),radial-gradient(circle_at_34%_86%,rgba(34,211,238,0.12),transparent_30%)]" />
-      {strands.map((className) => (
-        <div key={className} className={`absolute h-px bg-gradient-to-r ${className}`} />
-      ))}
-      {nodes.map((className) => (
-        <div key={className} className={`absolute h-1.5 w-1.5 rounded-full shadow-[0_0_22px] ${className}`} />
-      ))}
-    </div>
   );
 }
 
@@ -177,14 +140,14 @@ function connectorCopy(connector: ConnectorStatus) {
     return {
       state: connector.status === 'local' ? 'lokal bereit' : 'liest Signale',
       detail: connector.status === 'local'
-        ? 'Lokale OS-Bruecke ist aktiv. Sie liefert nur verdichtete Signale an MORA.'
-        : 'Diese Quelle liefert belegte Signale fuer MORA.',
+        ? 'Lokale OS-Brücke ist aktiv. Sie liefert nur verdichtete Signale.'
+        : 'Diese Quelle liefert belegte Signale.',
     };
   }
 
   return {
-    state: 'im Dashboard einrichten',
-    detail: 'Diese Quelle wird nicht hier konfiguriert. Das gehoert in den OS-Bereich des Dashboards.',
+    state: 'Setup offen',
+    detail: 'Diese Quelle ist noch nicht belegbar verbunden.',
   };
 }
 
@@ -193,13 +156,12 @@ function ConnectorPill({ connector }: { connector: ConnectorStatus }) {
   const copy = connectorCopy(connector);
 
   return (
-    <div className="rounded-xl border border-white/[0.08] bg-black/18 px-3 py-2">
-      <div className="flex items-center justify-between gap-3">
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-white/[0.06] bg-black/12 px-3 py-2" title={copy.detail}>
+      <div className="flex min-w-0 items-baseline gap-2">
         <span className="text-xs font-medium text-white/75">{connector.label}</span>
-        <span className={good ? 'h-2 w-2 rounded-full bg-emerald-300' : 'h-2 w-2 rounded-full bg-amber-300'} />
+        <span className="truncate text-[10px] uppercase tracking-[0.12em] text-white/34">{copy.state}</span>
       </div>
-      <div className="mt-1 text-[10px] uppercase tracking-[0.13em] text-white/34">{copy.state}</div>
-      <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/42">{copy.detail}</p>
+      <span className={good ? 'h-2 w-2 shrink-0 rounded-full bg-emerald-300' : 'h-2 w-2 shrink-0 rounded-full bg-amber-300'} />
     </div>
   );
 }
@@ -216,11 +178,11 @@ function HeadlineHero({
     const calm = TONES.success;
     const CalmIcon = calm.icon;
     return (
-      <div className={`flex items-center gap-3 rounded-2xl border ${calm.border} ${calm.bg} px-5 py-4`}>
+      <div className={`flex items-center gap-3 rounded-2xl border ${calm.border} ${calm.bg} px-5 py-5`}>
         <CalmIcon size={20} className={calm.text} />
         <div>
           <div className="text-base font-medium text-white/88">Alles ruhig</div>
-          <div className="text-sm text-white/50">Keine offenen Vorfälle. MÔRA beobachtet weiter.</div>
+          <div className="text-sm text-white/50">Keine kritischen Signale. MÔRA beobachtet weiter.</div>
         </div>
       </div>
     );
@@ -231,7 +193,7 @@ function HeadlineHero({
   const action = signal.suggestedActions[0];
 
   return (
-    <div className={`rounded-2xl border ${tone.border} ${tone.bg} p-5 shadow-[0_24px_70px_rgba(0,0,0,0.28)]`}>
+    <div className={`rounded-2xl border ${tone.border} ${tone.bg} p-5`}>
       <div className="mb-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/45">
         <Icon size={14} className={tone.text} />
         Jetzt wichtig · {SOURCE_LABEL[signal.source] || signal.source}
@@ -252,6 +214,49 @@ function HeadlineHero({
   );
 }
 
+function MoraOrientation({
+  headline,
+  attentionCount,
+  nextStepsCount,
+  nextStepsUnknown,
+  runtimeUnknown,
+  connectorHandshakeUnknown,
+}: {
+  headline: OpenFlowSignal | null;
+  attentionCount: number;
+  nextStepsCount: number;
+  nextStepsUnknown: boolean;
+  runtimeUnknown: boolean;
+  connectorHandshakeUnknown: boolean;
+}) {
+  let text = 'Keine kritischen Signale. Home zeigt nur belegte Zustände.';
+
+  if (headline) {
+    text = headline.source === 'server'
+      ? 'Ein Infrastruktur-Signal ist offen. Prüfe den belegten Vorfall, bevor du weitere Aktionen ableitest.'
+      : `${headline.title} ist gerade die wichtigste belegte Lage.`;
+  } else if (attentionCount > 0) {
+    text = `${attentionCount} Signal${attentionCount === 1 ? '' : 'e'} braucht Aufmerksamkeit.`;
+  } else if (nextStepsUnknown || runtimeUnknown || connectorHandshakeUnknown) {
+    text = 'Einige Zustände sind noch unbekannt. Home zeigt sie nicht als Wahrheit.';
+  } else if (nextStepsCount > 0) {
+    text =
+      nextStepsCount === 1
+        ? 'Ein belegter nächster Schritt wartet.'
+        : `${nextStepsCount} belegte nächste Schritte warten.`;
+  }
+
+  return (
+    <section className="rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4">
+      <div className="mb-2 flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/38">
+        <Compass size={13} className="text-cyan-100/50" />
+        MÔRA Orientierung
+      </div>
+      <p className="text-sm leading-relaxed text-white/66">{text}</p>
+    </section>
+  );
+}
+
 export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLagebildProps) {
   // The headline is shown once, big. Everything below excludes it (and attention
   // is not repeated inside "changed") — one signal, one place.
@@ -269,142 +274,99 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);
   const nextStepsUnknown = Boolean(view.truthState?.nextStepsUnknown);
   const hideRuntimePlaceholder = hiddenPlaceholders.includes('OpenClaw Infrastruktur');
-  const hideDashboardPlaceholder = hiddenPlaceholders.includes('Larry Dashboard');
+  const actionItems = nextSteps.slice(0, 2);
+  const signalItems = [...attention, ...changed].slice(0, 4);
 
   return (
     <section
       data-testid="openflow-lagebild"
-      className="relative mx-auto flex min-h-full w-full max-w-[1340px] flex-col gap-4 px-1 pb-8"
+      className="relative mx-auto flex min-h-full w-full max-w-[1180px] flex-col gap-4 px-1 pb-8"
     >
-      <MyceliumField />
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/14 bg-emerald-400/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-emerald-50/58">
-            <Sparkles size={12} />
-            SAIMOR OpenFlow
-          </div>
           <h1 className="max-w-3xl text-2xl font-light text-white">
             Lagebild
           </h1>
           <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-white/58">
-            Veraenderungen, Menschen und belegte Quellen wachsen zu einem lebenden Organisationsgedaechtnis.
+            Aktuelle belegte Signale, ruhig sortiert.
           </p>
         </div>
         <button
           type="button"
           onClick={onGoExplore}
-          className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/16 bg-cyan-300/[0.07] px-4 py-2.5 text-sm text-cyan-50/75 hover:bg-cyan-300/[0.12]"
+          className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white/62 hover:bg-white/[0.07] hover:text-white/82"
         >
           <Network size={16} />
-          Karte oeffnen
+          Karte öffnen
         </button>
       </div>
 
       <HeadlineHero signal={view.headline} onOpenPane={onOpenPane} />
 
-      <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(340px,1.08fr)_minmax(290px,0.92fr)_minmax(300px,0.92fr)]">
-        <div className="rounded-xl border border-emerald-200/[0.10] bg-black/24 p-4 shadow-[0_24px_80px_rgba(0,0,0,0.22)] backdrop-blur-2xl">
-          <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
-            <Activity size={16} className="text-cyan-200/70" />
-            Was hat sich veraendert?
-          </div>
-          <div className="grid gap-3">
-            {changed.length > 0 ? (
-              changed.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
-            ) : (
-              <EmptyState>Noch keine neuen Signale. Sobald Dashboard, Dateien oder Teamarbeit Quellen freigeben, waechst hier die Karte.</EmptyState>
-            )}
-          </div>
-        </div>
+      <div className="grid min-h-0 grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <main className="grid gap-4">
+          <MoraOrientation
+            headline={view.headline}
+            attentionCount={attention.length}
+            nextStepsCount={actionItems.length}
+            nextStepsUnknown={nextStepsUnknown}
+            runtimeUnknown={runtimeUnknown || hideRuntimePlaceholder}
+            connectorHandshakeUnknown={connectorHandshakeUnknown}
+          />
 
-        <div className="grid gap-4">
-          <div className="rounded-xl border border-amber-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
-              <AlertTriangle size={16} className="text-amber-200/70" />
-              Was braucht Aufmerksamkeit?
+          <section className="rounded-xl border border-white/[0.07] bg-black/18 p-4 backdrop-blur-xl">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
+              <ShieldCheck size={16} className="text-cyan-100/58" />
+              Belegte Signale
             </div>
             <div className="grid gap-3">
               {visibleIncidentPanels.map((panel) => (
                 <IncidentStatusPanel key={panel.id} panel={panel} />
               ))}
-              {attention.length > 0 ? (
-                attention.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
+              {signalItems.length > 0 ? (
+                signalItems.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
               ) : visibleIncidentPanels.length > 0 ? null : (
-                <EmptyState>Keine offenen Reibungspunkte.</EmptyState>
+                <EmptyState>Keine belegten Signale mit Handlungsdruck.</EmptyState>
               )}
             </div>
-          </div>
+          </section>
+        </main>
 
-          <div className="rounded-xl border border-cyan-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
-              <ArrowRight size={16} className="text-emerald-200/70" />
-              Naechster sinnvoller Schritt
-            </div>
-            <div className="grid gap-3">
-              {nextSteps.length > 0 ? (
-                nextSteps.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)
-              ) : nextStepsUnknown ? (
-                <EmptyState>Noch kein belegter naechster Schritt.</EmptyState>
-              ) : (
-                <EmptyState>MORA wartet auf neue Signale aus Quellen oder Arbeit.</EmptyState>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <aside className="grid gap-4">
-          {view.initiatives.length > 0 ? (
-            <div className="rounded-xl border border-violet-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
-              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/82">
-                <FolderOpen size={16} className="text-violet-200/70" />
-                Initiativen
+        <aside className="grid content-start gap-4">
+          {actionItems.length > 0 && (
+            <section className="rounded-xl border border-white/[0.07] bg-black/16 p-4 backdrop-blur-xl">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
+                <Compass size={16} className="text-cyan-100/58" />
+                MÔRA
               </div>
               <div className="grid gap-3">
-                {view.initiatives.map((initiative) => (
-                  <div key={initiative.id} className="rounded-xl border border-violet-200/10 bg-violet-300/[0.06] p-3">
-                    <h3 className="text-sm font-medium text-white/86">{initiative.title}</h3>
-                    <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-white/46">
-                      <span>{initiative.signalCount} Signale</span>
-                      <span>{initiative.riskCount} Risiken</span>
-                      <span>{initiative.decisionCount} Entscheidungen</span>
-                    </div>
-                  </div>
-                ))}
+                {actionItems.map((item) => <SignalCard key={item.id} signal={item} onOpenPane={onOpenPane} />)}
               </div>
-            </div>
-          ) : null}
+            </section>
+          )}
 
-          <div className="rounded-xl border border-emerald-200/[0.10] bg-black/22 p-4 backdrop-blur-2xl">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-white/82">
-                <Plug size={16} className="text-emerald-200/70" />
-                Quellenstatus
-              </div>
-              {!hideDashboardPlaceholder && (
-                <button
-                  type="button"
-                  onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
-                  className="inline-flex items-center gap-1 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.12em] text-white/45 hover:border-emerald-200/22 hover:text-emerald-100/80"
-                >
-                  Dashboard
-                  <ExternalLink size={11} />
-                </button>
-              )}
+          <section className="rounded-xl border border-white/[0.07] bg-black/16 p-4 backdrop-blur-xl">
+            <div className="mb-3 flex items-center gap-2 text-sm font-medium text-white/78">
+              <Plug size={16} className="text-white/46" />
+              System
             </div>
-            <p className="mb-3 text-xs leading-relaxed text-white/44">
-              {hideRuntimePlaceholder || runtimeUnknown
-                ? 'Status noch unbekannt. Home zeigt nur Quellen, fuer die CORE belegte Signale liefern kann.'
-                : 'Home nutzt nur die Signale, die fuer Orientierung belegbar sind.'}
-            </p>
             {connectorHandshakeUnknown ? (
-              <div className="mb-3 rounded-xl border border-amber-200/10 bg-amber-300/[0.05] px-3 py-2 text-xs text-amber-50/56">
+              <div className="mb-3 rounded-lg border border-amber-200/10 bg-amber-300/[0.04] px-3 py-2 text-xs text-amber-50/54">
                 Setup-Zustand nicht belegbar.
               </div>
             ) : null}
             <div className="grid gap-2">
               {view.connectors.map((connector) => <ConnectorPill key={connector.id} connector={connector} />)}
             </div>
-          </div>
+            <button
+              type="button"
+              onClick={() => onOpenPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } })}
+              className="mt-3 inline-flex items-center gap-2 text-[11px] text-white/34 transition-colors hover:text-white/58"
+            >
+              <ArrowRight size={11} />
+              Integrationen einrichten
+            </button>
+          </section>
         </aside>
       </div>
 

@@ -242,7 +242,7 @@ describe('openflow presentation', () => {
       },
     ]);
 
-    expect(initiatives.map((item) => item.id)).not.toContain('initiative-ki-einfuehrung');
+    expect(initiatives.map((item) => item.id)).not.toContain('initiative-ki-einführung');
   });
 
   it('deduplicates signals before deriving initiative counts from lagebild buckets', () => {
@@ -284,7 +284,7 @@ describe('openflow presentation', () => {
           id: 'late-mail',
           from: 'kunde@example.com',
           subject: 'Launch Problem dringend',
-          snippet: 'Risiko fuer Website Relaunch.',
+          snippet: 'Risiko für Website Relaunch.',
           date: '2026-06-01T08:00:00.000Z',
         },
       ],
@@ -331,7 +331,7 @@ describe('openflow presentation', () => {
     });
 
     expect(view.nextSteps.map((item) => item.title)).toEqual(
-      expect.arrayContaining(['Mail fuer OpenClaw vorbereiten', 'Kalender fuer OpenClaw vorbereiten'])
+      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
     );
     expect(view.nextSteps[0].suggestedActions[0]).toEqual(
       expect.objectContaining({ kind: 'connect_source', paneType: 'integrations' })
@@ -363,14 +363,14 @@ describe('openflow presentation', () => {
         home_cards: {
           verified: [],
           placeholder: [
-            { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-            { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+            { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
           ],
           unknown: [{ id: 'next_steps', reason: 'No tenant-scoped task nodes' }],
         },
         placeholders_detected: [
-          { label: 'Mail fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-          { label: 'Kalender fuer OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+          { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
+          { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
         ],
         unknowns: [
           { id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' },
@@ -380,7 +380,7 @@ describe('openflow presentation', () => {
     });
 
     expect(view.nextSteps.map((item) => item.title)).not.toEqual(
-      expect.arrayContaining(['Mail fuer OpenClaw vorbereiten', 'Kalender fuer OpenClaw vorbereiten'])
+      expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
     );
     expect(view.truthState?.nextStepsUnknown).toBe(true);
     expect(view.truthState?.runtimeUnknown).toBe(true);

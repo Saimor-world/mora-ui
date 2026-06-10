@@ -109,7 +109,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             {/* Tooltip */}
             {/* Bridge element to allow pointer crossing without dropout */}
             <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 ease-out pointer-events-none z-[9999]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 delay-150 ease-out pointer-events-none z-[9999]">
                 <div className={`rounded-lg px-3 py-2 min-w-[120px] text-center shadow-2xl ${isStandardMode
                     ? 'bg-gray-800 border border-gray-700'
                     : 'bg-black/95 backdrop-blur-xl border border-white/10'
@@ -203,7 +203,7 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
 
             {/* Tooltip */}
             <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 ease-out pointer-events-none z-[9999]">
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 delay-150 ease-out pointer-events-none z-[9999]">
                 <div className={`rounded-lg px-3 py-2 min-w-[140px] text-center shadow-2xl ${
                     isStandardMode
                         ? 'bg-gray-800 border border-gray-700'
@@ -367,7 +367,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                         ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
                         }`}
-                    title="Naechsten Track waehlen"
+                    title="Nächsten Track wählen"
                 >
                     <SkipForward size={14} />
                 </button>
@@ -500,7 +500,7 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-xs font-medium">{pane.title}</span>
                                     <span className={`mt-0.5 block text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geoeffnet'}
+                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geöffnet'}
                                     </span>
                                 </span>
                             </button>
@@ -892,7 +892,7 @@ export const Dock = () => {
             return {
                 label: 'Bereich',
                 title: activeSpace.name,
-                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der naechste Einstieg klar sichtbar sein.',
+                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der nächste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
                 actionLabel: 'Im Finder öffnen',
@@ -927,15 +927,15 @@ export const Dock = () => {
             label: 'Universe',
             title: displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: websiteEntryContext
-                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus oeffnest du Dossier, Aufgaben und Arbeitsraeume.'
+                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus öffnest du Dossier, Aufgaben und Arbeitsräume.'
                 : surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
                 : surfaceProfile.isLocalTruthSurface
                     ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
-                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus waehlst du zuerst die passende Organisation oder Abteilung.',
+                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus wählst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: websiteEntryContext ? 'Dossier oeffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
+            actionLabel: websiteEntryContext ? 'Dossier öffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
             onOpen: () => openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -1140,7 +1140,7 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-team',
-                    label: 'Teamflaeche',
+                    label: 'Teamfläche',
                     description: 'Wechsle direkt zur Team-Oberfläche für diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
@@ -1148,7 +1148,7 @@ export const Dock = () => {
                 {
                     id: 'department-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen und Live-Signale der Abteilung gebuendelt ansehen.',
+                    description: 'Erinnerungen und Live-Signale der Abteilung gebündelt ansehen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -1402,7 +1402,7 @@ export const Dock = () => {
                                 style={isStandardMode ? {} : {
                                     background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.55) 0%, rgba(10, 13, 28, 0.45) 54%, rgba(2, 7, 10, 0.6) 100%)',
                                     border: `1px solid var(--scene-border, rgba(125,224,255,0.28))`,
-                                    boxShadow: `0 24px 80px rgba(0,0,0,0.65), 0 0 80px var(--scene-accent, rgba(34,211,238,0.3)), inset 0 1px 0 rgba(255,255,255,0.1)`,
+                                    boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 40px var(--scene-accent, rgba(34,211,238,0.10)), inset 0 1px 0 rgba(255,255,255,0.07)`,
                                     transition: 'border-color 1.2s ease, box-shadow 1.2s ease',
                                     willChange: 'transform',
                                 }}
@@ -1427,7 +1427,7 @@ export const Dock = () => {
                                 )}
 
                                 {/* LEFT: Search, Control Center, Audio */}
-                                <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                     <CapsuleDockIcon
                                         icon={Search}
                                         label="Suche"
@@ -1484,7 +1484,7 @@ export const Dock = () => {
                                 <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
 
                                 {/* CENTER: App Icons */}
-                                <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                     {dockItems.map((item) => (
                                         <MagneticDockIconMemo
                                             key={item.action}
@@ -1499,7 +1499,7 @@ export const Dock = () => {
                                 <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
 
                                 {/* RIGHT: Status, Company Badge, Mora Orb */}
-                                <div className="flex items-center gap-1.5 shrink-0">
+                                <div className="flex items-center gap-1 shrink-0">
                                     {!websiteEntryContext && (
                                         <div className="flex items-center gap-1 shrink-0">
                                             <FocusModeWidget />
@@ -1577,49 +1577,43 @@ export const Dock = () => {
 
                                     {activeMode !== 'public_playground' && (
                                         <div className="flex items-center shrink-0" data-mora-orb>
-                                            <motion.div
-                                                animate={{ scale: [1, 1.02, 1] }}
-                                                transition={{ duration: 4.2, repeat: Infinity, ease: 'easeInOut' }}
-                                                style={{ transformOrigin: 'center' }}
+                                            <button
+                                                onClick={() => handleDockClick('chat')}
+                                                data-mora-home="true"
+                                                className={`relative h-10 w-10 rounded-full overflow-visible transition-all duration-200 hover:scale-105 active:scale-95 group ${
+                                                    isStandardMode ? 'bg-white shadow-md' : 'bg-transparent'
+                                                }`}
+                                                title="Mora öffnen"
+                                                style={!isStandardMode ? { filter: `drop-shadow(0 0 12px ${accent}20)` } : {}}
                                             >
-                                                <button
-                                                    onClick={() => handleDockClick('chat')}
-                                                    data-mora-home="true"
-                                                    className={`relative h-12 w-12 rounded-full overflow-visible transition-all duration-300 hover:scale-105 active:scale-95 group ${
-                                                        isStandardMode ? 'bg-white shadow-lg' : 'bg-transparent'
-                                                    }`}
-                                                    title="Mora öffnen"
-                                                    style={!isStandardMode ? { filter: `drop-shadow(0 0 25px ${accent}45)` } : {}}
-                                                >
-                                                    {!isStandardMode && (
-                                                        <>
-                                                            <div
-                                                                className="absolute inset-[-8px] rounded-full pointer-events-none"
-                                                                style={{
-                                                                    background: `radial-gradient(circle at 35% 30%, ${accent}40 0%, transparent 64%)`,
-                                                                    filter: 'blur(16px)',
-                                                                }}
-                                                            />
-                                                            <div className="absolute inset-[-4px] rounded-full border border-emerald-400/30 dock-ring-pulse pointer-events-none" />
-                                                            <div className="absolute inset-[2px] rounded-full border border-white/15 pointer-events-none" />
-                                                        </>
-                                                    )}
-                                                    <div className={`absolute inset-0 rounded-full border-2 ${isStandardMode ? 'border-[#0078D4]/40' : 'border-emerald-400/40'}`} />
-                                                    {!isStandardMode && (
+                                                {!isStandardMode && (
+                                                    <>
                                                         <div
-                                                            className="absolute inset-[4px] rounded-full pointer-events-none"
+                                                            className="absolute inset-[-6px] rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                                                             style={{
-                                                                background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.2) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.3) 0%, transparent 35%)',
+                                                                background: `radial-gradient(circle at 35% 30%, ${accent}30 0%, transparent 64%)`,
+                                                                filter: 'blur(12px)',
                                                             }}
                                                         />
-                                                    )}
-                                                    <PlasmaOrb
-                                                        color={viewMode === 'demo' ? '#6D28D9' : accentColor}
-                                                        state={orbState as any}
-                                                        size={48}
+                                                        <div className="absolute inset-[-3px] rounded-full border border-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                        <div className="absolute inset-[2px] rounded-full border border-white/10 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                <div className={`absolute inset-0 rounded-full border ${isStandardMode ? 'border-[#0078D4]/30' : 'border-emerald-400/25'}`} />
+                                                {!isStandardMode && (
+                                                    <div
+                                                        className="absolute inset-[3px] rounded-full pointer-events-none"
+                                                        style={{
+                                                            background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.15) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.25) 0%, transparent 35%)',
+                                                        }}
                                                     />
-                                                </button>
-                                            </motion.div>
+                                                )}
+                                                <PlasmaOrb
+                                                    color={viewMode === 'demo' ? '#6D28D9' : accentColor}
+                                                    state={orbState as any}
+                                                    size={40}
+                                                />
+                                            </button>
                                         </div>
                                     )}
                                 </div>

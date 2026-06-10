@@ -161,7 +161,7 @@ const PREVIEW_COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
 };
 
 const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'Groesse unbekannt';
+    if (!bytes) return 'Grösse unbekannt';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -199,7 +199,7 @@ const DocumentPreview: React.FC<{ item: PreviewableItem }> = ({ item }) => {
                         <FileText size={46} className="mx-auto mb-4 text-blue-300/35" />
                         <p className="text-sm text-white/70">Keine Dokumentvorschau vorhanden</p>
                         <p className="mt-2 text-xs leading-relaxed text-white/35">
-                            Oeffne das Element vollstaendig, um Metadaten, Quelle oder verknuepfte Datei zu pruefen.
+                            Oeffne das Element vollständig, um Metadaten, Quelle oder verknüpfte Datei zu prüfen.
                         </p>
                     </div>
                 )}
@@ -497,7 +497,7 @@ export const QuickPreview: React.FC = () => {
                                     onClick={next}
                                     className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white/50 hover:text-white hover:bg-white/5 transition-colors"
                                 >
-                                    <span className="text-xs">Naechste</span>
+                                    <span className="text-xs">Nächste</span>
                                     <ChevronRight size={16} />
                                 </button>
                             </div>

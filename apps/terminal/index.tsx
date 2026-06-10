@@ -112,7 +112,7 @@ const MORA_COMMANDS: Record<string, { description: string; handler: (args: strin
         },
     },
     providers: {
-        description: "Verfuegbare AI-Provider (benötigt Core-Verbindung)",
+        description: "Verfügbare AI-Provider (benötigt Core-Verbindung)",
         handler: async () => {
             try {
                 const data = await coreGet("/v3/chat/providers", { isOptional: true });

@@ -19,16 +19,16 @@ export type LowRiskCategory =
   | 'preference'  // Benutzervorlieben (z.B. "bevorzugt dunklen Modus")
   | 'tone'        // Kommunikationston (z.B. "formal", "freundlich")
   | 'phrasing'    // Ausdrucksweise (z.B. "verwendet 'wir' statt 'ich'")
-  | 'summary'     // Zusammenfassungen von Gespraechen
+  | 'summary'     // Zusammenfassungen von Gesprächen
   | 'context';    // Allgemeiner Kontext ohne kritische Daten
 
 /**
- * High-Risk Kategorien - Benoetigen Review
+ * High-Risk Kategorien - Benötigen Review
  * Diese Insights müssen vom Benutzer bestätigt werden.
  */
 export type HighRiskCategory =
-  | 'fact'        // Fakten ueber die Firma/Projekte
-  | 'goal'        // Geschaeftsziele und OKRs
+  | 'fact'        // Fakten über die Firma/Projekte
+  | 'goal'        // Geschäftsziele und OKRs
   | 'price'       // Preise, Budgets, finanzielle Daten
   | 'policy'      // Firmenregeln und Policies
   | 'team'        // Team-Informationen (Rollen, Kontakte)
@@ -141,7 +141,7 @@ export type ReviewStatus = 'pending' | 'approved' | 'rejected';
 
 /**
  * Item in der Review Queue (mem_review_queue Tabelle)
- * High-Risk Insights die auf Bestaetigung warten
+ * High-Risk Insights die auf Bestätigung warten
  */
 export interface ReviewItem {
   /** Eindeutige ID des Review Items */
@@ -156,7 +156,7 @@ export interface ReviewItem {
   /** Optional: User ID */
   user_id?: string | null;
 
-  /** Das zu ueberpruefende Insight */
+  /** Das zu überprüfende Insight */
   insight: string;
 
   /** Kategorie des Insights */
@@ -337,7 +337,7 @@ export interface MemoryMetrics {
   /** Anzahl ausstehender Reviews */
   pending_reviews: number;
 
-  /** Lern-Aktivitaet der letzten 7 Tage */
+  /** Lern-Aktivität der letzten 7 Tage */
   recent_learns_7d: number;
 
   /** Memory TTL in Tagen (default: 75) */
@@ -387,7 +387,7 @@ export interface MemoryCleanupOptions {
   /** Quellen die vom Cleanup ausgenommen sind */
   protected_sources?: MemorySource[];
 
-  /** Tags die vom Cleanup schuetzen (z.B. 'important') */
+  /** Tags die vom Cleanup schützen (z.B. 'important') */
   protected_tags?: string[];
 
   /** Dry-Run Modus (zeigt nur was gelöscht würde) */
@@ -436,7 +436,7 @@ export interface MemorySyncStatus {
 // =============================================================================
 
 /**
- * Prueft ob eine Kategorie low-risk ist
+ * Prüft ob eine Kategorie low-risk ist
  */
 export function isLowRiskCategory(category: MemoryCategory): category is LowRiskCategory {
   const lowRisk: LowRiskCategory[] = ['preference', 'tone', 'phrasing', 'summary', 'context'];
@@ -444,7 +444,7 @@ export function isLowRiskCategory(category: MemoryCategory): category is LowRisk
 }
 
 /**
- * Prueft ob eine Kategorie high-risk ist
+ * Prüft ob eine Kategorie high-risk ist
  */
 export function isHighRiskCategory(category: MemoryCategory): category is HighRiskCategory {
   const highRisk: HighRiskCategory[] = ['fact', 'goal', 'price', 'policy', 'team', 'technical'];

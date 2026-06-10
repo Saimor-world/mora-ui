@@ -13,14 +13,14 @@ function toNoteFilename(text: string) {
     .split('\n')
     .map((line) => line.replace(/^#+\s*/, '').trim())
     .find(Boolean);
-  const title = firstLine || 'Persoenliche Notiz';
+  const title = firstLine || 'Persönliche Notiz';
   const safe = title
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9\s._-]/g, '')
     .trim()
     .replace(/\s+/g, ' ')
-    .slice(0, 48) || 'Persoenliche Notiz';
+    .slice(0, 48) || 'Persönliche Notiz';
   return /\.md$/i.test(safe) ? safe : `${safe}.md`;
 }
 
@@ -51,7 +51,7 @@ export default function NotesApp({ paneId: _paneId }: AppProps) {
   const canSaveAsFile = useMemo(() => content.trim().length > 0, [content]);
 
   const saveIntoPrivateFiles = useCallback(() => {
-    const text = content.trim() ? content : '# Persoenliche Notiz\n\n';
+    const text = content.trim() ? content : '# Persönliche Notiz\n\n';
     const file = saveLocalPrivateTextFile(toNoteFilename(text), text);
     setLocalSaveState('saved');
     setTimeout(() => setLocalSaveState('idle'), 1800);
@@ -71,7 +71,7 @@ export default function NotesApp({ paneId: _paneId }: AppProps) {
           {loadState === 'no-server' ? (
             <span className="flex items-center gap-1 text-white/25">
               <CloudOff size={10} />
-              nur dieses Geraet
+              nur dieses Gerät
             </span>
           ) : saveState === 'saving' ? (
             <span className="flex items-center gap-1 text-white/35">
@@ -91,14 +91,14 @@ export default function NotesApp({ paneId: _paneId }: AppProps) {
           ) : loadState === 'loading' ? (
             <span className="flex items-center gap-1 text-white/20">
               <Loader2 size={10} className="animate-spin" />
-              laedt...
+              lädt...
             </span>
           ) : null}
         </div>
       </div>
 
       <div className="shrink-0 border-b border-white/[0.06] px-5 py-3 text-[11px] leading-relaxed text-white/42">
-        Das ist dein schneller Schreibblock. Er speichert in deinem persoenlichen OS-Profil, sobald die Verbindung steht.
+        Das ist dein schneller Schreibblock. Er speichert in deinem persönlichen OS-Profil, sobald die Verbindung steht.
         Wenn daraus eine Datei werden soll, lege sie bewusst in <span className="text-white/65">Meine Dateien</span> ab.
       </div>
 
@@ -134,7 +134,7 @@ export default function NotesApp({ paneId: _paneId }: AppProps) {
       {loadState !== 'loading' && (
         <div className="flex shrink-0 items-center justify-between gap-3 border-t border-white/[0.06] px-4 py-2">
           <span className="text-[10px] text-white/20">
-            {wordCount > 0 ? `${wordCount} Woerter - ${charCount} Zeichen` : 'Noch leer'}
+            {wordCount > 0 ? `${wordCount} Wörter - ${charCount} Zeichen` : 'Noch leer'}
           </span>
           <div className="flex items-center gap-2">
             <button

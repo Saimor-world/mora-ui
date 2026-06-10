@@ -121,7 +121,7 @@ export function getSessionBodyText(s: WorkSessionShellSummary): string {
         }
         return 'Mora arbeitet am Arbeitsplan.';
     }
-    return 'Mora haelt den aktuellen Arbeitsplan im Scope bereit.';
+    return 'Mora hält den aktuellen Arbeitsplan im Scope bereit.';
 }
 
 /**
@@ -146,8 +146,8 @@ export function getSessionExtendedNote(s: WorkSessionShellSummary): string | nul
     if (planned > 0 && total > planned) {
         const added = total - planned;
         return added === 1
-            ? 'Navigation hat einen Schritt zum Verlauf ergaenzt.'
-            : `Navigation hat ${added} Schritte zum Verlauf ergaenzt.`;
+            ? 'Navigation hat einen Schritt zum Verlauf ergänzt.'
+            : `Navigation hat ${added} Schritte zum Verlauf ergänzt.`;
     }
     return null;
 }

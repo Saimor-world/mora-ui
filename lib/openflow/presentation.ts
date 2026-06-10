@@ -90,7 +90,7 @@ interface BuildOpenFlowLagebildInput {
 
 const INITIATIVE_PATTERNS = [
   { id: 'initiative-website-relaunch', title: 'Website Relaunch', match: /website|relaunch|launch/i },
-  { id: 'initiative-ki-einfuehrung', title: 'KI Einfuehrung', match: /\bki\b|\bai\b|artificial intelligence|automation|agent/i },
+  { id: 'initiative-ki-einführung', title: 'KI Einführung', match: /\bki\b|\bai\b|artificial intelligence|automation|agent/i },
   { id: 'initiative-security-check', title: 'Security Check', match: /security|audit|ssl|risk|risiko/i },
   { id: 'initiative-kundenprojekt', title: 'Kundenprojekt', match: /kunde|customer|client|projekt/i },
 ];
@@ -238,7 +238,7 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
       source: 'mail',
       status: summary.mailConfigured ? 'connected' : 'needs_setup',
       detail: summary.mailStatusDetail || summary.mailStatusLabel || 'Mail ist noch nicht verbunden.',
-      actionLabel: summary.mailConfigured ? 'Postfach oeffnen' : 'Mail verbinden',
+      actionLabel: summary.mailConfigured ? 'Postfach öffnen' : 'Mail verbinden',
     },
     {
       id: 'calendar',
@@ -246,7 +246,7 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
       source: 'calendar',
       status: summary.calendarConfigured ? 'connected' : 'needs_setup',
       detail: summary.calendarStatusDetail || summary.calendarStatusLabel || 'Kalender ist noch nicht verbunden.',
-      actionLabel: summary.calendarConfigured ? 'Kalender oeffnen' : 'Kalender verbinden',
+      actionLabel: summary.calendarConfigured ? 'Kalender öffnen' : 'Kalender verbinden',
     },
     {
       id: 'browser',
@@ -262,7 +262,7 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
       source: 'os',
       status: localTruthStatus,
       detail: summary.localTruthStatusLabel || 'Desktop Bridge ist nicht verbunden.',
-      actionLabel: localTruthStatus === 'offline' ? 'Setup pruefen' : 'Oeffnen',
+      actionLabel: localTruthStatus === 'offline' ? 'Setup prüfen' : 'Oeffnen',
     },
   ];
 }
@@ -270,20 +270,20 @@ export function buildConnectorStatuses(summary: CommunicationSummaryLike): Conne
 function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSignal[] {
   return connectors
     .filter((connector) => connector.status === 'needs_setup' || connector.status === 'offline' || connector.status === 'degraded')
-    .slice(0, 3)
+    .slice(0, 2)
     .map((connector) =>
       signal({
         id: `setup-${connector.id}`,
         source: connector.source,
-        title: `${connector.label} fuer OpenClaw vorbereiten`,
-        summary: 'Setup gehoert in den OS-Bereich des Dashboards. SAIMOR OS nutzt danach nur verdichtete Signale fuer Orientierung.',
-        priority: connector.id === 'mail' ? 'high' : 'normal',
+        title: `${connector.label} verbinden`,
+        summary: 'Diese Quelle ist noch nicht belegbar verbunden.',
+        priority: 'normal',
         status: 'new',
         trustScope: 'personal',
         suggestedActions: [
           {
             id: `${connector.id}-connect`,
-            label: 'Dashboard oeffnen',
+            label: 'Setup prüfen',
             kind: 'connect_source',
             paneType: 'integrations',
             paneData: { focus: connector.id },
@@ -340,7 +340,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
       relatedInitiativeId: inferInitiativeId(`${item.subject} ${item.snippet || ''}`),
       suggestedActions: [
         { id: `${item.id}-reply`, label: 'Antwort entwerfen', kind: 'reply', paneType: 'mail', paneData: { messageId: item.id } },
-        { id: `${item.id}-flow`, label: 'Als Flow oeffnen', kind: 'open_flow' },
+        { id: `${item.id}-flow`, label: 'Als Flow öffnen', kind: 'open_flow' },
       ],
     })
   );
@@ -356,7 +356,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
       trustScope: 'personal',
       occurredAt: item.date,
       relatedInitiativeId: inferInitiativeId(item.title || ''),
-      suggestedActions: [{ id: `${item.id}-open-calendar`, label: 'Kalender oeffnen', kind: 'open_pane', paneType: 'calendar' }],
+      suggestedActions: [{ id: `${item.id}-open-calendar`, label: 'Kalender öffnen', kind: 'open_pane', paneType: 'calendar' }],
     })
   );
 
@@ -384,7 +384,7 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
       status: 'linked',
       trustScope: 'personal',
       relatedInitiativeId: inferInitiativeId(`${item.itemName} ${item.itemPath || ''}`),
-      suggestedActions: [{ id: `${item.itemId}-open-cloud`, label: 'Quelle pruefen', kind: 'open_pane', paneType: 'meine-dateien' }],
+      suggestedActions: [{ id: `${item.itemId}-open-cloud`, label: 'Quelle prüfen', kind: 'open_pane', paneType: 'meine-dateien' }],
     })
   );
 
@@ -405,13 +405,13 @@ export function buildOpenFlowLagebild(input: BuildOpenFlowLagebildInput): OpenFl
   });
 
   const homeNextSteps = (input.homeView?.next_steps || []).map((item) => {
-    const title = cleanTitle(item.title, 'Naechsten Schritt pruefen');
+    const title = cleanTitle(item.title, 'Nächsten Schritt prüfen');
 
     return signal({
       id: buildSignalId('home-next', item.id),
       source: 'os',
       title,
-      summary: item.source || 'Vorgeschlagener naechster Schritt.',
+      summary: item.source || 'Vorgeschlagener nächster Schritt.',
       priority: 'normal',
       status: 'new',
       trustScope: 'organization',

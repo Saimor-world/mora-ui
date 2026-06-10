@@ -617,20 +617,20 @@ export const MemorySidebar: React.FC = () => {
     const [isSearching, setIsSearching] = useState(false);
     const memoryScopeLabel = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface ? 'Beispielkontext' : 'Organisations-Memory')
-        : 'Konto-Gedaechtnis';
+        : 'Konto-Gedächtnis';
     const memoryContextLabel = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface ? 'Beispielkontext aktiv' : 'Organisationskontext aktiv')
         : 'Kein Kontext aktiv';
     const memoryContextTitle = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface
-            ? 'Hier siehst du deine letzten Eintraege und die Hinweise zur aktiven Beispielinstanz.'
-            : 'Hier siehst du deine letzten Eintraege und die Hinweise zum aktiven Organisationskontext.')
-        : 'Hier siehst du nur deine eigenen Eintraege. Weitere Hinweise erscheinen, sobald ein Kontext aktiv ist.';
+            ? 'Hier siehst du deine letzten Einträge und die Hinweise zur aktiven Beispielinstanz.'
+            : 'Hier siehst du deine letzten Einträge und die Hinweise zum aktiven Organisationskontext.')
+        : 'Hier siehst du nur deine eigenen Einträge. Weitere Hinweise erscheinen, sobald ein Kontext aktiv ist.';
     const memoryContextFooter = resolvedCompanyId
         ? (surfaceProfile.isPublicDemoSurface
             ? 'Mora zeigt hier, was im aktuellen Beispielkontext für dich gerade relevant ist.'
             : 'Mora zeigt hier, was für dich im aktuellen Organisationskontext gerade relevant ist.')
-        : 'Waehle einen Kontext, damit zusaetzlich Hinweise und Freigaben erscheinen.';
+        : 'Wähle einen Kontext, damit zusätzlich Hinweise und Freigaben erscheinen.';
 
     // Load recent memories on mount
     useEffect(() => {
@@ -800,7 +800,7 @@ export const MemorySidebar: React.FC = () => {
                                                 label={memoryContextLabel}
                                                 title={memoryContextTitle}
                                                 chips={[
-                                                    { label: 'Kuerzlich' },
+                                                    { label: 'Kürzlich' },
                                                     { label: 'Offen' },
                                                     { label: 'Kontext', tone: resolvedCompanyId ? 'cyan' : 'slate' },
                                                 ]}
@@ -819,7 +819,7 @@ export const MemorySidebar: React.FC = () => {
 
                                                 {!activeCompanyId && (
                                                     <div className="mx-3 mt-3 p-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-[11px] text-amber-200">
-                                                        Kein Kontext aktiv. Deine eigenen Eintraege bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geöffnet hast.
+                                                        Kein Kontext aktiv. Deine eigenen Einträge bleiben sichtbar; Hinweise und Freigaben kommen dazu, sobald du einen Bereich oder die Beispielinstanz geöffnet hast.
                                                     </div>
                                                 )}
 
@@ -865,7 +865,7 @@ export const MemorySidebar: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <AlertCircle size={12} className="text-amber-400" />
                                                                 <span className="text-[9px] uppercase tracking-wider text-amber-400/70">
-                                                                    Zur Pruefung ({pendingCount})
+                                                                    Zur Prüfung ({pendingCount})
                                                                 </span>
                                                             </div>
                                                             <div className="space-y-2">
@@ -892,7 +892,7 @@ export const MemorySidebar: React.FC = () => {
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <Clock size={12} className="text-white/30" />
                                                                 <span className="text-[9px] uppercase tracking-wider text-white/30">
-                                                                    Kuerzlich gelernt
+                                                                    Kürzlich gelernt
                                                                 </span>
                                                             </div>
                                                             {recentMemories.length > 0 ? (

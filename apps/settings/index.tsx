@@ -381,7 +381,7 @@ useEffect(() => {
 
         const oversizedFile = audioFiles.find((file) => file.size > MAX_AMBIENT_AUDIO_FILE_BYTES);
         if (oversizedFile) {
-            toast.error(`"${oversizedFile.name}" ist groesser als 25 MB`);
+            toast.error(`"${oversizedFile.name}" ist grösser als 25 MB`);
             return;
         }
 
@@ -402,8 +402,8 @@ useEffect(() => {
 
             toast.success(
                 storedTracks.length === 1
-                    ? `"${storedTracks[0].name}" wurde zur Audio-Bibliothek hinzugefuegt`
-                    : `${storedTracks.length} Songs wurden zur Audio-Bibliothek hinzugefuegt`
+                    ? `"${storedTracks[0].name}" wurde zur Audio-Bibliothek hinzugefügt`
+                    : `${storedTracks.length} Songs wurden zur Audio-Bibliothek hinzugefügt`
             );
         } catch (error) {
             console.error('[Settings] Failed to store ambient audio files:', error);
@@ -654,7 +654,7 @@ useEffect(() => {
                                         <div className="flex items-center justify-between text-xs uppercase tracking-wider text-white/40">
                                             <span className="inline-flex items-center gap-2">
                                                 <Volume2 size={14} />
-                                                Lautstaerke
+                                                Lautstärke
                                             </span>
                                             <span>{Math.round(ambientAudioVolume * 100)}%</span>
                                         </div>
@@ -677,7 +677,7 @@ useEffect(() => {
                                         <div className="text-sm text-white/80 font-medium">Szenen & Musik</div>
                                         <div className="mt-1 text-xs text-white/40 leading-relaxed">
                                             Optional kannst du pro Szene einen bevorzugten Song hinterlegen. Wenn die Szene aktiv ist,
-                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstaerke leicht an.
+                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstärke leicht an.
                                         </div>
 
                                         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -835,7 +835,7 @@ useEffect(() => {
                                 <div className="p-4 bg-white/5 rounded-xl border border-white/10 space-y-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex-1">
-                                            <div className="text-sm text-white/80 font-medium">Aktionen direkt ausfuehren</div>
+                                            <div className="text-sm text-white/80 font-medium">Aktionen direkt ausführen</div>
                                             <div className="text-xs text-white/40 mt-1">
                                                 Wenn deaktiviert, fragt MORA vor jedem Werkzeugschritt nach deiner Bestätigung.
                                                 Das betrifft zum Beispiel Dateierstellung und inhaltliche Änderungen.
@@ -847,7 +847,7 @@ useEffect(() => {
                                                 const next = !current;
                                                 saveSetting({ autoExecuteActions: next });
                                                 toast.info(next
-                                                    ? 'MORA wird Aktionen automatisch ausfuehren'
+                                                    ? 'MORA wird Aktionen automatisch ausführen'
                                                     : 'MORA wird vor Aktionen fragen');
                                             }}
                                             className={`w-12 h-7 rounded-full border relative transition-all flex-shrink-0 ml-4 ${(user?.settings?.autoExecuteActions ?? true)
@@ -1117,7 +1117,7 @@ useEffect(() => {
                                                         <button
                                                             onClick={async (e) => {
                                                                 e.stopPropagation();
-                                                                if (!confirm(`"${dept.name}" wirklich loeschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
+                                                                if (!confirm(`"${dept.name}" wirklich löschen? Alle enthaltenen Spaces und Dokumente werden gelöscht.`)) return;
                                                                 setIsDeleting(dept.id);
                                                                 try {
                                                                     await deleteDepartment(dept.id);
@@ -1215,7 +1215,7 @@ useEffect(() => {
                                                                     className="flex items-center gap-1.5 text-[10px] text-blue-400/60 hover:text-blue-300 transition-colors"
                                                                 >
                                                                     <Plus size={10} />
-                                                                    Space hinzufuegen
+                                                                    Space hinzufügen
                                                                 </button>
                                                             )}
                                                         </div>
@@ -1284,7 +1284,7 @@ useEffect(() => {
                                                                     </button>
                                                                     <button
                                                                         onClick={async () => {
-                                                                            if (!confirm(`"${child.name}" wirklich loeschen?`)) return;
+                                                                            if (!confirm(`"${child.name}" wirklich löschen?`)) return;
                                                                             setIsDeleting(child.id);
                                                                             try {
                                                                                 if (child.type === 'space') {

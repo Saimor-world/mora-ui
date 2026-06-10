@@ -44,7 +44,7 @@ export function MoraRadarToast({
             type="button"
             onClick={onDismiss}
             className="rounded-lg p-1 text-white/30 transition-colors hover:bg-white/8 hover:text-white/65"
-            aria-label="Mora-Hinweis spaeter zeigen"
+            aria-label="Mora-Hinweis später zeigen"
           >
             <X size={14} />
           </button>

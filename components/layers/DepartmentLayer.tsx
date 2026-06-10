@@ -683,7 +683,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                         )}
 
                         <p className="text-[11px] leading-relaxed text-white/45">
-                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die naechste Ebene gehst.'}
+                            {hoveredSpaceDetails.description || 'Die Vorschau zeigt die stärksten Ordner dieses Bereichs, bevor du in die nächste Ebene gehst.'}
                         </p>
                     </div>
                 ) : (

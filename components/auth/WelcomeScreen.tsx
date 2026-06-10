@@ -1026,7 +1026,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                         transition={{ duration: 1.5, repeat: Infinity }}
                                                         className="text-xs text-emerald-500/50 tracking-widest"
                                                     >
-                                                        Identität wird geprueft...
+                                                        Identität wird geprüft...
                                                     </motion.div>
                                                 </motion.div>
                                             )}
@@ -1076,7 +1076,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                     className="space-y-3"
                                                 >
                                                     <div className="text-xs text-amber-500/60 text-center tracking-wider mb-3">
-                                                        Bestaetige kurz dein Passwort
+                                                        Bestätige kurz dein Passwort
                                                     </div>
                                                     <input
                                                         type="password"
@@ -1096,7 +1096,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                             className="flex-1 py-3 bg-gradient-to-r from-emerald-500/15 to-emerald-500/10 hover:from-emerald-500/25 hover:to-emerald-500/15 border border-emerald-500/30 hover:border-emerald-500/50 rounded-xl text-emerald-100 transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50"
                                                         >
                                                             <LogIn className="w-4 h-4 text-emerald-400" />
-                                                            <span className="font-medium tracking-wide text-sm">Bestaetigen</span>
+                                                            <span className="font-medium tracking-wide text-sm">Bestätigen</span>
                                                         </motion.button>
                                                         <button
                                                             onClick={() => void handleLogout()}

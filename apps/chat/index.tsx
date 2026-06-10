@@ -446,10 +446,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }
 
         // Search commands
-        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('oeffne') || lower.includes('öffne')) {
+        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('öffne') || lower.includes('öffne')) {
             // Priority regex for German/English search verbs
             const target = text
-                .replace(/^(zeige mir|zeig mir|zeige|zeig|oeffne|öffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
+                .replace(/^(zeige mir|zeig mir|zeige|zeig|öffne|öffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
                 .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
                 .trim();
             return { type: 'search', target };
@@ -581,9 +581,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         setOpenIntentReceipt(null);
         await openSearchResult(chosen, openPane, scope, 'chat');
         if (chosen.type === 'file' || chosen.type === 'node') {
-            return `Ich oeffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
+            return `Ich öffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
         }
-        return `Ich oeffne **${chosen.title}** im aktuellen Organisationskontext.`;
+        return `Ich öffne **${chosen.title}** im aktuellen Organisationskontext.`;
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
@@ -1434,7 +1434,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                             }}
                                             className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
                                         >
-                                            Suche pruefen
+                                            Suche prüfen
                                         </button>
                                     }
                                     className="rounded-[22px]"
@@ -1497,7 +1497,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         ? 'text-white/28'
                                         : 'text-violet-300/60';
                             const stateWord = isRunning
-                                ? 'Laeuft'
+                                ? 'Läuft'
                                 : isWaiting
                                     ? 'Wartet'
                                     : isDone

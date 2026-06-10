@@ -35,7 +35,7 @@ export const QuickTips: React.FC = () => {
         {
             icon: Command,
             title: 'Spotlight Suche',
-            description: `Druecke ${modifier}+K um schnell zu suchen`,
+            description: `Drücke ${modifier}+K um schnell zu suchen`,
             color: 'emerald'
         },
         {

@@ -517,8 +517,8 @@ export const NotificationCenter: React.FC = () => {
             }
             const label = context?.name || notification.title;
             openNavigationOutcome({
-                title: 'Radar-Bereich geoeffnet',
-                message: `${label} wurde im Finder geoeffnet.`,
+                title: 'Radar-Bereich geöffnet',
+                message: `${label} wurde im Finder geöffnet.`,
                 targetType: 'space',
                 label,
                 path: buildContextPath(context),
@@ -693,7 +693,7 @@ export const NotificationCenter: React.FC = () => {
                                         <button
                                             onClick={clearAll}
                                             className="p-2 rounded-lg text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-colors"
-                                            title="Alle loeschen"
+                                            title="Alle löschen"
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -789,7 +789,7 @@ export const NotificationCenter: React.FC = () => {
                             {/* Footer */}
                             <div className="p-3 border-t border-white/5 flex items-center justify-between text-[10px] text-white/30">
                                 <span>Strg+Shift+N zum Öffnen</span>
-                                <span>{notifications.length + radarNotifications.length} Eintraege</span>
+                                <span>{notifications.length + radarNotifications.length} Einträge</span>
                             </div>
                         </motion.div>
                     </>

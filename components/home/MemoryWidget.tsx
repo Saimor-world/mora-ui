@@ -44,7 +44,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
         return [
             { label: 'Grund', value: foundation, icon: Database },
             { label: 'Bereich', value: scoped, icon: Sparkles },
-            { label: 'Persoenlich', value: personal, icon: ShieldCheck },
+            { label: 'Persönlich', value: personal, icon: ShieldCheck },
         ];
     }, [surface]);
 
@@ -91,7 +91,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
                     </div>
                     <div>
                         <h3 className="text-xs font-medium text-white/80 tracking-wide">
-                            {isAccountScoped ? 'Konto-Gedaechtnis' : 'Mora Center'}
+                            {isAccountScoped ? 'Konto-Gedächtnis' : 'Mora Center'}
                         </h3>
                         <p className="text-[9px] text-white/30 uppercase tracking-widest">
                             {isAccountScoped ? 'Kein Kontext aktiv' : 'Erinnerungen & Signale'}
@@ -115,7 +115,7 @@ export const MemoryWidget: React.FC<MemoryWidgetProps> = ({ className = '' }) =>
 
             {isAccountScoped && (
                 <div className="mb-4 rounded-xl border border-amber-500/15 bg-amber-500/5 p-3 text-xs text-white/45 leading-relaxed">
-                    Kein Kontext aktiv. Konto-Gedaechtnis bleibt lokal; zusaetzliche Hinweise und Freigaben erscheinen erst mit einem aktiven Bereich oder Organisationskontext.
+                    Kein Kontext aktiv. Konto-Gedächtnis bleibt lokal; zusätzliche Hinweise und Freigaben erscheinen erst mit einem aktiven Bereich oder Organisationskontext.
                 </div>
             )}
 

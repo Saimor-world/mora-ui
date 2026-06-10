@@ -160,7 +160,7 @@ export const RelevantMemories: React.FC<{
                 </div>
                 {isMemoryBasis && (
                     <p className="mb-2 text-[11px] leading-relaxed text-white/55">
-                        Mora hat diese Antwort auf gespeichertes Wissen gestuetzt. Hier siehst du die naheliegendsten Gedaechtnistreffer im aktuellen Organisationskontext.
+                        Mora hat diese Antwort auf gespeichertes Wissen gestützt. Hier siehst du die naheliegendsten Gedächtnistreffer im aktuellen Organisationskontext.
                     </p>
                 )}
                 <div className="space-y-1.5">
