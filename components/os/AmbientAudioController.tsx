@@ -26,7 +26,7 @@ export const AmbientAudioController: React.FC = () => {
     const currentTrackIdRef = useRef<string | null>(null);
     const syntheticContextRef = useRef<AudioContext | null>(null);
     const syntheticNodesRef = useRef<{
-        oscillators: OscillatorNode[];
+        oscillators: AudioScheduledSourceNode[];
         gains: GainNode[];
         master: GainNode;
         lfo: OscillatorNode;
@@ -105,38 +105,115 @@ export const AmbientAudioController: React.FC = () => {
         }
         if (context.state !== 'running') return;
 
+        const currentVolume = effectiveVolumeRef.current;
+
+        // Master output
         const master = context.createGain();
         master.gain.value = 0.0001;
         master.connect(context.destination);
 
+        // Reverb — 3 delay lines in parallel for room depth
+        const makeDelay = (time: number, feedback: number) => {
+            const delay = context.createDelay(2.0);
+            const fb = context.createGain();
+            const lpf = context.createBiquadFilter();
+            delay.delayTime.value = time;
+            fb.gain.value = feedback;
+            lpf.type = 'lowpass';
+            lpf.frequency.value = 3400;
+            delay.connect(lpf);
+            lpf.connect(fb);
+            fb.connect(delay);
+            delay.connect(master);
+            return delay;
+        };
+        const rev1 = makeDelay(0.067, 0.42);
+        const rev2 = makeDelay(0.149, 0.36);
+        const rev3 = makeDelay(0.211, 0.28);
+        const reverbBus = context.createGain();
+        reverbBus.gain.value = Math.max(0.001, currentVolume * 0.42);
+        reverbBus.connect(rev1);
+        reverbBus.connect(rev2);
+        reverbBus.connect(rev3);
+
+        // Primary LFO — slow breathing
         const lfo = context.createOscillator();
         const lfoGain = context.createGain();
         lfo.type = 'sine';
-        lfo.frequency.value = 0.035;
-        const currentVolume = effectiveVolumeRef.current;
-        lfoGain.gain.value = Math.max(0.001, currentVolume * 0.16);
+        lfo.frequency.value = 0.025;
+        lfoGain.gain.value = Math.max(0.001, currentVolume * 0.12);
         lfo.connect(lfoGain);
         lfoGain.connect(master.gain);
 
-        const frequencies = [110, 164.81, 220, 329.63];
-        const oscillators = frequencies.map((frequency, index) => {
-            const oscillator = context.createOscillator();
+        // Secondary LFO — subtle shimmer
+        const lfo2 = context.createOscillator();
+        const lfoGain2 = context.createGain();
+        lfo2.type = 'sine';
+        lfo2.frequency.value = 0.19;
+        lfoGain2.gain.value = Math.max(0.001, currentVolume * 0.035);
+        lfo2.connect(lfoGain2);
+        lfoGain2.connect(master.gain);
+
+        // Amaj9 open voicing — A sub, E, A, C# (warmth), E upper, G (floaty 7th), A high shimmer
+        const VOICES: Array<[number, 'sine' | 'triangle', number]> = [
+            [55,     'sine',     0.20],  // A1  sub drone
+            [110,    'sine',     0.17],  // A2  root
+            [164.81, 'triangle', 0.11],  // E3  5th
+            [220,    'sine',     0.13],  // A3  octave
+            [277.18, 'triangle', 0.09],  // C#4 major 3rd — warmth
+            [329.63, 'sine',     0.08],  // E4  upper 5th
+            [392,    'triangle', 0.055], // G4  natural 7th — floaty
+            [440,    'sine',     0.04],  // A4  high shimmer
+        ];
+
+        const allSources: AudioScheduledSourceNode[] = [];
+        const allGains: GainNode[] = [];
+
+        VOICES.forEach(([freq, waveType, level], i) => {
+            const osc = context.createOscillator();
             const gain = context.createGain();
-            oscillator.type = index % 2 === 0 ? 'sine' : 'triangle';
-            oscillator.frequency.value = frequency;
-            oscillator.detune.value = (index - 1.5) * 3.5;
-            gain.gain.value = Math.max(0.001, currentVolume * (index === 0 ? 0.18 : 0.09));
-            oscillator.connect(gain);
+            osc.type = waveType;
+            osc.frequency.value = freq;
+            osc.detune.value = (i - 3.5) * 2.0;
+            gain.gain.value = Math.max(0.001, currentVolume * level);
+            osc.connect(gain);
             gain.connect(master);
-            oscillator.start();
-            return { oscillator, gain };
+            gain.connect(reverbBus);
+            osc.start();
+            allSources.push(osc);
+            allGains.push(gain);
         });
 
+        // Filtered noise — room breath / air texture
+        const noiseBuffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * 0.5;
+        const noise = context.createBufferSource();
+        noise.buffer = noiseBuffer;
+        noise.loop = true;
+        const noiseFilter = context.createBiquadFilter();
+        noiseFilter.type = 'bandpass';
+        noiseFilter.frequency.value = 260;
+        noiseFilter.Q.value = 0.35;
+        const noiseGain = context.createGain();
+        noiseGain.gain.value = Math.max(0.0001, currentVolume * 0.010);
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(master);
+        noise.start();
+        allSources.push(noise);
+        allGains.push(noiseGain);
+
         lfo.start();
-        master.gain.setTargetAtTime(Math.max(0.001, currentVolume * 0.54), context.currentTime, 1.8);
+        lfo2.start();
+        allSources.push(lfo2);
+        allGains.push(lfoGain2);
+        allGains.push(reverbBus);
+
+        master.gain.setTargetAtTime(Math.max(0.001, currentVolume * 0.52), context.currentTime, 2.4);
         syntheticNodesRef.current = {
-            oscillators: oscillators.map((node) => node.oscillator),
-            gains: oscillators.map((node) => node.gain),
+            oscillators: allSources,
+            gains: allGains,
             master,
             lfo,
             lfoGain,
