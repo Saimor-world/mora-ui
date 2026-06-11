@@ -25,6 +25,7 @@ interface PlanetProps {
     health?: number;
     activity?: number;
     capacity?: number | null; // V10: Knowledge Capacity / Storage Use
+    alertLevel?: 'ok' | 'warning' | 'critical';
     showLabel?: boolean;
     labelSide?: 'left' | 'right';
 }
@@ -42,6 +43,7 @@ export const Planet: React.FC<PlanetProps> = ({
     health = 98,
     activity = 42,
     capacity = null,
+    alertLevel = 'ok',
     iconOverride,
     showLabel = true,
     labelSide = 'right'
@@ -79,12 +81,15 @@ export const Planet: React.FC<PlanetProps> = ({
     // Use shared util — single source of truth across all layers.
     const style = _getDeptStyle(department.name, department.color);
     const Icon = iconOverride || style.icon;
+    const { glow: deptGlow, border: deptBorder } = style;
+    const effectiveGlow = alertLevel === 'critical' ? '#F43F5E' : alertLevel === 'warning' ? '#F59E0B' : deptGlow;
+    const effectiveBorder = alertLevel === 'critical' ? '#FB7185' : alertLevel === 'warning' ? '#FBBF24' : deptBorder;
 
     const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
     const ringProgress = hasCapacity ? Math.max(0, Math.min(100, capacity)) : 0;
     const ringBaseOpacity = isHovered || isActive ? 0.24 : 0.09;
     const ringProgressOpacity = isHovered || isActive ? 0.72 : 0.22;
-    const capacityTone = style.border;
+    const capacityTone = effectiveBorder;
     const neutralRingTone = 'rgba(226, 232, 240, 0.16)';
     const orbitTone = 'rgba(148, 163, 184, 0.18)';
 
@@ -121,7 +126,7 @@ export const Planet: React.FC<PlanetProps> = ({
             <motion.div
                 className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[40px] w-[110px] -translate-x-1/2 translate-y-[38px] rounded-full"
                 style={{
-                    background: `radial-gradient(circle, ${style.glow}88 0%, ${style.glow}33 50%, transparent 78%)`,
+                    background: `radial-gradient(circle, ${effectiveGlow}88 0%, ${effectiveGlow}33 50%, transparent 78%)`,
                     filter: 'blur(22px)',
                 }}
                 animate={{
@@ -211,7 +216,7 @@ export const Planet: React.FC<PlanetProps> = ({
             {/* 0. ATMOSPHERIC HALO (Premium Depth) */}
             <motion.div
                 className="orb-glass-halo"
-                style={{ '--orb-glow': style.glow } as React.CSSProperties}
+                style={{ '--orb-glow': effectiveGlow } as React.CSSProperties}
                 initial={{ opacity: 0.22, scale: 1.04 }}
                 animate={{
                     opacity: isActive ? 0.52 : isHovered ? 0.38 : 0.22,
@@ -227,9 +232,9 @@ export const Planet: React.FC<PlanetProps> = ({
                     style={{
                         width: planetSize.diameter * 1.8,
                         height: planetSize.diameter * 0.45,
-                        border: `2px solid ${style.border}77`,
-                        background: `radial-gradient(ellipse at center, transparent 40%, ${style.border}33 70%, transparent 100%)`,
-                        boxShadow: `0 0 15px ${style.glow}44, inset 0 0 15px ${style.glow}33`,
+                        border: `2px solid ${effectiveBorder}77`,
+                        background: `radial-gradient(ellipse at center, transparent 40%, ${effectiveBorder}33 70%, transparent 100%)`,
+                        boxShadow: `0 0 15px ${effectiveGlow}44, inset 0 0 15px ${effectiveGlow}33`,
                         transform: 'rotate(-15deg) rotateX(75deg)',
                         top: '50%',
                         left: '50%',
@@ -279,7 +284,7 @@ export const Planet: React.FC<PlanetProps> = ({
                                     left: '50%',
                                     transform: 'translateX(-50%)',
                                     background: '#ffffff',
-                                    boxShadow: `0 0 8px #ffffff, 0 0 12px ${style.glow}`,
+                                    boxShadow: `0 0 8px #ffffff, 0 0 12px ${effectiveGlow}`,
                                 }}
                             />
                         </motion.div>
@@ -310,12 +315,29 @@ export const Planet: React.FC<PlanetProps> = ({
                                     bottom: 0,
                                     right: '50%',
                                     transform: 'translateX(50%)',
-                                    background: style.border,
-                                    boxShadow: `0 0 6px ${style.border}, 0 0 10px ${style.glow}`,
+                                    background: effectiveBorder,
+                                    boxShadow: `0 0 6px ${effectiveBorder}, 0 0 10px ${effectiveGlow}`,
                                 }}
                             />
                         </motion.div>
                     </>
+                )}
+
+                {alertLevel !== 'ok' && (
+                    <motion.div
+                        className="pointer-events-none absolute rounded-full"
+                        style={{
+                            width: planetSize.diameter + 18,
+                            height: planetSize.diameter + 18,
+                            border: `1.5px solid ${effectiveBorder}`,
+                            top: '50%',
+                            left: '50%',
+                            x: '-50%',
+                            y: '-50%',
+                        }}
+                        animate={{ opacity: [0.7, 0.15, 0.7], scale: [1, 1.12, 1] }}
+                        transition={{ duration: alertLevel === 'critical' ? 1.6 : 2.4, repeat: Infinity, ease: 'easeInOut' as const }}
+                    />
                 )}
 
                 <motion.div
@@ -330,14 +352,14 @@ export const Planet: React.FC<PlanetProps> = ({
                             ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0.05) 100%)'
                             : `
                                 radial-gradient(ellipse 55% 45% at 30% 20%, rgba(255,255,255,0.20) 0%, transparent 60%),
-                                radial-gradient(circle at 50% 50%, ${style.border}15 0%, ${style.glow}08 40%, rgba(13, 9, 33, 0.45) 85%, ${style.core}22 100%)
+                                radial-gradient(circle at 50% 50%, ${effectiveBorder}15 0%, ${effectiveGlow}08 40%, rgba(13, 9, 33, 0.45) 85%, ${style.core}22 100%)
                             `,
                         backdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
                         WebkitBackdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
-                        border: `2.5px solid ${style.border}`,
+                        border: `2.5px solid ${effectiveBorder}`,
                         boxShadow: isActive || isHovered
-                            ? `0 0 35px ${style.glow}88, 0 0 70px ${style.glow}55, inset 0 0 25px ${style.glow}44`
-                            : `0 0 20px ${style.glow}44, 0 0 45px ${style.glow}22, inset 0 0 15px ${style.glow}22`,
+                            ? `0 0 35px ${effectiveGlow}88, 0 0 70px ${effectiveGlow}55, inset 0 0 25px ${effectiveGlow}44`
+                            : `0 0 20px ${effectiveGlow}44, 0 0 45px ${effectiveGlow}22, inset 0 0 15px ${effectiveGlow}22`,
                     } as React.CSSProperties}
                     whileHover={{ scale: 1.1 }}
                     initial={{ scale: 1 }}
@@ -347,7 +369,7 @@ export const Planet: React.FC<PlanetProps> = ({
                     {/* Bottom rim light */}
                     <div style={{
                         position: 'absolute', inset: 0, borderRadius: '9999px', pointerEvents: 'none',
-                        background: `radial-gradient(ellipse 60% 30% at 50% 88%, ${style.border}44 0%, transparent 60%)`,
+                        background: `radial-gradient(ellipse 60% 30% at 50% 88%, ${effectiveBorder}44 0%, transparent 60%)`,
                     }} />
 
                     {/* Holographic Scanlines / Grid overlay */}
@@ -369,7 +391,7 @@ export const Planet: React.FC<PlanetProps> = ({
                         <motion.div
                             className="absolute inset-x-0 h-0.5 pointer-events-none opacity-[0.25]"
                             style={{
-                                background: `linear-gradient(90deg, transparent, ${style.border}, transparent)`,
+                                background: `linear-gradient(90deg, transparent, ${effectiveBorder}, transparent)`,
                             }}
                             animate={{ y: [0, planetSize.diameter, 0] }}
                             transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}

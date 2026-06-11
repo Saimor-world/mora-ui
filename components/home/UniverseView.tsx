@@ -33,6 +33,9 @@ import {
     buildSoftUniverseRoute,
     buildOrganicUniverseLayout,
 } from '@/lib/universe/layout';
+import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
+import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentContext';
+import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 
 const EMPTY_UNIVERSE_ITEMS: any[] = [];
 
@@ -73,6 +76,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [isCoreLogoHovered, setIsCoreLogoHovered] = useState(false);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
+    const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [lockedTooltipDeptId, setLockedTooltipDeptId] = useState<string | null>(null);
@@ -156,6 +160,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
         loadStats();
     }, [activeCompanyId]);
+
+    // ─── FETCH NIGHTWATCH INCIDENTS FOR PLANET HEALTH ───
+    useEffect(() => {
+        let cancelled = false;
+        fetchNightwatchIncidents().then((incidents) => {
+            if (!cancelled) setNightwatchIncidents(incidents);
+        }).catch(() => {});
+        return () => { cancelled = true; };
+    }, []);
 
     // ─── FETCH USER MEMBERSHIPS ───
     useEffect(() => {
@@ -262,6 +275,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         }
         return metrics;
     }, [statsMap, safeTreeData]);
+
+    // ─── PLANET ALERT LEVELS (incident-driven; no LLM scoring) ───
+    const deptAlertLevels = useMemo((): Record<string, 'ok' | 'warning' | 'critical'> => {
+        if (!nightwatchIncidents.length) return {};
+        const result: Record<string, 'ok' | 'warning' | 'critical'> = {};
+        for (const dept of safeDepartments) {
+            const hasIncident = nightwatchIncidents.some((inc) =>
+                incidentBelongsToDepartment(inc, dept.id, safeTreeData)
+            );
+            if (hasIncident) result[dept.id] = 'critical';
+        }
+        return result;
+    }, [nightwatchIncidents, safeDepartments, safeTreeData]);
 
     // Normalize metrics to percentages
     const maxNodes = useMemo(() => Math.max(1, ...Object.values(departmentMetrics).map(m => m.nodes)), [departmentMetrics]);
@@ -1346,6 +1372,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         health={health}
                                         activity={activity}
                                         capacity={capacity}
+                                        alertLevel={deptAlertLevels[p.id] ?? 'ok'}
                                     />
                                 </div>
                             ) : (
@@ -1381,6 +1408,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         health={health}
                                         activity={activity}
                                         capacity={capacity}
+                                        alertLevel={deptAlertLevels[p.id] ?? 'ok'}
                                     />
                                 </div>
                             )}
