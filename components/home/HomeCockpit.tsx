@@ -10,6 +10,7 @@ import {
 import type { HomeView } from '@/lib/queries/useHomeView';
 import type { IncidentStatusPanel } from '@/lib/panel/types';
 import type { PaneOpenRequest } from '@/lib/store/paneStore';
+import type { RecentKind } from '@/components/home/homeSurfaceFormat';
 
 // ─── Prop types (kept local — these mirror HomeSurface's local shapes) ─────────
 
@@ -17,7 +18,7 @@ export interface CockpitMailPreview  { id: string; subject: string; from: string
 export interface CockpitCalPreview   { id: string; title: string; date?: string; time?: string; }
 export interface CockpitTeamActivity { id: string; user_name?: string; action?: string; target_name?: string; timestamp?: string; }
 export interface CockpitTeamMessage  { id: string; sender_name?: string; content: string; timestamp?: string; }
-export interface CockpitRecentItem   { id: string; label: string; kind: string; openedAt: number; paneData?: any; }
+export interface CockpitRecentItem   { id: string; label: string; kind: RecentKind; openedAt: number; paneData?: any; }
 export interface CockpitDeptTile     { dept: { id: string; name: string }; count: number; active: boolean; }
 
 export interface HomeCockpitProps {

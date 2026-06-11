@@ -2,9 +2,11 @@
 
 export const CALENDAR_OAUTH_MESSAGE = 'saimor:calendar-oauth';
 export const CLOUD_OAUTH_MESSAGE = 'saimor:cloud-oauth';
+export const GOOGLE_CONNECT_MESSAGE = 'saimor:google-connect';
 const DEFAULT_POPUP_NAME = 'saimor-calendar-connect';
 const DEFAULT_CLOUD_POPUP_NAME = 'saimor-cloud-connect';
 const DEFAULT_CLOUD_DIRECT_POPUP_NAME = 'saimor-cloud-direct-connect';
+const DEFAULT_GOOGLE_CONNECT_POPUP_NAME = 'saimor-google-connect';
 
 export const getCalendarOAuthReturnTo = () => {
     if (typeof window === 'undefined') return '/oauth/calendar/callback';
@@ -100,6 +102,15 @@ export async function openCalendarOAuthPopup(authUrl: string): Promise<CalendarO
 
 export async function openCloudOAuthPopup(authUrl: string): Promise<CalendarOAuthResult> {
     return openOAuthPopup(authUrl, DEFAULT_CLOUD_POPUP_NAME, CLOUD_OAUTH_MESSAGE);
+}
+
+export const getGoogleConnectReturnTo = () => {
+    if (typeof window === 'undefined') return '/oauth/google/callback';
+    return `${window.location.origin}/oauth/google/callback`;
+};
+
+export async function openGoogleConnectPopup(authUrl: string): Promise<CalendarOAuthResult> {
+    return openOAuthPopup(authUrl, DEFAULT_GOOGLE_CONNECT_POPUP_NAME, GOOGLE_CONNECT_MESSAGE);
 }
 
 export async function openDirectCloudConnectPopup(params: {

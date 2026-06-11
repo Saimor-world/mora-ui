@@ -31,7 +31,12 @@ import { corePost } from '@/lib/api/coreClient';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
-import { getCalendarOAuthReturnTo, openCalendarOAuthPopup } from '@/lib/integrations/calendarOAuth';
+import {
+    getCalendarOAuthReturnTo,
+    openCalendarOAuthPopup,
+    getGoogleConnectReturnTo,
+    openGoogleConnectPopup,
+} from '@/lib/integrations/calendarOAuth';
 import type { AppProps } from '@/lib/apps/types';
 import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 
@@ -169,6 +174,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
     const [lane, setLane] = useState<Lane>('overview');
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
+    const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
     const [runtimeActionKey, setRuntimeActionKey] = useState<string | null>(null);
 
     const canControlRuntime = runtimeSession.data?.user?.role === 'system_owner';
@@ -257,6 +263,28 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             toast.error(err?.message || 'Kalender-Verbindung konnte nicht gestartet werden');
         } finally {
             setIsConnectingCalendar(false);
+        }
+    }, [refreshAll]);
+
+    const connectGoogleAll = useCallback(async () => {
+        setIsConnectingGoogle(true);
+        try {
+            const res = await corePost('/v1/integrations/google/connect', { return_to: getGoogleConnectReturnTo() });
+            if (!res?.auth_url) {
+                toast.error('Google OAuth ist serverseitig noch nicht konfiguriert.');
+                return;
+            }
+            const result = await openGoogleConnectPopup(res.auth_url);
+            if (result.ok) {
+                toast.success('Google verbunden — Mail, Kalender und Drive sind jetzt aktiv.');
+                await refreshAll();
+            } else if (result.reason === 'blocked') {
+                toast.error('Popup blockiert. Erlaube das Verbindungsfenster fuer SAIMOR.');
+            }
+        } catch (err: any) {
+            toast.error(err?.message || 'Google-Verbindung konnte nicht gestartet werden');
+        } finally {
+            setIsConnectingGoogle(false);
         }
     }, [refreshAll]);
 
@@ -384,7 +412,16 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                             </section>
 
                             {lane === 'overview' && (
-                                <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+                                <section className="space-y-4">
+                                <GoogleConnectHero
+                                    mailConfigured={Boolean(overview?.mail?.configured)}
+                                    calendarConfigured={Boolean(overview?.calendar?.configured)}
+                                    cloudConfigured={Boolean(overview?.cloud_storage?.configured)}
+                                    oauthEnabled={Boolean(overview?.capabilities?.calendar_oauth_enabled)}
+                                    isConnecting={isConnectingGoogle}
+                                    onConnect={connectGoogleAll}
+                                />
+                                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
                                     <ConnectionCard
                                         icon={Bell}
                                         title="Browser"
@@ -415,6 +452,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                             { label: isConnectingCalendar ? 'Verbinde...' : 'Google verbinden', onClick: connectGoogleCalendar, disabled: !overview?.capabilities?.calendar_oauth_enabled || isConnectingCalendar, ghost: true },
                                         ]}
                                     />
+                                </div>
                                 </section>
                             )}
 
@@ -615,6 +653,79 @@ function SetupPanel({ eyebrow, title, children }: { eyebrow: string; title: stri
             <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">{eyebrow}</p>
             <h3 className="mt-1 text-sm font-medium text-white/84">{title}</h3>
             <div className="mt-4">{children}</div>
+        </div>
+    );
+}
+
+function GoogleConnectHero({
+    mailConfigured,
+    calendarConfigured,
+    cloudConfigured,
+    oauthEnabled,
+    isConnecting,
+    onConnect,
+}: {
+    mailConfigured: boolean;
+    calendarConfigured: boolean;
+    cloudConfigured: boolean;
+    oauthEnabled: boolean;
+    isConnecting: boolean;
+    onConnect: () => void | Promise<void>;
+}) {
+    const allConnected = mailConfigured && calendarConfigured && cloudConfigured;
+    if (allConnected) return null;
+
+    const dots: Array<{ label: string; done: boolean }> = [
+        { label: 'Mail', done: mailConfigured },
+        { label: 'Kalender', done: calendarConfigured },
+        { label: 'Drive', done: cloudConfigured },
+    ];
+
+    return (
+        <div className="relative overflow-hidden rounded-[28px] border border-emerald-400/18 bg-[linear-gradient(135deg,rgba(4,22,18,0.90),rgba(2,10,8,0.96))] p-6">
+            <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 70% 40%, #10b981 0%, transparent 65%)' }} />
+            <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-300/55">Schnellstart</p>
+                    <h3 className="mt-2 text-lg font-medium text-white/92">Mit Google verbinden</h3>
+                    <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-white/52">
+                        Mail, Kalender und Drive in einem Schritt. Eine Anmeldung — Môra sieht danach echte Termine, Nachrichten und Dateien.
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2.5">
+                        {dots.map((d) => (
+                            <span
+                                key={d.label}
+                                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${
+                                    d.done
+                                        ? 'border-emerald-400/20 bg-emerald-400/[0.10] text-emerald-200/80'
+                                        : 'border-white/10 bg-white/[0.04] text-white/40'
+                                }`}
+                            >
+                                <span className={`h-1.5 w-1.5 rounded-full ${d.done ? 'bg-emerald-400' : 'bg-white/20'}`} />
+                                {d.label}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+                <div className="shrink-0">
+                    <button
+                        onClick={() => void onConnect()}
+                        disabled={!oauthEnabled || isConnecting}
+                        className="inline-flex min-w-[200px] items-center justify-center gap-2.5 rounded-2xl border border-emerald-400/28 bg-emerald-400/[0.12] px-6 py-3.5 text-sm font-medium text-emerald-50 transition-colors hover:bg-emerald-400/[0.20] disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                        <svg viewBox="0 0 18 18" width="16" height="16" className="shrink-0" aria-hidden>
+                            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615Z" fill="#4285F4" />
+                            <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18Z" fill="#34A853" />
+                            <path d="M3.964 10.71A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.042l3.007-2.332Z" fill="#FBBC05" />
+                            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58Z" fill="#EA4335" />
+                        </svg>
+                        {isConnecting ? 'Verbinde...' : 'Mit Google verbinden'}
+                    </button>
+                    {!oauthEnabled && (
+                        <p className="mt-2 text-center text-[11px] text-amber-200/55">Google OAuth muss zuerst vom Owner konfiguriert werden.</p>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }
