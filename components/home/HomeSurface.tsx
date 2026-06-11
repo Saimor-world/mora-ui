@@ -216,7 +216,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -339,20 +339,12 @@ export const HomeSurface: React.FC = () => {
     }, [revealPane]);
 
     const openCalendarSetup = useCallback(() => {
-        if (!communicationSummary.ownerManageable || !communicationSummary.calendarOauthEnabled || !integrationsOverview?.calendar?.configured) {
-            revealPane('integrations-main', {
-                type: 'integrations',
-                title: 'Integrationen',
-                size: { width: 980, height: 740 },
-            });
-            return;
-        }
         revealPane('calendar-main', {
             type: 'calendar',
             title: 'Kalender',
             size: { width: 840, height: 620 },
         });
-    }, [communicationSummary.calendarOauthEnabled, communicationSummary.ownerManageable, integrationsOverview?.calendar?.configured, revealPane]);
+    }, [revealPane]);
 
     const openLocalTruth = useCallback(() => {
         if (typeof window === 'undefined') return;
@@ -1033,88 +1025,115 @@ export const HomeSurface: React.FC = () => {
             {websiteEntryContext && (
             <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center 2xl:right-[390px] xl:flex">
                 <div className="pointer-events-auto relative w-full max-w-[690px]">
-                    <div className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full bg-cyan-400/[0.12] blur-[130px]" />
+                    <div
+                        className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full blur-[130px]"
+                        style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.13)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(245,158,11,0.11)' : 'rgba(34,211,238,0.12)' }}
+                    />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
                     <div className="relative overflow-hidden glass-card px-6 py-6 shadow-[0_34px_130px_rgba(0,0,0,0.4)]">
-                        <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/60 via-cyan-200/70 to-violet-300/65" />
-                        <div className="absolute -right-20 -top-24 h-52 w-52 rounded-full bg-cyan-300/[0.13] blur-[72px]" />
-                        <div className="absolute -bottom-24 left-12 h-56 w-56 rounded-full bg-violet-400/[0.12] blur-[82px]" />
+                        <div
+                            className="pointer-events-none absolute left-0 top-0 h-[2px] w-full"
+                            style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'linear-gradient(90deg,rgba(251,113,133,0.55),rgba(244,63,94,0.70),rgba(251,113,133,0.55))' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'linear-gradient(90deg,rgba(251,191,36,0.50),rgba(245,158,11,0.65),rgba(251,191,36,0.50))' : 'linear-gradient(90deg,rgba(52,211,153,0.50),rgba(16,185,129,0.65),rgba(52,211,153,0.50))' }}
+                        />
+                        <div
+                            className="absolute -right-20 -top-24 h-52 w-52 rounded-full blur-[72px]"
+                            style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.15)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(251,191,36,0.12)' : 'rgba(52,211,153,0.11)' }}
+                        />
+                        <div
+                            className="absolute -bottom-24 left-12 h-56 w-56 rounded-full blur-[82px]"
+                            style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.10)' : 'rgba(139,92,246,0.12)' }}
+                        />
                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_22%,rgba(255,255,255,0.055),transparent_22%),repeating-linear-gradient(115deg,rgba(255,255,255,0.025)_0_1px,transparent_1px_28px)] opacity-70" />
 
                         <div className="relative flex items-start justify-between gap-6">
                             <div className="min-w-0 flex-1">
-                                <div className="inline-block text-[10px] uppercase tracking-[0.24em] text-cyan-100/62 relative">
-                                    Universe aktiv
+                                <div
+                                    className="inline-block text-[10px] uppercase tracking-[0.24em] relative"
+                                    style={{ color: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.72)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(251,191,36,0.70)' : 'rgba(52,211,153,0.70)' }}
+                                >
+                                    Scan-Ergebnis
                                     <span
                                         className="absolute left-0 bottom-[-3px] rounded-full"
-                                        style={{ width: 28, height: 1, background: 'rgba(103,232,249,0.80)' }}
+                                        style={{ width: 28, height: 1, background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.85)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(251,191,36,0.80)' : 'rgba(52,211,153,0.80)' }}
                                     />
                                 </div>
-                                {stackBriefings.length > 0 ? (
-                                    <div className="mt-3">
-                                        <BriefingStack briefings={stackBriefings} />
+                                <div className="mt-3 flex items-start gap-4" data-testid="website-entry-home-card">
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="max-w-[24rem] text-[clamp(22px,2.4vw,32px)] font-light leading-[1.05] tracking-[-0.03em] text-white/94 truncate">
+                                            {websiteEntryContext.domain || websiteEntryContext.title || 'Dein Unternehmen'}
+                                        </h2>
+                                        <p className="mt-1.5 text-[12px] leading-relaxed text-white/48">
+                                            {websiteEntryContext.tasks.length} Signal{websiteEntryContext.tasks.length !== 1 ? 'e' : ''} erkannt · Analyse abgeschlossen
+                                        </p>
                                     </div>
-                                ) : (
-                                    <h2 className="mt-3 max-w-[30rem] text-[clamp(30px,3vw,38px)] font-light leading-[1.03] tracking-[-0.03em] text-white/94">
-                                        {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage
-                                            ? <>Weiter in <span style={{ color: 'rgba(167,139,250,0.95)' }}>{overlayRecentActivityItems[0].label}</span>.</>
-                                            : focusTitle}
-                                    </h2>
-                                )}
-                                <p className="mt-4 flex max-w-[31rem] items-start gap-1.5 text-[13px] leading-relaxed text-white/60">
-                                    {overlayRecentActivityItems[0] && !websiteEntryContext && !latestTeamMessage && (
-                                        <span className="mt-1.5 inline-block w-1.5 h-1.5 shrink-0 rounded-full bg-violet-400 animate-pulse" />
+                                    {websiteEntryContext.score !== undefined && (
+                                        <div
+                                            className="shrink-0 flex flex-col items-center justify-center w-[4.5rem] h-[4.5rem] rounded-2xl"
+                                            style={{
+                                                border: `1.5px solid ${websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.38)' : websiteEntryContext.score < 70 ? 'rgba(251,191,36,0.35)' : 'rgba(52,211,153,0.35)'}`,
+                                                background: websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.11)' : websiteEntryContext.score < 70 ? 'rgba(245,158,11,0.10)' : 'rgba(16,185,129,0.10)',
+                                            }}
+                                        >
+                                            <span
+                                                className="text-[28px] font-light leading-none tabular-nums"
+                                                style={{ color: websiteEntryContext.score < 40 ? '#fb7185' : websiteEntryContext.score < 70 ? '#fbbf24' : '#34d399' }}
+                                            >
+                                                {websiteEntryContext.score}
+                                            </span>
+                                            <span
+                                                className="mt-0.5 text-[8px] uppercase tracking-[0.13em]"
+                                                style={{ color: websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.68)' : websiteEntryContext.score < 70 ? 'rgba(251,191,36,0.65)' : 'rgba(52,211,153,0.65)' }}
+                                            >
+                                                {websiteEntryContext.score < 40 ? 'Hoch' : websiteEntryContext.score < 70 ? 'Mittel' : 'Gut'}
+                                            </span>
+                                        </div>
                                     )}
-                                    <span>{focusDetail}</span>
-                                </p>
-                                {websiteEntryContext ? (
-                                    <div
-                                        className="mt-5 max-w-[29rem] rounded-[22px] border border-amber-300/12 bg-amber-400/[0.06] p-3"
-                                        data-testid="website-entry-home-card"
+                                </div>
+                                <div className="mt-4 space-y-1.5">
+                                    {websiteEntryContext.tasks.slice(0, 3).map((task) => (
+                                        <div key={task.title} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.05] bg-white/[0.025] px-3 py-2">
+                                            <span className="min-w-0 truncate text-[12px] text-white/72">{task.title}</span>
+                                            <span
+                                                className="shrink-0 rounded-md px-1.5 py-0.5 text-[9px] uppercase tracking-[0.11em]"
+                                                style={
+                                                    task.priority === 'hoch'
+                                                        ? { background: 'rgba(244,63,94,0.14)', color: 'rgba(251,113,133,0.85)' }
+                                                        : task.priority === 'mittel'
+                                                            ? { background: 'rgba(245,158,11,0.14)', color: 'rgba(251,191,36,0.85)' }
+                                                            : { background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.42)' }
+                                                }
+                                            >
+                                                {task.priority}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="mt-4 flex gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={openWebsiteDossier}
+                                        className="rounded-full border px-4 py-1.5 text-[10px] uppercase tracking-[0.14em] transition-colors"
+                                        style={{
+                                            borderColor: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.28)' : 'rgba(251,191,36,0.24)',
+                                            background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.09)' : 'rgba(245,158,11,0.08)',
+                                            color: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(251,113,133,0.88)' : 'rgba(251,191,36,0.82)',
+                                        }}
                                     >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="min-w-0">
-                                                <div className="text-[10px] uppercase tracking-[0.22em] text-amber-100/55">Website-Einstieg</div>
-                                                <div className="mt-1 truncate text-[13px] font-medium text-white/78">
-                                                    {websiteEntryContext.domain || websiteEntryContext.title}
-                                                </div>
-                                            </div>
-                                            {websiteEntryContext.score !== undefined ? (
-                                                <div className="shrink-0 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] text-amber-100/80">
-                                                    {websiteEntryContext.score}
-                                                </div>
-                                            ) : null}
-                                        </div>
-                                        <div className="mt-3 grid gap-1.5">
-                                            {websiteEntryContext.tasks.slice(0, 2).map((task) => (
-                                                <div key={task.title} className="flex items-center justify-between gap-3 rounded-xl border border-white/[0.045] bg-violet-950/[0.20] px-3 py-2">
-                                                    <span className="min-w-0 truncate text-[12px] text-white/64">{task.title}</span>
-                                                    <span className="shrink-0 text-[10px] uppercase tracking-[0.12em] text-white/32">{task.priority}</span>
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <div className="mt-3 flex gap-2">
-                                            <button
-                                                type="button"
-                                                onClick={openWebsiteDossier}
-                                                className="rounded-full border border-amber-300/16 bg-amber-400/[0.08] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-amber-50/75 transition-colors hover:border-amber-200/26 hover:bg-amber-400/[0.12]"
-                                            >
-                                                Dossier öffnen
-                                            </button>
-                                            <button
-                                                type="button"
-                                                data-testid="dossier-wall-btn"
-                                                onClick={() => {
-                                                    // Phase 2: will save to Wall queue. Stub for now.
-                                                    console.log('[Wall] queued dossier node:', dossierNodeId);
-                                                }}
-                                                className="rounded-full border border-violet-300/16 bg-violet-400/[0.06] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/60 transition-colors hover:border-violet-200/26 hover:bg-violet-400/[0.10]"
-                                            >
-                                                Auf die Wall
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : null}
+                                        Dossier öffnen
+                                    </button>
+                                    <button
+                                        type="button"
+                                        data-testid="dossier-wall-btn"
+                                        onClick={() => revealPane('wall-main', {
+                                            type: 'wall',
+                                            title: 'Community Wall',
+                                            size: { width: 900, height: 680 },
+                                        })}
+                                        className="rounded-full border border-violet-300/16 bg-violet-400/[0.06] px-4 py-1.5 text-[10px] uppercase tracking-[0.14em] text-violet-100/60 transition-colors hover:bg-violet-400/[0.10]"
+                                    >
+                                        Auf die Wall
+                                    </button>
+                                </div>
                             </div>
 
                             <div

@@ -142,13 +142,13 @@ export const MoraLivingBackground: React.FC = () => {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
 
-            {/* Base — Deep Cinematic Universe (Stronger depth gradient) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0f2924] via-[#091d19] to-[#061412]" />
+            {/* Base — Luminous Twilight (brighter, more inviting than the old near-black teal) */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#243a55] via-[#172a3f] to-[#0d1826]" />
 
             {/* Rich 6-layer Nebula (Reduced baseline opacity to let orbs pop) */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.40 : 0.28,
+                    opacity: isThinking ? 0.55 : 0.42,
                     scale:   isThinking ? 1.06 : 1.0,
                 }}
                 transition={{ duration: 4, ease: 'easeInOut' }}

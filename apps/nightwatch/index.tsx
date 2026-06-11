@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
-import { Activity, ShieldCheck, ArrowRight } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, ShieldCheck, ArrowRight, X } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { TONES, priorityFromSeverityLabel, toneForPriority } from '@/lib/ui/status';
@@ -12,16 +12,20 @@ import {
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 
-/**
- * Nightwatch as an OS panel — read-only. Shows what MÔRA is watching
- * (monitors) and what needs attention (open incidents). No repair/write actions:
- * Nightwatch is a *capability inside* MÔRA, not a separate control surface.
- */
 export default function NightwatchApp({ paneId }: AppProps) {
     const openPane = usePaneStore((s) => s.openPane);
+    const removePane = usePaneStore((s) => s.removePane);
     const [incidents, setIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [monitors, setMonitors] = useState<NightwatchMonitorItem[]>([]);
     const [loading, setLoading] = useState(true);
+
+    const close = useCallback(() => removePane(paneId), [removePane, paneId]);
+
+    useEffect(() => {
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [close]);
 
     useEffect(() => {
         let cancelled = false;
@@ -47,7 +51,16 @@ export default function NightwatchApp({ paneId }: AppProps) {
         });
 
     return (
-        <div data-testid="nightwatch-app" className="flex h-full w-full flex-col gap-5 overflow-y-auto bg-gradient-to-b from-[#0c1116] to-[#080a0d] p-5">
+        <div data-testid="nightwatch-app" className="relative h-full w-full bg-gradient-to-b from-[#0c1116] to-[#080a0d]">
+            <button
+                type="button"
+                onClick={close}
+                aria-label="Nightwatch schließen"
+                className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/55 backdrop-blur-sm transition-colors hover:bg-white/[0.14] hover:text-white/90"
+            >
+                <X size={15} />
+            </button>
+            <div className="flex h-full w-full flex-col gap-5 overflow-y-auto p-5 pt-14">
             <header>
                 <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/14 bg-cyan-400/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-50/60">
                     <Activity size={12} />
@@ -119,6 +132,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     </div>
                 )}
             </section>
+            </div>
         </div>
     );
 }

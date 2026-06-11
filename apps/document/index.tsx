@@ -564,18 +564,24 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                                 </div>
                             </div>
                         )}
-                        {relations.length > 0 && (
-                            <div className="flex items-center gap-2 flex-wrap pt-1">
-                                <span className="text-[10px] text-white/30">Auch:</span>
-                                {relations.slice(0, 4).map((relation, index) => (
-                                    <span key={`${relation.type || 'relation'}-${index}`}
-                                        className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-white/40 border border-white/10"
-                                        title={`Verbunden mit: ${relation.target_name || relation.source_name || 'Inhalt'}`}>
-                                        {getRelationExplanation(relation)}
-                                    </span>
-                                ))}
-                            </div>
-                        )}
+                        {relations.length > 0 && (() => {
+                            const counts = relations.reduce((acc, r) => {
+                                const key = r.type || 'relation';
+                                acc[key] = (acc[key] || 0) + 1;
+                                return acc;
+                            }, {} as Record<string, number>);
+                            return (
+                                <div className="flex items-center gap-2 flex-wrap pt-1">
+                                    <span className="text-[10px] text-white/30">Auch:</span>
+                                    {Object.entries(counts).map(([type, count]) => (
+                                        <span key={type}
+                                            className="px-2 py-0.5 rounded bg-white/5 text-[10px] text-white/40 border border-white/10">
+                                            {getRelationExplanation({ type } as NodeRelation)}{count > 1 ? ` ×${count}` : ''}
+                                        </span>
+                                    ))}
+                                </div>
+                            );
+                        })()}
                     </div>
                 );
             })()}

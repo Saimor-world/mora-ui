@@ -668,11 +668,18 @@ export const MoraShell: React.FC = () => {
                 LAYER 1: BACKGROUND
             ================================================================= */}
 
-            {/* Cosmic Dawn Foundation — deep indigo void */}
+            {/* Cosmic Dawn Foundation — luminous twilight (brighter, more inviting) */}
             <div
                 className="fixed inset-0 z-[-10]"
                 style={{
-                    background: 'radial-gradient(ellipse 140% 80% at 50% 0%, hsl(248 45% 12%) 0%, hsl(248 48% 7%) 55%, hsl(248 52% 4%) 100%)',
+                    background: 'radial-gradient(ellipse 150% 95% at 50% -8%, hsl(243 46% 26%) 0%, hsl(246 46% 16%) 52%, hsl(251 50% 10%) 100%)',
+                }}
+            />
+            {/* Inviting warm dawn glow — soft amber/rose light from the top, like sunrise over the horizon */}
+            <div
+                className="fixed inset-0 z-[-9] pointer-events-none"
+                style={{
+                    background: 'radial-gradient(ellipse 90% 50% at 50% -6%, rgba(251,191,36,0.10) 0%, rgba(244,114,182,0.06) 30%, transparent 62%)',
                 }}
             />
             <RitualSceneStyler />

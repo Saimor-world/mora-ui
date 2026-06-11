@@ -93,7 +93,11 @@ export const PaneManager: React.FC = () => {
     const panes = usePaneStore((state) => state.panes);
 
     return (
-        <div className="absolute inset-0 pointer-events-none">
+        // z-[100]: lift every pane above the ViewPort/Universe layer (body-level z-10) so
+        // full-bleed apps that don't self-wrap in GlassPanel (e.g. Nightwatch) render in
+        // front instead of behind the topography. Stays below the Dock (z-740) and overlays
+        // (z-928+) so the Dock remains the single navigation truth on top of any open app.
+        <div className="absolute inset-0 z-[100] pointer-events-none">
             <AnimatePresence>
                 {panes.map((pane) => (
                     !pane.minimized && (
