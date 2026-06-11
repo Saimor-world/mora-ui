@@ -10,6 +10,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
+import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -48,7 +49,7 @@ const EMPTY_UNIVERSE_ITEMS: any[] = [];
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
     const setOrbState = useOrbStore((s) => s.setOrbState);
     const orbState = useOrbStore((s) => s.orbState);
-    const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment } = useNavStore();
+    const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment, universeScope, universeScopeDeptId, setUniverseScope } = useNavStore();
     const user = useSessionStore(s => s.user);
 
     const { data: departmentsData } = useDepartments(activeCompanyId);
@@ -191,6 +192,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 } else {
                     setMemberships(response.department_memberships);
                     setPersonalSpaceId(response.personal_space_id);
+                    if (!isAdmin(user?.role) && response.department_memberships.length === 1) {
+                        setUniverseScope('dept', response.department_memberships[0].department_id);
+                    }
                 }
                 setMembershipsLoaded(true);
             })
@@ -738,6 +742,16 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         resetUniverseParallax,
         scheduleHoverRelease,
     ]);
+
+    if (universeScope === 'dept' && universeScopeDeptId) {
+        const scopedDept = safeDepartments.find((d) => d.id === universeScopeDeptId);
+        return (
+            <DeptSpaceMap
+                departmentId={universeScopeDeptId}
+                departmentName={scopedDept?.name}
+            />
+        );
+    }
 
     return (
         <div
