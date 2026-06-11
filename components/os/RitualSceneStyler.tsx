@@ -32,7 +32,7 @@ export function RitualSceneStyler() {
         <AnimatePresence mode="wait">
             <motion.div
                 key={scene.id}
-                className="pointer-events-none fixed inset-0 z-[-6]"
+                className="pointer-events-none fixed inset-0 z-[4]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}

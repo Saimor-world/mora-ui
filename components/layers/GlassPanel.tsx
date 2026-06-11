@@ -383,15 +383,15 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 : 'rgba(10, 7, 26, 0.84)';
     const panelBoxShadow = effectiveIsActive
         ? hasDensePaneStack
-            ? '0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px rgba(124, 58, 237, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08)'
-            : '0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px rgba(124, 58, 237, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            ? `0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px var(--scene-border, rgba(124, 58, 237, 0.18)), inset 0 1px 0 rgba(255, 255, 255, 0.08)`
+            : `0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px var(--scene-border, rgba(124, 58, 237, 0.22)), inset 0 1px 0 rgba(255, 255, 255, 0.1)`
         : hasPaneStack
             ? '0 6px 18px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.035)'
             : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
     const panelBackgroundImage = isStandardMode
         ? undefined
         : effectiveIsActive
-            ? 'radial-gradient(circle at 14% 0%, rgba(124,58,237,0.14), transparent 32%), radial-gradient(circle at 88% 8%, rgba(34,211,238,0.08), transparent 28%), linear-gradient(160deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))'
+            ? `radial-gradient(circle at 14% 0%, var(--scene-accent, rgba(124,58,237,0.14)), transparent 32%), radial-gradient(circle at 88% 8%, rgba(34,211,238,0.08), transparent 28%), linear-gradient(160deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))`
             : 'linear-gradient(160deg, rgba(255,255,255,0.018), rgba(0,0,0,0.12))';
 
     // Safe Portal Rendering (Client-side only)

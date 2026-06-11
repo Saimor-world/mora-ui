@@ -215,7 +215,7 @@ export const MoraLivingBackground: React.FC = () => {
                     key={sceneId}
                     className="absolute inset-0 pointer-events-none"
                     animate={{ opacity: scene.id === sceneId ? 1 : 0 }}
-                    transition={{ duration: 2.0, ease: 'easeInOut' as const }}
+                    transition={{ duration: 0.45, ease: 'easeInOut' as const }}
                     style={{ background: SCENE_TINT[sceneId], mixBlendMode: 'screen' }}
                 />
             ))}
@@ -224,7 +224,7 @@ export const MoraLivingBackground: React.FC = () => {
             <motion.div
                 className="absolute inset-0 pointer-events-none bg-black"
                 animate={{ opacity: scene.id === 'night' ? 0.28 : 0 }}
-                transition={{ duration: 2.0, ease: 'easeInOut' as const }}
+                transition={{ duration: 0.45, ease: 'easeInOut' as const }}
             />
 
             {/* ── AURORA CURTAIN (Contextual & Trimmed to 2 bands) ── */}

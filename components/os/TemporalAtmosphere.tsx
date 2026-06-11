@@ -126,7 +126,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     }
 
     return (
-        <div className="pointer-events-none fixed inset-0 z-[-8] overflow-hidden">
+        <div className="pointer-events-none fixed inset-0 z-[2] overflow-hidden">
             {/* Layer 0: Dynamic Lead Context Aura (Proactive Adaptive Theming) */}
             {websiteContext && (
                 <motion.div
