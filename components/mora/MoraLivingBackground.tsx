@@ -4,6 +4,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useNavStore } from "@/lib/store/navStore";
 import { useOrbStore } from "@/lib/store/orbStore";
+import { useActiveRitualScene } from "@/lib/hooks/useActiveRitualScene";
+import { RITUAL_SCENE_ORDER, type RitualSceneId } from "@/lib/os/ritualMode";
 
 /**
  * MoraLivingBackground - Premium Ambient Universe
@@ -65,9 +67,19 @@ const GEO_SHAPES = [
     { type: 'diamond', x: 43,  y: 20,  size: 14, delay: 16, duration: 31, opacity: 0.04, color: 'rgba(6,182,212,0.50)'   },
 ] as const;
 
+// Per-scene color overlays. One div per scene; only the active one is opaque.
+// Framer animates opacity so cross-fades are smooth (2 s ease).
+const SCENE_TINT: Record<RitualSceneId, string> = {
+    flow:   'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(16,185,129,0.08) 0%, transparent 55%)',
+    build:  'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(56,189,248,0.28) 0%, transparent 55%), radial-gradient(ellipse 60% 50% at 80% 68%, rgba(251,191,36,0.16) 0%, transparent 50%)',
+    lounge: 'radial-gradient(ellipse 85% 65% at 25% 32%, rgba(251,146,60,0.26) 0%, transparent 55%), radial-gradient(ellipse 55% 50% at 75% 65%, rgba(244,114,182,0.18) 0%, transparent 50%)',
+    night:  'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(99,102,241,0.30) 0%, transparent 55%), radial-gradient(ellipse 60% 55% at 82% 72%, rgba(79,70,229,0.16) 0%, transparent 50%)',
+};
+
 export const MoraLivingBackground: React.FC = () => {
     const orbState = useOrbStore((s) => s.orbState);
     const viewLevel = useNavStore((s) => s.viewLevel);
+    const scene = useActiveRitualScene();
     const [mounted, setMounted] = React.useState(false);
     const prefersReducedMotion = useReducedMotion();
     const [isDocumentVisible, setIsDocumentVisible] = useState(
@@ -175,6 +187,24 @@ export const MoraLivingBackground: React.FC = () => {
                     `,
                     mixBlendMode: 'screen',
                 }}
+            />
+
+            {/* Scene tint overlays — opacity cross-fades between scenes */}
+            {RITUAL_SCENE_ORDER.map((sceneId) => (
+                <motion.div
+                    key={sceneId}
+                    className="absolute inset-0 pointer-events-none"
+                    animate={{ opacity: scene.id === sceneId ? 1 : 0 }}
+                    transition={{ duration: 2.0, ease: 'easeInOut' as const }}
+                    style={{ background: SCENE_TINT[sceneId], mixBlendMode: 'screen' }}
+                />
+            ))}
+
+            {/* Night-mode darkness layer — adds depth without killing star visibility */}
+            <motion.div
+                className="absolute inset-0 pointer-events-none bg-black"
+                animate={{ opacity: scene.id === 'night' ? 0.16 : 0 }}
+                transition={{ duration: 2.0, ease: 'easeInOut' as const }}
             />
 
             {/* ── AURORA CURTAIN (Contextual & Trimmed to 2 bands) ── */}
