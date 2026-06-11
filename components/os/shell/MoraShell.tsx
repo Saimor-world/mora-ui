@@ -18,6 +18,37 @@
  * - useAwareness: Orb state polling
  * - useRealtime: WebSocket connection
  * - useKeyboardShortcuts: Global shortcuts
+ *
+ * ─────────────────────────────────────────────────────────────────
+ * COMPOSITING LAYER STACK  (last updated 2026-06-11)
+ * ─────────────────────────────────────────────────────────────────
+ *  z-[-10]   Cosmic Dawn Foundation — radial-gradient base (hsl purples)
+ *  z-[-9]    Warm Dawn Glow — amber/rose top-light, always visible
+ *  z-0       MoraLivingBackground — stars, aurora, nebula, scene tints
+ *  z-0       TemporalAtmosphere — time-of-day atmospheric shift
+ *  z-0       ForestLightCanopy — organic light blobs (non-universe views)
+ *  z-0       StarField — twinkling star layer (density adapts to view level)
+ *  z-[30]    ViewPort — surface router (CoreLayer / DepartmentSurface / …)
+ *    CoreLayer (home mode):
+ *      absolute   blurred UniverseView bg (opacity 0.34)
+ *      absolute   radial-gradient center glow overlay
+ *      absolute   linear-gradient edge-darkening overlay
+ *      motion.div left + right fade vignettes
+ *      motion.div full-width dark overlay
+ *    CoreLayer (explore mode):
+ *      absolute   UniverseView (full, pointer-events-auto)
+ *  z-[100]   PaneManager — pane chrome + GlassPanel (draggable windows)
+ *  z-[740]   Dock — bottom navigation bar
+ *  z-[928]   Mycelium summary overlay
+ *  z-[929]   Navigation outcome toast
+ *  z-[930]   Mora field response
+ *  z-[950]   Modal overlays (pointer-events-none passthrough)
+ *  z-[1000]  Fatal-error / connection-lost full-screen blocks
+ * ─────────────────────────────────────────────────────────────────
+ * Phase 2 note: CoreLayer home-mode vignettes (5 overlay divs) are a
+ * candidate for consolidation into a single SVG feMerge filter, but
+ * they're not a perf bottleneck — defer until a visible regression appears.
+ * ─────────────────────────────────────────────────────────────────
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
