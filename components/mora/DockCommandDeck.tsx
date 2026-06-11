@@ -12,10 +12,14 @@ import {
     Pause,
     SkipForward,
     Sparkles,
+    Sunrise,
+    Sun,
+    Sunset,
+    Moon,
     type LucideIcon,
 } from 'lucide-react';
+import { RITUAL_SCENE_ORDER, type RitualSceneId } from '@/lib/os/ritualMode';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
-import type { RitualSceneId } from '@/lib/os/ritualMode';
 
 const SCENE_PALETTE: Record<RitualSceneId, {
     gradient: string;
@@ -23,34 +27,64 @@ const SCENE_PALETTE: Record<RitualSceneId, {
     badge: string;
     badgeBg: string;
     glow: string;
+    cardBg: string;
+    cardBorder: string;
+    cardGlow: string;
+    label: string;
+    timeRange: string;
+    Icon: LucideIcon;
 }> = {
     flow: {
-        gradient: 'radial-gradient(circle at 10% 50%, rgba(16,185,129,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(34,211,238,0.14), transparent 50%)',
-        border: 'rgba(34,211,238,0.28)',
-        badge: 'text-cyan-200',
-        badgeBg: 'rgba(34,211,238,0.10)',
-        glow: 'rgba(34,211,238,0.06)',
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(16,185,129,0.22), transparent 55%), radial-gradient(circle at 90% 20%, rgba(34,211,238,0.16), transparent 50%)',
+        border: 'rgba(34,211,238,0.32)',
+        badge: 'text-emerald-200',
+        badgeBg: 'rgba(16,185,129,0.14)',
+        glow: 'rgba(16,185,129,0.10)',
+        cardBg: 'rgba(16,185,129,0.10)',
+        cardBorder: 'rgba(16,185,129,0.30)',
+        cardGlow: 'rgba(16,185,129,0.18)',
+        label: 'Flow',
+        timeRange: '05 – 11',
+        Icon: Sunrise,
     },
     build: {
-        gradient: 'radial-gradient(circle at 10% 50%, rgba(59,130,246,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(251,191,36,0.14), transparent 50%)',
-        border: 'rgba(59,130,246,0.28)',
-        badge: 'text-blue-200',
-        badgeBg: 'rgba(59,130,246,0.10)',
-        glow: 'rgba(59,130,246,0.06)',
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(14,165,233,0.22), transparent 55%), radial-gradient(circle at 90% 20%, rgba(251,191,36,0.16), transparent 50%)',
+        border: 'rgba(14,165,233,0.32)',
+        badge: 'text-sky-200',
+        badgeBg: 'rgba(14,165,233,0.14)',
+        glow: 'rgba(14,165,233,0.10)',
+        cardBg: 'rgba(14,165,233,0.10)',
+        cardBorder: 'rgba(14,165,233,0.30)',
+        cardGlow: 'rgba(251,191,36,0.14)',
+        label: 'Build',
+        timeRange: '11 – 17',
+        Icon: Sun,
     },
     lounge: {
-        gradient: 'radial-gradient(circle at 10% 50%, rgba(251,146,60,0.18), transparent 55%), radial-gradient(circle at 90% 20%, rgba(244,114,182,0.14), transparent 50%)',
-        border: 'rgba(244,114,182,0.28)',
-        badge: 'text-rose-200',
-        badgeBg: 'rgba(244,114,182,0.10)',
-        glow: 'rgba(244,114,182,0.06)',
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(251,146,60,0.22), transparent 55%), radial-gradient(circle at 90% 20%, rgba(244,114,182,0.16), transparent 50%)',
+        border: 'rgba(251,146,60,0.32)',
+        badge: 'text-orange-200',
+        badgeBg: 'rgba(251,146,60,0.14)',
+        glow: 'rgba(251,146,60,0.10)',
+        cardBg: 'rgba(251,146,60,0.10)',
+        cardBorder: 'rgba(251,146,60,0.30)',
+        cardGlow: 'rgba(244,114,182,0.14)',
+        label: 'Lounge',
+        timeRange: '17 – 22',
+        Icon: Sunset,
     },
     night: {
-        gradient: 'radial-gradient(circle at 10% 50%, rgba(99,102,241,0.20), transparent 55%), radial-gradient(circle at 90% 20%, rgba(139,92,246,0.16), transparent 50%)',
-        border: 'rgba(139,92,246,0.28)',
+        gradient: 'radial-gradient(circle at 10% 50%, rgba(99,102,241,0.24), transparent 55%), radial-gradient(circle at 90% 20%, rgba(139,92,246,0.18), transparent 50%)',
+        border: 'rgba(139,92,246,0.32)',
         badge: 'text-violet-200',
-        badgeBg: 'rgba(139,92,246,0.10)',
-        glow: 'rgba(139,92,246,0.06)',
+        badgeBg: 'rgba(99,102,241,0.14)',
+        glow: 'rgba(99,102,241,0.10)',
+        cardBg: 'rgba(99,102,241,0.10)',
+        cardBorder: 'rgba(139,92,246,0.30)',
+        cardGlow: 'rgba(139,92,246,0.18)',
+        label: 'Nacht',
+        timeRange: '22 – 05',
+        Icon: Moon,
     },
 };
 
@@ -87,6 +121,7 @@ interface DockCommandDeckProps {
     onTogglePinned: () => void;
     onToggleAutoScene: () => void;
     onCycleScene: () => void;
+    onSelectScene?: (id: RitualSceneId) => void;
     trackName: string | null;
     trackCount: number;
     isPlaying: boolean;
@@ -121,6 +156,7 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
     onTogglePinned,
     onToggleAutoScene,
     onCycleScene,
+    onSelectScene,
     trackName,
     trackCount,
     isPlaying,
@@ -242,127 +278,137 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                     </div>
                 </div>
 
-                <div
-                    className={`relative overflow-hidden rounded-[28px] border p-3.5 ${isStandardMode ? 'border-gray-200 bg-gray-50' : ''}`}
-                    style={!isStandardMode ? {
-                        background: 'rgba(7,18,14,0.6)',
-                        borderColor: scenePalette.border,
-                        boxShadow: `0 0 32px ${scenePalette.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
-                    } : undefined}
-                >
-                    {/* Scene color wash */}
-                    {!isStandardMode && (
-                        <div
-                            className="pointer-events-none absolute inset-0 rounded-[28px]"
-                            style={{ background: scenePalette.gradient }}
-                        />
-                    )}
+                {/* ── Scene + Audio column ── */}
+                <div className="flex flex-col gap-3">
 
-                    <div className="relative flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                            <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
-                                <Clock3 size={12} />
-                                Szene
+                    {/* Scene picker */}
+                    <div
+                        className={`relative overflow-hidden rounded-[28px] border p-3.5 ${isStandardMode ? 'border-gray-200 bg-gray-50' : ''}`}
+                        style={!isStandardMode ? {
+                            background: 'rgba(7,18,14,0.65)',
+                            borderColor: scenePalette.border,
+                            boxShadow: `0 0 40px ${scenePalette.glow}, inset 0 1px 0 rgba(255,255,255,0.04)`,
+                        } : undefined}
+                    >
+                        {/* Active scene ambient wash */}
+                        {!isStandardMode && (
+                            <div
+                                className="pointer-events-none absolute inset-0 rounded-[28px] transition-all duration-[2000ms]"
+                                style={{ background: scenePalette.gradient }}
+                            />
+                        )}
+
+                        <div className="relative">
+                            {/* Header */}
+                            <div className="flex items-center justify-between gap-3 mb-3">
+                                <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
+                                    <Clock3 size={12} />
+                                    Szene
+                                </div>
+                                <button
+                                    onClick={onToggleAutoScene}
+                                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] transition-all ${autoSceneEnabled
+                                        ? isStandardMode
+                                            ? 'border-[#0078D4]/30 bg-[#0078D4]/10 text-[#0078D4]'
+                                            : 'text-white/80'
+                                        : isStandardMode
+                                            ? 'border-gray-200 text-gray-400 hover:text-[#0078D4]'
+                                            : 'border-white/10 text-white/35 hover:text-white/65'
+                                        }`}
+                                    style={!isStandardMode && autoSceneEnabled ? { borderColor: scenePalette.border, background: scenePalette.badgeBg } : undefined}
+                                >
+                                    <span className={`h-1.5 w-1.5 rounded-full ${autoSceneEnabled ? 'bg-current animate-pulse' : 'bg-white/20'}`} />
+                                    Auto
+                                </button>
                             </div>
-                            <div className={`mt-2 flex items-center gap-2`}>
-                                {!isStandardMode && (
-                                    <span
-                                        className={`inline-block rounded-full px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] font-medium ${scenePalette.badge}`}
-                                        style={{ background: scenePalette.badgeBg, border: `1px solid ${scenePalette.border}` }}
-                                    >
-                                        {sceneId}
-                                    </span>
-                                )}
-                                <span className={`text-base ${primaryText}`}>{sceneLabel}</span>
+
+                            {/* 4-scene grid */}
+                            <div className="grid grid-cols-2 gap-2">
+                                {RITUAL_SCENE_ORDER.map((sid) => {
+                                    const sp = SCENE_PALETTE[sid];
+                                    const isActive = sid === sceneId;
+                                    return (
+                                        <button
+                                            key={sid}
+                                            type="button"
+                                            onClick={() => onSelectScene ? onSelectScene(sid) : onCycleScene()}
+                                            className={`group relative overflow-hidden rounded-[18px] border p-3 text-left transition-all duration-200 ${isStandardMode
+                                                ? isActive ? 'border-[#0078D4]/40 bg-[#0078D4]/8' : 'border-gray-200 bg-white hover:border-[#0078D4]/25'
+                                                : isActive ? '' : 'border-white/[0.07] bg-white/[0.03] hover:bg-white/[0.07]'
+                                            }`}
+                                            style={!isStandardMode ? {
+                                                borderColor: isActive ? sp.cardBorder : 'rgba(255,255,255,0.07)',
+                                                background: isActive ? sp.cardBg : 'rgba(255,255,255,0.03)',
+                                                boxShadow: isActive ? `0 0 20px ${sp.cardGlow}` : undefined,
+                                            } : undefined}
+                                        >
+                                            {isActive && !isStandardMode && (
+                                                <div className="pointer-events-none absolute inset-0 rounded-[18px]"
+                                                    style={{ background: `radial-gradient(circle at 30% 40%, ${sp.cardGlow} 0%, transparent 70%)` }} />
+                                            )}
+                                            <div className="relative flex items-start justify-between gap-1">
+                                                <div>
+                                                    <sp.Icon size={13} className={isActive && !isStandardMode ? sp.badge : isStandardMode ? 'text-gray-500' : 'text-white/40'} />
+                                                    <div className={`mt-1.5 text-[11px] font-medium ${isActive && !isStandardMode ? sp.badge : isStandardMode ? 'text-gray-700' : 'text-white/65'}`}>
+                                                        {sp.label}
+                                                    </div>
+                                                    <div className={`mt-0.5 text-[10px] tabular-nums ${isStandardMode ? 'text-gray-400' : 'text-white/28'}`}>
+                                                        {sp.timeRange}
+                                                    </div>
+                                                </div>
+                                                {isActive && (
+                                                    <span className={`mt-0.5 h-1.5 w-1.5 rounded-full ${isStandardMode ? 'bg-[#0078D4]' : 'bg-current animate-pulse'} ${!isStandardMode ? sp.badge : ''}`} />
+                                                )}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
                             </div>
-                            <p className={`mt-2 text-sm leading-relaxed ${secondaryText}`}>
-                                {sceneDescription}
-                            </p>
                         </div>
-                        <button
-                            onClick={onToggleAutoScene}
-                            className={`shrink-0 inline-flex items-center gap-2 rounded-full border px-3 py-2 text-[10px] uppercase tracking-[0.22em] transition-colors ${autoSceneEnabled
-                                ? isStandardMode
-                                    ? 'border-[#0078D4]/25 bg-[#0078D4]/8 text-[#0078D4]'
-                                    : `border-[${scenePalette.border}] text-white/70`
-                                : isStandardMode
-                                    ? 'border-gray-200 bg-white text-gray-500 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                    : 'border-white/10 bg-white/[0.03] text-white/40 hover:text-white/70'
-                                }`}
-                            style={!isStandardMode && autoSceneEnabled ? { borderColor: scenePalette.border, background: scenePalette.badgeBg } : undefined}
-                        >
-                            <Clock3 size={12} />
-                            {autoSceneEnabled ? 'Auto' : 'Manuell'}
-                        </button>
                     </div>
 
-                    <div className="relative mt-4 flex flex-wrap gap-2">
-                        <button
-                            onClick={onCycleScene}
-                            className={`rounded-2xl border px-3 py-2 text-sm transition-all ${isStandardMode
-                                ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                : 'border-white/10 bg-white/[0.06] text-white/80 hover:bg-white/[0.10] hover:text-white'
-                                }`}
-                            style={!isStandardMode ? { borderColor: scenePalette.border } : undefined}
-                        >
-                            Szene wechseln
-                        </button>
-                        <button
-                            onClick={onOpenAudio}
-                            className={`rounded-2xl border px-3 py-2 text-sm transition-all ${isStandardMode
-                                ? 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
-                                : 'border-white/10 bg-white/[0.04] text-white/72 hover:bg-white/[0.08] hover:text-white'
-                                }`}
-                        >
-                            Audio
-                        </button>
-                    </div>
-
-                    <div className={`mt-4 rounded-[24px] border p-3.5 ${microCard}`}>
+                    {/* Audio card */}
+                    <div className={`rounded-[24px] border p-3.5 ${microCard}`}>
                         <div className={`flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <Music2 size={12} />
                             Audio
                         </div>
                         <div className="mt-3 flex items-center justify-between gap-3">
                             <div className="min-w-0">
-                                <div className={`truncate text-base ${primaryText}`}>
+                                <div className={`truncate text-sm ${primaryText}`}>
                                     {trackName || 'Mora Ambient'}
                                 </div>
-                                <div className={`mt-1 text-sm ${secondaryText}`}>
-                                    {trackCount > 0 ? `${trackCount} Tracks in deiner Library` : 'Eingebauter prozeduraler Pad'}
+                                <div className={`mt-0.5 text-[11px] ${secondaryText}`}>
+                                    {trackCount > 0 ? `${trackCount} Tracks` : 'Prozeduraler Pad'}
                                 </div>
                             </div>
-
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                                 <button
                                     onClick={onToggleAudio}
-                                    className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
+                                    className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
                                 >
-                                    {isPlaying ? <Pause size={15} /> : <Play size={15} />}
+                                    {isPlaying ? <Pause size={13} /> : <Play size={13} />}
                                 </button>
                                 {trackCount > 0 && (
                                     <button
                                         onClick={onNextTrack}
-                                        className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
+                                        className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40' : 'border-white/10 bg-white/[0.05] text-white/75 hover:border-white/20 hover:text-white'}`}
                                     >
-                                        <SkipForward size={15} />
+                                        <SkipForward size={13} />
                                     </button>
                                 )}
                             </div>
                         </div>
                     </div>
 
-                    <div className={`mt-4 rounded-[24px] border p-3.5 ${microCard}`}>
+                    {/* Mora runtime */}
+                    <div className={`rounded-[24px] border p-3.5 ${microCard}`}>
                         <div className={`flex items-center justify-between gap-3 text-[10px] uppercase tracking-[0.22em] ${secondaryText}`}>
                             <span>Mora-Laufzeit</span>
                             <span className={accentText}>{assistantRuntime.badge}</span>
                         </div>
-                        <div className={`mt-3 text-sm ${primaryText}`}>
-                            {assistantRuntime.title}
-                        </div>
-                        <div className={`mt-1 text-[11px] ${secondaryText}`}>
-                            {assistantRuntime.subtitle}
-                        </div>
+                        <div className={`mt-2.5 text-sm ${primaryText}`}>{assistantRuntime.title}</div>
+                        <div className={`mt-0.5 text-[11px] ${secondaryText}`}>{assistantRuntime.subtitle}</div>
                     </div>
                 </div>
             </div>

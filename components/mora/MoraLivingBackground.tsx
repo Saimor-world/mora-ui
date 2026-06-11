@@ -67,13 +67,33 @@ const GEO_SHAPES = [
     { type: 'diamond', x: 43,  y: 20,  size: 14, delay: 16, duration: 31, opacity: 0.04, color: 'rgba(6,182,212,0.50)'   },
 ] as const;
 
-// Per-scene color overlays. One div per scene; only the active one is opaque.
+// Per-scene color overlays. Strong enough to clearly differentiate each scene.
 // Framer animates opacity so cross-fades are smooth (2 s ease).
 const SCENE_TINT: Record<RitualSceneId, string> = {
-    flow:   'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(16,185,129,0.08) 0%, transparent 55%)',
-    build:  'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(56,189,248,0.28) 0%, transparent 55%), radial-gradient(ellipse 60% 50% at 80% 68%, rgba(251,191,36,0.16) 0%, transparent 50%)',
-    lounge: 'radial-gradient(ellipse 85% 65% at 25% 32%, rgba(251,146,60,0.26) 0%, transparent 55%), radial-gradient(ellipse 55% 50% at 75% 65%, rgba(244,114,182,0.18) 0%, transparent 50%)',
-    night:  'radial-gradient(ellipse 85% 65% at 18% 28%, rgba(99,102,241,0.30) 0%, transparent 55%), radial-gradient(ellipse 60% 55% at 82% 72%, rgba(79,70,229,0.16) 0%, transparent 50%)',
+    // Flow (morning): fresh emerald + teal — energised calm
+    flow: [
+        'radial-gradient(ellipse 110% 80% at 15% 25%, rgba(16,185,129,0.55) 0%, transparent 60%)',
+        'radial-gradient(ellipse 70% 60% at 80% 70%, rgba(34,211,238,0.32) 0%, transparent 55%)',
+        'radial-gradient(ellipse 50% 40% at 55% 95%, rgba(6,182,212,0.18) 0%, transparent 50%)',
+    ].join(', '),
+    // Build (day): sharp sky-blue + amber — focused productive daylight
+    build: [
+        'radial-gradient(ellipse 110% 80% at 18% 22%, rgba(14,165,233,0.60) 0%, transparent 58%)',
+        'radial-gradient(ellipse 75% 60% at 82% 65%, rgba(251,191,36,0.36) 0%, transparent 55%)',
+        'radial-gradient(ellipse 55% 45% at 50% 100%, rgba(56,189,248,0.22) 0%, transparent 50%)',
+    ].join(', '),
+    // Lounge (evening): warm amber + rose — sunset / warm lamp
+    lounge: [
+        'radial-gradient(ellipse 110% 80% at 22% 30%, rgba(251,146,60,0.58) 0%, transparent 58%)',
+        'radial-gradient(ellipse 75% 60% at 80% 60%, rgba(244,114,182,0.40) 0%, transparent 55%)',
+        'radial-gradient(ellipse 55% 45% at 45% 95%, rgba(239,68,68,0.20) 0%, transparent 50%)',
+    ].join(', '),
+    // Night (late): deep indigo + violet — quiet and focused
+    night: [
+        'radial-gradient(ellipse 110% 80% at 18% 28%, rgba(99,102,241,0.62) 0%, transparent 58%)',
+        'radial-gradient(ellipse 75% 60% at 82% 72%, rgba(139,92,246,0.42) 0%, transparent 55%)',
+        'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(30,27,75,0.28) 0%, transparent 60%)',
+    ].join(', '),
 };
 
 export const MoraLivingBackground: React.FC = () => {
@@ -154,13 +174,13 @@ export const MoraLivingBackground: React.FC = () => {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
 
-            {/* Base — Luminous Twilight (brighter, more inviting than the old near-black teal) */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#243a55] via-[#172a3f] to-[#0d1826]" />
+            {/* Base — slightly brighter twilight */}
+            <div className="absolute inset-0 bg-gradient-to-b from-[#2a4260] via-[#1a3048] to-[#0f1e30]" />
 
-            {/* Rich 6-layer Nebula (Reduced baseline opacity to let orbs pop) */}
+            {/* Rich 6-layer Nebula — dimmed so scene tints can paint clearly on top */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.55 : 0.42,
+                    opacity: isThinking ? 0.38 : 0.26,
                     scale:   isThinking ? 1.06 : 1.0,
                 }}
                 transition={{ duration: 4, ease: 'easeInOut' }}
@@ -203,7 +223,7 @@ export const MoraLivingBackground: React.FC = () => {
             {/* Night-mode darkness layer — adds depth without killing star visibility */}
             <motion.div
                 className="absolute inset-0 pointer-events-none bg-black"
-                animate={{ opacity: scene.id === 'night' ? 0.16 : 0 }}
+                animate={{ opacity: scene.id === 'night' ? 0.28 : 0 }}
                 transition={{ duration: 2.0, ease: 'easeInOut' as const }}
             />
 

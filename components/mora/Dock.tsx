@@ -1323,6 +1323,13 @@ export const Dock = () => {
         });
     }, [ritualSceneId, ritualSettings.autoTime, ritualSettings.sceneId, updateUserSettings]);
 
+    const handleSelectRitualScene = useCallback((sceneId: import('@/lib/os/ritualMode').RitualSceneId) => {
+        persistRitualSettings(updateUserSettings, {
+            ritualSceneId: sceneId,
+            ritualAutoTime: false,
+        });
+    }, [updateUserSettings]);
+
     const handleToggleRitualAuto = useCallback(() => {
         persistRitualSettings(updateUserSettings, {
             ritualAutoTime: !ritualSettings.autoTime,
@@ -1379,6 +1386,7 @@ export const Dock = () => {
                                     onTogglePinned={toggleCommandDeckPinned}
                                     onToggleAutoScene={handleToggleRitualAuto}
                                     onCycleScene={handleCycleRitualScene}
+                                    onSelectScene={handleSelectRitualScene}
                                     trackName={activeTrack?.name || null}
                                     trackCount={ambientTracks.length}
                                     isPlaying={ambientAudio.enabled}
