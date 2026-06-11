@@ -26,6 +26,10 @@ interface NavState {
   isStandardMode: boolean;
   nameConflict: NameConflictState | null;
   activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor';
+  /** 'org' = planet map (admin/owner); 'dept' = DeptSpaceMap (single-dept employee) */
+  universeScope: 'org' | 'dept';
+  /** Dept whose spaces DeptSpaceMap renders (set when universeScope === 'dept') */
+  universeScopeDeptId: string | null;
 
   setViewLevel(level: ViewLevel): void;
   setCoreMode(mode: CoreMode): void;
@@ -44,6 +48,7 @@ interface NavState {
   navigateToSpace(spaceId: string): void;
   navigateToFolder(folderId: string | null): void;
   setActiveMode(mode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor'): void;
+  setUniverseScope(scope: 'org' | 'dept', deptId?: string | null): void;
 }
 
 export const useNavStore = create<NavState>((set, get) => ({
@@ -57,6 +62,8 @@ export const useNavStore = create<NavState>((set, get) => ({
   isStandardMode: false,
   nameConflict: null,
   activeMode: (typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') as any : null) || 'real_hq',
+  universeScope: 'org',
+  universeScopeDeptId: null,
 
   setViewLevel: (level) => set({ viewLevel: level }),
   setCoreMode: (mode) => set({ coreMode: mode }),
@@ -75,6 +82,11 @@ export const useNavStore = create<NavState>((set, get) => ({
     }
     set({ activeMode: mode });
   },
+
+  setUniverseScope: (scope, deptId = null) => set({
+    universeScope: scope,
+    universeScopeDeptId: scope === 'dept' ? deptId : null,
+  }),
 
   setActiveCompany: (id) => {
     if (typeof window !== 'undefined') {

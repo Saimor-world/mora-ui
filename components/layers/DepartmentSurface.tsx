@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { LayoutGrid, Orbit } from 'lucide-react';
+import { Grid2X2, LayoutGrid, Orbit } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
@@ -9,13 +9,14 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { DepartmentView } from '@/components/home/DepartmentView';
+import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { selectRecentDepartmentDocs } from '@/lib/openflow/departmentContext';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { ConnectorStatus, OpenFlowSignal } from '@/lib/openflow/types';
 
-type SurfaceMode = 'map' | 'overview';
+type SurfaceMode = 'map' | 'overview' | 'spaces';
 
 /**
  * Routes the department level between the spatial orbit map (DepartmentLayer,
@@ -100,6 +101,13 @@ export const DepartmentSurface: React.FC = () => {
           >
             <LayoutGrid size={13} /> Übersicht
           </button>
+          <button
+            type="button"
+            onClick={() => setMode('spaces')}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] transition-colors ${mode === 'spaces' ? 'bg-emerald-500 text-black' : 'text-white/45 hover:text-white/75'}`}
+          >
+            <Grid2X2 size={13} /> Bereiche
+          </button>
         </div>
       </div>
 
@@ -107,6 +115,11 @@ export const DepartmentSurface: React.FC = () => {
         <DepartmentLayer
           incidentPanels={departmentIncidentPanels}
           hasUnscopedIncidents={hasGlobalIncidentsWithoutDepartmentEvidence}
+        />
+      ) : mode === 'spaces' ? (
+        <DeptSpaceMap
+          departmentId={activeDepartmentId}
+          departmentName={departmentName}
         />
       ) : (
         <div className="h-full w-full overflow-y-auto">
