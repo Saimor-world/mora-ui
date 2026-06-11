@@ -128,6 +128,9 @@ export const DepartmentSurface: React.FC = () => {
                 data: { nodeId: id },
               });
             }}
+            onSwitchToMap={() => setMode('map')}
+            onOpenFinder={() => openPane({ id: 'finder-main', type: 'finder', title: 'Finder', size: { width: 900, height: 700 }, data: { departmentId: activeDepartmentId } })}
+            onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1000, height: 680 } })}
           />
         </div>
       )}

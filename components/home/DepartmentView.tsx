@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { FileText, Plug, Sparkles, Users } from 'lucide-react';
+import { FileText, Folder, Map, Plug, Sparkles, Users, Zap } from 'lucide-react';
 import { getUserColorHex } from '@/lib/utils/userColors';
 import type { PeerUser } from '@/lib/hooks/usePresence';
 import type { ConnectorStatus, OpenFlowSignal } from '@/lib/openflow/types';
@@ -23,6 +23,9 @@ interface DepartmentViewProps {
   incidentPanels?: IncidentStatusPanelData[];
   hasUnscopedIncidents?: boolean;
   onOpenDoc?: (id: string) => void;
+  onSwitchToMap?: () => void;
+  onOpenFinder?: () => void;
+  onOpenNightwatch?: () => void;
 }
 
 function Pillar({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
@@ -65,6 +68,9 @@ export function DepartmentView({
   incidentPanels = [],
   hasUnscopedIncidents = false,
   onOpenDoc,
+  onSwitchToMap,
+  onOpenFinder,
+  onOpenNightwatch,
 }: DepartmentViewProps) {
   const visibleIncidentPanels = incidentPanels.filter(isVisibleIncidentPanel).slice(0, 2);
 
@@ -160,6 +166,47 @@ export function DepartmentView({
           )}
         </Pillar>
       </div>
+
+      {(onSwitchToMap || onOpenFinder || onOpenNightwatch || visibleIncidentPanels.length > 0) && (
+        <div className="rounded-[28px] border border-white/[0.08] bg-black/22 p-4 backdrop-blur-2xl">
+          <div className="mb-4 flex items-center gap-2 text-sm font-medium text-white/82">
+            <Zap size={16} className="text-amber-200/70" />
+            Schnellzugriff
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {onSwitchToMap && (
+              <button
+                type="button"
+                onClick={onSwitchToMap}
+                className="flex items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-sm text-white/75 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                <Map size={14} className="text-emerald-300/70" />
+                Karte öffnen
+              </button>
+            )}
+            {onOpenFinder && (
+              <button
+                type="button"
+                onClick={onOpenFinder}
+                className="flex items-center gap-2 rounded-2xl border border-white/[0.09] bg-white/[0.04] px-4 py-2.5 text-sm text-white/75 transition-colors hover:bg-white/[0.08] hover:text-white"
+              >
+                <Folder size={14} className="text-cyan-300/70" />
+                Finder
+              </button>
+            )}
+            {onOpenNightwatch && visibleIncidentPanels.length > 0 && (
+              <button
+                type="button"
+                onClick={onOpenNightwatch}
+                className="flex items-center gap-2 rounded-2xl border border-rose-400/20 bg-rose-500/[0.07] px-4 py-2.5 text-sm text-rose-200/80 transition-colors hover:bg-rose-500/[0.12] hover:text-rose-100"
+              >
+                <Sparkles size={14} className="text-rose-300/70" />
+                Nightwatch — {visibleIncidentPanels.length} Vorfall{visibleIncidentPanels.length !== 1 ? 'e' : ''}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }
