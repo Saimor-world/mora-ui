@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import { AppLoader } from '@/lib/apps/AppLoader';
@@ -12,9 +12,35 @@ import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
 import { WallPane } from '@/components/panes/WallPane';
 
+// Full-bleed apps: render at the correct pane z-index (same layer as GlassPanel
+// portals) so they're never buried under already-open windowed panes.
+const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {
+    nightwatch: 'nightwatch',
+};
+
+const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => (
+    <motion.div
+        key={pane.id}
+        className="fixed inset-0"
+        style={{ zIndex: pane.zIndex }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.25 }}
+    >
+        <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />
+    </motion.div>
+);
+
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
         return null;
+    }
+
+    // Full-bleed apps bypass GlassPanel — give them the correct z-index layer directly
+    const fullBleedAppId = FULLBLEED_APPS[pane.type];
+    if (fullBleedAppId) {
+        return <FullBleedWrapper pane={pane} appId={fullBleedAppId} />;
     }
 
     switch (pane.type) {
@@ -48,8 +74,6 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
         case 'timeline':
             return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
-        case 'nightwatch':
-            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
         case 'canvas':
             return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
         case 'apps':
@@ -93,15 +117,15 @@ export const PaneManager: React.FC = () => {
     const panes = usePaneStore((state) => state.panes);
 
     return (
-        // z-[100]: lift every pane above the ViewPort/Universe layer (body-level z-10) so
-        // full-bleed apps that don't self-wrap in GlassPanel (e.g. Nightwatch) render in
-        // front instead of behind the topography. Stays below the Dock (z-740) and overlays
-        // (z-928+) so the Dock remains the single navigation truth on top of any open app.
-        <div className="absolute inset-0 z-[100] pointer-events-none">
+        // Windowed panes (GlassPanel) use createPortal to document.body and receive
+        // their z-index directly. This container only handles the fallback pass-through
+        // for non-GlassPanel apps; full-bleed apps (nightwatch) render via FullBleedWrapper
+        // at their correct pane.zIndex above instead.
+        <div className="pointer-events-none fixed inset-0 z-[100]">
             <AnimatePresence>
                 {panes.map((pane) => (
                     !pane.minimized && (
-                        <div key={pane.id} className="pointer-events-auto contents">
+                        <div key={pane.id} className="pointer-events-auto absolute inset-0">
                             <PaneRenderer pane={pane} />
                         </div>
                     )
