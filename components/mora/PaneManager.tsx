@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
@@ -12,25 +13,31 @@ import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
 import { WallPane } from '@/components/panes/WallPane';
 
-// Full-bleed apps: render at the correct pane z-index (same layer as GlassPanel
-// portals) so they're never buried under already-open windowed panes.
+// Full-bleed apps: portal to document.body at pane.zIndex — same layer as
+// GlassPanel portals — so they're never buried by the PaneManager stacking context.
 const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {
     nightwatch: 'nightwatch',
 };
 
-const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => (
-    <motion.div
-        key={pane.id}
-        className="fixed inset-0"
-        style={{ zIndex: pane.zIndex }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.25 }}
-    >
-        <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />
-    </motion.div>
-);
+const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+    if (!mounted) return null;
+
+    return createPortal(
+        <motion.div
+            className="fixed inset-0"
+            style={{ zIndex: pane.zIndex }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+        >
+            <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />
+        </motion.div>,
+        document.body,
+    );
+};
 
 const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     if (!isPaneEnabled(pane.type)) {
