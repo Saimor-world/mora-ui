@@ -26,6 +26,7 @@ import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
+import { HomeCockpit } from '@/components/home/HomeCockpit';
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
@@ -855,20 +856,36 @@ export const HomeSurface: React.FC = () => {
             )}
 
             {!websiteEntryContext && (
-                <motion.div
+                <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] overflow-y-auto pr-2 pb-4 lg:left-6 lg:right-6 lg:top-36"
-                    style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.4) transparent' }}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, ease: 'easeOut' }}
+                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36"
                 >
-                    <OpenFlowLagebild
-                        view={openFlowView}
-                        onOpenPane={openPane}
+                    <HomeCockpit
+                        firstName={firstName}
+                        greeting={greeting}
+                        todayLabel={todayLabel}
+                        mailPreview={mailPreview}
+                        calendarPreview={calendarPreview}
+                        mailConfigured={Boolean(integrationsOverview?.mail?.configured)}
+                        calendarConfigured={Boolean(integrationsOverview?.calendar?.configured)}
+                        teamActivities={teamActivities}
+                        teamMessages={teamMessages}
+                        onlineCount={onlineTeamCount}
+                        unreadTeamMessages={unreadTeamCount}
+                        homeView={homeView}
+                        incidentStatusPanels={incidentStatusPanels}
+                        recentActivityItems={recentActivityItems}
+                        deptTiles={featuredDeptTiles}
+                        onOpenMail={openMail}
+                        onOpenCalendar={openCalendarSetup}
+                        onOpenTeam={openTeam}
+                        onOpenIntegrations={openIntegrations}
+                        onOpenFinder={openFinder}
+                        onOpenMora={openMora}
+                        onOpenRecentActivity={openRecentActivity}
                         onGoExplore={() => setCoreMode('explore')}
                     />
-                </motion.div>
+                </div>
             )}
 
             {websiteEntryContext && (
