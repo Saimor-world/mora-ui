@@ -147,6 +147,17 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const [isMaximized, setIsMaximized] = useState(false);
     const preMaximizeRef = useRef<{ position: { x: number; y: number }; size: { width: number; height: number } } | null>(null);
 
+    // Live viewport size — updates on resize/F11/zoom so drag bounds stay correct
+    const [viewportSize, setViewportSize] = useState({
+        width: typeof window !== 'undefined' ? window.innerWidth : 1920,
+        height: typeof window !== 'undefined' ? window.innerHeight : 1080,
+    });
+    useEffect(() => {
+        const onResize = () => setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+
     // Determine center position if not provided
     const getInitialX = () => {
         if (initialX !== undefined) return initialX;
@@ -198,6 +209,21 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, [isMaximized]);
+
+    // Re-clamp normal panes into viewport after F11/zoom/resize
+    useEffect(() => {
+        if (isMaximized) return;
+        const margin = 20;
+        const maxX = viewportSize.width - panelSize.width - margin;
+        const maxY = viewportSize.height - panelSize.height - 80; // dock clearance
+        const clampedX = Math.max(margin, Math.min(panelPosition.x, maxX));
+        const clampedY = Math.max(margin, Math.min(panelPosition.y, maxY));
+        if (clampedX !== panelPosition.x || clampedY !== panelPosition.y) {
+            setPanelPosition({ x: clampedX, y: clampedY });
+            onPositionChange?.(clampedX, clampedY);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [viewportSize]);
 
     useEffect(() => {
         return () => {
@@ -402,8 +428,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 dragConstraints={{
                     top: 10,
                     left: 10,
-                    right: typeof window !== 'undefined' ? window.innerWidth - 60 : 1000,
-                    bottom: typeof window !== 'undefined' ? window.innerHeight - 100 : 800 // Safety for dock
+                    right: Math.max(10, viewportSize.width - panelSize.width - 20),
+                    bottom: Math.max(10, viewportSize.height - panelSize.height - 80),
                 }}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
@@ -412,8 +438,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     opacity: 0,
                     scale: 0.05,
                     filter: 'blur(20px)',
-                    x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0,
-                    y: typeof window !== 'undefined' ? window.innerHeight - 140 : 0
+                    x: viewportSize.width / 2 - panelSize.width / 2,
+                    y: viewportSize.height - 140,
                 }}
                 animate={{
                     opacity: 1,
@@ -428,8 +454,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     opacity: 0,
                     scale: 0.1,
                     filter: 'blur(15px)',
-                    x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0,
-                    y: typeof window !== 'undefined' ? window.innerHeight - 140 : 0,
+                    x: viewportSize.width / 2 - panelSize.width / 2,
+                    y: viewportSize.height - 140,
                     transition: { duration: 0.5, ease: [0.4, 0, 1, 1] }
                 }}
                 transition={{
