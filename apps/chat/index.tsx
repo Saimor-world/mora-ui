@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 /**
  * ChatApp - Mora AI Conversation Interface (App Module)
  *
- * MASTERBIBEL: Môra is your Disney fairy AI companion.
- * This app allows direct conversation with Môra (via Ollama/Gemini/etc).
+ * MASTERBIBEL: MÃ´ra is your Disney fairy AI companion.
+ * This app allows direct conversation with MÃ´ra (via Ollama/Gemini/etc).
  *
  * Commands like "show me department XY" trigger cursor navigation.
  *
@@ -81,7 +81,7 @@ interface Message {
     pendingAction?: PendingAction;
     /** set when the agent produced a work-session plan; used to open WorkSessionPane */
     planId?: string;
-    /** typed frames from mora.dialogue.v1 path — rendered via FramedMessage */
+    /** typed frames from mora.dialogue.v1 path â€” rendered via FramedMessage */
     frames?: MoraFrame[];
     /** Sprint 3: IDs of mora_memories recalled for this response */
     recalledMemoryIds?: string[];
@@ -94,7 +94,7 @@ interface Message {
 // Extracted memory components to components/MemoryComponents.tsx and components/ChatStatusCards.tsx
 
 // =============================================================================
-// Sprint 3: MemoriesView — episodic memory browser with semantic search
+// Sprint 3: MemoriesView â€” episodic memory browser with semantic search
 // =============================================================================
 
 // Extracted MemoriesView component to components/MemoriesView.tsx
@@ -137,7 +137,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         return { scope: 'shared' };
     }, [activeDepartment]);
 
-    // Streaming hook — real AI, token-by-token (legacy free-text path)
+    // Streaming hook â€” real AI, token-by-token (legacy free-text path)
     const {
         sendMessage: streamSend,
         streamingText,
@@ -147,7 +147,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         clearHistory,
     } = useMoraStream();
 
-    // Typed-frame stream — mora.dialogue.v1 path (spec §4).
+    // Typed-frame stream â€” mora.dialogue.v1 path (spec Â§4).
     // Always called (hooks must not be conditional); only used when flag is on.
     const {
         send: frameSend,
@@ -171,10 +171,10 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             content: `Hallo, ich bin Mora.
 
 Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
-- **"Zeig mir ${d1}"** → ich navigiere dorthin
-- **"Was ist neu?"** → ich fasse reale Signale zusammen
-- **"Was läuft in ${d2}?"** → ich suche in Inhalten und Aktivität
-- **"Merke dir ..."** → ich speichere belastbare Fakten für später
+- **"Zeig mir ${d1}"** â†’ ich navigiere dorthin
+- **"Was ist neu?"** â†’ ich fasse reale Signale zusammen
+- **"Was lÃ¤uft in ${d2}?"** â†’ ich suche in Inhalten und AktivitÃ¤t
+- **"Merke dir ..."** â†’ ich speichere belastbare Fakten fÃ¼r spÃ¤ter
 
 Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             timestamp: new Date()
@@ -315,13 +315,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 auto_commit: true,
                 company_id: activeCompanyId
             });
-            // Bestätigung im Chat anzeigen
+            // BestÃ¤tigung im Chat anzeigen
             setMessages((prev) => [
                 ...prev,
                 {
                     id: crypto.randomUUID(),
                     role: 'assistant' as const,
-                    content: `✓ Gespeichert [👤 Persönlich]: „${savedContent}"`,
+                    content: `âœ“ Gespeichert [ðŸ‘¤ PersÃ¶nlich]: â€ž${savedContent}"`,
                     timestamp: new Date(),
                 },
             ]);
@@ -399,8 +399,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }));
     }, [isFullscreen, paneId]);
 
-    // Fullscreen: cleanup on unmount (or paneId change) — signal MoraShell to remove this pane from fullscreen set.
-    // Always dispatches isFullscreen: false — intentional stale closure; [paneId] dep only.
+    // Fullscreen: cleanup on unmount (or paneId change) â€” signal MoraShell to remove this pane from fullscreen set.
+    // Always dispatches isFullscreen: false â€” intentional stale closure; [paneId] dep only.
     useEffect(() => {
         return () => {
             document.body.classList.remove('chat-fullscreen');
@@ -446,10 +446,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         }
 
         // Search commands
-        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('öffne') || lower.includes('öffne')) {
+        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('Ã¶ffne') || lower.includes('Ã¶ffne')) {
             // Priority regex for German/English search verbs
             const target = text
-                .replace(/^(zeige mir|zeig mir|zeige|zeig|öffne|öffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
+                .replace(/^(zeige mir|zeig mir|zeige|zeig|Ã¶ffne|Ã¶ffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
                 .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
                 .trim();
             return { type: 'search', target };
@@ -483,7 +483,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 size: { width: 1280, height: 820 }
             });
 
-            return `✨ Ich navigiere zu **${dept.name}** und öffne den Finder!`;
+            return `âœ¨ Ich navigiere zu **${dept.name}** und Ã¶ffne den Finder!`;
         }
         return 'Department nicht gefunden.';
     }, [safeDepartments, activeCompanyId, openPane]);
@@ -493,15 +493,15 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         openPane({
             id: 'finder-main',
             type: 'finder',
-            title: global ? 'Saimôr Mycelium (Alle Daten)' : `Finder: ${query}`,
+            title: global ? 'SaimÃ´r Mycelium (Alle Daten)' : `Finder: ${query}`,
             size: { width: 1280, height: 820 },
             data: { query, globalSearch: global, companyId: activeCompanyId || undefined }
         });
         dispatchNavigationResult({
-            title: global ? 'Unternehmenssuche geöffnet' : 'Suche geöffnet',
+            title: global ? 'Unternehmenssuche geÃ¶ffnet' : 'Suche geÃ¶ffnet',
             message: global
-                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geöffnet.'
-                : `Ich habe die Suche für ${query} im aktuellen Organisationskontext geöffnet.`,
+                ? 'Ich habe die organisationsweite Suche im aktuellen Organisationskontext geÃ¶ffnet.'
+                : `Ich habe die Suche fÃ¼r ${query} im aktuellen Organisationskontext geÃ¶ffnet.`,
             targetType: 'search',
             label: query || 'Alle Dokumente',
             query: query || '',
@@ -509,8 +509,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             source: 'chat',
         });
         return global
-            ? `🌐 Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
-            : `🔍 Ich öffne die Suche für **"${query}"**...`;
+            ? `ðŸŒ Ich Ã¶ffne das gesamte **SaimÃ´r Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
+            : `ðŸ” Ich Ã¶ffne die Suche fÃ¼r **"${query}"**...`;
     }, [activeCompanyId, openPane]);
 
     const executeDirectOpenIntent = useCallback(async (query: string) => {
@@ -537,7 +537,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         if (openIntent.resolution === 'choose' && openIntent.candidates.length > 0) {
             dispatchNavigationResult({
                 title: 'Mehrdeutiger Treffer',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer für ${trimmed}. Wähle unten einen aus.`,
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Mehrere passende Treffer fÃ¼r ${trimmed}. WÃ¤hle unten einen aus.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -549,7 +549,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 results: openIntent.candidates.map((candidate) => toChatOpenableResult(candidate)),
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich sehe mehrere passende Treffer für **${trimmed}**. Wähle unten einen aus.`;
+            return `Ich sehe mehrere passende Treffer fÃ¼r **${trimmed}**. WÃ¤hle unten einen aus.`;
         }
 
         if (openIntent.resolution === 'none' || !openIntent.chosen) {
@@ -561,8 +561,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 data: { query: trimmed },
             });
             dispatchNavigationResult({
-                title: 'Suche geöffnet',
-                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer für ${trimmed} gefunden und die Suche geöffnet.`,
+                title: 'Suche geÃ¶ffnet',
+                message: openIntent.open_explanation?.reason || openIntent.reason || `Ich habe keinen klaren Treffer fÃ¼r ${trimmed} gefunden und die Suche geÃ¶ffnet.`,
                 targetType: 'search',
                 label: trimmed,
                 query: trimmed,
@@ -573,7 +573,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 query: trimmed,
                 receipt: buildOpenIntentReceipt(openIntent, trimmed),
             });
-            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche für **${trimmed}** geöffnet.`;
+            return `Ich finde dazu keinen klaren Treffer. Ich habe die Suche fÃ¼r **${trimmed}** geÃ¶ffnet.`;
         }
 
         const chosen = toChatOpenableResult(openIntent.chosen);
@@ -581,9 +581,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         setOpenIntentReceipt(null);
         await openSearchResult(chosen, openPane, scope, 'chat');
         if (chosen.type === 'file' || chosen.type === 'node') {
-            return `Ich öffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
+            return `Ich Ã¶ffne **${chosen.title}** direkt im passenden Finder-Kontext.`;
         }
-        return `Ich öffne **${chosen.title}** im aktuellen Organisationskontext.`;
+        return `Ich Ã¶ffne **${chosen.title}** im aktuellen Organisationskontext.`;
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
@@ -592,17 +592,17 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         setAmbiguityChoice(null);
         setOpenIntentReceipt(null);
 
-        // ── Recall-Intent: direkt aus Memory rendern, kein Agent-Call ──────────────
+        // â”€â”€ Recall-Intent: direkt aus Memory rendern, kein Agent-Call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (detectRecallIntent(content)) {
             try {
                 const memories = await fetchMoraMemories(20);
                 let recallText: string;
                 if (!memories || memories.length === 0) {
-                    recallText = 'Ich habe noch keine Erinnerungen gespeichert. Wenn du mir sagst "merke dir ...", speichere ich es für später.';
+                    recallText = 'Ich habe noch keine Erinnerungen gespeichert. Wenn du mir sagst "merke dir ...", speichere ich es fÃ¼r spÃ¤ter.';
                 } else {
                     const lines = memories
                         .slice(0, 10)
-                        .map((m) => `• ${m.summary}`)
+                        .map((m) => `â€¢ ${m.summary}`)
                         .join('\n');
                     recallText = `Ich erinnere mich an ${memories.length} ${memories.length === 1 ? 'Ding' : 'Dinge'}:\n\n${lines}`;
                 }
@@ -628,9 +628,9 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             } finally {
                 setIsLoading(false);
             }
-            return; // ← kein Agent-Call, kein parseIntent
+            return; // â† kein Agent-Call, kein parseIntent
         }
-        // ── Ende Recall-Intent ──────────────────────────────────────────────────────
+        // â”€â”€ Ende Recall-Intent â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
         const intent = parseIntent(content);
 
@@ -642,7 +642,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             }
         }
 
-        // Fetch relevant memories for context (debounced — don't block stream start)
+        // Fetch relevant memories for context (debounced â€” don't block stream start)
         const memSearchTimer = setTimeout(() => { void fetchRelevantMemories(content); }, 500);
 
         let responseContent = '';
@@ -708,7 +708,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                             setMessages(prev => [...prev, {
                                 id: crypto.randomUUID(),
                                 role: 'assistant',
-                                content: agentResponse.final_message || `Ich habe einen Aktionsplan für ${confirm.tool_name} vorbereitet. Bitte bestätige ihn.`,
+                                content: agentResponse.final_message || `Ich habe einen Aktionsplan fÃ¼r ${confirm.tool_name} vorbereitet. Bitte bestÃ¤tige ihn.`,
                                 timestamp: new Date(),
                                 pendingAction: {
                                     tool_name: confirm.tool_name,
@@ -837,7 +837,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 }
 
                 // ?? STREAMING AI RESPONSE ??????????????????????????????????
-                setIsLoading(false); // spinner off — streaming indicator takes over
+                setIsLoading(false); // spinner off â€” streaming indicator takes over
                 const historyForStream = messages
                     .filter(m => m.id !== 'welcome')
                     .slice(-10)
@@ -860,7 +860,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         history: streamHistoryWithCommunication,
                         context: chatContext,
                     });
-                    // After stream done — commit frames as a message
+                    // After stream done â€” commit frames as a message
                     const captured = [...liveFrames];
                     if (captured.length > 0) {
                         setMessages(prev => [...prev, {
@@ -874,7 +874,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         setMessages(prev => [...prev, {
                             id: crypto.randomUUID(),
                             role: 'assistant',
-                            content: `Mora konnte nicht antworten – ${frameError}`,
+                            content: `Mora konnte nicht antworten â€“ ${frameError}`,
                             timestamp: new Date(),
                         }]);
                     }
@@ -887,7 +887,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     context: chatContext,
                 });
 
-                // After stream done — add finalized message to local list
+                // After stream done â€” add finalized message to local list
                 // (streamingText already shown live; now commit it)
                 if (fullReply) {
                     setMessages(prev => [...prev, {
@@ -902,8 +902,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         id: crypto.randomUUID(),
                         role: 'assistant',
                         content: isConnErr
-                            ? 'Das Backend ist gerade nicht erreichbar. Stelle sicher, dass CORE läuft, und versuche es erneut.'
-                            : `Mora konnte nicht antworten – ${streamError}`,
+                            ? 'Das Backend ist gerade nicht erreichbar. Stelle sicher, dass CORE lÃ¤uft, und versuche es erneut.'
+                            : `Mora konnte nicht antworten â€“ ${streamError}`,
                         timestamp: new Date(),
                     }]);
                 }
@@ -920,7 +920,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             // Ensure isLoading is always cleared (noop if streaming path already cleared it)
             setIsLoading(false);
         }
-        // Cancel memSearch if it hasn't fired yet — not possible with simple setTimeout
+        // Cancel memSearch if it hasn't fired yet â€” not possible with simple setTimeout
         // (fire-and-forget is fine for memory hints)
     }, [
         activeCompanyId,
@@ -992,7 +992,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
 
     if (!pane) return null;
 
-    // ── Fullscreen wrapper ───────────────────────────────────────────────────
+    // â”€â”€ Fullscreen wrapper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const chatInner = (
         <div className={`flex flex-col ${isFullscreen ? 'h-full' : 'h-full'}`}>
             {/* Header */}
@@ -1006,7 +1006,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 </div>
                 <div>
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
-                        }`}>Môra</h3>
+                        }`}>MÃ´ra</h3>
                     <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
                         }`}>Deine KI-Begleiterin</p>
                 </div>
@@ -1022,7 +1022,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     </button>
                 </div>
             </div>
-            {/* Sprint 3: Tab bar — Chat / Erinnerungen */}
+            {/* Sprint 3: Tab bar â€” Chat / Erinnerungen */}
             <div className={`flex gap-0 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
                 {(['chat', 'memories'] as const).map((tab) => (
                     <button
@@ -1066,7 +1066,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
 
             {/* Messages */}
             <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView === 'memories' ? 'hidden' : ''}`}>
-                {/* Empty state — shown when no messages yet */}
+                {/* Empty state â€” shown when no messages yet */}
                 {messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
@@ -1078,7 +1078,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         </div>
                         <div>
                             <p className={`text-sm font-medium mb-1 ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white/75'}`}>
-                                Hallo, ich bin Môra
+                                Hallo, ich bin MÃ´ra
                             </p>
                             <p className={`text-xs leading-relaxed max-w-[260px] ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>
                                 Frag mich etwas, oder lass mich dir beim Durchsuchen, Erstellen und Verstehen deiner Inhalte helfen.
@@ -1088,7 +1088,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                         <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
                             {[
                                 'Was ist mein letzter Stand?',
-                                'Suche nach…',
+                                'Suche nachâ€¦',
                                 'Erstelle eine Notiz',
                             ].map((prompt) => (
                                 <button
@@ -1135,7 +1135,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                 {msg.role === 'assistant' && msg.recalledMemoryIds && msg.recalledMemoryIds.length > 0 && (
                                     <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-violet-300/72">
                                         <Sparkles size={10} />
-                                        Mora erinnert sich an {msg.recalledMemoryIds.length} Gespräch{msg.recalledMemoryIds.length !== 1 ? 'e' : ''}
+                                        Mora erinnert sich an {msg.recalledMemoryIds.length} GesprÃ¤ch{msg.recalledMemoryIds.length !== 1 ? 'e' : ''}
                                     </div>
                                 )}
                                 <div className="flex items-start gap-2">
@@ -1244,7 +1244,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                                         : null) ||
                                                     (_toolName === 'update_note_content'
                                                         ? 'Inhalt erfolgreich aktualisiert.'
-                                                        : 'Aktion erfolgreich ausgeführt.');
+                                                        : 'Aktion erfolgreich ausgefÃ¼hrt.');
                                                 setMessages(prev => [...prev, {
                                                     id: crypto.randomUUID(),
                                                     role: 'assistant',
@@ -1273,7 +1273,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ))}
                 </AnimatePresence>
 
-                {/* Thinking indicator — shown when stream started but no content yet */}
+                {/* Thinking indicator â€” shown when stream started but no content yet */}
                 <AnimatePresence>
                     {((useFramePath && isFrameStreaming && liveFrames.length === 0) ||
                       (!useFramePath && isStreaming && !streamingText)) && (
@@ -1297,13 +1297,13 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         />
                                     ))}
                                 </div>
-                                <span className="text-xs text-white/45">Môra denkt nach…</span>
+                                <span className="text-xs text-white/45">MÃ´ra denkt nachâ€¦</span>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Live streaming bubble — legacy free-text path */}
+                {/* Live streaming bubble â€” legacy free-text path */}
                 <AnimatePresence>
                     {!useFramePath && isStreaming && streamingText && (
                         <motion.div
@@ -1329,7 +1329,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     )}
                 </AnimatePresence>
 
-                {/* Live frame stream — mora.dialogue.v1 path */}
+                {/* Live frame stream â€” mora.dialogue.v1 path */}
                 <AnimatePresence>
                     {useFramePath && isFrameStreaming && liveFrames.length > 0 && (
                         <motion.div
@@ -1434,7 +1434,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                             }}
                                             className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
                                         >
-                                            Suche prüfen
+                                            Suche prÃ¼fen
                                         </button>
                                     }
                                     className="rounded-[22px]"
@@ -1453,7 +1453,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     >
                         <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
                             <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-                            <span className="text-sm text-white/60">Môra denkt nach...</span>
+                            <span className="text-sm text-white/60">MÃ´ra denkt nach...</span>
                         </div>
                     </motion.div>
                 )}
@@ -1461,7 +1461,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 <div ref={messagesEndRef} />
             </div>
 
-            {/* Input — hidden when viewing memories tab */}
+            {/* Input â€” hidden when viewing memories tab */}
             {chatView === 'memories' ? null : moraCtx.isOperational === null ? (
                 bootstrapTimedOut
                     ? <OfflineCard onRetry={() => { setBootstrapTimedOut(false); window.location.reload(); }} />
@@ -1497,7 +1497,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                         ? 'text-white/28'
                                         : 'text-violet-300/60';
                             const stateWord = isRunning
-                                ? 'Läuft'
+                                ? 'LÃ¤uft'
                                 : isWaiting
                                     ? 'Wartet'
                                     : isDone
@@ -1533,7 +1533,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     }
                                     if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
                                 }}
-                                placeholder="Schreib Mora… (Shift+↵ für Zeilenumbruch)"
+                                placeholder="Schreib Moraâ€¦ (Shift+â†µ fÃ¼r Zeilenumbruch)"
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
                                 style={{ resize: 'none', overflowY: 'hidden' }}
@@ -1559,7 +1559,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             ) : (
                 <SetupRequiredCard
                     onOpenSettings={() => {
-                        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                        openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 } });
                     }}
                 />
             )}
@@ -1583,7 +1583,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
 
     return (
         <GlassPanel
-            title="Chat mit Môra"
+            title="Chat mit MÃ´ra"
             width={pane.size.width}
             height={pane.size.height}
             minWidth={560}
@@ -1609,3 +1609,4 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         </GlassPanel>
     );
 }
+

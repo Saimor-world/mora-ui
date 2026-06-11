@@ -319,7 +319,7 @@ export const ContextRail: React.FC = () => {
                             <button
                                 onClick={() => {
                                     const { openPane } = usePaneStore.getState();
-                                    openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                                    openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 } });
                                     setShowUserMenu(false);
                                 }}
                                 className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/80"
@@ -363,7 +363,7 @@ export const ContextRail: React.FC = () => {
                             </button>
                             <button
                                 onClick={() => {
-                                    usePaneStore.getState().openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 720, height: 640 } });
+                                    usePaneStore.getState().openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 } });
                                     setShowSettings(false);
                                 }}
                                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/5 transition-colors duration-200 text-left text-sm text-white/70 hover:text-white/90"
@@ -409,3 +409,4 @@ export const ContextRail: React.FC = () => {
         </>
     );
 };
+

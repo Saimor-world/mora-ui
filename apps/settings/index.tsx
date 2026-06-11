@@ -417,7 +417,7 @@ useEffect(() => {
 
     return (
         <GlassPanel
-            title="Settings"
+            title={null}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -435,25 +435,75 @@ useEffect(() => {
             draggable
             resizable
         >
-            <div className="flex h-full">
-                {/* Sidebar */}
-                <div className="w-1/3 border-r border-white/10 p-4 space-y-1">
-                    {tabs.map(tab => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveTab(tab.id)}
-                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${activeTab === tab.id
-                                ? 'bg-emerald-500/20 text-emerald-400 font-medium'
-                                : 'text-white/60 hover:bg-white/5 hover:text-white'}`}
-                        >
-                            <tab.icon size={16} />
-                            {tab.label}
-                        </button>
-                    ))}
+            <div className="flex h-full overflow-hidden">
+                {/* ── Sidebar ─────────────────────────────────────────── */}
+                <div className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
+                    {/* Logo / header */}
+                    <div className={`px-4 pt-5 pb-3 border-b ${isStandardMode ? 'border-gray-200' : 'border-white/[0.06]'}`}>
+                        <div className={`text-[10px] uppercase tracking-[0.28em] font-medium ${isStandardMode ? 'text-gray-400' : 'text-white/35'}`}>
+                            Einstellungen
+                        </div>
+                    </div>
+
+                    <nav className="flex-1 overflow-y-auto py-2 px-2">
+                        {tabs.map(tab => {
+                            const active = activeTab === tab.id;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    className={`group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 mb-0.5 ${active
+                                        ? isStandardMode
+                                            ? 'bg-[#0078D4]/10 text-[#0078D4]'
+                                            : 'bg-white/[0.08] text-white'
+                                        : isStandardMode
+                                            ? 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            : 'text-white/50 hover:bg-white/[0.05] hover:text-white/85'
+                                        }`}
+                                >
+                                    <span className={`transition-colors ${active
+                                        ? isStandardMode ? 'text-[#0078D4]' : 'text-white/90'
+                                        : isStandardMode ? 'text-gray-400' : 'text-white/35 group-hover:text-white/60'
+                                        }`}>
+                                        <tab.icon size={15} />
+                                    </span>
+                                    <span className={`font-medium tracking-[0.01em] ${active ? '' : 'font-normal'}`}>{tab.label}</span>
+                                    {active && (
+                                        <span className={`ml-auto h-1.5 w-1.5 rounded-full ${isStandardMode ? 'bg-[#0078D4]' : 'bg-white/50'}`} />
+                                    )}
+                                </button>
+                            );
+                        })}
+                    </nav>
+
+                    {/* Bottom version stamp */}
+                    <div className={`px-4 py-3 border-t ${isStandardMode ? 'border-gray-200' : 'border-white/[0.06]'}`}>
+                        <div className={`text-[10px] ${isStandardMode ? 'text-gray-400' : 'text-white/22'}`}>
+                            SAIMOR OS · v2.0.0-beta
+                        </div>
+                    </div>
                 </div>
 
-                {/* Content Area */}
-                <div className="flex-1 p-6 overflow-y-auto">
+                {/* ── Content area ──────────────────────────────────────── */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Section header */}
+                    <div className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
+                        {(() => {
+                            const t = tabs.find(t => t.id === activeTab);
+                            return t ? (
+                                <div className="flex items-center gap-3">
+                                    <span className={isStandardMode ? 'text-gray-500' : 'text-white/40'}>
+                                        <t.icon size={16} />
+                                    </span>
+                                    <h2 className={`text-sm font-semibold tracking-[0.02em] ${isStandardMode ? 'text-gray-800' : 'text-white/90'}`}>
+                                        {t.label}
+                                    </h2>
+                                </div>
+                            ) : null;
+                        })()}
+                    </div>
+
+                    <div className="px-6 py-5 space-y-6">
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
                     )}
@@ -1582,6 +1632,7 @@ SMTP_TLS=true`}</pre>
                             </div>
                         </div>
                     )}
+                    </div>
                 </div>
             </div>
         </GlassPanel>
