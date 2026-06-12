@@ -181,8 +181,8 @@ function HeadlineHero({
       <div className={`flex items-center gap-3 rounded-2xl border ${calm.border} ${calm.bg} px-5 py-5`}>
         <CalmIcon size={20} className={calm.text} />
         <div>
-          <div className="text-base font-medium text-white/88">Alles ruhig</div>
-          <div className="text-sm text-white/50">Keine kritischen Signale. MÔRA beobachtet weiter.</div>
+          <div className="text-base font-medium text-white/88">Ruhig im Moment</div>
+          <div className="text-sm text-white/50">Keine kritischen Signale gemeldet. MÔRA beobachtet weiter.</div>
         </div>
       </div>
     );

@@ -185,7 +185,7 @@ function MeinTagZone({ mailPreview, calendarPreview, mailConfigured, calendarCon
                             ))}
                         </div>
                     ) : (
-                        <EmptyRow label="MÔRA analysiert deine Mails automatisch" />
+                        <EmptyRow label="MÔRA hat noch keine Aufgaben erkannt." />
                     )}
                 </div>
             </div>
@@ -324,9 +324,9 @@ function SignaleZone({ incidentStatusPanels, homeView, onOpenIntegrations, onOpe
                         )}
                     </div>
                 ) : (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-400/14 bg-emerald-400/[0.05] px-3 py-2.5">
-                        <CheckCircle2 size={13} className="shrink-0 text-emerald-300/70" />
-                        <span className="text-[12px] text-emerald-100/65">Alles ruhig — keine Vorfälle</span>
+                    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5">
+                        <CheckCircle2 size={13} className="shrink-0 text-white/45" />
+                        <span className="text-[12px] text-white/55">Keine offenen Vorfälle gemeldet</span>
                     </div>
                 )}
 
