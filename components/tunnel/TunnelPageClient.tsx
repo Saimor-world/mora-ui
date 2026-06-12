@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -99,7 +99,7 @@ function TunnelCard({ entry }: { entry: TunnelEntry }) {
           )}
           {entry.solution && (
             <div className="rounded-xl border border-emerald-400/20 bg-emerald-500/5 p-3 text-xs text-emerald-100/90">
-              <div className="font-medium text-emerald-200/90 mb-1">LÃ¶sung</div>
+              <div className="font-medium text-emerald-200/90 mb-1">Lösung</div>
               {entry.solution}
             </div>
           )}
@@ -122,7 +122,7 @@ function TunnelCard({ entry }: { entry: TunnelEntry }) {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-1.5 text-xs text-white/70 hover:bg-white/10"
               >
                 <ExternalLink size={12} />
-                Im HQ Ã¶ffnen
+                Im HQ öffnen
               </button>
             )}
           </div>
@@ -201,15 +201,15 @@ export function TunnelPageClient() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-400/60">Dev only</p>
-              <h1 className="mt-1 text-2xl font-semibold tracking-tight">SAIMÃ”R Tunnel</h1>
+              <h1 className="mt-1 text-2xl font-semibold tracking-tight">SAIMÔR Tunnel</h1>
               <p className="mt-2 max-w-2xl text-sm text-white/55 leading-relaxed">
                 Museum & Inventar: alles was im Code existiert, aber im HQ versteckt, gated oder
-                schlecht verdrahtet ist. Nichts wird gelÃ¶scht â€” du entscheidest was bleibt.
-                Vorschauen erst nach Klick auf â€žVorschau ladenâ€œ (verhindert AbstÃ¼rze).
+                schlecht verdrahtet ist. Nichts wird gelöscht — du entscheidest was bleibt.
+                Vorschauen erst nach Klick auf „Vorschau laden“ (verhindert Abstürze).
               </p>
               <p className="mt-2 max-w-2xl text-xs text-cyan-200/50 leading-relaxed">
-                Larry UI ist ein eigenes, reales Produkt auf dem Server (Port 3000) â€” getrennt von
-                SAIMOR HQ. Wird hier nicht angerÃ¼hrt.
+                Larry UI ist ein eigenes, reales Produkt auf dem Server (Port 3000) — getrennt von
+                SAIMOR HQ. Wird hier nicht angerührt.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -226,14 +226,14 @@ export function TunnelPageClient() {
                 Login
               </Link>
               <span className="self-center rounded-lg bg-emerald-500/10 border border-emerald-400/20 px-3 py-1.5 text-[10px] font-mono text-emerald-200/80">
-                CORE â†’ localhost:8081
+                CORE → localhost:8081
               </span>
             </div>
           </div>
 
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: 'EintrÃ¤ge', value: stats.total },
+              { label: 'Einträge', value: stats.total },
               { label: 'Broken wire', value: stats.broken, warn: true },
               { label: 'Gated', value: stats.gated },
               { label: 'Visuell markiert', value: stats.visual },
@@ -263,13 +263,13 @@ export function TunnelPageClient() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Suchenâ€¦"
+              placeholder="Suchen…"
               className="w-full rounded-xl border border-white/10 bg-black/40 py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-white/30"
             />
           </div>
           <label className="flex items-center gap-2 text-xs text-white/50 px-2">
             <input type="checkbox" checked={onlyVisual} onChange={(e) => setOnlyVisual(e.target.checked)} />
-            Nur â€žvisuell behaltenâ€œ
+            Nur „visuell behalten“
           </label>
           <label className="flex items-center gap-2 text-xs text-white/50 px-2">
             <input type="checkbox" checked={onlyBroken} onChange={(e) => setOnlyBroken(e.target.checked)} />
@@ -304,9 +304,9 @@ export function TunnelPageClient() {
             <div className="rounded-2xl border border-amber-400/20 bg-amber-500/5 p-4 flex gap-3">
               <AlertTriangle className="shrink-0 text-amber-300" size={20} />
               <div className="text-sm text-amber-100/85 leading-relaxed">
-                <strong className="text-amber-100">Punkt 4 â€” Produkt & Flows:</strong> Keine versteckte
-                UI, sondern echte LÃ¼cken zwischen WORLD, CORE und INTERFACE. Hier steht das Problem und
-                ein konkreter Fix â€” ohne dass du visuelle Arbeit verlierst.
+                <strong className="text-amber-100">Punkt 4 — Produkt & Flows:</strong> Keine versteckte
+                UI, sondern echte Lücken zwischen WORLD, CORE und INTERFACE. Hier steht das Problem und
+                ein konkreter Fix — ohne dass du visuelle Arbeit verlierst.
               </div>
             </div>
             {productFiltered.map((entry) => (
@@ -316,7 +316,7 @@ export function TunnelPageClient() {
         ) : (
           <section className="space-y-3">
             <p className="text-xs text-white/40 mb-2">
-              {tab === 'all' ? 'Alle Kategorien' : TUNNEL_CATEGORY_LABELS[tab]} â€” {filtered.length} EintrÃ¤ge
+              {tab === 'all' ? 'Alle Kategorien' : TUNNEL_CATEGORY_LABELS[tab]} — {filtered.length} Einträge
             </p>
             {filtered.length === 0 && (
               <p className="text-sm text-white/40 py-8 text-center">Keine Treffer.</p>

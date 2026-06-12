@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -28,7 +28,7 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                         Einstieg wird vorbereitet
                     </div>
                     <p className="mt-2 text-xs leading-relaxed text-emerald-100/55">
-                        Sitzung, Instanzregeln und lokaler Core werden geprÃ¼ft. Danach erscheint der Einstieg mit klarer Auswahl.
+                        Sitzung, Instanzregeln und lokaler Core werden geprüft. Danach erscheint der Einstieg mit klarer Auswahl.
                     </p>
                 </div>
                 {delayed && (
