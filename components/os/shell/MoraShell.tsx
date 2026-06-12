@@ -20,14 +20,13 @@
  * - useKeyboardShortcuts: Global shortcuts
  *
  * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- * COMPOSITING LAYER STACK  (last updated 2026-06-11)
+ * COMPOSITING LAYER STACK  (last updated 2026-06-12)
  * â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
- *  z-[-10]   Cosmic Dawn Foundation â€” radial-gradient base (hsl purples)
- *  z-[-9]    Warm Dawn Glow â€” amber/rose top-light, always visible
- *  z-0       MoraLivingBackground â€” stars, aurora, nebula, scene tints
- *  z-0       TemporalAtmosphere â€” time-of-day atmospheric shift
- *  z-0       ForestLightCanopy â€” organic light blobs (non-universe views)
- *  z-0       StarField â€” twinkling star layer (density adapts to view level)
+ *  z-0       MoraLivingBackground â€” scene-reactive deep base + aurora + tints
+ *  z-[1]     ForestLightCanopy â€” organic nebula blobs (non-universe views)
+ *  z-[1]     StarField â€” twinkling star canvas (mix-blend-mode: screen)
+ *  z-[2]     TemporalAtmosphere â€” atmospheric hazes, scene + time reactive
+ *  z-[4]     RitualSceneStyler â€” scene colour overlay + CSS vars
  *  z-[30]    ViewPort â€” surface router (CoreLayer / DepartmentSurface / â€¦)
  *    CoreLayer (home mode):
  *      absolute   blurred UniverseView bg (opacity 0.34)
@@ -697,22 +696,13 @@ export const MoraShell: React.FC = () => {
 
             {/* ================================================================
                 LAYER 1: BACKGROUND
+                z-0   MoraLivingBackground — scene-reactive deep base + tints
+                z-1   ForestLightCanopy — organic nebula/light blobs
+                z-1   StarField — twinkling star canvas
+                z-2   TemporalAtmosphere — atmospheric hazes
+                z-4   RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
-            {/* Cosmic Dawn Foundation â€” luminous twilight (brighter, more inviting) */}
-            <div
-                className="fixed inset-0 z-[-10]"
-                style={{
-                    background: 'radial-gradient(ellipse 150% 95% at 50% -8%, hsl(243 46% 26%) 0%, hsl(246 46% 16%) 52%, hsl(251 50% 10%) 100%)',
-                }}
-            />
-            {/* Inviting warm dawn glow â€” soft amber/rose light from the top, like sunrise over the horizon */}
-            <div
-                className="fixed inset-0 z-[-9] pointer-events-none"
-                style={{
-                    background: 'radial-gradient(ellipse 90% 50% at 50% -6%, rgba(251,191,36,0.10) 0%, rgba(244,114,182,0.06) 30%, transparent 62%)',
-                }}
-            />
             <RitualSceneStyler />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground} />

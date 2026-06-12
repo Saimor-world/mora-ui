@@ -295,7 +295,7 @@ export const StarField: React.FC<StarFieldProps> = ({
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-[-9] mix-blend-screen"
+            className="fixed inset-0 pointer-events-none z-[1] mix-blend-screen"
             style={{ opacity }}
         />
     );

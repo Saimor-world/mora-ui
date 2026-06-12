@@ -67,32 +67,41 @@ const GEO_SHAPES = [
     { type: 'diamond', x: 43,  y: 20,  size: 14, delay: 16, duration: 31, opacity: 0.04, color: 'rgba(6,182,212,0.50)'   },
 ] as const;
 
-// Per-scene color overlays. Strong enough to clearly differentiate each scene.
-// Framer animates opacity so cross-fades are smooth (2 s ease).
+// Per-scene deep-hued base gradients — these replace the static steel-blue base
+// so the ENTIRE backdrop shifts colour dramatically when the scene changes.
+const SCENE_BASE: Record<RitualSceneId, string> = {
+    flow:   'linear-gradient(160deg, #0a2218 0%, #071812 40%, #040c08 100%)',  // deep forest
+    build:  'linear-gradient(160deg, #062038 0%, #041628 40%, #020e1e 100%)',  // deep ocean
+    lounge: 'linear-gradient(160deg, #2c140a 0%, #1e0e06 40%, #100804 100%)', // deep ember
+    night:  'linear-gradient(160deg, #10102e 0%, #0c0a22 40%, #060416 100%)', // deep void
+};
+
+// Per-scene colour overlays painted on top of the base via screen blend.
+// Opacities bumped so they read clearly on the deeper, darker bases.
 const SCENE_TINT: Record<RitualSceneId, string> = {
-    // Flow (morning): fresh emerald + teal — energised calm
+    // Flow: fresh emerald + teal
     flow: [
-        'radial-gradient(ellipse 110% 80% at 15% 25%, rgba(16,185,129,0.55) 0%, transparent 60%)',
-        'radial-gradient(ellipse 70% 60% at 80% 70%, rgba(34,211,238,0.32) 0%, transparent 55%)',
-        'radial-gradient(ellipse 50% 40% at 55% 95%, rgba(6,182,212,0.18) 0%, transparent 50%)',
+        'radial-gradient(ellipse 120% 85% at 15% 20%, rgba(16,185,129,0.72) 0%, transparent 62%)',
+        'radial-gradient(ellipse 80% 65% at 80% 72%, rgba(34,211,238,0.50) 0%, transparent 58%)',
+        'radial-gradient(ellipse 55% 45% at 55% 98%, rgba(6,182,212,0.28) 0%, transparent 52%)',
     ].join(', '),
-    // Build (day): sharp sky-blue + amber — focused productive daylight
+    // Build: sharp sky-blue + amber
     build: [
-        'radial-gradient(ellipse 110% 80% at 18% 22%, rgba(14,165,233,0.60) 0%, transparent 58%)',
-        'radial-gradient(ellipse 75% 60% at 82% 65%, rgba(251,191,36,0.36) 0%, transparent 55%)',
-        'radial-gradient(ellipse 55% 45% at 50% 100%, rgba(56,189,248,0.22) 0%, transparent 50%)',
+        'radial-gradient(ellipse 120% 85% at 18% 18%, rgba(14,165,233,0.78) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 82% 65%, rgba(251,191,36,0.52) 0%, transparent 58%)',
+        'radial-gradient(ellipse 60% 48% at 50% 100%, rgba(56,189,248,0.34) 0%, transparent 52%)',
     ].join(', '),
-    // Lounge (evening): warm amber + rose — sunset / warm lamp
+    // Lounge: warm amber + rose
     lounge: [
-        'radial-gradient(ellipse 110% 80% at 22% 30%, rgba(251,146,60,0.58) 0%, transparent 58%)',
-        'radial-gradient(ellipse 75% 60% at 80% 60%, rgba(244,114,182,0.40) 0%, transparent 55%)',
-        'radial-gradient(ellipse 55% 45% at 45% 95%, rgba(239,68,68,0.20) 0%, transparent 50%)',
+        'radial-gradient(ellipse 120% 85% at 22% 28%, rgba(251,146,60,0.76) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 80% 62%, rgba(244,114,182,0.58) 0%, transparent 58%)',
+        'radial-gradient(ellipse 60% 48% at 45% 98%, rgba(239,68,68,0.32) 0%, transparent 52%)',
     ].join(', '),
-    // Night (late): deep indigo + violet — quiet and focused
+    // Night: deep indigo + violet
     night: [
-        'radial-gradient(ellipse 110% 80% at 18% 28%, rgba(99,102,241,0.62) 0%, transparent 58%)',
-        'radial-gradient(ellipse 75% 60% at 82% 72%, rgba(139,92,246,0.42) 0%, transparent 55%)',
-        'radial-gradient(ellipse 60% 50% at 50% 50%, rgba(30,27,75,0.28) 0%, transparent 60%)',
+        'radial-gradient(ellipse 120% 85% at 18% 25%, rgba(99,102,241,0.80) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 82% 75%, rgba(139,92,246,0.60) 0%, transparent 58%)',
+        'radial-gradient(ellipse 65% 55% at 50% 50%, rgba(30,27,75,0.40) 0%, transparent 62%)',
     ].join(', '),
 };
 
@@ -174,26 +183,38 @@ export const MoraLivingBackground: React.FC = () => {
     return (
         <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
 
-            {/* Base — slightly brighter twilight */}
-            <div className="absolute inset-0 bg-gradient-to-b from-[#2a4260] via-[#1a3048] to-[#0f1e30]" />
+            {/* Fallback base — near-black so nothing is ever white */}
+            <div className="absolute inset-0 bg-[#05080e]" />
 
-            {/* Rich 6-layer Nebula — dimmed so scene tints can paint clearly on top */}
+            {/* Scene base — cross-fades the entire deep backdrop colour */}
+            {RITUAL_SCENE_ORDER.map((sceneId) => (
+                <motion.div
+                    key={`base-${sceneId}`}
+                    className="absolute inset-0"
+                    animate={{ opacity: scene.id === sceneId ? 1 : 0 }}
+                    transition={{ duration: 0.6, ease: 'easeInOut' }}
+                    style={{ background: SCENE_BASE[sceneId] }}
+                />
+            ))}
+
+            {/* Rich nebula — tinted by current scene accent for depth */}
             <motion.div
                 animate={{
-                    opacity: isThinking ? 0.38 : 0.26,
+                    opacity: isThinking ? 0.55 : 0.42,
                     scale:   isThinking ? 1.06 : 1.0,
                 }}
                 transition={{ duration: 4, ease: 'easeInOut' }}
                 className="absolute inset-0"
                 style={{
                     background: `
-                        radial-gradient(ellipse 90% 70% at 18% 28%, rgba(16,185,129,0.42) 0%, transparent 60%),
-                        radial-gradient(ellipse 70% 55% at 82% 72%, rgba(6,182,212,0.30) 0%, transparent 55%),
-                        radial-gradient(ellipse 55% 55% at 50% 50%, rgba(212,175,55,0.22) 0%, transparent 45%),
-                        radial-gradient(ellipse 50% 60% at 75% 15%, rgba(139,92,246,0.25) 0%, transparent 50%),
-                        radial-gradient(ellipse 45% 45% at 10% 80%, rgba(244,63,94,0.16) 0%, transparent 48%),
-                        radial-gradient(ellipse 40% 50% at 93% 40%, rgba(251,191,36,0.15) 0%, transparent 45%)
+                        radial-gradient(ellipse 90% 70% at 18% 28%, ${scene.accent} 0%, transparent 60%),
+                        radial-gradient(ellipse 70% 55% at 82% 72%, ${scene.aura} 0%, transparent 55%),
+                        radial-gradient(ellipse 55% 55% at 50% 50%, rgba(212,175,55,0.18) 0%, transparent 45%),
+                        radial-gradient(ellipse 50% 60% at 75% 15%, rgba(139,92,246,0.22) 0%, transparent 50%),
+                        radial-gradient(ellipse 45% 45% at 10% 80%, rgba(244,63,94,0.14) 0%, transparent 48%),
+                        radial-gradient(ellipse 40% 50% at 93% 40%, rgba(251,191,36,0.14) 0%, transparent 45%)
                     `,
+                    mixBlendMode: 'screen',
                 }}
             />
 

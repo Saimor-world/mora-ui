@@ -52,7 +52,7 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
     }, []);
 
     return (
-        <div className="fixed inset-0 z-[-10] pointer-events-none overflow-hidden" style={{ background: '#0d0921' }}>
+        <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
             {/* MASSIVE VIOLET CROWN — fills top 70% of screen */}
             <div
                 className="absolute inset-x-0 top-0 h-[70vh]"
