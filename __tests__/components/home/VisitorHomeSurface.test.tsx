@@ -48,6 +48,21 @@ jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: () => jest.fn(),
 }));
 
+jest.mock('framer-motion', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const React = require('react');
+    const skip = new Set(['animate','exit','initial','transition','variants','whileHover','whileTap','whileInView']);
+    const strip = (props: any) => Object.fromEntries(Object.entries(props).filter(([k]) => !skip.has(k)));
+    const m = (tag: string) => ({ children, ...p }: any) => React.createElement(tag, strip(p), children);
+    return {
+        motion: { div: m('div'), span: m('span'), p: m('p'), section: m('section'), button: m('button') },
+        AnimatePresence: ({ children }: any) => children,
+        useInView: () => true,
+        useMotionValue: (v: any) => ({ set: jest.fn(), get: () => v, on: jest.fn() }),
+        useSpring: (v: any) => ({ set: jest.fn(), get: () => (typeof v === 'object' ? v?.get?.() ?? 0 : v), on: jest.fn() }),
+    };
+});
+
 beforeEach(() => {
     jest.clearAllMocks();
     (useCreateDossierNode as jest.Mock).mockReturnValue({ nodeId: 'node-audit-1', isCreating: false });

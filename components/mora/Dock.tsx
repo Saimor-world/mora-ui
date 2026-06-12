@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,7 +19,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { getCoreDockItems, getPlaygroundDockItems } from '@/lib/surface/surfaceRegistry';
 
-// Derived from paneStore â€” consistent with other pane-opening components
+// Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
 type DockPane = ReturnType<typeof usePaneStore.getState>['panes'][number];
 import { SearchPopup } from './SearchPopup';
@@ -69,7 +69,7 @@ import { deriveDockStructure, type DockDerivedSpace, type DockDerivedFolder } fr
  * - German labels
  */
 
-// â”€â”€â”€ Magnetic Dock Icon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Magnetic Dock Icon ──────────────────────────────────────────────────────
 interface MagneticDockIconProps {
     item: DockItem;
     isStandardMode: boolean;
@@ -139,10 +139,10 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
         </button>
     );
 };
-// â”€â”€â”€ End MagneticDockIcon (memoized to prevent spurious re-renders) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── End MagneticDockIcon (memoized to prevent spurious re-renders) ───────────────────────
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
 
-// â”€â”€â”€ Capsule Dock Icon (Unified rounded icon with custom tooltips) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Capsule Dock Icon (Unified rounded icon with custom tooltips) ────────────────────────
 interface CapsuleDockIconProps {
     icon: React.ComponentType<any>;
     label: string;
@@ -229,12 +229,12 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
     );
 };
 
-// â”€â”€â”€ Session Chip â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Session Chip ─────────────────────────────────────────────────────────────
 // Quiet ambient indicator: renders only when a work-session plan is active.
 // Clicking opens / focuses the WorkSessionPane. Exported for testing.
 // Follows the MagneticDockIcon inline sub-component pattern.
 interface SessionChipProps {
-    planId: string; // always non-null â€” Dock gates with {activePlanId && ...}
+    planId: string; // always non-null — Dock gates with {activePlanId && ...}
     openPane: OpenPaneFn;
     isStandardMode: boolean;
 }
@@ -256,7 +256,7 @@ export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isSt
         <button
             type="button"
             onClick={handleClick}
-            title="Aktiven Arbeitsplan Ã¶ffnen"
+            title="Aktiven Arbeitsplan öffnen"
             data-testid="session-chip"
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all ${
                 isStandardMode
@@ -310,7 +310,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
                     }`}
-                title="Audio-Einstellungen Ã¶ffnen"
+                title="Audio-Einstellungen öffnen"
             >
                 <Music2 size={16} />
             </button>
@@ -367,7 +367,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                         ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
                         }`}
-                    title="NÃ¤chsten Track wÃ¤hlen"
+                    title="Nächsten Track wählen"
                 >
                     <SkipForward size={14} />
                 </button>
@@ -500,7 +500,7 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
                                 <span className="min-w-0 flex-1">
                                     <span className="block truncate text-xs font-medium">{pane.title}</span>
                                     <span className={`mt-0.5 block text-[10px] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
-                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'GeÃ¶ffnet'}
+                                        {pane.minimized ? 'Minimiert' : isActive ? 'Aktiv' : 'Geöffnet'}
                                     </span>
                                 </span>
                             </button>
@@ -690,7 +690,7 @@ export const Dock = () => {
 
     const handleDockClick = useCallback((action: string) => {
         switch (action) {
-            // â”€â”€ Core Work surfaces â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+            // ── Core Work surfaces ──────────────────────────────────────
             case 'home':     navigateToCore(); break;
             case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  useNavStore.getState().navigateToAmbient(); break;
@@ -700,7 +700,7 @@ export const Dock = () => {
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Setup',          size: { width: 720, height: 640 } }); break;
             case 'larry':    window.open('https://dash.saimor.world', '_blank'); break;
-            // â”€â”€ Curated demo destinations (public_playground only) â”€â”€â”€â”€â”€â”€
+            // ── Curated demo destinations (public_playground only) ──────
             case 'dossier': {
                 const nodeId = typeof window !== 'undefined' ? localStorage.getItem('saimor_dossier_node') : null;
                 if (nodeId) {
@@ -728,7 +728,7 @@ export const Dock = () => {
         focusPane(pane.id);
     }, [activePaneId, focusPane, minimizePane, restorePane]);
 
-    // Icon map: action â†’ lucide icon. Defined here (UI concern) separate from registry (routing concern).
+    // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
     const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
         home:     Home,
         chat:     MessageCircle,
@@ -744,7 +744,7 @@ export const Dock = () => {
         workspace: Compass,
     }), []);
 
-    // Single source of truth â€” order, labels, shortcuts come from surfaceRegistry.
+    // Single source of truth — order, labels, shortcuts come from surfaceRegistry.
     const dockItems: DockItem[] = useMemo(() => {
         // Public playground gets the CURATED demo dock (4 designed destinations),
         // not the employee OS dock minus a few items. See demo-experience-rethink.
@@ -873,10 +873,10 @@ export const Dock = () => {
             return {
                 label: 'Ordner',
                 title: activeFolder.name,
-                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente Ã¶ffnen, teilen oder zurÃ¼ck in den Bereich springen.',
+                description: 'Du bist in einem konkreten Ordner. Von hier aus solltest du Dokumente öffnen, teilen oder zurück in den Bereich springen.',
                 signalA: `${activeFolder.node_count || 0} Dokumente`,
-                signalB: `${activeSpace.name} Â· ${activeFolders.length} Ordner`,
-                actionLabel: 'Im Finder Ã¶ffnen',
+                signalB: `${activeSpace.name} · ${activeFolders.length} Ordner`,
+                actionLabel: 'Im Finder öffnen',
                 accent: activeFolder.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeFolder.name, {
                     folderId: activeFolder.id,
@@ -892,10 +892,10 @@ export const Dock = () => {
             return {
                 label: 'Bereich',
                 title: activeSpace.name,
-                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der nÃ¤chste Einstieg klar sichtbar sein.',
+                description: 'Das ist die aktive Bereichsstruktur. Hier sollten die echten Ordner, Dokumente und der nächste Einstieg klar sichtbar sein.',
                 signalA: `${activeFolders.length} Ordner`,
                 signalB: `${docCount} Dokumente`,
-                actionLabel: 'Im Finder Ã¶ffnen',
+                actionLabel: 'Im Finder öffnen',
                 accent: activeSpace.color || activeDepartment?.color || accent,
                 onOpen: () => openFinderContext(activeSpace.name, {
                     spaceId: activeSpace.id,
@@ -913,8 +913,8 @@ export const Dock = () => {
                 title: activeDepartment.name,
                 description: 'Die Abteilung zeigt ihre Bereiche, Ordner und Dokumente. Von hier aus solltest du in den passenden Bereich hineinzoomen.',
                 signalA: `${activeSpaces.length} Bereiche`,
-                signalB: `${folderCount} Ordner Â· ${docCount} Dokumente`,
-                actionLabel: 'Im Finder Ã¶ffnen',
+                signalB: `${folderCount} Ordner · ${docCount} Dokumente`,
+                actionLabel: 'Im Finder öffnen',
                 accent: activeDepartment.color || accent,
                 onOpen: () => openFinderContext(activeDepartment.name, {
                     departmentId: activeDepartment.id,
@@ -927,15 +927,15 @@ export const Dock = () => {
             label: 'Universe',
             title: displayCompany?.name || user?.active_company_name || surfaceProfile.fallbackCompanyName,
             description: websiteEntryContext
-                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus Ã¶ffnest du Dossier, Aufgaben und ArbeitsrÃ¤ume.'
+                ? 'Dieses HQ zeigt das aus dem Website-Check erzeugte Kundendossier. Von hier aus öffnest du Dossier, Aufgaben und Arbeitsräume.'
                 : surfaceProfile.isPublicDemoSurface
                 ? 'Das Universe zeigt die kuratierte Beispielinstanz. Von hier aus springst du direkt in die passende Abteilung.'
                 : surfaceProfile.isLocalTruthSurface
                     ? 'Diese Instanz folgt der echten lokalen Arbeitslogik. Von hier aus gehst du direkt in Organisation, Abteilung oder Finder.'
-                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus wÃ¤hlst du zuerst die passende Organisation oder Abteilung.',
+                : 'Das Universe zeigt die Struktur der aktuellen Instanz. Von hier aus wählst du zuerst die passende Organisation oder Abteilung.',
             signalA: `${safeDepartments.length} Abteilungen`,
             signalB: companyContextLabel,
-            actionLabel: websiteEntryContext ? 'Dossier Ã¶ffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur Ã¶ffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz Ã¶ffnen' : 'Organisation Ã¶ffnen',
+            actionLabel: websiteEntryContext ? 'Dossier öffnen' : surfaceProfile.isPublicDemoSurface ? 'Struktur öffnen' : surfaceProfile.isLocalTruthSurface ? 'Instanz öffnen' : 'Organisation öffnen',
             accent,
             onOpen: () => openFinderContext(displayCompany?.name || surfaceProfile.fallbackCompanyName, {
                 companyId: activeCompanyId || undefined,
@@ -998,7 +998,7 @@ export const Dock = () => {
     const controlCenterNextMove = useMemo(() => {
         if (shellContext.nextTarget.kind === 'company') {
             return {
-                label: 'Organisation Ã¶ffnen',
+                label: 'Organisation öffnen',
                 hint: 'Direkt in Dateien und Strukturen dieser Organisation springen.',
             };
         }
@@ -1046,7 +1046,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'folder-open',
-                    label: 'Finder Ã¶ffnen',
+                    label: 'Finder öffnen',
                     description: 'Bleib im aktiven Folder und zieh Dateien direkt weiter.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -1068,7 +1068,7 @@ export const Dock = () => {
                 {
                     id: 'folder-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs Ã¶ffnen.',
+                    description: 'Erinnerungen, Signale und Kontext dieses Fokusbereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -1086,7 +1086,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'space-open',
-                    label: 'Im Finder Ã¶ffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Gehe direkt in den Finder mit diesem Bereich als Root.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -1108,7 +1108,7 @@ export const Dock = () => {
                 {
                     id: 'space-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs Ã¶ffnen.',
+                    description: 'Erinnerungen, Signale und Laufzeit dieses Bereichs öffnen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
@@ -1126,7 +1126,7 @@ export const Dock = () => {
             return [
                 {
                     id: 'department-open',
-                    label: 'Im Finder Ã¶ffnen',
+                    label: 'Im Finder öffnen',
                     description: 'Oeffne die Abteilungsstruktur direkt im Finder.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -1140,21 +1140,21 @@ export const Dock = () => {
                 },
                 {
                     id: 'department-team',
-                    label: 'TeamflÃ¤che',
-                    description: 'Wechsle direkt zur Team-OberflÃ¤che fÃ¼r diesen Bereich.',
+                    label: 'Teamfläche',
+                    description: 'Wechsle direkt zur Team-Oberfläche für diesen Bereich.',
                     icon: Users,
                     onClick: closeAfter(() => handleDockClick('team')),
                 },
                 {
                     id: 'department-mora-center',
                     label: 'Mora Center',
-                    description: 'Erinnerungen und Live-Signale der Abteilung gebÃ¼ndelt ansehen.',
+                    description: 'Erinnerungen und Live-Signale der Abteilung gebündelt ansehen.',
                     icon: Brain,
                     onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
                 },
                 {
                     id: 'department-chat',
-                    label: 'Mora fÃ¼r die Abteilung',
+                    label: 'Mora für die Abteilung',
                     description: 'Starte Mora mit Abteilungsfokus statt globalem Kontext.',
                     icon: MessageCircle,
                     onClick: closeAfter(() => handleDockClick('chat')),
@@ -1166,13 +1166,13 @@ export const Dock = () => {
             {
                 id: 'universe-home',
                 label: 'Home',
-                description: 'ZurÃ¼ck auf die zentrale Core-OberflÃ¤che.',
+                description: 'Zurück auf die zentrale Core-Oberfläche.',
                 icon: Home,
                 onClick: closeAfter(() => handleDockClick('home')),
             },
                 {
                     id: 'universe-finder',
-                    label: 'Finder Ã¶ffnen',
+                    label: 'Finder öffnen',
                     description: 'Direkt in Dateien und Strukturen einsteigen.',
                     icon: FolderOpen,
                     onClick: closeAfter(handleOpenContext),
@@ -1187,7 +1187,7 @@ export const Dock = () => {
             {
                 id: 'universe-mora-center',
                 label: 'Mora Center',
-                description: 'Erinnerungen, Signale und Kontext des Beispielsystems Ã¶ffnen.',
+                description: 'Erinnerungen, Signale und Kontext des Beispielsystems öffnen.',
                 icon: Brain,
                 onClick: closeAfter(() => openMoraCenter(openPane, 'overview')),
             },
@@ -1439,7 +1439,7 @@ export const Dock = () => {
                                     <CapsuleDockIcon
                                         icon={Search}
                                         label="Suche"
-                                        description="SaimÃ´r OS durchsuchen"
+                                        description="Saimôr OS durchsuchen"
                                         shortcut={`${mod}+K`}
                                         active={searchPopupOpen}
                                         onClick={() => setSearchPopupOpen(true)}
@@ -1458,7 +1458,7 @@ export const Dock = () => {
                                     <CapsuleDockIcon
                                         icon={Music2}
                                         label={activeTrack?.name || 'Mora Ambient'}
-                                        description={`${ambientAudio.enabled ? 'Spielt' : 'Pausiert'} Â· ${ambientTracks.length} Tracks (Rechtsklick: NÃ¤chster | Doppelkick: Settings)`}
+                                        description={`${ambientAudio.enabled ? 'Spielt' : 'Pausiert'} · ${ambientTracks.length} Tracks (Rechtsklick: Nächster | Doppelkick: Settings)`}
                                         active={ambientAudio.enabled}
                                         onClick={handleAmbientToggle}
                                         onContextMenu={(e) => {
@@ -1527,7 +1527,7 @@ export const Dock = () => {
                                             <CapsuleDockIcon
                                                 icon={Building2}
                                                 label={displayCompany?.name || surfaceProfile.fallbackCompanyName}
-                                                description={`${companyContextLabel} Â· Klicken zum Wechseln`}
+                                                description={`${companyContextLabel} · Klicken zum Wechseln`}
                                                 active={showCompanySwitcher}
                                                 onClick={() => {
                                                     if (surfaceProfile.companySwitcherEnabled) {
@@ -1591,7 +1591,7 @@ export const Dock = () => {
                                                 className={`relative h-10 w-10 rounded-full overflow-visible transition-all duration-200 hover:scale-105 active:scale-95 group ${
                                                     isStandardMode ? 'bg-white shadow-md' : 'bg-transparent'
                                                 }`}
-                                                title="Mora Ã¶ffnen"
+                                                title="Mora öffnen"
                                                 style={!isStandardMode ? { filter: `drop-shadow(0 0 12px ${accent}20)` } : {}}
                                             >
                                                 {!isStandardMode && (
