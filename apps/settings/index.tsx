@@ -31,7 +31,15 @@ import {
     type AmbientSceneTrackMap,
     type AmbientAudioTrackMeta,
 } from '@/lib/audio/ambientAudio';
-import { RITUAL_SCENES, RITUAL_SCENE_ORDER } from '@/lib/os/ritualMode';
+import {
+    RITUAL_SCENES,
+    RITUAL_SCENE_ORDER,
+    DEFAULT_RITUAL_SCENE,
+    getAutoRitualScene,
+    persistRitualSettings,
+    resolveRitualSettings,
+    type RitualSceneId,
+} from '@/lib/os/ritualMode';
 import { isMoraPerceiveV1Enabled, isMoraDialogueV1Enabled, isMoraLiveV1Enabled } from '@/lib/featureFlags';
 import type { AppProps } from '@/lib/apps/types';
 import { ProfileTab } from '@/apps/settings/ProfileTab';
@@ -74,6 +82,8 @@ export default function SettingsApp({ paneId }: AppProps) {
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
     const [interfaceScale, setInterfaceScale] = useState(1);
+    const [ritualSceneId, setRitualSceneId] = useState<RitualSceneId>(DEFAULT_RITUAL_SCENE);
+    const [ritualAutoTime, setRitualAutoTime] = useState(true);
     const [ambientAudioEnabled, setAmbientAudioEnabled] = useState(false);
     const [ambientAudioVolume, setAmbientAudioVolume] = useState(DEFAULT_AMBIENT_AUDIO_VOLUME);
     const [ambientAudioTrackId, setAmbientAudioTrackId] = useState<string | null>(null);
@@ -172,6 +182,9 @@ useEffect(() => {
             setAmbientAudioVolume(ambientAudio.volume);
             setAmbientAudioTrackId(ambientAudio.trackId);
             setAmbientSceneTrackMap(resolveAmbientSceneTrackMap(userSettings));
+            const ritual = resolveRitualSettings(userSettings);
+            setRitualSceneId(ritual.sceneId);
+            setRitualAutoTime(ritual.autoTime);
             return;
         }
         if (typeof window !== 'undefined') {
@@ -184,6 +197,9 @@ useEffect(() => {
             setAmbientAudioVolume(ambientAudio.volume);
             setAmbientAudioTrackId(ambientAudio.trackId);
             setAmbientSceneTrackMap(resolveAmbientSceneTrackMap());
+            const ritual = resolveRitualSettings();
+            setRitualSceneId(ritual.sceneId);
+            setRitualAutoTime(ritual.autoTime);
         }
     }, [user?.settings, userSettings]);
 
@@ -292,6 +308,20 @@ useEffect(() => {
             console.error('[Settings] Failed to save settings:', error);
             toast.error('Einstellungen konnten nicht gespeichert werden');
         }
+    };
+
+    // Picking a scene manually switches off auto-time so the choice takes effect now;
+    // persistRitualSettings fires the OS-wide re-tint event (whole UI recolours live).
+    const handleSelectRitualScene = (id: RitualSceneId) => {
+        setRitualSceneId(id);
+        setRitualAutoTime(false);
+        persistRitualSettings(updateUserSettings, { ritualSceneId: id, ritualAutoTime: false });
+    };
+
+    const handleToggleRitualAutoTime = () => {
+        const next = !ritualAutoTime;
+        setRitualAutoTime(next);
+        persistRitualSettings(updateUserSettings, { ritualAutoTime: next });
     };
 
     const promptAmbientAudioUpload = () => {
@@ -512,7 +542,7 @@ useEffect(() => {
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Design</h3>
                             <div className="space-y-3">
-                                <label className="text-xs uppercase tracking-wider text-white/40">Theme</label>
+                                <label className="text-xs uppercase tracking-wider text-white/40">Darstellung</label>
                                 <div className="flex gap-4">
                                     <button
                                         onClick={() => {
@@ -555,6 +585,68 @@ useEffect(() => {
                                         </div>
                                         <div className="absolute bottom-2 left-2 text-xs text-[#0078D4] font-medium">Standard</div>
                                     </button>
+                                </div>
+                            </div>
+
+                            {/* Atmosphäre — the same scene identity as the Control Center and
+                                Audio settings: a mood bound to a time of day. Auto switches it
+                                by the clock; picking one manually pins it. */}
+                            <div className="pt-4 border-t border-white/5 space-y-3">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-sm text-white/80">Atmosphäre</div>
+                                        <div className="text-xs text-white/40">Dieselbe Szene wie im Control Center — automatisch nach Tageszeit oder manuell.</div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleToggleRitualAutoTime}
+                                        className="inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] transition-colors"
+                                        style={ritualAutoTime
+                                            ? { borderColor: `${RITUAL_SCENES[ritualSceneId].accentHex}55`, background: `${RITUAL_SCENES[ritualSceneId].accentHex}1f`, color: RITUAL_SCENES[ritualSceneId].accentHex }
+                                            : { borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+                                    >
+                                        <span className={`h-1.5 w-1.5 rounded-full ${ritualAutoTime ? 'bg-current animate-pulse' : 'bg-white/25'}`} />
+                                        Automatisch
+                                    </button>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    {RITUAL_SCENE_ORDER.map((sid) => {
+                                        const scene = RITUAL_SCENES[sid];
+                                        const effectiveId = ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId;
+                                        const isActive = sid === effectiveId;
+                                        return (
+                                            <button
+                                                key={sid}
+                                                type="button"
+                                                onClick={() => handleSelectRitualScene(sid)}
+                                                className="relative overflow-hidden rounded-xl border px-3 py-2.5 text-left transition-all"
+                                                style={{
+                                                    borderColor: isActive ? `${scene.accentHex}66` : 'rgba(255,255,255,0.08)',
+                                                    background: isActive
+                                                        ? `linear-gradient(155deg, ${scene.accentHex}24, rgba(255,255,255,0.015) 65%)`
+                                                        : 'rgba(255,255,255,0.025)',
+                                                    boxShadow: isActive ? `0 0 22px ${scene.accentHex}22` : undefined,
+                                                }}
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span
+                                                        className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                                        style={{ backgroundColor: scene.accentHex, boxShadow: isActive ? `0 0 10px ${scene.accentHex}aa` : undefined }}
+                                                    />
+                                                    <span className={`text-sm font-medium ${isActive ? 'text-white/90' : 'text-white/65'}`}>{scene.label}</span>
+                                                </div>
+                                                <div className="mt-1 text-[10px] text-white/38">
+                                                    {scene.timeLabel} · <span className="tabular-nums">{scene.timeRange}</span>
+                                                </div>
+                                                {isActive && ritualAutoTime && (
+                                                    <div className="mt-1 text-[9px] uppercase tracking-[0.16em]" style={{ color: scene.accentHex }}>
+                                                        jetzt automatisch
+                                                    </div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
                             </div>
 
@@ -601,7 +693,7 @@ useEffect(() => {
                                                     disabled={brandingSaving}
                                                     className="px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all disabled:opacity-50"
                                                 >
-                                                    {brandingSaving ? <Loader2 className="animate-spin" size={14} /> : 'Save Branding'}
+                                                    {brandingSaving ? <Loader2 className="animate-spin" size={14} /> : 'Branding speichern'}
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -610,7 +702,7 @@ useEffect(() => {
                                                     }}
                                                     className="px-3 py-2 text-xs text-white/40 hover:text-white/70 transition-colors duration-200"
                                                 >
-                                                    Reset
+                                                    Zurücksetzen
                                                 </button>
                                             </div>
                                         </div>
@@ -621,8 +713,8 @@ useEffect(() => {
                             <div className="pt-4 border-t border-white/5 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-sm text-white/80">Interface Scaling</div>
-                                        <div className="text-xs text-white/40">Adjust UI size ({Math.round(interfaceScale * 100)}%)</div>
+                                        <div className="text-sm text-white/80">Oberflächengröße</div>
+                                        <div className="text-xs text-white/40">Größe der Oberfläche anpassen ({Math.round(interfaceScale * 100)}%)</div>
                                     </div>
                                     <input
                                         type="range"
@@ -641,8 +733,8 @@ useEffect(() => {
 
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <div className="text-sm text-white/80">Reduced Motion</div>
-                                        <div className="text-xs text-white/40">Disable animations</div>
+                                        <div className="text-sm text-white/80">Reduzierte Bewegung</div>
+                                        <div className="text-xs text-white/40">Animationen abschalten</div>
                                     </div>
                                     <button
                                         onClick={() => {
