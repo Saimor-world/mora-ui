@@ -15,7 +15,55 @@ import {
 } from '@/lib/audio/ambientAudio';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
-import { getEffectiveRitualScene, resolveRitualSettings, RITUAL_SCENES } from '@/lib/os/ritualMode';
+import { getEffectiveRitualScene, resolveRitualSettings, RITUAL_SCENES, type RitualSceneId } from '@/lib/os/ritualMode';
+
+// Per-scene chord voicings: [freq Hz, waveform, relative gain]
+const SCENE_VOICES: Record<RitualSceneId, Array<[number, OscillatorType, number]>> = {
+    // Amaj9 open — meditative, emerald clarity
+    flow: [
+        [55,     'sine',     0.20],
+        [110,    'sine',     0.17],
+        [164.81, 'triangle', 0.11],
+        [220,    'sine',     0.13],
+        [277.18, 'triangle', 0.09],
+        [329.63, 'sine',     0.08],
+        [392,    'triangle', 0.055],
+        [440,    'sine',     0.04],
+    ],
+    // Dmaj9 — focused, sky-blue precision
+    build: [
+        [36.71,  'sine',     0.22],
+        [73.42,  'sine',     0.18],
+        [110,    'triangle', 0.10],
+        [146.83, 'sine',     0.14],
+        [185.00, 'triangle', 0.08],
+        [220,    'sine',     0.07],
+        [293.66, 'triangle', 0.05],
+        [329.63, 'sine',     0.035],
+    ],
+    // Fmaj9 — warm, jazzy, amber glow
+    lounge: [
+        [43.65,  'sine',     0.21],
+        [87.31,  'sine',     0.17],
+        [130.81, 'triangle', 0.12],
+        [174.61, 'sine',     0.13],
+        [220,    'triangle', 0.09],
+        [261.63, 'sine',     0.08],
+        [329.63, 'triangle', 0.06],
+        [392,    'sine',     0.04],
+    ],
+    // Am11 — mysterious, deep indigo space
+    night: [
+        [27.50,  'sine',     0.24],
+        [55,     'sine',     0.19],
+        [82.41,  'triangle', 0.10],
+        [110,    'sine',     0.12],
+        [146.83, 'triangle', 0.07],
+        [196,    'sine',     0.06],
+        [261.63, 'triangle', 0.04],
+        [293.66, 'sine',     0.03],
+    ],
+};
 
 export const AmbientAudioController: React.FC = () => {
     const userSettings = useSessionStore((state) => state.user?.settings);
@@ -91,7 +139,7 @@ export const AmbientAudioController: React.FC = () => {
             syntheticNodesRef.current = null;
         }
     });
-    const startSyntheticAmbient = useRef(async () => {
+    const startSyntheticAmbient = useRef(async (forceScene?: RitualSceneId) => {
         if (syntheticNodesRef.current) return;
         if (typeof window === 'undefined') return;
 
@@ -154,17 +202,8 @@ export const AmbientAudioController: React.FC = () => {
         lfo2.connect(lfoGain2);
         lfoGain2.connect(master.gain);
 
-        // Amaj9 open voicing — A sub, E, A, C# (warmth), E upper, G (floaty 7th), A high shimmer
-        const VOICES: Array<[number, 'sine' | 'triangle', number]> = [
-            [55,     'sine',     0.20],  // A1  sub drone
-            [110,    'sine',     0.17],  // A2  root
-            [164.81, 'triangle', 0.11],  // E3  5th
-            [220,    'sine',     0.13],  // A3  octave
-            [277.18, 'triangle', 0.09],  // C#4 major 3rd — warmth
-            [329.63, 'sine',     0.08],  // E4  upper 5th
-            [392,    'triangle', 0.055], // G4  natural 7th — floaty
-            [440,    'sine',     0.04],  // A4  high shimmer
-        ];
+        const activeScene = forceScene ?? ritualSceneId;
+        const VOICES = SCENE_VOICES[activeScene] ?? SCENE_VOICES.flow;
 
         const allSources: AudioScheduledSourceNode[] = [];
         const allGains: GainNode[] = [];
@@ -244,6 +283,23 @@ export const AmbientAudioController: React.FC = () => {
         if (!audioElement) return;
         audioElement.loop = true;
     }, []);
+
+    // Scene change — restart synthetic ambient with new voicing
+    const prevRitualSceneRef = useRef<RitualSceneId>(ritualSceneId);
+    useEffect(() => {
+        if (prevRitualSceneRef.current === ritualSceneId) return;
+        prevRitualSceneRef.current = ritualSceneId;
+        if (!ambientAudio.enabled || effectiveTrackId || !interactionReadyRef.current) return;
+        const ctx = syntheticContextRef.current;
+        if (ctx && syntheticNodesRef.current) {
+            // Fade out old synth over 1.8s, then swap in new scene voicing
+            syntheticNodesRef.current.master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.6);
+            setTimeout(() => {
+                stopSyntheticAmbient.current();
+                void startSyntheticAmbient.current(ritualSceneId);
+            }, 1800);
+        }
+    }, [ritualSceneId, ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
@@ -546,6 +602,27 @@ export const AmbientAudioController: React.FC = () => {
         audioElement.addEventListener('canplay', handleCanPlay);
         return () => audioElement.removeEventListener('canplay', handleCanPlay);
     }, [ambientAudio.enabled, effectiveTrackId]);
+
+    // Scene change — restart synth with new chord voicing (only when no file track is active)
+    useEffect(() => {
+        if (effectiveTrackId) return;
+        if (!ambientAudio.enabled) return;
+        if (!interactionReadyRef.current) return;
+
+        const ctx = syntheticContextRef.current;
+        if (!syntheticNodesRef.current || !ctx) return;
+
+        // Fade out current synth over 1.8s, then restart with new scene voicing
+        const master = syntheticNodesRef.current.master;
+        master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.6);
+
+        const timer = window.setTimeout(() => {
+            stopSyntheticAmbient.current();
+            void startSyntheticAmbient.current(ritualSceneId);
+        }, 1800);
+
+        return () => window.clearTimeout(timer);
+    }, [ritualSceneId, ambientAudio.enabled, effectiveTrackId]);
 
     useEffect(() => {
         const audioElement = audioRef.current;
