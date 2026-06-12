@@ -20,6 +20,31 @@ if (typeof window.cancelAnimationFrame === 'undefined') {
   window.cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as NodeJS.Timeout);
 }
 
+class MockIntersectionObserver implements IntersectionObserver {
+  readonly root = null;
+  readonly rootMargin = '0px';
+  readonly thresholds = [0];
+
+  disconnect() {}
+  observe() {}
+  takeRecords(): IntersectionObserverEntry[] { return []; }
+  unobserve() {}
+}
+
+class MockResizeObserver implements ResizeObserver {
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+}
+
+if (typeof global.IntersectionObserver === 'undefined') {
+  global.IntersectionObserver = MockIntersectionObserver;
+}
+
+if (typeof global.ResizeObserver === 'undefined') {
+  global.ResizeObserver = MockResizeObserver;
+}
+
 Object.defineProperty(window.HTMLCanvasElement.prototype, 'getContext', {
   value: function getContext() {
     return {
