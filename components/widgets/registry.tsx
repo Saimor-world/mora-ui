@@ -4,6 +4,7 @@ import React from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
+    ArrowRight,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
@@ -11,19 +12,53 @@ import { useSpaces } from '@/lib/queries/useSpaces';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
 
 // ── Small shared building blocks ────────────────────────────────────────────
+// Scene-tinted, consistent, a touch more elevated than flat cards. Every accent
+// resolves through --scene-rgb so widgets breathe with the active ritual scene.
+
+const SectionLabel: React.FC<{ icon?: React.ReactNode; children: React.ReactNode; trailing?: React.ReactNode }> = ({ icon, children, trailing }) => (
+    <div className="mb-1.5 flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-white/38">
+            {icon}{children}
+        </span>
+        {trailing}
+    </div>
+);
 
 const Empty: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div className="flex h-full items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-4 text-center text-[11px] leading-relaxed text-white/38">
+    <div className="flex h-full min-h-[44px] items-center justify-center rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-center text-[11px] leading-relaxed text-white/38">
         {children}
     </div>
 );
 
+const ConnectCTA: React.FC<{ label: string; onClick?: () => void }> = ({ label, onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="group flex items-center gap-1.5 rounded-xl border border-dashed px-3 py-2 text-left text-[11px] transition-colors"
+        style={{
+            borderColor: 'rgba(var(--scene-rgb, 16,185,129), 0.28)',
+            background: 'rgba(var(--scene-rgb, 16,185,129), 0.05)',
+            color: 'rgba(var(--scene-rgb, 16,185,129), 0.85)',
+        }}
+    >
+        <Plug size={12} className="opacity-80" />
+        {label}
+        <ArrowRight size={11} className="ml-auto opacity-50 transition-transform group-hover:translate-x-0.5" />
+    </button>
+);
+
 const Stat: React.FC<{ label: string; value: React.ReactNode; icon?: React.ReactNode }> = ({ label, value, icon }) => (
-    <div className="flex flex-col gap-1 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2.5">
-        <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.16em] text-white/35">
+    <div
+        className="flex flex-col gap-1 rounded-xl border px-3 py-2.5"
+        style={{
+            borderColor: 'rgba(var(--scene-rgb, 16,185,129), 0.12)',
+            background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.06), rgba(255,255,255,0.015) 60%)',
+        }}
+    >
+        <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.16em] text-white/40">
             {icon}{label}
         </span>
-        <span className="text-lg font-light tabular-nums text-white/85">{value}</span>
+        <span className="text-xl font-light tabular-nums text-white/88">{value}</span>
     </div>
 );
 
@@ -31,10 +66,30 @@ const ActionButton: React.FC<{ icon: React.ReactNode; label: string; onClick?: (
     <button
         type="button"
         onClick={onClick}
-        className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-left text-[12px] text-white/62 transition-colors hover:border-white/[0.18] hover:bg-white/[0.09] hover:text-white/90"
+        className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.04] px-3 py-2.5 text-left text-[12px] text-white/62 transition-all hover:border-white/[0.18] hover:bg-white/[0.09] hover:text-white/90"
     >
         <span className="opacity-70">{icon}</span>
         {label}
+    </button>
+);
+
+/** A single live row (mail / calendar / signal) with leading icon + meta. */
+const LiveRow: React.FC<{
+    icon: React.ReactNode;
+    title: string;
+    meta?: string;
+    onClick?: () => void;
+}> = ({ icon, title, meta, onClick }) => (
+    <button
+        type="button"
+        onClick={onClick}
+        className="group flex w-full items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-left transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
+    >
+        <span className="mt-0.5 shrink-0 opacity-70">{icon}</span>
+        <span className="min-w-0 flex-1">
+            <span className="block truncate text-[12px] text-white/78">{title}</span>
+            {meta && <span className="mt-0.5 block truncate text-[10px] text-white/40">{meta}</span>}
+        </span>
     </button>
 );
 
@@ -70,23 +125,71 @@ const MoraWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     <div className="mt-1.5 truncate text-[11px] text-white/55">{titled[0].title}</div>
                 )}
             </div>
+            <ArrowRight size={14} className="shrink-0 text-white/25" />
         </button>
     );
 };
 
 const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
-    const { data } = useHomeView();
-    const tasks = data?.next_steps ?? [];
+    const { data: homeView } = useHomeView();
+    const tasks = homeView?.next_steps ?? [];
+    const mail = context.data?.mailPreview ?? [];
+    const cal = context.data?.calendarPreview ?? [];
+    const mailConfigured = context.data?.mailConfigured ?? false;
+    const calConfigured = context.data?.calendarConfigured ?? false;
+
     return (
-        <div className="flex h-full flex-col gap-2">
-            <div className="flex gap-2">
-                <ActionButton icon={<CalendarDays size={13} />} label="Kalender" onClick={context.openCalendar} />
-                <ActionButton icon={<Mail size={13} />} label="Mail" onClick={context.openMail} />
+        <div className="flex h-full flex-col gap-3 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
+            {/* Termine */}
+            <div>
+                <SectionLabel icon={<CalendarDays size={10} className="opacity-70" />}>Termine</SectionLabel>
+                {cal.length > 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                        {cal.slice(0, 3).map((c) => (
+                            <LiveRow
+                                key={c.id}
+                                icon={<CalendarDays size={13} style={{ color: 'rgba(var(--scene-rgb, 16,185,129), 0.8)' }} />}
+                                title={c.title}
+                                meta={[c.time, c.location].filter(Boolean).join(' · ') || undefined}
+                                onClick={context.openCalendar}
+                            />
+                        ))}
+                    </div>
+                ) : calConfigured ? (
+                    <Empty>Keine Termine heute</Empty>
+                ) : (
+                    <ConnectCTA label="Kalender verbinden" onClick={context.openIntegrations} />
+                )}
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
+
+            {/* Posteingang */}
+            <div>
+                <SectionLabel icon={<Mail size={10} className="opacity-70" />}>Posteingang</SectionLabel>
+                {mail.length > 0 ? (
+                    <div className="flex flex-col gap-1.5">
+                        {mail.slice(0, 3).map((m) => (
+                            <LiveRow
+                                key={m.id}
+                                icon={<Mail size={13} className="text-violet-300/75" />}
+                                title={m.subject}
+                                meta={m.from}
+                                onClick={context.openMail}
+                            />
+                        ))}
+                    </div>
+                ) : mailConfigured ? (
+                    <Empty>Posteingang leer</Empty>
+                ) : (
+                    <ConnectCTA label="Mail verbinden" onClick={context.openIntegrations} />
+                )}
+            </div>
+
+            {/* Aufgaben (MÔRA-erkannt, evidenzbasiert) */}
+            <div className="min-h-0">
+                <SectionLabel icon={<CheckCircle2 size={10} className="opacity-70" />}>Aufgaben</SectionLabel>
                 {tasks.length > 0 ? (
                     <div className="flex flex-col gap-1.5">
-                        {tasks.slice(0, 5).map((t) => (
+                        {tasks.slice(0, 4).map((t) => (
                             <div key={t.id} className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[12px] text-white/72">
                                 <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-white/40" />
                                 <span className="min-w-0 flex-1">{t.title}</span>
@@ -108,7 +211,7 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         <div className="flex h-full flex-col gap-2">
             <div className="flex items-center gap-2 text-[12px] text-white/72">
                 <span className={`h-2 w-2 rounded-full ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
-                {online.length} online
+                {online.length} {online.length === 1 ? 'Person' : 'Personen'} online
             </div>
             <div className="min-h-0 flex-1 overflow-y-auto">
                 {online.length > 0 ? (
@@ -128,17 +231,22 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     );
 };
 
-const SignalsWidget: React.FC<{ context: WidgetContext }> = () => {
+const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data } = useHomeView();
     const attention = data?.attention ?? [];
     return (
         <div className="flex h-full flex-col gap-1.5 overflow-y-auto">
             {attention.length > 0 ? (
                 attention.slice(0, 6).map((a) => (
-                    <div key={a.id} className="flex items-start gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2 text-[12px] text-white/72">
-                        <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-300/70" />
+                    <button
+                        key={a.id}
+                        type="button"
+                        onClick={context.openMora}
+                        className="flex items-start gap-2 rounded-xl border border-amber-300/15 bg-amber-400/[0.05] px-3 py-2 text-left text-[12px] text-white/74 transition-colors hover:border-amber-300/30 hover:bg-amber-400/[0.1]"
+                    >
+                        <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-300/75" />
                         <span className="min-w-0 flex-1">{a.title}</span>
-                    </div>
+                    </button>
                 ))
             ) : (
                 <div className="flex h-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-4 text-[12px] text-white/55">
@@ -222,12 +330,12 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     signals: {
         type: 'signals', label: 'Signale', hint: 'Vorfälle & Aufmerksamkeit', icon: <AlertTriangle size={14} />,
         defaultW: 4, defaultH: 5, minW: 3, minH: 3, surfaces: ['home', 'department'],
-        render: () => <SignalsWidget context={{ surface: 'home' }} />,
+        render: ({ context }) => <SignalsWidget context={context} />,
     },
     orgStats: {
         type: 'orgStats', label: 'Organisation', hint: 'Abteilungen, Dokumente, Ordner', icon: <BarChart2 size={14} />,
         defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home'],
-        render: () => <OrgStatsWidget context={{ surface: 'home' }} />,
+        render: ({ context }) => <OrgStatsWidget context={context} />,
     },
     quickActions: {
         type: 'quickActions', label: 'Schnellzugriff', hint: 'Finder, MÔRA, Erkunden', icon: <Compass size={14} />,
@@ -237,7 +345,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     clock: {
         type: 'clock', label: 'Uhr', hint: 'Zeit & Datum', icon: <Clock size={14} />,
         defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'department'],
-        render: () => <ClockWidget context={{ surface: 'home' }} />,
+        render: ({ context }) => <ClockWidget context={context} />,
     },
     deptStats: {
         type: 'deptStats', label: 'Datenlage', hint: 'Bereiche & Ordner der Abteilung', icon: <TrendingUp size={14} />,
