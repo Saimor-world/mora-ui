@@ -21,7 +21,7 @@ export const AdminModeSwitcher: React.FC = () => {
     const surfaceProfile = useSurfaceProfile();
 
     // Role gate -- only owner/admin can enter admin mode
-    if (!user || (user.role !== 'owner' && user.role !== 'admin')) return null;
+    if (!user || !['owner', 'system_owner', 'admin'].includes(user.role)) return null;
     if (surfaceProfile.isPublicDemoSurface) return null;
 
     return (
