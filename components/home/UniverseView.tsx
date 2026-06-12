@@ -2,6 +2,8 @@
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useActiveRitualScene } from '@/lib/hooks/useActiveRitualScene';
+import type { RitualSceneId } from '@/lib/os/ritualMode';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -40,14 +42,39 @@ import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 
 const EMPTY_UNIVERSE_ITEMS: any[] = [];
 
-/**
- * UNIVERSE VIEW - V11 STELLAR ORCHESTRATION
- * VISION: A living, breathing autonomous business workspace.
- * Now with REAL department stats from backend!
- */
+// Per-scene nebula colors — Universe background reacts dramatically to scene switches
+const UNIVERSE_BASE: Record<RitualSceneId, string> = {
+    flow:   'linear-gradient(135deg, rgba(0,12,10,0.98) 0%, rgba(0,8,6,0.96) 48%, rgba(0,10,8,0.98) 100%)',
+    build:  'linear-gradient(135deg, rgba(0,5,15,0.98) 0%, rgba(3,9,21,0.96) 48%, rgba(0,5,12,0.98) 100%)',
+    lounge: 'linear-gradient(135deg, rgba(12,6,0,0.98) 0%, rgba(8,4,0,0.96) 48%, rgba(10,5,0,0.98) 100%)',
+    night:  'linear-gradient(135deg, rgba(5,3,18,0.98) 0%, rgba(8,4,22,0.96) 48%, rgba(4,2,16,0.98) 100%)',
+};
+const UNIVERSE_NEBULA: Record<RitualSceneId, string> = {
+    flow: `
+        radial-gradient(1120px 720px at 52% 54%, rgba(16,185,129,0.40) 0%, transparent 62%),
+        radial-gradient(980px 620px at 18% 24%, rgba(20,184,166,0.30) 0%, transparent 54%),
+        radial-gradient(860px 520px at 84% 20%, rgba(34,211,238,0.18) 0%, transparent 50%),
+        radial-gradient(780px 460px at 22% 78%, rgba(16,185,129,0.16) 0%, transparent 54%)`,
+    build: `
+        radial-gradient(1120px 720px at 52% 54%, rgba(56,189,248,0.40) 0%, transparent 62%),
+        radial-gradient(980px 620px at 18% 24%, rgba(99,102,241,0.30) 0%, transparent 54%),
+        radial-gradient(860px 520px at 84% 20%, rgba(251,191,36,0.18) 0%, transparent 50%),
+        radial-gradient(780px 460px at 22% 78%, rgba(56,189,248,0.16) 0%, transparent 54%)`,
+    lounge: `
+        radial-gradient(1120px 720px at 52% 54%, rgba(251,146,60,0.38) 0%, transparent 62%),
+        radial-gradient(980px 620px at 18% 24%, rgba(249,115,22,0.30) 0%, transparent 54%),
+        radial-gradient(860px 520px at 84% 20%, rgba(244,114,182,0.22) 0%, transparent 50%),
+        radial-gradient(780px 460px at 22% 78%, rgba(251,146,60,0.14) 0%, transparent 54%)`,
+    night: `
+        radial-gradient(1120px 720px at 52% 54%, rgba(99,102,241,0.42) 0%, transparent 62%),
+        radial-gradient(980px 620px at 18% 24%, rgba(139,92,246,0.32) 0%, transparent 54%),
+        radial-gradient(860px 520px at 84% 20%, rgba(34,211,238,0.16) 0%, transparent 50%),
+        radial-gradient(780px 460px at 22% 78%, rgba(99,102,241,0.18) 0%, transparent 54%)`,
+};
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
     const setOrbState = useOrbStore((s) => s.setOrbState);
+    const ritualScene = useActiveRitualScene();
     const orbState = useOrbStore((s) => s.orbState);
     const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment, universeScope, universeScopeDeptId, setUniverseScope } = useNavStore();
     const user = useSessionStore(s => s.user);
@@ -759,39 +786,36 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             onMouseMove={handleUniversePointerMove}
             onMouseLeave={handleUniversePointerLeave}
         >
-            {/* 0. UNIVERSE BACKDROP - single merged stage shared with Home overlays */}
-            <div
-                className="absolute inset-0 z-[-10] pointer-events-none"
-                style={{
-                    background: `
-                        radial-gradient(1500px 900px at 51% 50%, rgba(28, 105, 155, 0.18) 0%, rgba(7, 22, 42, 0.10) 40%, transparent 72%),
-                        radial-gradient(980px 640px at 12% 14%, rgba(20, 184, 166, 0.15) 0%, transparent 60%),
-                        radial-gradient(860px 560px at 88% 18%, rgba(99, 102, 241, 0.12) 0%, transparent 58%),
-                        radial-gradient(720px 540px at 72% 82%, rgba(180, 83, 9, 0.08) 0%, transparent 58%),
-                        linear-gradient(135deg, rgba(0, 8, 10, 0.98) 0%, rgba(3, 9, 21, 0.96) 48%, rgba(0, 5, 7, 0.98) 100%)
-                    `,
-                }}
-            />
-            <motion.div
-                className="absolute inset-0 z-[-9] pointer-events-none"
-                animate={{ x: parallaxOffset.x * 0.24, y: parallaxOffset.y * 0.18 }}
-                transition={{ type: 'spring', stiffness: 28, damping: 18, mass: 1 }}
-                style={{
-                    background: `
-                        radial-gradient(1120px 720px at 52% 54%, rgba(124, 58, 237, 0.38) 0%, transparent 62%),
-                        radial-gradient(980px 620px at 18% 24%, rgba(16, 185, 129, 0.28) 0%, transparent 54%),
-                        radial-gradient(860px 520px at 84% 20%, rgba(245, 158, 11, 0.20) 0%, transparent 50%),
-                        radial-gradient(780px 460px at 22% 78%, rgba(34, 211, 238, 0.18) 0%, transparent 54%)
-                    `,
-                    mixBlendMode: 'screen',
-                }}
-            />
+            {/* 0. UNIVERSE BACKDROP — scene-reactive dark base */}
+            <AnimatePresence mode="sync">
+                <motion.div
+                    key={`base-${ritualScene.id}`}
+                    className="absolute inset-0 z-[-10] pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.4, ease: 'easeInOut' }}
+                    style={{ background: UNIVERSE_BASE[ritualScene.id] }}
+                />
+            </AnimatePresence>
+            {/* Scene-reactive nebula blobs */}
+            <AnimatePresence mode="sync">
+                <motion.div
+                    key={`nebula-${ritualScene.id}`}
+                    className="absolute inset-0 z-[-9] pointer-events-none"
+                    initial={{ opacity: 0 }}
+                    animate={{ x: parallaxOffset.x * 0.24, y: parallaxOffset.y * 0.18, opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.4, ease: 'easeInOut', x: { type: 'spring', stiffness: 28, damping: 18 }, y: { type: 'spring', stiffness: 28, damping: 18 } }}
+                    style={{ background: UNIVERSE_NEBULA[ritualScene.id], mixBlendMode: 'screen' }}
+                />
+            </AnimatePresence>
             <motion.div
                 className="absolute inset-0 z-[-8] pointer-events-none"
                 animate={{ x: parallaxOffset.x * 0.44, y: parallaxOffset.y * 0.2, rotate: -2.4 }}
                 transition={{ type: 'spring', stiffness: 22, damping: 16, mass: 1.05 }}
                 style={{
-                    background: 'linear-gradient(104deg, transparent 0%, rgba(124,58,237,0.06) 16%, rgba(16,185,129,0.10) 32%, rgba(245,158,11,0.06) 48%, rgba(124,58,237,0.05) 66%, transparent 84%)',
+                    background: `linear-gradient(104deg, transparent 0%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 16%, ${ritualScene.aura.replace(/[\d.]+\)$/, '0.10)')} 32%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 48%, transparent 84%)`,
                     transform: 'scale(1.2)',
                     filter: 'blur(34px)',
                     opacity: 0.62,

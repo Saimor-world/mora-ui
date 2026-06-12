@@ -700,7 +700,7 @@ export const MoraShell: React.FC = () => {
                 z-1   ForestLightCanopy — organic nebula/light blobs
                 z-1   StarField — twinkling star canvas
                 z-2   TemporalAtmosphere — atmospheric hazes
-                z-4   RitualSceneStyler — scene colour overlay + CSS vars
+                z-11  RitualSceneStyler — scene colour overlay + CSS vars (above z-10 content)
             ================================================================= */}
 
             <RitualSceneStyler />

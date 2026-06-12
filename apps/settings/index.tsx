@@ -686,7 +686,7 @@ useEffect(() => {
                                 </button>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
+                            <div className="grid grid-cols-1 gap-4">
                                 <div className="overflow-hidden rounded-[26px] border border-emerald-300/[0.1] bg-[radial-gradient(circle_at_18%_0%,rgba(16,185,129,0.16),transparent_34%),linear-gradient(160deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.22)] space-y-4">
                                     <div className="flex items-center justify-between gap-4">
                                         <div>
