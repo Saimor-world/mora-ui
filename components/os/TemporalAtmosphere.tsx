@@ -26,11 +26,13 @@ const getTimeBand = (date: Date): TimeBand => {
     return 'night';
 };
 
+// Time-of-day bands — kept subtle and cool. Warm (amber) accents are pulled
+// right down so they don't muddy the corners on top of the scene colour.
 const BAND_BACKGROUNDS: Record<TimeBand, string> = {
-    morning: 'radial-gradient(circle at 18% 20%, rgba(251,191,36,0.18), transparent 34%), radial-gradient(circle at 82% 18%, rgba(34,211,238,0.16), transparent 32%), radial-gradient(circle at 50% 80%, rgba(16,185,129,0.12), transparent 42%)',
-    day: 'radial-gradient(circle at 22% 18%, rgba(34,211,238,0.14), transparent 34%), radial-gradient(circle at 76% 24%, rgba(59,130,246,0.12), transparent 30%), radial-gradient(circle at 52% 84%, rgba(251,191,36,0.10), transparent 46%)',
-    evening: 'radial-gradient(circle at 18% 26%, rgba(251,146,60,0.18), transparent 36%), radial-gradient(circle at 80% 18%, rgba(244,114,182,0.12), transparent 30%), radial-gradient(circle at 52% 82%, rgba(168,85,247,0.12), transparent 44%)',
-    night: 'radial-gradient(circle at 16% 18%, rgba(16,185,129,0.12), transparent 32%), radial-gradient(circle at 82% 16%, rgba(139,92,246,0.16), transparent 34%), radial-gradient(circle at 56% 86%, rgba(34,211,238,0.09), transparent 44%)',
+    morning: 'radial-gradient(circle at 18% 20%, rgba(251,191,36,0.07), transparent 32%), radial-gradient(circle at 82% 18%, rgba(34,211,238,0.12), transparent 32%), radial-gradient(circle at 50% 82%, rgba(16,185,129,0.08), transparent 42%)',
+    day: 'radial-gradient(circle at 22% 18%, rgba(34,211,238,0.12), transparent 34%), radial-gradient(circle at 76% 24%, rgba(59,130,246,0.10), transparent 30%), radial-gradient(circle at 52% 86%, rgba(99,102,241,0.07), transparent 46%)',
+    evening: 'radial-gradient(circle at 18% 26%, rgba(251,146,60,0.10), transparent 34%), radial-gradient(circle at 80% 18%, rgba(244,114,182,0.10), transparent 30%), radial-gradient(circle at 52% 84%, rgba(168,85,247,0.10), transparent 44%)',
+    night: 'radial-gradient(circle at 16% 18%, rgba(16,185,129,0.08), transparent 32%), radial-gradient(circle at 82% 16%, rgba(139,92,246,0.14), transparent 34%), radial-gradient(circle at 56% 86%, rgba(34,211,238,0.08), transparent 44%)',
 };
 
 const ORB_ACCENTS: Record<string, string> = {

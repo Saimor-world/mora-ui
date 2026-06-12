@@ -433,16 +433,66 @@ export function HomeCockpit(props: HomeCockpitProps) {
         onOpenFinder, onOpenMora, onOpenRecentActivity, onGoExplore,
     } = props;
 
+    // Honest MÔRA presence state — reflects real UI activity, never fabricated insight.
+    const moraSignalCount =
+        (homeView?.changes ?? []).filter((c) => c.title && c.title.trim().length > 0).length +
+        (homeView?.attention?.length ?? 0);
+    const moraStatusLabel = moraSignalCount > 0
+        ? `beobachtet · ${moraSignalCount} ${moraSignalCount === 1 ? 'Signal' : 'Signale'}`
+        : 'wach · beobachtet im Hintergrund';
+
     return (
         <div className="flex h-full flex-col gap-4 overflow-y-auto pb-2 pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.3) transparent' }}>
 
-            {/* ── Greeting header ── */}
-            <motion.div {...fade(0)} className="flex items-baseline justify-between gap-4">
-                <div>
-                    <h1 className="text-[clamp(22px,2.2vw,32px)] font-light leading-tight tracking-[-0.03em] text-white/90">
-                        {greeting}{firstName ? <span className="text-white/44">, {firstName}.</span> : '.'}
-                    </h1>
-                    <div className="mt-1 text-[11px] text-white/32">{todayLabel}</div>
+            {/* ── Greeting header with living MÔRA presence ── */}
+            <motion.div {...fade(0)} className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                    {/* MÔRA orb — breathing, scene-coloured, opens MÔRA on click */}
+                    <button
+                        type="button"
+                        onClick={onOpenMora}
+                        aria-label="MÔRA öffnen"
+                        className="group relative flex h-14 w-14 shrink-0 items-center justify-center outline-none"
+                    >
+                        <motion.span
+                            className="absolute inset-0 rounded-full"
+                            style={{ background: 'radial-gradient(circle, rgba(var(--scene-rgb, 16,185,129), 0.32) 0%, transparent 70%)' }}
+                            animate={{ scale: [1, 1.22, 1], opacity: [0.55, 0.22, 0.55] }}
+                            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                        />
+                        <motion.span
+                            className="absolute inset-[5px] rounded-full border-[1.5px]"
+                            style={{ borderColor: 'rgba(var(--scene-rgb, 16,185,129), 0.45)', borderTopColor: 'transparent', borderRightColor: 'transparent' }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+                        />
+                        <span
+                            className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105"
+                            style={{
+                                background: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45), rgba(var(--scene-rgb, 16,185,129), 0.62) 46%, rgba(0,0,0,0.32))',
+                                boxShadow: '0 0 26px rgba(var(--scene-rgb, 16,185,129), 0.5), inset 0 1px 2px rgba(255,255,255,0.4)',
+                            }}
+                        >
+                            <Sparkles size={14} className="text-white/95" />
+                        </span>
+                    </button>
+                    <div>
+                        <h1 className="text-[clamp(22px,2.2vw,32px)] font-light leading-tight tracking-[-0.03em] text-white/90">
+                            {greeting}{firstName ? <span className="text-white/44">, {firstName}.</span> : '.'}
+                        </h1>
+                        <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
+                            <span className="text-white/32">{todayLabel}</span>
+                            <span className="text-white/16">·</span>
+                            <button
+                                type="button"
+                                onClick={onOpenMora}
+                                className="inline-flex items-center gap-1.5 text-white/45 transition-colors hover:text-white/75"
+                            >
+                                <span className="font-medium" style={{ color: 'rgba(var(--scene-rgb, 16,185,129), 0.9)' }}>MÔRA</span>
+                                <span>{moraStatusLabel}</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 {/* Live status pills */}
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">

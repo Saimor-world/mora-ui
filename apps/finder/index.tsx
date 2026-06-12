@@ -1070,16 +1070,18 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                             path: ec.path,
                             counts: { nodes: 0, subfolders: 0 },
                         }, null);
-                    } else if (ec && (!ec.resolved || (ec.context_lookup && !ec.context_lookup.resolved))) {
-                        const hintReason = ec.reason || ec.context_lookup?.reason || 'Serverpfad fehlt';
-                        storeCache(null, `${hintReason}. Finder nutzt den lokalen Pfad weiter.`);
                     } else {
-                        storeCache(null, 'Serverpfad fehlt. Finder nutzt den lokalen Pfad weiter.');
+                        // The finder transparently falls back to the local tree path here.
+                        // An unresolved server context is the NORMAL case for an empty/new
+                        // space (no server folder yet) — it is not an error, so we stay
+                        // silent instead of flashing a scary "Serverpfad" hint.
+                        storeCache(null, null);
                     }
                 })
                 .catch(() => {
+                    // Network hiccup — finder keeps working on the local path. Silent.
                     if (!cancelled) {
-                        storeCache(null, 'Serverpfad gerade nicht erreichbar. Finder nutzt den lokalen Pfad weiter.');
+                        storeCache(null, null);
                     }
                 });
         }
