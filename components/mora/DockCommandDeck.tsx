@@ -18,7 +18,7 @@ import {
     Moon,
     type LucideIcon,
 } from 'lucide-react';
-import { RITUAL_SCENE_ORDER, type RitualSceneId } from '@/lib/os/ritualMode';
+import { RITUAL_SCENE_ORDER, RITUAL_SCENES, type RitualSceneId } from '@/lib/os/ritualMode';
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 
 const SCENE_PALETTE: Record<RitualSceneId, {
@@ -31,7 +31,6 @@ const SCENE_PALETTE: Record<RitualSceneId, {
     cardBorder: string;
     cardGlow: string;
     label: string;
-    timeRange: string;
     Icon: LucideIcon;
 }> = {
     flow: {
@@ -44,7 +43,6 @@ const SCENE_PALETTE: Record<RitualSceneId, {
         cardBorder: 'rgba(16,185,129,0.30)',
         cardGlow: 'rgba(16,185,129,0.18)',
         label: 'Flow',
-        timeRange: '05 – 11',
         Icon: Sunrise,
     },
     build: {
@@ -57,7 +55,6 @@ const SCENE_PALETTE: Record<RitualSceneId, {
         cardBorder: 'rgba(14,165,233,0.30)',
         cardGlow: 'rgba(251,191,36,0.14)',
         label: 'Build',
-        timeRange: '11 – 17',
         Icon: Sun,
     },
     lounge: {
@@ -70,7 +67,6 @@ const SCENE_PALETTE: Record<RitualSceneId, {
         cardBorder: 'rgba(251,146,60,0.30)',
         cardGlow: 'rgba(244,114,182,0.14)',
         label: 'Lounge',
-        timeRange: '17 – 22',
         Icon: Sunset,
     },
     night: {
@@ -83,7 +79,6 @@ const SCENE_PALETTE: Record<RitualSceneId, {
         cardBorder: 'rgba(139,92,246,0.30)',
         cardGlow: 'rgba(139,92,246,0.18)',
         label: 'Nacht',
-        timeRange: '22 – 05',
         Icon: Moon,
     },
 };
@@ -352,8 +347,8 @@ export const DockCommandDeck: React.FC<DockCommandDeckProps> = ({
                                                     <div className={`mt-1.5 text-[11px] font-medium ${isActive && !isStandardMode ? sp.badge : isStandardMode ? 'text-gray-700' : 'text-white/65'}`}>
                                                         {sp.label}
                                                     </div>
-                                                    <div className={`mt-0.5 text-[10px] tabular-nums ${isStandardMode ? 'text-gray-400' : 'text-white/28'}`}>
-                                                        {sp.timeRange}
+                                                    <div className={`mt-0.5 text-[10px] ${isStandardMode ? 'text-gray-400' : 'text-white/28'}`}>
+                                                        {RITUAL_SCENES[sid].timeLabel} · <span className="tabular-nums">{RITUAL_SCENES[sid].timeRange}</span>
                                                     </div>
                                                 </div>
                                                 {isActive && (
