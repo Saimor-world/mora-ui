@@ -95,12 +95,12 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
     // Risk level config
     const riskConfig = {
         none: {
-            color: '#10B981',
+            color: 'var(--scene-accent-hex, #10B981)',
             icon: CheckCircle,
             label: 'No Risk'
         },
         low: {
-            color: '#10B981',
+            color: 'var(--scene-accent-hex, #10B981)',
             icon: CheckCircle,
             label: 'Low Risk'
         },
@@ -157,7 +157,7 @@ export const IntelligenceContextBar: React.FC<IntelligenceContextBarProps> = ({
                         className="w-full h-10 flex items-center justify-between px-6 pointer-events-auto backdrop-blur-md border-b"
                         style={{
                             backgroundColor: 'rgba(3, 8, 6, 0.85)',
-                            borderColor: 'rgba(16, 185, 129, 0.15)'
+                            borderColor: 'rgba(var(--scene-rgb, 16, 185, 129), 0.15)'
                         }}
                     >
                         {/* Left: Breadcrumb */}

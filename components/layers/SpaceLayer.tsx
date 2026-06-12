@@ -489,11 +489,11 @@ export const SpaceLayer: React.FC = () => {
                 style={{
                     opacity: atmosphereIntensity,
                     background: `
-                        radial-gradient(1150px 600px at 54% 56%, rgba(16, 185, 129, 0.24) 0%, transparent 64%),
-                        radial-gradient(900px 420px at 24% 28%, rgba(34, 211, 238, 0.16) 0%, transparent 58%),
-                        radial-gradient(760px 360px at 80% 34%, rgba(99, 102, 241, 0.14) 0%, transparent 56%),
-                        radial-gradient(700px 320px at 18% 76%, rgba(167, 139, 250, 0.14) 0%, transparent 54%),
-                        radial-gradient(640px 300px at 74% 82%, rgba(245, 158, 11, 0.11) 0%, transparent 50%)
+                        radial-gradient(1150px 600px at 54% 56%, rgba(var(--scene-rgb, 16, 185, 129), 0.24) 0%, transparent 64%),
+                        radial-gradient(900px 420px at 24% 28%, var(--scene-aura, rgba(34, 211, 238, 0.16)) 0%, transparent 58%),
+                        radial-gradient(760px 360px at 80% 34%, rgba(var(--scene-rgb, 16, 185, 129), 0.12) 0%, transparent 56%),
+                        radial-gradient(700px 320px at 18% 76%, var(--scene-aura, rgba(167, 139, 250, 0.14)) 0%, transparent 54%),
+                        radial-gradient(640px 300px at 74% 82%, rgba(var(--scene-rgb, 16, 185, 129), 0.09) 0%, transparent 50%)
                     `,
                 }}
             />

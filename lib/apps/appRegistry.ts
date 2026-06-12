@@ -213,7 +213,7 @@ export const APP_REGISTRY: AppManifest[] = [
     icon: 'Settings',
     color: 'slate',
     category: 'system',
-    defaultSize: { width: 700, height: 500 },
+    defaultSize: { width: 920, height: 620 },
     singleton: true,
   },
 

@@ -12,6 +12,14 @@ const SCENE_PANEL_BG: Record<RitualSceneId, string> = {
     night:  'rgba(10, 8, 28, 0.82)',
 };
 
+// Raw RGB channels — lets any component build rgba(var(--scene-rgb), alpha) inline styles
+const SCENE_RGB: Record<RitualSceneId, string> = {
+    flow:   '16, 185, 129',
+    build:  '56, 189, 248',
+    lounge: '251, 146, 60',
+    night:  '99, 102, 241',
+};
+
 /**
  * RitualSceneStyler — the global color pipeline.
  *
@@ -32,6 +40,7 @@ export function RitualSceneStyler() {
         root.setProperty('--scene-glow', `0 0 60px ${scene.accent}`);
         root.setProperty('--scene-border', `${scene.accentHex}55`);
         root.setProperty('--scene-panel-bg', SCENE_PANEL_BG[scene.id]);
+        root.setProperty('--scene-rgb', SCENE_RGB[scene.id]);
     }, [scene.accent, scene.accentHex, scene.aura, scene.id]);
 
     // Visible overlay — the actual dramatic re-tint

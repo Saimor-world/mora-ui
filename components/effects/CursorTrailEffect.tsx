@@ -20,11 +20,11 @@ interface Point {
     color: string;
 }
 
-const TRAIL_COLORS = [
-    'rgba(16, 185, 129, ',
-    'rgba(52, 211, 153, ',
-    'rgba(206, 182, 118, '
-];
+const getSceneTrailColor = (): string => {
+    if (typeof document === 'undefined') return 'rgba(16, 185, 129, ';
+    const rgb = getComputedStyle(document.documentElement).getPropertyValue('--scene-rgb').trim();
+    return rgb ? `rgba(${rgb}, ` : 'rgba(16, 185, 129, ';
+};
 
 export const CursorTrailEffect: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -111,7 +111,7 @@ export const CursorTrailEffect: React.FC = () => {
                         vy: (Math.random() - 0.5) * 2,
                         life: life,
                         size: 1 + Math.random() * 2,
-                        color: TRAIL_COLORS[Math.floor(Math.random() * TRAIL_COLORS.length)]
+                        color: getSceneTrailColor()
                     });
                 }
             }
