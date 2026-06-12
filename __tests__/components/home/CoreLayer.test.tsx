@@ -1,10 +1,11 @@
 /**
  * CoreLayer.test.tsx
  *
- * CoreLayer overlay architecture:
- * coreMode='home'    → renders UniverseView (background) + HomeSurface (overlay)
- * coreMode='explore' → renders UniverseView only (no HomeSurface overlay)
- * coreMode changes   → overlay switches accordingly
+ * CoreLayer surface router:
+ * coreMode='home'    → renders HomeSurface only (UniverseView duplicate removed,
+ *                       MoraLivingBackground provides cosmic depth behind Home)
+ * coreMode='explore' → renders UniverseView only (no HomeSurface)
+ * coreMode changes   → surface switches accordingly
  */
 
 import React from 'react';
@@ -56,12 +57,12 @@ describe('CoreLayer', () => {
         } as any);
     });
 
-    it('renders HomeSurface overlay + UniverseView background when coreMode is home', () => {
+    it('renders HomeSurface when coreMode is home (no UniverseView duplicate)', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
         expect(screen.getByTestId('home-surface')).toBeInTheDocument();
-        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
+        expect(screen.queryByTestId('universe-view')).not.toBeInTheDocument();
     });
 
     it('renders only UniverseView when coreMode is explore', () => {
@@ -97,6 +98,6 @@ describe('CoreLayer', () => {
         });
 
         expect(screen.getByTestId('home-surface')).toBeInTheDocument();
-        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
+        expect(screen.queryByTestId('universe-view')).not.toBeInTheDocument();
     });
 });

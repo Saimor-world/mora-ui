@@ -21,6 +21,12 @@ describe('AdminModeSwitcher', () => {
         expect(screen.getByTitle(/Admin/i)).toBeInTheDocument();
     });
 
+    it('renders for system owner role', () => {
+        useSessionStore.setState({ user: { id: 'u-system', name: 'System Owner', email: 'system@saimor.world', role: 'system_owner' } });
+        render(<AdminModeSwitcher />);
+        expect(screen.getByTitle(/Admin/i)).toBeInTheDocument();
+    });
+
     it('does not render for member role', () => {
         useSessionStore.setState({ user: { id: 'u-3', name: 'Member', email: 'm@firma.de', role: 'member' } });
         const { container } = render(<AdminModeSwitcher />);

@@ -100,7 +100,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                 data: { context }
             });
         } catch (err) {
-            toast.error('Dossier konnte nicht geÃ¶ffnet werden.');
+            toast.error('Dossier konnte nicht geöffnet werden.');
         }
     };
 
@@ -159,7 +159,7 @@ export const WebsiteLeadLedger: React.FC = () => {
         : status === 'local'
             ? 'Lokaler Fallback'
             : status === 'loading'
-                ? 'Lädt'
+                ? 'L�dt'
                 : 'Noch leer';
 
     return (
@@ -169,7 +169,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                     <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-100/54">Website Pipeline</div>
                     <h2 className="mt-1 text-lg font-medium text-white/90">Website-Checks als HQ-Firmen</h2>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/45">
-                        Firmen, die aus WORLD ins HQ übernommen wurden. Offene Previews sind noch nicht verbunden; Kundenaccount bedeutet, dass der Check bereits an den angegebenen Account gebunden ist.
+                        Firmen, die aus WORLD ins HQ �bernommen wurden. Offene Previews sind noch nicht verbunden; Kundenaccount bedeutet, dass der Check bereits an den angegebenen Account gebunden ist.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -231,7 +231,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                                         {lead.dossier_title || `${lead.company_name} Dossier`}
                                         <ExternalLink size={10} className="text-white/30" />
                                     </div>
-                                    <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/28">Dossier öffnen</div>
+                                    <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/28">Dossier �ffnen</div>
                                 </button>
                                 <button
                                     onClick={() => handleResendLink(lead)}
