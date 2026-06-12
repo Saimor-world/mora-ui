@@ -76,48 +76,7 @@ export const CoreLayer: React.FC = () => {
                         animate="animate"
                         exit="exit"
                     >
-                        <div className="absolute inset-0">
-                            <div className="pointer-events-none absolute inset-0 scale-[1.06] opacity-[0.34] saturate-[0.78] [filter:blur(2px)]">
-                                <UniverseView />
-                            </div>
-                            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_42%,rgba(139,92,246,0.12),rgba(23,42,63,0.18)_40%,rgba(13,24,38,0.44)_100%)]" />
-                            <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(13,24,38,0.18)_0%,rgba(23,42,63,0.08)_18%,transparent_40%,transparent_60%,rgba(23,42,63,0.08)_82%,rgba(13,24,38,0.18)_100%)]" />
-                            <div className="pointer-events-none absolute inset-x-[18%] top-[14%] h-[24rem] rounded-full bg-violet-300/[0.10] blur-[160px]" />
-                            <div className="pointer-events-none absolute inset-x-[24%] bottom-[9%] h-[18rem] rounded-full bg-indigo-300/[0.07] blur-[150px]" />
-                            <motion.div
-                                className="absolute inset-y-0 left-0 w-[23%] pointer-events-none"
-                                initial={false}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: '-12%', transition: { duration: prefersReducedMotion ? 0.14 : 0.7, ease: [0.24, 0.96, 0.16, 1] as const } }}
-                                style={{
-                                    background: 'linear-gradient(90deg, rgba(13, 24, 38, 0.18) 0%, rgba(13, 24, 38, 0.08) 52%, rgba(13, 24, 38, 0) 100%)',
-                                    backdropFilter: 'blur(1px)',
-                                }}
-                            />
-                            <motion.div
-                                className="absolute inset-y-0 right-0 w-[23%] pointer-events-none"
-                                initial={false}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: '12%', transition: { duration: prefersReducedMotion ? 0.14 : 0.7, ease: [0.24, 0.96, 0.16, 1] as const } }}
-                                style={{
-                                    background: 'linear-gradient(270deg, rgba(13, 24, 38, 0.18) 0%, rgba(13, 24, 38, 0.08) 52%, rgba(13, 24, 38, 0) 100%)',
-                                    backdropFilter: 'blur(1px)',
-                                }}
-                            />
-                            <motion.div
-                                className="absolute inset-0 pointer-events-none"
-                                initial={false}
-                                animate={{ opacity: 1 }}
-                                exit={{
-                                    opacity: 0,
-                                    clipPath: prefersReducedMotion ? undefined : 'inset(0 48% 0 48% round 56px)',
-                                    transition: { duration: prefersReducedMotion ? 0.14 : 0.72, ease: [0.24, 0.96, 0.16, 1] as const },
-                                }}
-                                style={{
-                                    background: 'linear-gradient(90deg, rgba(2, 10, 8, 0.30) 0%, rgba(2, 18, 14, 0.12) 18%, rgba(2, 18, 14, 0.02) 50%, rgba(2, 18, 14, 0.12) 82%, rgba(2, 10, 8, 0.30) 100%)',
-                                }}
-                            />
-                        </div>
+                        <div className="absolute inset-0" />
                         {activeMode === 'visitor' ? <VisitorHomeSurface /> : <HomeSurface />}
                     </motion.div>
                 ) : (
