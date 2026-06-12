@@ -144,26 +144,26 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 </svg>
             </div>
 
-            {/* 2. NEBULA PILLARS — massive, impossible to miss */}
+            {/* 2. NEBULA PILLARS — scene-reactive via CSS vars */}
             <div className="absolute inset-0 mix-blend-screen">
-                {/* Pillar 1: Violet — left deep cloud */}
+                {/* Pillar 1: primary scene colour — left deep cloud */}
                 <div
                     className={`absolute bottom-[-10%] left-[-5%] w-[60vw] h-[80vh] rounded-full blur-[90px] ${
                         animateAmbient ? 'forest-canopy-nebula-a' : ''
                     }`}
-                    style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.55) 0%, rgba(99,40,200,0.30) 50%, transparent 75%)', opacity: animateAmbient ? undefined : 0.75 }}
+                    style={{ background: `radial-gradient(circle, rgba(var(--scene-rgb, 124,58,237), 0.52) 0%, rgba(var(--scene-rgb, 99,40,200), 0.28) 50%, transparent 75%)`, opacity: animateAmbient ? undefined : 0.75 }}
                 />
-                {/* Pillar 2: Emerald — right top cloud */}
+                {/* Pillar 2: scene aura (secondary) — right top cloud */}
                 <div
                     className={`absolute top-[-5%] right-[5%] w-[55vw] h-[60vh] rounded-full blur-[100px] ${
                         animateAmbient ? 'forest-canopy-nebula-b' : ''
                     }`}
-                    style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.50) 0%, rgba(6,95,70,0.25) 55%, transparent 75%)', opacity: animateAmbient ? undefined : 0.65 }}
+                    style={{ background: `radial-gradient(circle, var(--scene-aura, rgba(16,185,129,0.50)) 0%, transparent 75%)`, opacity: animateAmbient ? undefined : 0.65 }}
                 />
-                {/* Pillar 3: Amber — bottom right warmth */}
+                {/* Pillar 3: softer scene accent — bottom right depth */}
                 <div
                     className="absolute bottom-[5%] right-[10%] w-[45vw] h-[50vh] rounded-full blur-[80px]"
-                    style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.40) 0%, rgba(217,119,6,0.20) 55%, transparent 75%)', opacity: 0.70 }}
+                    style={{ background: `radial-gradient(circle, rgba(var(--scene-rgb, 245,158,11), 0.36) 0%, transparent 75%)`, opacity: 0.70 }}
                 />
             </div>
 

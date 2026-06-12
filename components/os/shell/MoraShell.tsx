@@ -707,10 +707,16 @@ export const MoraShell: React.FC = () => {
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground} />
 
-            {/* Background Layers */}
-            {!isUniverseExploreSurface && <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />}
+            {/* Background Layers — ForestLightCanopy fades to 6% in Universe instead
+                of disappearing, so Home and Universe share the same atmospheric truth */}
+            <div
+                className="transition-opacity duration-[1400ms] ease-in-out"
+                style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
+            >
+                <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
+            </div>
             <StarField
-                density={isUniverseExploreSurface ? 'low' : viewLevel === 'core' ? 'medium' : 'medium'}
+                density="medium"
                 opacity={0.97}
                 paused={pauseHeavyBackground}
             />
