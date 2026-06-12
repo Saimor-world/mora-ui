@@ -816,7 +816,7 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
         >
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.52),rgba(5,4,16,0.74))]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.18),rgba(5,4,16,0.34))]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
             {!websiteEntryContext && (
@@ -858,8 +858,9 @@ export const HomeSurface: React.FC = () => {
             {!websiteEntryContext && (
                 <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36"
+                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36 flex justify-center"
                 >
+                    <div className="w-full max-w-[1320px]">
                     <HomeCockpit
                         firstName={firstName}
                         greeting={greeting}
@@ -885,6 +886,7 @@ export const HomeSurface: React.FC = () => {
                         onOpenRecentActivity={openRecentActivity}
                         onGoExplore={() => setCoreMode('explore')}
                     />
+                    </div>
                 </div>
             )}
 
