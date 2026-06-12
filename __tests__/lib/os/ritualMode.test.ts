@@ -16,6 +16,15 @@ describe('ritualMode', () => {
         });
     });
 
+    it('every scene carries its canonical time-of-day identity (one source for all surfaces)', () => {
+        RITUAL_SCENE_ORDER.forEach((id) => {
+            const scene = RITUAL_SCENES[id];
+            // timeRange like '05 – 11', timeLabel like 'morgens'
+            expect(scene.timeRange).toMatch(/^\d{2}\s–\s\d{2}$/);
+            expect(scene.timeLabel.length).toBeGreaterThan(0);
+        });
+    });
+
     it('cycles through all four scenes and wraps around', () => {
         let id = RITUAL_SCENE_ORDER[0];
         const seen = new Set<string>([id]);

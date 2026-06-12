@@ -21,6 +21,11 @@ export interface RitualSceneDefinition {
     accentHex: string;   // solid hex — consumers needing hex (orb, canvas)
     aura: string;
     audioGain: number;
+    // A scene is a mood (Flow/Build/Lounge/Nacht) bound to a time-of-day window.
+    // These make that single identity renderable consistently everywhere — the
+    // Control Center, the Audio settings and anywhere else show the SAME thing.
+    timeRange: string;   // e.g. '05 – 11' — the window autoTime activates this scene
+    timeLabel: string;   // e.g. 'morgens' — human phrasing of that window
 }
 
 export const DEFAULT_RITUAL_SCENE: RitualSceneId = 'flow';
@@ -44,6 +49,8 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         accentHex: '#10B981',
         aura: 'rgba(34,211,238,0.55)',
         audioGain: 0.92,
+        timeRange: '05 – 11',
+        timeLabel: 'morgens',
     },
     build: {
         id: 'build',
@@ -54,6 +61,8 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         accentHex: '#38BDF8',
         aura: 'rgba(251,191,36,0.55)',
         audioGain: 1.05,
+        timeRange: '11 – 17',
+        timeLabel: 'mittags',
     },
     lounge: {
         id: 'lounge',
@@ -64,6 +73,8 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         accentHex: '#FB923C',
         aura: 'rgba(244,114,182,0.55)',
         audioGain: 0.86,
+        timeRange: '17 – 22',
+        timeLabel: 'abends',
     },
     night: {
         id: 'night',
@@ -74,6 +85,8 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
         accentHex: '#6366F1',
         aura: 'rgba(34,211,238,0.50)',
         audioGain: 0.76,
+        timeRange: '22 – 05',
+        timeLabel: 'nachts',
     },
 };
 

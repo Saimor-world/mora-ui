@@ -724,38 +724,58 @@ useEffect(() => {
                                     </div>
 
                                     <div className="rounded-xl border border-white/10 bg-black/20 px-4 py-4">
-                                        <div className="text-sm text-white/80 font-medium">Szenen & Musik</div>
+                                        <div className="text-sm text-white/80 font-medium">Szenen &amp; Musik</div>
                                         <div className="mt-1 text-xs text-white/40 leading-relaxed">
-                                            Optional kannst du pro Szene einen bevorzugten Song hinterlegen. Wenn die Szene aktiv ist,
-                                            nutzt SAIMOR zuerst diesen Track und passt die Lautstärke leicht an.
+                                            Jede Szene ist eine Stimmung mit fester Tageszeit — dieselben Szenen wie im
+                                            Control Center. Dort schaltest du zwischen <span className="text-white/60">automatisch nach Uhrzeit</span> und
+                                            {' '}<span className="text-white/60">manuell</span> um. Hier hinterlegst du pro Szene einen Song.
                                         </div>
 
                                         <div className="mt-4 grid gap-3 md:grid-cols-2">
-                                            {RITUAL_SCENE_ORDER.map((sceneId) => (
-                                                <label
-                                                    key={sceneId}
-                                                    className="rounded-xl border border-white/10 bg-white/[0.03] px-3 py-3"
-                                                >
-                                                    <div className="text-xs uppercase tracking-[0.18em] text-white/35">
-                                                        {RITUAL_SCENES[sceneId].label}
-                                                    </div>
-                                                    <div className="mt-1 text-xs text-white/45">
-                                                        {RITUAL_SCENES[sceneId].description}
-                                                    </div>
-                                                    <select
-                                                        value={ambientSceneTrackMap[sceneId] ?? ''}
-                                                        onChange={(event) => handleAmbientSceneTrackSelect(sceneId, event.target.value)}
-                                                        className="mt-3 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-emerald-500/40 focus:outline-none"
+                                            {RITUAL_SCENE_ORDER.map((sceneId) => {
+                                                const scene = RITUAL_SCENES[sceneId];
+                                                return (
+                                                    <label
+                                                        key={sceneId}
+                                                        className="block rounded-xl border px-3 py-3 transition-colors"
+                                                        style={{
+                                                            borderColor: `${scene.accentHex}33`,
+                                                            background: `linear-gradient(155deg, ${scene.accentHex}14, rgba(255,255,255,0.012) 62%)`,
+                                                        }}
                                                     >
-                                                        <option value="">Aktiven Song beibehalten</option>
-                                                        {ambientTracks.map((track) => (
-                                                            <option key={track.id} value={track.id}>
-                                                                {track.name}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </label>
-                                            ))}
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <div className="flex items-center gap-2">
+                                                                <span
+                                                                    className="h-2.5 w-2.5 shrink-0 rounded-full"
+                                                                    style={{ backgroundColor: scene.accentHex, boxShadow: `0 0 10px ${scene.accentHex}aa` }}
+                                                                />
+                                                                <span className="text-sm font-medium text-white/85">{scene.label}</span>
+                                                            </div>
+                                                            <span
+                                                                className="shrink-0 rounded-full border px-2 py-0.5 text-[10px] tabular-nums"
+                                                                style={{ borderColor: `${scene.accentHex}33`, color: scene.accentHex }}
+                                                            >
+                                                                {scene.timeLabel} · {scene.timeRange}
+                                                            </span>
+                                                        </div>
+                                                        <div className="mt-1.5 text-xs text-white/45 leading-relaxed">
+                                                            {scene.description}
+                                                        </div>
+                                                        <select
+                                                            value={ambientSceneTrackMap[sceneId] ?? ''}
+                                                            onChange={(event) => handleAmbientSceneTrackSelect(sceneId, event.target.value)}
+                                                            className="mt-3 w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white focus:border-emerald-500/40 focus:outline-none"
+                                                        >
+                                                            <option value="">Aktiven Song beibehalten</option>
+                                                            {ambientTracks.map((track) => (
+                                                                <option key={track.id} value={track.id}>
+                                                                    {track.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </label>
+                                                );
+                                            })}
                                         </div>
                                     </div>
                                 </div>
