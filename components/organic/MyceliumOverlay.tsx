@@ -185,7 +185,7 @@ export const MyceliumOverlay: React.FC = () => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-[-5] opacity-50"
+            className="fixed inset-0 pointer-events-none z-[1] opacity-50"
             style={{ mixBlendMode: 'screen' }}
         />
     );

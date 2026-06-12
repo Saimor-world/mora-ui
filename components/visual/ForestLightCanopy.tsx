@@ -93,28 +93,6 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
                 }}
             />
 
-            {/* AMBER DEPTH GLOW — warm base, pulls scene forward */}
-            <div
-                className="absolute inset-x-0 bottom-0 h-[35vh]"
-                style={{
-                    background: 'radial-gradient(ellipse 100% 70% at 50% 110%, rgba(245,158,11,0.28) 0%, rgba(217,119,6,0.12) 50%, transparent 75%)',
-                    mixBlendMode: 'screen',
-                }}
-            />
-
-            {/* 1. DEEP STARFIELD (The "Universe" Layer) */}
-            <div className="absolute inset-0 opacity-55">
-                {/* Distant Micro-Stars */}
-                <div className="absolute inset-0 bg-[radial-gradient(white_1px,transparent_1px)] [background-size:60px_60px] opacity-[0.12]" />
-                {/* Mid-Range Stars */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.4)_1.5px,transparent_1px)] bg-[length:250px_250px]" />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.3)_1.5px,transparent_1px)] bg-[length:350px_350px]" />
-                {/* Bright Pilot Stars */}
-                <div
-                    className={`absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,230,200,0.8)_2px,rgba(255,255,255,0)_4px)] bg-[length:600px_600px] ${animateAmbient ? 'animate-pulse' : ''}`}
-                    style={animateAmbient ? { animationDuration: '8s' } : undefined}
-                />
-            </div>
 
             {/* 1.5 CONSTELLATIONS (Sternbilder - Enhanced with Green Glow) */}
             <div className="absolute inset-0 opacity-60">

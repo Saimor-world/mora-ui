@@ -3,15 +3,21 @@
 import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useActiveRitualScene } from '@/lib/hooks/useActiveRitualScene';
+import type { RitualSceneId } from '@/lib/os/ritualMode';
+
+const SCENE_PANEL_BG: Record<RitualSceneId, string> = {
+    flow:   'rgba(6, 22, 14, 0.82)',
+    build:  'rgba(5, 14, 28, 0.82)',
+    lounge: 'rgba(26, 12, 5, 0.82)',
+    night:  'rgba(10, 8, 28, 0.82)',
+};
 
 /**
  * RitualSceneStyler — the global color pipeline.
  *
  * Two jobs:
- * 1. Writes CSS vars to documentElement (scene-accent, aura, hex, glow).
- * 2. Renders a VISIBLE full-screen scene overlay — the reason the color
- *    change was always "too subtle": the atmosphere layers were too dim.
- *    This overlay IS the dominant scene color. Radically opaque by design.
+ * 1. Writes CSS vars to documentElement (scene-accent, aura, hex, glow, panel-bg).
+ * 2. Renders a VISIBLE full-screen scene overlay for dramatic scene color changes.
  */
 export function RitualSceneStyler() {
     const scene = useActiveRitualScene();
@@ -25,7 +31,8 @@ export function RitualSceneStyler() {
         root.setProperty('--scene-aura', scene.aura);
         root.setProperty('--scene-glow', `0 0 60px ${scene.accent}`);
         root.setProperty('--scene-border', `${scene.accentHex}55`);
-    }, [scene.accent, scene.accentHex, scene.aura]);
+        root.setProperty('--scene-panel-bg', SCENE_PANEL_BG[scene.id]);
+    }, [scene.accent, scene.accentHex, scene.aura, scene.id]);
 
     // Visible overlay — the actual dramatic re-tint
     return (
