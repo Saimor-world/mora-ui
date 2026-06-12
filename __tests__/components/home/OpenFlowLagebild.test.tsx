@@ -125,7 +125,7 @@ describe('OpenFlowLagebild', () => {
 
   it('shows the calm hero when there is no headline', () => {
     render(<OpenFlowLagebild view={view} onOpenPane={jest.fn()} onGoExplore={jest.fn()} />);
-    expect(screen.getByText('Alles ruhig')).toBeInTheDocument();
+    expect(screen.getByText('Ruhig im Moment')).toBeInTheDocument();
   });
 
   it('renders the dynamic headline once and not again in the lists below', () => {

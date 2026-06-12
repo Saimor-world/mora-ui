@@ -90,6 +90,20 @@ jest.mock('framer-motion', () => ({
             );
             return <div {...domProps}>{children}</div>;
         },
+        span: ({ children, ...props }: any) => {
+            const motionProps = new Set(['animate', 'exit', 'initial', 'transition', 'variants', 'whileHover', 'whileTap']);
+            const domProps = Object.fromEntries(
+                Object.entries(props).filter(([key]) => !motionProps.has(key))
+            );
+            return <span {...domProps}>{children}</span>;
+        },
+        button: ({ children, ...props }: any) => {
+            const motionProps = new Set(['animate', 'exit', 'initial', 'transition', 'variants', 'whileHover', 'whileTap']);
+            const domProps = Object.fromEntries(
+                Object.entries(props).filter(([key]) => !motionProps.has(key))
+            );
+            return <button {...domProps}>{children}</button>;
+        },
     },
     useReducedMotion: () => false,
 }));
@@ -207,39 +221,37 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 // ── rendering ──────────────────────────────────────────────────────────────
 
 describe('HomeSurface — rendering', () => {
-    it('frames Home as immersive OpenFlow Lagebild', () => {
+    it('frames Home as the cockpit workspace', () => {
         renderWithDepts();
         expect(screen.getByTestId('openflow-workspace')).toHaveClass('lg:left-6');
-        expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
-        expect(screen.getByText('Lagebild')).toBeInTheDocument();
+        expect(screen.queryByTestId('openflow-lagebild')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /MÔRA öffnen/i })).toBeInTheDocument();
     });
 
-    it('renders OpenFlow Lagebild for normal OS home', async () => {
+    it('renders HomeCockpit for normal OS home', async () => {
         renderWithDepts();
         await waitFor(() => {
-            // Overlay renders greeting in two spots (portal + left card) — use getAllByText
-            expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument();
-            expect(screen.getByText('Lagebild')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /MÔRA öffnen/i })).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /Desktop/i })).toBeInTheDocument();
         });
     });
 
     it('does not render Home status placeholders as normal recommendations', async () => {
         renderWithDepts();
-        await waitFor(() => expect(screen.getByTestId('openflow-lagebild')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByRole('button', { name: /MÔRA öffnen/i })).toBeInTheDocument());
 
         expect(screen.queryByText('Mail für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
         expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
         expect(screen.queryByText('Noch kein belegter nächster Schritt.')).not.toBeInTheDocument();
-        expect(screen.getByText('Setup-Zustand nicht belegbar.')).toBeInTheDocument();
     });
 
-    it('renders Lagebild when no user', async () => {
+    it('renders HomeCockpit when no user', async () => {
         useSessionStore.setState({ user: null, resetStore, setUser } as any);
         renderWithDepts();
         await waitFor(() => {
-            expect(screen.getByText('Lagebild')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /MÔRA öffnen/i })).toBeInTheDocument();
         });
     });
 
@@ -383,7 +395,7 @@ describe('HomeSurface — Zuletzt berührt', () => {
         expect(screen.queryByTestId('recent-items-empty')).not.toBeInTheDocument();
     });
 
-    it('does not render activity items from activityStore in default Home', () => {
+    it('renders real activity items in the compact continue-working strip', () => {
         useActivityStore.setState({
             recentItems: [
                 { id: 'doc-1', label: 'Projektplan Q2.md', openedAt: Date.now() - 7200000, paneType: 'document', paneData: { nodeId: 'doc-1' } },
@@ -393,11 +405,11 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
         renderWithDepts();
         expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
-        expect(screen.queryByText('Projektplan Q2.md')).not.toBeInTheDocument();
-        expect(screen.queryByText('Finder')).not.toBeInTheDocument();
+        expect(screen.getByText('Projektplan Q2.md')).toBeInTheDocument();
+        expect(screen.getByText('Weiterarbeiten')).toBeInTheDocument();
     });
 
-    it('does not expose recent item caps in default Home', () => {
+    it('caps compact recent activity at five items', () => {
         const manyItems = Array.from({ length: 8 }, (_, i) => ({
             id: `item-${i}`,
             label: `Item ${i}`,
@@ -409,9 +421,12 @@ describe('HomeSurface — Zuletzt berührt', () => {
 
         renderWithDepts();
         expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
+        expect(screen.getByText('Item 0')).toBeInTheDocument();
+        expect(screen.getByText('Item 4')).toBeInTheDocument();
+        expect(screen.queryByText('Item 5')).not.toBeInTheDocument();
     });
 
-    it('cannot open a document pane through old recent items in default Home', () => {
+    it('opens a document pane through compact recent activity', () => {
         useActivityStore.setState({
             recentItems: [
                 { id: 'doc-1', label: 'Bericht Q1.md', openedAt: Date.now(), paneType: 'document', paneData: { nodeId: 'doc-1' } },
@@ -419,20 +434,27 @@ describe('HomeSurface — Zuletzt berührt', () => {
         } as any);
 
         renderWithDepts();
-        expect(screen.queryByText('Bericht Q1.md')).not.toBeInTheDocument();
-        expect(openPane).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Bericht Q1.md' }));
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'doc-doc-1',
+            type: 'document',
+            data: { nodeId: 'doc-1' },
+        }));
     });
 
-    it('cannot open the finder pane through old recent items in default Home', () => {
+    it('opens the finder pane through compact recent activity', () => {
         useActivityStore.setState({
             recentItems: [
-                { id: 'finder-main', label: 'Finder', openedAt: Date.now(), paneType: 'finder' },
+                { id: 'finder-main', label: 'Projekt Finder', openedAt: Date.now(), paneType: 'finder' },
             ],
         } as any);
 
         renderWithDepts();
-        expect(screen.queryByTestId('recent-item')).not.toBeInTheDocument();
-        expect(openPane).not.toHaveBeenCalled();
+        fireEvent.click(screen.getByRole('button', { name: 'Projekt Finder' }));
+        expect(openPane).toHaveBeenCalledWith(expect.objectContaining({
+            id: 'finder-main',
+            type: 'finder',
+        }));
     });
 });
 
