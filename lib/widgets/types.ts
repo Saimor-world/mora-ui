@@ -17,10 +17,28 @@ export interface WidgetInstance {
     h: number;
 }
 
-/** Handlers a widget may call. All optional — a widget degrades gracefully. */
+// ── Live data threaded from the host surface (single source of truth) ─────────
+// HomeSurface already computes mail/calendar previews + presence from the real
+// backend. Rather than each widget re-polling its own hooks, the surface passes
+// the truth down so the Desktop shows exactly what the Cockpit shows.
+
+export interface WidgetMailItem { id: string; subject: string; from: string; snippet?: string; date?: string }
+export interface WidgetCalItem { id: string; title: string; date?: string; time?: string; location?: string }
+
+export interface WidgetData {
+    mailPreview?: WidgetMailItem[];
+    calendarPreview?: WidgetCalItem[];
+    mailConfigured?: boolean;
+    calendarConfigured?: boolean;
+    onlineCount?: number;
+}
+
+/** Handlers + live data a widget may use. All optional — a widget degrades gracefully. */
 export interface WidgetContext {
     surface: WidgetSurface;
     departmentId?: string | null;
+    /** Live truth from the host surface (mail/calendar previews, presence). */
+    data?: WidgetData;
     openMora?: () => void;
     openFinder?: () => void;
     openCalendar?: () => void;

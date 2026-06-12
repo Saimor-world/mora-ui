@@ -890,6 +890,15 @@ export const HomeSurface: React.FC = () => {
                                 surface="home"
                                 context={{
                                     surface: 'home',
+                                    // Single source of truth: the Desktop shows exactly the
+                                    // mail/calendar/presence the Cockpit already computed.
+                                    data: {
+                                        mailPreview,
+                                        calendarPreview,
+                                        mailConfigured: Boolean(integrationsOverview?.mail?.configured),
+                                        calendarConfigured: Boolean(integrationsOverview?.calendar?.configured),
+                                        onlineCount: onlineTeamCount,
+                                    },
                                     openMora,
                                     openFinder,
                                     openCalendar: openCalendarSetup,
