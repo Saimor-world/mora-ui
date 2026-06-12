@@ -553,18 +553,20 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
-                    opacity: 0.85,
+                    // Lower opacity so the shell starfield shines through — the
+                    // department orbit sits IN the cosmos, not on a flat panel.
+                    opacity: 0.5,
                     background: `
-                        radial-gradient(1400px 720px at 52% 54%, ${g}38 0%, transparent 66%),
-                        radial-gradient(1050px 540px at 18% 25%, ${g}22 0%, transparent 62%),
-                        radial-gradient(880px 440px at 84% 34%, ${g}1a 0%, transparent 58%),
-                        radial-gradient(720px 340px at 62% 82%, ${g}16 0%, transparent 58%),
-                        radial-gradient(500px 400px at 88% 72%, ${g}12 0%, transparent 55%)
+                        radial-gradient(1400px 720px at 52% 54%, ${g}30 0%, transparent 66%),
+                        radial-gradient(1050px 540px at 18% 25%, ${g}1c 0%, transparent 62%),
+                        radial-gradient(880px 440px at 84% 34%, ${g}16 0%, transparent 58%),
+                        radial-gradient(720px 340px at 62% 82%, ${g}12 0%, transparent 58%),
+                        radial-gradient(500px 400px at 88% 72%, ${g}0e 0%, transparent 55%)
                     `
                 }}
             />
-            {/* Edge vignette */}
-            <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.35)_82%,rgba(0,0,0,0.55)_100%)]" />
+            {/* Edge vignette — keep it light so stars stay visible toward the centre */}
+            <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.22)_84%,rgba(0,0,0,0.42)_100%)]" />
 
             <motion.button
                 data-testid="nav-back-to-universe"

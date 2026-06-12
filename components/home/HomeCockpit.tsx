@@ -55,9 +55,14 @@ function ZoneCard({ children, accent, className = '' }: {
     className?: string;
 }) {
     return (
-        <div className={`relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.09] bg-white/[0.042] backdrop-blur-sm ${className}`}>
+        <div
+            className={`relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.1] backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${className}`}
+            style={{ backgroundColor: 'rgba(10, 13, 23, 0.62)' }}
+        >
             <div className={`pointer-events-none absolute left-0 top-0 h-[2px] w-full ${accent}`} />
-            {children}
+            {/* faint scene tint so the cards still belong to the active scene */}
+            <div className="pointer-events-none absolute inset-0 opacity-[0.5]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }} />
+            <div className="relative z-[1] flex flex-col">{children}</div>
         </div>
     );
 }
@@ -494,30 +499,36 @@ export function HomeCockpit(props: HomeCockpitProps) {
                 </motion.div>
             )}
 
-            {/* ── Môra changes (intelligence stream) ── */}
-            {homeView && homeView.changes.length > 0 && (
-                <motion.div {...fade(0.06)}>
-                    <ZoneCard accent="bg-gradient-to-r from-violet-400/55 via-indigo-300/35 to-transparent">
-                        <ZoneLabel>
-                            <Brain size={11} className="mr-1.5 inline opacity-70" aria-hidden />
-                            Môra beobachtet
-                        </ZoneLabel>
-                        <div className="flex flex-col gap-1.5 px-4 pb-4">
-                            {homeView.changes.slice(0, 3).map(change => (
-                                <div key={change.id} className="flex items-start gap-2.5 rounded-xl border border-violet-400/12 bg-violet-400/[0.05] px-3 py-2.5">
-                                    <TrendingUp size={12} className="mt-0.5 shrink-0 text-violet-300/60" />
-                                    <div className="min-w-0 flex-1">
-                                        <div className="text-[12px] leading-snug text-white/78">{change.title}</div>
-                                        {change.scope && (
-                                            <div className="mt-0.5 text-[10px] text-white/36 uppercase tracking-[0.14em]">{change.scope}</div>
-                                        )}
+            {/* ── Môra changes (intelligence stream) — only render changes that
+                 carry a real title, and hide the whole card if none do. No empty
+                 rows, no fake system-truth. ── */}
+            {(() => {
+                const titledChanges = (homeView?.changes ?? []).filter(c => c.title && c.title.trim().length > 0);
+                if (titledChanges.length === 0) return null;
+                return (
+                    <motion.div {...fade(0.06)}>
+                        <ZoneCard accent="bg-gradient-to-r from-violet-400/55 via-indigo-300/35 to-transparent">
+                            <ZoneLabel>
+                                <Brain size={11} className="mr-1.5 inline opacity-70" aria-hidden />
+                                Môra beobachtet
+                            </ZoneLabel>
+                            <div className="flex flex-col gap-1.5 px-4 pb-4">
+                                {titledChanges.slice(0, 3).map(change => (
+                                    <div key={change.id} className="flex items-start gap-2.5 rounded-xl border border-violet-400/12 bg-violet-400/[0.05] px-3 py-2.5">
+                                        <TrendingUp size={12} className="mt-0.5 shrink-0 text-violet-300/60" />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-[12px] leading-snug text-white/82">{change.title}</div>
+                                            {change.scope && (
+                                                <div className="mt-0.5 text-[10px] text-white/36 uppercase tracking-[0.14em]">{change.scope}</div>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    </ZoneCard>
-                </motion.div>
-            )}
+                                ))}
+                            </div>
+                        </ZoneCard>
+                    </motion.div>
+                );
+            })()}
 
             {/* ── 3-zone cockpit grid ── */}
             <div className="grid flex-1 grid-cols-3 gap-3 min-h-0">

@@ -5,6 +5,7 @@ import { Grid2X2, LayoutGrid, Orbit } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
+import { useSpaces } from '@/lib/queries/useSpaces';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
@@ -21,11 +22,15 @@ type SurfaceMode = 'map' | 'overview' | 'spaces';
 /**
  * Routes the department level between the spatial orbit map (DepartmentLayer,
  * manager view) and the daily overview (DepartmentView: team online, recent
- * docs, Mora suggestions, external data). Default stays on the map to preserve
- * existing behavior; a local toggle reveals the overview.
+ * docs, Mora suggestions, external data).
+ *
+ * Default mode is DATA-AWARE: a sparse department (few spaces, no folders)
+ * has nothing meaningful to show on the orbit map, so we land the user on the
+ * actionable overview instead. A spatially rich department keeps the signature
+ * orbit map. Once the user picks a mode by hand, their choice wins until they
+ * navigate to a different department.
  */
 export const DepartmentSurface: React.FC = () => {
-  const [mode, setMode] = useState<SurfaceMode>('map');
   const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
   const activeCompanyId = useNavStore((s) => s.activeCompanyId);
   const { openPane } = usePaneStore();
@@ -33,7 +38,23 @@ export const DepartmentSurface: React.FC = () => {
 
   const { data: departments = [] } = useDepartments(activeCompanyId);
   const { data: treeData = [] } = useTree(activeCompanyId);
+  const { data: deptSpaces = [], isLoading: spacesLoading } = useSpaces(activeDepartmentId);
   const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
+
+  // Has the department enough spatial substance to make the orbit map worthwhile?
+  const spatiallyRich = deptSpaces.length >= 2 || deptSpaces.some((s) => (s.folder_count ?? 0) > 0);
+  const autoMode: SurfaceMode = spacesLoading ? 'map' : spatiallyRich ? 'map' : 'overview';
+
+  // null = follow the data-aware auto default; a value = the user's explicit pick.
+  const [explicitMode, setExplicitMode] = useState<SurfaceMode | null>(null);
+  const mode = explicitMode ?? autoMode;
+
+  // Re-evaluate the auto default whenever the user switches department.
+  useEffect(() => {
+    setExplicitMode(null);
+  }, [activeDepartmentId]);
+
+  const setMode = setExplicitMode;
 
   useEffect(() => {
     let cancelled = false;

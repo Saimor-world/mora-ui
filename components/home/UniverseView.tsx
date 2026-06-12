@@ -51,25 +51,25 @@ const UNIVERSE_BASE: Record<RitualSceneId, string> = {
 };
 const UNIVERSE_NEBULA: Record<RitualSceneId, string> = {
     flow: `
-        radial-gradient(1120px 720px at 52% 54%, rgba(16,185,129,0.40) 0%, transparent 62%),
-        radial-gradient(980px 620px at 18% 24%, rgba(20,184,166,0.30) 0%, transparent 54%),
-        radial-gradient(860px 520px at 84% 20%, rgba(34,211,238,0.18) 0%, transparent 50%),
-        radial-gradient(780px 460px at 22% 78%, rgba(16,185,129,0.16) 0%, transparent 54%)`,
+        radial-gradient(1180px 760px at 52% 54%, rgba(16,185,129,0.22) 0%, transparent 64%),
+        radial-gradient(1000px 640px at 18% 24%, rgba(20,184,166,0.16) 0%, transparent 56%),
+        radial-gradient(880px 540px at 84% 20%, rgba(34,211,238,0.10) 0%, transparent 52%),
+        radial-gradient(800px 480px at 22% 78%, rgba(16,185,129,0.09) 0%, transparent 56%)`,
     build: `
-        radial-gradient(1120px 720px at 52% 54%, rgba(56,189,248,0.40) 0%, transparent 62%),
-        radial-gradient(980px 620px at 18% 24%, rgba(99,102,241,0.30) 0%, transparent 54%),
-        radial-gradient(860px 520px at 84% 20%, rgba(251,191,36,0.18) 0%, transparent 50%),
-        radial-gradient(780px 460px at 22% 78%, rgba(56,189,248,0.16) 0%, transparent 54%)`,
+        radial-gradient(1180px 760px at 52% 54%, rgba(56,189,248,0.22) 0%, transparent 64%),
+        radial-gradient(1000px 640px at 18% 24%, rgba(99,102,241,0.16) 0%, transparent 56%),
+        radial-gradient(880px 540px at 84% 20%, rgba(251,191,36,0.10) 0%, transparent 52%),
+        radial-gradient(800px 480px at 22% 78%, rgba(56,189,248,0.09) 0%, transparent 56%)`,
     lounge: `
-        radial-gradient(1120px 720px at 52% 54%, rgba(251,146,60,0.38) 0%, transparent 62%),
-        radial-gradient(980px 620px at 18% 24%, rgba(249,115,22,0.30) 0%, transparent 54%),
-        radial-gradient(860px 520px at 84% 20%, rgba(244,114,182,0.22) 0%, transparent 50%),
-        radial-gradient(780px 460px at 22% 78%, rgba(251,146,60,0.14) 0%, transparent 54%)`,
+        radial-gradient(1180px 760px at 52% 54%, rgba(251,146,60,0.21) 0%, transparent 64%),
+        radial-gradient(1000px 640px at 18% 24%, rgba(249,115,22,0.16) 0%, transparent 56%),
+        radial-gradient(880px 540px at 84% 20%, rgba(244,114,182,0.12) 0%, transparent 52%),
+        radial-gradient(800px 480px at 22% 78%, rgba(251,146,60,0.08) 0%, transparent 56%)`,
     night: `
-        radial-gradient(1120px 720px at 52% 54%, rgba(99,102,241,0.42) 0%, transparent 62%),
-        radial-gradient(980px 620px at 18% 24%, rgba(139,92,246,0.32) 0%, transparent 54%),
-        radial-gradient(860px 520px at 84% 20%, rgba(34,211,238,0.16) 0%, transparent 50%),
-        radial-gradient(780px 460px at 22% 78%, rgba(99,102,241,0.18) 0%, transparent 54%)`,
+        radial-gradient(1180px 760px at 52% 54%, rgba(99,102,241,0.23) 0%, transparent 64%),
+        radial-gradient(1000px 640px at 18% 24%, rgba(139,92,246,0.17) 0%, transparent 56%),
+        radial-gradient(880px 540px at 84% 20%, rgba(34,211,238,0.09) 0%, transparent 52%),
+        radial-gradient(800px 480px at 22% 78%, rgba(99,102,241,0.10) 0%, transparent 56%)`,
 };
 
 export default function UniverseView({ viewMode: viewModeProp = 'live' }: { viewMode?: 'live' | 'demo' }) {
@@ -818,7 +818,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     background: `linear-gradient(104deg, transparent 0%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 16%, ${ritualScene.aura.replace(/[\d.]+\)$/, '0.10)')} 32%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 48%, transparent 84%)`,
                     transform: 'scale(1.2)',
                     filter: 'blur(34px)',
-                    opacity: 0.62,
+                    opacity: 0.38,
                     mixBlendMode: 'screen',
                 }}
             />
@@ -827,10 +827,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 animate={{ x: parallaxOffset.x * 0.18, y: parallaxOffset.y * 0.12, rotate: 2.2 }}
                 transition={{ type: 'spring', stiffness: 18, damping: 16, mass: 1.2 }}
                 style={{
-                    background: 'conic-gradient(from 218deg at 50% 50%, transparent 0deg, rgba(45,212,191,0.08) 58deg, rgba(59,130,246,0.10) 112deg, rgba(167,139,250,0.055) 168deg, transparent 250deg, rgba(250,204,21,0.035) 306deg, transparent 360deg)',
+                    background: 'conic-gradient(from 218deg at 50% 50%, transparent 0deg, rgba(45,212,191,0.05) 58deg, rgba(59,130,246,0.06) 112deg, rgba(167,139,250,0.035) 168deg, transparent 250deg, rgba(250,204,21,0.022) 306deg, transparent 360deg)',
                     transform: 'scale(1.34)',
                     filter: 'blur(42px)',
-                    opacity: 0.55,
+                    opacity: 0.34,
                     mixBlendMode: 'screen',
                 }}
             />

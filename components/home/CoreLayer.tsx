@@ -76,11 +76,11 @@ export const CoreLayer: React.FC = () => {
                         animate="animate"
                         exit="exit"
                     >
-                        <div className="absolute inset-0">
-                            <div className="pointer-events-none absolute inset-0 scale-[1.04] opacity-[0.18] saturate-[0.65] [filter:blur(3px)]">
-                                <UniverseView />
-                            </div>
-                        </div>
+                        {/* No blurred UniverseView duplicate here — MoraLivingBackground
+                            (z-0, scene-reactive) already provides the cosmic depth behind
+                            Home. The old duplicate drifted with mouse parallax (the "ramp")
+                            and washed the panels out. Home and Universe now share ONE
+                            background truth. */}
                         {activeMode === 'visitor' ? <VisitorHomeSurface /> : <HomeSurface />}
                     </motion.div>
                 ) : (

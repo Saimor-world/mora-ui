@@ -816,7 +816,9 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
         >
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,4,16,0.18),rgba(5,4,16,0.34))]" />
+            {/* Reading scrim: the cosmos stays visible at the edges but the working
+                surface gets a calm, darker centre so panels read clearly. */}
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_90%_at_50%_42%,rgba(4,3,14,0.62)_0%,rgba(4,3,14,0.44)_46%,rgba(4,3,14,0.30)_100%)]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
             {!websiteEntryContext && (
