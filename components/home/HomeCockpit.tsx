@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import {
     AlertTriangle, ArrowRight, CalendarDays, CheckCircle2,
     FileText, Folder, Mail, MessageSquare, Plug, Settings,
-    Sparkles, Users,
+    Sparkles, Users, BarChart2, Brain, TrendingUp,
 } from 'lucide-react';
 import type { HomeView } from '@/lib/queries/useHomeView';
 import type { IncidentStatusPanel } from '@/lib/panel/types';
@@ -467,6 +467,57 @@ export function HomeCockpit(props: HomeCockpitProps) {
                     )}
                 </div>
             </motion.div>
+
+            {/* ── Org stats strip ── */}
+            {homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
+                <motion.div {...fade(0.04)} className="flex flex-wrap gap-2">
+                    {[
+                        { label: 'Abteilungen', value: homeView.org_stats.departments, icon: <Users size={11} /> },
+                        { label: 'Dokumente', value: homeView.org_stats.documents, icon: <FileText size={11} /> },
+                        { label: 'Ordner', value: homeView.org_stats.folders, icon: <Folder size={11} /> },
+                        { label: 'Aufgaben', value: homeView.org_stats.tasks, icon: <CheckCircle2 size={11} /> },
+                        ...(homeView.org_stats.members != null ? [{ label: 'Mitglieder', value: homeView.org_stats.members, icon: <Users size={11} /> }] : []),
+                    ].filter(s => s.value > 0).map(stat => (
+                        <div key={stat.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[11px] text-white/52">
+                            <span className="opacity-60">{stat.icon}</span>
+                            <span className="tabular-nums text-white/76">{stat.value}</span>
+                            <span>{stat.label}</span>
+                        </div>
+                    ))}
+                    {(homeView.changes.length > 0 || homeView.attention.length > 0) && (
+                        <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-3 py-1 text-[11px] text-violet-200/70">
+                            <Brain size={11} className="opacity-80" />
+                            <span className="tabular-nums text-violet-100/80">{homeView.changes.length + homeView.attention.length}</span>
+                            <span>Môra-Signale</span>
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
+            {/* ── Môra changes (intelligence stream) ── */}
+            {homeView && homeView.changes.length > 0 && (
+                <motion.div {...fade(0.06)}>
+                    <ZoneCard accent="bg-gradient-to-r from-violet-400/55 via-indigo-300/35 to-transparent">
+                        <ZoneLabel>
+                            <Brain size={11} className="mr-1.5 inline opacity-70" aria-hidden />
+                            Môra beobachtet
+                        </ZoneLabel>
+                        <div className="flex flex-col gap-1.5 px-4 pb-4">
+                            {homeView.changes.slice(0, 3).map(change => (
+                                <div key={change.id} className="flex items-start gap-2.5 rounded-xl border border-violet-400/12 bg-violet-400/[0.05] px-3 py-2.5">
+                                    <TrendingUp size={12} className="mt-0.5 shrink-0 text-violet-300/60" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-[12px] leading-snug text-white/78">{change.title}</div>
+                                        {change.scope && (
+                                            <div className="mt-0.5 text-[10px] text-white/36 uppercase tracking-[0.14em]">{change.scope}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ZoneCard>
+                </motion.div>
+            )}
 
             {/* ── 3-zone cockpit grid ── */}
             <div className="grid flex-1 grid-cols-3 gap-3 min-h-0">

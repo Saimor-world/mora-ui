@@ -30,12 +30,22 @@ export interface HomeViewNextStep {
     source: string;
 }
 
+export interface HomeViewOrgStats {
+    departments: number;
+    documents: number;
+    folders: number;
+    spaces: number;
+    tasks: number;
+    members: number | null;
+}
+
 export interface HomeView {
     company: HomeViewCompany;
     greeting: string;
     changes: HomeViewChange[];
     attention: HomeViewAttention[];
     next_steps: HomeViewNextStep[];
+    org_stats?: HomeViewOrgStats;
 }
 
 export interface HomeInsight {
