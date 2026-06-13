@@ -54,6 +54,7 @@ describe('CoreLayer', () => {
         useNavStore.setState({
             coreMode: 'home',
             viewLevel: 'core',
+            activeMode: 'real_hq',
         } as any);
     });
 

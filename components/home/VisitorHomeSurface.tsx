@@ -6,7 +6,9 @@ import { ArrowRight, ExternalLink, Globe2, ShieldAlert, ShieldCheck, Sparkles, T
 import { submitDossierToWall } from '@/lib/api/wallClient';
 import { useCreateDossierNode } from '@/lib/hooks/useCreateDossierNode';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
+import { useCompanies } from '@/lib/queries/useCompanies';
 import { useDossierView } from '@/lib/queries/useDossierView';
+import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 type VisitorFinding = {
@@ -100,7 +102,11 @@ export function VisitorHomeSurface() {
     const { nodeId: dossierNodeId, isCreating: isCreatingDossierNode } = useCreateDossierNode(context);
     const { data: view } = useDossierView(context?.id);
     const openPane = usePaneStore((s) => s.openPane);
+    const { data: companies = [] } = useCompanies({ includeDemo: true });
+    const setActiveCompany = useNavStore((s) => s.setActiveCompany);
+    const navigateToExplore = useNavStore((s) => s.navigateToExplore);
     const [wallState, setWallState] = useState<'idle' | 'submitting' | 'pending' | 'error'>('idle');
+    const guidedDemoCompany = companies.find((company) => company.is_demo && company.name === 'Simple Coffee Group');
 
     const audit = view?.audit;
     const companyName = view?.company?.name || context?.companyName || 'Deine Firma';
@@ -156,6 +162,12 @@ export function VisitorHomeSurface() {
         } catch {
             setWallState('error');
         }
+    };
+
+    const openGuidedDemo = () => {
+        if (!guidedDemoCompany) return;
+        setActiveCompany(guidedDemoCompany.id);
+        navigateToExplore();
     };
 
     const wallDisabled = !dossierNodeId || isCreatingDossierNode || wallState === 'submitting' || wallState === 'pending';
@@ -298,6 +310,15 @@ export function VisitorHomeSurface() {
                                 </div>
                             ))}
                         </div>
+                        <button
+                            type="button"
+                            onClick={openGuidedDemo}
+                            disabled={!guidedDemoCompany}
+                            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-violet-300/16 bg-violet-400/[0.08] px-4 py-3 text-sm text-violet-50 transition-colors hover:bg-violet-400/[0.14] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/[0.03] disabled:text-white/28"
+                        >
+                            {guidedDemoCompany ? 'Geführte Simple Coffee Demo öffnen' : 'Demo wird vorbereitet'}
+                            <ArrowRight size={14} />
+                        </button>
                     </motion.section>
 
                     <div className="flex flex-col gap-5">
