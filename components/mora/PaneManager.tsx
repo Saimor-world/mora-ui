@@ -15,9 +15,9 @@ import { WallPane } from '@/components/panes/WallPane';
 
 // Full-bleed apps: portal to document.body at pane.zIndex — same layer as
 // GlassPanel portals — so they're never buried by the PaneManager stacking context.
-const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {
-    nightwatch: 'nightwatch',
-};
+// Nightwatch was here but was moved to GlassPanel (floating window) in favour of
+// keeping the universe/department view visible behind the pane.
+const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {};
 
 const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => {
     const [mounted, setMounted] = useState(false);
@@ -81,6 +81,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
         case 'timeline':
             return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
+        case 'nightwatch':
+            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
         case 'canvas':
             return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
         case 'apps':
