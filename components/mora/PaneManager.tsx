@@ -13,11 +13,12 @@ import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
 import { WallPane } from '@/components/panes/WallPane';
 
-// Full-bleed apps: portal to document.body at pane.zIndex — same layer as
-// GlassPanel portals — so they're never buried by the PaneManager stacking context.
-// Nightwatch was here but was moved to GlassPanel (floating window) in favour of
-// keeping the universe/department view visible behind the pane.
-const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {};
+// Full-bleed apps: portal to document.body at z-850 so they render above the Dock
+// (z-740) but below MoraShell overlays (z-928+). These apps fill the viewport
+// entirely and manage their own close button.
+const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {
+    nightwatch: 'nightwatch',
+};
 
 const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => {
     const [mounted, setMounted] = useState(false);
@@ -27,11 +28,11 @@ const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane,
     return createPortal(
         <motion.div
             className="fixed inset-0"
-            style={{ zIndex: pane.zIndex }}
+            style={{ zIndex: 850 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.1 }}
         >
             <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />
         </motion.div>,
@@ -81,8 +82,6 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
         case 'timeline':
             return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
-        case 'nightwatch':
-            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
         case 'canvas':
             return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
         case 'apps':

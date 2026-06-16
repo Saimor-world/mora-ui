@@ -45,7 +45,7 @@ export const ViewPort: React.FC = () => {
                     <motion.div
                         key="core"
                         initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.985, filter: 'blur(6px)' }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
                         exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.04, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
                         transition={rmVariants?.transition ?? { duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0"
@@ -59,7 +59,7 @@ export const ViewPort: React.FC = () => {
                     <motion.div
                         key="department"
                         initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
                         exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.08, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
                         transition={rmVariants?.transition ?? { duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
@@ -73,7 +73,7 @@ export const ViewPort: React.FC = () => {
                     <motion.div
                         key="space"
                         initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.94, filter: 'blur(6px)' }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
                         exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.08, filter: 'blur(10px)', transition: { duration: 0.28, ease: [0.4, 0, 0.2, 1] } }}
                         transition={rmVariants?.transition ?? { duration: 0.56, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
@@ -87,7 +87,7 @@ export const ViewPort: React.FC = () => {
                     <motion.div
                         key="ambient"
                         initial={rmVariants?.initial    ?? { opacity: 0, scale: 1.04, filter: 'blur(20px)' }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'blur(0px)' }}
+                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
                         exit={rmVariants?.exit          ?? { opacity: 0, scale: 0.96, filter: 'blur(16px)', transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
                         transition={rmVariants?.transition ?? { duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0"
