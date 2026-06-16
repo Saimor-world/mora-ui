@@ -5,7 +5,7 @@
 // react-grid-layout handles free drag, resize, collision and compaction; we
 // persist the geometry per surface so a user's desktop arrangement sticks.
 
-export type WidgetSurface = 'home' | 'department';
+export type WidgetSurface = 'home' | 'department' | 'universe';
 
 /** A placed widget. `i` is the react-grid-layout item key (instance id). */
 export interface WidgetInstance {

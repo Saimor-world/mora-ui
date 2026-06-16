@@ -27,8 +27,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
-import { WidgetGrid } from '@/components/widgets/WidgetGrid';
-import { LayoutGrid, LayoutPanelLeft } from 'lucide-react';
+
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
@@ -152,7 +151,6 @@ export const HomeSurface: React.FC = () => {
     const logoutAccount = useAccountStore((s) => s.logout);
     const recentItems   = useActivityStore((s) => s.recentItems);
     const [privateArea, setPrivateArea] = useState<PrivateAreaSurface | null>(null);
-    const [homeViewMode, setHomeViewMode] = useState<'cockpit' | 'desktop'>('cockpit');
     const [isUniversePortalHovered, setIsUniversePortalHovered] = useState(false);
     const [teamActivities, setTeamActivities] = useState<TeamActivitySurface[]>([]);
     const [teamMessages, setTeamMessages] = useState<TeamMessageSurface[]>([]);
@@ -866,50 +864,6 @@ export const HomeSurface: React.FC = () => {
                     className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36 flex justify-center"
                 >
                     <div className="flex w-full max-w-[1320px] flex-col min-h-0">
-                    {/* View switch: classic cockpit ⇄ editable widget desktop */}
-                    <div className="mb-2 flex shrink-0 justify-end">
-                        <div className="inline-flex rounded-full border border-white/10 bg-black/30 p-0.5 backdrop-blur-xl">
-                            <button
-                                onClick={() => setHomeViewMode('cockpit')}
-                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] transition-colors ${homeViewMode === 'cockpit' ? 'bg-white/10 text-white/85' : 'text-white/45 hover:text-white/70'}`}
-                            >
-                                <LayoutPanelLeft size={12} /> Cockpit
-                            </button>
-                            <button
-                                onClick={() => setHomeViewMode('desktop')}
-                                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] transition-colors ${homeViewMode === 'desktop' ? 'bg-white/10 text-white/85' : 'text-white/45 hover:text-white/70'}`}
-                            >
-                                <LayoutGrid size={12} /> Desktop
-                            </button>
-                        </div>
-                    </div>
-
-                    {homeViewMode === 'desktop' ? (
-                        <div className="min-h-0 flex-1 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.3) transparent' }}>
-                            <WidgetGrid
-                                surface="home"
-                                context={{
-                                    surface: 'home',
-                                    // Single source of truth: the Desktop shows exactly the
-                                    // mail/calendar/presence the Cockpit already computed.
-                                    data: {
-                                        mailPreview,
-                                        calendarPreview,
-                                        mailConfigured: Boolean(integrationsOverview?.mail?.configured),
-                                        calendarConfigured: Boolean(integrationsOverview?.calendar?.configured),
-                                        onlineCount: onlineTeamCount,
-                                    },
-                                    openMora,
-                                    openFinder,
-                                    openCalendar: openCalendarSetup,
-                                    openMail,
-                                    openTeam,
-                                    openIntegrations,
-                                    goExplore: () => setCoreMode('explore'),
-                                }}
-                            />
-                        </div>
-                    ) : (
                     <div className="min-h-0 flex-1">
                     <HomeCockpit
                         firstName={firstName}
@@ -937,7 +891,6 @@ export const HomeSurface: React.FC = () => {
                         onGoExplore={() => setCoreMode('explore')}
                     />
                     </div>
-                    )}
                     </div>
                 </div>
             )}

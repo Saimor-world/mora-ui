@@ -14,7 +14,8 @@ import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
 import { Planet } from '@/components/mora/Planet';
 import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
-import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder } from 'lucide-react';
+import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder, LayoutGrid, Map as MapIcon } from 'lucide-react';
+import { WidgetGrid } from '@/components/widgets/WidgetGrid';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
@@ -89,6 +90,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const websiteEntryContext = useWebsiteEntryContext();
     const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !websiteEntryContext;
 
+    const [universeMode, setUniverseMode] = useState<'map' | 'desktop'>('map');
     const [showSystemStatus, setShowSystemStatus] = useState(false);
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [activePlanetId, setActivePlanetId] = useState<string | null>(null);
@@ -903,6 +905,24 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
+            {/* UNIVERSE DESKTOP — widgets always float on the starfield (Universe IS the Desktop) */}
+            <div className="absolute inset-0 z-10 pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+                <div className="pointer-events-auto">
+                    <WidgetGrid
+                        surface="universe"
+                        context={{
+                            surface: 'universe',
+                            openMora: () => setOrbState('curious'),
+                            openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }),
+                            goExplore: () => navigateToCore(),
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* MAP CONTENT — planets and semantic connections, always visible behind widgets */}
+            <div>
+
             {/* 2. CENTER HUB (The Core) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 -translate-y-8">
                 <motion.div
@@ -1700,6 +1720,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </motion.div>
                 )}
             </AnimatePresence>
+            </div>{/* end MAP CONTENT */}
         </div>
     );
 }

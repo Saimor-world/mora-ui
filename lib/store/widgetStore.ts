@@ -25,9 +25,16 @@ const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'team-1', type: 'team', x: 0, y: 6, w: 6, h: 5 },
 ];
 
+const DEFAULT_UNIVERSE: WidgetInstance[] = [
+    { i: 'signals-1', type: 'signals', x: 0, y: 0, w: 4, h: 5 },
+    { i: 'orgStats-1', type: 'orgStats', x: 4, y: 0, w: 4, h: 5 },
+    { i: 'clock-1', type: 'clock', x: 8, y: 0, w: 4, h: 5 },
+];
+
 const DEFAULTS: Record<WidgetSurface, WidgetInstance[]> = {
     home: DEFAULT_HOME,
     department: DEFAULT_DEPARTMENT,
+    universe: DEFAULT_UNIVERSE,
 };
 
 const clone = (items: WidgetInstance[]): WidgetInstance[] => items.map((it) => ({ ...it }));
@@ -67,7 +74,7 @@ interface WidgetState {
 }
 
 export const useWidgetStore = create<WidgetState>((set, get) => ({
-    layouts: { home: clone(DEFAULT_HOME), department: clone(DEFAULT_DEPARTMENT) },
+    layouts: { home: clone(DEFAULT_HOME), department: clone(DEFAULT_DEPARTMENT), universe: clone(DEFAULT_UNIVERSE) },
     editMode: false,
     hydrated: false,
 
@@ -79,6 +86,7 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
             layouts: {
                 home: stored.home && stored.home.length ? stored.home : clone(DEFAULT_HOME),
                 department: stored.department && stored.department.length ? stored.department : clone(DEFAULT_DEPARTMENT),
+                universe: stored.universe && stored.universe.length ? stored.universe : clone(DEFAULT_UNIVERSE),
             },
         });
     },
