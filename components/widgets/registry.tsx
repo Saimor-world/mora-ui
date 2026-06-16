@@ -206,27 +206,62 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     );
 };
 
+function nameInitials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || '??';
+}
+function nameHue(name: string): number {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+    return h;
+}
+
 const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { peers } = usePresence();
     const online = peers.filter((p) => p.status === 'online');
+    const away = peers.filter((p) => p.status !== 'online');
+
+    const AvatarRow: React.FC<{ name: string; isOnline: boolean }> = ({ name, isOnline }) => {
+        const initials = nameInitials(name || 'Mitglied');
+        const hue = nameHue(name || '');
+        return (
+            <div className="flex items-center gap-2.5">
+                <div className="relative shrink-0">
+                    <div
+                        className="flex h-7 w-7 items-center justify-center rounded-full text-[10px] font-medium"
+                        style={{
+                            background: `hsla(${hue},55%,40%,0.25)`,
+                            color: `hsla(${hue},80%,75%,0.9)`,
+                            border: isOnline ? `1.5px solid hsla(${hue},70%,60%,0.5)` : '1.5px solid rgba(255,255,255,0.08)',
+                        }}
+                    >
+                        {initials}
+                    </div>
+                    <span
+                        className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full"
+                        style={{
+                            background: isOnline ? 'rgb(52,211,153)' : 'rgba(255,255,255,0.18)',
+                            boxShadow: isOnline ? '0 0 0 1.5px rgba(0,0,0,0.6)' : '0 0 0 1.5px rgba(0,0,0,0.6)',
+                        }}
+                    />
+                </div>
+                <span className="min-w-0 flex-1 truncate text-[12px] text-white/72">{name || 'Mitglied'}</span>
+                {isOnline && <span className="shrink-0 text-[9px] uppercase tracking-[.12em] text-emerald-400/70">online</span>}
+            </div>
+        );
+    };
+
     return (
         <div className="flex h-full flex-col gap-2">
-            <div className="flex items-center gap-2 text-[12px] text-white/72">
-                <span className={`h-2 w-2 rounded-full ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
-                {online.length} {online.length === 1 ? 'Person' : 'Personen'} online
+            <div className="flex items-center gap-2 mb-0.5">
+                <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
+                <span className="text-[12px] text-white/72">{online.length} {online.length === 1 ? 'Person' : 'Personen'} online</span>
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-                {online.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                        {online.slice(0, 8).map((p) => (
-                            <span key={p.sessionId} className="rounded-full border border-white/[0.08] bg-white/[0.05] px-2.5 py-0.5 text-[11px] text-white/60">
-                                {p.name || 'Mitglied'}
-                            </span>
-                        ))}
-                    </div>
-                ) : (
-                    <Empty>Gerade niemand online.</Empty>
-                )}
+            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+                {online.slice(0, 5).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={true} />)}
+                {away.slice(0, 3).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={false} />)}
+                {peers.length === 0 && <Empty>Gerade niemand online.</Empty>}
             </div>
             <ActionButton icon={<Users size={13} />} label="Team öffnen" onClick={context.openTeam} />
         </div>
@@ -263,14 +298,32 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = () => {
     const { data } = useHomeView();
     const s = data?.org_stats;
     if (!s) return <Empty>Noch keine Organisationsdaten.</Empty>;
+    const rows = [
+        { label: 'Abteilungen', value: s.departments ?? 0 },
+        { label: 'Bereiche',    value: s.spaces      ?? 0 },
+        { label: 'Ordner',      value: s.folders     ?? 0 },
+        { label: 'Dokumente',   value: s.documents   ?? 0 },
+        ...(s.members != null ? [{ label: 'Mitglieder', value: s.members }] : []),
+    ];
+    const maxVal = Math.max(...rows.map((r) => r.value), 1);
     return (
-        <div className="grid h-full grid-cols-2 gap-2 sm:grid-cols-3">
-            <Stat label="Abteilungen" value={s.departments} icon={<Building2 size={10} />} />
-            <Stat label="Dokumente" value={s.documents} icon={<FolderOpen size={10} />} />
-            <Stat label="Ordner" value={s.folders} icon={<FolderOpen size={10} />} />
-            <Stat label="Aufgaben" value={s.tasks} icon={<CheckCircle2 size={10} />} />
-            <Stat label="Bereiche" value={s.spaces} icon={<BarChart2 size={10} />} />
-            {s.members != null && <Stat label="Mitglieder" value={s.members} icon={<Users size={10} />} />}
+        <div className="flex h-full flex-col justify-center gap-2">
+            {rows.map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-2">
+                    <span className="w-[72px] shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
+                    <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div
+                            className="h-full rounded-full"
+                            style={{
+                                width: `${(value / maxVal) * 100}%`,
+                                background: 'rgba(var(--scene-rgb, 16,185,129), 0.6)',
+                                transition: 'width 0.5s ease',
+                            }}
+                        />
+                    </div>
+                    <span className="w-7 shrink-0 text-right text-[11px] tabular-nums text-white/55">{value}</span>
+                </div>
+            ))}
         </div>
     );
 };
@@ -287,15 +340,47 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
 const ClockWidget: React.FC<{ context: WidgetContext }> = () => {
     const [now, setNow] = React.useState(() => new Date());
     React.useEffect(() => {
-        const t = window.setInterval(() => setNow(new Date()), 1000 * 30);
+        const t = window.setInterval(() => setNow(new Date()), 1000);
         return () => window.clearInterval(t);
     }, []);
-    const time = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    const date = now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+
+    const h = now.getHours() % 12;
+    const m = now.getMinutes();
+    const s = now.getSeconds();
+    const hourDeg  = (h / 12) * 360 + (m / 60) * 30;
+    const minDeg   = (m / 60) * 360 + (s / 60) * 6;
+    const secDeg   = (s / 60) * 360;
+    const hand = (deg: number, len: number) => {
+        const a = (deg - 90) * (Math.PI / 180);
+        return { x: 50 + len * Math.cos(a), y: 50 + len * Math.sin(a) };
+    };
+    const hr = hand(hourDeg, 22);
+    const mr = hand(minDeg, 30);
+    const sr = hand(secDeg, 33);
+    const ticks = Array.from({ length: 12 }, (_, i) => {
+        const a = (i / 12) * Math.PI * 2 - Math.PI / 2;
+        const major = i % 3 === 0;
+        return { x1: 50 + (major ? 35 : 37) * Math.cos(a), y1: 50 + (major ? 35 : 37) * Math.sin(a), x2: 50 + 42 * Math.cos(a), y2: 50 + 42 * Math.sin(a), major };
+    });
+    const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+
     return (
-        <div className="flex h-full flex-col items-center justify-center">
-            <div className="text-3xl font-extralight tabular-nums text-white/88" style={{ textShadow: '0 0 24px rgba(var(--scene-rgb, 16,185,129), 0.3)' }}>{time}</div>
-            <div className="mt-1 text-[11px] text-white/40">{date}</div>
+        <div className="flex h-full flex-col items-center justify-center gap-1">
+            <svg viewBox="0 0 100 100" className="w-full" style={{ maxHeight: 110 }} aria-label={`Uhr ${h}:${String(m).padStart(2,'0')}`}>
+                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
+                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(var(--scene-rgb,16,185,129),0.12)" strokeWidth="1.5" />
+                {ticks.map((t, i) => (
+                    <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+                        stroke={t.major ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.1)'}
+                        strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round"
+                    />
+                ))}
+                <line x1="50" y1="50" x2={hr.x} y2={hr.y} stroke="rgba(255,255,255,0.78)" strokeWidth="2.5" strokeLinecap="round" />
+                <line x1="50" y1="50" x2={mr.x} y2={mr.y} stroke="rgba(255,255,255,0.6)"  strokeWidth="1.5" strokeLinecap="round" />
+                <line x1="50" y1="50" x2={sr.x} y2={sr.y} stroke="rgba(var(--scene-rgb,16,185,129),0.9)" strokeWidth="1" strokeLinecap="round" />
+                <circle cx="50" cy="50" r="2.5" fill="rgba(var(--scene-rgb,16,185,129),0.9)" />
+            </svg>
+            <div className="text-[11px] text-white/38">{date}</div>
         </div>
     );
 };
