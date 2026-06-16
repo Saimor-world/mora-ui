@@ -27,6 +27,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
+import { WidgetGrid } from '@/components/widgets/WidgetGrid';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -821,6 +822,23 @@ export const HomeSurface: React.FC = () => {
                 surface gets a calm, darker centre so panels read clearly. */}
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_90%_at_50%_42%,rgba(4,3,14,0.62)_0%,rgba(4,3,14,0.44)_46%,rgba(4,3,14,0.30)_100%)]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+
+            {/* HOME WIDGETS — float above cockpit (z-[2] inside z-[44] context); cockpit below is still interactive */}
+            {!websiteEntryContext && (
+                <div className="absolute inset-0 z-[2] pointer-events-none overflow-y-auto px-4 pt-32 pb-28 lg:px-6 lg:pt-36" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+                    <div className="pointer-events-auto">
+                        <WidgetGrid
+                            surface="home"
+                            context={{
+                                surface: 'home',
+                                openMora: openMora,
+                                openFinder: openFinder,
+                                goExplore: () => setCoreMode('explore'),
+                            }}
+                        />
+                    </div>
+                </div>
+            )}
 
             {!websiteEntryContext && (
                 <form
