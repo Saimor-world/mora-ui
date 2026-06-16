@@ -823,9 +823,10 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_90%_at_50%_42%,rgba(4,3,14,0.62)_0%,rgba(4,3,14,0.44)_46%,rgba(4,3,14,0.30)_100%)]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-            {/* HOME WIDGETS — float above cockpit (z-[2] inside z-[44] context); cockpit below is still interactive */}
+            {/* HOME WIDGETS — right-side panel on large screens; cockpit keeps the center stage.
+                Hidden on mobile (< lg) where the cockpit fills the viewport. */}
             {!websiteEntryContext && (
-                <div className="absolute inset-0 z-[2] pointer-events-none overflow-y-auto px-4 pt-32 pb-28 lg:px-6 lg:pt-36" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+                <div className="absolute top-32 bottom-28 right-4 z-[2] pointer-events-none hidden lg:block lg:w-[340px] xl:w-[380px] 2xl:w-[420px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
                     <div className="pointer-events-auto">
                         <WidgetGrid
                             surface="home"

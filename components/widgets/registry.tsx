@@ -314,37 +314,37 @@ const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     mora: {
         type: 'mora', label: 'MÔRA', hint: 'Lebendige Präsenz & Signale', icon: <Sparkles size={14} />,
-        defaultW: 12, defaultH: 2, minW: 4, minH: 2, surfaces: ['home', 'department'],
+        defaultW: 12, defaultH: 2, minW: 4, minH: 2, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <MoraWidget context={context} />,
     },
     meinTag: {
         type: 'meinTag', label: 'Mein Tag', hint: 'Kalender, Mail & Aufgaben', icon: <CalendarDays size={14} />,
-        defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'department'],
+        defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <MeinTagWidget context={context} />,
     },
     team: {
         type: 'team', label: 'Team', hint: 'Wer ist gerade da', icon: <Users size={14} />,
-        defaultW: 4, defaultH: 5, minW: 3, minH: 3, surfaces: ['home', 'department'],
+        defaultW: 4, defaultH: 5, minW: 3, minH: 3, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <TeamWidget context={context} />,
     },
     signals: {
         type: 'signals', label: 'Signale', hint: 'Vorfälle & Aufmerksamkeit', icon: <AlertTriangle size={14} />,
-        defaultW: 4, defaultH: 5, minW: 3, minH: 3, surfaces: ['home', 'department'],
+        defaultW: 4, defaultH: 5, minW: 3, minH: 3, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <SignalsWidget context={context} />,
     },
     orgStats: {
         type: 'orgStats', label: 'Organisation', hint: 'Abteilungen, Dokumente, Ordner', icon: <BarChart2 size={14} />,
-        defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home'],
+        defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home', 'universe'],
         render: ({ context }) => <OrgStatsWidget context={context} />,
     },
     quickActions: {
         type: 'quickActions', label: 'Schnellzugriff', hint: 'Finder, MÔRA, Erkunden', icon: <Compass size={14} />,
-        defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home', 'department'],
+        defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <QuickActionsWidget context={context} />,
     },
     clock: {
         type: 'clock', label: 'Uhr', hint: 'Zeit & Datum', icon: <Clock size={14} />,
-        defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'department'],
+        defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <ClockWidget context={context} />,
     },
     deptStats: {
