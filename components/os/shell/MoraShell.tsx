@@ -95,6 +95,7 @@ import { NeuralGrid } from '@/components/visual/NeuralGrid';
 import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
 import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
 import { AmbientDust } from '@/components/organic/AmbientDust';
+import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
@@ -720,6 +721,9 @@ export const MoraShell: React.FC = () => {
                 opacity={0.97}
                 paused={pauseHeavyBackground}
             />
+
+            {/* Mycelium neural network — living particle threads, screen-blended over starfield */}
+            {!pauseHeavyBackground && <MyceliumOverlay />}
 
             {/* Neural Grid �" Tesla-style tech texture, reacts to Mora state */}
             <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
