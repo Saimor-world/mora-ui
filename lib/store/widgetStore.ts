@@ -3,32 +3,34 @@
 import { create } from 'zustand';
 import type { WidgetInstance, WidgetSurface } from '@/lib/widgets/types';
 
-const STORAGE_KEY = 'saimor_widget_layouts_v1';
+// Bump version when default layouts change so existing users get fresh defaults.
+const STORAGE_KEY = 'saimor_widget_layouts_v2';
 
 // ── Default desktops ────────────────────────────────────────────────────────
-// 12-column grid. These are the out-of-the-box arrangements; the user can drag,
-// resize, add and remove from here, and their changes persist per surface.
+// 12-column grid. x/y positions collapse to single-column on narrow surfaces
+// (like the Home sidebar at ~340px → xxs breakpoint = 2 cols, everything stacks).
 
 const DEFAULT_HOME: WidgetInstance[] = [
-    { i: 'mora-1', type: 'mora', x: 0, y: 0, w: 12, h: 2 },
-    { i: 'meinTag-1', type: 'meinTag', x: 0, y: 2, w: 4, h: 6 },
-    { i: 'team-1', type: 'team', x: 4, y: 2, w: 4, h: 6 },
-    { i: 'signals-1', type: 'signals', x: 8, y: 2, w: 4, h: 6 },
-    { i: 'orgStats-1', type: 'orgStats', x: 0, y: 8, w: 6, h: 3 },
-    { i: 'quickActions-1', type: 'quickActions', x: 6, y: 8, w: 6, h: 3 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0,  w: 4, h: 8 },
+    { i: 'meinTag-1',    type: 'meinTag',    x: 0, y: 8,  w: 4, h: 6 },
+    { i: 'signals-1',    type: 'signals',    x: 0, y: 14, w: 4, h: 5 },
+    { i: 'orgStats-1',   type: 'orgStats',   x: 0, y: 19, w: 4, h: 3 },
+    { i: 'quickActions-1', type: 'quickActions', x: 0, y: 22, w: 4, h: 3 },
 ];
 
 const DEFAULT_DEPARTMENT: WidgetInstance[] = [
-    { i: 'deptStats-1', type: 'deptStats', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'signals-1', type: 'signals', x: 6, y: 0, w: 6, h: 5 },
-    { i: 'quickActions-1', type: 'quickActions', x: 0, y: 3, w: 6, h: 3 },
-    { i: 'team-1', type: 'team', x: 0, y: 6, w: 6, h: 5 },
+    { i: 'deptStats-1',    type: 'deptStats',    x: 0, y: 0, w: 6, h: 3 },
+    { i: 'nightwatch-1',   type: 'nightwatch',   x: 6, y: 0, w: 6, h: 8 },
+    { i: 'signals-1',      type: 'signals',      x: 0, y: 3, w: 6, h: 5 },
+    { i: 'quickActions-1', type: 'quickActions', x: 0, y: 8, w: 6, h: 3 },
+    { i: 'team-1',         type: 'team',         x: 6, y: 8, w: 6, h: 4 },
 ];
 
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'signals-1', type: 'signals', x: 0, y: 0, w: 4, h: 5 },
-    { i: 'orgStats-1', type: 'orgStats', x: 4, y: 0, w: 4, h: 5 },
-    { i: 'clock-1', type: 'clock', x: 8, y: 0, w: 4, h: 5 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 4, h: 8 },
+    { i: 'signals-1',    type: 'signals',    x: 4, y: 0, w: 4, h: 8 },
+    { i: 'orgStats-1',   type: 'orgStats',   x: 8, y: 0, w: 4, h: 4 },
+    { i: 'clock-1',      type: 'clock',      x: 8, y: 4, w: 4, h: 4 },
 ];
 
 const DEFAULTS: Record<WidgetSurface, WidgetInstance[]> = {

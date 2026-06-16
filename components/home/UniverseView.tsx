@@ -914,6 +914,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             surface: 'universe',
                             openMora: () => setOrbState('curious'),
                             openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }),
+                            openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }),
                             goExplore: () => navigateToCore(),
                         }}
                     />

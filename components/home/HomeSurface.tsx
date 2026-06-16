@@ -219,7 +219,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -260,6 +260,10 @@ export const HomeSurface: React.FC = () => {
 
     const openMora = useCallback(() => {
         revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+    }, [revealPane]);
+
+    const openNightwatch = useCallback(() => {
+        revealPane('nightwatch-main', { type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } });
     }, [revealPane]);
 
     const openWebsiteDossier = useCallback(() => {
@@ -834,6 +838,7 @@ export const HomeSurface: React.FC = () => {
                                 surface: 'home',
                                 openMora: openMora,
                                 openFinder: openFinder,
+                                openNightwatch: openNightwatch,
                                 goExplore: () => setCoreMode('explore'),
                             }}
                         />

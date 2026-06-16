@@ -10,6 +10,15 @@ export async function fetchNightwatchIncidents(): Promise<NightwatchIncidentItem
     return Array.isArray(data) ? (data as NightwatchIncidentItem[]) : [];
 }
 
+/**
+ * Read ALL Nightwatch incidents (including resolved) for history and sparklines.
+ * Returns [] when unavailable.
+ */
+export async function fetchAllNightwatchIncidents(): Promise<NightwatchIncidentItem[]> {
+    const data = await coreGet('/v3/nightwatch/incidents?include_resolved=true', { isOptional: true });
+    return Array.isArray(data) ? (data as NightwatchIncidentItem[]) : [];
+}
+
 export interface NightwatchMonitorItem {
     id: string;
     name?: string;

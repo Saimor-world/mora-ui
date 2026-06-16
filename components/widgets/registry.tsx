@@ -4,11 +4,13 @@ import React from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
-    ArrowRight,
+    ArrowRight, Activity, Shield,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
+import { fetchAllNightwatchIncidents } from '@/lib/api/nightwatchClient';
+import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
 
 // ── Small shared building blocks ────────────────────────────────────────────
@@ -298,6 +300,108 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = () => {
     );
 };
 
+const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
+
+const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+    const [incidents, setIncidents] = React.useState<NightwatchIncidentItem[]>([]);
+    const [loaded, setLoaded] = React.useState(false);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        fetchAllNightwatchIncidents()
+            .then((data) => { if (!cancelled) { setIncidents(data); setLoaded(true); } })
+            .catch(() => { if (!cancelled) setLoaded(true); });
+        return () => { cancelled = true; };
+    }, []);
+
+    const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
+    const critical = open.filter((i) => i.severity === 'critical').length;
+    const warnings = open.filter((i) => i.severity === 'warning').length;
+
+    const now = Date.now();
+    const bars = Array.from({ length: 7 }, (_, idx) => {
+        const dayStart = now - (6 - idx) * 864e5;
+        const dayEnd = dayStart + 864e5;
+        return incidents.filter((i) => {
+            const ts = i.detected_at ? new Date(i.detected_at).getTime() : 0;
+            return ts >= dayStart && ts < dayEnd;
+        }).length;
+    });
+    const maxBar = Math.max(...bars, 1);
+    const statusRgb = critical > 0 ? '248,113,113' : warnings > 0 ? '251,191,36' : '52,211,153';
+
+    return (
+        <div className="flex h-full flex-col gap-2.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+            {/* Status */}
+            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
+                <span
+                    className={`h-2.5 w-2.5 rounded-full shrink-0 ${open.length > 0 ? 'animate-pulse' : ''}`}
+                    style={{ backgroundColor: `rgb(${statusRgb})` }}
+                />
+                <div className="min-w-0 flex-1">
+                    <div className="text-[12px] font-medium text-white/80">
+                        {open.length === 0 ? 'Alles in Ordnung' : `${open.length} offene Vorfälle`}
+                    </div>
+                    {(critical > 0 || warnings > 0) && (
+                        <div className="mt-0.5 flex gap-2 text-[10px]">
+                            {critical > 0 && <span style={{ color: 'rgb(248,113,113)' }}>{critical} kritisch</span>}
+                            {warnings > 0 && <span style={{ color: 'rgb(251,191,36)' }}>{warnings} Warnung</span>}
+                        </div>
+                    )}
+                </div>
+                <Shield size={14} className="shrink-0 text-white/20" />
+            </div>
+
+            {/* 7-day bar chart */}
+            <div>
+                <SectionLabel icon={<TrendingUp size={10} className="opacity-70" />}>Letzte 7 Tage</SectionLabel>
+                <div className="flex items-end gap-1" style={{ height: 36 }}>
+                    {bars.map((count, i) => (
+                        <div
+                            key={i}
+                            className="flex-1 rounded-sm transition-all duration-300"
+                            style={{
+                                height: `${Math.max((count / maxBar) * 100, 8)}%`,
+                                background: count === 0
+                                    ? 'rgba(255,255,255,0.05)'
+                                    : `rgba(${statusRgb}, ${0.25 + (count / maxBar) * 0.55})`,
+                            }}
+                        />
+                    ))}
+                </div>
+                <div className="mt-1 flex justify-between text-[9px] text-white/25">
+                    <span>–6d</span><span>heute</span>
+                </div>
+            </div>
+
+            {/* Incident list */}
+            {!loaded && <Empty>Lädt…</Empty>}
+            {loaded && open.length === 0 && <Empty>Keine aktiven Vorfälle</Empty>}
+            {loaded && open.length > 0 && (
+                <div className="flex flex-col gap-1">
+                    {open.slice(0, 4).map((inc) => {
+                        const sev = (inc.severity || 'warning').toLowerCase();
+                        const sevColor = sev === 'critical' ? 'rgb(248,113,113)' : sev === 'info' ? 'rgb(96,165,250)' : 'rgb(251,191,36)';
+                        return (
+                            <div key={inc.id} className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2">
+                                <span className="mt-1 h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sevColor }} />
+                                <div className="min-w-0 flex-1">
+                                    <div className="truncate text-[11px] text-white/72">{inc.title || inc.host || 'Vorfall'}</div>
+                                    {inc.host && <div className="truncate text-[10px] text-white/38">{inc.host}</div>}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            <div className="mt-auto pt-1">
+                <ActionButton icon={<Activity size={13} />} label="Nightwatch öffnen" onClick={context.openNightwatch} />
+            </div>
+        </div>
+    );
+};
+
 const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data: spaces = [] } = useSpaces(context.departmentId);
     const folders = spaces.reduce((sum, s) => sum + (s.folder_count ?? 0), 0);
@@ -351,6 +455,11 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         type: 'deptStats', label: 'Datenlage', hint: 'Bereiche & Ordner der Abteilung', icon: <TrendingUp size={14} />,
         defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['department'],
         render: ({ context }) => <DeptStatsWidget context={context} />,
+    },
+    nightwatch: {
+        type: 'nightwatch', label: 'Nightwatch', hint: 'Infrastruktur-Vorfälle & 7-Tage-Verlauf', icon: <Activity size={14} />,
+        defaultW: 4, defaultH: 8, minW: 3, minH: 5, surfaces: ['home', 'department', 'universe'],
+        render: ({ context }) => <NightwatchWidget context={context} />,
     },
 };
 
