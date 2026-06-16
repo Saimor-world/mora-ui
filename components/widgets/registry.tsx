@@ -4,7 +4,7 @@ import React from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
-    ArrowRight, Activity, Shield,
+    ArrowRight, Activity,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
@@ -300,6 +300,24 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = () => {
     );
 };
 
+function catmullRomPath(pts: Array<{ x: number; y: number }>): string {
+    if (pts.length < 2) return '';
+    let d = `M${pts[0].x},${pts[0].y}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(i - 1, 0)];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[Math.min(i + 2, pts.length - 1)];
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
+    }
+    return d;
+}
+const NW_ARC_C = 163.4; // 2*PI*r (r=26)
+
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
@@ -317,10 +335,11 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
     const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
     const critical = open.filter((i) => i.severity === 'critical').length;
     const warnings = open.filter((i) => i.severity === 'warning').length;
+    const resolved = incidents.filter((i) => _NW_RESOLVED.has((i.status || '').toLowerCase())).length;
 
-    const now = Date.now();
+    const tsNow = Date.now();
     const bars = Array.from({ length: 7 }, (_, idx) => {
-        const dayStart = now - (6 - idx) * 864e5;
+        const dayStart = tsNow - (6 - idx) * 864e5;
         const dayEnd = dayStart + 864e5;
         return incidents.filter((i) => {
             const ts = i.detected_at ? new Date(i.detected_at).getTime() : 0;
@@ -328,67 +347,110 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
         }).length;
     });
     const maxBar = Math.max(...bars, 1);
-    const statusRgb = critical > 0 ? '248,113,113' : warnings > 0 ? '251,191,36' : '52,211,153';
+
+    const cleanDays = bars.filter((b) => b === 0).length;
+    const uptimePct = loaded ? Math.round((cleanDays / 7) * 100) : 0;
+    const arcOffset = NW_ARC_C * (1 - uptimePct / 100);
+    const arcColor = critical > 0 ? 'rgb(248,113,113)' : warnings > 0 ? 'rgb(251,191,36)' : 'rgb(52,211,153)';
+
+    // Smooth SVG area chart
+    const CW = 200;
+    const CH = 44;
+    const pts = bars.map((b, i) => ({
+        x: (i / 6) * CW,
+        y: CH - Math.max((b / maxBar) * CH * 0.9, b > 0 ? 4 : 0),
+    }));
+    const linePath = catmullRomPath(pts);
+    const areaPath = `${linePath} L${CW},${CH} L0,${CH} Z`;
+    const lineStroke = critical > 0 ? 'rgba(248,113,113,0.85)' : warnings > 0 ? 'rgba(251,191,36,0.85)' : 'rgba(52,211,153,0.7)';
+    const areaFill = critical > 0 ? 'rgba(248,113,113,0.08)' : warnings > 0 ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.06)';
 
     return (
         <div className="flex h-full flex-col gap-2.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-            {/* Status */}
-            <div className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2.5">
-                <span
-                    className={`h-2.5 w-2.5 rounded-full shrink-0 ${open.length > 0 ? 'animate-pulse' : ''}`}
-                    style={{ backgroundColor: `rgb(${statusRgb})` }}
-                />
-                <div className="min-w-0 flex-1">
-                    <div className="text-[12px] font-medium text-white/80">
-                        {open.length === 0 ? 'Alles in Ordnung' : `${open.length} offene Vorfälle`}
+            {/* Header + uptime arc */}
+            <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                        <span
+                            className={`h-2 w-2 rounded-full shrink-0 ${loaded ? 'animate-pulse' : ''}`}
+                            style={{ backgroundColor: arcColor }}
+                        />
+                        <span className="text-[13px] font-medium text-white/88">Nightwatch</span>
                     </div>
-                    {(critical > 0 || warnings > 0) && (
-                        <div className="mt-0.5 flex gap-2 text-[10px]">
-                            {critical > 0 && <span style={{ color: 'rgb(248,113,113)' }}>{critical} kritisch</span>}
-                            {warnings > 0 && <span style={{ color: 'rgb(251,191,36)' }}>{warnings} Warnung</span>}
-                        </div>
-                    )}
+                    <span className="text-[9px] uppercase tracking-[.16em] text-white/35 block">
+                        {!loaded ? 'Lädt…' : open.length === 0 ? 'Alles in Ordnung' : `${open.length} offene Vorfälle`}
+                    </span>
                 </div>
-                <Shield size={14} className="shrink-0 text-white/20" />
+                <div className="flex flex-col items-center shrink-0 ml-2">
+                    <svg width="50" height="50" viewBox="0 0 64 64" aria-label={`Uptime ${uptimePct}%`}>
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
+                        <circle
+                            cx="32" cy="32" r="26" fill="none"
+                            stroke={arcColor}
+                            strokeWidth="5"
+                            strokeDasharray={`${NW_ARC_C}`}
+                            strokeDashoffset={arcOffset}
+                            strokeLinecap="round"
+                            transform="rotate(-90 32 32)"
+                            style={{ transition: 'stroke-dashoffset 0.6s ease, stroke 0.4s ease' }}
+                        />
+                        <text x="32" y="36" textAnchor="middle" fontSize="12" fontWeight="500" fill="rgba(255,255,255,0.85)">{uptimePct}%</text>
+                    </svg>
+                    <span className="text-[8px] uppercase tracking-[.13em] text-white/28 -mt-0.5">Uptime</span>
+                </div>
             </div>
 
-            {/* 7-day bar chart */}
+            {/* Stat cards */}
+            <div className="grid grid-cols-3 gap-1.5">
+                {[
+                    { label: 'Kritisch', value: critical, color: critical > 0 ? 'rgb(248,113,113)' : undefined as string | undefined },
+                    { label: 'Warnung', value: warnings, color: warnings > 0 ? 'rgb(251,191,36)' : undefined as string | undefined },
+                    { label: 'Gelöst', value: resolved, color: undefined as string | undefined },
+                ].map(({ label, value, color }) => (
+                    <div
+                        key={label}
+                        className="flex flex-col gap-0.5 rounded-xl border px-2.5 py-2"
+                        style={{ borderColor: 'rgba(255,255,255,0.07)', background: 'rgba(255,255,255,0.03)' }}
+                    >
+                        <span className="text-[18px] font-light tabular-nums leading-none" style={{ color: color ?? 'rgba(255,255,255,0.82)' }}>{loaded ? value : '–'}</span>
+                        <span className="mt-0.5 text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
+                    </div>
+                ))}
+            </div>
+
+            {/* SVG area chart */}
             <div>
-                <SectionLabel icon={<TrendingUp size={10} className="opacity-70" />}>Letzte 7 Tage</SectionLabel>
-                <div className="flex items-end gap-1" style={{ height: 36 }}>
-                    {bars.map((count, i) => (
-                        <div
-                            key={i}
-                            className="flex-1 rounded-sm transition-all duration-300"
-                            style={{
-                                height: `${Math.max((count / maxBar) * 100, 8)}%`,
-                                background: count === 0
-                                    ? 'rgba(255,255,255,0.05)'
-                                    : `rgba(${statusRgb}, ${0.25 + (count / maxBar) * 0.55})`,
-                            }}
-                        />
+                <SectionLabel icon={<TrendingUp size={10} className="opacity-70" />}>Vorfälle · 7 Tage</SectionLabel>
+                <svg viewBox={`-2 -2 ${CW + 4} ${CH + 4}`} className="w-full" style={{ height: 44 }} aria-hidden="true">
+                    <path d={areaPath} fill={areaFill} />
+                    <path d={linePath} fill="none" stroke={lineStroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    {pts.map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r="2.5" fill={bars[i] > 0 ? lineStroke : 'rgba(255,255,255,0.12)'} />
                     ))}
-                </div>
-                <div className="mt-1 flex justify-between text-[9px] text-white/25">
-                    <span>–6d</span><span>heute</span>
+                </svg>
+                <div className="flex justify-between mt-1">
+                    {['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'].map((d) => (
+                        <span key={d} className="text-[8px] uppercase tracking-[.1em] text-white/25">{d}</span>
+                    ))}
                 </div>
             </div>
 
             {/* Incident list */}
-            {!loaded && <Empty>Lädt…</Empty>}
             {loaded && open.length === 0 && <Empty>Keine aktiven Vorfälle</Empty>}
             {loaded && open.length > 0 && (
                 <div className="flex flex-col gap-1">
-                    {open.slice(0, 4).map((inc) => {
+                    {open.slice(0, 3).map((inc) => {
                         const sev = (inc.severity || 'warning').toLowerCase();
                         const sevColor = sev === 'critical' ? 'rgb(248,113,113)' : sev === 'info' ? 'rgb(96,165,250)' : 'rgb(251,191,36)';
+                        const sevBg = sev === 'critical' ? 'rgba(248,113,113,0.1)' : sev === 'info' ? 'rgba(96,165,250,0.1)' : 'rgba(251,191,36,0.1)';
                         return (
                             <div key={inc.id} className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2">
                                 <span className="mt-1 h-1.5 w-1.5 rounded-full shrink-0" style={{ backgroundColor: sevColor }} />
                                 <div className="min-w-0 flex-1">
                                     <div className="truncate text-[11px] text-white/72">{inc.title || inc.host || 'Vorfall'}</div>
-                                    {inc.host && <div className="truncate text-[10px] text-white/38">{inc.host}</div>}
+                                    {inc.host && <div className="truncate text-[10px] text-white/35">{inc.host}</div>}
                                 </div>
+                                <span className="shrink-0 rounded-full px-2 py-0.5 text-[9px] uppercase tracking-[.1em]" style={{ background: sevBg, color: sevColor }}>{sev}</span>
                             </div>
                         );
                     })}
