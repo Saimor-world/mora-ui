@@ -132,6 +132,13 @@ const MoraWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     );
 };
 
+const CAL_COLORS = [
+    'rgba(var(--scene-rgb,16,185,129),0.8)',
+    'rgba(139,92,246,0.75)',
+    'rgba(59,130,246,0.75)',
+    'rgba(236,72,153,0.7)',
+];
+
 const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data: homeView } = useHomeView();
     const tasks = homeView?.next_steps ?? [];
@@ -142,19 +149,24 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 
     return (
         <div className="flex h-full flex-col gap-3 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
-            {/* Termine */}
+            {/* Termine — colored left-border blocks */}
             <div>
                 <SectionLabel icon={<CalendarDays size={10} className="opacity-70" />}>Termine</SectionLabel>
                 {cal.length > 0 ? (
                     <div className="flex flex-col gap-1.5">
-                        {cal.slice(0, 3).map((c) => (
-                            <LiveRow
+                        {cal.slice(0, 3).map((c, i) => (
+                            <button
                                 key={c.id}
-                                icon={<CalendarDays size={13} style={{ color: 'rgba(var(--scene-rgb, 16,185,129), 0.8)' }} />}
-                                title={c.title}
-                                meta={[c.time, c.location].filter(Boolean).join(' · ') || undefined}
+                                type="button"
                                 onClick={context.openCalendar}
-                            />
+                                className="flex items-stretch overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] text-left transition-colors hover:bg-white/[0.05]"
+                            >
+                                <div className="w-1 shrink-0 rounded-l-xl" style={{ background: CAL_COLORS[i % CAL_COLORS.length] }} />
+                                <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2">
+                                    {c.time && <span className="w-9 shrink-0 text-[10px] tabular-nums text-white/40">{c.time}</span>}
+                                    <span className="min-w-0 flex-1 truncate text-[12px] text-white/75">{c.title}</span>
+                                </div>
+                            </button>
                         ))}
                     </div>
                 ) : calConfigured ? (
@@ -164,20 +176,34 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 )}
             </div>
 
-            {/* Posteingang */}
+            {/* Posteingang — sender avatar circles */}
             <div>
                 <SectionLabel icon={<Mail size={10} className="opacity-70" />}>Posteingang</SectionLabel>
                 {mail.length > 0 ? (
                     <div className="flex flex-col gap-1.5">
-                        {mail.slice(0, 3).map((m) => (
-                            <LiveRow
-                                key={m.id}
-                                icon={<Mail size={13} className="text-violet-300/75" />}
-                                title={m.subject}
-                                meta={m.from}
-                                onClick={context.openMail}
-                            />
-                        ))}
+                        {mail.slice(0, 3).map((m) => {
+                            const initials = nameInitials(m.from || '?');
+                            const hue = nameHue(m.from || '');
+                            return (
+                                <button
+                                    key={m.id}
+                                    type="button"
+                                    onClick={context.openMail}
+                                    className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-left transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
+                                >
+                                    <div
+                                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-medium"
+                                        style={{ background: `hsla(${hue},55%,40%,0.25)`, color: `hsla(${hue},80%,75%,0.9)` }}
+                                    >
+                                        {initials}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="truncate text-[12px] text-white/75">{m.subject}</div>
+                                        <div className="truncate text-[10px] text-white/38">{m.from}</div>
+                                    </div>
+                                </button>
+                            );
+                        })}
                     </div>
                 ) : mailConfigured ? (
                     <Empty>Posteingang leer</Empty>
@@ -186,15 +212,18 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 )}
             </div>
 
-            {/* Aufgaben (MÔRA-erkannt, evidenzbasiert) */}
+            {/* Aufgaben — open circle checkboxes */}
             <div className="min-h-0">
                 <SectionLabel icon={<CheckCircle2 size={10} className="opacity-70" />}>Aufgaben</SectionLabel>
                 {tasks.length > 0 ? (
                     <div className="flex flex-col gap-1.5">
                         {tasks.slice(0, 4).map((t) => (
-                            <div key={t.id} className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2 text-[12px] text-white/72">
-                                <CheckCircle2 size={12} className="mt-0.5 shrink-0 text-white/40" />
-                                <span className="min-w-0 flex-1">{t.title}</span>
+                            <div key={t.id} className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2">
+                                <span
+                                    className="h-4 w-4 shrink-0 rounded-full border"
+                                    style={{ borderColor: 'rgba(var(--scene-rgb,16,185,129),0.4)' }}
+                                />
+                                <span className="min-w-0 flex-1 text-[12px] text-white/72">{t.title}</span>
                             </div>
                         ))}
                     </div>
@@ -272,22 +301,36 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data } = useHomeView();
     const attention = data?.attention ?? [];
     return (
-        <div className="flex h-full flex-col gap-1.5 overflow-y-auto">
+        <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+            {attention.length > 0 && (
+                <div className="flex items-center justify-between mb-0.5">
+                    <span className="text-[9px] uppercase tracking-[.16em] text-white/35">Signale</span>
+                    <span
+                        className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tabular-nums"
+                        style={{ background: 'rgba(251,191,36,0.15)', color: 'rgb(251,191,36)' }}
+                    >
+                        {attention.length}
+                    </span>
+                </div>
+            )}
             {attention.length > 0 ? (
                 attention.slice(0, 6).map((a) => (
                     <button
                         key={a.id}
                         type="button"
                         onClick={context.openMora}
-                        className="flex items-start gap-2 rounded-xl border border-amber-300/15 bg-amber-400/[0.05] px-3 py-2 text-left text-[12px] text-white/74 transition-colors hover:border-amber-300/30 hover:bg-amber-400/[0.1]"
+                        className="flex items-stretch overflow-hidden rounded-xl border border-amber-300/15 bg-amber-400/[0.04] text-left transition-colors hover:border-amber-300/28 hover:bg-amber-400/[0.08]"
                     >
-                        <AlertTriangle size={12} className="mt-0.5 shrink-0 text-amber-300/75" />
-                        <span className="min-w-0 flex-1">{a.title}</span>
+                        <div className="w-0.5 shrink-0" style={{ background: 'rgba(251,191,36,0.5)' }} />
+                        <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
+                            <AlertTriangle size={11} className="shrink-0 text-amber-300/65" />
+                            <span className="min-w-0 flex-1 truncate text-[12px] text-white/72">{a.title}</span>
+                        </div>
                     </button>
                 ))
             ) : (
-                <div className="flex h-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-4 text-[12px] text-white/55">
-                    <CheckCircle2 size={14} /> Keine offenen Signale gemeldet
+                <div className="flex h-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-4 text-[12px] text-white/45">
+                    <CheckCircle2 size={14} className="text-emerald-400/60" /> Keine offenen Signale
                 </div>
             )}
         </div>
@@ -330,10 +373,22 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = () => {
 
 const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => (
     <div className="grid h-full grid-cols-2 gap-2 content-start">
-        <ActionButton icon={<FolderOpen size={13} />} label="Finder" onClick={context.openFinder} />
-        <ActionButton icon={<Sparkles size={13} />} label="MÔRA fragen" onClick={context.openMora} />
-        <ActionButton icon={<Compass size={13} />} label="Erkunden" onClick={context.goExplore} />
-        <ActionButton icon={<Plug size={13} />} label="Integrationen" onClick={context.openIntegrations} />
+        {([
+            { icon: <FolderOpen size={20} />, label: 'Finder',       onClick: context.openFinder },
+            { icon: <Sparkles  size={20} />, label: 'MÔRA',          onClick: context.openMora },
+            { icon: <Compass   size={20} />, label: 'Erkunden',      onClick: context.goExplore },
+            { icon: <Plug      size={20} />, label: 'Integrationen', onClick: context.openIntegrations },
+        ] as const).map(({ icon, label, onClick }) => (
+            <button
+                key={label}
+                type="button"
+                onClick={onClick}
+                className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] py-3 transition-all hover:border-white/[0.18] hover:bg-white/[0.09]"
+            >
+                <span className="text-white/45">{icon}</span>
+                <span className="text-[10px] uppercase tracking-[.14em] text-white/45">{label}</span>
+            </button>
+        ))}
     </div>
 );
 
@@ -552,10 +607,29 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
 const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data: spaces = [] } = useSpaces(context.departmentId);
     const folders = spaces.reduce((sum, s) => sum + (s.folder_count ?? 0), 0);
+    const rows = [
+        { label: 'Bereiche', value: spaces.length },
+        { label: 'Ordner',   value: folders },
+    ];
+    const maxVal = Math.max(...rows.map((r) => r.value), 1);
     return (
-        <div className="grid h-full grid-cols-2 gap-2">
-            <Stat label="Bereiche" value={spaces.length} icon={<BarChart2 size={10} />} />
-            <Stat label="Ordner" value={folders} icon={<FolderOpen size={10} />} />
+        <div className="flex h-full flex-col justify-center gap-3">
+            {rows.map(({ label, value }) => (
+                <div key={label} className="flex items-center gap-2">
+                    <span className="w-14 shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
+                    <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                        <div
+                            className="h-full rounded-full"
+                            style={{
+                                width: `${(value / maxVal) * 100}%`,
+                                background: 'rgba(var(--scene-rgb,16,185,129),0.6)',
+                                transition: 'width 0.5s ease',
+                            }}
+                        />
+                    </div>
+                    <span className="w-7 shrink-0 text-right text-[13px] font-light tabular-nums text-white/65">{value}</span>
+                </div>
+            ))}
         </div>
     );
 };
