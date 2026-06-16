@@ -57,7 +57,7 @@ function ZoneCard({ children, accent, className = '' }: {
     return (
         <div
             className={`relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.1] backdrop-blur-2xl shadow-[0_12px_40px_rgba(0,0,0,0.4)] ${className}`}
-            style={{ backgroundColor: 'rgba(10, 13, 23, 0.62)' }}
+            style={{ backgroundColor: 'rgba(10, 13, 23, 0.9)' }}
         >
             <div className={`pointer-events-none absolute left-0 top-0 h-[2px] w-full ${accent}`} />
             {/* faint scene tint so the cards still belong to the active scene */}
