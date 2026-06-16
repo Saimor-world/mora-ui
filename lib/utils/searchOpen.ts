@@ -172,6 +172,10 @@ export function dispatchNavigationResult(outcome: NavigationOutcome) {
     window.dispatchEvent(new CustomEvent<NavigationOutcome>(NAVIGATION_RESULT_EVENT, { detail: outcome }));
 }
 
+export function shouldShowShellNavigationOutcome(outcome: NavigationOutcome): boolean {
+    return !(outcome.source === 'chat' && outcome.targetType === 'search');
+}
+
 function toFinderNavigationContext(outcome: NavigationOutcome): FinderNavigationContext | null {
     if (outcome.targetType === 'search') return null;
     return {

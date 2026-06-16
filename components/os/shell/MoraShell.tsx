@@ -144,7 +144,8 @@ import { RitualSceneStyler } from '@/components/os/RitualSceneStyler';
 // import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
 import { Upload, Sparkles, FolderOpen, History, X, Search, FileText, LayoutList, Music2 } from 'lucide-react';
-import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import { NAVIGATION_RESULT_EVENT, openNavigationOutcome, shouldShowShellNavigationOutcome, type NavigationOutcome } from '@/lib/utils/searchOpen';
+import { getOsRouteState, mergeOsRouteSearch, parseOsRouteState, type OsRouteState } from '@/lib/navigation/osRouteState';
 import {
     MYCELIUM_BATCH_COMPLETE_EVENT,
     MYCELIUM_REVIEW_READY_EVENT,
@@ -200,6 +201,9 @@ export const MoraShell: React.FC = () => {
     const viewLevel = useNavStore((s) => s.viewLevel);
     const coreMode = useNavStore((s) => s.coreMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const activeSpaceId = useNavStore((s) => s.activeSpaceId);
+    const activeFolderId = useNavStore((s) => s.activeFolderId);
     const storeOrbState = useOrbStore((s) => s.orbState);
     const { data: companiesData = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
     const companies = companiesData;
@@ -343,6 +347,94 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, isAdminMode, setAdminMode]);
 
     const effectiveAdminMode = isAdminMode && !isPublicDemoSurface;
+    const [isRouteHydrated, setIsRouteHydrated] = useState(false);
+    const hasCompletedInitialRouteSyncRef = useRef(false);
+    const isApplyingHistoryRouteRef = useRef(false);
+
+    const applyOsRoute = useCallback((route: OsRouteState) => {
+        const navigation = useNavStore.getState();
+        switch (route.view) {
+            case 'universe':
+                navigation.navigateToExplore();
+                return;
+            case 'department':
+                if (route.departmentId) navigation.navigateToDepartment(route.departmentId);
+                return;
+            case 'space':
+                if (route.departmentId && route.spaceId) {
+                    navigation.navigateToDepartment(route.departmentId);
+                    navigation.navigateToSpace(route.spaceId);
+                }
+                return;
+            case 'folder':
+                if (route.departmentId && route.folderId) {
+                    navigation.navigateToDepartment(route.departmentId);
+                    if (route.spaceId) navigation.navigateToSpace(route.spaceId);
+                    navigation.navigateToFolder(route.folderId);
+                }
+                return;
+            case 'ambient':
+                navigation.navigateToAmbient();
+                return;
+            case 'home':
+            default:
+                navigation.navigateToCore();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!isBootstrapped || isRouteHydrated) return;
+
+        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface;
+        if (isSingleCompanySurface) {
+            if (!safeCompanies.length || !activeCompanyId) return;
+            if (preferredSurfaceCompany && activeCompanyId !== preferredSurfaceCompany.id) return;
+        }
+
+        applyOsRoute(parseOsRouteState(window.location.search));
+        setIsRouteHydrated(true);
+    }, [activeCompanyId, applyOsRoute, isBootstrapped, isRouteHydrated, preferredSurfaceCompany, safeCompanies.length, surfaceProfile.isHqSurface, surfaceProfile.isLocalTruthSurface]);
+
+    useEffect(() => {
+        if (!isRouteHydrated) return;
+        const handlePopState = () => {
+            isApplyingHistoryRouteRef.current = true;
+            applyOsRoute(parseOsRouteState(window.location.search));
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [applyOsRoute, isRouteHydrated]);
+
+    useEffect(() => {
+        if (!isRouteHydrated) return;
+        const route = getOsRouteState({
+            viewLevel,
+            coreMode,
+            activeDepartmentId,
+            activeSpaceId,
+            activeFolderId,
+        });
+        const nextSearch = mergeOsRouteSearch(window.location.search, route);
+        const nextUrl = `${window.location.pathname}${nextSearch}${window.location.hash}`;
+        const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+
+        if (isApplyingHistoryRouteRef.current) {
+            if (nextUrl === currentUrl) isApplyingHistoryRouteRef.current = false;
+            return;
+        }
+
+        if (!hasCompletedInitialRouteSyncRef.current) {
+            hasCompletedInitialRouteSyncRef.current = true;
+            if (nextUrl !== currentUrl) {
+                window.history.replaceState(window.history.state, '', nextUrl);
+            }
+            return;
+        }
+
+        if (nextUrl !== currentUrl) {
+            window.history.pushState(window.history.state, '', nextUrl);
+        }
+    }, [activeDepartmentId, activeFolderId, activeSpaceId, coreMode, isRouteHydrated, viewLevel]);
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
@@ -472,6 +564,10 @@ export const MoraShell: React.FC = () => {
         const handleNavigationResult = (event: Event) => {
             const detail = (event as CustomEvent<NavigationOutcome>).detail;
             if (!detail) return;
+            if (!shouldShowShellNavigationOutcome(detail)) {
+                setNavigationOutcome(null);
+                return;
+            }
             setNavigationOutcome({
                 ...detail,
                 timestamp: Date.now(),
@@ -1297,4 +1393,3 @@ export const MoraShell: React.FC = () => {
 };
 
 export default MoraShell;
-

@@ -591,7 +591,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 z-[300] flex items-start justify-center pt-[15vh]"
+                className="fixed inset-0 z-[960] flex items-start justify-center pt-[10vh]"
                 onClick={onClose}
             >
                 {/* Backdrop - Organic Blur */}
@@ -673,7 +673,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
                         {/* RESULTS: The Field or Chat Interface */}
                         {(isMoraThinking || moraResponse) ? (
-                            <div className="max-h-[500px] h-[400px] overflow-y-auto custom-scrollbar p-6">
+                            <div className="h-[min(400px,calc(80vh-96px))] max-h-[500px] overflow-y-auto custom-scrollbar p-6">
                                 <div className="space-y-6">
                                     {/* User Query Mirror (Opt) */}
                                     <div className="flex justify-end">
@@ -734,7 +734,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
                                 </div>
                             </div>
                         ) : (
-                            <div ref={listRef} className="max-h-[500px] overflow-y-auto custom-scrollbar overflow-x-hidden p-2">
+                            <div ref={listRef} className="max-h-[min(500px,calc(80vh-96px))] overflow-y-auto custom-scrollbar overflow-x-hidden p-2">
                                 {filteredActions.length === 0 ? (
                                     <div className="h-64 flex flex-col items-center justify-center gap-4 text-emerald-500/30">
                                         <div className="relative w-16 h-16 flex items-center justify-center">
@@ -836,7 +836,5 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
         </AnimatePresence>
     );
 };
-
-
 
 

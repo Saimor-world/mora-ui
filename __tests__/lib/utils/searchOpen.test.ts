@@ -1,5 +1,5 @@
 // __tests__/lib/utils/searchOpen.test.ts
-import { mapRawSearchResult, getSearchResultSubtitle, resolveSearchResults, surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
+import { mapRawSearchResult, getSearchResultSubtitle, resolveSearchResults, shouldShowShellNavigationOutcome, surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import { corePost, searchGlobal, searchSemantic } from '@/lib/api/coreClient';
 import { dispatchWorkSessionPlan } from '@/lib/utils/moraExplanation';
 
@@ -22,6 +22,26 @@ jest.mock('@/lib/store/workSessionStore', () => ({
         { getState: () => mockedStoreState },
     ),
 }));
+
+describe('shell navigation outcome visibility', () => {
+    it('keeps chat search receipts inside the chat and search pane', () => {
+        expect(shouldShowShellNavigationOutcome({
+            title: 'Suche geöffnet',
+            message: 'Kein klarer Treffer',
+            targetType: 'search',
+            source: 'chat',
+        })).toBe(false);
+    });
+
+    it('still surfaces navigation outcomes from other sources', () => {
+        expect(shouldShowShellNavigationOutcome({
+            title: 'Suche geöffnet',
+            message: 'Treffer prüfen',
+            targetType: 'search',
+            source: 'search-popup',
+        })).toBe(true);
+    });
+});
 
 describe('mapRawSearchResult — scope_path priority', () => {
     it('prefers scope_path over path for the path field', () => {

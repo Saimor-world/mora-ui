@@ -8,6 +8,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
+import { PaneShell } from '@/components/panes/PaneShell';
 import { useSearchQuery } from './hooks/useSearchQuery';
 
 export default function SearchApp({ paneId, initialData }: AppProps) {
@@ -58,7 +59,8 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <PaneShell id={paneId} defaultWidth={960} defaultHeight={720} padding={0} modal>
+      <div className="h-full flex flex-col">
       {/* Search Input */}
       <div className="p-4 border-b border-white/10">
         <div className="relative">
@@ -173,6 +175,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
           <span>{searchMode === 'mora' ? 'Lokal + Mora-Semantik' : 'Lokale Suche'}{activeCompanyName ? ` · ${activeCompanyName}` : ''}</span>
         </div>
       </div>
-    </div>
+      </div>
+    </PaneShell>
   );
 }

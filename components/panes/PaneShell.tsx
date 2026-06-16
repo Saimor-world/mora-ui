@@ -23,9 +23,19 @@ interface PaneShellProps {
   title?: string;
   defaultWidth?: number;
   defaultHeight?: number;
+  padding?: number;
+  modal?: boolean;
 }
 
-export function PaneShell({ id, children, title, defaultWidth = 720, defaultHeight = 580 }: PaneShellProps) {
+export function PaneShell({
+  id,
+  children,
+  title,
+  defaultWidth = 720,
+  defaultHeight = 580,
+  padding = 2,
+  modal = false,
+}: PaneShellProps) {
   const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
   const isActive = usePaneStore(s => s.activePaneId === id);
   const pane = getPane(id);
@@ -37,6 +47,7 @@ export function PaneShell({ id, children, title, defaultWidth = 720, defaultHeig
       paneId={id}
       width={pane.size?.width ?? defaultWidth}
       height={pane.size?.height ?? defaultHeight}
+      padding={padding}
       initialX={pane.position.x}
       initialY={pane.position.y}
       onPositionChange={(x, y) => updatePanePosition(id, x, y)}
@@ -45,7 +56,10 @@ export function PaneShell({ id, children, title, defaultWidth = 720, defaultHeig
       onMinimize={() => minimizePane(id)}
       onFocus={() => focusPane(id)}
       isActive={isActive}
-      zIndex={pane.zIndex}
+      zIndex={modal ? Math.max(pane.zIndex, 960) : pane.zIndex}
+      dimBackground={modal}
+      dimOpacity={0.46}
+      onDimClick={modal ? () => removePane(id) : undefined}
       showCloseButton
       showMinimizeButton
       draggable
