@@ -4,10 +4,10 @@ import '@testing-library/jest-dom';
 import { SecurityCheckEntry } from '@/components/entry/SecurityCheckEntry';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 
-jest.mock('@/components/entry/SecurityCheckPlaygroundLogin', () => ({
-    SecurityCheckPlaygroundLogin: ({ onReady }: any) => {
-        React.useEffect(() => { onReady(); }, [onReady]);
-        return null;
+jest.mock('@/components/entry/WebsiteEntryTokenLogin', () => ({
+    WebsiteEntryTokenLogin: ({ onSuccess, token, redirectOnSuccess }: any) => {
+        React.useEffect(() => { onSuccess({}); }, [onSuccess]);
+        return <div data-testid="preview-login" data-token={token} data-redirect={String(redirectOnSuccess)} />;
     },
 }));
 
@@ -16,6 +16,7 @@ const mockCtx: WebsiteEntryContext = {
     domain: 'acme.de',
     score: 62,
     level: 'Mittel',
+    entryToken: 'signed-preview.token',
     title: 'Test',
     rooms: [],
     documents: [],
@@ -48,6 +49,13 @@ it('shows 4 dimension bars', () => {
 it('shows CTA button', () => {
     render(<SecurityCheckEntry context={mockCtx} />);
     expect(screen.getByRole('button', { name: /Workspace öffnen/i })).toBeInTheDocument();
+});
+
+it('uses the private preview login without an automatic redirect', () => {
+    render(<SecurityCheckEntry context={mockCtx} />);
+    const login = screen.getByTestId('preview-login');
+    expect(login).toHaveAttribute('data-token', 'signed-preview.token');
+    expect(login).toHaveAttribute('data-redirect', 'false');
 });
 
 it('CTA redirects to /home after auth ready', async () => {

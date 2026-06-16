@@ -81,7 +81,9 @@ export const CoreLayer: React.FC = () => {
                             Home. The old duplicate drifted with mouse parallax (the "ramp")
                             and washed the panels out. Home and Universe now share ONE
                             background truth. */}
-                        {activeMode === 'visitor' ? <VisitorHomeSurface /> : <HomeSurface />}
+                        {activeMode === 'visitor' || activeMode === 'private_preview'
+                            ? <VisitorHomeSurface />
+                            : <HomeSurface />}
                     </motion.div>
                 ) : (
                     <motion.div

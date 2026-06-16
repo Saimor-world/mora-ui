@@ -24,7 +24,20 @@ async function detectRealSession(): Promise<string | null> {
     }
 }
 
-export function WebsiteEntryTokenLogin({ token, onSuccess }: { token: string; onSuccess?: () => void }) {
+type WebsitePreviewSession = {
+    active_company_id?: string;
+    guided_demo_company_id?: string;
+};
+
+export function WebsiteEntryTokenLogin({
+    token,
+    onSuccess,
+    redirectOnSuccess = true,
+}: {
+    token: string;
+    onSuccess?: (session: WebsitePreviewSession) => void;
+    redirectOnSuccess?: boolean;
+}) {
     const router = useRouter();
     const [status, setStatus] = useState<'idle' | 'checking' | 'confirm' | 'logging-in' | 'success' | 'error'>('idle');
     const [realEmail, setRealEmail] = useState<string | null>(null);
@@ -87,11 +100,13 @@ export function WebsiteEntryTokenLogin({ token, onSuccess }: { token: string; on
                     toast.success('HQ Preview bereit. Myzel-Struktur wird geladen...');
 
                     // Let the caller do any pre-redirect setup (e.g. set activeMode).
-                    onSuccess?.();
+                    onSuccess?.(res as WebsitePreviewSession);
 
                     // Force a full refresh/redirect to ensure all stores (authStore, etc.)
                     // pick up the new session from the cookie.
-                    window.location.href = '/home';
+                    if (redirectOnSuccess) {
+                        window.location.href = '/home';
+                    }
                 } else {
                     throw new Error('Login response invalid');
                 }
@@ -103,6 +118,7 @@ export function WebsiteEntryTokenLogin({ token, onSuccess }: { token: string; on
         }
 
     if (status === 'idle' || status === 'checking') return null;
+    if (status === 'success' && !redirectOnSuccess) return null;
 
     // Confirmation screen — shown when a real user is already logged in
     if (status === 'confirm' && realEmail) {
@@ -116,7 +132,7 @@ export function WebsiteEntryTokenLogin({ token, onSuccess }: { token: string; on
                         <h3 className="text-xl font-light text-white">eingeloggt.</h3>
                     </div>
                     <p className="text-sm text-white/45 leading-relaxed">
-                        Der Demo-Flow öffnet einen isolierten Preview-Workspace und loggt dich aus deinem echten HQ aus.
+                        Der Security Check öffnet einen isolierten 20-Tage-Preview-Account und loggt dich aus deinem echten HQ aus.
                     </p>
                     <div className="grid gap-3">
                         <button

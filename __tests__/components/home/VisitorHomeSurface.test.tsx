@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
 import { submitDossierToWall } from '@/lib/api/wallClient';
 import { useCreateDossierNode } from '@/lib/hooks/useCreateDossierNode';
+import { useNavStore } from '@/lib/store/navStore';
 
 jest.mock('@/lib/api/wallClient', () => ({
     submitDossierToWall: jest.fn(),
@@ -44,6 +45,14 @@ jest.mock('@/lib/queries/useDossierView', () => ({
     }),
 }));
 
+jest.mock('@/lib/queries/useCompanies', () => {
+    const companies = [
+        { id: 'company-acme', name: 'Acme GmbH', is_demo: false },
+        { id: 'company-simple-coffee', name: 'Simple Coffee Group', is_demo: true },
+    ];
+    return { useCompanies: () => ({ data: companies }) };
+});
+
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: () => jest.fn(),
 }));
@@ -65,8 +74,18 @@ jest.mock('framer-motion', () => {
 
 beforeEach(() => {
     jest.clearAllMocks();
+    useNavStore.setState({ activeCompanyId: 'company-acme', coreMode: 'home' } as any);
     (useCreateDossierNode as jest.Mock).mockReturnValue({ nodeId: 'node-audit-1', isCreating: false });
     (submitDossierToWall as jest.Mock).mockResolvedValue({ success: true, wall_status: 'pending' });
+});
+
+it('opens the tenant-scoped Simple Coffee demo without using the public playground', async () => {
+    render(<VisitorHomeSurface />);
+
+    await userEvent.click(screen.getByRole('button', { name: /Geführte Simple Coffee Demo öffnen/i }));
+
+    expect(useNavStore.getState().activeCompanyId).toBe('company-simple-coffee');
+    expect(useNavStore.getState().coreMode).toBe('explore');
 });
 
 it('submits the visitor dossier node to the Wall queue', async () => {

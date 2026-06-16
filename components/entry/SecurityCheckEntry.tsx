@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { SecurityCheckPlaygroundLogin } from './SecurityCheckPlaygroundLogin';
+import { WebsiteEntryTokenLogin } from './WebsiteEntryTokenLogin';
 import { scoreBreakdown, buildScoreNarrative } from '@/lib/dossier/scoreBreakdown';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
+import { useNavStore } from '@/lib/store/navStore';
 
 interface Props {
     context: WebsiteEntryContext;
@@ -17,7 +18,7 @@ const STATUS_STYLES = {
 
 export function SecurityCheckEntry({ context }: Props) {
     const [authReady, setAuthReady] = useState(false);
-    const [authError, setAuthError] = useState(false);
+    const [authError, setAuthError] = useState(!context.entryToken);
     const [waiting,   setWaiting]   = useState(false);
 
     const dimensions = scoreBreakdown(context);
@@ -33,6 +34,7 @@ export function SecurityCheckEntry({ context }: Props) {
     }
 
     function handleReady() {
+        useNavStore.getState().setActiveMode('private_preview');
         setAuthReady(true);
         if (waiting) window.location.href = '/home';
     }
@@ -44,12 +46,14 @@ export function SecurityCheckEntry({ context }: Props) {
             <div className="pointer-events-none absolute bottom-[-200px] right-[-100px] h-[500px] w-[600px] rounded-full bg-cyan-500/[0.07] blur-[120px]" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.014)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.014)_1px,transparent_1px)] bg-[size:80px_80px]" />
 
-            {/* Silent auth — runs in background while visitor reads */}
-            <SecurityCheckPlaygroundLogin
-                context={context}
-                onReady={handleReady}
-                onError={() => setAuthError(true)}
-            />
+            {/* Private preview auth runs in the background while the visitor reads. */}
+            {context.entryToken ? (
+                <WebsiteEntryTokenLogin
+                    token={context.entryToken}
+                    redirectOnSuccess={false}
+                    onSuccess={handleReady}
+                />
+            ) : null}
 
             {/* Top bar */}
             <div className="relative z-10 flex items-center justify-between px-14 pt-7">
@@ -131,7 +135,7 @@ export function SecurityCheckEntry({ context }: Props) {
                             {waiting ? 'Wird vorbereitet…' : 'Workspace öffnen'}&nbsp;→
                         </button>
                         <span className="text-[11px] text-white/20">
-                            {authError ? 'Fehler — bitte neu laden.' : 'Kein Account · Demo-Space'}
+                            {authError ? 'Preview-Link ungültig — bitte neu starten.' : '20 Tage Preview-Account · Private Demo'}
                         </span>
                     </div>
                 </div>

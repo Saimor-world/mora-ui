@@ -37,3 +37,15 @@ it('renders the dedicated visitor home surface instead of the normal home surfac
     expect(screen.getByTestId('visitor-home-surface')).toBeInTheDocument();
     expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
 });
+
+it('renders the dedicated visitor home for a private preview account', () => {
+    useNavStore.setState({
+        coreMode: 'home',
+        activeMode: 'private_preview',
+    } as any);
+
+    renderWithProviders(<CoreLayer />);
+
+    expect(screen.getByTestId('visitor-home-surface')).toBeInTheDocument();
+    expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
+});
