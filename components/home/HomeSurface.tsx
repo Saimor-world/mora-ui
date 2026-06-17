@@ -830,7 +830,7 @@ export const HomeSurface: React.FC = () => {
             {/* HOME WIDGETS — right-side panel on large screens; cockpit keeps the center stage.
                 Hidden on mobile (< lg) where the cockpit fills the viewport. */}
             {!websiteEntryContext && (
-                <div className="absolute top-32 bottom-28 right-4 z-[2] pointer-events-none hidden lg:block lg:w-[340px] xl:w-[380px] 2xl:w-[420px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+                <div className="absolute top-28 bottom-28 right-4 z-[2] pointer-events-none hidden lg:block lg:w-[440px] xl:w-[520px] 2xl:w-[600px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
                     <div className="pointer-events-auto">
                         <WidgetGrid
                             surface="home"

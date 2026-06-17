@@ -108,23 +108,23 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
     }, [color]);
     const useStaticOrb = size <= 20; // Use static orb only for very small sizes
 
-    // State-based parameters - POLISHED for smoother animations
+    // State-based parameters — tuned for clean plasma-heart (less turbulence = more premium)
     const params = useMemo(() => {
         switch (state) {
             case 'thinking':
-                return { speed: 0.6, turbulence: 1.8, glow: 2.5, breathe: 0.03 };
+                return { speed: 0.5, turbulence: 0.9, glow: 2.2, breathe: 0.025 };
             case 'alert':
-                return { speed: 1.2, turbulence: 2.2, glow: 3.5, breathe: 0.05 };
+                return { speed: 0.9, turbulence: 1.1, glow: 3.0, breathe: 0.04 };
             case 'focus':
-                return { speed: 0.25, turbulence: 0.9, glow: 1.8, breathe: 0.02 };
+                return { speed: 0.2, turbulence: 0.45, glow: 1.6, breathe: 0.015 };
             case 'curious':
-                return { speed: 0.8, turbulence: 1.5, glow: 2.8, breathe: 0.04 };
+                return { speed: 0.65, turbulence: 0.75, glow: 2.4, breathe: 0.03 };
             case 'learning':
-                return { speed: 0.45, turbulence: 2.0, glow: 2.2, breathe: 0.025 };
+                return { speed: 0.35, turbulence: 1.0, glow: 1.9, breathe: 0.02 };
             case 'insight':
-                return { speed: 0.3, turbulence: 0.7, glow: 4.0, breathe: 0.06 };
-            default:
-                return { speed: 0.4, turbulence: 1.2, glow: 2.0, breathe: 0.015 };
+                return { speed: 0.25, turbulence: 0.35, glow: 3.8, breathe: 0.055 };
+            default: // idle
+                return { speed: 0.3, turbulence: 0.55, glow: 1.8, breathe: 0.012 };
         }
     }, [state]);
 
@@ -179,73 +179,50 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             const imageData = ctx.createImageData(size, size);
             const data = imageData.data;
 
-            // Render plasma effect
+            // Render plasma effect — original formula restored, targeted fixes
             for (let y = 0; y < size; y++) {
                 for (let x = 0; x < size; x++) {
                     const dx = x - centerX;
                     const dy = y - centerY;
                     const dist = Math.sqrt(dx * dx + dy * dy);
 
-                    // Only render inside orb
-                    if (dist > radius) continue;
+                    if (dist > radius + 1) continue;
 
-                    // Normalized coordinates
                     const nx = dx / radius;
                     const ny = dy / radius;
+                    const falloff = 1 - dist / radius;
 
-                    // Multi-octave noise for plasma effect
-                    const noise1 = noise.noise2D(nx * 2 + timeRef.current, ny * 2 + timeRef.current);
-                    const noise2 = noise.noise2D(nx * 4 + timeRef.current * 0.5, ny * 4 - timeRef.current * 0.5);
-                    const noise3 = noise.noise2D(nx * 8 - timeRef.current * 0.3, ny * 8 + timeRef.current * 0.3);
+                    // 2-octave noise (cleaner than 3, less marbling)
+                    const n1 = noise.noise2D(nx * 2 + timeRef.current, ny * 2 + timeRef.current);
+                    const n2 = noise.noise2D(nx * 4 + timeRef.current * 0.45, ny * 4 - timeRef.current * 0.4);
 
-                    // Distance-based darkening (sphere shading)
-                    const falloffRaw = dist / radius;
-                    const falloff = 1 - falloffRaw;
-
-                    // NESTED BRAIN: Secondary high-frequency noise for 'thinking' state
-                    let thinkingNoise = 0;
+                    let accentNoise = 0;
                     if (state === 'thinking') {
-                        const tn1 = noise.noise2D(nx * 15 + timeRef.current * 2, ny * 15 + timeRef.current * 2);
-                        const tn2 = noise.noise2D(nx * 30 - timeRef.current * 3, ny * 30 - timeRef.current * 3);
-                        thinkingNoise = (tn1 * 0.6 + tn2 * 0.4) * falloff;
+                        accentNoise = noise.noise2D(nx * 10 + timeRef.current * 1.5, ny * 10 + timeRef.current * 1.5) * 0.3;
+                    } else if (state === 'learning') {
+                        accentNoise = noise.noise2D(nx * 5 + timeRef.current * 0.35, ny * 5 - timeRef.current * 0.35) * 0.25;
+                    } else if (state === 'curious') {
+                        accentNoise = noise.noise2D(nx * 9 + timeRef.current * 1.6, ny * 9 + timeRef.current * 1.6) * 0.22;
                     }
 
-                    // Learning: slow deep wave patterns
-                    let learningNoise = 0;
-                    if (state === 'learning') {
-                        const ln = noise.noise2D(nx * 6 + timeRef.current * 0.4, ny * 6 - timeRef.current * 0.4);
-                        learningNoise = ln * 0.35 * falloff;
-                    }
+                    const plasma = (n1 * 0.55 + n2 * 0.45 + accentNoise) * params.turbulence;
 
-                    // Curious: quick scanning ripples
-                    let curiousNoise = 0;
-                    if (state === 'curious') {
-                        const cn = noise.noise2D(nx * 12 + timeRef.current * 2.5, ny * 12 + timeRef.current * 2.5);
-                        curiousNoise = cn * 0.28 * falloff;
-                    }
-                    // Combine noise layers
-                    const plasma = (noise1 * 0.5 + noise2 * 0.3 + noise3 * 0.2 + thinkingNoise * 0.25 + learningNoise + curiousNoise) * params.turbulence;
+                    // Brightness formula like original — gives visible plasma texture in mid-region
+                    const colorVariation = Math.sin(plasma * Math.PI) * 0.12 + 1.08;
+                    const brightness = (plasma * 0.35 + 2.6) * Math.pow(falloff, 0.8);
 
-                    // LIQUID HOT SUN: Ultra-bright core, Jupiter-like surface
-                    const brightness = (plasma * 0.4 + 2.8) * Math.pow(falloff, 0.8);
-
-                    // Color with plasma variation - lighter mixes
                     const idx = (y * size + x) * 4;
-                    const colorVariation = Math.sin(plasma * Math.PI) * 0.15 + 1.15;
-
-                    // IMPERIAL MILK: More white for that molten sun look
-                    const milk = 180 * Math.pow(falloff, 1.2);
-
-                    // Deterministic grain keeps texture without per-frame Math.random cost.
+                    // milk at 90 (was 180) — still adds whiteness at center but less wash
+                    const milk = 90 * Math.pow(falloff, 1.1);
                     const grainSeed = ((x * 17 + y * 31) % 23) / 23 - 0.5;
-                    const grain = grainSeed * 8 * (1 - falloff * 0.5);
+                    const grain = grainSeed * 7 * (1 - falloff * 0.5);
 
-                    data[idx] = Math.min(255, baseColor.r * brightness * colorVariation + milk + grain);
+                    data[idx]     = Math.min(255, baseColor.r * brightness * colorVariation + milk + grain);
                     data[idx + 1] = Math.min(255, baseColor.g * brightness * colorVariation + milk + grain);
                     data[idx + 2] = Math.min(255, baseColor.b * brightness * colorVariation + milk + grain);
-                    // HIGHER OPACITY with soft edge falloff
-                    const edgeSoftness = Math.pow(falloff, 0.12);  // Softer edge
-                    data[idx + 3] = Math.min(255, 255 * edgeSoftness * 2.4 * breathe);
+                    // Alpha: opaque body, feathered 1px rim, breathe scale
+                    const rimFade = Math.min(1, radius + 1 - dist);
+                    data[idx + 3] = Math.min(255, 255 * Math.pow(falloff, 0.12) * rimFade * 2.2 * breathe);
                 }
             }
 
@@ -304,27 +281,51 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 ctx.globalCompositeOperation = 'source-over';
             }
 
-            // Add glow layer (Bloom) - ENHANCED
-            ctx.shadowBlur = 50 * params.glow;
-            ctx.shadowColor = color;
+            // ── BLOOM PASS ──
             ctx.globalCompositeOperation = 'screen';
-            ctx.globalAlpha = 0.6;
 
-            const gradient = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 1.1);
-            gradient.addColorStop(0, color + 'FF');
-            gradient.addColorStop(0.3, color + 'DD');
-            gradient.addColorStop(0.6, color + '88');
-            gradient.addColorStop(0.85, color + '33');
-            gradient.addColorStop(1, color + '00');
-
-            ctx.fillStyle = gradient;
+            // 1. Emerald core — centred, enhances pixel render (not replaces)
+            ctx.globalAlpha = 0.28;
+            const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 0.7);
+            coreGrad.addColorStop(0,    color + 'EE');
+            coreGrad.addColorStop(0.4,  color + '99');
+            coreGrad.addColorStop(0.75, color + '33');
+            coreGrad.addColorStop(1,    color + '00');
+            ctx.fillStyle = coreGrad;
             ctx.beginPath();
-            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.arc(centerX, centerY, radius * 0.7, 0, Math.PI * 2);
             ctx.fill();
 
-            // Reset composite
+            // 2. Wide colour corona ring
+            ctx.globalAlpha = 0.25;
+            const coronaGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.2, centerX, centerY, radius * 1.05);
+            coronaGrad.addColorStop(0,    color + '00');
+            coronaGrad.addColorStop(0.45, color + '88');
+            coronaGrad.addColorStop(0.82, color + '33');
+            coronaGrad.addColorStop(1,    color + '00');
+            ctx.fillStyle = coronaGrad;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius * 1.05, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Reset to source-over for the crisp specular glint
             ctx.globalCompositeOperation = 'source-over';
             ctx.globalAlpha = 1;
+
+            // 3. Specular glint — sharp white dot top-left (glass premium feel)
+            //    This is source-over so it cuts through, not blends into soup
+            const specX = centerX - radius * 0.22;
+            const specY = centerY - radius * 0.25;
+            const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, radius * 0.18);
+            specGrad.addColorStop(0,   'rgba(255,255,255,0.88)');
+            specGrad.addColorStop(0.35,'rgba(255,255,255,0.30)');
+            specGrad.addColorStop(0.7, 'rgba(255,255,255,0.06)');
+            specGrad.addColorStop(1,   'rgba(255,255,255,0)');
+            ctx.fillStyle = specGrad;
+            ctx.beginPath();
+            ctx.arc(specX, specY, radius * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
             ctx.shadowBlur = 0;
 
             animationFrameRef.current = requestAnimationFrame(render);

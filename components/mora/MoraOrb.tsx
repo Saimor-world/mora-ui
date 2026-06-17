@@ -183,7 +183,7 @@ export function MoraOrb({
                 <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                        background: 'radial-gradient(58% 48% at 32% 26%, rgba(255,255,255,0.6) 0%, rgba(255,255,255,0.14) 16%, transparent 40%)',
+                        background: 'radial-gradient(52% 42% at 36% 30%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 20%, transparent 42%)',
                         mixBlendMode: 'screen',
                     }}
                 />
