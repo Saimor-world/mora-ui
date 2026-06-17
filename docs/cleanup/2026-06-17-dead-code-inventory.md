@@ -31,13 +31,15 @@ ui/{Breadcrumb, PageSection, PanelCard, SideDrawer, ToastViewport}
 
 ---
 
-## ⏸ Sweep 1 — offen: Legacy-Panes, abgelöst durch `apps/*` (22 + ~20 Tests)
+## ✅ Sweep 1 — AUSGEFÜHRT: Legacy-Panes, abgelöst durch `apps/*` (22 Panes + PaneShell)
 
-`PaneManager` lädt Apps über `AppLoader` → `apps/<id>`. Die alten `components/panes/*Pane.tsx` sind die abgelösten Vorgänger — null Live-Imports (auch nicht aus `apps/`). **Live bleiben:** `CompanyDetailPane`, `MoraHubPane`, `BrowserPane`, `WallPane`.
+`PaneManager` lädt Apps über `AppLoader` → `apps/<id>`. Die alten `components/panes/*Pane.tsx` waren die abgelösten Vorgänger — null Live-Imports. **Live geblieben:** `CompanyDetailPane`, `MoraHubPane`, `BrowserPane`, `WallPane`, `AuditDossierView` (apps/document), `FinderInitiativeLane` (apps/finder).
 
-Löschen (nach Test-Abgleich apps/*): ActionCenterPane · AppLibraryPane · CalendarPane · CanvasPane · ChatPane · DocumentPane · FinderPane · GridPane · IntegrationsPane · MailPane · MeineDateienPane · NotesPane · ScannerPane · SearchPane · SettingsPane · TasksPane · TeamPane · TerminalPane · TimelinePane · UsersPane · WebsiteDossierPane · WorkSessionPane
+Gelöscht: 22 Panes + `PaneShell` (verwaist nach Pane-Löschung).
 
-`__tests__/components/panes/*` (21) — außer `WallPane.test.tsx` (bleibt) — testen toten Code. Vor dem Löschen prüfen, ob `apps/*` äquivalente Coverage hat; sonst Test portieren.
+**Tests:** 13 veraltete Komponenten-Tests gelöscht (testeten tote Pane-Kopien). 2 Utility-Tests (`groupStepsBySegment`, `splitAtPlannedSteps`) auf `@/apps/work-session` umgebogen statt gelöscht — dort sind die reinen Funktionen live, beide Tests grün. `WallPane.test.tsx` + `FinderInitiativeLane.test.tsx` bleiben (Panes live).
+
+**⚠ Coverage-Follow-up:** Apps ohne eigene Tests, die jetzt nur noch durch ihre alten Pane-Tests „abgedeckt" waren (jetzt weg): action-center · canvas · finder · grid · integrations · mail · tasks · team · terminal · timeline · users · website-dossier. → Eigene Tests gegen `apps/*` schreiben.
 
 ---
 
