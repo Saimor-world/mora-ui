@@ -644,7 +644,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     },
     meinTag: {
         type: 'meinTag', label: 'Mein Tag', hint: 'Kalender, Mail & Aufgaben', icon: <CalendarDays size={14} />,
-        defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'department', 'universe'],
+        defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'universe'],
         render: ({ context }) => <MeinTagWidget context={context} />,
     },
     team: {

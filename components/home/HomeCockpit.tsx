@@ -14,6 +14,9 @@ import type { RecentKind } from '@/components/home/homeSurfaceFormat';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
 
+// TODO(Phase 2): Wire personal/private scope area to server-persisted user preferences
+// (personal home note exists at GET/PUT /v3/users/me/personal-home-note; account settings sync TBD).
+
 // ─── Prop types (kept local — these mirror HomeSurface's local shapes) ─────────
 
 export interface CockpitMailPreview  { id: string; subject: string; from: string; snippet?: string; date?: string; }

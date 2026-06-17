@@ -114,6 +114,7 @@ export const DepartmentSurface: React.FC = () => {
             surface="department"
             context={{
               surface: 'department',
+              departmentId: activeDepartmentId,
               openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: { width: 480, height: 640 } }),
               openFinder: () => openPane({ id: 'finder-dept', type: 'finder', title: 'Finder', size: { width: 900, height: 700 }, data: { departmentId: activeDepartmentId } }),
               openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }),

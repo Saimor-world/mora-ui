@@ -4,7 +4,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout';
 import { Plus, X, Check, Pencil, RotateCcw, GripVertical } from 'lucide-react';
 import { useWidgetStore } from '@/lib/store/widgetStore';
+import { useNavStore } from '@/lib/store/navStore';
 import { WIDGET_REGISTRY, WIDGET_TYPES } from '@/components/widgets/registry';
+import { isWidgetAllowedOnSurface } from '@/lib/widgets/surfaceAllowlist';
 import {
     WIDGET_GRID_COLS,
     WIDGET_ROW_HEIGHT,
@@ -16,26 +18,34 @@ const Grid = WidthProvider(GridLayout);
 const COLS = WIDGET_GRID_COLS.lg;
 
 /**
- * WidgetGrid — the editable widget desktop for a surface (Home / Department).
+ * WidgetGrid — the editable widget desktop for a surface (Universe / Department).
  *
  * View mode: a static, read-only arrangement. Edit mode ("Anpassen"): widgets
  * become draggable + resizable via react-grid-layout, with an add palette, a
- * per-widget remove, and a reset. Geometry persists per surface (widgetStore).
+ * per-widget remove, and a reset. Geometry persists per user+company on the server.
  */
 export function WidgetGrid({ surface, context }: { surface: WidgetSurface; context: WidgetContext }) {
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const departmentId = context.departmentId ?? activeDepartmentId;
+
     const {
-        layouts, editMode, hydrated,
-        hydrate, setEditMode, applyLayout, addWidget, removeWidget, resetSurface,
+        editMode, hydrated,
+        hydrate, setLayoutScope, setEditMode, applyLayout, addWidget, removeWidget, resetSurface, getSurfaceItems,
     } = useWidgetStore();
     const [mounted, setMounted] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
 
     useEffect(() => {
+        setLayoutScope(activeCompanyId, surface === 'department' ? departmentId : null);
+    }, [activeCompanyId, departmentId, surface, setLayoutScope]);
+
+    useEffect(() => {
         hydrate();
         setMounted(true);
-    }, [hydrate]);
+    }, [hydrate, activeCompanyId]);
 
-    const items = layouts[surface] ?? [];
+    const items = getSurfaceItems(surface, departmentId);
     const rglLayout: Layout[] = useMemo(
         () => items.map((w) => {
             const def = WIDGET_REGISTRY[w.type];
@@ -44,12 +54,13 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
         [items],
     );
 
-    // react-grid-layout + WidthProvider need the DOM; render nothing until mounted
-    // (also avoids SSR/hydration mismatch with localStorage-driven layouts).
-    if (!mounted || !hydrated) return null;
+    if (!mounted || !hydrated || surface === 'home') return null;
 
-    const available = WIDGET_TYPES.filter((t) => WIDGET_REGISTRY[t].surfaces.includes(surface));
+    const available = WIDGET_TYPES.filter(
+        (t) => WIDGET_REGISTRY[t].surfaces.includes(surface) && isWidgetAllowedOnSurface(t, surface),
+    );
     const btn = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition-colors';
+    const deptArg = surface === 'department' ? departmentId : undefined;
 
     return (
         <div className="relative">
@@ -68,7 +79,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                                 <Plus size={12} /> Widget
                             </button>
                             <button
-                                onClick={() => resetSurface(surface)}
+                                onClick={() => resetSurface(surface, deptArg)}
                                 className={`${btn} border-white/12 bg-white/[0.04] text-white/45 hover:bg-white/[0.09] hover:text-white/75`}
                             >
                                 <RotateCcw size={12} /> Zurücksetzen
@@ -94,7 +105,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                         return (
                             <button
                                 key={t}
-                                onClick={() => { addWidget(surface, t, { w: def.defaultW, h: def.defaultH }); setPaletteOpen(false); }}
+                                onClick={() => { addWidget(surface, t, { w: def.defaultW, h: def.defaultH }, deptArg); setPaletteOpen(false); }}
                                 className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/[0.09]"
                                 title={def.hint}
                             >
@@ -120,7 +131,11 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                 compactType="vertical"
                 onLayoutChange={(l) => {
                     if (editMode) {
-                        applyLayout(surface, l.map((x) => ({ i: x.i, x: x.x, y: x.y, w: x.w, h: x.h })));
+                        applyLayout(
+                            surface,
+                            l.map((x) => ({ i: x.i, x: x.x, y: x.y, w: x.w, h: x.h })),
+                            deptArg,
+                        );
                     }
                 }}
             >
@@ -146,7 +161,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                                 </span>
                                 {editMode && (
                                     <button
-                                        onClick={() => removeWidget(surface, w.i)}
+                                        onClick={() => removeWidget(surface, w.i, deptArg)}
                                         className="rounded-md p-0.5 text-white/35 transition-colors hover:bg-rose-400/15 hover:text-rose-300"
                                         aria-label={`${def.label} entfernen`}
                                     >
