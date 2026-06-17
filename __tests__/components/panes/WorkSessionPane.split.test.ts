@@ -1,4 +1,4 @@
-import { splitAtPlannedSteps } from '@/components/panes/WorkSessionPane';
+import { splitAtPlannedSteps } from '@/apps/work-session';
 
 const makeStep = (id: string) => ({
     step_id: id,
