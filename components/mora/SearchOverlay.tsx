@@ -147,7 +147,7 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
     return (
         <AnimatePresence>
             {isOpen && (
-                <div className="fixed inset-0 z-[200] flex items-start justify-center pt-[15vh]">
+                <div className="fixed inset-0 z-[960] flex items-start justify-center pt-[15vh]">
                     {/* Backdrop */}
                     <motion.div
                         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
@@ -288,4 +288,3 @@ export const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose })
         </AnimatePresence>
     );
 };
-

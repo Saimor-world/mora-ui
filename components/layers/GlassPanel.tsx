@@ -28,6 +28,8 @@ interface GlassPanelProps {
     dimBackground?: boolean;
     /** Background dim opacity */
     dimOpacity?: number;
+    /** Optional click handler for an interactive dim layer */
+    onDimClick?: () => void;
     /** Show close button (X) */
     showCloseButton?: boolean;
     /** Show back button (chevron) */
@@ -102,6 +104,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     zIndex = 20,
     dimBackground = false,
     dimOpacity = 0.4,
+    onDimClick,
     showCloseButton = false,
     showBackButton = false,
     showMinimizeButton = false,
@@ -413,8 +416,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     animate={{ opacity: dimOpacity }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="fixed inset-0 bg-black pointer-events-none"
+                    className={`fixed inset-0 bg-black ${onDimClick ? 'pointer-events-auto' : 'pointer-events-none'}`}
                     style={{ zIndex: zIndex - 1 }}
+                    onClick={onDimClick}
                 />
             )}
 
@@ -624,4 +628,3 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
 // Export type for external use
 export type { GlassPanelProps };
-

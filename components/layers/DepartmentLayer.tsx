@@ -13,13 +13,15 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
-import { ArrowLeft, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, FolderOpen, Sparkles, Users } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 import { getDeptStyle } from '@/lib/utils/deptStyle';
 import { fetchSingleDepartmentStats } from '@/lib/api/coreClient';
 import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
+import { usePresence } from '@/lib/hooks/usePresence';
+import { selectRecentDepartmentDocs } from '@/lib/openflow/departmentContext';
 
 const MOON_COLORS = ['#22D3EE', '#A78BFA', '#F59E0B', '#34D399', '#F43F5E', '#60A5FA', '#FB923C', '#E879F9'];
 const ORBIT_STEP_SECONDS = 1 / 18; // Cap visual updates to ~18 FPS to reduce rerender load without killing motion.
@@ -87,6 +89,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
     const { data: spaces = [], isLoading: isLoadingSpaces } = useSpaces(activeDepartmentId);
     const { data: treeData = [] } = useTree(activeCompanyId);
     const { openPane } = usePaneStore();
+    const { peers } = usePresence();
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
     const safeTreeData = useMemo(() => (Array.isArray(treeData) ? treeData : []), [treeData]);
 
@@ -112,6 +115,13 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
         walk(root);
         return docs;
     }, [activeDepartmentId, safeTreeData]);
+
+    const recentDocs = useMemo(
+        () => activeDepartmentId
+            ? selectRecentDepartmentDocs(safeTreeData, activeDepartmentId, 3)
+            : [],
+        [activeDepartmentId, safeTreeData]
+    );
 
     const prefersReducedMotion = useReducedMotion();
     const [hoveredSpaceId, setHoveredSpaceId] = useState<string | null>(null);
@@ -571,7 +581,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             <motion.button
                 data-testid="nav-back-to-universe"
                 onClick={handleNavigateToExplore}
-                className="absolute top-8 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
+                className="absolute top-36 left-8 z-50 flex items-center gap-3 text-white/50 hover:text-white transition-colors group"
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 whileHover={{ x: -2 }}
@@ -602,7 +612,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                         description: 'Aus dem Department-Layer erstellt'
                     });
                 }}
-                className="absolute top-8 right-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 transition-all text-sm tracking-widest font-light"
+                className="absolute top-36 right-32 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-emerald-300 hover:text-emerald-200 transition-all text-sm tracking-widest font-light min-[1120px]:right-[300px]"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 whileHover={{ scale: 1.04 }}
@@ -613,7 +623,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             </motion.button>
 
             <LayerInsightRail
-                className="left-8 top-32 z-40"
+                className="left-8 top-52 z-40"
                 eyebrow={deptTitle || 'Abteilung'}
                 title={hoveredSpaceDetails?.displayName || deptTitle || 'Abteilung'}
                 badge={hoveredSpaceDetails ? 'Bereich im Fokus' : 'Bereichsübersicht'}
@@ -715,7 +725,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             </LayerInsightRail>
 
             <motion.div
-                className="pointer-events-none absolute right-8 top-32 z-30 hidden w-[340px] overflow-hidden p-4 glass-panel xl:block"
+                className="pointer-events-auto absolute right-8 top-52 z-30 hidden max-h-[calc(100%-19rem)] w-[300px] overflow-y-auto p-4 glass-panel min-[1120px]:block"
                 initial={{ opacity: 0, x: 18 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.45, delay: 0.08 }}
@@ -749,6 +759,67 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                             <div className="mt-1 text-lg text-violet-100">{docsCount}</div>
                         </div>
                     </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 900, height: 640 } })}
+                            className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left transition-colors hover:bg-white/[0.07]"
+                        >
+                            <Users size={14} className="text-emerald-200/70" />
+                            <div className="mt-2 text-[9px] uppercase tracking-[0.16em] text-white/34">Team</div>
+                            <div className="mt-1 text-sm text-white/78">{peers.length} online</div>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => openPane({
+                                id: 'finder-main',
+                                type: 'finder',
+                                title: deptTitle || 'Abteilung',
+                                data: { departmentId: activeDepartmentId, companyId: activeCompanyId || undefined },
+                                size: { width: 1100, height: 760 },
+                            })}
+                            className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left transition-colors hover:bg-white/[0.07]"
+                        >
+                            <FolderOpen size={14} className="text-cyan-200/70" />
+                            <div className="mt-2 text-[9px] uppercase tracking-[0.16em] text-white/34">Finder</div>
+                            <div className="mt-1 text-sm text-white/78">{docsCount} Docs</div>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => openPane({ id: 'chat-main', type: 'chat', title: 'MORA', size: { width: 860, height: 680 } })}
+                            className="rounded-2xl border border-white/10 bg-white/[0.035] px-3 py-3 text-left transition-colors hover:bg-white/[0.07]"
+                        >
+                            <Sparkles size={14} className="text-amber-200/70" />
+                            <div className="mt-2 text-[9px] uppercase tracking-[0.16em] text-white/34">MÔRA</div>
+                            <div className="mt-1 text-sm text-white/78">Fragen</div>
+                        </button>
+                    </div>
+
+                    {recentDocs.length > 0 && (
+                        <div className="mt-4 border-t border-white/8 pt-3">
+                            <div className="mb-2 text-[9px] uppercase tracking-[0.18em] text-white/34">Zuletzt bearbeitet</div>
+                            <div className="space-y-1.5">
+                                {recentDocs.slice(0, 2).map((doc) => (
+                                    <button
+                                        key={doc.id}
+                                        type="button"
+                                        onClick={() => openPane({
+                                            id: `document-${doc.id}`,
+                                            type: 'document',
+                                            title: doc.title || 'Dokument',
+                                            data: { nodeId: doc.id },
+                                            size: { width: 900, height: 700 },
+                                        })}
+                                        className="flex w-full items-center gap-2 rounded-xl border border-white/8 bg-black/15 px-3 py-2 text-left transition-colors hover:bg-white/[0.06]"
+                                    >
+                                        <FileText size={12} className="shrink-0 text-violet-200/60" />
+                                        <span className="truncate text-[11px] text-white/58">{doc.title}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     <div className="mt-4 space-y-2">
                         {spaces.slice(0, 4).map((space) => {
@@ -1161,6 +1232,3 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
         </div>
     );
 };
-
-
-

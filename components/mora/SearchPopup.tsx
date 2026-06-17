@@ -247,7 +247,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.95 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                className="fixed bottom-24 left-1/2 z-[200] w-[600px] max-h-[500px] -translate-x-1/2 pointer-events-auto"
+                className="fixed bottom-24 left-1/2 z-[960] w-[min(600px,calc(100vw-2rem))] max-h-[500px] -translate-x-1/2 pointer-events-auto"
             >
                 {/* Backdrop */}
                 <div

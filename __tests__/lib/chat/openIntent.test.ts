@@ -1,4 +1,30 @@
-import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
+import {
+  buildOpenIntentReceipt,
+  extractDirectOpenTarget,
+  findDepartmentIntentMatch,
+  toChatOpenableResult,
+} from '@/lib/chat/openIntent';
+
+describe('direct open intent matching', () => {
+  const departments = [
+    { id: 'product', name: 'Product' },
+    { id: 'intelligence', name: 'Intelligence' },
+    { id: 'growth', name: 'Growth' },
+  ];
+
+  it('extracts a target even when command and target are joined', () => {
+    expect(extractDirectOpenTarget('öffneintellgence')).toBe('intellgence');
+  });
+
+  it('resolves a small department typo without opening search', () => {
+    expect(findDepartmentIntentMatch('intellgence', departments)?.id).toBe('intelligence');
+  });
+
+  it('does not guess an unrelated short or distant target', () => {
+    expect(findDepartmentIntentMatch('plan', departments)).toBeNull();
+    expect(findDepartmentIntentMatch('quartalsbericht', departments)).toBeNull();
+  });
+});
 
 describe('buildOpenIntentReceipt', () => {
   it('builds chips from query, destination and next step', () => {

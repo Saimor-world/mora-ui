@@ -64,22 +64,16 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
             />
 
             <div className="relative p-4">
-                <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                            <span
-                                className="h-2 w-2 rounded-full"
-                                style={{ background: accent, boxShadow: `0 0 14px ${accent}` }}
-                            />
-                            <div className="text-[10px] uppercase tracking-[0.24em] text-white/40">
-                                {eyebrow}
-                            </div>
-                        </div>
-                        <div className="mt-2 truncate text-[30px] font-light tracking-[0.02em] text-white/90">
-                            {title}
+                <div className="flex items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <span
+                            className="h-2 w-2 shrink-0 rounded-full"
+                            style={{ background: accent, boxShadow: `0 0 14px ${accent}` }}
+                        />
+                        <div className="truncate text-[10px] uppercase tracking-[0.24em] text-white/40">
+                            {eyebrow}
                         </div>
                     </div>
-
                     <div className="flex items-center gap-2">
                         {badge && (
                             <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/46">
@@ -100,6 +94,10 @@ export const LayerInsightRail: React.FC<LayerInsightRailProps> = ({
                             </button>
                         ) : null}
                     </div>
+                </div>
+
+                <div className="mt-2 break-words text-[26px] font-light leading-tight tracking-[0.02em] text-white/90">
+                    {title}
                 </div>
 
                 {!isExpanded && (

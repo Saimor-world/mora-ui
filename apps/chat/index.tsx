@@ -22,7 +22,12 @@ import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
 import { toToolTrace, type ToolTraceStep } from '@/lib/chat/toolTrace';
 import { ToolTrace } from '@/components/chat/ToolTrace';
-import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
+import {
+    buildOpenIntentReceipt,
+    extractDirectOpenTarget,
+    findDepartmentIntentMatch,
+    toChatOpenableResult,
+} from '@/lib/chat/openIntent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -428,6 +433,15 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             return { type: 'global_search' };
         }
 
+        const directTarget = extractDirectOpenTarget(text);
+        if (directTarget) {
+            const departmentMatch = findDepartmentIntentMatch(directTarget, safeDepartments);
+            if (departmentMatch) {
+                return { type: 'navigate', target: departmentMatch.id };
+            }
+            return { type: 'search', target: directTarget };
+        }
+
         // Navigation commands
         if (lower.includes('zeig') || lower.includes('zeige') || lower.includes('show') || lower.includes('geh zu') || lower.includes('go to')) {
             // Find department name
@@ -470,23 +484,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 source: 'ai',
             });
             useNavStore.getState().navigateToDepartment(deptId);
-            openPane({
-                id: 'finder-main',
-                type: 'finder',
-                title: dept.name,
-                data: {
-                    departmentId: dept.id,
-                    departmentName: dept.name,
-                    companyId: activeCompanyId || dept.company_id || undefined,
-                    showUpload: true
-                },
-                size: { width: 1280, height: 820 }
-            });
-
-            return `✨ Ich navigiere zu **${dept.name}** und öffne den Finder!`;
+            return `✨ Ich öffne **${dept.name}**.`;
         }
         return 'Department nicht gefunden.';
-    }, [safeDepartments, activeCompanyId, openPane]);
+    }, [safeDepartments]);
 
     // Execute search
     const executeSearch = useCallback((query: string, global: boolean = false) => {
@@ -1609,4 +1610,3 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         </GlassPanel>
     );
 }
-
