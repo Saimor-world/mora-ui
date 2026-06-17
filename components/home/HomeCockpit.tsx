@@ -89,11 +89,12 @@ function WidgetGlanceCard({ type, accent, context }: { type: string; accent: str
     if (!def) return null;
     return (
         <div
-            className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.09] backdrop-blur-3xl shadow-[0_20px_60px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)]"
-            style={{ backgroundColor: 'rgba(6, 8, 20, 0.72)' }}
+            className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.16] backdrop-blur-2xl shadow-[0_8px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.10)]"
+            style={{ backgroundColor: 'rgba(8, 12, 30, 0.68)' }}
         >
             <div className={`pointer-events-none absolute left-0 top-0 h-[2px] w-full ${accent}`} />
-            <div className="pointer-events-none absolute inset-0 opacity-[0.45]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.07), transparent 50%)' }} />
+            <div className="pointer-events-none absolute inset-0 opacity-[0.5]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.09), transparent 55%)' }} />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-24 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.03), transparent)' }} />
             <ZoneLabel>{def.icon}{def.label}</ZoneLabel>
             <div className="relative z-[1] min-h-0 flex-1 px-4 pb-4">
                 {def.render({ context })}
@@ -196,10 +197,10 @@ export function HomeCockpit(props: HomeCockpitProps) {
     };
 
     return (
-        <div className="flex h-full flex-col gap-4 overflow-y-auto pb-2 pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.3) transparent' }}>
+        <div className="flex h-full flex-col gap-3 overflow-hidden pr-1">
 
             {/* ── Greeting header with living MÔRA presence ── */}
-            <motion.div {...fade(0)} className="flex items-start justify-between gap-4">
+            <motion.div {...fade(0)} className="flex shrink-0 items-start justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                     {/* MÔRA orb — breathing, scene-coloured, opens MÔRA on click */}
                     <button
@@ -279,7 +280,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
             {/* ── Org stats strip — glass badges with glow ── */}
             {homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
-                <motion.div {...fade(0.04)} className="flex flex-wrap gap-1.5">
+                <motion.div {...fade(0.04)} className="flex shrink-0 flex-wrap gap-1.5">
                     {[
                         { label: 'Abteilungen', value: homeView.org_stats.departments, icon: <Users size={11} /> },
                         { label: 'Dokumente', value: homeView.org_stats.documents, icon: <FileText size={11} /> },
@@ -310,7 +311,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                 const titledChanges = (homeView?.changes ?? []).filter(c => c.title && c.title.trim().length > 0);
                 if (titledChanges.length === 0) return null;
                 return (
-                    <motion.div {...fade(0.06)}>
+                    <motion.div {...fade(0.06)} className="shrink-0">
                         <ZoneCard accent="bg-gradient-to-r from-violet-400/55 via-indigo-300/35 to-transparent">
                             <ZoneLabel>
                                 <Brain size={11} className="mr-1.5 inline opacity-70" aria-hidden />
@@ -334,43 +335,37 @@ export function HomeCockpit(props: HomeCockpitProps) {
                 );
             })()}
 
-            {/* ── Widget glance — the 3 old cockpit panels are now real widgets
-                 from the one widget system. Read-only here (Home = lock screen);
-                 the editable desktop lives in Universe. ── */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <motion.div {...fade(0.08)} className="h-[340px]">
-                    <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/60 via-sky-300/40 to-transparent" context={glanceContext} />
-                </motion.div>
-                <motion.div {...fade(0.14)} className="h-[340px]">
-                    <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/60 via-indigo-300/40 to-transparent" context={glanceContext} />
-                </motion.div>
-                <motion.div {...fade(0.20)} className="h-[340px]">
-                    <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/50 via-teal-300/30 to-transparent" context={glanceContext} />
-                </motion.div>
-            </div>
+            {/* ── Widget glance — fills all remaining height proportionally.
+                 No fixed px: two flex rows (55/45 split) fill the available
+                 lock-screen space without scrolling. ── */}
+            <div className="flex min-h-0 flex-1 flex-col gap-3">
+                {/* Row 1: meinTag / team / signals — 55% of widget area */}
+                <div className="min-h-0 flex-[55]">
+                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        <motion.div {...fade(0.08)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/60 via-sky-300/40 to-transparent" context={glanceContext} />
+                        </motion.div>
+                        <motion.div {...fade(0.14)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/60 via-indigo-300/40 to-transparent" context={glanceContext} />
+                        </motion.div>
+                        <motion.div {...fade(0.20)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/50 via-teal-300/30 to-transparent" context={glanceContext} />
+                        </motion.div>
+                    </div>
+                </div>
 
-            {/* Second glance row — Nightwatch (server pulse) + the clock ── */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <motion.div {...fade(0.24)} className="h-[300px] sm:col-span-2">
-                    <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} />
-                </motion.div>
-                <motion.div {...fade(0.28)} className="h-[300px]">
-                    <WidgetGlanceCard type="clock" accent="bg-gradient-to-r from-white/30 via-white/15 to-transparent" context={glanceContext} />
-                </motion.div>
+                {/* Row 2: Nightwatch (server pulse) + clock — 45% of widget area */}
+                <div className="min-h-0 flex-[45]">
+                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3">
+                        <motion.div {...fade(0.24)} className="min-h-0 h-full sm:col-span-2">
+                            <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} />
+                        </motion.div>
+                        <motion.div {...fade(0.28)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="clock" accent="bg-gradient-to-r from-white/30 via-white/15 to-transparent" context={glanceContext} />
+                        </motion.div>
+                    </div>
+                </div>
             </div>
-
-            {/* ── Weiterarbeiten ── */}
-            {(recentActivityItems.length > 0 || deptTiles.some((d) => d.active)) && (
-                <motion.div {...fade(0.28)}>
-                    <WeiterarbeitenStrip
-                        recentActivityItems={recentActivityItems}
-                        deptTiles={deptTiles}
-                        onOpenRecentActivity={onOpenRecentActivity}
-                        onOpenFinder={onOpenFinder}
-                        onGoExplore={onGoExplore}
-                    />
-                </motion.div>
-            )}
         </div>
     );
 }
