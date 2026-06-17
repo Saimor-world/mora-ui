@@ -118,17 +118,6 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
       })),
     { ssr: false, loading: PreviewFallback },
   ) as React.ComponentType,
-  LiquidOrb: dynamic(
-    () =>
-      import("@/components/mora/LiquidOrb").then((m) => ({
-        default: () => (
-          <div className="flex h-40 items-center justify-center">
-            <div className="w-48 h-48"><m.LiquidOrb color="#34d399" state="idle" /></div>
-          </div>
-        ),
-      })),
-    { ssr: false, loading: PreviewFallback },
-  ) as React.ComponentType,
   PlasmaOrb: dynamic(
     () =>
       import("@/components/mora/PlasmaOrb").then((m) => ({
@@ -140,7 +129,17 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
       })),
     { ssr: false, loading: PreviewFallback },
   ) as React.ComponentType,
-  MoraOrb: devDynamic(() => import("@/components/mora/MoraOrb"), "MoraOrb"),
+  MoraOrb: dynamic(
+    () =>
+      import("@/components/mora/MoraOrb").then((m) => ({
+        default: () => (
+          <div className="flex h-56 items-center justify-center">
+            <m.MoraOrb state="idle" size="lg" interactive />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
   StarField: dynamic(
     () =>
       import("@/components/visual/StarField").then((m) => ({

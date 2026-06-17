@@ -19,10 +19,12 @@ interface MoraOrbProps {
 }
 
 /**
- * V10 "RESONATING" MORA ORB
- * 
- * Now breathes in sync with the ForestLightCanopy.
- * Enhanced Steam Deck x Organic aesthetics.
+ * THE ORB (V11) — unified Glas + Plasma-Herz
+ *
+ * The single canonical orb. One luminous body: a liquid-morphing glass hub
+ * breathing in sync with its PlasmaOrb heart, both driven by one state→colour
+ * palette. Replaces the old 3D/WebGL LiquidOrb (removed) — the liquid feel now
+ * lives in the 2D hub morph, so no WebGL cost and no preview crash.
  */
 const SIZE_CLASSES: Record<NonNullable<MoraOrbProps['size']>, { wrapper: string; hub: string; plasma: number }> = {
     sm: { wrapper: 'w-[80px] h-[80px]',  hub: 'w-16 h-16 p-1.5', plasma: 52 },
@@ -91,16 +93,19 @@ export function MoraOrb({
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
-            {/* V10 CORONA RESONANCE */}
-            <div
+            {/* CORONA RESONANCE — breathes in sync with the hub morph (one body) */}
+            <motion.div
                 className="absolute inset-[-60%] rounded-full mix-blend-screen pointer-events-none"
                 style={{
                     background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
                     filter: 'blur(60px)',
-                    opacity: isHovered ? 0.3 : 0.18,
-                    transform: `scale(${isHovered ? 1.15 : 1})`,
-                    transition: 'opacity 180ms ease, transform 180ms ease',
                 }}
+                animate={isHovered
+                    ? { opacity: 0.3, scale: 1.15 }
+                    : { opacity: [0.14, 0.22, 0.14], scale: [1, 1.05, 1] }}
+                transition={isHovered
+                    ? { duration: 0.18, ease: 'easeOut' }
+                    : { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' }}
             />
 
             {/* V10 STEAM DECK GLASS BORDER - THE HUB */}
@@ -110,7 +115,16 @@ export function MoraOrb({
                         background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,20,15,0.8) 100%)',
                         boxShadow: `0 20px 60px rgba(0,0,0,0.8), 0 0 50px ${color}60, inset 0 0 30px ${color}30`,
                 }}
-                animate={{ borderRadius: '48% 52% 50% 50% / 52% 48% 50% 50%' }}
+                animate={{
+                    borderRadius: [
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                        '53% 47% 52% 48% / 47% 53% 49% 51%',
+                        '47% 53% 48% 52% / 52% 48% 53% 47%',
+                        '50% 50% 53% 47% / 48% 52% 47% 53%',
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                    ],
+                }}
+                transition={{ borderRadius: { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' } }}
                 whileHover={{ scale: 1.1, boxShadow: `0 20px 80px rgba(0,0,0,0.9), 0 0 70px ${color}90, inset 0 0 40px ${color}40` }}
                 whileTap={{ scale: 0.95 }}
             >

@@ -47,7 +47,7 @@ Gelöscht: 22 Panes + `PaneShell` (verwaist nach Pane-Löschung).
 
 Tot, aber Quelle fürs jeweilige Zielprodukt / die genannten Zukunftsthemen.
 
-- **Orb:** `mora/LiquidOrb` · `effects/OrbMessageEffect`  (+ live `mora/PlasmaOrb`, `mora/MoraOrb`)
+- **Orb:** ✅ Produkt gebaut — `mora/MoraOrb` (= „Der Orb", Glas + Plasma-Herz) ist kanonisch, `mora/LiquidOrb` (3D/WebGL) gelöscht, `mora/PlasmaOrb` bleibt als internes Herz. Rest-Quelle: `effects/OrbMessageEffect`
 - **Mycelium / Semantik:** `organic/Mycelium25D` · `organic/MyceliumLayer` · `visual/OrbitalCanvas` · `visual/SemanticConstellation` · `semantic/SemanticLinesRenderer` · `layers/FolderLayer`  (+ live `organic/MyceliumOverlay`, `organic/MyceliumField3D`, `mora/MyceliumDropfield`)
 - **Mora-Raum:** `mora/MoraThoughtStream` · `mora/QuickMemoryInput` · `mora/CognitionBadge` · `mora/MoraCommand` · `mora/MoraHint` · `organic/InsightCard` · `home/MemoryWidget` · `ui/MemoryBadge` · `intelligence/SynthesisPanel` · `intelligence/IntelligencePlayfield`
 - **Universe-Neudenken:** `home/DepartmentCluster` · `home/layers/{DeepSpaceLayer,MoonLayer,PlanetLayer}` · `orbits/CompanyOrbit` · `spaces/SpaceTileGrid`
