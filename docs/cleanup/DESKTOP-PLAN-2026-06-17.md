@@ -8,13 +8,23 @@ Stand 2026-06-17. Vision + Bauplan für den AI-gesteuerten, datengefüllten Desk
 
 Code-Beleg: `UniverseView.tsx:908` — *„Universe IS the Desktop — widgets always float on the starfield"*. Gerüst `universeMode: 'map' | 'desktop'` existiert schon, nur nicht fertig verdrahtet.
 
+## Zwei Flächen — beide bleiben (WICHTIG)
+
+| | **Home** | **Universe = Desktop** |
+|---|---|---|
+| Rolle | **Sperrbildschirm-Glance** — wie wenn das Handy gesperrt ist | Voller, editierbarer Arbeitsraum |
+| Gefühl | ruhig, kuratiert, auf einen Blick | reich, anklickbar, draggbar, hinter den Planeten |
+| Inhalt | die *wichtigsten* Widgets, read-only Glance | *alle* Widgets |
+
+**Home bleibt** — es ist ein eigenes starkes Produkt, NICHT auflösen. Das alte Cockpit (`HomeCockpit.tsx`, 3 Panels) wird *nicht gekillt*, sondern in saubere **Widgets** überführt; Home zeigt davon eine ruhige, kuratierte Glance-Auswahl. Universe zeigt die volle Fläche.
+
 ## Die große Verschiebung: EIN Widget-System überall
 
 Heute zwei parallele Welten:
 - **Home-Cockpit** (`components/home/HomeCockpit.tsx`): 3 feste Panels (Mein Tag / Team / Signale) — *„alt, nicht schön, passen nicht mehr"*.
 - **WidgetGrid** (`components/widgets/`): das echte, editierbare Widget-System (Home-rechts + Universe).
 
-→ **Auflösen:** Die 3 Cockpit-Panels werden zu echten **Widgets** im WidgetGrid. Danach gibt es EINE Widget-Fläche, die überall (Home + Universe) hinter den Planeten lebt — editierbar, draggbar, scope-bewusst.
+→ **Vereinheitlichen (NICHT Home killen):** Die 3 Cockpit-Panels werden zu echten **Widgets** im WidgetGrid. Danach gibt es EINE Widget-Quelle für beide Flächen: **Home** zeigt eine ruhige kuratierte Glance-Auswahl, **Universe** die volle editierbare Fläche hinter den Planeten.
 - Mein Tag → **Tag/Kalender-Widget** · Team → **Team-Widget** · Signale → **Signale-Widget**
 - Dazu bestehend: **Uhr** (geliebt — Qualitäts-Vorbild), Datenlage, Nightwatch.
 
@@ -35,7 +45,7 @@ Mail, Kalender, Cloud (OneDrive/Google Drive) über Integrationen verbunden, via
 
 ## Baureihenfolge (Phasen — je eigener Branch/Commit, tsc+build grün)
 
-1. **Cockpit → Widgets**: die 3 Home-Panels als echte Widgets in die Registry; Home-Cockpit auflösen, EINE Widget-Fläche. (Größter Architektur-Schritt.)
+1. **Cockpit → Widgets**: die 3 Home-Panels als echte Widgets in die Registry. **Home bleibt** als ruhige Glance-Fläche (Sperrbildschirm) — zeigt eine kuratierte Widget-Auswahl; Universe zeigt alle. EINE Widget-Quelle. (Größter Architektur-Schritt.)
 2. **Widget-Qualität**: Nightwatch klickbar + echte Daten; Mail/Kalender/Cloud-Widgets real (honest empty state wenn keine Daten).
 3. **Planeten-Toggle** (map/desktop) fertig + sauberer Übergang.
 4. **Bridge**: externe Datenquellen sauber in Widgets spiegeln.
