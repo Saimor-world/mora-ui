@@ -27,7 +27,6 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
-import { WidgetGrid } from '@/components/widgets/WidgetGrid';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -827,24 +826,8 @@ export const HomeSurface: React.FC = () => {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_90%_at_50%_42%,rgba(4,3,14,0.62)_0%,rgba(4,3,14,0.44)_46%,rgba(4,3,14,0.30)_100%)]" />
             <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
-            {/* HOME WIDGETS — right-side panel on large screens; cockpit keeps the center stage.
-                Hidden on mobile (< lg) where the cockpit fills the viewport. */}
-            {!websiteEntryContext && (
-                <div className="absolute top-28 bottom-28 right-4 z-[2] pointer-events-none hidden lg:block lg:w-[440px] xl:w-[520px] 2xl:w-[600px] overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
-                    <div className="pointer-events-auto">
-                        <WidgetGrid
-                            surface="home"
-                            context={{
-                                surface: 'home',
-                                openMora: openMora,
-                                openFinder: openFinder,
-                                openNightwatch: openNightwatch,
-                                goExplore: () => setCoreMode('explore'),
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+            {/* Home is now a single curated widget glance (rendered inside HomeCockpit).
+                The editable widget desktop lives in Universe — no duplicate right panel. */}
 
             {!websiteEntryContext && (
                 <form
@@ -913,6 +896,7 @@ export const HomeSurface: React.FC = () => {
                         onOpenMora={openMora}
                         onOpenRecentActivity={openRecentActivity}
                         onGoExplore={() => setCoreMode('explore')}
+                        onOpenNightwatch={openNightwatch}
                     />
                     </div>
                     </div>
