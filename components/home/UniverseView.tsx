@@ -714,7 +714,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
     const backgroundCalmFactor = hasUniverseInteraction ? 0.78 : 1;
-    const widgetGlanceOpacity = hasUniverseInteraction ? 0.16 : 0.44;
+    const widgetGlanceOpacity = hasUniverseInteraction ? 0.25 : 0.44;
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
@@ -1312,7 +1312,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         clearHoverRelease();
                                         setLockedTooltipDeptId(p.id);
                                     }}
-                                    style={{ opacity: isDimmed ? 0.22 : 0.4, cursor: 'pointer', filter: 'grayscale(0.6)', transition: 'opacity 0.45s ease' }}
+                                    style={{ opacity: isDimmed ? 0.38 : 0.4, cursor: 'pointer', filter: 'grayscale(0.6)', transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)' }}
                                 >
                                     <Planet
                                         department={p as any}
@@ -1336,7 +1336,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                     />
                                 </div>
                             ) : (
-                                <div style={{ opacity: isDimmed ? 0.28 : 1, transition: 'opacity 0.45s ease' }} className="pointer-events-auto">
+                                <div style={{ opacity: isDimmed ? 0.6 : 1, transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)' }} className="pointer-events-auto">
                                     <Planet
                                         department={p as any}
                                         spaces={spacesList}
