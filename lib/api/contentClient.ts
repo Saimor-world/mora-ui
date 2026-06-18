@@ -66,15 +66,44 @@ export async function fetchPersonalSpace(): Promise<PersonalSpace | null> {
 
 export interface PersonalHomeNote {
     content: string;
+    noteId?: string;
     updated_at?: string;
 }
 
+interface PersonalHomeNoteApiPayload {
+    space?: PersonalSpace | null;
+    folder?: { id: string; name?: string } | null;
+    note?: {
+        id: string;
+        title?: string;
+        name?: string;
+        content?: string;
+        updated_at?: string;
+    } | null;
+}
+
+function normalizePersonalHomeNote(payload: PersonalHomeNoteApiPayload | null): PersonalHomeNote | null {
+    if (!payload) return null;
+    const note = payload.note;
+    if (!note) {
+        return { content: '' };
+    }
+    const content = typeof note.content === 'string' ? note.content : '';
+    return {
+        content,
+        noteId: note.id,
+        updated_at: note.updated_at,
+    };
+}
+
 export async function fetchPersonalHomeNote(): Promise<PersonalHomeNote | null> {
-    return coreGet('/v3/users/me/personal-home-note', { isOptional: true });
+    const payload = await coreGet('/v3/users/me/personal-home-note', { isOptional: true }) as PersonalHomeNoteApiPayload | null;
+    return normalizePersonalHomeNote(payload);
 }
 
 export async function savePersonalHomeNote(content: string): Promise<PersonalHomeNote | null> {
-    return corePut('/v3/users/me/personal-home-note', { content }, { isOptional: true });
+    const payload = await corePut('/v3/users/me/personal-home-note', { content }, { isOptional: true }) as PersonalHomeNoteApiPayload | null;
+    return normalizePersonalHomeNote(payload);
 }
 
 // ── My Content (v3) ───────────────────────────────────────────────────────────

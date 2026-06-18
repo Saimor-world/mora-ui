@@ -191,8 +191,8 @@ export async function corePost(path: string, body: any, options: Omit<CoreReques
     return coreRequest(path, { ...options, method: 'POST', body });
 }
 
-export async function corePatch(path: string, body: any): Promise<any> {
-    return coreRequest(path, { method: 'PATCH', body });
+export async function corePatch(path: string, body: any, options: Omit<CoreRequestOptions, 'method'> = {}): Promise<any> {
+    return coreRequest(path, { ...options, method: 'PATCH', body });
 }
 
 export async function corePut(path: string, body: any, options: Omit<CoreRequestOptions, 'method'> = {}): Promise<any> {

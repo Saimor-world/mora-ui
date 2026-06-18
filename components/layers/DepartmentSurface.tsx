@@ -105,9 +105,12 @@ export const DepartmentSurface: React.FC = () => {
 
   if (!activeDepartmentId) return null;
 
+  const showWidgetDesktop = mode === 'map';
+
   return (
     <div className="relative w-full h-full">
-      {/* DEPARTMENT WIDGETS — float above all modes, planet map / overview still interactive below */}
+      {/* Editable widget desktop — orbit map mode only; overview uses DepartmentView pillars */}
+      {showWidgetDesktop && (
       <div className="absolute inset-0 z-10 pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
         <div className="pointer-events-auto">
           <WidgetGrid
@@ -123,6 +126,7 @@ export const DepartmentSurface: React.FC = () => {
           />
         </div>
       </div>
+      )}
 
       <div className="absolute top-8 left-1/2 z-50 -translate-x-1/2">
         <div className="flex rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-xl">

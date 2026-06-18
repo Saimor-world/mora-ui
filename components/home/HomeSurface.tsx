@@ -897,6 +897,12 @@ export const HomeSurface: React.FC = () => {
                         onOpenRecentActivity={openRecentActivity}
                         onGoExplore={() => setCoreMode('explore')}
                         onOpenNightwatch={openNightwatch}
+                        privateAreaLabel={privateArea?.label}
+                        privateFolderCount={privateArea?.folderCount}
+                        privateDocumentCount={privateArea?.documentCount}
+                        privateFileCount={privateArea?.fileCount}
+                        onOpenPrivateArea={openPrivateArea}
+                        showOrgOverview={user?.role !== 'member'}
                     />
                     </div>
                     </div>

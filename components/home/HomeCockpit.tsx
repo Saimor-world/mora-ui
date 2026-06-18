@@ -13,9 +13,7 @@ import type { PaneOpenRequest } from '@/lib/store/paneStore';
 import type { RecentKind } from '@/components/home/homeSurfaceFormat';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
-
-// TODO(Phase 2): Wire personal/private scope area to server-persisted user preferences
-// (personal home note exists at GET/PUT /v3/users/me/personal-home-note; account settings sync TBD).
+import { PersonalHomeZone } from '@/components/home/PersonalHomeZone';
 
 // ─── Prop types (kept local — these mirror HomeSurface's local shapes) ─────────
 
@@ -51,6 +49,14 @@ export interface HomeCockpitProps {
     onOpenRecentActivity: (item: CockpitRecentItem) => void;
     onGoExplore:       () => void;
     onOpenNightwatch?: () => void;
+    /** Personal / private scope — server-backed home note + content counts */
+    privateAreaLabel?: string | null;
+    privateFolderCount?: number;
+    privateDocumentCount?: number;
+    privateFileCount?: number;
+    onOpenPrivateArea?: () => void;
+    /** When false, org-wide stats strip is hidden (scoped employees). */
+    showOrgOverview?: boolean;
 }
 
 // ─── Small UI helpers ──────────────────────────────────────────────────────────
@@ -174,6 +180,9 @@ export function HomeCockpit(props: HomeCockpitProps) {
         onOpenMail, onOpenCalendar, onOpenTeam, onOpenIntegrations,
         onOpenFinder, onOpenMora, onOpenRecentActivity, onGoExplore,
         onOpenNightwatch,
+        privateAreaLabel, privateFolderCount, privateDocumentCount, privateFileCount,
+        onOpenPrivateArea,
+        showOrgOverview = true,
     } = props;
 
     // Honest MÔRA presence state — reflects real UI activity, never fabricated insight.
@@ -281,8 +290,19 @@ export function HomeCockpit(props: HomeCockpitProps) {
                 </div>
             </motion.div>
 
-            {/* ── Org stats strip — glass badges with glow ── */}
-            {homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
+            {/* ── Personal scope — private workspace anchor on Home ── */}
+            <motion.div {...fade(0.03)} className="shrink-0">
+                <PersonalHomeZone
+                    privateLabel={privateAreaLabel}
+                    folderCount={privateFolderCount}
+                    documentCount={privateDocumentCount}
+                    fileCount={privateFileCount}
+                    onOpenPrivateArea={onOpenPrivateArea}
+                />
+            </motion.div>
+
+            {/* ── Org stats strip — owners/admins; hidden for scoped employees ── */}
+            {showOrgOverview && homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
                 <motion.div {...fade(0.04)} className="flex shrink-0 flex-wrap gap-1.5">
                     {[
                         { label: 'Abteilungen', value: homeView.org_stats.departments, icon: <Users size={11} /> },

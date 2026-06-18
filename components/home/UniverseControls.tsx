@@ -139,111 +139,69 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     );
 
     return (
-        <div className="fixed top-6 left-1/2 z-50 flex w-[min(1040px,calc(100vw-2rem))] lg:w-[min(900px,calc(100vw-22rem))] -translate-x-1/2 items-center gap-3 rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,rgba(4,10,9,0.74),rgba(0,0,0,0.54))] px-3 py-2.5 text-white shadow-[0_22px_70px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-2 py-2">
+        <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/[0.10] bg-black/45 px-2 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            {/* Context mode badge — compact, no switcher clutter */}
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]">
                 {showModeSwitches ? (
                     <>
                         {visibleModes.includes('owner') && (
-                            <ControlButton
-                                isActive={viewMode === 'owner'}
-                                onClick={() => setViewMode('owner')}
-                                icon={Shield}
-                                label="Owner"
-                            />
+                            <ControlButton isActive={viewMode === 'owner'} onClick={() => setViewMode('owner')} icon={Shield} label="Owner" />
                         )}
-
-                        {visibleModes.includes('owner') && visibleModes.includes('workspace') && (
-                            <div className="h-5 w-px bg-white/12" />
-                        )}
-
                         {visibleModes.includes('workspace') && (
-                            <ControlButton
-                                isActive={viewMode === 'workspace'}
-                                onClick={() => setViewMode('workspace')}
-                                icon={LayoutGrid}
-                                label={workspaceLabel || 'Kontext'}
-                            />
+                            <ControlButton isActive={viewMode === 'workspace'} onClick={() => setViewMode('workspace')} icon={LayoutGrid} label={workspaceLabel || 'Kontext'} />
                         )}
-
-                        {visibleModes.includes('workspace') && visibleModes.includes('demo') && (
-                            <div className="h-5 w-px bg-white/12" />
-                        )}
-
                         {visibleModes.includes('demo') && (
-                            <ControlButton
-                                isActive={viewMode === 'demo'}
-                                onClick={() => setViewMode('demo')}
-                                icon={Activity}
-                                label="Demo"
-                                showLabelAlways={true}
-                            />
+                            <ControlButton isActive={viewMode === 'demo'} onClick={() => setViewMode('demo')} icon={Activity} label="Demo" showLabelAlways />
                         )}
                     </>
                 ) : (
-                    <div className="flex items-center gap-2 rounded-xl border border-violet-400/20 bg-violet-500/[0.10] px-3 py-2 text-[10px] uppercase tracking-[0.18em] text-violet-100">
-                        <LayoutGrid size={13} />
-                        <span>{contextModeLabel}</span>
-                    </div>
+                    <span className="text-violet-200/80">{contextModeLabel}</span>
                 )}
             </div>
 
+            {/* Company name — single line, opens Control Center */}
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="min-w-0 flex-1 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-2.5 text-left transition-colors hover:border-emerald-400/22 hover:bg-emerald-500/[0.08]"
+                className="flex items-center gap-2 rounded-xl px-3 py-1 text-[12px] text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/95"
             >
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/36">
-                    <span>Layer {surfaceLabel}</span>
-                    <span className="text-white/18">/</span>
-                    <span style={{ color: shellContext.accent }}>{contextLabelOverride || shellContext.contextLabel}</span>
-                </div>
-                <div className="mt-1 truncate text-sm text-white/86">{shellContext.title}</div>
-                <div className="mt-1 truncate text-[11px] text-white/44">
-                    {contextSubtitleOverride || shellContext.subtitle}
-                </div>
+                <span className="font-medium">{shellContext.title}</span>
+                {shellContext.contextLabel && (
+                    <span className="text-[10px] text-white/35" style={{ color: shellContext.accent }}>
+                        {contextLabelOverride || shellContext.contextLabel}
+                    </span>
+                )}
             </button>
 
+            {/* HOME / UNIVERSE surface toggle */}
             {showCoreSurfaceSwitch && (
-                <div className="hidden shrink-0 items-center gap-1 rounded-2xl border border-white/10 bg-white/[0.03] p-1 md:flex">
-                    <CoreSurfaceButton
-                        isActive={coreMode === 'home'}
-                        onClick={() => setCoreMode('home')}
-                        icon={Home}
-                        label="Home"
-                    />
-                    <CoreSurfaceButton
-                        isActive={coreMode === 'explore'}
-                        onClick={() => setCoreMode('explore')}
-                        icon={Orbit}
-                        label="Universe"
-                    />
+                <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
+                    <CoreSurfaceButton isActive={coreMode === 'home'} onClick={() => setCoreMode('home')} icon={Home} label="Home" />
+                    <CoreSurfaceButton isActive={coreMode === 'explore'} onClick={() => setCoreMode('explore')} icon={Orbit} label="Universe" />
                 </div>
             )}
 
+            {/* Company switcher — only when multi-company, collapsed to icon+count */}
             {showCompanySwitcher && (
                 <button
                     type="button"
                     onClick={handleContextClick}
-                    className="hidden shrink-0 items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-2 text-white/74 transition-colors hover:border-emerald-400/18 hover:text-emerald-200 md:flex"
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-white/55 transition-colors hover:text-emerald-200"
                     title="Organisation wechseln"
                 >
                     <Globe className="h-3 w-3" />
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-white/56">
-                        Organisationen
-                    </span>
-                    <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-[9px] uppercase tracking-[0.16em] text-emerald-300/68">
-                        {companyCountLabel || operationalCompanyCount}
-                    </span>
+                    <span className="text-[10px] text-emerald-300/68">{companyCountLabel || operationalCompanyCount}</span>
                 </button>
             )}
 
+            {/* Control center icon — collapsed on wide screens too */}
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-white/58 transition-colors hover:border-emerald-400/20 hover:bg-emerald-500/[0.08] hover:text-emerald-200 xl:hidden"
-                title="Control Center öffnen"
+                className="flex shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] p-1.5 text-white/45 transition-colors hover:text-emerald-200 xl:flex"
+                title="Control Center"
             >
-                <PanelTopOpen size={16} />
+                <PanelTopOpen size={14} />
             </button>
         </div>
     );

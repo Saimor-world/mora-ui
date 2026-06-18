@@ -72,6 +72,8 @@ export const queryKeys = {
     companyId ? ['tree', companyId] : ['tree'],
 
   userProfile: () => ['userProfile'] as const,
+  userSettings: () => ['userSettings'] as const,
+  personalHomeNote: () => ['personalHomeNote'] as const,
 
   perceptionRoot: () => ['perception'] as const,
   perception: (key: string) => ['perception', key] as const,

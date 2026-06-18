@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { bridgeNextAuthSignOut } from '@/lib/auth/nextAuthBridge';
 import { useUserProfile } from '@/lib/queries/useUserProfile';
+import { useUserSettings } from '@/lib/queries/useUserSettings';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
@@ -60,6 +61,7 @@ export function useAuthBootstrapper() {
     // The queries themselves handle re-fetch, caching, and error states.
     const { data: profile } = useUserProfile();
     const { data: companies } = useCompanies({ enabled: !!profile });
+    useUserSettings(!!profile?.user_id);
 
     const setUser = useSessionStore((s) => s.setUser);
     const setHasBooted = useSessionStore((s) => s.setHasBooted);
