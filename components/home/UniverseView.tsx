@@ -1298,7 +1298,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
             {focusedPlanet && focusedPlanetMetrics && (
                 <LayerInsightRail
-                    className="left-6 top-24 z-[14] pointer-events-auto"
+                    className="left-1/2 top-24 z-[14] -translate-x-1/2 pointer-events-auto"
                     compact
                     eyebrow={hoverPlanetId ? 'Live Focus' : 'Department Signal'}
                     title={focusedPlanet.name}
@@ -1449,7 +1449,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         <React.Fragment key={p.id}>
                             {!isHomeUniversePreview && !shouldShowPlanetLabel && (
                                 <div
-                                    className="pointer-events-none absolute z-20 max-w-[164px] -translate-x-1/2 translate-y-[52px] truncate rounded-full border border-white/[0.06] bg-black/[0.12] px-2.5 py-1 text-center text-[8px] uppercase tracking-[0.13em] text-white/42 backdrop-blur-[8px]"
+                                    className="pointer-events-none absolute z-20 flex max-w-[190px] -translate-x-1/2 translate-y-[52px] flex-col items-center gap-0.5 rounded-2xl border border-white/[0.06] bg-black/[0.18] px-2.5 py-1.5 text-center backdrop-blur-[8px]"
                                     style={{
                                         left: `${p.x}%`,
                                         top: `${p.y}%`,
@@ -1457,7 +1457,20 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         transition: 'opacity 0.45s ease',
                                     }}
                                 >
-                                    {p.name}
+                                    <span className="max-w-[170px] truncate text-[8px] uppercase tracking-[0.13em] text-white/52">
+                                        {p.name}
+                                    </span>
+                                    {!locked && (spaceCount > 0 || activity > 0) && (
+                                        <span className="flex items-center gap-1 text-[8px] tracking-[0.02em] text-white/34">
+                                            <span
+                                                className="inline-block h-1 w-1 rounded-full"
+                                                style={{ background: health >= 60 ? '#34d399' : health >= 30 ? '#fbbf24' : '#fb7185' }}
+                                            />
+                                            {spaceCount > 0 ? `${spaceCount} ${spaceCount === 1 ? 'Bereich' : 'Bereiche'}` : null}
+                                            {spaceCount > 0 && activity > 0 ? ' · ' : null}
+                                            {activity > 0 ? `${activity} Docs` : null}
+                                        </span>
+                                    )}
                                 </div>
                             )}
                             {locked ? (
@@ -1481,7 +1494,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
                                         showLabel={shouldShowPlanetLabel}
-                                        labelSide={p.x > 57 ? 'left' : 'right'}
+                                        labelSide={p.x >= 50 ? 'left' : 'right'}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             if (isHomeUniversePreview) {
@@ -1503,7 +1516,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
                                         showLabel={shouldShowPlanetLabel}
-                                        labelSide={p.x > 57 ? 'left' : 'right'}
+                                        labelSide={p.x >= 50 ? 'left' : 'right'}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
                                             if (isHomeUniversePreview) {
