@@ -145,9 +145,11 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                     return (
                         <div
                             key={w.i}
-                            className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.1] shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
-                            style={{ backgroundColor: 'rgba(10, 13, 23, 0.62)' }}
+                            className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.12] backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]"
+                            style={{ backgroundColor: 'rgba(8, 11, 24, 0.82)' }}
                         >
+                            {/* Top hairline highlight — lifts the panel off the starfield */}
+                            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), transparent)' }} />
                             <div
                                 className="pointer-events-none absolute inset-0 opacity-[0.5]"
                                 style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }}
