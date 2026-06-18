@@ -2,6 +2,11 @@
 
 import { create } from 'zustand';
 import type { WidgetInstance, WidgetSurface } from '@/lib/widgets/types';
+import {
+    UNIVERSE_GLANCE_BAND,
+    UNIVERSE_GLANCE_CAPS,
+    UNIVERSE_GLANCE_DEFAULTS,
+} from '@/lib/widgets/universeGlance';
 import { filterWidgetsForSurface } from '@/lib/widgets/surfaceAllowlist';
 import {
     fetchDesktopLayouts,
@@ -33,35 +38,39 @@ const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'team-1', type: 'team', x: 6, y: 8, w: 6, h: 4 },
 ];
 
-// Universe widgets are peripheral glance panels — not co-equal with the planet field.
-// They snap to compact edge bands (cols 0–2 left, cols 9–11 right); the wide centre
-// stays open so departments can breathe across the viewport.
-const UNIVERSE_TOTAL_COLS = 12;
-const UNIVERSE_LEFT_BAND_END = 3;     // left glance band occupies cols [0, 3)
-const UNIVERSE_RIGHT_BAND_START = 9;  // right glance band occupies cols [9, 12)
-const UNIVERSE_BAND_WIDTH = UNIVERSE_LEFT_BAND_END;
+// Universe widgets are peripheral glance panels — planets are the hero layer.
+const UNIVERSE_TOTAL_COLS = UNIVERSE_GLANCE_BAND.totalCols;
+const UNIVERSE_LEFT_BAND_END = UNIVERSE_GLANCE_BAND.leftEnd;
+const UNIVERSE_RIGHT_BAND_START = UNIVERSE_GLANCE_BAND.rightStart;
+const UNIVERSE_BAND_WIDTH = UNIVERSE_GLANCE_BAND.bandWidth;
 
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 3, h: 5 },
-    { i: 'clock-1', type: 'clock', x: 0, y: 5, w: 3, h: 2 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 3, h: 4 },
+    { i: 'clock-1', type: 'clock', x: 0, y: 4, w: 2, h: 2 },
     { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 3 },
-    { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 3, h: 4 },
+    { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 2, h: 3 },
 ];
 
 /**
- * Keep universe widgets as compact peripheral glance panels.
- * Each widget is snapped into the nearer edge band and width-clamped so the
- * planet field remains the hero layer. Idempotent — safe on every load/save.
+ * Snap universe widgets to edge glance bands and clamp to content-appropriate caps.
+ * Preserves user positions within bands; oversized saved layouts shrink on load.
  */
 export function reflowUniverseAroundCenter(items: WidgetInstance[]): WidgetInstance[] {
     return items.map((w) => {
-        const width = Math.max(1, Math.min(w.w, UNIVERSE_BAND_WIDTH));
+        const caps = UNIVERSE_GLANCE_CAPS[w.type] ?? { maxW: UNIVERSE_BAND_WIDTH, maxH: 5, minW: 2, minH: 2 };
+        const width = Math.max(caps.minW, Math.min(w.w, UNIVERSE_BAND_WIDTH, caps.maxW));
+        const height = Math.max(caps.minH, Math.min(w.h, caps.maxH));
         const mid = w.x + w.w / 2;
         const x = mid <= UNIVERSE_TOTAL_COLS / 2
             ? Math.max(0, Math.min(UNIVERSE_LEFT_BAND_END - width, w.x))
             : Math.min(UNIVERSE_TOTAL_COLS - width, Math.max(UNIVERSE_RIGHT_BAND_START, w.x));
-        return { ...w, x, w: width };
+        return { ...w, x, w: width, h: height };
     });
+}
+
+/** Default footprint when adding a widget on the universe surface. */
+export function universeWidgetDefaults(type: string): { w: number; h: number } {
+    return UNIVERSE_GLANCE_DEFAULTS[type] ?? { w: 2, h: 2 };
 }
 
 const DEFAULTS: Record<EditableSurface, WidgetInstance[]> = {

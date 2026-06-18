@@ -47,6 +47,10 @@ export interface WidgetContext {
     openIntegrations?: () => void;
     openNightwatch?: () => void;
     goExplore?: () => void;
+    /** Grid cell size — widgets adapt their internal layout to fit. */
+    gridSize?: { w: number; h: number };
+    /** Compact rendering (universe glance panels, small cells). */
+    compact?: boolean;
 }
 
 export interface WidgetDefinition {

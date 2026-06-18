@@ -250,6 +250,7 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { peers } = usePresence();
     const online = peers.filter((p) => p.status === 'online');
     const away = peers.filter((p) => p.status !== 'online');
+    const compact = context.compact;
 
     const AvatarRow: React.FC<{ name: string; isOnline: boolean }> = ({ name, isOnline }) => {
         const initials = nameInitials(name || 'Mitglied');
@@ -281,6 +282,33 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         );
     };
 
+    if (compact) {
+        return (
+            <button type="button" onClick={context.openTeam} className="flex h-full w-full flex-col justify-center gap-2 text-left">
+                <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
+                    <span className="text-[10px] text-white/68">{online.length} online</span>
+                </div>
+                <div className="flex -space-x-1.5">
+                    {[...online, ...away].slice(0, 4).map((p) => {
+                        const initials = nameInitials(p.name || 'M');
+                        const hue = nameHue(p.name || '');
+                        return (
+                            <div
+                                key={p.sessionId}
+                                className="flex h-6 w-6 items-center justify-center rounded-full border border-black/40 text-[8px] font-medium"
+                                style={{ background: `hsla(${hue},55%,40%,0.35)`, color: `hsla(${hue},80%,75%,0.9)` }}
+                            >
+                                {initials}
+                            </div>
+                        );
+                    })}
+                    {peers.length === 0 && <span className="text-[10px] text-white/38">Niemand online</span>}
+                </div>
+            </button>
+        );
+    }
+
     return (
         <div className="flex h-full flex-col gap-2">
             <div className="flex items-center gap-2 mb-0.5">
@@ -300,6 +328,31 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data } = useHomeView();
     const attention = data?.attention ?? [];
+    const compact = context.compact;
+
+    if (compact) {
+        return (
+            <button type="button" onClick={context.openMora} className="flex h-full w-full flex-col justify-center gap-1.5 text-left">
+                <div className="flex items-center justify-between">
+                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Signale</span>
+                    <span
+                        className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] tabular-nums"
+                        style={{ background: attention.length > 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.06)', color: attention.length > 0 ? 'rgb(251,191,36)' : 'rgba(255,255,255,0.35)' }}
+                    >
+                        {attention.length}
+                    </span>
+                </div>
+                {attention[0] ? (
+                    <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{attention[0].title}</span>
+                ) : (
+                    <span className="flex items-center gap-1.5 text-[10px] text-white/40">
+                        <CheckCircle2 size={11} className="text-emerald-400/55" /> Alles ruhig
+                    </span>
+                )}
+            </button>
+        );
+    }
+
     return (
         <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
             {attention.length > 0 && (
@@ -337,24 +390,25 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     );
 };
 
-const OrgStatsWidget: React.FC<{ context: WidgetContext }> = () => {
+const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data } = useHomeView();
     const s = data?.org_stats;
+    const compact = context.compact;
     if (!s) return <Empty>Noch keine Organisationsdaten.</Empty>;
     const rows = [
         { label: 'Abteilungen', value: s.departments ?? 0 },
         { label: 'Bereiche',    value: s.spaces      ?? 0 },
         { label: 'Ordner',      value: s.folders     ?? 0 },
         { label: 'Dokumente',   value: s.documents   ?? 0 },
-        ...(s.members != null ? [{ label: 'Mitglieder', value: s.members }] : []),
+        ...(s.members != null && !compact ? [{ label: 'Mitglieder', value: s.members }] : []),
     ];
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
     return (
-        <div className="flex h-full flex-col justify-center gap-2">
+        <div className={`flex h-full flex-col justify-center ${compact ? 'gap-1' : 'gap-2'}`}>
             {rows.map(({ label, value }) => (
-                <div key={label} className="flex items-center gap-2">
-                    <span className="w-[72px] shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
-                    <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div key={label} className="flex items-center gap-1.5">
+                    <span className={`shrink-0 text-right uppercase tracking-[.12em] text-white/35 ${compact ? 'w-[52px] text-[7px]' : 'w-[72px] text-[9px]'}`}>{label}</span>
+                    <div className="flex-1 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
                         <div
                             className="h-full rounded-full"
                             style={{
@@ -364,7 +418,7 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = () => {
                             }}
                         />
                     </div>
-                    <span className="w-7 shrink-0 text-right text-[11px] tabular-nums text-white/55">{value}</span>
+                    <span className={`shrink-0 text-right tabular-nums text-white/55 ${compact ? 'w-5 text-[9px]' : 'w-7 text-[11px]'}`}>{value}</span>
                 </div>
             ))}
         </div>
@@ -392,7 +446,7 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
     </div>
 );
 
-const ClockWidget: React.FC<{ context: WidgetContext }> = () => {
+const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const [now, setNow] = React.useState(() => new Date());
     React.useEffect(() => {
         const t = window.setInterval(() => setNow(new Date()), 1000);
@@ -418,23 +472,37 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = () => {
         return { x1: 50 + (major ? 35 : 37) * Math.cos(a), y1: 50 + (major ? 35 : 37) * Math.sin(a), x2: 50 + 42 * Math.cos(a), y2: 50 + 42 * Math.sin(a), major };
     });
     const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+    const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
+
+    const face = (
+        <svg viewBox="0 0 100 100" className="h-full w-full" aria-label={`Uhr ${h}:${String(m).padStart(2,'0')}`}>
+            <circle cx="50" cy="50" r="44" fill="rgba(8,11,24,0.35)" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+            <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(var(--scene-rgb,16,185,129),0.18)" strokeWidth="1.5" />
+            {ticks.map((t, i) => (
+                <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+                    stroke={t.major ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.1)'}
+                    strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round"
+                />
+            ))}
+            <line x1="50" y1="50" x2={hr.x} y2={hr.y} stroke="rgba(255,255,255,0.78)" strokeWidth="2.5" strokeLinecap="round" />
+            <line x1="50" y1="50" x2={mr.x} y2={mr.y} stroke="rgba(255,255,255,0.6)"  strokeWidth="1.5" strokeLinecap="round" />
+            <line x1="50" y1="50" x2={sr.x} y2={sr.y} stroke="rgba(var(--scene-rgb,16,185,129),0.9)" strokeWidth="1" strokeLinecap="round" />
+            <circle cx="50" cy="50" r="2.5" fill="rgba(var(--scene-rgb,16,185,129),0.9)" />
+        </svg>
+    );
+
+    if (compact) {
+        return (
+            <div className="flex h-full w-full flex-col items-center justify-center">
+                <div className="aspect-square h-[88%] w-[88%] max-h-full max-w-full">{face}</div>
+                <div className="mt-0.5 text-[7px] uppercase tracking-[0.14em] text-white/30">{date}</div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-full flex-col items-center justify-center gap-1">
-            <svg viewBox="0 0 100 100" className="w-full" style={{ maxHeight: 110 }} aria-label={`Uhr ${h}:${String(m).padStart(2,'0')}`}>
-                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="1" />
-                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(var(--scene-rgb,16,185,129),0.12)" strokeWidth="1.5" />
-                {ticks.map((t, i) => (
-                    <line key={i} x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-                        stroke={t.major ? 'rgba(255,255,255,0.32)' : 'rgba(255,255,255,0.1)'}
-                        strokeWidth={t.major ? 1.5 : 0.8} strokeLinecap="round"
-                    />
-                ))}
-                <line x1="50" y1="50" x2={hr.x} y2={hr.y} stroke="rgba(255,255,255,0.78)" strokeWidth="2.5" strokeLinecap="round" />
-                <line x1="50" y1="50" x2={mr.x} y2={mr.y} stroke="rgba(255,255,255,0.6)"  strokeWidth="1.5" strokeLinecap="round" />
-                <line x1="50" y1="50" x2={sr.x} y2={sr.y} stroke="rgba(var(--scene-rgb,16,185,129),0.9)" strokeWidth="1" strokeLinecap="round" />
-                <circle cx="50" cy="50" r="2.5" fill="rgba(var(--scene-rgb,16,185,129),0.9)" />
-            </svg>
+            <div className="w-full" style={{ maxHeight: 110 }}>{face}</div>
             <div className="text-[11px] text-white/38">{date}</div>
         </div>
     );
@@ -463,6 +531,7 @@ const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const [incidents, setIncidents] = React.useState<NightwatchIncidentItem[]>([]);
     const [loaded, setLoaded] = React.useState(false);
+    const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
 
     React.useEffect(() => {
         let cancelled = false;
@@ -504,6 +573,50 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
     const areaPath = `${linePath} L${CW},${CH} L0,${CH} Z`;
     const lineStroke = critical > 0 ? 'rgba(248,113,113,0.85)' : warnings > 0 ? 'rgba(251,191,36,0.85)' : 'rgba(52,211,153,0.7)';
     const areaFill = critical > 0 ? 'rgba(248,113,113,0.08)' : warnings > 0 ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.06)';
+
+    if (compact) {
+        return (
+            <button
+                type="button"
+                onClick={context.openNightwatch}
+                className="flex h-full w-full flex-col gap-2 text-left"
+            >
+                <div className="flex items-center gap-2">
+                    <svg width="40" height="40" viewBox="0 0 64 64" aria-label={`Uptime ${uptimePct}%`} className="shrink-0">
+                        <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
+                        <circle
+                            cx="32" cy="32" r="26" fill="none"
+                            stroke={arcColor}
+                            strokeWidth="5"
+                            strokeDasharray={`${NW_ARC_C}`}
+                            strokeDashoffset={arcOffset}
+                            strokeLinecap="round"
+                            transform="rotate(-90 32 32)"
+                        />
+                        <text x="32" y="36" textAnchor="middle" fontSize="12" fontWeight="500" fill="rgba(255,255,255,0.85)">{uptimePct}%</text>
+                    </svg>
+                    <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-medium text-white/82">Nightwatch</div>
+                        <div className="text-[8px] uppercase tracking-[.14em] text-white/32">
+                            {!loaded ? 'Lädt…' : open.length === 0 ? 'Alles ruhig' : `${open.length} offen`}
+                        </div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                    {[
+                        { label: 'Krit.', value: critical, color: critical > 0 ? 'rgb(248,113,113)' : undefined },
+                        { label: 'Warn.', value: warnings, color: warnings > 0 ? 'rgb(251,191,36)' : undefined },
+                        { label: 'Gel.', value: resolved, color: undefined },
+                    ].map(({ label, value, color }) => (
+                        <div key={label} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-1.5 py-1 text-center">
+                            <div className="text-[13px] font-light tabular-nums leading-none" style={{ color: color ?? 'rgba(255,255,255,0.78)' }}>{loaded ? value : '–'}</div>
+                            <div className="mt-0.5 text-[7px] uppercase tracking-[.1em] text-white/28">{label}</div>
+                        </div>
+                    ))}
+                </div>
+            </button>
+        );
+    }
 
     return (
         <div className="flex h-full flex-col gap-2.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
@@ -669,7 +782,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     },
     clock: {
         type: 'clock', label: 'Uhr', hint: 'Zeit & Datum', icon: <Clock size={14} />,
-        defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'department', 'universe'],
+        defaultW: 2, defaultH: 2, minW: 2, minH: 2, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <ClockWidget context={context} />,
     },
     deptStats: {
@@ -679,7 +792,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     },
     nightwatch: {
         type: 'nightwatch', label: 'Nightwatch', hint: 'Infrastruktur-Vorfälle & 7-Tage-Verlauf', icon: <Activity size={14} />,
-        defaultW: 4, defaultH: 8, minW: 3, minH: 5, surfaces: ['home', 'department', 'universe'],
+        defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <NightwatchWidget context={context} />,
     },
 };
