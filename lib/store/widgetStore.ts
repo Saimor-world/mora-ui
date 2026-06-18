@@ -33,12 +33,38 @@ const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'team-1', type: 'team', x: 6, y: 8, w: 6, h: 4 },
 ];
 
+// Universe widgets frame a reserved central planet zone (grid cols 4–7).
+// Widgets live only in the left band (cols 0–3) and the right band (cols 8–11);
+// the centre columns stay clear so the planet cluster has its own breathing room.
+const UNIVERSE_TOTAL_COLS = 12;
+const UNIVERSE_LEFT_BAND_END = 4;     // left band occupies cols [0, 4)
+const UNIVERSE_RIGHT_BAND_START = 8;  // right band occupies cols [8, 12)
+const UNIVERSE_BAND_WIDTH = UNIVERSE_LEFT_BAND_END; // 4 cols per side band
+
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
     { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 4, h: 8 },
-    { i: 'signals-1', type: 'signals', x: 4, y: 0, w: 4, h: 8 },
+    { i: 'clock-1', type: 'clock', x: 0, y: 8, w: 4, h: 3 },
     { i: 'orgStats-1', type: 'orgStats', x: 8, y: 0, w: 4, h: 4 },
-    { i: 'clock-1', type: 'clock', x: 8, y: 4, w: 4, h: 4 },
+    { i: 'signals-1', type: 'signals', x: 8, y: 4, w: 4, h: 5 },
 ];
+
+/**
+ * Keep universe widgets out of the reserved central planet zone.
+ * Each widget is snapped wholly into the left or right band (whichever its
+ * horizontal centre is nearer) and its width is clamped to a single band.
+ * Vertical position is preserved; react-grid-layout vertical compaction then
+ * resolves any in-band stacking. Idempotent, so it is safe to run on every load.
+ */
+export function reflowUniverseAroundCenter(items: WidgetInstance[]): WidgetInstance[] {
+    return items.map((w) => {
+        const width = Math.max(1, Math.min(w.w, UNIVERSE_BAND_WIDTH));
+        const mid = w.x + w.w / 2;
+        const x = mid <= UNIVERSE_TOTAL_COLS / 2
+            ? Math.max(0, Math.min(UNIVERSE_LEFT_BAND_END - width, w.x))
+            : Math.min(UNIVERSE_TOTAL_COLS - width, Math.max(UNIVERSE_RIGHT_BAND_START, w.x));
+        return { ...w, x, w: width };
+    });
+}
 
 const DEFAULTS: Record<EditableSurface, WidgetInstance[]> = {
     department: DEFAULT_DEPARTMENT,
@@ -100,7 +126,7 @@ function normalizeFromServer(raw: Partial<DesktopLayoutsPayload> | undefined): C
     const base = emptyCompanyLayouts();
     if (!raw) return base;
     if (Array.isArray(raw.universe) && raw.universe.length) {
-        base.universe = filterWidgetsForSurface(clone(raw.universe), 'universe');
+        base.universe = reflowUniverseAroundCenter(filterWidgetsForSurface(clone(raw.universe), 'universe'));
     }
     if (Array.isArray(raw.department) && raw.department.length) {
         base.department = filterWidgetsForSurface(clone(raw.department), 'department');
@@ -118,7 +144,7 @@ function normalizeFromServer(raw: Partial<DesktopLayoutsPayload> | undefined): C
 function legacyToCompanyLayouts(): CompanyLayoutState {
     const stored = readLegacyLocalStorage();
     const base = emptyCompanyLayouts();
-    if (stored.universe?.length) base.universe = filterWidgetsForSurface(clone(stored.universe), 'universe');
+    if (stored.universe?.length) base.universe = reflowUniverseAroundCenter(filterWidgetsForSurface(clone(stored.universe), 'universe'));
     if (stored.department?.length) {
         base.department = filterWidgetsForSurface(clone(stored.department), 'department');
     }
@@ -366,7 +392,7 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         const filtered = filterWidgetsForSurface(merged, surface);
         let nextState = state;
         if (surface === 'universe') {
-            nextState = { ...state, universe: filtered };
+            nextState = { ...state, universe: reflowUniverseAroundCenter(filtered) };
         } else {
             nextState = writeDepartmentItems(state, filtered, deptId);
         }
@@ -396,7 +422,7 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         const nextItems = filterWidgetsForSurface([...current, instance], surface);
         let nextState = state;
         if (surface === 'universe') {
-            nextState = { ...state, universe: nextItems };
+            nextState = { ...state, universe: reflowUniverseAroundCenter(nextItems) };
         } else {
             nextState = writeDepartmentItems(state, nextItems, deptId);
         }

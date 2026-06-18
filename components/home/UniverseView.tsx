@@ -386,7 +386,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             const right = `${b.id || ''}:${b.name || ''}`;
             return left.localeCompare(right);
         });
-        return buildOrganicUniverseLayout(stableDepartments, departmentMetrics);
+        const base = buildOrganicUniverseLayout(stableDepartments, departmentMetrics);
+        // Compress the constellation toward the core so the planet cluster lives
+        // inside a reserved central zone (~grid cols 4–7). The widget desktop frames
+        // it on the left/right bands and never overlaps — both layers stay clickable.
+        const COMPRESS_X = 0.5;
+        const COMPRESS_Y = 0.6;
+        return base.map((p) => ({
+            ...p,
+            x: UNIVERSE_CORE_POINT.x + (p.x - UNIVERSE_CORE_POINT.x) * COMPRESS_X,
+            y: UNIVERSE_CORE_POINT.y + (p.y - UNIVERSE_CORE_POINT.y) * COMPRESS_Y,
+        }));
     }, [safeDepartments, departmentMetrics]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
@@ -1433,7 +1443,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     );
                     const planetSize = isHomeUniversePreview
                         ? 'sm'
-                        : (shouldShowPlanetLabel ? 'lg' : 'md');
+                        : (shouldShowPlanetLabel ? 'md' : 'sm');
 
                     return (
                         <React.Fragment key={p.id}>
