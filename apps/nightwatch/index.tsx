@@ -1,10 +1,10 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { X, RefreshCw, Shield, ShieldAlert, ShieldCheck, Clock, Wifi, WifiOff } from 'lucide-react';
+import { RefreshCw, Shield, ShieldCheck, Clock } from 'lucide-react';
+import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { priorityFromSeverityLabel, toneForPriority, TONES } from '@/lib/ui/status';
 import {
     fetchNightwatchIncidents,
     fetchNightwatchMonitors,
@@ -30,119 +30,105 @@ function absoluteTime(iso?: string): string {
     return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-// severity → visual config
 function severityConfig(sev?: string) {
     if (sev === 'critical') return {
-        border: 'border-red-500/30',
-        bg: 'bg-red-500/[0.06]',
+        border: 'border-red-400/22',
+        bg: 'bg-red-500/[0.07]',
         dot: 'bg-red-400',
-        ping: 'bg-red-500',
-        text: 'text-red-300',
-        label: 'KRITISCH',
-        badgeBg: 'bg-red-500/15 border-red-400/25',
+        text: 'text-red-300/90',
+        label: 'Kritisch',
     };
     if (sev === 'warning') return {
-        border: 'border-amber-500/30',
-        bg: 'bg-amber-500/[0.06]',
+        border: 'border-amber-400/22',
+        bg: 'bg-amber-500/[0.07]',
         dot: 'bg-amber-400',
-        ping: 'bg-amber-500',
-        text: 'text-amber-300',
-        label: 'WARNUNG',
-        badgeBg: 'bg-amber-500/15 border-amber-400/25',
+        text: 'text-amber-300/90',
+        label: 'Warnung',
     };
     return {
-        border: 'border-sky-500/25',
+        border: 'border-sky-400/18',
         bg: 'bg-sky-500/[0.05]',
         dot: 'bg-sky-400',
-        ping: 'bg-sky-400',
-        text: 'text-sky-300',
-        label: 'INFO',
-        badgeBg: 'bg-sky-500/12 border-sky-400/20',
+        text: 'text-sky-300/85',
+        label: 'Info',
     };
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
 
-function PulseDot({ color, animate = true, size = 'sm' }: { color: string; animate?: boolean; size?: 'xs' | 'sm' | 'md' }) {
-    const dim = size === 'xs' ? 'h-1.5 w-1.5' : size === 'md' ? 'h-3 w-3' : 'h-2 w-2';
+function PulseDot({ color, animate = true, size = 'sm' }: { color: string; animate?: boolean; size?: 'xs' | 'sm' }) {
+    const dim = size === 'xs' ? 'h-1.5 w-1.5' : 'h-2 w-2';
     return (
         <span className={`relative inline-flex ${dim} shrink-0`}>
             {animate && (
-                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${color} opacity-60`} />
+                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${color} opacity-50`} />
             )}
             <span className={`relative inline-flex ${dim} rounded-full ${color}`} />
         </span>
     );
 }
 
-function MonitorCard({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDown: boolean }) {
+function MonitorChip({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDown: boolean }) {
+    const label = monitor.name || monitor.host || 'Monitor';
+    const hostHint = monitor.name && monitor.host && monitor.name !== monitor.host ? monitor.host : null;
     return (
-        <div className={`group relative overflow-hidden rounded-2xl border px-4 py-3 transition-colors ${
-            isDown
-                ? 'border-red-500/30 bg-red-500/[0.06] hover:bg-red-500/[0.09]'
-                : 'border-white/[0.07] bg-white/[0.025] hover:bg-white/[0.04]'
-        }`}>
-            <div className="flex items-center gap-3">
-                <PulseDot color={isDown ? 'bg-red-400' : 'bg-emerald-400'} animate={isDown} />
-                <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-white/85">{monitor.name || monitor.host}</p>
-                    {monitor.name && monitor.host && (
-                        <p className="truncate text-[11px] text-white/35">{monitor.host}</p>
-                    )}
-                </div>
-                <span className={`shrink-0 text-[10px] uppercase tracking-[0.14em] font-medium ${isDown ? 'text-red-300/80' : 'text-emerald-300/70'}`}>
-                    {isDown ? 'Kritisch' : 'Online'}
-                </span>
-            </div>
+        <div
+            className={`inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 transition-colors ${
+                isDown
+                    ? 'border-red-400/25 bg-red-500/[0.08]'
+                    : 'border-white/[0.1] bg-white/[0.04]'
+            }`}
+            title={hostHint || label}
+        >
+            <PulseDot color={isDown ? 'bg-red-400' : 'bg-emerald-400'} animate={isDown} size="xs" />
+            <span className="truncate text-[11px] font-medium text-white/78">{label}</span>
+            <span className={`shrink-0 text-[9px] uppercase tracking-[0.14em] ${isDown ? 'text-red-300/75' : 'text-emerald-300/65'}`}>
+                {isDown ? 'Down' : 'Online'}
+            </span>
         </div>
     );
 }
 
-function IncidentCard({ incident, onOpen }: { incident: NightwatchIncidentItem; onOpen: () => void }) {
+function IncidentRow({ incident, onOpen }: { incident: NightwatchIncidentItem; onOpen: () => void }) {
     const cfg = severityConfig(incident.severity);
     return (
-        <article className={`relative overflow-hidden rounded-2xl border ${cfg.border} ${cfg.bg}`}>
-            {/* Left severity stripe */}
-            <div className={`absolute left-0 top-0 bottom-0 w-0.5 ${cfg.dot}`} />
-            <div className="px-5 py-4">
-                <div className="flex items-start gap-4">
-                    <div className="mt-0.5 shrink-0">
-                        <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
+        <article className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
+            <div className="flex items-start gap-3">
+                <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
+                <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span className={`text-[9px] uppercase tracking-[0.16em] font-semibold ${cfg.text}`}>
+                            {cfg.label}
+                        </span>
+                        {incident.host && (
+                            <span className="truncate text-[10px] font-mono text-white/38">{incident.host}</span>
+                        )}
                     </div>
-                    <div className="min-w-0 flex-1">
-                        <div className="mb-1 flex items-center gap-2 flex-wrap">
-                            <span className={`inline-flex items-center rounded-md border px-1.5 py-0.5 text-[9px] uppercase tracking-[0.18em] font-semibold ${cfg.badgeBg} ${cfg.text}`}>
-                                {cfg.label}
-                            </span>
-                            {incident.host && (
-                                <span className="text-[11px] text-white/40 font-mono">{incident.host}</span>
-                            )}
+                    <h3 className="text-[13px] font-medium leading-snug text-white/88">
+                        {incident.title || `Vorfall: ${incident.host || 'Infrastruktur'}`}
+                    </h3>
+                    {incident.summary && (
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/45">
+                            {incident.summary}
+                        </p>
+                    )}
+                    {incident.detected_at && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-white/32">
+                            <Clock size={9} />
+                            <span>{absoluteTime(incident.detected_at)}</span>
+                            <span>·</span>
+                            <span>{relativeTime(incident.detected_at)}</span>
                         </div>
-                        <h3 className="text-sm font-medium text-white/90 leading-snug">
-                            {incident.title || `Vorfall: ${incident.host || 'Infrastruktur'}`}
-                        </h3>
-                        {incident.summary && (
-                            <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-white/48">
-                                {incident.summary}
-                            </p>
-                        )}
-                        {incident.detected_at && (
-                            <div className="mt-2 flex items-center gap-1.5 text-[11px] text-white/30">
-                                <Clock size={10} />
-                                <span>{absoluteTime(incident.detected_at)}</span>
-                                <span>·</span>
-                                <span>{relativeTime(incident.detected_at)}</span>
-                            </div>
-                        )}
-                    </div>
-                    <button
-                        type="button"
-                        onClick={onOpen}
-                        className="shrink-0 self-start rounded-xl border border-white/10 bg-white/[0.05] px-3 py-1.5 text-[11px] text-white/60 transition-colors hover:bg-white/[0.1] hover:text-white/85 active:scale-95"
-                    >
-                        Öffnen
-                    </button>
+                    )}
                 </div>
+                <button
+                    type="button"
+                    onClick={onOpen}
+                    aria-label="Vorfall öffnen"
+                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/82"
+                >
+                    Öffnen
+                </button>
             </div>
         </article>
     );
@@ -151,7 +137,17 @@ function IncidentCard({ incident, onOpen }: { incident: NightwatchIncidentItem; 
 // ── main ──────────────────────────────────────────────────────────────────────
 
 export default function NightwatchApp({ paneId }: AppProps) {
-    const { removePane, openPane } = usePaneStore();
+    const {
+        removePane,
+        openPane,
+        getPane,
+        minimizePane,
+        focusPane,
+        updatePanePosition,
+        updatePaneSize,
+    } = usePaneStore();
+    const isActive = usePaneStore((s) => s.activePaneId === paneId);
+    const pane = getPane(paneId);
 
     const [incidents, setIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [monitors, setMonitors] = useState<NightwatchMonitorItem[]>([]);
@@ -160,18 +156,10 @@ export default function NightwatchApp({ paneId }: AppProps) {
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const mountedRef = useRef(true);
 
-    const close = useCallback(() => removePane(paneId), [removePane, paneId]);
-
     useEffect(() => {
         mountedRef.current = true;
         return () => { mountedRef.current = false; };
     }, []);
-
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [close]);
 
     const load = useCallback(async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
@@ -195,7 +183,6 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     useEffect(() => { load(); }, [load]);
 
-    // auto-refresh every 60s
     useEffect(() => {
         const id = setInterval(() => load(true), 60_000);
         return () => clearInterval(id);
@@ -218,11 +205,19 @@ export default function NightwatchApp({ paneId }: AppProps) {
     const systemStatus: 'ok' | 'warning' | 'critical' =
         criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'ok';
 
-    const heroBg = {
-        ok:       'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(16,185,129,0.10) 0%, transparent 70%)',
-        warning:  'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,0.10) 0%, transparent 70%)',
-        critical: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(239,68,68,0.12) 0%, transparent 70%)',
-    }[systemStatus];
+    const statusLine = loading
+        ? 'Verbinde…'
+        : systemStatus === 'ok'
+            ? 'Alle Systeme normal'
+            : systemStatus === 'critical'
+                ? `${criticalCount} kritischer${criticalCount !== 1 ? 'e' : ''} Vorfall${criticalCount !== 1 ? 'e' : ''}`
+                : `${warningCount} Warnung${warningCount !== 1 ? 'en' : ''}`;
+
+    const statusTone =
+        loading ? 'text-white/35'
+            : systemStatus === 'ok' ? 'text-emerald-300/85'
+                : systemStatus === 'critical' ? 'text-red-300/85'
+                    : 'text-amber-300/85';
 
     const openIncident = (id: string, title?: string) =>
         openPane({ id: `document-${id}`, type: 'document', title: title || 'Vorfall', size: { width: 900, height: 700 }, data: { nodeId: id } });
@@ -232,149 +227,114 @@ export default function NightwatchApp({ paneId }: AppProps) {
         return [...incidents].sort((a, b) => (order[a.severity || 'info'] ?? 2) - (order[b.severity || 'info'] ?? 2));
     }, [incidents]);
 
+    if (!pane) return null;
+
     return (
-        <div
-            data-testid="nightwatch-app"
-            className="relative h-full w-full overflow-hidden"
-            style={{ background: 'linear-gradient(165deg, #05080f 0%, #030610 50%, #02040a 100%)' }}
+        <GlassPanel
+            title={(
+                <span className="flex items-center gap-2">
+                    <Shield size={13} className="text-cyan-400/70" />
+                    <span>Nightwatch</span>
+                </span>
+            )}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+            onResize={(w, h) => updatePaneSize(paneId, w, h)}
+            onClose={() => removePane(paneId)}
+            onMinimize={() => minimizePane(paneId)}
+            onFocus={() => focusPane(paneId)}
+            isActive={isActive}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+            paneId={paneId}
+            dimBackground
+            dimOpacity={0.28}
+            blurIntensity={24}
+            opacity={0.38}
         >
-            {/* Status-reactive ambient glow */}
-            <div className="pointer-events-none absolute inset-0 transition-all duration-1000" style={{ background: heroBg }} />
-
-            {/* Subtle grid texture */}
             <div
-                className="pointer-events-none absolute inset-0 opacity-[0.015]"
-                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '48px 48px' }}
-            />
+                data-testid="nightwatch-app"
+                className="relative flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.15) transparent' }}
+            >
+                {/* Ambient status glow — no grid, universe shows through GlassPanel */}
+                <div
+                    className="pointer-events-none absolute -left-8 -right-8 -top-6 h-28 opacity-80 transition-all duration-700"
+                    style={{
+                        background: systemStatus === 'critical'
+                            ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(239,68,68,0.14) 0%, transparent 72%)'
+                            : systemStatus === 'warning'
+                                ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 72%)'
+                                : 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 72%)',
+                    }}
+                />
 
-            {/* Top bar */}
-            <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between border-b border-white/[0.05] px-6 py-4 backdrop-blur-sm">
-                <div className="flex items-center gap-3">
-                    <Shield size={14} className="text-cyan-400/70" />
-                    <span className="text-[11px] uppercase tracking-[0.25em] text-white/40">Nightwatch</span>
-                    {refreshing && (
-                        <RefreshCw size={11} className="animate-spin text-white/25" />
-                    )}
-                </div>
-                <div className="flex items-center gap-3">
-                    {lastRefresh && (
-                        <span className="text-[10px] text-white/25">
-                            {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                    )}
-                    <button
-                        type="button"
-                        onClick={() => load(true)}
-                        disabled={refreshing}
-                        className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-1.5 text-white/35 transition-colors hover:bg-white/[0.07] hover:text-white/65 disabled:opacity-40"
-                        aria-label="Aktualisieren"
-                    >
-                        <RefreshCw size={12} />
-                    </button>
-                    <button
-                        type="button"
-                        onClick={close}
-                        className="rounded-lg border border-white/[0.07] bg-white/[0.03] p-1.5 text-white/35 transition-colors hover:bg-white/[0.07] hover:text-white/65"
-                        aria-label="Schließen"
-                    >
-                        <X size={12} />
-                    </button>
-                </div>
-            </div>
-
-            {/* Scrollable content */}
-            <div className="h-full overflow-y-auto pt-16 pb-10 px-8 lg:px-16 xl:px-24" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.12) transparent' }}>
-
-                {/* ── HERO ───────────────────────────────────────────────── */}
-                <div className="mt-8 mb-10">
-                    <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <div className="mb-3 flex items-center gap-3">
-                                {loading ? (
-                                    <div className="h-2 w-2 rounded-full bg-white/20 animate-pulse" />
-                                ) : systemStatus === 'ok' ? (
-                                    <PulseDot color="bg-emerald-400" animate={false} size="sm" />
-                                ) : (
-                                    <PulseDot color={systemStatus === 'critical' ? 'bg-red-400' : 'bg-amber-400'} animate size="sm" />
-                                )}
-                                <span className={`text-[11px] font-semibold uppercase tracking-[0.2em] ${
-                                    loading ? 'text-white/25' :
-                                    systemStatus === 'ok' ? 'text-emerald-300/80' :
-                                    systemStatus === 'critical' ? 'text-red-300/80' : 'text-amber-300/80'
-                                }`}>
-                                    {loading ? 'Verbinde…' : systemStatus === 'ok' ? 'Alle Systeme normal' : systemStatus === 'critical' ? 'Kritischer Zustand' : 'Achtung erforderlich'}
-                                </span>
-                            </div>
-
-                            {!loading && (
-                                <h1 className="text-4xl font-extralight tracking-tight text-white lg:text-5xl">
-                                    {systemStatus === 'ok' ? (
-                                        'MÔRA beobachtet alles.'
-                                    ) : systemStatus === 'critical' ? (
-                                        <span>
-                                            <span className="text-red-300">{criticalCount}</span>
-                                            <span className="text-white/70"> kritischer{criticalCount !== 1 ? 'e' : ''} Vorfall{criticalCount !== 1 ? 'e' : ''}</span>
-                                        </span>
-                                    ) : (
-                                        <span>
-                                            <span className="text-amber-300">{warningCount}</span>
-                                            <span className="text-white/70"> Warnung{warningCount !== 1 ? 'en' : ''}</span>
-                                        </span>
-                                    )}
-                                </h1>
-                            )}
-
-                            {loading && (
-                                <div className="mt-2 h-12 w-80 rounded-xl bg-white/[0.04] animate-pulse" />
-                            )}
+                {/* Compact status row */}
+                <div className="relative flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        {loading ? (
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-white/25" />
+                        ) : (
+                            <PulseDot
+                                color={systemStatus === 'ok' ? 'bg-emerald-400' : systemStatus === 'critical' ? 'bg-red-400' : 'bg-amber-400'}
+                                animate={systemStatus !== 'ok'}
+                            />
+                        )}
+                        <div className="min-w-0">
+                            <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${statusTone}`}>
+                                {statusLine}
+                            </p>
+                            <p className="mt-0.5 text-[12px] text-white/52">
+                                MÔRA beobachtet Infrastruktur und offene Vorfälle.
+                            </p>
                         </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                        {lastRefresh && (
+                            <span className="text-[10px] tabular-nums text-white/28">
+                                {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => load(true)}
+                            disabled={refreshing}
+                            className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-40"
+                            aria-label="Aktualisieren"
+                        >
+                            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
+                </div>
 
-                        {/* Stat cards */}
-                        {!loading && (
-                            <div className="flex items-center gap-3 shrink-0">
-                                <div className="flex flex-col items-center rounded-2xl border border-white/[0.07] bg-white/[0.02] px-5 py-3 text-center">
-                                    <span className="text-2xl font-light text-white">{monitors.length}</span>
-                                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/35 mt-0.5">Monitore</span>
-                                </div>
-                                <div className={`flex flex-col items-center rounded-2xl border px-5 py-3 text-center ${criticalCount > 0 ? 'border-red-500/30 bg-red-500/[0.05]' : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                                    <span className={`text-2xl font-light ${criticalCount > 0 ? 'text-red-300' : 'text-white'}`}>{criticalCount}</span>
-                                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/35 mt-0.5">Kritisch</span>
-                                </div>
-                                <div className={`flex flex-col items-center rounded-2xl border px-5 py-3 text-center ${warningCount > 0 ? 'border-amber-500/25 bg-amber-500/[0.05]' : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                                    <span className={`text-2xl font-light ${warningCount > 0 ? 'text-amber-300' : 'text-white'}`}>{warningCount}</span>
-                                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/35 mt-0.5">Warnung</span>
-                                </div>
-                                <div className={`flex flex-col items-center rounded-2xl border px-5 py-3 text-center ${systemStatus === 'ok' ? 'border-emerald-500/25 bg-emerald-500/[0.04]' : 'border-white/[0.07] bg-white/[0.02]'}`}>
-                                    <span className={`text-2xl font-light ${systemStatus === 'ok' ? 'text-emerald-300' : 'text-white'}`}>{monitors.length - downHosts.size}</span>
-                                    <span className="text-[10px] uppercase tracking-[0.14em] text-white/35 mt-0.5">Online</span>
-                                </div>
-                            </div>
+                {/* Monitor chips — compact, no sprawling grid */}
+                <section className="relative space-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Monitore</span>
+                        {!loading && monitors.length > 0 && (
+                            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] tabular-nums text-white/42">
+                                {monitors.length}
+                            </span>
                         )}
                     </div>
-                </div>
-
-                {/* ── MONITORS ───────────────────────────────────────────── */}
-                <section className="mb-10">
-                    <div className="mb-3 flex items-center gap-2">
-                        <span className="text-[11px] uppercase tracking-[0.2em] text-white/35 font-medium">Monitore</span>
-                        <div className="h-px flex-1 bg-white/[0.06]" />
-                    </div>
-
                     {loading ? (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                            {[...Array(4)].map((_, i) => (
-                                <div key={i} className="h-14 rounded-2xl bg-white/[0.03] animate-pulse" />
+                        <div className="flex flex-wrap gap-2">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
                             ))}
                         </div>
                     ) : monitors.length === 0 ? (
-                        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] px-4 py-4 text-sm text-white/35">
-                            <Wifi size={14} className="shrink-0 text-white/25" />
-                            Noch keine Monitore eingerichtet.
-                        </div>
+                        <p className="text-[11px] text-white/38">Noch keine Monitore eingerichtet.</p>
                     ) : (
-                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        <div className="flex flex-wrap gap-2">
                             {sortedMonitors.map((m) => (
-                                <MonitorCard
+                                <MonitorChip
                                     key={m.id}
                                     monitor={m}
                                     isDown={!!m.host && downHosts.has(m.host)}
@@ -384,36 +344,37 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     )}
                 </section>
 
-                {/* ── INCIDENTS ──────────────────────────────────────────── */}
-                <section>
-                    <div className="mb-3 flex items-center gap-2">
-                        <span className="text-[11px] uppercase tracking-[0.2em] text-white/35 font-medium">Offene Vorfälle</span>
+                {/* Incidents — tight list, calm empty state */}
+                <section className="relative space-y-2 pb-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Offene Vorfälle</span>
                         {!loading && incidents.length > 0 && (
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${criticalCount > 0 ? 'bg-red-500/20 text-red-300' : 'bg-amber-500/15 text-amber-300'}`}>
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${
+                                criticalCount > 0 ? 'bg-red-500/18 text-red-300/90' : 'bg-amber-500/14 text-amber-300/85'
+                            }`}>
                                 {incidents.length}
                             </span>
                         )}
-                        <div className="h-px flex-1 bg-white/[0.06]" />
                     </div>
 
                     {loading ? (
-                        <div className="grid gap-3">
+                        <div className="space-y-2">
                             {[...Array(2)].map((_, i) => (
-                                <div key={i} className="h-24 rounded-2xl bg-white/[0.03] animate-pulse" />
+                                <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
                             ))}
                         </div>
                     ) : incidents.length === 0 ? (
-                        <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/15 bg-emerald-500/[0.04] px-5 py-5">
-                            <ShieldCheck size={18} className="shrink-0 text-emerald-300/60" />
+                        <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
+                            <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />
                             <div>
-                                <p className="text-sm font-medium text-emerald-100/75">Keine offenen Vorfälle</p>
-                                <p className="text-[12px] text-emerald-200/40 mt-0.5">Alles ruhig — MÔRA überwacht weiter.</p>
+                                <p className="text-[12px] font-medium text-emerald-100/78">Keine offenen Vorfälle</p>
+                                <p className="mt-0.5 text-[10px] text-emerald-200/42">Alles ruhig — Überwachung läuft weiter.</p>
                             </div>
                         </div>
                     ) : (
-                        <div className="grid gap-3 lg:grid-cols-2">
+                        <div className="space-y-2">
                             {sortedIncidents.map((i) => (
-                                <IncidentCard
+                                <IncidentRow
                                     key={i.id}
                                     incident={i}
                                     onOpen={() => openIncident(i.id, i.title)}
@@ -423,6 +384,6 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     )}
                 </section>
             </div>
-        </div>
+        </GlassPanel>
     );
 }

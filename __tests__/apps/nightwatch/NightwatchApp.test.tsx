@@ -2,9 +2,37 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 
 const openPane = jest.fn();
+const removePane = jest.fn();
+const getPane = jest.fn();
 jest.mock('@/lib/store/paneStore', () => ({
   usePaneStore: (selector?: any) => {
-    const store = { openPane };
+    const pane = {
+      id: 'nw-1',
+      type: 'nightwatch',
+      title: 'Nightwatch',
+      position: { x: 120, y: 80 },
+      size: { width: 720, height: 560 },
+      minimized: false,
+      zIndex: 520,
+    };
+    const store = {
+      openPane,
+      removePane,
+      getPane: getPane.mockImplementation(() => pane),
+      minimizePane: jest.fn(),
+      focusPane: jest.fn(),
+      updatePanePosition: jest.fn(),
+      updatePaneSize: jest.fn(),
+      activePaneId: 'nw-1',
+      panes: [pane],
+    };
+    return selector ? selector(store) : store;
+  },
+}));
+
+jest.mock('@/lib/store/navStore', () => ({
+  useNavStore: (selector?: any) => {
+    const store = { isStandardMode: false };
     return selector ? selector(store) : store;
   },
 }));
@@ -70,7 +98,7 @@ describe('NightwatchApp', () => {
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
-    const btn = await screen.findByText('Vorfall öffnen');
+    const btn = await screen.findByLabelText('Vorfall öffnen');
     btn.click();
 
     await waitFor(() => {
