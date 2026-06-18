@@ -65,11 +65,11 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
     return (
         <div className="relative">
             {/* Toolbar */}
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3 pointer-events-none">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">
                     {editMode ? 'Anordnen — ziehen · skalieren · hinzufügen' : 'Dein Desktop'}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pointer-events-auto">
                     {editMode && (
                         <>
                             <button
@@ -99,7 +99,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
 
             {/* Add palette */}
             {editMode && paletteOpen && (
-                <div className="mb-3 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-xl">
+                <div className="pointer-events-auto mb-3 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-xl">
                     {available.map((t) => {
                         const def = WIDGET_REGISTRY[t];
                         return (
@@ -145,7 +145,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                     return (
                         <div
                             key={w.i}
-                            className="relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.12] backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]"
+                            className="pointer-events-auto relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.12] backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]"
                             style={{ backgroundColor: 'rgba(8, 11, 24, 0.82)' }}
                         >
                             {/* Top hairline highlight — lifts the panel off the starfield */}
