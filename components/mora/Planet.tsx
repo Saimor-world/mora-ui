@@ -31,6 +31,7 @@ interface PlanetProps {
     capacity?: number | null; // V10: Knowledge Capacity / Storage Use
     alertLevel?: 'ok' | 'warning' | 'critical';
     showLabel?: boolean;
+    ambientLabel?: boolean;
     labelSide?: 'left' | 'right';
     hoverEnterDwellMs?: number;
     hoverLeaveDwellMs?: number;
@@ -52,6 +53,7 @@ export const Planet: React.FC<PlanetProps> = ({
     alertLevel = 'ok',
     iconOverride,
     showLabel = true,
+    ambientLabel = false,
     labelSide = 'right',
     hoverEnterDwellMs = PLANET_HOVER_ENTER_DWELL_MS,
     hoverLeaveDwellMs = PLANET_HOVER_LEAVE_DWELL_MS,
@@ -125,6 +127,14 @@ export const Planet: React.FC<PlanetProps> = ({
     const capacityTone = effectiveBorder;
     const neutralRingTone = 'rgba(226, 232, 240, 0.16)';
     const orbitTone = 'rgba(148, 163, 184, 0.18)';
+
+    const spaceCount = spaces.length;
+    const vitalityHint = activity > 0
+        ? 'Aktiv — Inhalt wartet'
+        : spaceCount > 0
+            ? 'Bereiche angelegt — ruhig'
+            : 'Noch leer — Potenzial';
+    const healthTone = health >= 60 ? '#34d399' : health >= 30 ? '#fbbf24' : '#fb7185';
 
     return (
         <motion.button
@@ -442,8 +452,68 @@ export const Planet: React.FC<PlanetProps> = ({
                 </motion.div>
             </div>
 
-            {/* ═ DATA LABELS (V10 Cinematic HUD & Glassmorphic Hover Card) ═ */}
-            {showLabel && (
+            {/* ═ DATA LABELS — ambient orbital bloom or cinematic card ═ */}
+            {showLabel && ambientLabel && (
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+                    <AnimatePresence>
+                        {isHoverEngaged && (
+                            <motion.div
+                                key="ambient-bloom"
+                                className="absolute flex flex-col items-center text-center"
+                                style={{ top: planetSize.diameter * 0.62 }}
+                                initial={{ opacity: 0, y: -6, scale: 0.94 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 4, scale: 0.96 }}
+                                transition={{ duration: 0.38, ease: 'easeOut' }}
+                            >
+                                <span
+                                    className="max-w-[200px] truncate text-[9px] font-semibold uppercase tracking-[0.22em] text-white/82"
+                                    style={{ textShadow: `0 0 18px ${effectiveGlow}88, 0 0 36px ${effectiveGlow}44` }}
+                                >
+                                    {department.name}
+                                </span>
+                                <span className="mt-1.5 flex items-center gap-1.5 text-[8px] tracking-[0.04em] text-white/48">
+                                    <span
+                                        className="inline-block h-1.5 w-1.5 rounded-full"
+                                        style={{ background: healthTone, boxShadow: `0 0 8px ${healthTone}` }}
+                                    />
+                                    {spaceCount > 0 ? `${spaceCount} ${spaceCount === 1 ? 'Bereich' : 'Bereiche'}` : 'Keine Bereiche'}
+                                    {activity > 0 ? ` · ${activity} Docs` : ''}
+                                    {health > 0 ? ` · ${health}%` : ''}
+                                </span>
+                                <span className="mt-1 text-[7px] uppercase tracking-[0.2em] text-white/28">
+                                    {vitalityHint}
+                                </span>
+                                {spaces.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
+                                        {spaces.slice(0, 3).map((space) => (
+                                            <span
+                                                key={space.id}
+                                                className="max-w-[88px] truncate rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[7px] text-white/42"
+                                                style={{ boxShadow: `0 0 12px ${effectiveGlow}22` }}
+                                            >
+                                                {space.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    {!isHoverEngaged && isPointerOver && (
+                        <motion.span
+                            className="absolute text-[8px] uppercase tracking-[0.18em] text-white/24"
+                            style={{ top: planetSize.diameter * 0.48 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.55 }}
+                            exit={{ opacity: 0 }}
+                        >
+                            {department.name}
+                        </motion.span>
+                    )}
+                </div>
+            )}
+            {showLabel && !ambientLabel && (
             <div
                 className={`absolute top-1/2 -translate-y-1/2 flex flex-col pointer-events-none min-w-[240px] z-50 ${
                     labelSide === 'left'

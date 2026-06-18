@@ -5,10 +5,10 @@
  */
 
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 25,
-    maxX: 76,
-    minY: 24,
-    maxY: 61,
+    minX: 14,
+    maxX: 86,
+    minY: 14,
+    maxY: 72,
 };
 
 export const UNIVERSE_CORE_POINT = {
@@ -137,8 +137,8 @@ export const buildOrganicUniverseLayout = (
         const vitality = Math.min(1, signal / maxSignal);
         const radialJitter = (((seed >>> 12) % 100) / 100) * 0.08;
         const radiusBias = 0.7 + (1 - vitality) * 0.18 + radialJitter;
-        const rx = 17 + radiusBias * 21;
-        const ry = 10 + radiusBias * 14;
+        const rx = 24 + radiusBias * 28;
+        const ry = 14 + radiusBias * 20;
 
         return {
             ...dept,

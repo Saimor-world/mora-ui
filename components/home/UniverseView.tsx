@@ -20,7 +20,6 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
 import { LockedPlanetTooltip } from '@/components/layers/LockedPlanetTooltip';
-import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { useContextStore } from '@/lib/store/contextStore';
 import { isAdmin } from '@/lib/auth/roles';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
@@ -99,14 +98,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [hoverPlanetId, setHoverPlanetId] = useState<string | null>(null);
     const [activePlanetId, setActivePlanetId] = useState<string | null>(null);
     const [semanticPreviewPathId, setSemanticPreviewPathId] = useState<string | null>(null);
-    // isInsightRailHovered is kept as state (drives hasUniverseInteraction / visibleSemanticPaths)
-    // AND mirrored to a ref so callbacks always read the current value without stale closures.
-    const [isInsightRailHovered, setIsInsightRailHoveredState] = useState(false);
-    const isInsightRailHoveredRef = useRef(false);
-    const setIsInsightRailHovered = useCallback((value: boolean) => {
-        isInsightRailHoveredRef.current = value;
-        setIsInsightRailHoveredState(value);
-    }, []);
     const [parallaxOffset, setParallaxOffset] = useState({ x: 0, y: 0 });
     const [isCoreLogoHovered, setIsCoreLogoHovered] = useState(false);
     const [statsMap, setStatsMap] = useState<Record<string, DepartmentStats>>({});
@@ -353,11 +344,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const scheduleHoverRelease = useCallback(() => {
         clearHoverRelease();
         hoverClearRef.current = setTimeout(() => {
-            // Always read from ref — the closure would otherwise capture a stale
-            // isInsightRailHovered value from the render when the timer was scheduled.
-            if (isInsightRailHoveredRef.current) {
-                return;
-            }
             setHoverPlanetId(null);
             setSemanticPreviewPathId(null);
             setLockedTooltipDeptId(null);
@@ -375,9 +361,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         if (coreMode === 'explore') return;
         clearHoverRelease();
         clearUniverseInteractionState();
-        setIsInsightRailHovered(false);
         setLockedTooltipDeptId(null);
-    }, [clearHoverRelease, clearUniverseInteractionState, coreMode, setIsInsightRailHovered]);
+    }, [clearHoverRelease, clearUniverseInteractionState, coreMode]);
 
     const planetPositions = useMemo(() => {
         if (safeDepartments.length === 0) return [];
@@ -387,16 +372,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             return left.localeCompare(right);
         });
         const base = buildOrganicUniverseLayout(stableDepartments, departmentMetrics);
-        // Compress the constellation toward the core so the planet cluster lives
-        // inside a reserved central zone (~grid cols 4–7). The widget desktop frames
-        // it on the left/right bands and never overlaps — both layers stay clickable.
-        const COMPRESS_X = 0.5;
-        const COMPRESS_Y = 0.6;
-        return base.map((p) => ({
-            ...p,
-            x: UNIVERSE_CORE_POINT.x + (p.x - UNIVERSE_CORE_POINT.x) * COMPRESS_X,
-            y: UNIVERSE_CORE_POINT.y + (p.y - UNIVERSE_CORE_POINT.y) * COMPRESS_Y,
-        }));
+        // Planets ARE the company — use the full organic spread, no compression.
+        return base;
     }, [safeDepartments, departmentMetrics]);
 
     // ─── SILK DRIFT PATHS (V10.6) ───
@@ -564,9 +541,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         return visiblePlanets.find((planet) => planet.id === focusedPlanetId) || null;
     }, [focusedPlanetId, visiblePlanets]);
 
-    const focusedPlanetMetrics = focusedPlanet
-        ? (departmentMetrics[focusedPlanet.id] || { nodes: 0, spaces: 0, folders: 0, health: 0 })
-        : null;
     const focusedSemanticLinks = useMemo(() => {
         if (!focusedPlanet) return [];
 
@@ -609,16 +583,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         setSemanticPreviewPathId(null);
         setHoverPlanetId(null);
         setActivePlanetId(null);
-        setIsInsightRailHovered(false);
-    }, [activeDepartmentId, setIsInsightRailHovered]);
+    }, [activeDepartmentId]);
 
     const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
         if (hovered) {
             clearHoverRelease();
             setHoverPlanetId(planetId);
-            // Sticky: activePlanetId keeps the rail alive even after hoverPlanetId clears
-            // (when cursor moves between planet and rail). Without this, the rail unmounts
-            // the instant the cursor leaves the planet, before the user reaches the rail.
             setActivePlanetId(planetId);
             setSemanticPreviewPathId(null);
             setLockedTooltipDeptId(null);
@@ -626,12 +596,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         }
 
         setHoverPlanetId((current) => (current === planetId ? null : current));
-        // Planet enter/leave is debounced in Planet.tsx before this fires.
-        // the user may have already moved into the InsightRail. The state value would
-        // still be false here (captured at callback creation), but the ref is current.
-        if (!isInsightRailHoveredRef.current) {
-            scheduleHoverRelease();
-        }
+        scheduleHoverRelease();
     }, [clearHoverRelease, scheduleHoverRelease]);
 
     const handleSemanticPreview = (pathId: string | null) => {
@@ -747,8 +712,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         []
     );
 
-    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || isInsightRailHovered || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
-    const backgroundCalmFactor = hasUniverseInteraction ? 0.62 : 1;
+    const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
+    const backgroundCalmFactor = hasUniverseInteraction ? 0.78 : 1;
+    const widgetGlanceOpacity = hasUniverseInteraction ? 0.16 : 0.44;
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
@@ -777,15 +743,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const handleUniversePointerLeave = useCallback(() => {
         resetUniverseParallax();
-
-        if (isInsightRailHoveredRef.current) {
-            return;
-        }
         scheduleHoverRelease();
-    }, [
-        resetUniverseParallax,
-        scheduleHoverRelease,
-    ]);
+    }, [resetUniverseParallax, scheduleHoverRelease]);
 
     if (universeScope === 'dept' && universeScopeDeptId) {
         const scopedDept = safeDepartments.find((d) => d.id === universeScopeDeptId);
@@ -961,12 +920,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
-            {/* UNIVERSE DESKTOP — widgets sit above the calm starfield but BELOW the
-                planet layer (z-12), so planets stay visible and clickable even where a
-                widget card overlaps them. The overlay stays pointer-events-none so empty
-                grid space falls through; WidgetGrid re-enables pointer events only on the
-                toolbar and the actual widget cards. */}
-            <div className="absolute inset-0 z-[10] pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+            {/* UNIVERSE DESKTOP — peripheral glance panels that visualize company state.
+                Planets stay above (z-12) and remain clickable; widgets recede when exploring. */}
+            <motion.div
+                className="absolute inset-0 z-[10] pointer-events-none overflow-y-auto px-3 pt-3 pb-28"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
+                animate={{
+                    opacity: widgetGlanceOpacity,
+                    filter: hasUniverseInteraction ? 'blur(1.2px)' : 'blur(0px)',
+                }}
+                transition={{ duration: 0.55, ease: 'easeOut' }}
+            >
                 <div className="pointer-events-none">
                     <WidgetGrid
                         surface="universe"
@@ -979,7 +943,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         }}
                     />
                 </div>
-            </div>
+            </motion.div>
 
             {/* MAP CONTENT — planets and semantic connections, always visible behind widgets */}
             <div>
@@ -1296,108 +1260,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     })}
             </div>
 
-            {focusedPlanet && focusedPlanetMetrics && (
-                <LayerInsightRail
-                    className="left-1/2 top-24 z-[14] -translate-x-1/2 pointer-events-auto"
-                    compact
-                    eyebrow={hoverPlanetId ? 'Live Focus' : 'Department Signal'}
-                    title={focusedPlanet.name}
-                    badge={isLocked(focusedPlanet) ? 'Sichtbar' : 'Mitglied'}
-                    accent={focusedPlanet.color || '#34d399'}
-                    collapsedHint={hoverPlanetId ? 'Signal gehalten — Details öffnen.' : 'Kurz halten für Analyse.'}
-                    summary={`${focusedPlanetLinkCount} semantische Beziehungen für ${focusedPlanet.name}. Hover previewt das Signal, die Rail hält den Fokus und ein Klick springt direkt in den verbundenen Bereich.`}
-                    showToggle
-                    forceExpanded={Boolean(isInsightRailHovered) || Boolean(semanticPreviewPathId)}
-                    onPointerEnter={() => {
-                        setIsInsightRailHovered(true);
-                        setActivePlanetId(focusedPlanet.id);
-                        clearHoverRelease();
-                    }}
-                    onPointerLeave={() => {
-                        setIsInsightRailHovered(false);
-                        if (hoverPlanetId) {
-                            setActivePlanetId(hoverPlanetId);
-                            return;
-                        }
-                        setActivePlanetId(null);
-                        scheduleHoverRelease();
-                    }}
-                    metrics={[
-                        { label: 'Bereiche', value: focusedPlanetMetrics.spaces, toneClassName: 'text-emerald-200' },
-                        { label: 'Ordner', value: focusedPlanetMetrics.folders, toneClassName: 'text-cyan-200' },
-                        { label: 'Dokumente', value: focusedPlanetMetrics.nodes, toneClassName: 'text-violet-200' },
-                        { label: 'Health', value: `${focusedPlanetMetrics.health}%`, toneClassName: 'text-amber-200' },
-                    ]}
-                >
-                    <div className="rounded-2xl border border-white/10 bg-black/20 px-4 py-3">
-                        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-white/35">
-                            <span>Semantische Links</span>
-                            <span>{focusedPlanetLinkCount}</span>
-                        </div>
-                        <p className="mt-2 text-[11px] leading-relaxed text-white/45">
-                            Verbindungen richten sich nach inhaltlicher, struktureller und operativer Nähe. Die Route erscheint erst dann stark, wenn du sie wirklich fokussierst.
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                            {Object.values(SEMANTIC_DRIVER_META).map((driver) => (
-                                <div
-                                    key={driver.label}
-                                    className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1"
-                                >
-                                    <span
-                                        className="h-2 w-2 rounded-full"
-                                        style={{ background: driver.accent, boxShadow: `0 0 10px ${driver.accent}` }}
-                                    />
-                                    <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">
-                                        {driver.label}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-
-                        {focusedSemanticLinks.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                                {focusedSemanticLinks.slice(0, 3).map((link) => {
-                                    const driverMeta = SEMANTIC_DRIVER_META[link.dominantDriver];
-
-                                    return (
-                                        <button
-                                            type="button"
-                                            key={link.id}
-                                        onMouseEnter={() => handleSemanticPreview(link.pathId)}
-                                            onMouseLeave={() => handleSemanticPreview(null)}
-                                            onClick={() => handleSemanticNavigate(link.targetDepartmentId)}
-                                            className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
-                                                semanticPreviewPathId === link.pathId
-                                                    ? 'border-white/18 bg-white/[0.07]'
-                                                    : 'border-white/10 bg-white/[0.03] hover:border-white/16 hover:bg-white/[0.05]'
-                                            }`}
-                                        >
-                                            <div className="min-w-0">
-                                                <div className="truncate text-xs text-white/84">{link.name}</div>
-                                                <div
-                                                    className="mt-1 text-[10px] uppercase tracking-[0.16em]"
-                                                    style={{ color: driverMeta.accent }}
-                                                >
-                                                    {driverMeta.label} · {driverMeta.reason}
-                                                </div>
-                                            </div>
-                                            <div className="ml-3 text-right">
-                                                <div className="text-[11px] text-white/66">
-                                                    {Math.round(link.semanticAffinity * 100)}%
-                                                </div>
-                                                <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-white/34">
-                                                    Zoom
-                                                </div>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </LayerInsightRail>
-            )}
-
             {/* 3. PLANET LAYER (Managed by Store Data) */}
             {/*
              * IMPORTANT: Use React.Fragment (not a div) as the per-planet key wrapper.
@@ -1434,45 +1296,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const isSemanticPreviewPlanet = semanticPreviewPlanetIds.has(p.id);
                     const isFocusedPlanet = focusedPlanetId === p.id;
                     const isDimmed = (matchedDepartmentIds && !isMatched) || (hasUniverseInteraction && focusedPlanetId && !isFocusedPlanet && !isSemanticPreviewPlanet);
-                    const shouldShowPlanetLabel = !isHomeUniversePreview && (
-                        matchedDepartmentIds ? isMatched : (
-                            focusedPlanetId === p.id ||
-                            isSemanticPreviewPlanet ||
-                            activeDepartmentId === p.id
-                        )
-                    );
-                    const planetSize = isHomeUniversePreview
-                        ? 'sm'
-                        : (shouldShowPlanetLabel ? 'md' : 'sm');
+                    const planetSize = isHomeUniversePreview ? 'sm' : 'lg';
 
                     return (
                         <React.Fragment key={p.id}>
-                            {!isHomeUniversePreview && !shouldShowPlanetLabel && (
-                                <div
-                                    className="pointer-events-none absolute z-20 flex max-w-[190px] -translate-x-1/2 translate-y-[52px] flex-col items-center gap-0.5 rounded-2xl border border-white/[0.06] bg-black/[0.18] px-2.5 py-1.5 text-center backdrop-blur-[8px]"
-                                    style={{
-                                        left: `${p.x}%`,
-                                        top: `${p.y}%`,
-                                        opacity: isDimmed ? 0.22 : 1,
-                                        transition: 'opacity 0.45s ease',
-                                    }}
-                                >
-                                    <span className="max-w-[170px] truncate text-[8px] uppercase tracking-[0.13em] text-white/52">
-                                        {p.name}
-                                    </span>
-                                    {!locked && (spaceCount > 0 || activity > 0) && (
-                                        <span className="flex items-center gap-1 text-[8px] tracking-[0.02em] text-white/34">
-                                            <span
-                                                className="inline-block h-1 w-1 rounded-full"
-                                                style={{ background: health >= 60 ? '#34d399' : health >= 30 ? '#fbbf24' : '#fb7185' }}
-                                            />
-                                            {spaceCount > 0 ? `${spaceCount} ${spaceCount === 1 ? 'Bereich' : 'Bereiche'}` : null}
-                                            {spaceCount > 0 && activity > 0 ? ' · ' : null}
-                                            {activity > 0 ? `${activity} Docs` : null}
-                                        </span>
-                                    )}
-                                </div>
-                            )}
                             {locked ? (
                                 <div
                                     data-testid={`locked-planet-${p.id}`}
@@ -1493,7 +1320,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
-                                        showLabel={shouldShowPlanetLabel}
+                                        showLabel={!isHomeUniversePreview}
+                                        ambientLabel={!isHomeUniversePreview}
                                         labelSide={p.x >= 50 ? 'left' : 'right'}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {
@@ -1515,7 +1343,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
-                                        showLabel={shouldShowPlanetLabel}
+                                        showLabel={!isHomeUniversePreview}
+                                        ambientLabel={!isHomeUniversePreview}
                                         labelSide={p.x >= 50 ? 'left' : 'right'}
                                         onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
                                         onClick={() => {

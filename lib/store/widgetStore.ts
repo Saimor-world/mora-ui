@@ -33,27 +33,25 @@ const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'team-1', type: 'team', x: 6, y: 8, w: 6, h: 4 },
 ];
 
-// Universe widgets frame a reserved central planet zone (grid cols 4–7).
-// Widgets live only in the left band (cols 0–3) and the right band (cols 8–11);
-// the centre columns stay clear so the planet cluster has its own breathing room.
+// Universe widgets are peripheral glance panels — not co-equal with the planet field.
+// They snap to compact edge bands (cols 0–2 left, cols 9–11 right); the wide centre
+// stays open so departments can breathe across the viewport.
 const UNIVERSE_TOTAL_COLS = 12;
-const UNIVERSE_LEFT_BAND_END = 4;     // left band occupies cols [0, 4)
-const UNIVERSE_RIGHT_BAND_START = 8;  // right band occupies cols [8, 12)
-const UNIVERSE_BAND_WIDTH = UNIVERSE_LEFT_BAND_END; // 4 cols per side band
+const UNIVERSE_LEFT_BAND_END = 3;     // left glance band occupies cols [0, 3)
+const UNIVERSE_RIGHT_BAND_START = 9;  // right glance band occupies cols [9, 12)
+const UNIVERSE_BAND_WIDTH = UNIVERSE_LEFT_BAND_END;
 
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 4, h: 8 },
-    { i: 'clock-1', type: 'clock', x: 0, y: 8, w: 4, h: 3 },
-    { i: 'orgStats-1', type: 'orgStats', x: 8, y: 0, w: 4, h: 4 },
-    { i: 'signals-1', type: 'signals', x: 8, y: 4, w: 4, h: 5 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 3, h: 5 },
+    { i: 'clock-1', type: 'clock', x: 0, y: 5, w: 3, h: 2 },
+    { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 3 },
+    { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 3, h: 4 },
 ];
 
 /**
- * Keep universe widgets out of the reserved central planet zone.
- * Each widget is snapped wholly into the left or right band (whichever its
- * horizontal centre is nearer) and its width is clamped to a single band.
- * Vertical position is preserved; react-grid-layout vertical compaction then
- * resolves any in-band stacking. Idempotent, so it is safe to run on every load.
+ * Keep universe widgets as compact peripheral glance panels.
+ * Each widget is snapped into the nearer edge band and width-clamped so the
+ * planet field remains the hero layer. Idempotent — safe on every load/save.
  */
 export function reflowUniverseAroundCenter(items: WidgetInstance[]): WidgetInstance[] {
     return items.map((w) => {

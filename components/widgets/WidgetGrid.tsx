@@ -54,6 +54,10 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
         [items],
     );
 
+    const isUniverseGlance = surface === 'universe';
+    const panelBackground = isUniverseGlance ? 'rgba(8, 11, 24, 0.38)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBorder = isUniverseGlance ? 'border-white/[0.07]' : 'border-white/[0.12]';
+
     if (!mounted || !hydrated || surface === 'home') return null;
 
     const available = WIDGET_TYPES.filter(
@@ -145,8 +149,8 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                     return (
                         <div
                             key={w.i}
-                            className="pointer-events-auto relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.12] backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]"
-                            style={{ backgroundColor: 'rgba(8, 11, 24, 0.82)' }}
+                            className={`pointer-events-auto relative flex h-full flex-col overflow-hidden rounded-2xl border ${panelBorder} backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]`}
+                            style={{ backgroundColor: panelBackground }}
                         >
                             {/* Top hairline highlight — lifts the panel off the starfield */}
                             <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), transparent)' }} />
