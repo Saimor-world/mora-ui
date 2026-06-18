@@ -951,11 +951,12 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
-            {/* UNIVERSE DESKTOP — widgets float above the calm starfield layer.
-                The whole overlay stays pointer-events-none so empty grid space lets
-                clicks fall through to the planets behind it; WidgetGrid re-enables
-                pointer events only on the toolbar and the actual widget cards. */}
-            <div className="absolute inset-0 z-[18] pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+            {/* UNIVERSE DESKTOP — widgets sit above the calm starfield but BELOW the
+                planet layer (z-12), so planets stay visible and clickable even where a
+                widget card overlaps them. The overlay stays pointer-events-none so empty
+                grid space falls through; WidgetGrid re-enables pointer events only on the
+                toolbar and the actual widget cards. */}
+            <div className="absolute inset-0 z-[10] pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
                 <div className="pointer-events-none">
                     <WidgetGrid
                         surface="universe"
