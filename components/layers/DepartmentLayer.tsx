@@ -49,6 +49,8 @@ const getFreshnessWeight = (value?: string | null) => {
 interface DepartmentLayerProps {
     incidentPanels?: IncidentStatusPanelData[];
     hasUnscopedIncidents?: boolean;
+    /** When true: orbit hero only — chrome moves to shell + edge widgets. */
+    cosmosMode?: boolean;
 }
 
 function isVisibleIncidentPanel(panel: IncidentStatusPanelData): boolean {
@@ -71,6 +73,7 @@ function isVisibleIncidentPanel(panel: IncidentStatusPanelData): boolean {
 export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
     incidentPanels = [],
     hasUnscopedIncidents = false,
+    cosmosMode = false,
 }) => {
     // Granular store selectors — prevents rerender on unrelated store mutations
     const { activeDepartmentId, activeCompanyId, navigateToExplore, navigateToSpace, navigateToFolder, setActiveSpace } = useNavStore();
@@ -549,12 +552,12 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
 
     return (
         <div className="relative w-full h-full overflow-hidden bg-transparent">
-            {/* Dept-coloured nebula — shifts hue per department */}
+            {/* Dept-coloured nebula — only when not using shared cosmic backdrop */}
+            {!cosmosMode && (
+            <>
             <div
                 className="absolute inset-0 z-[-1] pointer-events-none"
                 style={{
-                    // Lower opacity so the shell starfield shines through — the
-                    // department orbit sits IN the cosmos, not on a flat panel.
                     opacity: 0.5,
                     background: `
                         radial-gradient(1400px 720px at 52% 54%, ${g}30 0%, transparent 66%),
@@ -565,9 +568,12 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                     `
                 }}
             />
-            {/* Edge vignette — keep it light so stars stay visible toward the centre */}
             <div className="absolute inset-0 z-[-1] pointer-events-none bg-[radial-gradient(circle_at_50%_50%,transparent_0%,rgba(0,0,0,0.22)_84%,rgba(0,0,0,0.42)_100%)]" />
+            </>
+            )}
 
+            {!cosmosMode && (
+            <>
             <motion.button
                 data-testid="nav-back-to-universe"
                 onClick={handleNavigateToExplore}
@@ -771,6 +777,28 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                     </div>
                 </div>
             </motion.div>
+            </>
+            )}
+
+            {cosmosMode && (
+                <motion.button
+                    type="button"
+                    onClick={() => {
+                        if (!activeDepartmentId) return;
+                        addSpace({
+                            department_id: activeDepartmentId,
+                            name: 'Neuer Bereich',
+                            description: 'Aus dem Department-Layer erstellt',
+                        });
+                    }}
+                    className="pointer-events-auto absolute bottom-28 right-8 z-40 flex items-center gap-2 rounded-full border border-emerald-500/25 bg-emerald-500/10 px-4 py-2 text-[10px] uppercase tracking-[0.16em] text-emerald-200/85 transition-all hover:bg-emerald-500/18"
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
+                >
+                    <Plus size={14} />
+                    Bereich
+                </motion.button>
+            )}
 
             <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 {isLoadingSpaces ? (

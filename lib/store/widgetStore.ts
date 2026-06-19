@@ -6,6 +6,7 @@ import {
     UNIVERSE_GLANCE_BAND,
     UNIVERSE_GLANCE_CAPS,
     UNIVERSE_GLANCE_DEFAULTS,
+    DEPARTMENT_GLANCE_CAPS,
 } from '@/lib/widgets/universeGlance';
 import { filterWidgetsForSurface } from '@/lib/widgets/surfaceAllowlist';
 import {
@@ -30,12 +31,13 @@ interface CompanyLayoutState {
     departments: Record<string, WidgetInstance[]>;
 }
 
+/** Edge-band glance layout for department cosmos — center stays open for orbit map. */
 const DEFAULT_DEPARTMENT: WidgetInstance[] = [
-    { i: 'deptStats-1', type: 'deptStats', x: 0, y: 0, w: 6, h: 3 },
-    { i: 'nightwatch-1', type: 'nightwatch', x: 6, y: 0, w: 6, h: 8 },
-    { i: 'signals-1', type: 'signals', x: 0, y: 3, w: 6, h: 5 },
-    { i: 'quickActions-1', type: 'quickActions', x: 0, y: 8, w: 6, h: 3 },
-    { i: 'team-1', type: 'team', x: 6, y: 8, w: 6, h: 4 },
+    { i: 'deptStats-1', type: 'deptStats', x: 0, y: 0, w: 3, h: 4 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 4, w: 3, h: 4 },
+    { i: 'signals-1', type: 'signals', x: 9, y: 0, w: 2, h: 3 },
+    { i: 'quickActions-1', type: 'quickActions', x: 9, y: 3, w: 3, h: 2 },
+    { i: 'team-1', type: 'team', x: 9, y: 5, w: 2, h: 3 },
 ];
 
 // Universe widgets are peripheral glance panels — planets are the hero layer.
@@ -54,12 +56,14 @@ const DEFAULT_UNIVERSE: WidgetInstance[] = [
 ];
 
 /**
- * Snap universe widgets to edge glance bands and clamp to content-appropriate caps.
- * Preserves user positions within bands; oversized saved layouts shrink on load.
+ * Snap glance widgets to edge bands and clamp to content-appropriate caps.
+ * Used for universe and department surfaces — center stays open for planets/orbit.
  */
-export function reflowUniverseAroundCenter(items: WidgetInstance[]): WidgetInstance[] {
+export function reflowGlanceAroundCenter(items: WidgetInstance[]): WidgetInstance[] {
     return items.map((w) => {
-        const caps = UNIVERSE_GLANCE_CAPS[w.type] ?? { maxW: UNIVERSE_BAND_WIDTH, maxH: 5, minW: 2, minH: 2 };
+        const caps = UNIVERSE_GLANCE_CAPS[w.type]
+            ?? DEPARTMENT_GLANCE_CAPS[w.type]
+            ?? { maxW: UNIVERSE_BAND_WIDTH, maxH: 5, minW: 2, minH: 2 };
         const width = Math.max(caps.minW, Math.min(w.w, UNIVERSE_BAND_WIDTH, caps.maxW));
         const height = Math.max(caps.minH, Math.min(w.h, caps.maxH));
         const mid = w.x + w.w / 2;
@@ -69,6 +73,9 @@ export function reflowUniverseAroundCenter(items: WidgetInstance[]): WidgetInsta
         return { ...w, x, w: width, h: height };
     });
 }
+
+/** @deprecated Use reflowGlanceAroundCenter */
+export const reflowUniverseAroundCenter = reflowGlanceAroundCenter;
 
 /** Default footprint when adding a widget on the universe surface. */
 export function universeWidgetDefaults(type: string): { w: number; h: number } {
@@ -135,15 +142,15 @@ function normalizeFromServer(raw: Partial<DesktopLayoutsPayload> | undefined): C
     const base = emptyCompanyLayouts();
     if (!raw) return base;
     if (Array.isArray(raw.universe) && raw.universe.length) {
-        base.universe = reflowUniverseAroundCenter(filterWidgetsForSurface(clone(raw.universe), 'universe'));
+        base.universe = reflowGlanceAroundCenter(filterWidgetsForSurface(clone(raw.universe), 'universe'));
     }
     if (Array.isArray(raw.department) && raw.department.length) {
-        base.department = filterWidgetsForSurface(clone(raw.department), 'department');
+        base.department = reflowGlanceAroundCenter(filterWidgetsForSurface(clone(raw.department), 'department'));
     }
     if (raw.departments && typeof raw.departments === 'object') {
         for (const [deptId, items] of Object.entries(raw.departments)) {
             if (Array.isArray(items) && items.length) {
-                base.departments[deptId] = filterWidgetsForSurface(clone(items), 'department');
+                base.departments[deptId] = reflowGlanceAroundCenter(filterWidgetsForSurface(clone(items), 'department'));
             }
         }
     }
@@ -153,9 +160,9 @@ function normalizeFromServer(raw: Partial<DesktopLayoutsPayload> | undefined): C
 function legacyToCompanyLayouts(): CompanyLayoutState {
     const stored = readLegacyLocalStorage();
     const base = emptyCompanyLayouts();
-    if (stored.universe?.length) base.universe = reflowUniverseAroundCenter(filterWidgetsForSurface(clone(stored.universe), 'universe'));
+    if (stored.universe?.length) base.universe = reflowGlanceAroundCenter(filterWidgetsForSurface(clone(stored.universe), 'universe'));
     if (stored.department?.length) {
-        base.department = filterWidgetsForSurface(clone(stored.department), 'department');
+        base.department = reflowGlanceAroundCenter(filterWidgetsForSurface(clone(stored.department), 'department'));
     }
     return base;
 }
@@ -376,7 +383,11 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         const companyId = get().activeCompanyId;
         const state = companyId ? companyCache[companyId] ?? emptyCompanyLayouts() : emptyCompanyLayouts();
         const deptId = departmentId ?? get().activeDepartmentId;
-        return resolveSurfaceItems(state, surface, deptId);
+        const items = resolveSurfaceItems(state, surface, deptId);
+        if (surface === 'universe' || surface === 'department') {
+            return reflowGlanceAroundCenter(items);
+        }
+        return items;
     },
 
     setEditMode: (value) => set({ editMode: value }),
@@ -401,9 +412,9 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         const filtered = filterWidgetsForSurface(merged, surface);
         let nextState = state;
         if (surface === 'universe') {
-            nextState = { ...state, universe: reflowUniverseAroundCenter(filtered) };
+            nextState = { ...state, universe: reflowGlanceAroundCenter(filtered) };
         } else {
-            nextState = writeDepartmentItems(state, filtered, deptId);
+            nextState = writeDepartmentItems(state, reflowGlanceAroundCenter(filtered), deptId);
         }
 
         companyCache[companyId] = nextState;
@@ -431,9 +442,9 @@ export const useWidgetStore = create<WidgetState>((set, get) => ({
         const nextItems = filterWidgetsForSurface([...current, instance], surface);
         let nextState = state;
         if (surface === 'universe') {
-            nextState = { ...state, universe: reflowUniverseAroundCenter(nextItems) };
+            nextState = { ...state, universe: reflowGlanceAroundCenter(nextItems) };
         } else {
-            nextState = writeDepartmentItems(state, nextItems, deptId);
+            nextState = writeDepartmentItems(state, reflowGlanceAroundCenter(nextItems), deptId);
         }
 
         companyCache[companyId] = nextState;

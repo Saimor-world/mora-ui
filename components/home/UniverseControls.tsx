@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield } from 'lucide-react';
+import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -43,7 +42,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     contextSubtitleOverride,
 }) => {
     const user = useSessionStore((state) => state.user);
-    const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId } = useNavStore();
+    const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
 
     const { data: departments = [] } = useDepartments(activeCompany?.id ?? null);
@@ -123,6 +122,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     };
 
     const showCoreSurfaceSwitch = viewLevel === 'core';
+    const showDeptBack = viewLevel === 'department' || viewLevel === 'space';
     const showModeSwitches = visibleModes.length > 1 && !surfaceProfile.isLocalTruthSurface && !surfaceProfile.isHqSurface;
     const contextModeLabel = surfaceProfile.isHqSurface
         ? 'HQ'
@@ -139,7 +139,18 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     );
 
     return (
-        <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/[0.10] bg-black/45 px-2 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+        <div className="fixed top-4 left-1/2 z-50 flex max-w-[min(96vw,920px)] -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/[0.10] bg-black/45 px-2 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+            {showDeptBack && (
+                <button
+                    type="button"
+                    onClick={navigateToExplore}
+                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] text-white/55 transition-colors hover:text-emerald-200"
+                    title="Zurück zum Universum"
+                >
+                    <ChevronLeft size={14} />
+                    <span className="hidden sm:inline">Universum</span>
+                </button>
+            )}
             {/* Context mode badge — compact, no switcher clutter */}
             <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]">
                 {showModeSwitches ? (
@@ -232,21 +243,13 @@ const ControlButton: React.FC<{ isActive: boolean; onClick: () => void; icon: an
     isActive, onClick, icon: Icon, label, showLabelAlways = false
 }) => (
     <button
+        type="button"
         onClick={onClick}
-        className={`relative group flex items-center justify-center rounded-xl p-2 transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300' : 'text-white/54 hover:bg-white/6 hover:text-white'}`}
+        className={`group relative flex items-center justify-center rounded-xl p-2 transition-all duration-300 ${isActive ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/25' : 'text-white/54 hover:bg-white/6 hover:text-white'}`}
     >
         <Icon className={`h-4 w-4 ${isActive ? 'stroke-[2.5px]' : 'stroke-2'}`} />
         <span className={`ml-2 overflow-hidden text-[10px] font-medium transition-all duration-300 ${(isActive || showLabelAlways) ? 'max-w-[52px] opacity-100' : 'max-w-0 opacity-0 group-hover:max-w-[52px] group-hover:opacity-100'}`}>
             {label}
         </span>
-
-        {isActive && (
-            <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 rounded-xl border border-emerald-500/30"
-                initial={false}
-                transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-            />
-        )}
     </button>
 );

@@ -13,8 +13,11 @@ import {
     type WidgetContext,
     type WidgetSurface,
 } from '@/lib/widgets/types';
-import { UNIVERSE_ROW_HEIGHT, universeGlanceMins } from '@/lib/widgets/universeGlance';
+import { UNIVERSE_ROW_HEIGHT, universeGlanceMins, departmentGlanceMins } from '@/lib/widgets/universeGlance';
 import { universeWidgetDefaults } from '@/lib/store/widgetStore';
+import { departmentWidgetDefaults } from '@/lib/widgets/universeGlance';
+import { widgetOverlapsCosmosColumns } from '@/lib/universe/interactionZones';
+import type { UniverseFocusMode } from '@/lib/universe/interactionZones';
 
 const Grid = WidthProvider(GridLayout);
 const COLS = WIDGET_GRID_COLS.lg;
@@ -26,7 +29,16 @@ const COLS = WIDGET_GRID_COLS.lg;
  * become draggable + resizable via react-grid-layout, with an add palette, a
  * per-widget remove, and a reset. Geometry persists per user+company on the server.
  */
-export function WidgetGrid({ surface, context }: { surface: WidgetSurface; context: WidgetContext }) {
+export function WidgetGrid({
+    surface,
+    context,
+    focusMode = 'peripheral',
+}: {
+    surface: WidgetSurface;
+    context: WidgetContext;
+    /** Universe-only: when explore, widgets yield clicks to the planet layer. */
+    focusMode?: UniverseFocusMode;
+}) {
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const departmentId = context.departmentId ?? activeDepartmentId;
@@ -37,6 +49,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
     } = useWidgetStore();
     const [mounted, setMounted] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
+    const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
 
     useEffect(() => {
         setLayoutScope(activeCompanyId, surface === 'department' ? departmentId : null);
@@ -48,11 +61,14 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
     }, [hydrate, activeCompanyId]);
 
     const items = getSurfaceItems(surface, departmentId);
-    const isUniverseGlance = surface === 'universe';
+    const isGlanceSurface = surface === 'universe' || surface === 'department';
+    const cosmosYield = isGlanceSurface && focusMode === 'explore' && !editMode;
     const rglLayout: Layout[] = useMemo(
         () => items.map((w) => {
             const def = WIDGET_REGISTRY[w.type];
-            const glanceMins = isUniverseGlance ? universeGlanceMins(w.type) : null;
+            const glanceMins = isGlanceSurface
+                ? (surface === 'department' ? departmentGlanceMins(w.type) : universeGlanceMins(w.type))
+                : null;
             return {
                 i: w.i,
                 x: w.x,
@@ -63,11 +79,11 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                 minH: glanceMins?.minH ?? def?.minH ?? 2,
             };
         }),
-        [items, isUniverseGlance],
+        [items, isGlanceSurface, surface],
     );
 
-    const panelBackground = isUniverseGlance ? 'rgba(8, 11, 24, 0.28)' : 'rgba(8, 11, 24, 0.82)';
-    const panelBorder = isUniverseGlance ? 'border-white/[0.05]' : 'border-white/[0.12]';
+    const panelBackground = isGlanceSurface ? 'rgba(8, 11, 24, 0.28)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBorder = isGlanceSurface ? 'border-white/[0.05]' : 'border-white/[0.12]';
 
     if (!mounted || !hydrated || surface === 'home') return null;
 
@@ -79,12 +95,13 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
 
     return (
         <div className="relative">
-            {/* Toolbar */}
+            {/* Toolbar — hidden in glance view until edit mode */}
+            {(editMode || !isGlanceSurface) && (
             <div className="mb-3 flex items-center justify-between gap-3 pointer-events-none">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">
                     {editMode
                         ? 'Anordnen — ziehen · skalieren · hinzufügen'
-                        : isUniverseGlance ? 'Glance' : 'Dein Desktop'}
+                        : isGlanceSurface ? 'Glance' : 'Dein Desktop'}
                 </div>
                 <div className="flex items-center gap-2 pointer-events-auto">
                     {editMode && (
@@ -113,6 +130,21 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                     </button>
                 </div>
             </div>
+            )}
+
+            {/* Subtle customize affordance for glance surfaces */}
+            {isGlanceSurface && !editMode && (
+                <div className="pointer-events-none mb-2 flex justify-end">
+                    <button
+                        type="button"
+                        onClick={() => setEditMode(true)}
+                        className="pointer-events-auto inline-flex items-center gap-1 rounded-full border border-white/[0.06] bg-black/20 px-2 py-1 text-[9px] uppercase tracking-[0.14em] text-white/28 transition-colors hover:border-white/12 hover:text-white/55"
+                        title="Widgets anpassen"
+                    >
+                        <Pencil size={10} /> Anpassen
+                    </button>
+                </div>
+            )}
 
             {/* Add palette */}
             {editMode && paletteOpen && (
@@ -123,8 +155,8 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                             <button
                                 key={t}
                                 onClick={() => {
-                                    const geom = isUniverseGlance
-                                        ? universeWidgetDefaults(t)
+                                    const geom = isGlanceSurface
+                                        ? (surface === 'department' ? departmentWidgetDefaults(t) : universeWidgetDefaults(t))
                                         : { w: def.defaultW, h: def.defaultH };
                                     addWidget(surface, t, geom, deptArg);
                                     setPaletteOpen(false);
@@ -142,11 +174,11 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
 
             {/* The grid */}
             <Grid
-                className="layout"
+                className={`layout ${isGlanceSurface ? 'pointer-events-none' : ''}`}
                 layout={rglLayout}
                 cols={COLS}
-                rowHeight={isUniverseGlance ? UNIVERSE_ROW_HEIGHT : WIDGET_ROW_HEIGHT}
-                margin={isUniverseGlance ? [10, 10] : [14, 14]}
+                rowHeight={isGlanceSurface ? UNIVERSE_ROW_HEIGHT : WIDGET_ROW_HEIGHT}
+                margin={isGlanceSurface ? [10, 10] : [14, 14]}
                 containerPadding={[0, 0]}
                 isDraggable={editMode}
                 isResizable={editMode}
@@ -169,14 +201,22 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                         ...context,
                         surface,
                         gridSize: { w: w.w, h: w.h },
-                        compact: isUniverseGlance || (w.w <= 3 && w.h <= 4),
+                        compact: isGlanceSurface || (w.w <= 3 && w.h <= 4),
                     };
-                    const chromeless = isUniverseGlance && !editMode;
+                    const chromeless = isGlanceSurface && !editMode;
                     const isClockOrb = chromeless && w.type === 'clock';
+                    const overlapsCosmos = isGlanceSurface && widgetOverlapsCosmosColumns(w.x, w.w);
+                    const allowPointer =
+                        !isGlanceSurface ||
+                        editMode ||
+                        (!cosmosYield && !overlapsCosmos) ||
+                        hoveredWidgetId === w.i;
                     return (
                         <div
                             key={w.i}
-                            className={`pointer-events-auto relative flex h-full flex-col overflow-hidden ${
+                            className={`relative flex h-full flex-col overflow-hidden ${
+                                allowPointer ? 'pointer-events-auto' : 'pointer-events-none'
+                            } ${
                                 isClockOrb
                                     ? 'rounded-full border-0 bg-transparent shadow-none'
                                     : chromeless
@@ -184,6 +224,8 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                                         : `rounded-2xl border ${panelBorder} backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]`
                             }`}
                             style={isClockOrb ? undefined : { backgroundColor: panelBackground }}
+                            onPointerEnter={() => setHoveredWidgetId(w.i)}
+                            onPointerLeave={() => setHoveredWidgetId((current) => (current === w.i ? null : current))}
                         >
                             {!chromeless && (
                                 <>
@@ -194,7 +236,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                                     />
                                 </>
                             )}
-                            {(editMode || !isUniverseGlance) && (
+                            {(editMode || !isGlanceSurface) && (
                                 <div
                                     className={`relative z-[1] flex items-center justify-between ${chromeless ? 'px-1 py-1' : 'px-3 py-2'} ${editMode ? 'widget-drag-handle cursor-grab active:cursor-grabbing' : ''}`}
                                 >

@@ -958,13 +958,14 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
 const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data: spaces = [] } = useSpaces(context.departmentId);
     const folders = spaces.reduce((sum, s) => sum + (s.folder_count ?? 0), 0);
+    const compact = context.compact;
     const rows = [
         { label: 'Bereiche', value: spaces.length },
         { label: 'Ordner',   value: folders },
     ];
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
     return (
-        <div className="flex h-full flex-col justify-center gap-3">
+        <div className={`flex h-full flex-col ${compact ? 'gap-2 p-1' : 'justify-center gap-3'}`}>
             {rows.map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-2">
                     <span className="w-14 shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
@@ -981,6 +982,18 @@ const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     <span className="w-7 shrink-0 text-right text-[13px] font-light tabular-nums text-white/65">{value}</span>
                 </div>
             ))}
+            {compact && spaces.length > 0 && (
+                <div className="mt-1 flex flex-col gap-1 border-t border-white/[0.06] pt-2">
+                    {spaces.slice(0, 4).map((space) => (
+                        <div key={space.id} className="truncate text-[10px] text-white/52">
+                            {space.name}
+                        </div>
+                    ))}
+                    {spaces.length > 4 && (
+                        <div className="text-[9px] text-white/30">+ {spaces.length - 4} weitere</div>
+                    )}
+                </div>
+            )}
         </div>
     );
 };
@@ -1035,7 +1048,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     },
     deptStats: {
         type: 'deptStats', label: 'Datenlage', hint: 'Bereiche & Ordner der Abteilung', icon: <TrendingUp size={14} />,
-        defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['department'],
+        defaultW: 3, defaultH: 4, minW: 2, minH: 3, surfaces: ['department'],
         render: ({ context }) => <DeptStatsWidget context={context} />,
     },
     nightwatch: {

@@ -38,6 +38,35 @@ export const UNIVERSE_GLANCE_CAPS: Record<string, { maxW: number; maxH: number; 
     quickActions: { maxW: 3, maxH: 3, minW: 2, minH: 2 },
 };
 
+/** Suggested default footprint per widget type on the department cosmos surface. */
+export const DEPARTMENT_GLANCE_DEFAULTS: Record<string, { w: number; h: number }> = {
+    deptStats: { w: 3, h: 4 },
+    nightwatch: { w: 3, h: 4 },
+    signals: { w: 2, h: 3 },
+    team: { w: 2, h: 3 },
+    quickActions: { w: 3, h: 2 },
+    mora: { w: 3, h: 2 },
+};
+
+/** Hard caps — department shares universe glance sizing. */
+export const DEPARTMENT_GLANCE_CAPS: Record<string, { maxW: number; maxH: number; minW: number; minH: number }> = {
+    deptStats: { maxW: 3, maxH: 5, minW: 2, minH: 3 },
+    nightwatch: { maxW: 3, maxH: 5, minW: 2, minH: 3 },
+    signals: { maxW: 3, maxH: 4, minW: 2, minH: 2 },
+    team: { maxW: 3, maxH: 4, minW: 2, minH: 2 },
+    quickActions: { maxW: 3, maxH: 3, minW: 2, minH: 2 },
+    mora: { maxW: 3, maxH: 3, minW: 2, minH: 2 },
+};
+
+export function departmentGlanceMins(type: string) {
+    const caps = DEPARTMENT_GLANCE_CAPS[type] ?? UNIVERSE_GLANCE_CAPS[type];
+    return caps ? { minW: caps.minW, minH: caps.minH } : { minW: 2, minH: 2 };
+}
+
+export function departmentWidgetDefaults(type: string): { w: number; h: number } {
+    return DEPARTMENT_GLANCE_DEFAULTS[type] ?? UNIVERSE_GLANCE_DEFAULTS[type] ?? { w: 2, h: 2 };
+}
+
 export const UNIVERSE_ROW_HEIGHT = 50;
 
 export function universeGlanceMins(type: string) {

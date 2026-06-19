@@ -45,6 +45,13 @@ import {
     UNIVERSE_HOVER_RELEASE_HOME_MS,
     UNIVERSE_HOVER_RELEASE_MS,
 } from '@/lib/universe/hoverTiming';
+import {
+    isNearAnyPlanet,
+    resolveUniverseFocusMode,
+    resolveUniverseInteractionZone,
+    universeWidgetOpacity,
+    type UniverseFocusMode,
+} from '@/lib/universe/interactionZones';
 
 const EMPTY_UNIVERSE_ITEMS: any[] = [];
 
@@ -113,6 +120,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     // Planet being "flown into" — drives the cosmos zoom toward that planet
     // right before the department surface resolves. { x, y } in viewport %.
     const [flyToPlanet, setFlyToPlanet] = useState<{ id: string; x: number; y: number } | null>(null);
+    const [universeFocusMode, setUniverseFocusMode] = useState<UniverseFocusMode>('explore');
     const prefersReducedMotion = useReducedMotion();
     const flyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -652,7 +660,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             x: relativeX * 18,
             y: relativeY * 14,
         });
-    }, []);
+
+        const normX = (event.clientX - rect.left) / rect.width;
+        const normY = (event.clientY - rect.top) / rect.height;
+        const zone = resolveUniverseInteractionZone(normX, normY);
+        const nearPlanet = isNearAnyPlanet(normX, normY, visiblePlanets);
+        setUniverseFocusMode(resolveUniverseFocusMode({
+            zone,
+            nearPlanet,
+            planetHovered: Boolean(hoverPlanetId),
+            widgetHovered: false,
+        }));
+    }, [visiblePlanets, hoverPlanetId]);
 
     const resetUniverseParallax = useCallback(() => {
         setParallaxOffset({ x: 0, y: 0 });
@@ -750,8 +769,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     );
 
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
-    const backgroundCalmFactor = (hasUniverseInteraction ? 0.78 : 1) * nebulaPulseFactor;
-    const widgetGlanceOpacity = hasUniverseInteraction ? 0.25 : 0.44;
+    const backgroundCalmFactor = (hasUniverseInteraction ? 0.82 : 1) * nebulaPulseFactor;
+    const widgetGlanceOpacity = universeWidgetOpacity(universeFocusMode, hasUniverseInteraction);
+    const widgetGlanceBlur = universeFocusMode === 'explore' ? 'blur(1.6px)' : hasUniverseInteraction ? 'blur(1px)' : 'blur(0px)';
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
@@ -780,6 +800,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const handleUniversePointerLeave = useCallback(() => {
         resetUniverseParallax();
+        setUniverseFocusMode('explore');
         scheduleHoverRelease();
     }, [resetUniverseParallax, scheduleHoverRelease]);
 
@@ -969,7 +990,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
                 animate={{
                     opacity: widgetGlanceOpacity,
-                    filter: hasUniverseInteraction ? 'blur(1.2px)' : 'blur(0px)',
+                    filter: widgetGlanceBlur,
                 }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
             >
