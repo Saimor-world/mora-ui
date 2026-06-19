@@ -689,11 +689,15 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 };
 
 const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
-    const [now, setNow] = React.useState(() => new Date());
+    const [now, setNow] = React.useState<Date | null>(null);
     React.useEffect(() => {
+        setNow(new Date());
         const t = window.setInterval(() => setNow(new Date()), 1000);
         return () => window.clearInterval(t);
     }, []);
+    if (!now) {
+        return <div className="h-full w-full" aria-hidden />;
+    }
 
     const h = now.getHours() % 12;
     const m = now.getMinutes();
@@ -713,7 +717,7 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         const major = i % 3 === 0;
         return { x1: 50 + (major ? 35 : 37) * Math.cos(a), y1: 50 + (major ? 35 : 37) * Math.sin(a), x2: 50 + 42 * Math.cos(a), y2: 50 + 42 * Math.sin(a), major };
     });
-    const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+    const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
 
     const face = (
@@ -737,7 +741,7 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         return (
             <div className="flex h-full w-full flex-col items-center justify-center">
                 <div className="aspect-square h-[88%] w-[88%] max-h-full max-w-full">{face}</div>
-                <div className="mt-0.5 text-[7px] uppercase tracking-[0.14em] text-white/30">{date}</div>
+                <div className="mt-0.5 text-[7px] uppercase tracking-[0.14em] text-white/30" suppressHydrationWarning>{date}</div>
             </div>
         );
     }
@@ -745,7 +749,7 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     return (
         <div className="flex h-full flex-col items-center justify-center gap-1">
             <div className="w-full" style={{ maxHeight: 110 }}>{face}</div>
-            <div className="text-[11px] text-white/38">{date}</div>
+            <div className="text-[11px] text-white/38" suppressHydrationWarning>{date}</div>
         </div>
     );
 };
