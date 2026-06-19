@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { CalendarDays, Sparkles, Wrench } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { CalendarIntegration } from '@/components/integrations/CalendarIntegration';
 import { useCalendarEvents } from './hooks/useCalendarEvents';
@@ -14,7 +16,9 @@ export default function CalendarApp({ paneId }: AppProps) {
   const { events, addEvent } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const openPane = usePaneStore((state) => state.openPane);
+  const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+  const isActive = usePaneStore((state) => state.activePaneId === paneId);
+  const pane = getPane(paneId);
   const { summary, overview } = useCommunicationSurface();
   const calendarMissingEnv = Array.isArray(overview?.setup?.calendar?.missing_env) ? overview.setup.calendar.missing_env : [];
   const showSetupState = !summary.calendarConfigured;
@@ -29,8 +33,31 @@ export default function CalendarApp({ paneId }: AppProps) {
     });
   };
 
+  if (!pane) return null;
+
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#030806]/95">
+    <GlassPanel
+      title="Kalender"
+      paneId={paneId}
+      width={pane.size.width}
+      height={pane.size.height}
+      initialX={pane.position.x}
+      initialY={pane.position.y}
+      padding={0}
+      onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+      onResize={(w, h) => updatePaneSize(paneId, w, h)}
+      onClose={() => removePane(paneId)}
+      onMinimize={() => minimizePane(paneId)}
+      onFocus={() => focusPane(paneId)}
+      isActive={isActive}
+      zIndex={pane.zIndex}
+      showCloseButton
+      showMinimizeButton
+      draggable
+      resizable
+      {...GLASS_SHEET_PRESENTATION}
+    >
+    <div className="flex h-full flex-col overflow-hidden">
       {showSetupState ? (
         <div className="flex-1 overflow-y-auto p-5">
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
@@ -106,5 +133,6 @@ export default function CalendarApp({ paneId }: AppProps) {
         <span>{summary.calendarConfigured ? 'Termine werden als Einträge im Mycelium gespeichert' : 'Kalender bleibt im OS, bis die echte Verbindung aktiv ist.'}</span>
       </div>
     </div>
+    </GlassPanel>
   );
 }

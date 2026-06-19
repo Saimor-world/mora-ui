@@ -33,6 +33,7 @@ import {
     formatBatchTime,
     formatRole,
 } from '@/lib/actionCenter/format';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 type ActionFilter = 'all' | 'active' | 'done' | 'rejected' | 'failed';
 type RoleFilter = 'all' | 'owner' | 'admin' | 'manager' | 'member' | 'system';
@@ -347,7 +348,7 @@ function VerlaufTab() {
             </div>
 
             {/* Run list */}
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+            <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-2">
                 {loading ? (
                     <div className="flex h-full items-center justify-center text-white/50">
                         <Loader2 size={18} className="mr-2 animate-spin text-cyan-300" />
@@ -414,7 +415,7 @@ function VerlaufTab() {
                                                 </div>
                                             </div>
                                             {expanded && (
-                                                <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-black/20 p-3 text-[11px]">
+                                                <div className="mt-3 space-y-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-[11px]">
                                                     {run.input_json && (
                                                         <div>
                                                             <div className="mb-1 text-[10px] uppercase tracking-[0.18em] text-white/35">Eingabe</div>
@@ -618,6 +619,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             draggable
             resizable
             paneId={paneId}
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full flex-col gap-4">
                 {/* Tab bar */}
@@ -736,7 +738,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                 </div>
 
                 {/* Event list */}
-                <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-black/20 p-2">
+                <div className="min-h-0 flex-1 overflow-y-auto rounded-2xl border border-white/10 bg-white/[0.02] p-2">
                     {isLoading ? (
                         <div className="flex h-full items-center justify-center text-white/50">
                             <Loader2 size={18} className="mr-2 animate-spin text-cyan-300" />
@@ -957,7 +959,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                                                     </div>
                                                 )}
                                                 {expanded && (
-                                                    <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-white/60 md:grid-cols-2">
+                                                    <div className="mt-3 grid gap-2 rounded-xl border border-white/10 bg-white/[0.02] p-3 text-xs text-white/60 md:grid-cols-2">
                                                         <div>
                                                             <div className="text-[10px] uppercase tracking-[0.18em] text-white/35">Aktion</div>
                                                             <div className="mt-1 text-white/75">{intentLabelMap[evt.intent ?? ''] || (evt.intent ?? '-')}</div>

@@ -17,6 +17,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
@@ -1604,6 +1605,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             showMaximizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             {chatInner}
         </GlassPanel>

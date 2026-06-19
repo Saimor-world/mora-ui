@@ -116,7 +116,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'browser':
             return <BrowserPane id={pane.id} />;
         case 'wall':
-            return <WallPane />;
+            return <WallPane id={pane.id} />;
 
         default:
             return null;

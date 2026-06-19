@@ -13,6 +13,7 @@ import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import type { NodeVisibility } from '@/lib/types/core';
 import type { AppProps } from '@/lib/apps/types';
 import { visibilityFromScope } from '@/lib/utils/visibility';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 function toNodeVisibility(node: CoreNode & { visibility_scope?: string; file_visibility_scope?: string }): NodeVisibility | null {
     return visibilityFromScope(
@@ -101,6 +102,7 @@ export default function GridApp({ paneId }: AppProps) {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex flex-col h-full">
                 {/* Toolbar */}
@@ -154,7 +156,7 @@ export default function GridApp({ paneId }: AppProps) {
                             <Loader2 size={32} className="text-emerald-400 animate-spin" />
                         </div>
                     ) : filteredNodes.length > 0 ? (
-                        <div className="grid grid-cols-4 gap-4">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                             <AnimatePresence>
                                 {filteredNodes.map((node, i) => {
                                     const Icon = getNodeIcon(node.type);
@@ -163,11 +165,11 @@ export default function GridApp({ paneId }: AppProps) {
                                     return (
                                         <motion.div
                                             key={node.id}
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            exit={{ opacity: 0, scale: 0.9 }}
-                                            transition={{ delay: i * 0.02 }}
-                                            className={`p-4 rounded-xl border ${colorClass} hover:scale-105 transition-transform cursor-pointer`}
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: 6 }}
+                                            transition={{ delay: Math.min(i * 0.015, 0.2) }}
+                                            className="group cursor-pointer rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 transition-colors hover:border-white/15 hover:bg-white/[0.06]"
                                             onClick={() => {
                                                 openPane({
                                                     id: `doc-${node.id}`,
