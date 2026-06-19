@@ -33,7 +33,8 @@ describe('interactionZones', () => {
         });
 
         it('allows right-band widgets', () => {
-            expect(widgetOverlapsCosmosColumns(9, 3)).toBe(false);
+            expect(widgetOverlapsCosmosColumns(7, 3)).toBe(false);
+            expect(widgetOverlapsCosmosColumns(10, 2)).toBe(false);
         });
     });
 

@@ -81,6 +81,6 @@ describe('buildOrganicUniverseLayout', () => {
   });
 
   it('keeps the core point constant', () => {
-    expect(UNIVERSE_CORE_POINT).toEqual({ x: 50, y: 44 });
+    expect(UNIVERSE_CORE_POINT).toEqual({ x: 50, y: 50 });
   });
 });

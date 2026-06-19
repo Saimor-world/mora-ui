@@ -3,12 +3,12 @@
  * widgets only capture pointer events at the peripheral edge bands.
  */
 
-/** Normalised viewport rect for the planet field (excludes dock + top chrome). */
+/** Normalised viewport rect — tight halo around the planet cluster, not a full-width band. */
 export const COSMOS_ZONE = {
-    minX: 0.22,
-    maxX: 0.78,
-    minY: 0.12,
-    maxY: 0.82,
+    minX: 0.38,
+    maxX: 0.62,
+    minY: 0.20,
+    maxY: 0.74,
 } as const;
 
 export type UniverseInteractionZone = 'cosmos' | 'peripheral';
@@ -25,9 +25,9 @@ export function resolveUniverseInteractionZone(
     return inCosmos ? 'cosmos' : 'peripheral';
 }
 
-/** Grid columns reserved for peripheral widget bands (cols 0–2 left, 9–11 right). */
-export const WIDGET_LEFT_BAND_MAX_COL = 3;
-export const WIDGET_RIGHT_BAND_MIN_COL = 9;
+/** Grid columns reserved for peripheral widget bands (cols 0–4 left, 7–11 right). */
+export const WIDGET_LEFT_BAND_MAX_COL = 5;
+export const WIDGET_RIGHT_BAND_MIN_COL = 7;
 export const WIDGET_GRID_COLS = 12;
 
 /** True when a widget's grid footprint overlaps the central cosmos columns. */

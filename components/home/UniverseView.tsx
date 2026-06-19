@@ -393,7 +393,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             return left.localeCompare(right);
         });
         const base = buildOrganicUniverseLayout(stableDepartments, departmentMetrics);
-        // Planets ARE the company — use the full organic spread, no compression.
         return base;
     }, [safeDepartments, departmentMetrics]);
 

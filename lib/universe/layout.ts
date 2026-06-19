@@ -4,17 +4,17 @@
  * All functions are deterministic and side-effect-free.
  */
 
-/** Percentage bounds for planet placement — tuned for 1920×1080 full viewport orbit. */
+/** Percentage bounds for planet placement — tighter cluster around viewport centre. */
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 12,
-    maxX: 88,
-    minY: 12,
-    maxY: 78,
+    minX: 24,
+    maxX: 76,
+    minY: 20,
+    maxY: 72,
 };
 
 export const UNIVERSE_CORE_POINT = {
     x: 50,
-    y: 46,
+    y: 50,
 };
 
 export const clampUniverseCoordinate = (value: number, min: number, max: number) =>
@@ -136,10 +136,10 @@ export const buildOrganicUniverseLayout = (
         const metrics = metricsMap[dept.id];
         const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
         const vitality = Math.min(1, signal / maxSignal);
-        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.08;
-        const radiusBias = 0.7 + (1 - vitality) * 0.18 + radialJitter;
-        const rx = 26 + radiusBias * 30;
-        const ry = 16 + radiusBias * 22;
+        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.06;
+        const radiusBias = 0.52 + (1 - vitality) * 0.14 + radialJitter;
+        const rx = 10 + radiusBias * 16;
+        const ry = 7 + radiusBias * 11;
 
         return {
             ...dept,
@@ -161,13 +161,13 @@ export const buildOrganicUniverseLayout = (
         };
     });
 
-    const minDistance = count > 14 ? 8.6 : count > 8 ? 10.4 : 12.8;
+    const minDistance = count > 14 ? 6.2 : count > 8 ? 7.4 : 8.8;
     for (let iteration = 0; iteration < 28; iteration += 1) {
         for (const point of points) {
             const dx = point.x - UNIVERSE_CORE_POINT.x;
             const dy = (point.y - UNIVERSE_CORE_POINT.y) * 1.18;
             const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
-            const coreDistance = count > 10 ? 13 : 15.2;
+            const coreDistance = count > 10 ? 7.5 : 9;
             if (distance >= coreDistance) continue;
 
             const push = (coreDistance - distance) * 0.34;

@@ -1,8 +1,8 @@
 import { reflowUniverseAroundCenter } from '@/lib/store/widgetStore';
 import type { WidgetInstance } from '@/lib/widgets/types';
 
-const LEFT_BAND_END = 3;
-const RIGHT_BAND_START = 9;
+const LEFT_BAND_END = 5;
+const RIGHT_BAND_START = 7;
 
 const widget = (over: Partial<WidgetInstance>): WidgetInstance => ({
     i: 'w', type: 'clock', x: 0, y: 0, w: 2, h: 2, ...over,
