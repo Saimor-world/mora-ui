@@ -22,9 +22,18 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  */
 export const ViewPort: React.FC = () => {
     const viewLevel = useNavStore((state) => state.viewLevel);
+    const departmentEntryOrigin = useNavStore((state) => state.departmentEntryOrigin);
     const prefersReducedMotion = useReducedMotion();
     // folder → renders inside SpaceLayer; ambient → fullscreen takeover
     const effectiveViewLevel = viewLevel === 'folder' ? 'space' : viewLevel;
+
+    // Transform-origin for the core↔department zoom. Anchored to the clicked
+    // planet (viewport %) so entering a department reads as flying *into* that
+    // planet, and backing out zooms back out from the same point. Falls back to
+    // the cosmos core point (UNIVERSE_CORE_POINT ≈ 50% / 46%).
+    const planetOrigin = departmentEntryOrigin
+        ? `${departmentEntryOrigin.x}% ${departmentEntryOrigin.y}%`
+        : '50% 46%';
 
     // Shared reduced-motion fallback variants (opacity-only, short duration)
     const rmVariants = prefersReducedMotion
@@ -40,29 +49,33 @@ export const ViewPort: React.FC = () => {
         <div className="w-full h-full relative">
             <AnimatePresence mode="wait" initial={false}>
 
-                {/* CORE VIEW — CoreLayer routes to HomeSurface or UniverseView via coreMode */}
+                {/* CORE VIEW — CoreLayer routes to HomeSurface or UniverseView via coreMode.
+                    Exit scales UP toward the clicked planet (camera flies in); entry on
+                    back-nav starts zoomed-in and settles (camera pulls back out). */}
                 {effectiveViewLevel === 'core' && (
                     <motion.div
                         key="core"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.985, filter: 'blur(6px)' }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 1.16, filter: 'blur(10px)' }}
                         animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.04, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.58, ease: [0.4, 0, 0.2, 1] }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.55, filter: 'blur(16px)', transition: { duration: 0.42, ease: [0.4, 0, 0.2, 1] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.62, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0"
+                        style={{ transformOrigin: planetOrigin }}
                     >
                         <CoreLayer />
                     </motion.div>
                 )}
 
-                {/* DEPARTMENT VIEW */}
+                {/* DEPARTMENT VIEW — interior unfolds from the planet entry point. */}
                 {effectiveViewLevel === 'department' && (
                     <motion.div
                         key="department"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
+                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 0.86, filter: 'blur(10px)' }}
                         animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.08, filter: 'blur(12px)', transition: { duration: 0.32, ease: [0.4, 0, 0.2, 1] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 1.12, filter: 'blur(12px)', transition: { duration: 0.34, ease: [0.4, 0, 0.2, 1] } }}
+                        transition={rmVariants?.transition ?? { duration: 0.62, ease: [0.4, 0, 0.2, 1] }}
                         className="absolute inset-0 preserve-3d"
+                        style={{ transformOrigin: planetOrigin }}
                     >
                         <DepartmentSurface />
                     </motion.div>

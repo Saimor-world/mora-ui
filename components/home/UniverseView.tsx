@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useActiveRitualScene } from '@/lib/hooks/useActiveRitualScene';
 import type { RitualSceneId } from '@/lib/os/ritualMode';
 import { useOrbStore } from '@/lib/store/orbStore';
@@ -110,6 +110,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
+    // Planet being "flown into" — drives the cosmos zoom toward that planet
+    // right before the department surface resolves. { x, y } in viewport %.
+    const [flyToPlanet, setFlyToPlanet] = useState<{ id: string; x: number; y: number } | null>(null);
+    const prefersReducedMotion = useReducedMotion();
+    const flyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const safeCompanies = useMemo(() => (Array.isArray(companiesData) ? companiesData : EMPTY_UNIVERSE_ITEMS), [companiesData]);
     const safeDepartments = useMemo(() => (Array.isArray(departmentsData) ? departmentsData : EMPTY_UNIVERSE_ITEMS), [departmentsData]);
@@ -603,6 +608,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         scheduleHoverRelease();
     }, [clearHoverRelease, scheduleHoverRelease]);
 
+    // Cinematic drill-in: briefly zoom the cosmos toward the clicked planet, then
+    // resolve the department surface (ViewPort continues the zoom from the same
+    // origin). Reduced-motion users navigate instantly.
+    const flyIntoDepartment = useCallback((deptId: string, x: number, y: number) => {
+        if (flyToPlanet) return; // a flight is already in progress
+        clearHoverRelease();
+        setHoverPlanetId(null);
+        setActivePlanetId(deptId);
+        setSemanticPreviewPathId(null);
+        setLockedTooltipDeptId(null);
+
+        if (prefersReducedMotion) {
+            navigateToDepartment(deptId, { x, y });
+            return;
+        }
+
+        setFlyToPlanet({ id: deptId, x, y });
+        flyTimerRef.current = setTimeout(() => {
+            navigateToDepartment(deptId, { x, y });
+        }, 260);
+    }, [flyToPlanet, clearHoverRelease, prefersReducedMotion, navigateToDepartment]);
+
+    useEffect(() => () => {
+        if (flyTimerRef.current) clearTimeout(flyTimerRef.current);
+    }, []);
+
     const handleSemanticPreview = (pathId: string | null) => {
         setSemanticPreviewPathId(pathId);
     };
@@ -763,10 +794,15 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }
 
     return (
-        <div
+        <motion.div
             className="relative w-full h-full overflow-hidden text-white bg-transparent"
             onMouseMove={handleUniversePointerMove}
             onMouseLeave={handleUniversePointerLeave}
+            style={{ transformOrigin: flyToPlanet ? `${flyToPlanet.x}% ${flyToPlanet.y}%` : '50% 50%' }}
+            animate={flyToPlanet
+                ? { scale: 1.7, opacity: 0.32, filter: 'blur(3px)' }
+                : { scale: 1, opacity: 1, filter: 'blur(0px)' }}
+            transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
         >
             {/* 0. UNIVERSE BACKDROP — scene-reactive dark base */}
             <AnimatePresence mode="sync">
@@ -1361,17 +1397,14 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                                 setCoreMode('explore');
                                                 return;
                                             }
-                                            clearHoverRelease();
-                                            setHoverPlanetId(null);
-                                            setActivePlanetId(p.id);
-                                            setSemanticPreviewPathId(null);
-                                            setLockedTooltipDeptId(null);
-                                            // Navigate into the Department layer ONLY. Previously this also
+                                            // Fly into the Department layer ONLY. Previously this also
                                             // opened a 'finder-main' pane on top — which obscured the clean
                                             // Department layer (the "two layers" bug). The DepartmentLayer
                                             // renders its own spaces/files view; the finder is reachable by
                                             // clicking a space inside it, so no redundant auto-pane is needed.
-                                            navigateToDepartment(p.id);
+                                            // flyIntoDepartment runs the cosmos zoom toward this planet,
+                                            // then navigates with the planet's viewport-% as zoom origin.
+                                            flyIntoDepartment(p.id, p.x, p.y);
                                         }}
                                         health={health}
                                         activity={activity}
@@ -1631,7 +1664,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 )}
             </AnimatePresence>
             </div>{/* end MAP CONTENT */}
-        </div>
+        </motion.div>
     );
 }
 

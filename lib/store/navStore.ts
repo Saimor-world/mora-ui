@@ -30,6 +30,13 @@ interface NavState {
   universeScope: 'org' | 'dept';
   /** Dept whose spaces DeptSpaceMap renders (set when universeScope === 'dept') */
   universeScopeDeptId: string | null;
+  /**
+   * Viewport-percentage point of the planet last flown into ({x,y} in 0–100).
+   * Drives the cinematic zoom transform-origin so entering a department feels
+   * like flying into that planet, and backing out reverses from the same spot.
+   * null = use the cosmos center (no specific planet origin).
+   */
+  departmentEntryOrigin: { x: number; y: number } | null;
 
   setViewLevel(level: ViewLevel): void;
   setCoreMode(mode: CoreMode): void;
@@ -44,8 +51,9 @@ interface NavState {
   navigateToCore(): void;
   navigateToExplore(): void;
   navigateToAmbient(): void;
-  navigateToDepartment(deptId: string): void;
+  navigateToDepartment(deptId: string, entryOrigin?: { x: number; y: number } | null): void;
   navigateToSpace(spaceId: string): void;
+  setDepartmentEntryOrigin(origin: { x: number; y: number } | null): void;
   navigateToFolder(folderId: string | null): void;
   setActiveMode(mode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor'): void;
   setUniverseScope(scope: 'org' | 'dept', deptId?: string | null): void;
@@ -64,6 +72,7 @@ export const useNavStore = create<NavState>((set, get) => ({
   activeMode: (typeof window !== 'undefined' ? localStorage.getItem('saimor_active_mode') as any : null) || 'real_hq',
   universeScope: 'org',
   universeScopeDeptId: null,
+  departmentEntryOrigin: null,
 
   setViewLevel: (level) => set({ viewLevel: level }),
   setCoreMode: (mode) => set({ coreMode: mode }),
@@ -119,6 +128,8 @@ export const useNavStore = create<NavState>((set, get) => ({
   setNameConflict: (conflict) => set({ nameConflict: conflict }),
   cancelNameConflict: () => set({ nameConflict: null }),
 
+  setDepartmentEntryOrigin: (origin) => set({ departmentEntryOrigin: origin }),
+
   navigateToCore: () => set({
     viewLevel: 'core',
     coreMode: 'home',
@@ -140,14 +151,19 @@ export const useNavStore = create<NavState>((set, get) => ({
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,
+    departmentEntryOrigin: null,
   }),
 
-  navigateToDepartment: (deptId) => set({
+  // entryOrigin (planet viewport %) keeps the zoom anchored to the clicked
+  // planet. When absent (e.g. breadcrumb/search jumps) the prior origin is
+  // preserved so the transition still has a sensible focal point.
+  navigateToDepartment: (deptId, entryOrigin) => set((state) => ({
     viewLevel: 'department',
     activeDepartmentId: deptId,
     activeSpaceId: null,
     activeFolderId: null,
-  }),
+    departmentEntryOrigin: entryOrigin === undefined ? state.departmentEntryOrigin : entryOrigin,
+  })),
 
   navigateToSpace: (spaceId) => set({
     viewLevel: 'space',
