@@ -23,6 +23,7 @@ export interface SystemStats {
         departments: number;
         spaces: number;
         nodes: number;
+        larry_nodes?: number;
     };
     /** Nightwatch graph nodes — open incident pressure */
     nightwatch?: {

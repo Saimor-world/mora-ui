@@ -4,11 +4,14 @@ import React from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
-    ArrowRight, Activity, Cpu, ExternalLink, Radio,
+    ArrowRight, Activity, Cpu, ExternalLink, Radio, PenLine, Layout, Target, Inbox, FileText,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
+import { useLarryArtifacts } from '@/lib/queries/useLarryArtifacts';
+import { useNavStore } from '@/lib/store/navStore';
+import type { LarryArtifact } from '@/lib/api/larryClient';
 import { fetchAllNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -507,6 +510,7 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
                 <div className="grid grid-cols-2 gap-1 text-[9px] tabular-nums text-white/45">
                     <span>CPU {pulse.cpu != null ? `${Math.round(pulse.cpu)}%` : '–'}</span>
                     <span>MÔRA {pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'}</span>
+                    {pulse.larryNodes != null && <span className="col-span-2">Larry · {pulse.larryNodes}</span>}
                 </div>
             </button>
         );
@@ -529,6 +533,9 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
                 <Stat label="MÔRA Load" value={pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'} icon={<Radio size={10} />} />
                 <Stat label="Analysten" value={pulse.activeAnalysts ?? '–'} icon={<Users size={10} />} />
                 <Stat label="Knoten" value={pulse.bridgeNodes ?? '–'} icon={<Building2 size={10} />} />
+                {pulse.larryNodes != null && (
+                    <Stat label="Larry" value={pulse.larryNodes} icon={<Sparkles size={10} />} />
+                )}
             </div>
             <div className="mt-auto flex gap-2">
                 <ActionButton icon={<Activity size={13} />} label="Nightwatch" onClick={context.openNightwatch} />
@@ -558,6 +565,128 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
         ))}
     </div>
 );
+
+const LARRY_KIND_META: Record<string, { label: string; icon: React.ReactNode }> = {
+    canvas: { label: 'Canvas', icon: <Layout size={11} /> },
+    mission: { label: 'Mission', icon: <Target size={11} /> },
+    note: { label: 'Notiz', icon: <PenLine size={11} /> },
+    inbox: { label: 'Inbox', icon: <Inbox size={11} /> },
+    brief: { label: 'Brief', icon: <FileText size={11} /> },
+};
+
+function larryKindMeta(kind: string) {
+    return LARRY_KIND_META[kind] ?? { label: kind, icon: <Sparkles size={11} /> };
+}
+
+function larryArtifactMeta(artifact: LarryArtifact): string {
+    if (artifact.owner) return artifact.owner;
+    if (artifact.source_page) return artifact.source_page;
+    return '';
+}
+
+const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: artifacts = [], isLoading } = useLarryArtifacts(activeCompanyId, context.compact ? 4 : 8);
+    const compact = context.compact;
+
+    const openArtifact = (artifact: LarryArtifact) => {
+        if (context.openLarryNode) {
+            context.openLarryNode(artifact.id, artifact.title);
+            return;
+        }
+        context.openDashboard?.();
+    };
+
+    if (isLoading) {
+        return <Empty>Workspace lädt…</Empty>;
+    }
+
+    if (artifacts.length === 0) {
+        return (
+            <div className="flex h-full flex-col justify-center gap-2">
+                <Empty>Noch keine Workspace-Artefakte</Empty>
+                {context.openDashboard && !compact && (
+                    <button
+                        type="button"
+                        onClick={context.openDashboard}
+                        className="flex items-center justify-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
+                    >
+                        <ExternalLink size={10} />
+                        Larry Dashboard
+                    </button>
+                )}
+            </div>
+        );
+    }
+
+    if (compact) {
+        const latest = artifacts[0];
+        const meta = larryKindMeta(String(latest.kind));
+        return (
+            <button
+                type="button"
+                onClick={() => openArtifact(latest)}
+                className="flex h-full w-full flex-col justify-center gap-1.5 text-left"
+            >
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Workspace</span>
+                    <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
+                        {artifacts.length}
+                    </span>
+                </div>
+                <span className="flex items-center gap-1.5 text-[10px] text-cyan-200/75">
+                    {meta.icon}
+                    {meta.label}
+                </span>
+                <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{latest.title}</span>
+            </button>
+        );
+    }
+
+    return (
+        <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+            <SectionLabel icon={<Sparkles size={10} className="opacity-70" />} trailing={
+                <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
+                    {artifacts.length}
+                </span>
+            }>
+                Workspace
+            </SectionLabel>
+            {artifacts.map((artifact) => {
+                const meta = larryKindMeta(String(artifact.kind));
+                const sub = larryArtifactMeta(artifact);
+                return (
+                    <button
+                        key={artifact.id}
+                        type="button"
+                        onClick={() => openArtifact(artifact)}
+                        className="group flex w-full items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-left transition-colors hover:border-cyan-300/18 hover:bg-cyan-400/[0.05]"
+                    >
+                        <span className="mt-0.5 shrink-0 rounded-lg border border-cyan-400/16 bg-cyan-500/[0.08] p-1 text-cyan-200/75">
+                            {meta.icon}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                            <span className="block truncate text-[12px] text-white/78">{artifact.title}</span>
+                            <span className="mt-0.5 block truncate text-[10px] text-white/40">
+                                {meta.label}{sub ? ` · ${sub}` : ''}
+                            </span>
+                        </span>
+                    </button>
+                );
+            })}
+            {context.openDashboard && (
+                <button
+                    type="button"
+                    onClick={context.openDashboard}
+                    className="mt-auto flex items-center gap-1.5 pt-1 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
+                >
+                    <ExternalLink size={10} />
+                    Larry Dashboard
+                </button>
+            )}
+        </div>
+    );
+};
 
 const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const [now, setNow] = React.useState(() => new Date());
@@ -892,6 +1021,11 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         type: 'bridgePulse', label: 'Bridge Puls', hint: 'Core, Larry Dashboard & Live-Last', icon: <Radio size={14} />,
         defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'universe'],
         render: ({ context }) => <BridgePulseWidget context={context} />,
+    },
+    larryWork: {
+        type: 'larryWork', label: 'Workspace', hint: 'Larry Canvas, Missionen & Notizen aus dem Dashboard', icon: <Layout size={14} />,
+        defaultW: 3, defaultH: 4, minW: 2, minH: 3, surfaces: ['home', 'universe'],
+        render: ({ context }) => <LarryWorkWidget context={context} />,
     },
     quickActions: {
         type: 'quickActions', label: 'Schnellzugriff', hint: 'Finder, MÔRA, Erkunden', icon: <Compass size={14} />,

@@ -14,6 +14,8 @@ import type { RecentKind } from '@/components/home/homeSurfaceFormat';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
 import { PersonalHomeZone } from '@/components/home/PersonalHomeZone';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
 
 // ─── Prop types (kept local — these mirror HomeSurface's local shapes) ─────────
 
@@ -184,6 +186,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
         onOpenPrivateArea,
         showOrgOverview = true,
     } = props;
+    const openPane = usePaneStore((s) => s.openPane);
 
     // Honest MÔRA presence state — reflects real UI activity, never fabricated insight.
     const moraSignalCount =
@@ -206,6 +209,13 @@ export function HomeCockpit(props: HomeCockpitProps) {
         openFinder: onOpenFinder,
         openNightwatch: onOpenNightwatch,
         openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
+        openLarryNode: (nodeId, title) => openPane({
+            id: `document-${nodeId}`,
+            type: 'document',
+            title: title || 'Workspace',
+            size: GLASS_SHEET_SIZE,
+            data: { nodeId },
+        }),
         goExplore: onGoExplore,
     };
 
@@ -378,11 +388,14 @@ export function HomeCockpit(props: HomeCockpitProps) {
                     </div>
                 </div>
 
-                {/* Row 2: Bridge pulse + Nightwatch + clock */}
+                {/* Row 2: Bridge pulse + Workspace + Nightwatch + clock */}
                 <div className="min-h-0 flex-[45]">
-                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-4">
+                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-5">
                         <motion.div {...fade(0.22)} className="min-h-0 h-full">
                             <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-cyan-400/55 via-sky-300/35 to-transparent" context={glanceContext} />
+                        </motion.div>
+                        <motion.div {...fade(0.23)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="larryWork" accent="bg-gradient-to-r from-sky-400/50 via-cyan-300/30 to-transparent" context={glanceContext} />
                         </motion.div>
                         <motion.div {...fade(0.24)} className="min-h-0 h-full sm:col-span-2">
                             <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} />

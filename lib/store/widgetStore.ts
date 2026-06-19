@@ -49,7 +49,8 @@ const DEFAULT_UNIVERSE: WidgetInstance[] = [
     { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 3, w: 3, h: 4 },
     { i: 'clock-1', type: 'clock', x: 0, y: 7, w: 2, h: 2 },
     { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 3 },
-    { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 2, h: 3 },
+    { i: 'larryWork-1', type: 'larryWork', x: 9, y: 3, w: 3, h: 4 },
+    { i: 'signals-1', type: 'signals', x: 9, y: 7, w: 2, h: 3 },
 ];
 
 /**

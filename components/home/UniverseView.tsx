@@ -982,6 +982,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: GLASS_SHEET_SIZE }),
                             openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
                             openDashboard: () => window.open(bridgePulse.dashboardUrl, '_blank', 'noopener,noreferrer'),
+                            openLarryNode: (nodeId, title) => openPane({
+                                id: `document-${nodeId}`,
+                                type: 'document',
+                                title: title || 'Workspace',
+                                size: GLASS_SHEET_SIZE,
+                                data: { nodeId },
+                            }),
                             goExplore: () => navigateToCore(),
                         }}
                     />

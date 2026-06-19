@@ -14,6 +14,7 @@ export interface BridgePulseSnapshot {
     cognitionRate: string | null;
     bridgeDepartments: number | null;
     bridgeNodes: number | null;
+    larryNodes: number | null;
     openIncidents: number | null;
     criticalIncidents: number | null;
     dashboardUrl: string;
@@ -76,6 +77,7 @@ export function useBridgePulse(enabled = true): BridgePulseSnapshot {
         cognitionRate: stats?.intelligence?.cognition_rate ?? null,
         bridgeDepartments: stats?.bridge?.departments ?? null,
         bridgeNodes: stats?.bridge?.nodes ?? null,
+        larryNodes: stats?.bridge?.larry_nodes ?? null,
         openIncidents: stats?.nightwatch?.open_incidents ?? null,
         criticalIncidents: stats?.nightwatch?.critical ?? null,
         dashboardUrl: stats?.dashboard?.url ?? DEFAULT_URLS.dashboard,

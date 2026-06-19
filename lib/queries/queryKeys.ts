@@ -41,6 +41,9 @@ export const STALE_TIMES = {
 
   // Radar notifications — short stale; WebSocket invalidates immediately on push.
   radar: 30 * 1000, // 30 seconds
+
+  // Larry workspace artifacts — dashboard ingest can arrive any time.
+  larryArtifacts: 60 * 1000, // 1 minute
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -79,4 +82,9 @@ export const queryKeys = {
   perception: (key: string) => ['perception', key] as const,
 
   radar: () => ['radar'] as const,
+
+  larryArtifacts: (companyId?: string | null, limit?: number) =>
+    limit != null
+      ? (['larryArtifacts', companyId, limit] as const)
+      : (['larryArtifacts', companyId] as const),
 };

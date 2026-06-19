@@ -48,6 +48,8 @@ export interface WidgetContext {
     openNightwatch?: () => void;
     /** Larry / dash.saimor.world — ops dashboard */
     openDashboard?: () => void;
+    /** Open a larry.* workspace artifact in the document pane */
+    openLarryNode?: (nodeId: string, title?: string) => void;
     goExplore?: () => void;
     /** Grid cell size — widgets adapt their internal layout to fit. */
     gridSize?: { w: number; h: number };
