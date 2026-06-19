@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
@@ -805,16 +805,26 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ c
 });
 QuickActionsWidget.displayName = 'QuickActionsWidget';
 
-const LARRY_KIND_META: Record<string, { label: string; icon: React.ReactNode }> = {
-    canvas: { label: 'Canvas', icon: <Layout size={11} /> },
-    mission: { label: 'Mission', icon: <Target size={11} /> },
-    note: { label: 'Notiz', icon: <PenLine size={11} /> },
-    inbox: { label: 'Inbox', icon: <Inbox size={11} /> },
-    brief: { label: 'Brief', icon: <FileText size={11} /> },
+type LarryKindMeta = { label: string; icon: React.ReactNode; color: string; bg: string; border: string };
+
+const LARRY_KIND_META: Record<string, LarryKindMeta> = {
+    canvas: { label: 'Canvas', icon: <Layout size={10} />, color: 'rgb(34,211,238)', bg: 'rgba(34,211,238,0.12)', border: 'rgba(34,211,238,0.22)' },
+    mission: { label: 'Mission', icon: <Target size={10} />, color: 'rgb(251,191,36)', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.22)' },
+    note: { label: 'Notiz', icon: <PenLine size={10} />, color: 'rgb(167,139,250)', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.22)' },
+    inbox: { label: 'Inbox', icon: <Inbox size={10} />, color: 'rgb(96,165,250)', bg: 'rgba(96,165,250,0.12)', border: 'rgba(96,165,250,0.22)' },
+    brief: { label: 'Brief', icon: <FileText size={10} />, color: 'rgb(52,211,153)', bg: 'rgba(52,211,153,0.12)', border: 'rgba(52,211,153,0.22)' },
 };
 
-function larryKindMeta(kind: string) {
-    return LARRY_KIND_META[kind] ?? { label: kind, icon: <Sparkles size={11} /> };
+const LARRY_KIND_FALLBACK: LarryKindMeta = {
+    label: 'Artefakt',
+    icon: <Sparkles size={10} />,
+    color: 'rgb(34,211,238)',
+    bg: 'rgba(34,211,238,0.1)',
+    border: 'rgba(34,211,238,0.18)',
+};
+
+function larryKindMeta(kind: string): LarryKindMeta {
+    return LARRY_KIND_META[kind] ?? { ...LARRY_KIND_FALLBACK, label: kind };
 }
 
 function larryArtifactMeta(artifact: LarryArtifact): string {
@@ -823,28 +833,118 @@ function larryArtifactMeta(artifact: LarryArtifact): string {
     return '';
 }
 
+function larryArtifactTime(artifact: LarryArtifact): string | null {
+    return formatRelativeDe(artifact.updated_at || artifact.created_at);
+}
+
+const LarryKindPill: React.FC<{ kind: string; count?: number; compact?: boolean }> = ({ kind, count, compact }) => {
+    const meta = larryKindMeta(kind);
+    return (
+        <span
+            className={`inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 tabular-nums ${compact ? 'text-[7px]' : 'text-[8px]'}`}
+            style={{ color: meta.color, background: meta.bg, borderColor: meta.border }}
+        >
+            {meta.icon}
+            {meta.label}
+            {count != null && count > 1 && <span className="opacity-70">×{count}</span>}
+        </span>
+    );
+};
+
+const LarryArtifactRow: React.FC<{
+    artifact: LarryArtifact;
+    onClick: () => void;
+    compact?: boolean;
+}> = ({ artifact, onClick, compact }) => {
+    const meta = larryKindMeta(String(artifact.kind));
+    const sub = larryArtifactMeta(artifact);
+    const when = larryArtifactTime(artifact);
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className={`group flex w-full items-stretch overflow-hidden rounded-lg border border-white/[0.06] bg-white/[0.03] text-left transition-colors hover:border-white/[0.14] hover:bg-white/[0.06] ${compact ? 'min-h-0' : ''}`}
+        >
+            <div className="w-[3px] shrink-0" style={{ background: meta.color }} />
+            <span
+                className={`flex shrink-0 items-center justify-center ${compact ? 'mx-1.5 my-1 h-5 w-5' : 'm-2 h-7 w-7'}`}
+                style={{ color: meta.color, background: meta.bg, border: `1px solid ${meta.border}`, borderRadius: compact ? 6 : 8 }}
+            >
+                {meta.icon}
+            </span>
+            <span className={`min-w-0 flex-1 ${compact ? 'py-1 pr-1.5' : 'py-2 pr-2.5'}`}>
+                <span className={`block truncate font-medium text-white/78 ${compact ? 'text-[9px] leading-tight' : 'text-[12px]'}`}>
+                    {artifact.title}
+                </span>
+                <span className={`mt-0.5 flex flex-wrap items-center gap-1 ${compact ? 'text-[7px]' : 'text-[9px]'}`}>
+                    <LarryKindPill kind={String(artifact.kind)} compact={compact} />
+                    {when && <span className="text-white/32">{when}</span>}
+                    {!compact && sub && <span className="truncate text-white/38">{sub}</span>}
+                </span>
+            </span>
+        </button>
+    );
+};
+
 const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
-    const { data: artifacts = [], isLoading } = useLarryArtifacts(activeCompanyId, context.compact ? 4 : 8);
     const compact = context.compact;
+    const limit = compact ? 5 : 8;
+    const { data: artifacts = [], isLoading } = useLarryArtifacts(activeCompanyId, limit);
 
-    const openArtifact = (artifact: LarryArtifact) => {
+    const kindCounts = useMemo(() => {
+        const acc: Record<string, number> = {};
+        for (const a of artifacts) {
+            const k = String(a.kind);
+            acc[k] = (acc[k] ?? 0) + 1;
+        }
+        return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+    }, [artifacts]);
+
+    const openArtifact = useCallback((artifact: LarryArtifact) => {
         if (context.openLarryNode) {
             context.openLarryNode(artifact.id, artifact.title);
             return;
         }
         context.openDashboard?.();
-    };
+    }, [context]);
+
+    const tone: StatusTone = artifacts.length > 0 ? 'info' : 'neutral';
+    const visibleRows = compact ? artifacts.slice(0, 2) : artifacts.slice(0, 6);
 
     if (isLoading) {
-        return <Empty>Workspace lädt…</Empty>;
+        return (
+            <GlanceShell tone="neutral">
+                <div className="flex items-center gap-2 text-[10px] text-white/40">
+                    <Layout size={10} className="text-white/28" />
+                    Workspace lädt…
+                </div>
+            </GlanceShell>
+        );
     }
 
     if (artifacts.length === 0) {
+        if (compact) {
+            return (
+                <GlanceShell tone="neutral" onClick={context.openDashboard}>
+                    <div className="flex items-center justify-between gap-1">
+                        <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
+                            <Layout size={9} className="opacity-60" /> Workspace
+                        </span>
+                    </div>
+                    <span className="text-[10px] text-white/40">Noch keine Artefakte</span>
+                    {context.openDashboard && (
+                        <span className="flex items-center gap-1 text-[8px] text-cyan-200/55">
+                            <ExternalLink size={9} /> Larry öffnen
+                        </span>
+                    )}
+                </GlanceShell>
+            );
+        }
         return (
             <div className="flex h-full flex-col justify-center gap-2">
                 <Empty>Noch keine Workspace-Artefakte</Empty>
-                {context.openDashboard && !compact && (
+                {context.openDashboard && (
                     <button
                         type="button"
                         onClick={context.openDashboard}
@@ -859,65 +959,70 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
     }
 
     if (compact) {
-        const latest = artifacts[0];
-        const meta = larryKindMeta(String(latest.kind));
-        const kindCounts = artifacts.reduce<Record<string, number>>((acc, a) => {
-            const k = String(a.kind);
-            acc[k] = (acc[k] ?? 0) + 1;
-            return acc;
-        }, {});
-        const kindSummary = Object.entries(kindCounts).slice(0, 2).map(([k, n]) => `${larryKindMeta(k).label} ${n}`).join(' · ');
-        const updated = formatRelativeDe(latest.updated_at || latest.created_at);
         return (
-            <GlanceShell tone="info" onClick={() => openArtifact(latest)}>
+            <GlanceShell tone={tone}>
                 <div className="flex items-center justify-between gap-2">
-                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Workspace</span>
+                    <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
+                        <Layout size={9} className="text-cyan-300/55" /> Workspace
+                    </span>
                     <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
                         {artifacts.length}
                     </span>
                 </div>
-                <span className="flex items-center gap-1.5 text-[10px] text-cyan-200/75">
-                    {meta.icon}
-                    {meta.label}
-                    {updated && <span className="text-[8px] text-white/32">· {updated}</span>}
-                </span>
-                <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{latest.title}</span>
-                {kindSummary && <span className="truncate text-[9px] text-white/35">{kindSummary}</span>}
+                {kindCounts.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {kindCounts.slice(0, 3).map(([k, n]) => (
+                            <LarryKindPill key={k} kind={k} count={n} compact />
+                        ))}
+                    </div>
+                )}
+                <div className="flex flex-col gap-1">
+                    {visibleRows.map((artifact) => (
+                        <LarryArtifactRow
+                            key={artifact.id}
+                            artifact={artifact}
+                            compact
+                            onClick={() => openArtifact(artifact)}
+                        />
+                    ))}
+                </div>
+                {artifacts.length > visibleRows.length && (
+                    <span className="text-[8px] tabular-nums text-white/30">+{artifacts.length - visibleRows.length} weitere</span>
+                )}
             </GlanceShell>
         );
     }
 
     return (
         <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-            <SectionLabel icon={<Sparkles size={10} className="opacity-70" />} trailing={
+            <div className="mb-0.5 flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-white/38">
+                    <Layout size={10} className="text-cyan-300/55" />
+                    Workspace
+                </span>
                 <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
                     {artifacts.length}
                 </span>
-            }>
-                Workspace
-            </SectionLabel>
-            {artifacts.map((artifact) => {
-                const meta = larryKindMeta(String(artifact.kind));
-                const sub = larryArtifactMeta(artifact);
-                return (
-                    <button
+            </div>
+            {kindCounts.length > 1 && (
+                <div className="flex flex-wrap gap-1 pb-0.5">
+                    {kindCounts.map(([k, n]) => (
+                        <LarryKindPill key={k} kind={k} count={n} />
+                    ))}
+                </div>
+            )}
+            <div className="flex flex-col gap-1">
+                {visibleRows.map((artifact) => (
+                    <LarryArtifactRow
                         key={artifact.id}
-                        type="button"
+                        artifact={artifact}
                         onClick={() => openArtifact(artifact)}
-                        className="group flex w-full items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-left transition-colors hover:border-cyan-300/18 hover:bg-cyan-400/[0.05]"
-                    >
-                        <span className="mt-0.5 shrink-0 rounded-lg border border-cyan-400/16 bg-cyan-500/[0.08] p-1 text-cyan-200/75">
-                            {meta.icon}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[12px] text-white/78">{artifact.title}</span>
-                            <span className="mt-0.5 block truncate text-[10px] text-white/40">
-                                {meta.label}{sub ? ` · ${sub}` : ''}
-                            </span>
-                        </span>
-                    </button>
-                );
-            })}
+                    />
+                ))}
+            </div>
+            {artifacts.length > visibleRows.length && (
+                <span className="text-[9px] text-white/32">+ {artifacts.length - visibleRows.length} weitere im Dashboard</span>
+            )}
             {context.openDashboard && (
                 <button
                     type="button"
@@ -1368,7 +1473,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
     },
     larryWork: {
         type: 'larryWork', label: 'Workspace', hint: 'Larry Canvas, Missionen & Notizen aus dem Dashboard', icon: <Layout size={14} />,
-        defaultW: 3, defaultH: 4, minW: 2, minH: 3, surfaces: ['home', 'universe'],
+        defaultW: 3, defaultH: 5, minW: 2, minH: 3, surfaces: ['home', 'universe'],
         render: ({ context }) => <LarryWorkWidget context={context} />,
     },
     quickActions: {

@@ -31,13 +31,13 @@ interface CompanyLayoutState {
     departments: Record<string, WidgetInstance[]>;
 }
 
-/** Edge-band glance layout for department cosmos — center stays open for orbit map. */
+/** Edge-band glance layout — only cols 5–6 stay open for the planet cluster. */
 const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'deptStats-1', type: 'deptStats', x: 0, y: 0, w: 3, h: 4 },
     { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 4, w: 3, h: 4 },
-    { i: 'signals-1', type: 'signals', x: 9, y: 0, w: 2, h: 3 },
-    { i: 'quickActions-1', type: 'quickActions', x: 9, y: 3, w: 3, h: 2 },
-    { i: 'team-1', type: 'team', x: 9, y: 5, w: 2, h: 3 },
+    { i: 'signals-1', type: 'signals', x: 10, y: 0, w: 2, h: 3 },
+    { i: 'quickActions-1', type: 'quickActions', x: 7, y: 0, w: 3, h: 2 },
+    { i: 'team-1', type: 'team', x: 10, y: 3, w: 2, h: 3 },
 ];
 
 // Universe widgets are peripheral glance panels — planets are the hero layer.
@@ -47,12 +47,14 @@ const UNIVERSE_RIGHT_BAND_START = UNIVERSE_GLANCE_BAND.rightStart;
 const UNIVERSE_BAND_WIDTH = UNIVERSE_GLANCE_BAND.bandWidth;
 
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'bridgePulse-1', type: 'bridgePulse', x: 0, y: 0, w: 3, h: 3 },
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 3, w: 3, h: 4 },
-    { i: 'clock-1', type: 'clock', x: 0, y: 7, w: 2, h: 2 },
-    { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 3 },
-    { i: 'larryWork-1', type: 'larryWork', x: 9, y: 3, w: 3, h: 4 },
-    { i: 'signals-1', type: 'signals', x: 9, y: 7, w: 2, h: 3 },
+    { i: 'meinTag-1', type: 'meinTag', x: 0, y: 0, w: 3, h: 6 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 6, w: 3, h: 4 },
+    { i: 'larryWork-1', type: 'larryWork', x: 0, y: 10, w: 3, h: 4 },
+    { i: 'clock-1', type: 'clock', x: 10, y: 0, w: 2, h: 2 },
+    { i: 'mora-1', type: 'mora', x: 7, y: 0, w: 3, h: 2 },
+    { i: 'quickActions-1', type: 'quickActions', x: 7, y: 2, w: 3, h: 2 },
+    { i: 'orgStats-1', type: 'orgStats', x: 7, y: 4, w: 3, h: 3 },
+    { i: 'team-1', type: 'team', x: 10, y: 2, w: 2, h: 3 },
 ];
 
 /**

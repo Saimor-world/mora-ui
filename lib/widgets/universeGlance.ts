@@ -5,9 +5,9 @@
 
 export const UNIVERSE_GLANCE_BAND = {
     totalCols: 12,
-    leftEnd: 3,
-    rightStart: 9,
-    bandWidth: 3,
+    leftEnd: 5,
+    rightStart: 7,
+    bandWidth: 5,
 } as const;
 
 /** Suggested default footprint per widget type on the universe surface. */
@@ -16,7 +16,7 @@ export const UNIVERSE_GLANCE_DEFAULTS: Record<string, { w: number; h: number }> 
     clock: { w: 2, h: 2 },
     orgStats: { w: 3, h: 3 },
     bridgePulse: { w: 3, h: 3 },
-    larryWork: { w: 3, h: 4 },
+    larryWork: { w: 3, h: 5 },
     signals: { w: 2, h: 3 },
     team: { w: 2, h: 3 },
     meinTag: { w: 3, h: 4 },
