@@ -775,8 +775,8 @@ const NW_ARC_C = 163.4; // 2*PI*r (r=26)
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
-    const { data: incidents = [], isPending } = useNightwatchIncidents();
-    const loaded = !isPending;
+    const { data: incidents = [], isLoading } = useNightwatchIncidents();
+    const loaded = !isLoading;
     const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
 
     const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
