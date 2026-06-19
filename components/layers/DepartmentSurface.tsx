@@ -111,7 +111,7 @@ export const DepartmentSurface: React.FC = () => {
     <div className="relative w-full h-full">
       {/* Editable widget desktop — orbit map mode only; overview uses DepartmentView pillars */}
       {showWidgetDesktop && (
-      <div className="absolute inset-0 z-10 pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+      <div className="absolute inset-0 z-[12] pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
         {/* Match UniverseView: pass clicks through empty grid area to DepartmentLayer orbit below; widgets opt in via pointer-events-auto cells. */}
         <div className="pointer-events-none">
           <WidgetGrid
