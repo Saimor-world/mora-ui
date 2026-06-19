@@ -50,6 +50,7 @@ export const STALE_TIMES = {
 
   // Nightwatch glance widgets — keep cached across surface transitions.
   nightwatchIncidents: 60 * 1000, // 1 minute
+  nightwatchMonitors: 60 * 1000, // 1 minute
 
   // Bridge / system stats — shared across OrgStats + BridgePulse + Universe nebula.
   bridgePulse: 60 * 1000, // 1 minute
@@ -101,6 +102,8 @@ export const queryKeys = {
 
   nightwatchIncidents: (includeResolved = true) =>
     ['nightwatchIncidents', includeResolved] as const,
+
+  nightwatchMonitors: () => ['nightwatchMonitors'] as const,
 
   bridgePulse: () => ['bridgePulse'] as const,
 };

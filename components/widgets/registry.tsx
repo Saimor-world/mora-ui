@@ -11,6 +11,7 @@ import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useLarryArtifacts } from '@/lib/queries/useLarryArtifacts';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
+import { useNightwatchMonitors } from '@/lib/queries/useNightwatchMonitors';
 import { useNavStore } from '@/lib/store/navStore';
 import { useTree } from '@/lib/queries/useTree';
 import type { LarryArtifact } from '@/lib/api/larryClient';
@@ -1142,14 +1143,19 @@ const NW_ARC_C = 163.4; // 2*PI*r (r=26)
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
-    const { data: incidents = [], isLoading } = useNightwatchIncidents();
-    const loaded = !isLoading;
+    const { data: incidents = [], isLoading: incidentsLoading } = useNightwatchIncidents();
+    const { data: monitors = [], isLoading: monitorsLoading } = useNightwatchMonitors();
+    const loaded = !incidentsLoading;
+    const monitorsLoaded = !monitorsLoading;
     const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
 
     const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
+    const downHosts = new Set(open.map((i) => i.host).filter(Boolean) as string[]);
     const critical = open.filter((i) => i.severity === 'critical').length;
     const warnings = open.filter((i) => i.severity === 'warning').length;
     const resolved = incidents.filter((i) => _NW_RESOLVED.has((i.status || '').toLowerCase())).length;
+    const onlineCount = monitors.filter((m) => !m.host || !downHosts.has(m.host)).length;
+    const downCount = monitors.length - onlineCount;
 
     const tsNow = Date.now();
     const bars = Array.from({ length: 7 }, (_, idx) => {
@@ -1211,11 +1217,38 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                     </div>
                 </div>
                 <MicroSparkline values={bars} tone={tone} />
+                {monitorsLoaded && monitors.length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                        {monitors.slice(0, 4).map((monitor) => {
+                            const label = monitor.name || monitor.host || 'Monitor';
+                            const isDown = !!monitor.host && downHosts.has(monitor.host);
+                            const isContainer = monitor.target_type === 'container';
+                            return (
+                                <span
+                                    key={monitor.id}
+                                    title={monitor.host || label}
+                                    className={`inline-flex max-w-full items-center gap-1 rounded-full border px-1.5 py-0.5 text-[7px] ${
+                                        isDown
+                                            ? 'border-red-400/25 bg-red-500/[0.08] text-red-200/75'
+                                            : 'border-white/[0.08] bg-white/[0.04] text-white/50'
+                                    }`}
+                                >
+                                    <span className={`h-1 w-1 rounded-full ${isDown ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                                    <span className="truncate">{label}</span>
+                                    {isContainer && <span className="opacity-60">ctr</span>}
+                                </span>
+                            );
+                        })}
+                        {monitors.length > 4 && (
+                            <span className="text-[7px] tabular-nums text-white/30">+{monitors.length - 4}</span>
+                        )}
+                    </div>
+                )}
                 <div className="grid grid-cols-3 gap-1">
                     {[
                         { label: 'Krit.', value: critical, color: critical > 0 ? 'rgb(248,113,113)' : undefined },
                         { label: 'Warn.', value: warnings, color: warnings > 0 ? 'rgb(251,191,36)' : undefined },
-                        { label: '7T', value: bars.reduce((a, b) => a + b, 0), color: undefined },
+                        { label: monitors.length > 0 ? 'Online' : '7T', value: monitors.length > 0 ? onlineCount : bars.reduce((a, b) => a + b, 0), color: downCount > 0 ? 'rgb(251,191,36)' : monitors.length > 0 ? 'rgb(52,211,153)' : undefined },
                     ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-1.5 py-1 text-center">
                             <div className="text-[12px] font-light tabular-nums leading-none" style={{ color: color ?? 'rgba(255,255,255,0.78)' }}>{loaded ? value : '–'}</div>
@@ -1279,6 +1312,47 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                     </div>
                 ))}
             </div>
+
+            {/* Monitor status */}
+            {monitorsLoaded && monitors.length > 0 && (
+                <div>
+                    <SectionLabel
+                        icon={<Activity size={10} className="opacity-70" />}
+                        trailing={<span className="text-[8px] tabular-nums text-white/32">{onlineCount}/{monitors.length} online</span>}
+                    >
+                        Monitore
+                    </SectionLabel>
+                    <div className="flex flex-wrap gap-1.5">
+                        {[...monitors]
+                            .sort((a, b) => {
+                                const aDown = !!a.host && downHosts.has(a.host);
+                                const bDown = !!b.host && downHosts.has(b.host);
+                                return Number(bDown) - Number(aDown);
+                            })
+                            .slice(0, 6)
+                            .map((monitor) => {
+                                const label = monitor.name || monitor.host || 'Monitor';
+                                const isDown = !!monitor.host && downHosts.has(monitor.host);
+                                const typeLabel = monitor.target_type === 'container' ? 'Container' : monitor.target_type === 'endpoint' ? 'Endpoint' : 'Host';
+                                return (
+                                    <div
+                                        key={monitor.id}
+                                        className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-1 text-[9px] ${
+                                            isDown
+                                                ? 'border-red-400/22 bg-red-500/[0.07] text-red-200/78'
+                                                : 'border-white/[0.08] bg-white/[0.03] text-white/58'
+                                        }`}
+                                        title={monitor.host || label}
+                                    >
+                                        <span className={`h-1.5 w-1.5 rounded-full ${isDown ? 'bg-red-400' : 'bg-emerald-400'}`} />
+                                        <span className="truncate">{label}</span>
+                                        <span className="shrink-0 uppercase tracking-[0.12em] opacity-60">{typeLabel}</span>
+                                    </div>
+                                );
+                            })}
+                    </div>
+                </div>
+            )}
 
             {/* SVG area chart */}
             <div>

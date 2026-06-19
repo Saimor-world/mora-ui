@@ -47,6 +47,7 @@ import { openNavigationOutcome } from '@/lib/utils/searchOpen';
 import { RadarCard } from '@/components/mora/RadarCard';
 import { MoraRadarToast } from '@/components/mora/MoraRadarToast';
 import type { RadarNotification } from '@/lib/store/radarStore';
+import { useMailArrivalPrompt } from '@/lib/hooks/useMailArrivalPrompt';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -365,6 +366,7 @@ const NotificationItem: React.FC<{
 // ═══════════════════════════════════════════════════════════════════════════
 
 export const NotificationCenter: React.FC = () => {
+    useMailArrivalPrompt(true);
     const {
         notifications,
         isOpen,
