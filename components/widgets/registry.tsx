@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
@@ -12,10 +12,101 @@ import { useSpaces } from '@/lib/queries/useSpaces';
 import { useLarryArtifacts } from '@/lib/queries/useLarryArtifacts';
 import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { useNavStore } from '@/lib/store/navStore';
+import { useTree } from '@/lib/queries/useTree';
 import type { LarryArtifact } from '@/lib/api/larryClient';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import type { CoreTreeNode } from '@/lib/types/core';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
+
+type StatusTone = 'ok' | 'warn' | 'alert' | 'info' | 'neutral';
+
+function statusToneColor(tone: StatusTone): string {
+    switch (tone) {
+        case 'ok': return 'rgb(52,211,153)';
+        case 'warn': return 'rgb(251,191,36)';
+        case 'alert': return 'rgb(248,113,113)';
+        case 'info': return 'rgb(34,211,238)';
+        default: return 'rgba(255,255,255,0.18)';
+    }
+}
+
+/** Left-edge status band + optional alert gradient — no blur, no animation loops. */
+const GlanceShell: React.FC<{
+    tone?: StatusTone;
+    alert?: boolean;
+    onClick?: () => void;
+    className?: string;
+    children: React.ReactNode;
+}> = ({ tone = 'neutral', alert, onClick, className = '', children }) => {
+    const color = statusToneColor(tone);
+    const body = (
+        <div
+            className={`relative flex h-full w-full min-h-0 flex-col overflow-hidden ${className}`}
+            style={alert ? {
+                background: `linear-gradient(135deg, ${color}10, transparent 58%)`,
+                boxShadow: `inset 0 0 0 1px ${color}28`,
+            } : undefined}
+        >
+            <div
+                className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl"
+                style={{ background: color }}
+            />
+            <div className="flex min-h-0 flex-1 flex-col justify-center gap-1.5 py-1 pl-2.5 pr-1">{children}</div>
+        </div>
+    );
+    if (onClick) {
+        return (
+            <button type="button" onClick={onClick} className="h-full w-full text-left transition-opacity hover:opacity-95">
+                {body}
+            </button>
+        );
+    }
+    return body;
+};
+
+/** Static micro sparkline — derived SVG only, no rAF. */
+const MicroSparkline: React.FC<{ values: number[]; tone?: StatusTone; className?: string }> = ({ values, tone = 'ok', className = '' }) => {
+    if (values.length === 0) return null;
+    const max = Math.max(...values, 1);
+    const w = 56;
+    const h = 14;
+    const pts = values.map((v, i) => ({
+        x: values.length === 1 ? w / 2 : (i / (values.length - 1)) * w,
+        y: h - Math.max((v / max) * (h - 2), v > 0 ? 2 : 0),
+    }));
+    const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+    const stroke = statusToneColor(tone);
+    return (
+        <svg viewBox={`0 0 ${w} ${h}`} className={`h-[14px] w-[56px] shrink-0 opacity-80 ${className}`} aria-hidden="true">
+            <path d={d} fill="none" stroke={stroke} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+    );
+};
+
+const MicroProgress: React.FC<{ value: number; max?: number; tone?: StatusTone; className?: string }> = ({ value, max = 100, tone = 'ok', className = '' }) => {
+    const pct = Math.min(100, Math.max(0, (value / max) * 100));
+    return (
+        <div className={`h-1 overflow-hidden rounded-full bg-white/[0.06] ${className}`}>
+            <div
+                className="h-full rounded-full"
+                style={{ width: `${pct}%`, background: statusToneColor(tone) }}
+            />
+        </div>
+    );
+};
+
+function formatRelativeDe(iso?: string | null): string | null {
+    if (!iso) return null;
+    const ts = new Date(iso).getTime();
+    if (Number.isNaN(ts)) return null;
+    const diffMin = Math.round((Date.now() - ts) / 60_000);
+    if (diffMin < 1) return 'gerade';
+    if (diffMin < 60) return `vor ${diffMin} Min.`;
+    const diffH = Math.round(diffMin / 60);
+    if (diffH < 24) return `vor ${diffH} Std.`;
+    return `vor ${Math.round(diffH / 24)} T.`;
+}
 
 // ── Small shared building blocks ────────────────────────────────────────────
 // Scene-tinted, consistent, a touch more elevated than flat cards. Every accent
@@ -101,40 +192,44 @@ const LiveRow: React.FC<{
 
 // ── Widget bodies ───────────────────────────────────────────────────────────
 
-const MoraWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const MoraWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data } = useHomeView();
     const titled = (data?.changes ?? []).filter((c) => c.title && c.title.trim().length > 0);
-    const signalCount = titled.length + (data?.attention?.length ?? 0);
+    const attention = data?.attention ?? [];
+    const signalCount = titled.length + attention.length;
+    const urgent = attention.filter((a) => (a.severity ?? 0) >= 2).length;
+    const tone: StatusTone = urgent > 0 ? 'alert' : signalCount > 0 ? 'warn' : 'ok';
     return (
-        <button type="button" onClick={context.openMora} className="flex h-full w-full items-center gap-4 text-left">
-            <span className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-                <span
-                    className="absolute inset-0 animate-pulse rounded-full"
-                    style={{ background: 'radial-gradient(circle, rgba(var(--scene-rgb, 16,185,129), 0.3) 0%, transparent 70%)' }}
-                />
-                <span
-                    className="relative flex h-8 w-8 items-center justify-center rounded-full"
+        <GlanceShell tone={tone} alert={urgent > 0} onClick={context.openMora}>
+            <div className="flex items-center gap-3">
+                <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                     style={{
                         background: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45), rgba(var(--scene-rgb, 16,185,129), 0.62) 46%, rgba(0,0,0,0.32))',
-                        boxShadow: '0 0 22px rgba(var(--scene-rgb, 16,185,129), 0.5)',
+                        boxShadow: '0 0 16px rgba(var(--scene-rgb, 16,185,129), 0.35)',
                     }}
                 >
-                    <Sparkles size={13} className="text-white/95" />
+                    <Sparkles size={12} className="text-white/95" />
                 </span>
-            </span>
-            <div className="min-w-0 flex-1">
-                <div className="text-sm text-white/85">MÔRA</div>
-                <div className="mt-0.5 text-[11px] text-white/45">
-                    {signalCount > 0 ? `beobachtet · ${signalCount} ${signalCount === 1 ? 'Signal' : 'Signale'}` : 'wach · beobachtet im Hintergrund'}
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                        <span className="text-[10px] text-white/82">MÔRA</span>
+                        {signalCount > 0 && (
+                            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/45">{signalCount}</span>
+                        )}
+                    </div>
+                    <div className="mt-0.5 text-[9px] text-white/42">
+                        {signalCount > 0 ? `${titled.length} Änderungen · ${attention.length} Signale` : 'wach · beobachtet'}
+                    </div>
+                    {(attention[0]?.title || titled[0]?.title) && (
+                        <div className="mt-1 truncate text-[9px] text-white/52">{attention[0]?.title || titled[0]?.title}</div>
+                    )}
                 </div>
-                {titled[0] && (
-                    <div className="mt-1.5 truncate text-[11px] text-white/55">{titled[0].title}</div>
-                )}
+                <ArrowRight size={12} className="shrink-0 text-white/22" />
             </div>
-            <ArrowRight size={14} className="shrink-0 text-white/25" />
-        </button>
+        </GlanceShell>
     );
-};
+});
+MoraWidget.displayName = 'MoraWidget';
 
 const CAL_COLORS = [
     'rgba(var(--scene-rgb,16,185,129),0.8)',
@@ -143,13 +238,54 @@ const CAL_COLORS = [
     'rgba(236,72,153,0.7)',
 ];
 
-const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data: homeView } = useHomeView();
     const tasks = homeView?.next_steps ?? [];
     const mail = context.data?.mailPreview ?? [];
     const cal = context.data?.calendarPreview ?? [];
     const mailConfigured = context.data?.mailConfigured ?? false;
     const calConfigured = context.data?.calendarConfigured ?? false;
+    const compact = context.compact;
+
+    if (compact) {
+        const nextCal = cal[0];
+        const nextMail = mail[0];
+        const openPrimary = () => {
+            if (nextCal && context.openCalendar) context.openCalendar();
+            else if (nextMail && context.openMail) context.openMail();
+            else if (tasks.length > 0 && context.openMora) context.openMora();
+            else if (context.openCalendar) context.openCalendar();
+            else context.openIntegrations?.();
+        };
+        const tone: StatusTone =
+            (cal.length + mail.length + tasks.length) > 0 ? 'info'
+                : (mailConfigured || calConfigured) ? 'ok' : 'neutral';
+        return (
+            <GlanceShell tone={tone} onClick={openPrimary}>
+                <div className="flex items-center justify-between gap-1">
+                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Mein Tag</span>
+                    <CalendarDays size={10} className="text-white/28" />
+                </div>
+                {nextCal ? (
+                    <div className="truncate text-[10px] text-white/68">
+                        {nextCal.time ? `${nextCal.time} · ` : ''}{nextCal.title}
+                    </div>
+                ) : calConfigured ? (
+                    <div className="text-[10px] text-white/40">Keine Termine heute</div>
+                ) : (
+                    <div className="text-[10px] text-white/40">Kalender nicht verbunden</div>
+                )}
+                <div className="flex flex-wrap gap-1.5 text-[8px] tabular-nums text-white/38">
+                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{cal.length} Termine</span>
+                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{mail.length} Mails</span>
+                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{tasks.length} Aufgaben</span>
+                </div>
+                {nextMail && (
+                    <div className="truncate text-[9px] text-white/42">{nextMail.subject}</div>
+                )}
+            </GlanceShell>
+        );
+    }
 
     return (
         <div className="flex h-full flex-col gap-3 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
@@ -237,7 +373,8 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             </div>
         </div>
     );
-};
+});
+MeinTagWidget.displayName = 'MeinTagWidget';
 
 function nameInitials(name: string): string {
     const parts = name.trim().split(/\s+/);
@@ -250,11 +387,13 @@ function nameHue(name: string): number {
     return h;
 }
 
-const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const TeamWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { peers } = usePresence();
     const online = peers.filter((p) => p.status === 'online');
     const away = peers.filter((p) => p.status !== 'online');
     const compact = context.compact;
+    const onlineRatio = peers.length > 0 ? online.length / peers.length : 0;
+    const tone: StatusTone = online.length > 0 ? 'ok' : peers.length > 0 ? 'warn' : 'neutral';
 
     const AvatarRow: React.FC<{ name: string; isOnline: boolean }> = ({ name, isOnline }) => {
         const initials = nameInitials(name || 'Mitglied');
@@ -290,18 +429,19 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         const leadOnline = online[0];
         const leadAway = away[0];
         return (
-            <button type="button" onClick={context.openTeam} className="flex h-full w-full flex-col justify-center gap-2 text-left">
+            <GlanceShell tone={tone} onClick={context.openTeam}>
                 <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0">
-                        <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400' : 'bg-white/20'}`} />
-                        <span className="text-[10px] text-white/68 truncate">
+                    <div className="flex min-w-0 items-center gap-2">
+                        <Users size={10} className="shrink-0 text-white/35" />
+                        <span className="truncate text-[10px] text-white/68">
                             {online.length > 0 ? `${online.length} online` : 'Niemand online'}
                         </span>
                     </div>
                     {peers.length > 0 && (
-                        <span className="shrink-0 text-[9px] tabular-nums text-white/32">{peers.length} ges.</span>
+                        <span className="shrink-0 text-[8px] tabular-nums text-white/32">{peers.length} ges.</span>
                     )}
                 </div>
+                <MicroProgress value={onlineRatio * 100} tone={tone} />
                 <div className="flex -space-x-1.5">
                     {[...online, ...away].slice(0, 4).map((p) => {
                         const initials = nameInitials(p.name || 'M');
@@ -317,13 +457,16 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                         );
                     })}
                 </div>
-                {(leadOnline || leadAway) && (
-                    <span className="truncate text-[9px] text-white/42">
-                        {leadOnline ? leadOnline.name : leadAway?.name}
-                        {online.length > 1 ? ` +${online.length - 1}` : away.length > 0 && online.length === 0 ? ` · ${away.length} abw.` : ''}
+                <div className="flex items-center justify-between gap-2 text-[9px] text-white/38">
+                    <span className="truncate">
+                        {leadOnline ? leadOnline.name : leadAway?.name ?? 'Team'}
+                        {online.length > 1 ? ` +${online.length - 1}` : ''}
                     </span>
-                )}
-            </button>
+                    {away.length > 0 && (
+                        <span className="shrink-0 tabular-nums">{away.length} abw.</span>
+                    )}
+                </div>
+            </GlanceShell>
         );
     }
 
@@ -341,19 +484,24 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             <ActionButton icon={<Users size={13} />} label="Team öffnen" onClick={context.openTeam} />
         </div>
     );
-};
+});
+TeamWidget.displayName = 'TeamWidget';
 
-const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data } = useHomeView();
     const attention = data?.attention ?? [];
+    const changes = (data?.changes ?? []).filter((c) => c.title && c.title.trim().length > 0);
     const compact = context.compact;
+    const urgent = attention.filter((a) => (a.severity ?? 0) >= 2).length;
+    const tone: StatusTone = urgent > 0 ? 'alert' : attention.length > 0 ? 'warn' : 'ok';
 
     if (compact) {
-        const urgent = attention.filter((a) => (a.severity ?? 0) >= 2).length;
         return (
-            <button type="button" onClick={context.openMora} className="flex h-full w-full flex-col justify-center gap-1.5 text-left">
+            <GlanceShell tone={tone} alert={urgent > 0} onClick={context.openMora}>
                 <div className="flex items-center justify-between">
-                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Signale</span>
+                    <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
+                        <AlertTriangle size={9} className="opacity-60" /> Signale
+                    </span>
                     <span
                         className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] tabular-nums"
                         style={{ background: attention.length > 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.06)', color: attention.length > 0 ? 'rgb(251,191,36)' : 'rgba(255,255,255,0.35)' }}
@@ -364,16 +512,18 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 {attention[0] ? (
                     <>
                         <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{attention[0].title}</span>
-                        {urgent > 0 && (
-                            <span className="text-[9px] text-amber-300/65">{urgent} brauchen Aufmerksamkeit</span>
-                        )}
+                        <div className="flex flex-wrap gap-1 text-[8px] text-white/38">
+                            {urgent > 0 && <span className="text-amber-300/70">{urgent} dringend</span>}
+                            {changes.length > 0 && <span>{changes.length} Änderungen</span>}
+                        </div>
                     </>
                 ) : (
                     <span className="flex items-center gap-1.5 text-[10px] text-white/40">
                         <CheckCircle2 size={11} className="text-emerald-400/55" /> Alles ruhig
+                        {changes.length > 0 && <span className="text-white/32">· {changes.length} Änderungen</span>}
                     </span>
                 )}
-            </button>
+            </GlanceShell>
         );
     }
 
@@ -412,9 +562,10 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             )}
         </div>
     );
-};
+});
+SignalsWidget.displayName = 'SignalsWidget';
 
-const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const OrgStatsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data } = useHomeView();
     const pulse = useBridgePulse();
     const s = data?.org_stats;
@@ -433,6 +584,10 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     ];
     if (rows.length === 0) return <Empty>Noch keine Organisationsdaten.</Empty>;
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
+    const tone: StatusTone =
+        (pulse.openIncidents ?? 0) > 0 ? 'warn'
+            : (pulse.criticalIncidents ?? 0) > 0 ? 'alert'
+                : s ? 'ok' : 'neutral';
 
     const pulseLine = pulse.loaded && (pulse.cpu != null || pulse.moraLoad != null) ? (
         <div className={`flex flex-wrap gap-1.5 ${compact ? 'mt-1' : 'mt-2'}`}>
@@ -456,8 +611,8 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         </div>
     ) : null;
 
-    return (
-        <div className={`flex h-full flex-col justify-center ${compact ? 'gap-1' : 'gap-2'}`}>
+    const statsBody = (
+        <>
             {rows.slice(0, compact ? 3 : rows.length).map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-1.5">
                     <span className={`shrink-0 text-right uppercase tracking-[.12em] text-white/35 ${compact ? 'w-[52px] text-[7px]' : 'w-[72px] text-[9px]'}`}>{label}</span>
@@ -467,7 +622,6 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                             style={{
                                 width: `${(value / maxVal) * 100}%`,
                                 background: 'rgba(var(--scene-rgb, 16,185,129), 0.6)',
-                                transition: 'width 0.5s ease',
                             }}
                         />
                     </div>
@@ -475,10 +629,10 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 </div>
             ))}
             {pulseLine}
-            {compact && s?.documents != null && (
-                <div className="mt-1 flex items-center justify-between text-[9px] text-white/38">
+            {compact && s && (
+                <div className="mt-1 flex items-center justify-between text-[8px] text-white/38">
                     <span>{s.members ?? '–'} Mitglieder</span>
-                    <span className="tabular-nums">{s.documents} Docs</span>
+                    <span className="tabular-nums">{s.tasks ?? 0} Tasks · {s.documents} Docs</span>
                 </div>
             )}
             {!compact && context.openDashboard && (
@@ -491,11 +645,34 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     Larry Dashboard
                 </button>
             )}
+        </>
+    );
+
+    if (compact) {
+        return (
+            <GlanceShell tone={tone} alert={(pulse.criticalIncidents ?? 0) > 0} onClick={context.openDashboard}>
+                <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
+                        <BarChart2 size={9} className="opacity-60" /> Organisation
+                    </span>
+                    {pulse.bridgeDepartments != null && (
+                        <span className="text-[8px] tabular-nums text-white/32">{pulse.bridgeDepartments} Bridge</span>
+                    )}
+                </div>
+                {statsBody}
+            </GlanceShell>
+        );
+    }
+
+    return (
+        <div className={`flex h-full flex-col justify-center ${compact ? 'gap-1' : 'gap-2'}`}>
+            {statsBody}
         </div>
     );
-};
+});
+OrgStatsWidget.displayName = 'OrgStatsWidget';
 
-const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const BridgePulseWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const pulse = useBridgePulse();
     const compact = context.compact;
 
@@ -519,27 +696,31 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
                     ? 'Erhöhte Last'
                     : 'Ruhig';
 
+    const tone: StatusTone =
+        (pulse.criticalIncidents ?? 0) > 0 ? 'alert'
+            : (pulse.openIncidents ?? 0) > 0 ? 'warn'
+                : pulse.cognitionRate === 'elevated' ? 'info' : 'ok';
+    const mem = pulse.stats?.metrics?.memory_usage ?? null;
+
     if (compact) {
         return (
-            <button
-                type="button"
-                onClick={context.openDashboard}
-                className="flex h-full w-full flex-col justify-center gap-2 text-left"
-            >
+            <GlanceShell tone={tone} alert={(pulse.criticalIncidents ?? 0) > 0} onClick={context.openDashboard}>
                 <div className="flex items-center gap-2">
-                    <span
-                        className="h-2 w-2 shrink-0 rounded-full"
-                        style={{ background: pulse.ambientIntensity > 0.5 ? 'rgb(251,191,36)' : 'rgb(52,211,153)' }}
-                    />
-                    <span className={`text-[11px] font-medium ${statusTone}`}>{statusLabel}</span>
+                    <Radio size={10} className="shrink-0 text-white/35" />
+                    <span className={`text-[10px] font-medium ${statusTone}`}>{statusLabel}</span>
                 </div>
-                <div className="grid grid-cols-2 gap-1 text-[9px] tabular-nums text-white/45">
+                <MicroProgress
+                    value={pulse.moraLoad != null ? pulse.moraLoad * 100 : pulse.cpu ?? 0}
+                    max={100}
+                    tone={tone}
+                />
+                <div className="grid grid-cols-2 gap-1 text-[8px] tabular-nums text-white/42">
                     <span>CPU {pulse.cpu != null ? `${Math.round(pulse.cpu)}%` : '–'}</span>
+                    <span>RAM {mem != null ? `${Math.round(mem)}%` : '–'}</span>
                     <span>MÔRA {pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'}</span>
-                    {pulse.bridgeNodes != null && <span>Bridge {pulse.bridgeNodes}</span>}
-                    {pulse.larryNodes != null && <span>Larry {pulse.larryNodes}</span>}
+                    <span>{pulse.activeAnalysts ?? 0} Analysten</span>
                 </div>
-            </button>
+            </GlanceShell>
         );
     }
 
@@ -570,9 +751,10 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
             </div>
         </div>
     );
-};
+});
+BridgePulseWidget.displayName = 'BridgePulseWidget';
 
-const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const QuickActionsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const compact = context.compact;
     const actions = [
         { icon: <FolderOpen size={compact ? 16 : 20} />, label: 'Finder', onClick: context.openFinder },
@@ -583,19 +765,25 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
 
     if (compact) {
         return (
-            <div className="grid h-full grid-cols-2 gap-1.5 content-center">
-                {actions.map(({ icon, label, onClick }) => (
-                    <button
-                        key={label}
-                        type="button"
-                        onClick={onClick}
-                        className="flex flex-col items-center justify-center gap-1 rounded-lg border border-white/[0.07] bg-white/[0.04] py-2 transition-colors hover:border-white/[0.16] hover:bg-white/[0.08]"
-                    >
-                        <span className="text-white/50">{icon}</span>
-                        <span className="text-[8px] uppercase tracking-[.12em] text-white/42">{label}</span>
-                    </button>
-                ))}
-            </div>
+            <GlanceShell tone="info">
+                <div className="flex items-center justify-between gap-1">
+                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Schnellzugriff</span>
+                    <Compass size={10} className="text-white/28" />
+                </div>
+                <div className="grid grid-cols-2 gap-1 content-center">
+                    {actions.map(({ icon, label, onClick }) => (
+                        <button
+                            key={label}
+                            type="button"
+                            onClick={onClick}
+                            className="flex flex-col items-center justify-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.04] py-1.5 transition-colors hover:border-white/[0.16] hover:bg-white/[0.08]"
+                        >
+                            <span className="text-white/50">{icon}</span>
+                            <span className="text-[7px] uppercase tracking-[.12em] text-white/42">{label}</span>
+                        </button>
+                    ))}
+                </div>
+            </GlanceShell>
         );
     }
 
@@ -614,7 +802,8 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
         ))}
     </div>
     );
-};
+});
+QuickActionsWidget.displayName = 'QuickActionsWidget';
 
 const LARRY_KIND_META: Record<string, { label: string; icon: React.ReactNode }> = {
     canvas: { label: 'Canvas', icon: <Layout size={11} /> },
@@ -634,7 +823,7 @@ function larryArtifactMeta(artifact: LarryArtifact): string {
     return '';
 }
 
-const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { data: artifacts = [], isLoading } = useLarryArtifacts(activeCompanyId, context.compact ? 4 : 8);
     const compact = context.compact;
@@ -678,12 +867,9 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             return acc;
         }, {});
         const kindSummary = Object.entries(kindCounts).slice(0, 2).map(([k, n]) => `${larryKindMeta(k).label} ${n}`).join(' · ');
+        const updated = formatRelativeDe(latest.updated_at || latest.created_at);
         return (
-            <button
-                type="button"
-                onClick={() => openArtifact(latest)}
-                className="flex h-full w-full flex-col justify-center gap-1.5 text-left"
-            >
+            <GlanceShell tone="info" onClick={() => openArtifact(latest)}>
                 <div className="flex items-center justify-between gap-2">
                     <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Workspace</span>
                     <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
@@ -693,10 +879,11 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 <span className="flex items-center gap-1.5 text-[10px] text-cyan-200/75">
                     {meta.icon}
                     {meta.label}
+                    {updated && <span className="text-[8px] text-white/32">· {updated}</span>}
                 </span>
                 <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{latest.title}</span>
                 {kindSummary && <span className="truncate text-[9px] text-white/35">{kindSummary}</span>}
-            </button>
+            </GlanceShell>
         );
     }
 
@@ -743,9 +930,10 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             )}
         </div>
     );
-};
+});
+LarryWorkWidget.displayName = 'LarryWorkWidget';
 
-const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const ClockWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const [now, setNow] = React.useState<Date | null>(null);
     const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
     const tickMs = compact ? 15_000 : 1_000;
@@ -779,6 +967,8 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     });
     const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
     const timeLabel = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    const dayProgress = ((now.getHours() * 60 + now.getMinutes()) / (24 * 60)) * 100;
+    const tone: StatusTone = now.getHours() >= 6 && now.getHours() < 18 ? 'ok' : 'info';
 
     const face = (
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-label={`Uhr ${h}:${String(m).padStart(2,'0')}`}>
@@ -798,7 +988,17 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     );
 
     if (compact) {
-        return (
+        const shell = (
+            <GlanceShell tone={tone} onClick={context.openCalendar}>
+                <div className="flex items-center justify-center">
+                    <div className="aspect-square h-[72%] w-[72%] max-h-full max-w-full">{face}</div>
+                </div>
+                <div className="text-center text-[8px] tabular-nums text-white/42" suppressHydrationWarning>{timeLabel}</div>
+                <MicroProgress value={dayProgress} tone={tone} className="mx-1" />
+                <div className="text-center text-[7px] uppercase tracking-[0.14em] text-white/30" suppressHydrationWarning>{date}</div>
+            </GlanceShell>
+        );
+        return context.openCalendar ? shell : (
             <div className="flex h-full w-full flex-col items-center justify-center">
                 <div className="aspect-square h-[78%] w-[78%] max-h-full max-w-full">{face}</div>
                 <div className="mt-0.5 text-[8px] tabular-nums text-white/42" suppressHydrationWarning>{timeLabel}</div>
@@ -813,7 +1013,8 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             <div className="text-[11px] text-white/38" suppressHydrationWarning>{date}</div>
         </div>
     );
-};
+});
+ClockWidget.displayName = 'ClockWidget';
 
 function catmullRomPath(pts: Array<{ x: number; y: number }>): string {
     if (pts.length < 2) return '';
@@ -835,7 +1036,7 @@ const NW_ARC_C = 163.4; // 2*PI*r (r=26)
 
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
-const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data: incidents = [], isLoading } = useNightwatchIncidents();
     const loaded = !isLoading;
     const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
@@ -875,14 +1076,11 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
 
     if (compact) {
         const topOpen = open[0];
+        const tone: StatusTone = critical > 0 ? 'alert' : warnings > 0 ? 'warn' : 'ok';
         return (
-            <button
-                type="button"
-                onClick={context.openNightwatch}
-                className="flex h-full w-full flex-col gap-2 text-left"
-            >
+            <GlanceShell tone={tone} alert={critical > 0} onClick={context.openNightwatch}>
                 <div className="flex items-center gap-2">
-                    <svg width="40" height="40" viewBox="0 0 64 64" aria-label={`Uptime ${uptimePct}%`} className="shrink-0">
+                    <svg width="36" height="36" viewBox="0 0 64 64" aria-label={`Uptime ${uptimePct}%`} className="shrink-0">
                         <circle cx="32" cy="32" r="26" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="5" />
                         <circle
                             cx="32" cy="32" r="26" fill="none"
@@ -896,28 +1094,31 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
                         <text x="32" y="36" textAnchor="middle" fontSize="12" fontWeight="500" fill="rgba(255,255,255,0.85)">{uptimePct}%</text>
                     </svg>
                     <div className="min-w-0 flex-1">
-                        <div className="text-[11px] font-medium text-white/82">Nightwatch</div>
+                        <div className="flex items-center gap-1 text-[10px] font-medium text-white/82">
+                            <Activity size={10} className="text-white/35" /> Nightwatch
+                        </div>
                         <div className="text-[8px] uppercase tracking-[.14em] text-white/32">
-                            {!loaded ? 'Lädt…' : open.length === 0 ? 'Alles ruhig' : `${open.length} offen`}
+                            {!loaded ? 'Lädt…' : open.length === 0 ? 'Alles ruhig' : `${open.length} offen · ${resolved} gelöst`}
                         </div>
                         {topOpen && (
-                            <div className="mt-1 truncate text-[9px] text-white/48">{topOpen.title || topOpen.host}</div>
+                            <div className="mt-0.5 truncate text-[9px] text-white/48">{topOpen.title || topOpen.host}</div>
                         )}
                     </div>
                 </div>
+                <MicroSparkline values={bars} tone={tone} />
                 <div className="grid grid-cols-3 gap-1">
                     {[
                         { label: 'Krit.', value: critical, color: critical > 0 ? 'rgb(248,113,113)' : undefined },
                         { label: 'Warn.', value: warnings, color: warnings > 0 ? 'rgb(251,191,36)' : undefined },
-                        { label: 'Gel.', value: resolved, color: undefined },
+                        { label: '7T', value: bars.reduce((a, b) => a + b, 0), color: undefined },
                     ].map(({ label, value, color }) => (
                         <div key={label} className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-1.5 py-1 text-center">
-                            <div className="text-[13px] font-light tabular-nums leading-none" style={{ color: color ?? 'rgba(255,255,255,0.78)' }}>{loaded ? value : '–'}</div>
+                            <div className="text-[12px] font-light tabular-nums leading-none" style={{ color: color ?? 'rgba(255,255,255,0.78)' }}>{loaded ? value : '–'}</div>
                             <div className="mt-0.5 text-[7px] uppercase tracking-[.1em] text-white/28">{label}</div>
                         </div>
                     ))}
                 </div>
-            </button>
+            </GlanceShell>
         );
     }
 
@@ -1018,37 +1219,91 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
             </div>
         </div>
     );
-};
+});
+NightwatchWidget.displayName = 'NightwatchWidget';
 
-const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+const DeptStatsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data: spaces = [] } = useSpaces(context.departmentId);
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const { data: tree = [] } = useTree(activeCompanyId);
     const folders = spaces.reduce((sum, s) => sum + (s.folder_count ?? 0), 0);
     const compact = context.compact;
+    const deptId = context.departmentId;
+    const nodeCount = useMemo(() => {
+        if (!deptId || !Array.isArray(tree)) return 0;
+        const deptNode = tree.find((n) => n.id === deptId);
+        if (!deptNode?.children) return 0;
+        let count = 0;
+        const walk = (nodes: CoreTreeNode[]) => {
+            for (const n of nodes) {
+                if (n.type === 'node') count += 1;
+                if (n.children?.length) walk(n.children);
+            }
+        };
+        walk(deptNode.children);
+        return count;
+    }, [deptId, tree]);
     const rows = [
         { label: 'Bereiche', value: spaces.length },
         { label: 'Ordner',   value: folders },
+        ...(nodeCount > 0 ? [{ label: 'Inhalte', value: nodeCount }] : []),
     ];
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
     const topSpaces = [...spaces].sort((a, b) => (b.folder_count ?? 0) - (a.folder_count ?? 0));
-    return (
-        <div className={`flex h-full flex-col ${compact ? 'gap-2 p-1' : 'justify-center gap-3'}`}>
-            {rows.map(({ label, value }) => (
-                <div key={label} className="flex items-center gap-2">
-                    <span className="w-14 shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
-                    <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-                        <div
-                            className="h-full rounded-full"
-                            style={{
-                                width: `${(value / maxVal) * 100}%`,
-                                background: 'rgba(var(--scene-rgb,16,185,129),0.6)',
-                                transition: 'width 0.5s ease',
-                            }}
-                        />
-                    </div>
-                    <span className="w-7 shrink-0 text-right text-[13px] font-light tabular-nums text-white/65">{value}</span>
+    const sparkValues = topSpaces.slice(0, 7).map((s) => s.folder_count ?? 0);
+    const tone: StatusTone = spaces.length > 0 ? 'ok' : 'neutral';
+
+    const statsRows = rows.map(({ label, value }) => (
+        <div key={label} className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-right text-[9px] uppercase tracking-[.12em] text-white/35">{label}</span>
+            <div className="flex-1 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <div
+                    className="h-full rounded-full"
+                    style={{
+                        width: `${(value / maxVal) * 100}%`,
+                        background: 'rgba(var(--scene-rgb,16,185,129),0.6)',
+                    }}
+                />
+            </div>
+            <span className="w-7 shrink-0 text-right text-[13px] font-light tabular-nums text-white/65">{value}</span>
+        </div>
+    ));
+
+    if (compact) {
+        return (
+            <GlanceShell tone={tone} onClick={context.openFinder}>
+                <div className="flex items-center justify-between gap-1">
+                    <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
+                        <TrendingUp size={9} className="opacity-60" /> Datenlage
+                    </span>
+                    {spaces.length > 0 && (
+                        <span className="text-[8px] tabular-nums text-white/32">{folders} Ordner</span>
+                    )}
                 </div>
-            ))}
-            {compact && spaces.length > 0 && (
+                {statsRows}
+                {sparkValues.some((v) => v > 0) && <MicroSparkline values={sparkValues} tone="ok" />}
+                {spaces.length > 0 ? (
+                    <div className="mt-1 flex flex-col gap-0.5 border-t border-white/[0.06] pt-1.5">
+                        {topSpaces.slice(0, 3).map((space) => (
+                            <div key={space.id} className="flex items-center justify-between gap-2 text-[9px]">
+                                <span className="truncate text-white/48">{space.name}</span>
+                                {(space.folder_count ?? 0) > 0 && (
+                                    <span className="shrink-0 tabular-nums text-white/30">{space.folder_count}</span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-[9px] text-white/35">Noch keine Bereiche</div>
+                )}
+            </GlanceShell>
+        );
+    }
+
+    return (
+        <div className="flex h-full flex-col justify-center gap-3">
+            {statsRows}
+            {spaces.length > 0 && (
                 <div className="mt-1 flex flex-col gap-1 border-t border-white/[0.06] pt-2">
                     {topSpaces.slice(0, 4).map((space) => (
                         <div key={space.id} className="flex items-center justify-between gap-2 text-[10px]">
@@ -1063,9 +1318,20 @@ const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     )}
                 </div>
             )}
+            {context.openFinder && (
+                <button
+                    type="button"
+                    onClick={context.openFinder}
+                    className="mt-auto flex items-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
+                >
+                    <FolderOpen size={10} />
+                    Finder öffnen
+                </button>
+            )}
         </div>
     );
-};
+});
+DeptStatsWidget.displayName = 'DeptStatsWidget';
 
 // ── Registry ────────────────────────────────────────────────────────────────
 

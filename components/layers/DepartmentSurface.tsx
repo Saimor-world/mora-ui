@@ -130,7 +130,17 @@ export const DepartmentSurface: React.FC = () => {
                 size: GLASS_SHEET_SIZE,
                 data: { departmentId: activeDepartmentId },
               }),
+              openTeam: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: GLASS_SHEET_SIZE }),
+              openIntegrations: () => openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE }),
               openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
+              openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
+              openLarryNode: (nodeId, title) => openPane({
+                id: `document-${nodeId}`,
+                type: 'document',
+                title: title || 'Workspace',
+                size: GLASS_SHEET_SIZE,
+                data: { nodeId },
+              }),
               goExplore: () => useNavStore.getState().navigateToExplore(),
             }}
           />
