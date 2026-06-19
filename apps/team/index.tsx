@@ -19,6 +19,7 @@ import { realtime as realtimeClient } from '@/lib/api/realtimeClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import type { AppProps } from '@/lib/apps/types';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -352,6 +353,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             draggable
             resizable
             paneId={paneId}
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full flex-col">
                 {/* ── Tab bar ── */}

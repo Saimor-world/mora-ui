@@ -39,6 +39,8 @@ import {
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentContext';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
+import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
 import {
     UNIVERSE_HOVER_RELEASE_HOME_MS,
     UNIVERSE_HOVER_RELEASE_MS,
@@ -184,6 +186,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         };
 
         loadStats();
+        const interval = window.setInterval(loadStats, 45_000);
+        return () => window.clearInterval(interval);
     }, [activeCompanyId]);
 
     // ─── FETCH NIGHTWATCH INCIDENTS FOR PLANET HEALTH ───
@@ -656,6 +660,8 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         : (activeCompanyId || currentCompany ? 1 : safeCompanies.length);
     const showOrganizationAggregate = !isPublicDemoSurface && !surfaceProfile.isLocalTruthSurface && !activeCompanyId && safeCompanies.length > 1;
     const isHomeUniversePreview = coreMode === 'home';
+    const bridgePulse = useBridgePulse(!isHomeUniversePreview);
+    const nebulaPulseFactor = 0.82 + bridgePulse.ambientIntensity * 0.22;
     const centerSummary = useMemo(() => {
         const departmentCount = visiblePlanets.length;
         const areaCount = totalSpaceCount;
@@ -713,7 +719,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     );
 
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
-    const backgroundCalmFactor = hasUniverseInteraction ? 0.78 : 1;
+    const backgroundCalmFactor = (hasUniverseInteraction ? 0.78 : 1) * nebulaPulseFactor;
     const widgetGlanceOpacity = hasUniverseInteraction ? 0.25 : 0.44;
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
@@ -937,8 +943,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         context={{
                             surface: 'universe',
                             openMora: () => setOrbState('curious'),
-                            openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: { width: 1280, height: 820 } }),
-                            openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }),
+                            openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: GLASS_SHEET_SIZE }),
+                            openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
+                            openDashboard: () => window.open(bridgePulse.dashboardUrl, '_blank', 'noopener,noreferrer'),
                             goExplore: () => navigateToCore(),
                         }}
                     />

@@ -205,6 +205,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
         openTeam: onOpenTeam,
         openFinder: onOpenFinder,
         openNightwatch: onOpenNightwatch,
+        openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
         goExplore: onGoExplore,
     };
 
@@ -377,9 +378,12 @@ export function HomeCockpit(props: HomeCockpitProps) {
                     </div>
                 </div>
 
-                {/* Row 2: Nightwatch (server pulse) + clock — 45% of widget area */}
+                {/* Row 2: Bridge pulse + Nightwatch + clock */}
                 <div className="min-h-0 flex-[45]">
-                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-3">
+                    <div className="grid h-full grid-cols-1 gap-3 sm:grid-cols-4">
+                        <motion.div {...fade(0.22)} className="min-h-0 h-full">
+                            <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-cyan-400/55 via-sky-300/35 to-transparent" context={glanceContext} />
+                        </motion.div>
                         <motion.div {...fade(0.24)} className="min-h-0 h-full sm:col-span-2">
                             <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} />
                         </motion.div>

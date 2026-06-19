@@ -45,8 +45,9 @@ const UNIVERSE_RIGHT_BAND_START = UNIVERSE_GLANCE_BAND.rightStart;
 const UNIVERSE_BAND_WIDTH = UNIVERSE_GLANCE_BAND.bandWidth;
 
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 0, w: 3, h: 4 },
-    { i: 'clock-1', type: 'clock', x: 0, y: 4, w: 2, h: 2 },
+    { i: 'bridgePulse-1', type: 'bridgePulse', x: 0, y: 0, w: 3, h: 3 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 3, w: 3, h: 4 },
+    { i: 'clock-1', type: 'clock', x: 0, y: 7, w: 2, h: 2 },
     { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 3 },
     { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 2, h: 3 },
 ];

@@ -22,6 +22,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import type { AppProps } from '@/lib/apps/types';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 interface MailAttachment {
     filename: string;
@@ -214,6 +215,7 @@ export default function MailApp({ paneId }: AppProps) {
             onBack={() => setViewingMail(null)}
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex flex-col h-full relative">
                 {!viewingMail && !composing && (

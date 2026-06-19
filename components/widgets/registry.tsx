@@ -4,12 +4,13 @@ import React from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
-    ArrowRight, Activity,
+    ArrowRight, Activity, Cpu, ExternalLink, Radio,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { fetchAllNightwatchIncidents } from '@/lib/api/nightwatchClient';
+import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
 
@@ -392,17 +393,46 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 
 const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const { data } = useHomeView();
+    const pulse = useBridgePulse();
     const s = data?.org_stats;
     const compact = context.compact;
-    if (!s) return <Empty>Noch keine Organisationsdaten.</Empty>;
+    if (!s && !pulse.loaded) return <Empty>Noch keine Organisationsdaten.</Empty>;
+
     const rows = [
-        { label: 'Abteilungen', value: s.departments ?? 0 },
-        { label: 'Bereiche',    value: s.spaces      ?? 0 },
-        { label: 'Ordner',      value: s.folders     ?? 0 },
-        { label: 'Dokumente',   value: s.documents   ?? 0 },
-        ...(s.members != null && !compact ? [{ label: 'Mitglieder', value: s.members }] : []),
+        ...(s ? [
+            { label: 'Abteilungen', value: s.departments ?? 0 },
+            { label: 'Bereiche',    value: s.spaces      ?? 0 },
+            { label: 'Ordner',      value: s.folders     ?? 0 },
+            { label: 'Dokumente',   value: s.documents   ?? 0 },
+            ...(s.members != null && !compact ? [{ label: 'Mitglieder', value: s.members }] : []),
+        ] : []),
+        ...(pulse.bridgeNodes != null && !compact ? [{ label: 'Knoten (Bridge)', value: pulse.bridgeNodes }] : []),
     ];
+    if (rows.length === 0) return <Empty>Noch keine Organisationsdaten.</Empty>;
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
+
+    const pulseLine = pulse.loaded && (pulse.cpu != null || pulse.moraLoad != null) ? (
+        <div className={`flex flex-wrap gap-1.5 ${compact ? 'mt-1' : 'mt-2'}`}>
+            {pulse.cpu != null && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] px-2 py-0.5 text-[9px] tabular-nums text-white/50">
+                    <Cpu size={9} className="opacity-60" />
+                    {Math.round(pulse.cpu)}% CPU
+                </span>
+            )}
+            {pulse.moraLoad != null && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-cyan-400/16 bg-cyan-500/[0.06] px-2 py-0.5 text-[9px] tabular-nums text-cyan-200/70">
+                    <Radio size={9} className="opacity-70" />
+                    MÔRA {Math.round(pulse.moraLoad * 100)}%
+                </span>
+            )}
+            {pulse.openIncidents != null && pulse.openIncidents > 0 && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-rose-400/18 bg-rose-500/[0.08] px-2 py-0.5 text-[9px] text-rose-200/75">
+                    {pulse.openIncidents} NW
+                </span>
+            )}
+        </div>
+    ) : null;
+
     return (
         <div className={`flex h-full flex-col justify-center ${compact ? 'gap-1' : 'gap-2'}`}>
             {rows.map(({ label, value }) => (
@@ -421,6 +451,89 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     <span className={`shrink-0 text-right tabular-nums text-white/55 ${compact ? 'w-5 text-[9px]' : 'w-7 text-[11px]'}`}>{value}</span>
                 </div>
             ))}
+            {pulseLine}
+            {!compact && context.openDashboard && (
+                <button
+                    type="button"
+                    onClick={context.openDashboard}
+                    className="mt-auto flex items-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
+                >
+                    <ExternalLink size={10} />
+                    Larry Dashboard
+                </button>
+            )}
+        </div>
+    );
+};
+
+const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+    const pulse = useBridgePulse();
+    const compact = context.compact;
+
+    if (!pulse.loaded) {
+        return <Empty>Bridge-Puls verbindet…</Empty>;
+    }
+
+    const statusTone =
+        pulse.criticalIncidents && pulse.criticalIncidents > 0
+            ? 'text-rose-300/85'
+            : pulse.openIncidents && pulse.openIncidents > 0
+                ? 'text-amber-300/85'
+                : 'text-emerald-300/85';
+
+    const statusLabel =
+        pulse.criticalIncidents && pulse.criticalIncidents > 0
+            ? `${pulse.criticalIncidents} kritisch`
+            : pulse.openIncidents && pulse.openIncidents > 0
+                ? `${pulse.openIncidents} Nightwatch`
+                : pulse.cognitionRate === 'elevated'
+                    ? 'Erhöhte Last'
+                    : 'Ruhig';
+
+    if (compact) {
+        return (
+            <button
+                type="button"
+                onClick={context.openDashboard}
+                className="flex h-full w-full flex-col justify-center gap-2 text-left"
+            >
+                <div className="flex items-center gap-2">
+                    <span
+                        className="h-2 w-2 shrink-0 rounded-full animate-pulse"
+                        style={{ background: pulse.ambientIntensity > 0.5 ? 'rgb(251,191,36)' : 'rgb(52,211,153)' }}
+                    />
+                    <span className={`text-[11px] font-medium ${statusTone}`}>{statusLabel}</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1 text-[9px] tabular-nums text-white/45">
+                    <span>CPU {pulse.cpu != null ? `${Math.round(pulse.cpu)}%` : '–'}</span>
+                    <span>MÔRA {pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'}</span>
+                </div>
+            </button>
+        );
+    }
+
+    return (
+        <div className="flex h-full flex-col gap-2">
+            <div className="flex items-center gap-2">
+                <span
+                    className="h-2 w-2 shrink-0 rounded-full animate-pulse"
+                    style={{ background: pulse.ambientIntensity > 0.5 ? 'rgb(251,191,36)' : 'rgb(52,211,153)' }}
+                />
+                <div>
+                    <div className={`text-[12px] font-medium ${statusTone}`}>{statusLabel}</div>
+                    <div className="text-[9px] uppercase tracking-[0.16em] text-white/32">Bridge · Core · Nightwatch</div>
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+                <Stat label="CPU" value={pulse.cpu != null ? `${Math.round(pulse.cpu)}%` : '–'} icon={<Cpu size={10} />} />
+                <Stat label="MÔRA Load" value={pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'} icon={<Radio size={10} />} />
+                <Stat label="Analysten" value={pulse.activeAnalysts ?? '–'} icon={<Users size={10} />} />
+                <Stat label="Knoten" value={pulse.bridgeNodes ?? '–'} icon={<Building2 size={10} />} />
+            </div>
+            <div className="mt-auto flex gap-2">
+                <ActionButton icon={<Activity size={13} />} label="Nightwatch" onClick={context.openNightwatch} />
+                <ActionButton icon={<ExternalLink size={13} />} label="Dashboard" onClick={context.openDashboard} />
+            </div>
         </div>
     );
 };
@@ -771,9 +884,14 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         render: ({ context }) => <SignalsWidget context={context} />,
     },
     orgStats: {
-        type: 'orgStats', label: 'Organisation', hint: 'Abteilungen, Dokumente, Ordner', icon: <BarChart2 size={14} />,
+        type: 'orgStats', label: 'Organisation', hint: 'Abteilungen, Dokumente, Bridge-Puls', icon: <BarChart2 size={14} />,
         defaultW: 6, defaultH: 3, minW: 3, minH: 2, surfaces: ['home', 'universe'],
         render: ({ context }) => <OrgStatsWidget context={context} />,
+    },
+    bridgePulse: {
+        type: 'bridgePulse', label: 'Bridge Puls', hint: 'Core, Larry Dashboard & Live-Last', icon: <Radio size={14} />,
+        defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'universe'],
+        render: ({ context }) => <BridgePulseWidget context={context} />,
     },
     quickActions: {
         type: 'quickActions', label: 'Schnellzugriff', hint: 'Finder, MÔRA, Erkunden', icon: <Compass size={14} />,

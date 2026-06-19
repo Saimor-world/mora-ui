@@ -45,6 +45,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { ProfileTab } from '@/apps/settings/ProfileTab';
 import { queueAccountSettingsSync } from '@/lib/userSettings/persistAccountSettings';
 import { useUserSettings } from '@/lib/queries/useUserSettings';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -472,6 +473,7 @@ useEffect(() => {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full overflow-hidden">
                 {/* ── Sidebar ─────────────────────────────────────────── */}
