@@ -5,7 +5,7 @@
 // react-grid-layout handles free drag, resize, collision and compaction; we
 // persist the geometry per surface so a user's desktop arrangement sticks.
 
-export type WidgetSurface = 'home' | 'department';
+export type WidgetSurface = 'home' | 'department' | 'universe';
 
 /** A placed widget. `i` is the react-grid-layout item key (instance id). */
 export interface WidgetInstance {
@@ -46,7 +46,15 @@ export interface WidgetContext {
     openTeam?: () => void;
     openIntegrations?: () => void;
     openNightwatch?: () => void;
+    /** Larry / dash.saimor.world — ops dashboard */
+    openDashboard?: () => void;
+    /** Open a larry.* workspace artifact in the document pane */
+    openLarryNode?: (nodeId: string, title?: string) => void;
     goExplore?: () => void;
+    /** Grid cell size — widgets adapt their internal layout to fit. */
+    gridSize?: { w: number; h: number };
+    /** Compact rendering (universe glance panels, small cells). */
+    compact?: boolean;
 }
 
 export interface WidgetDefinition {

@@ -772,7 +772,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                 </div>
             </motion.div>
 
-            <div className="absolute inset-0 flex items-center justify-center z-10">
+            <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                 {isLoadingSpaces ? (
                     <LoadingState message="Department wird geladen..." />
                 ) : (

@@ -4,61 +4,89 @@ import React, { useEffect, useMemo, useState } from 'react';
 import GridLayout, { WidthProvider, type Layout } from 'react-grid-layout';
 import { Plus, X, Check, Pencil, RotateCcw, GripVertical } from 'lucide-react';
 import { useWidgetStore } from '@/lib/store/widgetStore';
+import { useNavStore } from '@/lib/store/navStore';
 import { WIDGET_REGISTRY, WIDGET_TYPES } from '@/components/widgets/registry';
+import { isWidgetAllowedOnSurface } from '@/lib/widgets/surfaceAllowlist';
 import {
     WIDGET_GRID_COLS,
     WIDGET_ROW_HEIGHT,
     type WidgetContext,
     type WidgetSurface,
 } from '@/lib/widgets/types';
+import { UNIVERSE_ROW_HEIGHT, universeGlanceMins } from '@/lib/widgets/universeGlance';
+import { universeWidgetDefaults } from '@/lib/store/widgetStore';
 
 const Grid = WidthProvider(GridLayout);
 const COLS = WIDGET_GRID_COLS.lg;
 
 /**
- * WidgetGrid — the editable widget desktop for a surface (Home / Department).
+ * WidgetGrid — the editable widget desktop for a surface (Universe / Department).
  *
  * View mode: a static, read-only arrangement. Edit mode ("Anpassen"): widgets
  * become draggable + resizable via react-grid-layout, with an add palette, a
- * per-widget remove, and a reset. Geometry persists per surface (widgetStore).
+ * per-widget remove, and a reset. Geometry persists per user+company on the server.
  */
 export function WidgetGrid({ surface, context }: { surface: WidgetSurface; context: WidgetContext }) {
+    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
+    const departmentId = context.departmentId ?? activeDepartmentId;
+
     const {
-        layouts, editMode, hydrated,
-        hydrate, setEditMode, applyLayout, addWidget, removeWidget, resetSurface,
+        editMode, hydrated,
+        hydrate, setLayoutScope, setEditMode, applyLayout, addWidget, removeWidget, resetSurface, getSurfaceItems,
     } = useWidgetStore();
     const [mounted, setMounted] = useState(false);
     const [paletteOpen, setPaletteOpen] = useState(false);
 
     useEffect(() => {
+        setLayoutScope(activeCompanyId, surface === 'department' ? departmentId : null);
+    }, [activeCompanyId, departmentId, surface, setLayoutScope]);
+
+    useEffect(() => {
         hydrate();
         setMounted(true);
-    }, [hydrate]);
+    }, [hydrate, activeCompanyId]);
 
-    const items = layouts[surface] ?? [];
+    const items = getSurfaceItems(surface, departmentId);
+    const isUniverseGlance = surface === 'universe';
     const rglLayout: Layout[] = useMemo(
         () => items.map((w) => {
             const def = WIDGET_REGISTRY[w.type];
-            return { i: w.i, x: w.x, y: w.y, w: w.w, h: w.h, minW: def?.minW ?? 2, minH: def?.minH ?? 2 };
+            const glanceMins = isUniverseGlance ? universeGlanceMins(w.type) : null;
+            return {
+                i: w.i,
+                x: w.x,
+                y: w.y,
+                w: w.w,
+                h: w.h,
+                minW: glanceMins?.minW ?? def?.minW ?? 2,
+                minH: glanceMins?.minH ?? def?.minH ?? 2,
+            };
         }),
-        [items],
+        [items, isUniverseGlance],
     );
 
-    // react-grid-layout + WidthProvider need the DOM; render nothing until mounted
-    // (also avoids SSR/hydration mismatch with localStorage-driven layouts).
-    if (!mounted || !hydrated) return null;
+    const panelBackground = isUniverseGlance ? 'rgba(8, 11, 24, 0.28)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBorder = isUniverseGlance ? 'border-white/[0.05]' : 'border-white/[0.12]';
 
-    const available = WIDGET_TYPES.filter((t) => WIDGET_REGISTRY[t].surfaces.includes(surface));
+    if (!mounted || !hydrated || surface === 'home') return null;
+
+    const available = WIDGET_TYPES.filter(
+        (t) => WIDGET_REGISTRY[t].surfaces.includes(surface) && isWidgetAllowedOnSurface(t, surface),
+    );
     const btn = 'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] transition-colors';
+    const deptArg = surface === 'department' ? departmentId : undefined;
 
     return (
         <div className="relative">
             {/* Toolbar */}
-            <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="mb-3 flex items-center justify-between gap-3 pointer-events-none">
                 <div className="text-[11px] uppercase tracking-[0.18em] text-white/35">
-                    {editMode ? 'Anordnen — ziehen · skalieren · hinzufügen' : 'Dein Desktop'}
+                    {editMode
+                        ? 'Anordnen — ziehen · skalieren · hinzufügen'
+                        : isUniverseGlance ? 'Glance' : 'Dein Desktop'}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 pointer-events-auto">
                     {editMode && (
                         <>
                             <button
@@ -68,7 +96,7 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                                 <Plus size={12} /> Widget
                             </button>
                             <button
-                                onClick={() => resetSurface(surface)}
+                                onClick={() => resetSurface(surface, deptArg)}
                                 className={`${btn} border-white/12 bg-white/[0.04] text-white/45 hover:bg-white/[0.09] hover:text-white/75`}
                             >
                                 <RotateCcw size={12} /> Zurücksetzen
@@ -88,13 +116,19 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
 
             {/* Add palette */}
             {editMode && paletteOpen && (
-                <div className="mb-3 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-xl">
+                <div className="pointer-events-auto mb-3 flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-black/30 p-3 backdrop-blur-xl">
                     {available.map((t) => {
                         const def = WIDGET_REGISTRY[t];
                         return (
                             <button
                                 key={t}
-                                onClick={() => { addWidget(surface, t, { w: def.defaultW, h: def.defaultH }); setPaletteOpen(false); }}
+                                onClick={() => {
+                                    const geom = isUniverseGlance
+                                        ? universeWidgetDefaults(t)
+                                        : { w: def.defaultW, h: def.defaultH };
+                                    addWidget(surface, t, geom, deptArg);
+                                    setPaletteOpen(false);
+                                }}
                                 className="group flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/[0.09]"
                                 title={def.hint}
                             >
@@ -111,8 +145,8 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                 className="layout"
                 layout={rglLayout}
                 cols={COLS}
-                rowHeight={WIDGET_ROW_HEIGHT}
-                margin={[14, 14]}
+                rowHeight={isUniverseGlance ? UNIVERSE_ROW_HEIGHT : WIDGET_ROW_HEIGHT}
+                margin={isUniverseGlance ? [10, 10] : [14, 14]}
                 containerPadding={[0, 0]}
                 isDraggable={editMode}
                 isResizable={editMode}
@@ -120,42 +154,67 @@ export function WidgetGrid({ surface, context }: { surface: WidgetSurface; conte
                 compactType="vertical"
                 onLayoutChange={(l) => {
                     if (editMode) {
-                        applyLayout(surface, l.map((x) => ({ i: x.i, x: x.x, y: x.y, w: x.w, h: x.h })));
+                        applyLayout(
+                            surface,
+                            l.map((x) => ({ i: x.i, x: x.x, y: x.y, w: x.w, h: x.h })),
+                            deptArg,
+                        );
                     }
                 }}
             >
                 {items.map((w) => {
                     const def = WIDGET_REGISTRY[w.type];
                     if (!def) return <div key={w.i} />;
+                    const widgetContext: WidgetContext = {
+                        ...context,
+                        surface,
+                        gridSize: { w: w.w, h: w.h },
+                        compact: isUniverseGlance || (w.w <= 3 && w.h <= 4),
+                    };
+                    const chromeless = isUniverseGlance && !editMode;
+                    const isClockOrb = chromeless && w.type === 'clock';
                     return (
                         <div
                             key={w.i}
-                            className="flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.1] shadow-[0_12px_40px_rgba(0,0,0,0.4)]"
-                            style={{ backgroundColor: 'rgba(10, 13, 23, 0.62)' }}
+                            className={`pointer-events-auto relative flex h-full flex-col overflow-hidden ${
+                                isClockOrb
+                                    ? 'rounded-full border-0 bg-transparent shadow-none'
+                                    : chromeless
+                                        ? `rounded-xl border ${panelBorder} backdrop-blur-md shadow-[0_8px_28px_rgba(0,0,0,0.28)]`
+                                        : `rounded-2xl border ${panelBorder} backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]`
+                            }`}
+                            style={isClockOrb ? undefined : { backgroundColor: panelBackground }}
                         >
-                            <div
-                                className="pointer-events-none absolute inset-0 opacity-[0.5]"
-                                style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }}
-                            />
-                            <div
-                                className={`relative z-[1] flex items-center justify-between px-3 py-2 ${editMode ? 'widget-drag-handle cursor-grab active:cursor-grabbing' : ''}`}
-                            >
-                                <span className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.16em] text-white/40">
-                                    {editMode && <GripVertical size={12} className="text-white/30" />}
-                                    {def.label}
-                                </span>
-                                {editMode && (
-                                    <button
-                                        onClick={() => removeWidget(surface, w.i)}
-                                        className="rounded-md p-0.5 text-white/35 transition-colors hover:bg-rose-400/15 hover:text-rose-300"
-                                        aria-label={`${def.label} entfernen`}
-                                    >
-                                        <X size={13} />
-                                    </button>
-                                )}
-                            </div>
-                            <div className="relative z-[1] min-h-0 flex-1 overflow-auto px-3 pb-3">
-                                {def.render({ context })}
+                            {!chromeless && (
+                                <>
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), transparent)' }} />
+                                    <div
+                                        className="pointer-events-none absolute inset-0 opacity-[0.5]"
+                                        style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }}
+                                    />
+                                </>
+                            )}
+                            {(editMode || !isUniverseGlance) && (
+                                <div
+                                    className={`relative z-[1] flex items-center justify-between ${chromeless ? 'px-1 py-1' : 'px-3 py-2'} ${editMode ? 'widget-drag-handle cursor-grab active:cursor-grabbing' : ''}`}
+                                >
+                                    <span className={`flex items-center gap-1.5 uppercase tracking-[0.16em] text-white/40 ${chromeless ? 'text-[8px]' : 'text-[10px]'}`}>
+                                        {editMode && <GripVertical size={12} className="text-white/30" />}
+                                        {!chromeless && def.label}
+                                    </span>
+                                    {editMode && (
+                                        <button
+                                            onClick={() => removeWidget(surface, w.i, deptArg)}
+                                            className="rounded-md p-0.5 text-white/35 transition-colors hover:bg-rose-400/15 hover:text-rose-300"
+                                            aria-label={`${def.label} entfernen`}
+                                        >
+                                            <X size={13} />
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                            <div className={`relative z-[1] min-h-0 flex-1 overflow-hidden ${chromeless ? 'p-0' : 'overflow-auto px-2.5 pb-2.5'}`}>
+                                {def.render({ context: widgetContext })}
                             </div>
                         </div>
                     );

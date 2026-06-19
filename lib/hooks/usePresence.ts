@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { realtime } from "@/lib/api/realtimeClient";
+import { useMemo } from "react";
+import { useTeamMembers } from "@/lib/queries/useTeamMembers";
 
 export interface PeerUser {
     sessionId: string;
@@ -10,54 +10,25 @@ export interface PeerUser {
     lastHeartbeat: number;
 }
 
-type PresencePayload = {
-    peers?: PeerUser[];
-    peer?: PeerUser;
-    sessionId?: string;
-};
-
-const upsertPeer = (list: PeerUser[], peer: PeerUser) => {
-    const idx = list.findIndex((p) => p.sessionId === peer.sessionId);
-    if (idx === -1) return [...list, peer];
-    const next = [...list];
-    next[idx] = peer;
-    return next;
-};
-
+/**
+ * Team presence for widgets and department views.
+ * Backed by /v3/team/members (user-level online ids) — not raw WS sessions.
+ */
 export const usePresence = () => {
-    const [peers, setPeers] = useState<PeerUser[]>([]);
+    const { data: members = [] } = useTeamMembers();
 
-    useEffect(() => {
-        // Connection lifecycle is managed by useRealtime (MoraShell).
-        // This hook only subscribes to events on the shared singleton.
-        const handleSnapshot = (data: PresencePayload) => {
-            if (Array.isArray(data?.peers)) {
-                setPeers(data.peers);
-            }
-        };
-
-        const handleUpdate = (data: PresencePayload) => {
-            if (data?.peer) {
-                setPeers((prev) => upsertPeer(prev, data.peer as PeerUser));
-            }
-        };
-
-        const handleRemove = (data: PresencePayload) => {
-            const sessionId = data?.sessionId;
-            if (!sessionId) return;
-            setPeers((prev) => prev.filter((p) => p.sessionId !== sessionId));
-        };
-
-        realtime.on("presence.snapshot", handleSnapshot);
-        realtime.on("presence.update", handleUpdate);
-        realtime.on("presence.remove", handleRemove);
-
-        return () => {
-            realtime.off("presence.snapshot", handleSnapshot);
-            realtime.off("presence.update", handleUpdate);
-            realtime.off("presence.remove", handleRemove);
-        };
-    }, []);
+    const peers = useMemo<PeerUser[]>(
+        () =>
+            members.map((member) => ({
+                sessionId: member.id,
+                name: member.name,
+                email: member.email,
+                role: member.role,
+                status: member.status,
+                lastHeartbeat: Date.now(),
+            })),
+        [members],
+    );
 
     return { peers };
 };

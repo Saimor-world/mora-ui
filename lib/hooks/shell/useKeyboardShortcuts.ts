@@ -62,6 +62,12 @@ export function useKeyboardShortcuts({
             const meta = e.metaKey || e.ctrlKey;
             const key = e.key.toLowerCase();
 
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                onCloseTopPane?.();
+                return;
+            }
+
             if (meta && key === 'k') {
                 e.preventDefault();
                 onToggleSpotlight();
@@ -109,12 +115,6 @@ export function useKeyboardShortcuts({
             if (meta && key === 'l') {
                 e.preventDefault();
                 onOpenLarry?.();
-                return;
-            }
-
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                onCloseTopPane?.();
                 return;
             }
 

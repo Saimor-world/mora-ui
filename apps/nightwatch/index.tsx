@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, ShieldCheck, ArrowRight, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RefreshCw, Shield, ShieldCheck, Clock } from 'lucide-react';
+import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { TONES, priorityFromSeverityLabel, toneForPriority } from '@/lib/ui/status';
 import {
     fetchNightwatchIncidents,
     fetchNightwatchMonitors,
@@ -12,127 +12,378 @@ import {
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 
+// ── helpers ──────────────────────────────────────────────────────────────────
+
+function relativeTime(iso?: string): string {
+    if (!iso) return '';
+    const diff = Date.now() - new Date(iso).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'gerade eben';
+    if (mins < 60) return `vor ${mins} Min.`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `vor ${hrs} Std.`;
+    return `vor ${Math.floor(hrs / 24)} T.`;
+}
+
+function absoluteTime(iso?: string): string {
+    if (!iso) return '';
+    return new Date(iso).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function severityConfig(sev?: string) {
+    if (sev === 'critical') return {
+        border: 'border-red-400/22',
+        bg: 'bg-red-500/[0.07]',
+        dot: 'bg-red-400',
+        text: 'text-red-300/90',
+        label: 'Kritisch',
+    };
+    if (sev === 'warning') return {
+        border: 'border-amber-400/22',
+        bg: 'bg-amber-500/[0.07]',
+        dot: 'bg-amber-400',
+        text: 'text-amber-300/90',
+        label: 'Warnung',
+    };
+    return {
+        border: 'border-sky-400/18',
+        bg: 'bg-sky-500/[0.05]',
+        dot: 'bg-sky-400',
+        text: 'text-sky-300/85',
+        label: 'Info',
+    };
+}
+
+// ── sub-components ────────────────────────────────────────────────────────────
+
+function PulseDot({ color, animate = true, size = 'sm' }: { color: string; animate?: boolean; size?: 'xs' | 'sm' }) {
+    const dim = size === 'xs' ? 'h-1.5 w-1.5' : 'h-2 w-2';
+    return (
+        <span className={`relative inline-flex ${dim} shrink-0`}>
+            {animate && (
+                <span className={`absolute inline-flex h-full w-full animate-ping rounded-full ${color} opacity-50`} />
+            )}
+            <span className={`relative inline-flex ${dim} rounded-full ${color}`} />
+        </span>
+    );
+}
+
+function MonitorChip({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDown: boolean }) {
+    const label = monitor.name || monitor.host || 'Monitor';
+    const hostHint = monitor.name && monitor.host && monitor.name !== monitor.host ? monitor.host : null;
+    return (
+        <div
+            className={`inline-flex max-w-full items-center gap-2 rounded-full border px-3 py-1.5 transition-colors ${
+                isDown
+                    ? 'border-red-400/25 bg-red-500/[0.08]'
+                    : 'border-white/[0.1] bg-white/[0.04]'
+            }`}
+            title={hostHint || label}
+        >
+            <PulseDot color={isDown ? 'bg-red-400' : 'bg-emerald-400'} animate={isDown} size="xs" />
+            <span className="truncate text-[11px] font-medium text-white/78">{label}</span>
+            <span className={`shrink-0 text-[9px] uppercase tracking-[0.14em] ${isDown ? 'text-red-300/75' : 'text-emerald-300/65'}`}>
+                {isDown ? 'Down' : 'Online'}
+            </span>
+        </div>
+    );
+}
+
+function IncidentRow({ incident, onOpen }: { incident: NightwatchIncidentItem; onOpen: () => void }) {
+    const cfg = severityConfig(incident.severity);
+    return (
+        <article className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
+            <div className="flex items-start gap-3">
+                <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
+                <div className="min-w-0 flex-1">
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <span className={`text-[9px] uppercase tracking-[0.16em] font-semibold ${cfg.text}`}>
+                            {cfg.label}
+                        </span>
+                        {incident.host && (
+                            <span className="truncate text-[10px] font-mono text-white/38">{incident.host}</span>
+                        )}
+                    </div>
+                    <h3 className="text-[13px] font-medium leading-snug text-white/88">
+                        {incident.title || `Vorfall: ${incident.host || 'Infrastruktur'}`}
+                    </h3>
+                    {incident.summary && (
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/45">
+                            {incident.summary}
+                        </p>
+                    )}
+                    {incident.detected_at && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-white/32">
+                            <Clock size={9} />
+                            <span>{absoluteTime(incident.detected_at)}</span>
+                            <span>·</span>
+                            <span>{relativeTime(incident.detected_at)}</span>
+                        </div>
+                    )}
+                </div>
+                <button
+                    type="button"
+                    onClick={onOpen}
+                    aria-label="Vorfall öffnen"
+                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/82"
+                >
+                    Öffnen
+                </button>
+            </div>
+        </article>
+    );
+}
+
+// ── main ──────────────────────────────────────────────────────────────────────
+
 export default function NightwatchApp({ paneId }: AppProps) {
-    const openPane = usePaneStore((s) => s.openPane);
-    const removePane = usePaneStore((s) => s.removePane);
+    const {
+        removePane,
+        openPane,
+        getPane,
+        minimizePane,
+        focusPane,
+        updatePanePosition,
+        updatePaneSize,
+    } = usePaneStore();
+    const isActive = usePaneStore((s) => s.activePaneId === paneId);
+    const pane = getPane(paneId);
+
     const [incidents, setIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [monitors, setMonitors] = useState<NightwatchMonitorItem[]>([]);
     const [loading, setLoading] = useState(true);
-
-    const close = useCallback(() => removePane(paneId), [removePane, paneId]);
-
-    useEffect(() => {
-        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') close(); };
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [close]);
+    const [refreshing, setRefreshing] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
+    const mountedRef = useRef(true);
 
     useEffect(() => {
-        let cancelled = false;
-        Promise.all([fetchNightwatchIncidents(), fetchNightwatchMonitors()])
-            .then(([inc, mon]) => { if (!cancelled) { setIncidents(inc); setMonitors(mon); } })
-            .catch(() => { if (!cancelled) { setIncidents([]); setMonitors([]); } })
-            .finally(() => { if (!cancelled) setLoading(false); });
-        return () => { cancelled = true; };
+        mountedRef.current = true;
+        return () => { mountedRef.current = false; };
     }, []);
+
+    const load = useCallback(async (isRefresh = false) => {
+        if (isRefresh) setRefreshing(true);
+        try {
+            const [inc, mon] = await Promise.all([fetchNightwatchIncidents(), fetchNightwatchMonitors()]);
+            if (!mountedRef.current) return;
+            setIncidents(inc);
+            setMonitors(mon);
+            setLastRefresh(new Date());
+        } catch {
+            if (!mountedRef.current) return;
+            setIncidents([]);
+            setMonitors([]);
+        } finally {
+            if (mountedRef.current) {
+                setLoading(false);
+                setRefreshing(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => { load(); }, [load]);
+
+    useEffect(() => {
+        const id = setInterval(() => load(true), 60_000);
+        return () => clearInterval(id);
+    }, [load]);
 
     const downHosts = useMemo(
         () => new Set(incidents.map((i) => i.host).filter(Boolean) as string[]),
         [incidents],
     );
 
+    const sortedMonitors = useMemo(() => {
+        const down = monitors.filter((m) => m.host && downHosts.has(m.host));
+        const up = monitors.filter((m) => !m.host || !downHosts.has(m.host));
+        return [...down, ...up];
+    }, [monitors, downHosts]);
+
+    const criticalCount = incidents.filter((i) => i.severity === 'critical').length;
+    const warningCount = incidents.filter((i) => i.severity === 'warning').length;
+
+    const systemStatus: 'ok' | 'warning' | 'critical' =
+        criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'ok';
+
+    const statusLine = loading
+        ? 'Verbinde…'
+        : systemStatus === 'ok'
+            ? 'Alle Systeme normal'
+            : systemStatus === 'critical'
+                ? `${criticalCount} kritischer${criticalCount !== 1 ? 'e' : ''} Vorfall${criticalCount !== 1 ? 'e' : ''}`
+                : `${warningCount} Warnung${warningCount !== 1 ? 'en' : ''}`;
+
+    const statusTone =
+        loading ? 'text-white/35'
+            : systemStatus === 'ok' ? 'text-emerald-300/85'
+                : systemStatus === 'critical' ? 'text-red-300/85'
+                    : 'text-amber-300/85';
+
     const openIncident = (id: string, title?: string) =>
-        openPane({
-            id: `document-${id}`,
-            type: 'document',
-            title: title || 'Vorfall',
-            size: { width: 900, height: 700 },
-            data: { nodeId: id },
-        });
+        openPane({ id: `document-${id}`, type: 'document', title: title || 'Vorfall', size: { width: 900, height: 700 }, data: { nodeId: id } });
+
+    const sortedIncidents = useMemo(() => {
+        const order: Record<string, number> = { critical: 0, warning: 1, info: 2 };
+        return [...incidents].sort((a, b) => (order[a.severity || 'info'] ?? 2) - (order[b.severity || 'info'] ?? 2));
+    }, [incidents]);
+
+    if (!pane) return null;
 
     return (
-        <div data-testid="nightwatch-app" className="relative h-full w-full bg-gradient-to-b from-[#0c1116] to-[#080a0d]">
-            <button
-                type="button"
-                onClick={close}
-                aria-label="Nightwatch schließen"
-                className="absolute right-4 top-4 z-20 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.07] text-white/55 backdrop-blur-sm transition-colors hover:bg-white/[0.14] hover:text-white/90"
+        <GlassPanel
+            title={(
+                <span className="flex items-center gap-2">
+                    <Shield size={13} className="text-cyan-400/70" />
+                    <span>Nightwatch</span>
+                </span>
+            )}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+            onResize={(w, h) => updatePaneSize(paneId, w, h)}
+            onClose={() => removePane(paneId)}
+            onMinimize={() => minimizePane(paneId)}
+            onFocus={() => focusPane(paneId)}
+            isActive={isActive}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+            paneId={paneId}
+            dimBackground
+            dimOpacity={0.28}
+            blurIntensity={24}
+            opacity={0.38}
+        >
+            <div
+                data-testid="nightwatch-app"
+                className="relative flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.15) transparent' }}
             >
-                <X size={15} />
-            </button>
-            <div className="flex h-full w-full flex-col gap-5 overflow-y-auto p-5 pt-14">
-            <header>
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-cyan-300/14 bg-cyan-400/[0.07] px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-cyan-50/60">
-                    <Activity size={12} />
-                    Nightwatch
+                {/* Ambient status glow — no grid, universe shows through GlassPanel */}
+                <div
+                    className="pointer-events-none absolute -left-8 -right-8 -top-6 h-28 opacity-80 transition-all duration-700"
+                    style={{
+                        background: systemStatus === 'critical'
+                            ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(239,68,68,0.14) 0%, transparent 72%)'
+                            : systemStatus === 'warning'
+                                ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 72%)'
+                                : 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 72%)',
+                    }}
+                />
+
+                {/* Compact status row */}
+                <div className="relative flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                        {loading ? (
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-white/25" />
+                        ) : (
+                            <PulseDot
+                                color={systemStatus === 'ok' ? 'bg-emerald-400' : systemStatus === 'critical' ? 'bg-red-400' : 'bg-amber-400'}
+                                animate={systemStatus !== 'ok'}
+                            />
+                        )}
+                        <div className="min-w-0">
+                            <p className={`text-[11px] font-semibold uppercase tracking-[0.18em] ${statusTone}`}>
+                                {statusLine}
+                            </p>
+                            <p className="mt-0.5 text-[12px] text-white/52">
+                                MÔRA beobachtet Infrastruktur und offene Vorfälle.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                        {lastRefresh && (
+                            <span className="text-[10px] tabular-nums text-white/28">
+                                {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => load(true)}
+                            disabled={refreshing}
+                            className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-40"
+                            aria-label="Aktualisieren"
+                        >
+                            <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
                 </div>
-                <h1 className="text-2xl font-light text-white">MÔRA beobachtet deine Infrastruktur</h1>
-                <p className="mt-1 text-sm text-white/45">Was läuft, was braucht Aufmerksamkeit — nur Lesen.</p>
-            </header>
 
-            {/* Monitors */}
-            <section>
-                <h2 className="mb-2 text-sm font-medium text-white/82">Überwacht</h2>
-                {monitors.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                        {monitors.map((m) => {
-                            const down = m.host ? downHosts.has(m.host) : false;
-                            const tone = down ? TONES.critical : TONES.success;
-                            return (
-                                <div key={m.id} className="flex items-center gap-2 rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2">
-                                    <span className={`h-2 w-2 shrink-0 rounded-full ${tone.dot}`} />
-                                    <span className="min-w-0 truncate text-xs text-white/78">{m.name || m.host}</span>
-                                </div>
-                            );
-                        })}
+                {/* Monitor chips — compact, no sprawling grid */}
+                <section className="relative space-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Monitore</span>
+                        {!loading && monitors.length > 0 && (
+                            <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] tabular-nums text-white/42">
+                                {monitors.length}
+                            </span>
+                        )}
                     </div>
-                ) : (
-                    <p className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-sm text-white/40">
-                        {loading ? 'Lade Monitore…' : 'Noch keine Monitore.'}
-                    </p>
-                )}
-            </section>
+                    {loading ? (
+                        <div className="flex flex-wrap gap-2">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
+                            ))}
+                        </div>
+                    ) : monitors.length === 0 ? (
+                        <p className="text-[11px] text-white/38">Noch keine Monitore eingerichtet.</p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {sortedMonitors.map((m) => (
+                                <MonitorChip
+                                    key={m.id}
+                                    monitor={m}
+                                    isDown={!!m.host && downHosts.has(m.host)}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
 
-            {/* Open incidents */}
-            <section>
-                <h2 className="mb-2 text-sm font-medium text-white/82">Offene Vorfälle</h2>
-                {incidents.length > 0 ? (
-                    <div className="grid gap-2">
-                        {incidents.map((i) => {
-                            const tone = TONES[toneForPriority(priorityFromSeverityLabel(i.severity))];
-                            const Icon = tone.icon;
-                            return (
-                                <article key={i.id} className={`rounded-2xl border ${tone.border} ${tone.bg} p-3`}>
-                                    <div className="flex items-start gap-2.5">
-                                        <Icon size={15} className={`mt-0.5 shrink-0 ${tone.text}`} />
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="text-sm font-medium text-white/88">{i.title || `Vorfall: ${i.host || 'Infrastruktur'}`}</h3>
-                                            {i.summary && <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-white/52">{i.summary}</p>}
-                                            <div className="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.16em] text-white/35">
-                                                {i.host && <span>{i.host}</span>}
-                                                {i.detected_at && <span>{new Date(i.detected_at).toLocaleString('de-DE')}</span>}
-                                            </div>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => openIncident(i.id, i.title)}
-                                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-white/10 bg-white/[0.05] px-2.5 py-1.5 text-[11px] text-white/65 transition-colors hover:bg-white/[0.1]"
-                                        >
-                                            Vorfall öffnen <ArrowRight size={12} />
-                                        </button>
-                                    </div>
-                                </article>
-                            );
-                        })}
+                {/* Incidents — tight list, calm empty state */}
+                <section className="relative space-y-2 pb-1">
+                    <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Offene Vorfälle</span>
+                        {!loading && incidents.length > 0 && (
+                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold tabular-nums ${
+                                criticalCount > 0 ? 'bg-red-500/18 text-red-300/90' : 'bg-amber-500/14 text-amber-300/85'
+                            }`}>
+                                {incidents.length}
+                            </span>
+                        )}
                     </div>
-                ) : (
-                    <div className="flex items-center gap-2 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.05] px-3 py-3 text-sm text-emerald-100/65">
-                        <ShieldCheck size={15} className="text-emerald-300/70" />
-                        {loading ? 'Lade Vorfälle…' : 'Keine offenen Vorfälle — alles ruhig.'}
-                    </div>
-                )}
-            </section>
+
+                    {loading ? (
+                        <div className="space-y-2">
+                            {[...Array(2)].map((_, i) => (
+                                <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
+                            ))}
+                        </div>
+                    ) : incidents.length === 0 ? (
+                        <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
+                            <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />
+                            <div>
+                                <p className="text-[12px] font-medium text-emerald-100/78">Keine offenen Vorfälle</p>
+                                <p className="mt-0.5 text-[10px] text-emerald-200/42">Alles ruhig — Überwachung läuft weiter.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {sortedIncidents.map((i) => (
+                                <IncidentRow
+                                    key={i.id}
+                                    incident={i}
+                                    onOpen={() => openIncident(i.id, i.title)}
+                                />
+                            ))}
+                        </div>
+                    )}
+                </section>
             </div>
-        </div>
+        </GlassPanel>
     );
 }

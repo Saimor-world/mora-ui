@@ -8,10 +8,14 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { useSearchQuery } from './hooks/useSearchQuery';
 
 export default function SearchApp({ paneId, initialData }: AppProps) {
-  const { removePane, openPane } = usePaneStore();
+  const { removePane, openPane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+  const isActive = usePaneStore((s) => s.activePaneId === paneId);
+  const pane = getPane(paneId);
   const activeCompanyId = useNavStore((s) => s.activeCompanyId);
   const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
   const navigateToSpace = useNavStore((s) => s.navigateToSpace);
@@ -57,7 +61,30 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
     }
   };
 
+  if (!pane) return null;
+
   return (
+    <GlassPanel
+      title="Suche"
+      paneId={paneId}
+      width={pane.size.width}
+      height={pane.size.height}
+      initialX={pane.position.x}
+      initialY={pane.position.y}
+      padding={0}
+      onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+      onResize={(w, h) => updatePaneSize(paneId, w, h)}
+      onClose={() => removePane(paneId)}
+      onMinimize={() => minimizePane(paneId)}
+      onFocus={() => focusPane(paneId)}
+      isActive={isActive}
+      zIndex={pane.zIndex}
+      showCloseButton
+      showMinimizeButton
+      draggable
+      resizable
+      {...GLASS_SHEET_PRESENTATION}
+    >
     <div className="h-full flex flex-col">
       {/* Search Input */}
       <div className="p-4 border-b border-white/10">
@@ -174,5 +201,6 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
         </div>
       </div>
     </div>
+    </GlassPanel>
   );
 }

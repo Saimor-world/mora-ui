@@ -337,9 +337,23 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     // Handle keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && onClose && effectiveIsActive) {
-                onClose();
-                return;
+            if (e.key === 'Escape' && onClose) {
+                const { panes, activePaneId } = usePaneStore.getState();
+                const visiblePanes = panes.filter((pane) => !pane.minimized);
+                const isFrontmost = paneId
+                    ? (activePaneId === paneId || (
+                        visiblePanes.length > 0 &&
+                        visiblePanes.reduce((top, pane) => (
+                            !top || pane.zIndex > top.zIndex ? pane : top
+                        ), visiblePanes[0]).id === paneId
+                    ))
+                    : effectiveIsActive;
+
+                if (isFrontmost) {
+                    e.preventDefault();
+                    onClose();
+                    return;
+                }
             }
             // Native-style maximize toggle for active pane
             if (effectiveIsActive && (e.key === 'F11' || ((e.ctrlKey || e.metaKey) && e.key === 'ArrowUp'))) {
@@ -352,7 +366,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [allowMaximize, effectiveIsActive, onClose, toggleMaximize]);
+    }, [allowMaximize, effectiveIsActive, onClose, paneId, toggleMaximize]);
 
     // Border radius mapping
     const radiusMap = {

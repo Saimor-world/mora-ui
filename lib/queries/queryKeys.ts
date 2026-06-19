@@ -41,6 +41,15 @@ export const STALE_TIMES = {
 
   // Radar notifications — short stale; WebSocket invalidates immediately on push.
   radar: 30 * 1000, // 30 seconds
+
+  // Larry workspace artifacts — dashboard ingest can arrive any time.
+  larryArtifacts: 60 * 1000, // 1 minute
+
+  // Team roster + online status — WebSocket invalidates between polls.
+  teamMembers: 30 * 1000, // 30 seconds
+
+  // Nightwatch glance widgets — keep cached across surface transitions.
+  nightwatchIncidents: 60 * 1000, // 1 minute
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -72,9 +81,21 @@ export const queryKeys = {
     companyId ? ['tree', companyId] : ['tree'],
 
   userProfile: () => ['userProfile'] as const,
+  userSettings: () => ['userSettings'] as const,
+  personalHomeNote: () => ['personalHomeNote'] as const,
 
   perceptionRoot: () => ['perception'] as const,
   perception: (key: string) => ['perception', key] as const,
 
   radar: () => ['radar'] as const,
+
+  larryArtifacts: (companyId?: string | null, limit?: number) =>
+    limit != null
+      ? (['larryArtifacts', companyId, limit] as const)
+      : (['larryArtifacts', companyId] as const),
+
+  teamMembers: () => ['teamMembers'] as const,
+
+  nightwatchIncidents: (includeResolved = true) =>
+    ['nightwatchIncidents', includeResolved] as const,
 };

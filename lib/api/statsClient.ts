@@ -18,6 +18,24 @@ export interface SystemStats {
         active_analysts: number;
         cognition_rate: string;
     };
+    /** Bridge / knowledge graph counts (same truth as MCP get_stats) */
+    bridge?: {
+        departments: number;
+        spaces: number;
+        nodes: number;
+        larry_nodes?: number;
+    };
+    /** Nightwatch graph nodes — open incident pressure */
+    nightwatch?: {
+        open_incidents: number;
+        critical: number;
+        monitors: number;
+    };
+    /** Larry dashboard deep links */
+    dashboard?: {
+        url: string;
+        larry_url: string;
+    };
 }
 
 export async function fetchSystemStats(): Promise<SystemStats | null> {

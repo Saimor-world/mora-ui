@@ -72,6 +72,7 @@ import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -1818,6 +1819,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                 showMinimizeButton
                 draggable
                 resizable
+                {...GLASS_SHEET_PRESENTATION}
             >
                 {/* Hidden file input for upload buttons */}
                 <input
@@ -2198,7 +2200,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     </div>
 
                     {/* Content Container with Animation */}
-                    <div className="relative flex-1 overflow-y-auto bg-[radial-gradient(circle_at_16%_0%,rgba(16,185,129,0.2),transparent_30%),radial-gradient(circle_at_92%_12%,rgba(34,211,238,0.12),transparent_28%),linear-gradient(180deg,rgba(1,13,11,0.82),rgba(1,7,7,0.95))] px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
+                    <div className="relative flex-1 overflow-y-auto bg-transparent px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
                         <FinderInitiativeLane
                             initiatives={folderInitiatives}
                             onOpenInUniverse={handleOpenInUniverse}

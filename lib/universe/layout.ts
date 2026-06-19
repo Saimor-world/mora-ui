@@ -4,16 +4,17 @@
  * All functions are deterministic and side-effect-free.
  */
 
+/** Percentage bounds for planet placement — tuned for 1920×1080 full viewport orbit. */
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 25,
-    maxX: 76,
-    minY: 24,
-    maxY: 61,
+    minX: 12,
+    maxX: 88,
+    minY: 12,
+    maxY: 78,
 };
 
 export const UNIVERSE_CORE_POINT = {
     x: 50,
-    y: 44,
+    y: 46,
 };
 
 export const clampUniverseCoordinate = (value: number, min: number, max: number) =>
@@ -137,8 +138,8 @@ export const buildOrganicUniverseLayout = (
         const vitality = Math.min(1, signal / maxSignal);
         const radialJitter = (((seed >>> 12) % 100) / 100) * 0.08;
         const radiusBias = 0.7 + (1 - vitality) * 0.18 + radialJitter;
-        const rx = 17 + radiusBias * 21;
-        const ry = 10 + radiusBias * 14;
+        const rx = 26 + radiusBias * 30;
+        const ry = 16 + radiusBias * 22;
 
         return {
             ...dept,

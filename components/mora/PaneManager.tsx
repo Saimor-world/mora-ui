@@ -13,10 +13,11 @@ import { MoraHubPane } from '@/components/panes/MoraHubPane';
 import { BrowserPane } from '@/components/panes/BrowserPane';
 import { WallPane } from '@/components/panes/WallPane';
 
-// Full-bleed apps: portal to document.body at pane.zIndex — same layer as
-// GlassPanel portals — so they're never buried by the PaneManager stacking context.
+// Full-bleed apps: portal to document.body at z-850 so they render above the Dock
+// (z-740) but below MoraShell overlays (z-928+). These apps fill the viewport
+// entirely and manage their own close button.
 const FULLBLEED_APPS: Partial<Record<PaneConfig['type'], string>> = {
-    nightwatch: 'nightwatch',
+    // nightwatch moved to GlassPanel sheet — universe stays visible behind
 };
 
 const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane, appId }) => {
@@ -27,11 +28,11 @@ const FullBleedWrapper: React.FC<{ pane: PaneConfig; appId: string }> = ({ pane,
     return createPortal(
         <motion.div
             className="fixed inset-0"
-            style={{ zIndex: pane.zIndex }}
+            style={{ zIndex: 850 }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            transition={{ duration: 0.1 }}
         >
             <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />
         </motion.div>,
@@ -98,6 +99,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="action-center" paneId={pane.id} initialData={pane.data} />;
         case 'work-session':
             return <AppLoader appId="work-session" paneId={pane.id} initialData={pane.data} />;
+        case 'nightwatch':
+            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
 
         // ── No apps/ module yet — keep legacy pane ───────────────────────────
         case 'company-detail':
@@ -113,7 +116,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         case 'browser':
             return <BrowserPane id={pane.id} />;
         case 'wall':
-            return <WallPane />;
+            return <WallPane id={pane.id} />;
 
         default:
             return null;

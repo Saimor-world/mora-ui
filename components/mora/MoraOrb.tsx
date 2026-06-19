@@ -19,15 +19,17 @@ interface MoraOrbProps {
 }
 
 /**
- * V10 "RESONATING" MORA ORB
- * 
- * Now breathes in sync with the ForestLightCanopy.
- * Enhanced Steam Deck x Organic aesthetics.
+ * THE ORB (V11) — unified Glas + Plasma-Herz
+ *
+ * The single canonical orb. One luminous body: a liquid-morphing glass hub
+ * breathing in sync with its PlasmaOrb heart, both driven by one state→colour
+ * palette. Replaces the old 3D/WebGL LiquidOrb (removed) — the liquid feel now
+ * lives in the 2D hub morph, so no WebGL cost and no preview crash.
  */
 const SIZE_CLASSES: Record<NonNullable<MoraOrbProps['size']>, { wrapper: string; hub: string; plasma: number }> = {
-    sm: { wrapper: 'w-[80px] h-[80px]',  hub: 'w-16 h-16 p-1.5', plasma: 52 },
-    md: { wrapper: 'w-[140px] h-[140px]', hub: 'w-28 h-28 p-2',   plasma: 92 },
-    lg: { wrapper: 'w-[220px] h-[220px]', hub: 'w-44 h-44 p-3',   plasma: 148 },
+    sm: { wrapper: 'w-[80px] h-[80px]',  hub: 'w-16 h-16', plasma: 66 },
+    md: { wrapper: 'w-[140px] h-[140px]', hub: 'w-28 h-28', plasma: 116 },
+    lg: { wrapper: 'w-[220px] h-[220px]', hub: 'w-44 h-44', plasma: 182 },
 };
 
 export function MoraOrb({
@@ -54,7 +56,7 @@ export function MoraOrb({
     const getStateParams = () => {
         // Use custom accentColor if provided (e.g. from company branding)
         // while maintaining the characteristic glow for specific states.
-        const baseColor = accentColor || '#7C3AED';
+        const baseColor = accentColor || '#10B981';
 
         switch (state) {
             case 'alert':
@@ -66,7 +68,7 @@ export function MoraOrb({
             case 'thinking':
                 return { color: '#3B82F6', glowIntensity: 45, pulse: 2.5 };
             case 'focus':
-                return { color: accentColor || '#7C3AED', glowIntensity: 40, pulse: 1.5 };
+                return { color: accentColor || '#10B981', glowIntensity: 40, pulse: 1.5 };
             case 'watch':
                 return { color: accentColor || '#06B6D4', glowIntensity: 35, pulse: 2.5 };
             case 'demo':
@@ -91,31 +93,44 @@ export function MoraOrb({
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
-            {/* V10 CORONA RESONANCE */}
-            <div
+            {/* CORONA RESONANCE — breathes in sync with the hub morph (one body) */}
+            <motion.div
                 className="absolute inset-[-60%] rounded-full mix-blend-screen pointer-events-none"
                 style={{
                     background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
                     filter: 'blur(60px)',
-                    opacity: isHovered ? 0.3 : 0.18,
-                    transform: `scale(${isHovered ? 1.15 : 1})`,
-                    transition: 'opacity 180ms ease, transform 180ms ease',
                 }}
+                animate={isHovered
+                    ? { opacity: 0.3, scale: 1.15 }
+                    : { opacity: [0.14, 0.22, 0.14], scale: [1, 1.05, 1] }}
+                transition={isHovered
+                    ? { duration: 0.18, ease: 'easeOut' }
+                    : { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' }}
             />
 
             {/* V10 STEAM DECK GLASS BORDER - THE HUB */}
                 <motion.div
-                    className={`relative ${sz.hub} flex items-center justify-center rounded-full border border-white/10 backdrop-blur-[40px] cursor-pointer`}
+                    className={`relative ${sz.hub} flex items-center justify-center overflow-hidden cursor-pointer`}
                 style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(0,20,15,0.8) 100%)',
-                        boxShadow: `0 20px 60px rgba(0,0,0,0.8), 0 0 50px ${color}60, inset 0 0 30px ${color}30`,
+                        background: `radial-gradient(circle at 50% 45%, ${color}1f 0%, rgba(2,10,8,0.45) 72%, rgba(1,6,5,0.65) 100%)`,
+                        boxShadow: `0 14px 44px rgba(0,0,0,0.5), 0 0 64px ${color}55, inset 0 0 0 1.5px ${color}66, inset 0 0 28px ${color}33`,
                 }}
-                animate={{ borderRadius: '48% 52% 50% 50% / 52% 48% 50% 50%' }}
+                animate={{
+                    borderRadius: [
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                        '53% 47% 52% 48% / 47% 53% 49% 51%',
+                        '47% 53% 48% 52% / 52% 48% 53% 47%',
+                        '50% 50% 53% 47% / 48% 52% 47% 53%',
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                    ],
+                }}
+                transition={{ borderRadius: { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' } }}
                 whileHover={{ scale: 1.1, boxShadow: `0 20px 80px rgba(0,0,0,0.9), 0 0 70px ${color}90, inset 0 0 40px ${color}40` }}
                 whileTap={{ scale: 0.95 }}
             >
-                {/* PLASMA CONTENT - MORA'S HEART */}
-                <div className="absolute inset-2 rounded-full overflow-hidden pointer-events-none opacity-90 saturate-[1.2]">
+                {/* PLASMA CONTENT — MORA'S HEART. Fills + centred; the hub's
+                    overflow-hidden + morphing borderRadius clip it into the liquid blob. */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-95 saturate-[1.15]">
                     <PlasmaOrb
                         color={color}
                         state={state as any}
@@ -164,8 +179,22 @@ export function MoraOrb({
                     </motion.div>
                 )}
 
-                {/* HIGHLIGHT REFLECTION */}
-                <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.2)_0%,transparent_50%)] pointer-events-none" />
+                {/* GLASS SHEEN — crisp top-left glint (the "Glas" in Glas + Plasma-Herz) */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'radial-gradient(52% 42% at 36% 30%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 20%, transparent 42%)',
+                        mixBlendMode: 'screen',
+                    }}
+                />
+                {/* DEPTH — soft inner shadow lower-right gives the body sphere volume */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'radial-gradient(85% 85% at 70% 76%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.12) 38%, transparent 60%)',
+                        mixBlendMode: 'multiply',
+                    }}
+                />
             </motion.div>
 
             {/* RESONANCE STATE RINGS */}

@@ -5,6 +5,45 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LucideIcon, Folder, Activity, Database } from 'lucide-react';
 import { getDeptStyle as _getDeptStyle } from '@/lib/utils/deptStyle';
 import { useNavStore } from '@/lib/store/navStore';
+import {
+    PLANET_HOVER_ENTER_DWELL_MS,
+    PLANET_HOVER_LEAVE_DWELL_MS,
+} from '@/lib/universe/hoverTiming';
+
+const IOS_SPRING = { type: 'spring' as const, stiffness: 380, damping: 28, mass: 0.82 };
+
+interface OrbitalStatChip {
+    text: string;
+    orbitRadius: number;
+    startAngle: number;
+    duration: number;
+    glow: string;
+}
+
+function buildOrbitalStats(
+    health: number,
+    activity: number,
+    spaceCount: number,
+    glow: string,
+): OrbitalStatChip[] {
+    const chips: OrbitalStatChip[] = [];
+    if (health > 0) {
+        chips.push({ text: `${health}%`, orbitRadius: 1.05, startAngle: -40, duration: 14, glow });
+    }
+    if (activity > 0) {
+        chips.push({ text: `${activity} Docs`, orbitRadius: 1.22, startAngle: 95, duration: 18, glow });
+    }
+    if (spaceCount > 0) {
+        chips.push({
+            text: spaceCount === 1 ? '1 Bereich' : `${spaceCount} Bereiche`,
+            orbitRadius: 1.38,
+            startAngle: 210,
+            duration: 22,
+            glow,
+        });
+    }
+    return chips;
+}
 
 interface PlanetProps {
     department: {
@@ -27,7 +66,10 @@ interface PlanetProps {
     capacity?: number | null; // V10: Knowledge Capacity / Storage Use
     alertLevel?: 'ok' | 'warning' | 'critical';
     showLabel?: boolean;
+    ambientLabel?: boolean;
     labelSide?: 'left' | 'right';
+    hoverEnterDwellMs?: number;
+    hoverLeaveDwellMs?: number;
 }
 
 export const Planet: React.FC<PlanetProps> = ({
@@ -46,29 +88,57 @@ export const Planet: React.FC<PlanetProps> = ({
     alertLevel = 'ok',
     iconOverride,
     showLabel = true,
-    labelSide = 'right'
+    ambientLabel = false,
+    labelSide = 'right',
+    hoverEnterDwellMs = PLANET_HOVER_ENTER_DWELL_MS,
+    hoverLeaveDwellMs = PLANET_HOVER_LEAVE_DWELL_MS,
 }) => {
     const isStandardMode = useNavStore((s) => s.isStandardMode);
+    const [isPointerOver, setIsPointerOver] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
     const planetRef = useRef<HTMLButtonElement>(null);
-    // Dwell timer: prevent blink when cursor briefly leaves the planet
+    const enterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const isHoverEngaged = isHovered || isActive;
+
+    const clearEnterTimer = useCallback(() => {
+        if (enterTimerRef.current) {
+            clearTimeout(enterTimerRef.current);
+            enterTimerRef.current = null;
+        }
+    }, []);
+
+    const clearLeaveTimer = useCallback(() => {
+        if (leaveTimerRef.current) {
+            clearTimeout(leaveTimerRef.current);
+            leaveTimerRef.current = null;
+        }
+    }, []);
 
     const handleMouseEnter = useCallback(() => {
-        if (leaveTimerRef.current) { clearTimeout(leaveTimerRef.current); leaveTimerRef.current = null; }
-        setIsHovered(true);
-        onHover?.(true);
-    }, [onHover]);
+        clearLeaveTimer();
+        setIsPointerOver(true);
+        clearEnterTimer();
+        enterTimerRef.current = setTimeout(() => {
+            setIsHovered(true);
+            onHover?.(true);
+        }, hoverEnterDwellMs);
+    }, [clearEnterTimer, clearLeaveTimer, hoverEnterDwellMs, onHover]);
 
     const handleMouseLeave = useCallback(() => {
+        clearEnterTimer();
+        setIsPointerOver(false);
+        clearLeaveTimer();
         leaveTimerRef.current = setTimeout(() => {
             setIsHovered(false);
             onHover?.(false);
-        }, 220);
-    }, [onHover]);
+        }, hoverLeaveDwellMs);
+    }, [clearEnterTimer, clearLeaveTimer, hoverLeaveDwellMs, onHover]);
 
-    // Cleanup dwell timer on unmount
-    useEffect(() => () => { if (leaveTimerRef.current) clearTimeout(leaveTimerRef.current); }, []);
+    useEffect(() => () => {
+        clearEnterTimer();
+        clearLeaveTimer();
+    }, [clearEnterTimer, clearLeaveTimer]);
 
     const sizeMap = {
         sm: { diameter: 74, iconSize: 23 },
@@ -87,11 +157,21 @@ export const Planet: React.FC<PlanetProps> = ({
 
     const hasCapacity = typeof capacity === 'number' && Number.isFinite(capacity);
     const ringProgress = hasCapacity ? Math.max(0, Math.min(100, capacity)) : 0;
-    const ringBaseOpacity = isHovered || isActive ? 0.24 : 0.09;
-    const ringProgressOpacity = isHovered || isActive ? 0.72 : 0.22;
+    const ringBaseOpacity = isHoverEngaged ? 0.32 : isPointerOver ? 0.18 : 0.09;
+    const ringProgressOpacity = isHoverEngaged ? 0.82 : isPointerOver ? 0.42 : 0.22;
     const capacityTone = effectiveBorder;
     const neutralRingTone = 'rgba(226, 232, 240, 0.16)';
     const orbitTone = 'rgba(148, 163, 184, 0.18)';
+
+    const spaceCount = spaces.length;
+    const vitalityHint = activity > 0
+        ? 'Aktiv — Inhalt wartet'
+        : spaceCount > 0
+            ? 'Bereiche angelegt — ruhig'
+            : 'Noch leer — Potenzial';
+    const healthTone = health >= 60 ? '#34d399' : health >= 30 ? '#fbbf24' : '#fb7185';
+    const orbitalStats = buildOrbitalStats(health, activity, spaceCount, effectiveGlow);
+    const hoverScale = isHoverEngaged ? 1.08 : isPointerOver ? 1.03 : 1;
 
     return (
         <motion.button
@@ -112,11 +192,11 @@ export const Planet: React.FC<PlanetProps> = ({
             onBlur={handleMouseLeave}
             onClick={onClick}
             animate={{
-                y: isHovered || isActive ? [0, -4, 0] : [0, -2, 0],
+                y: isHoverEngaged ? [0, -4, 0] : isPointerOver ? [0, -3, 0] : [0, -2, 0],
             }}
             transition={{
                 y: {
-                    duration: isHovered || isActive ? 3.4 : 5.6,
+                    duration: isHoverEngaged ? 3.4 : isPointerOver ? 4.6 : 5.6,
                     repeat: Infinity,
                     ease: 'easeInOut',
                     delay,
@@ -130,12 +210,12 @@ export const Planet: React.FC<PlanetProps> = ({
                     filter: 'blur(22px)',
                 }}
                 animate={{
-                    opacity: isHovered || isActive ? 1.0 : 0.75,
-                    scaleX: isHovered || isActive ? 1.35 : 1.15,
-                    scaleY: isHovered || isActive ? 1.25 : 1.08,
+                    opacity: isHoverEngaged ? 1.0 : isPointerOver ? 0.9 : 0.75,
+                    scaleX: isHoverEngaged ? 1.48 : isPointerOver ? 1.28 : 1.15,
+                    scaleY: isHoverEngaged ? 1.38 : isPointerOver ? 1.2 : 1.08,
                 }}
                 initial={{ opacity: 0.75, scaleX: 1.15, scaleY: 1.08 }}
-                transition={{ duration: 0.28, ease: 'easeOut' }}
+                transition={{ ...IOS_SPRING, opacity: { duration: 0.38 } }}
             />
 
             {/* Functional rings: capacity halo + structural orbit */}
@@ -147,7 +227,7 @@ export const Planet: React.FC<PlanetProps> = ({
                         r="35.5"
                         fill="none"
                         stroke={isActive ? 'rgba(52, 211, 153, 0.55)' : neutralRingTone}
-                        strokeWidth={isHovered || isActive ? '1.05' : '0.85'}
+                        strokeWidth={isHoverEngaged ? '1.05' : '0.85'}
                         animate={isActive ? {
                             opacity: [ringBaseOpacity, ringBaseOpacity * 3.2, ringBaseOpacity],
                             strokeWidth: ['1.05', '1.45', '1.05'],
@@ -165,7 +245,7 @@ export const Planet: React.FC<PlanetProps> = ({
                             r="35.5"
                             fill="none"
                             stroke={capacityTone}
-                            strokeWidth={isHovered || isActive ? 1.35 : 0.95}
+                            strokeWidth={isHoverEngaged ? 1.35 : 0.95}
                             strokeDasharray="223"
                             strokeDashoffset={223 - (223 * (ringProgress / 100))}
                             strokeLinecap="round"
@@ -174,7 +254,7 @@ export const Planet: React.FC<PlanetProps> = ({
                             animate={{
                                 opacity: ringProgressOpacity,
                             }}
-                            transition={{ duration: 0.22, ease: 'easeOut' }}
+                            transition={{ duration: 0.36, ease: 'easeOut' }}
                         />
                     )}
 
@@ -188,10 +268,10 @@ export const Planet: React.FC<PlanetProps> = ({
                         strokeDasharray="2 8"
                         initial={{ opacity: 0.035, scale: 1 }}
                         animate={{
-                            opacity: isHovered || isActive ? 0.12 : 0.035,
-                            scale: isHovered ? 1.03 : 1,
+                            opacity: isHoverEngaged ? 0.18 : isPointerOver ? 0.08 : 0.035,
+                            scale: isHoverEngaged ? 1.14 : isPointerOver ? 1.05 : 1,
                         }}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        transition={IOS_SPRING}
                         style={{ transformOrigin: '50px 50px' }}
                     />
 
@@ -204,10 +284,10 @@ export const Planet: React.FC<PlanetProps> = ({
                         strokeWidth="0.45"
                         initial={{ opacity: 0.018, scale: 1 }}
                         animate={{
-                            opacity: isHovered || isActive ? 0.06 : 0.018,
-                            scale: isHovered || isActive ? 1.02 : 1,
+                            opacity: isHoverEngaged ? 0.1 : isPointerOver ? 0.05 : 0.018,
+                            scale: isHoverEngaged ? 1.1 : 1,
                         }}
-                        transition={{ duration: 0.22, ease: 'easeOut' }}
+                        transition={IOS_SPRING}
                         style={{ transformOrigin: '50px 50px' }}
                     />
                 </svg>
@@ -219,9 +299,10 @@ export const Planet: React.FC<PlanetProps> = ({
                 style={{ '--orb-glow': effectiveGlow } as React.CSSProperties}
                 initial={{ opacity: 0.22, scale: 1.04 }}
                 animate={{
-                    opacity: isActive ? 0.52 : isHovered ? 0.38 : 0.22,
-                    scale: isHovered ? 1.18 : isActive ? 1.12 : 1.04
+                    opacity: isActive ? 0.58 : isHovered ? 0.44 : isPointerOver ? 0.32 : 0.22,
+                    scale: isHoverEngaged ? 1.22 : isPointerOver ? 1.1 : 1.04
                 }}
+                transition={IOS_SPRING}
             />
 
             {/* ═ PLANET SPHERE — Solid energy node, no more glass ═ */}
@@ -254,7 +335,7 @@ export const Planet: React.FC<PlanetProps> = ({
                 />
 
                 {/* Orbiting Moons */}
-                {(isHovered || isActive) && (
+                {isHoverEngaged && (
                     <>
                         {/* Moon 1 */}
                         <motion.div
@@ -361,10 +442,10 @@ export const Planet: React.FC<PlanetProps> = ({
                             ? `0 0 35px ${effectiveGlow}88, 0 0 70px ${effectiveGlow}55, inset 0 0 25px ${effectiveGlow}44`
                             : `0 0 20px ${effectiveGlow}44, 0 0 45px ${effectiveGlow}22, inset 0 0 15px ${effectiveGlow}22`,
                     } as React.CSSProperties}
-                    whileHover={{ scale: 1.1 }}
+                    whileHover={undefined}
                     initial={{ scale: 1 }}
-                    animate={{ scale: isHovered || isActive ? 1.06 : 1 }}
-                    transition={{ scale: { type: 'spring', stiffness: 320, damping: 22 } }}
+                    animate={{ scale: hoverScale }}
+                    transition={{ scale: IOS_SPRING }}
                 >
                     {/* Bottom rim light */}
                     <div style={{
@@ -387,7 +468,7 @@ export const Planet: React.FC<PlanetProps> = ({
                     )}
 
                     {/* Scanline sweep effect */}
-                    {!isStandardMode && (isHovered || isActive) && (
+                    {!isStandardMode && isHoverEngaged && (
                         <motion.div
                             className="absolute inset-x-0 h-0.5 pointer-events-none opacity-[0.25]"
                             style={{
@@ -409,8 +490,95 @@ export const Planet: React.FC<PlanetProps> = ({
                 </motion.div>
             </div>
 
-            {/* ═ DATA LABELS (V10 Cinematic HUD & Glassmorphic Hover Card) ═ */}
-            {showLabel && (
+            {/* ═ DATA LABELS — ambient orbital bloom or cinematic card ═ */}
+            {showLabel && ambientLabel && (
+                <div className="pointer-events-none absolute left-1/2 top-1/2 z-50 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+                    {/* Orbiting stat labels — iOS peek, no card chrome */}
+                    <AnimatePresence>
+                        {isHoverEngaged && orbitalStats.length > 0 && (
+                            <motion.div
+                                key="orbital-stats"
+                                className="absolute inset-0"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.28 }}
+                            >
+                                {orbitalStats.map((chip, index) => {
+                                    const rad = (chip.startAngle * Math.PI) / 180;
+                                    const orbitPx = planetSize.diameter * 0.54 * chip.orbitRadius;
+                                    const offsetX = Math.cos(rad) * orbitPx;
+                                    const offsetY = Math.sin(rad) * orbitPx;
+                                    return (
+                                        <motion.span
+                                            key={chip.text}
+                                            className="absolute whitespace-nowrap text-[8px] font-medium uppercase tracking-[0.16em]"
+                                            style={{
+                                                left: `calc(50% + ${offsetX}px)`,
+                                                top: `calc(50% + ${offsetY}px)`,
+                                                transform: 'translate(-50%, -50%)',
+                                                color: 'rgba(255,255,255,0.74)',
+                                                textShadow: `0 0 14px ${chip.glow}aa, 0 0 28px ${chip.glow}55, 0 1px 2px rgba(0,0,0,0.55)`,
+                                            }}
+                                            initial={{ opacity: 0, scale: 0.88 }}
+                                            animate={{
+                                                opacity: [0.48, 0.86, 0.48],
+                                                scale: 1,
+                                            }}
+                                            transition={{
+                                                opacity: { duration: 2.6 + index * 0.4, repeat: Infinity, ease: 'easeInOut' },
+                                                scale: IOS_SPRING,
+                                            }}
+                                        >
+                                            {chip.text}
+                                        </motion.span>
+                                    );
+                                })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                        {isHoverEngaged && (
+                            <motion.div
+                                key="ambient-bloom"
+                                className="absolute flex flex-col items-center text-center"
+                                style={{ top: planetSize.diameter * 0.72 }}
+                                initial={{ opacity: 0, y: -8, scale: 0.92 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 6, scale: 0.94 }}
+                                transition={IOS_SPRING}
+                            >
+                                <span
+                                    className="max-w-[220px] truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-white/88"
+                                    style={{ textShadow: `0 0 20px ${effectiveGlow}99, 0 0 40px ${effectiveGlow}44` }}
+                                >
+                                    {department.name}
+                                </span>
+                                <span className="mt-1.5 flex items-center gap-1.5 text-[8px] tracking-[0.06em] text-white/52">
+                                    <span
+                                        className="inline-block h-1.5 w-1.5 rounded-full"
+                                        style={{ background: healthTone, boxShadow: `0 0 10px ${healthTone}` }}
+                                    />
+                                    {vitalityHint}
+                                </span>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                    {!isHoverEngaged && isPointerOver && (
+                        <motion.span
+                            className="absolute text-[8px] uppercase tracking-[0.2em] text-white/32"
+                            style={{ top: planetSize.diameter * 0.5 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 0.65 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.28 }}
+                        >
+                            {department.name}
+                        </motion.span>
+                    )}
+                </div>
+            )}
+            {showLabel && !ambientLabel && (
             <div
                 className={`absolute top-1/2 -translate-y-1/2 flex flex-col pointer-events-none min-w-[240px] z-50 ${
                     labelSide === 'left'
@@ -422,7 +590,7 @@ export const Planet: React.FC<PlanetProps> = ({
                     className="flex items-center gap-1 mb-1"
                     initial={{ opacity: 0.68, x: 0 }}
                     animate={{
-                        opacity: isHovered || isActive ? 1 : 0.68,
+                        opacity: isHoverEngaged ? 1 : isPointerOver ? 0.78 : 0.68,
                         x: isHovered ? (labelSide === 'left' ? -3 : 3) : 0
                     }}
                 >
@@ -438,12 +606,13 @@ export const Planet: React.FC<PlanetProps> = ({
                 </motion.span>
 
                 <AnimatePresence>
-                    {(isHovered || isActive) && (
+                    {isHoverEngaged && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: 10, x: labelSide === 'left' ? 10 : -10 }}
+                            initial={{ opacity: 0, scale: 0.97, y: 6, x: labelSide === 'left' ? 6 : -6 }}
                             animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 10, x: labelSide === 'left' ? 10 : -10 }}
-                            className={`flex flex-col gap-3 p-4 rounded-2xl border backdrop-blur-[24px] shadow-[0_16px_50px_rgba(0,0,0,0.65)] min-w-[240px] max-w-[280px] ${
+                            exit={{ opacity: 0, scale: 0.97, y: 6, x: labelSide === 'left' ? 6 : -6 }}
+                            transition={{ duration: 0.34, ease: 'easeOut' }}
+                            className={`flex flex-col gap-2.5 p-3 rounded-xl border backdrop-blur-[18px] shadow-[0_10px_28px_rgba(0,0,0,0.42)] min-w-[200px] max-w-[240px] ${
                                 isStandardMode
                                     ? 'bg-white/92 border-gray-200/80 text-gray-800'
                                     : 'glass-card text-white'

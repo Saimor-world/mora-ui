@@ -11,6 +11,7 @@ beforeEach(() => {
     activeFolderId: null,
     isStandardMode: false,
     nameConflict: null,
+    departmentEntryOrigin: null,
   });
 });
 
@@ -47,6 +48,23 @@ describe('navStore', () => {
     expect(state.activeDepartmentId).toBeNull();
     expect(state.activeSpaceId).toBeNull();
     expect(state.coreMode).toBe('home');
+  });
+
+  it('navigateToDepartment records the planet zoom origin when provided', () => {
+    useNavStore.getState().navigateToDepartment('d1', { x: 12, y: 34 });
+    expect(useNavStore.getState().departmentEntryOrigin).toEqual({ x: 12, y: 34 });
+  });
+
+  it('navigateToDepartment preserves the prior origin when none is provided', () => {
+    useNavStore.getState().navigateToDepartment('d1', { x: 12, y: 34 });
+    useNavStore.getState().navigateToDepartment('d2');
+    expect(useNavStore.getState().departmentEntryOrigin).toEqual({ x: 12, y: 34 });
+  });
+
+  it('setDepartmentEntryOrigin can clear the origin', () => {
+    useNavStore.getState().navigateToDepartment('d1', { x: 12, y: 34 });
+    useNavStore.getState().setDepartmentEntryOrigin(null);
+    expect(useNavStore.getState().departmentEntryOrigin).toBeNull();
   });
 
   it('cancelNameConflict clears nameConflict', () => {

@@ -39,6 +39,7 @@ import {
 } from '@/lib/integrations/calendarOAuth';
 import type { AppProps } from '@/lib/apps/types';
 import type { IntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 type Lane = 'overview' | 'sources' | 'desktop' | 'setup';
 type RuntimeAction = 'start' | 'stop' | 'restart';
@@ -328,8 +329,9 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full min-h-0 flex-col overflow-hidden bg-black/10">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 <header className="border-b border-white/[0.07] px-6 py-5">
                     <div className="flex flex-wrap items-start justify-between gap-5">
                         <div className="min-w-0">
@@ -381,7 +383,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                     ) : (
                         <div className="space-y-5">
                             <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-                                <div className="rounded-[28px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(13,43,39,0.44),rgba(3,8,9,0.78))] p-5">
+                                <div className="rounded-[28px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(13,43,39,0.28),rgba(3,8,9,0.30))] p-5">
                                     <div className="flex items-start justify-between gap-4">
                                         <div>
                                             <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Aktueller Stand</p>
@@ -481,7 +483,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                         body={buildAssistantText(overview)}
                                         meta={overview?.assistant?.routing_profile ? `Profil: ${overview.assistant.routing_profile}` : null}
                                     />
-                                    <div className="xl:col-span-3 rounded-[26px] border border-white/[0.08] bg-black/20 p-5">
+                                    <div className="xl:col-span-3 rounded-[26px] border border-white/[0.08] bg-white/[0.03] p-5">
                                         <p className="text-[10px] uppercase tracking-[0.24em] text-white/38">Provider</p>
                                         <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                                             {assistantProviders.length > 0 ? assistantProviders.map(([provider, meta]) => (
@@ -630,7 +632,7 @@ function ConnectionCard({
 
 function SignalLine({ icon: Icon, label, text }: { icon: LucideIcon; label: string; text: string }) {
     return (
-        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-black/18 px-3 py-2">
+        <div className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-2">
             <Icon size={15} className="shrink-0 text-emerald-100/58" />
             <span className="w-16 shrink-0 text-[11px] uppercase tracking-[0.14em] text-white/35">{label}</span>
             <span className="min-w-0 truncate text-xs text-white/64">{text}</span>
@@ -640,7 +642,7 @@ function SignalLine({ icon: Icon, label, text }: { icon: LucideIcon; label: stri
 
 function RuntimeRow({ title, state }: { title: string; state?: string | null }) {
     return (
-        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-black/18 px-3 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-3 py-3">
             <span className="text-sm text-white/74">{title}</span>
             <StatusPill status={state} />
         </div>
@@ -649,7 +651,7 @@ function RuntimeRow({ title, state }: { title: string; state?: string | null }) 
 
 function SetupPanel({ eyebrow, title, children }: { eyebrow: string; title: string; children: React.ReactNode }) {
     return (
-        <div className="rounded-[26px] border border-white/[0.08] bg-black/20 p-5">
+        <div className="rounded-[26px] border border-white/[0.08] bg-white/[0.03] p-5">
             <p className="text-[10px] uppercase tracking-[0.24em] text-white/35">{eyebrow}</p>
             <h3 className="mt-1 text-sm font-medium text-white/84">{title}</h3>
             <div className="mt-4">{children}</div>
@@ -682,7 +684,7 @@ function GoogleConnectHero({
     ];
 
     return (
-        <div className="relative overflow-hidden rounded-[28px] border border-emerald-400/18 bg-[linear-gradient(135deg,rgba(4,22,18,0.90),rgba(2,10,8,0.96))] p-6">
+        <div className="relative overflow-hidden rounded-[28px] border border-emerald-400/18 bg-[linear-gradient(135deg,rgba(4,22,18,0.42),rgba(2,10,8,0.36))] p-6">
             <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'radial-gradient(circle at 70% 40%, #10b981 0%, transparent 65%)' }} />
             <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
                 <div>

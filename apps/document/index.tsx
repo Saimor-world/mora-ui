@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchNodeDetails, fetchNodeRelations } from '@/lib/api/coreClient';
 import { fetchNodeGraphContext, type NodeGraphContext } from '@/lib/api/orgClient';
@@ -423,6 +424,7 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
         <div className="flex flex-col h-full">
             {navigationContext && (

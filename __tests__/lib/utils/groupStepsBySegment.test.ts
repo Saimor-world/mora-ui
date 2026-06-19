@@ -1,4 +1,4 @@
-import { groupStepsBySegment } from '@/components/panes/WorkSessionPane';
+import { groupStepsBySegment } from '@/apps/work-session';
 import type { WorkSessionSegmentSummary, WorkSessionStep } from '@/lib/api/coreClient';
 
 // Minimal step factory

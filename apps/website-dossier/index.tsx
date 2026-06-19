@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet } from '@/lib/api/coreClient';
 import { ExternalLink, Globe, Loader2, ShieldCheck, ShieldAlert, ShieldQuestion } from 'lucide-react';
@@ -81,6 +82,7 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex flex-col h-full overflow-y-auto p-5 space-y-4">
                 {/* Header */}

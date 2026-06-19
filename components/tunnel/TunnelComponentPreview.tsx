@@ -118,17 +118,6 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
       })),
     { ssr: false, loading: PreviewFallback },
   ) as React.ComponentType,
-  LiquidOrb: dynamic(
-    () =>
-      import("@/components/mora/LiquidOrb").then((m) => ({
-        default: () => (
-          <div className="flex h-40 items-center justify-center">
-            <div className="w-48 h-48"><m.LiquidOrb color="#34d399" state="idle" /></div>
-          </div>
-        ),
-      })),
-    { ssr: false, loading: PreviewFallback },
-  ) as React.ComponentType,
   PlasmaOrb: dynamic(
     () =>
       import("@/components/mora/PlasmaOrb").then((m) => ({
@@ -140,7 +129,17 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
       })),
     { ssr: false, loading: PreviewFallback },
   ) as React.ComponentType,
-  MoraOrb: devDynamic(() => import("@/components/mora/MoraOrb"), "MoraOrb"),
+  MoraOrb: dynamic(
+    () =>
+      import("@/components/mora/MoraOrb").then((m) => ({
+        default: () => (
+          <div className="flex h-56 items-center justify-center">
+            <m.MoraOrb state="idle" size="lg" interactive />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
   StarField: dynamic(
     () =>
       import("@/components/visual/StarField").then((m) => ({
@@ -167,10 +166,83 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
     () => import("@/components/visual/NeuralGrid"),
     "NeuralGrid",
   ),
+  SemanticConstellation: dynamic(
+    () =>
+      import("@/components/visual/SemanticConstellation").then((m) => ({
+        default: () => (
+          <div className="relative h-48 w-full overflow-hidden rounded-xl bg-black/20">
+            <m.SemanticConstellation
+              center={{ x: 50, y: 50 }}
+              satellites={[
+                { id: 'a', x: 18, y: 22, weight: 0.9 },
+                { id: 'b', x: 82, y: 20, weight: 0.7 },
+                { id: 'c', x: 25, y: 78, weight: 0.85 },
+                { id: 'd', x: 75, y: 75, weight: 0.5 },
+                { id: 'e', x: 60, y: 35, weight: 0.6 },
+              ]}
+              isActive
+            />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
+  OrbitalCanvas: dynamic(
+    () =>
+      import("@/components/visual/OrbitalCanvas").then((m) => ({
+        default: () => (
+          <div className="relative h-48 w-full overflow-hidden rounded-xl bg-black/30">
+            <m.OrbitalCanvas
+              bodies={[
+                { id: 'core', name: 'SAIMOR', type: 'star', baseX: 50, baseY: 50, size: 36, color: '#34d399' },
+                { id: 'p1', name: 'Design', type: 'planet', baseX: 50, baseY: 50, size: 14, color: '#818cf8', orbitRadius: 90, orbitSpeed: 0.5, parentId: 'core' },
+                { id: 'p2', name: 'Tech', type: 'planet', baseX: 50, baseY: 50, size: 18, color: '#f472b6', orbitRadius: 140, orbitSpeed: 0.3, parentId: 'core' },
+                { id: 'p3', name: 'Ops', type: 'planet', baseX: 50, baseY: 50, size: 12, color: '#fb923c', orbitRadius: 190, orbitSpeed: 0.2, parentId: 'core' },
+              ]}
+            />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
+  MyceliumOverlay: dynamic(
+    () =>
+      import("@/components/organic/MyceliumOverlay").then((m) => ({
+        default: () => (
+          <div className="relative h-48 w-full overflow-hidden rounded-xl bg-[#030912]">
+            <style>{`.preview-mycelium-overlay canvas { position: absolute !important; width: 100% !important; height: 100% !important; inset: 0 !important; }`}</style>
+            <div className="preview-mycelium-overlay w-full h-full"><m.MyceliumOverlay /></div>
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
   MyceliumLayer: devDynamic(
     () => import("@/components/organic/MyceliumLayer"),
     "MyceliumLayer",
   ),
+  Mycelium25D: dynamic(
+    () =>
+      import("@/components/organic/Mycelium25D").then((m) => ({
+        default: () => (
+          <div className="relative h-48 w-full overflow-hidden rounded-xl bg-[#030912]">
+            <m.Mycelium25D nodes={[]} />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
+  MyceliumField3D: dynamic(
+    () =>
+      import("@/components/organic/MyceliumField3D").then((m) => ({
+        default: () => (
+          <div className="relative h-48 w-full overflow-hidden rounded-xl bg-[#030912]">
+            <m.MyceliumField3D nodes={[]} />
+          </div>
+        ),
+      })),
+    { ssr: false, loading: PreviewFallback },
+  ) as React.ComponentType,
   AmbientDust: devDynamic(
     () => import("@/components/organic/AmbientDust"),
     "AmbientDust",

@@ -11,6 +11,7 @@ import { usePresence } from '@/lib/hooks/usePresence';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { DepartmentView } from '@/components/home/DepartmentView';
 import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
+import { WidgetGrid } from '@/components/widgets/WidgetGrid';
 import { selectRecentDepartmentDocs } from '@/lib/openflow/departmentContext';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -104,8 +105,30 @@ export const DepartmentSurface: React.FC = () => {
 
   if (!activeDepartmentId) return null;
 
+  const showWidgetDesktop = mode === 'map';
+
   return (
     <div className="relative w-full h-full">
+      {/* Editable widget desktop — orbit map mode only; overview uses DepartmentView pillars */}
+      {showWidgetDesktop && (
+      <div className="absolute inset-0 z-[12] pointer-events-none overflow-y-auto px-4 pt-4 pb-28" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}>
+        {/* Match UniverseView: pass clicks through empty grid area to DepartmentLayer orbit below; widgets opt in via pointer-events-auto cells. */}
+        <div className="pointer-events-none">
+          <WidgetGrid
+            surface="department"
+            context={{
+              surface: 'department',
+              departmentId: activeDepartmentId,
+              openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: { width: 480, height: 640 } }),
+              openFinder: () => openPane({ id: 'finder-dept', type: 'finder', title: 'Finder', size: { width: 900, height: 700 }, data: { departmentId: activeDepartmentId } }),
+              openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }),
+              goExplore: () => setMode('map'),
+            }}
+          />
+        </div>
+      </div>
+      )}
+
       <div className="absolute top-8 left-1/2 z-50 -translate-x-1/2">
         <div className="flex rounded-full border border-white/10 bg-black/40 p-1 backdrop-blur-xl">
           <button

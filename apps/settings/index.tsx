@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
@@ -43,6 +43,9 @@ import {
 import { isMoraPerceiveV1Enabled, isMoraDialogueV1Enabled, isMoraLiveV1Enabled } from '@/lib/featureFlags';
 import type { AppProps } from '@/lib/apps/types';
 import { ProfileTab } from '@/apps/settings/ProfileTab';
+import { queueAccountSettingsSync } from '@/lib/userSettings/persistAccountSettings';
+import { useUserSettings } from '@/lib/queries/useUserSettings';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -118,6 +121,12 @@ export default function SettingsApp({ paneId }: AppProps) {
     const [smtpLoading, setSmtpLoading] = useState(false);
     const [smtpTesting, setSmtpTesting] = useState(false);
     const userSettings = useMemo(() => (user?.settings ?? {}) as Record<string, unknown>, [user?.settings]);
+    useUserSettings(!!user?.id);
+
+    const syncUserSettings = useCallback((updates: Record<string, unknown>) => {
+        updateUserSettings(updates);
+        queueAccountSettingsSync(updates);
+    }, [updateUserSettings]);
 
         const activeCompany = useMemo(() => safeCompanies.find(c => c.id === activeCompanyId) || null, [safeCompanies, activeCompanyId]);
 
@@ -257,7 +266,7 @@ useEffect(() => {
 
     const saveSetting = (updates: Record<string, any>) => {
         try {
-            updateUserSettings(updates);
+            syncUserSettings(updates);
             if (typeof window === 'undefined') return;
 
             // Safe localStorage writes
@@ -315,13 +324,13 @@ useEffect(() => {
     const handleSelectRitualScene = (id: RitualSceneId) => {
         setRitualSceneId(id);
         setRitualAutoTime(false);
-        persistRitualSettings(updateUserSettings, { ritualSceneId: id, ritualAutoTime: false });
+        persistRitualSettings(syncUserSettings, { ritualSceneId: id, ritualAutoTime: false });
     };
 
     const handleToggleRitualAutoTime = () => {
         const next = !ritualAutoTime;
         setRitualAutoTime(next);
-        persistRitualSettings(updateUserSettings, { ritualAutoTime: next });
+        persistRitualSettings(syncUserSettings, { ritualAutoTime: next });
     };
 
     const promptAmbientAudioUpload = () => {
@@ -464,6 +473,7 @@ useEffect(() => {
             showMinimizeButton
             draggable
             resizable
+            {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full overflow-hidden">
                 {/* ── Sidebar ─────────────────────────────────────────── */}

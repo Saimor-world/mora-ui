@@ -4,6 +4,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Loader2, ExternalLink, Zap } from 'lucide-react';
 import { coreGet } from '@/lib/api/http';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { GlassPanel } from '@/components/layers/GlassPanel';
+import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 interface WallEntry {
     id: string;
@@ -89,7 +91,7 @@ function FeaturedCard({ entry, onMora }: { entry: WallEntry; onMora: (e: WallEnt
         <div
             className="relative flex flex-col justify-between overflow-hidden rounded-2xl h-full min-h-[320px]"
             style={{
-                background: `radial-gradient(ellipse at 20% 30%, ${p.glow} 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, ${p.glowStrong.replace('0.55','0.15')} 0%, transparent 45%), rgba(10,10,18,0.92)`,
+                background: `radial-gradient(ellipse at 20% 30%, ${p.glow} 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, ${p.glowStrong.replace('0.55','0.15')} 0%, transparent 45%), rgba(10,10,18,0.55)`,
                 border: `1px solid ${p.border}`,
                 boxShadow: `0 0 60px ${p.glow}, inset 0 1px 0 rgba(255,255,255,0.06)`,
             }}
@@ -174,7 +176,7 @@ function CompactCard({ entry, onMora }: { entry: WallEntry; onMora: (e: WallEntr
         <div
             className="relative flex flex-col overflow-hidden rounded-xl p-5 gap-3 transition-transform hover:scale-[1.015]"
             style={{
-                background: `radial-gradient(ellipse at 85% 15%, ${p.glow} 0%, transparent 50%), rgba(12,12,22,0.88)`,
+                background: `radial-gradient(ellipse at 85% 15%, ${p.glow} 0%, transparent 50%), rgba(12,12,22,0.52)`,
                 border: `1px solid ${p.border}`,
                 boxShadow: `0 0 30px ${p.glow.replace('0.28','0.12')}, inset 0 1px 0 rgba(255,255,255,0.05)`,
                 cursor: 'default',
@@ -265,11 +267,13 @@ function EmptyState() {
 }
 
 // ─── Main WallPane ────────────────────────────────────────────────────────────
-export function WallPane() {
+export function WallPane({ id }: { id?: string }) {
     const [entries, setEntries] = useState<WallEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<Filter>('Alle');
-    const { openPane } = usePaneStore();
+    const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const isActive = usePaneStore((state) => (id ? state.activePaneId === id : true));
+    const pane = id ? getPane(id) : undefined;
 
     useEffect(() => {
         let cancelled = false;
@@ -298,11 +302,8 @@ export function WallPane() {
 
     const filters: Filter[] = ['Alle', 'Kritisch', 'Mittel', 'Sicher'];
 
-    return (
-        <div
-            className="flex flex-col h-full overflow-hidden"
-            style={{ background: 'rgba(7,7,16,0.97)' }}
-        >
+    const content = (
+        <div className="flex flex-col h-full overflow-hidden">
             {/* ── Header ──────────────────────────────────────────────────── */}
             <div
                 className="shrink-0 px-6 pt-5 pb-4 flex items-center justify-between gap-4"
@@ -397,6 +398,35 @@ export function WallPane() {
                 </a>
             </div>
         </div>
+    );
+
+    // Legacy/standalone usage without a managed pane: render bare content.
+    if (!pane || !id) return content;
+
+    return (
+        <GlassPanel
+            title={null}
+            paneId={id}
+            width={pane.size.width}
+            height={pane.size.height}
+            initialX={pane.position.x}
+            initialY={pane.position.y}
+            padding={0}
+            onPositionChange={(x, y) => updatePanePosition(id, x, y)}
+            onResize={(w, h) => updatePaneSize(id, w, h)}
+            onClose={() => removePane(id)}
+            onMinimize={() => minimizePane(id)}
+            onFocus={() => focusPane(id)}
+            isActive={isActive}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
+            {...GLASS_SHEET_PRESENTATION}
+        >
+            {content}
+        </GlassPanel>
     );
 }
 

@@ -17,3 +17,5 @@ export * from './memoryClient';
 export * from './perfClient';
 export * from './workSessionClient';
 export * from './terminalClient';
+export * from './desktopLayoutClient';
+export * from './userSettingsClient';
