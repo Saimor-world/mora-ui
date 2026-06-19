@@ -6,10 +6,10 @@
 
 /** Percentage bounds for planet placement — tighter cluster around viewport centre. */
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 28,
-    maxX: 72,
-    minY: 24,
-    maxY: 68,
+    minX: 34,
+    maxX: 66,
+    minY: 30,
+    maxY: 64,
 };
 
 export const UNIVERSE_CORE_POINT = {
@@ -131,15 +131,15 @@ export const buildOrganicUniverseLayout = (
 
     const points = orderedDepartments.map(({ dept, seed }, index) => {
         const angleStep = (Math.PI * 2) / Math.max(1, count);
-        const angularJitter = ((((seed >>> 8) % 100) / 100) - 0.5) * Math.min(0.22, angleStep * 0.34);
+        const angularJitter = ((((seed >>> 8) % 100) / 100) - 0.5) * Math.min(0.14, angleStep * 0.28);
         const angle = (-Math.PI / 2) + (index * angleStep) + angularJitter;
         const metrics = metricsMap[dept.id];
         const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
         const vitality = Math.min(1, signal / maxSignal);
-        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.05;
-        const radiusBias = 0.42 + (1 - vitality) * 0.10 + radialJitter;
-        const rx = 8 + radiusBias * 12;
-        const ry = 5 + radiusBias * 8;
+        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.04;
+        const radiusBias = 0.30 + (1 - vitality) * 0.08 + radialJitter;
+        const rx = 5 + radiusBias * 9;
+        const ry = 3.5 + radiusBias * 6.5;
 
         return {
             ...dept,
@@ -161,13 +161,13 @@ export const buildOrganicUniverseLayout = (
         };
     });
 
-    const minDistance = count > 14 ? 5.2 : count > 8 ? 6.2 : 7.4;
+    const minDistance = count > 14 ? 4.2 : count > 8 ? 5.0 : 6.0;
     for (let iteration = 0; iteration < 28; iteration += 1) {
         for (const point of points) {
             const dx = point.x - UNIVERSE_CORE_POINT.x;
             const dy = (point.y - UNIVERSE_CORE_POINT.y) * 1.18;
             const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
-            const coreDistance = count > 10 ? 5.5 : 6.5;
+            const coreDistance = count > 10 ? 3.5 : 4.5;
             if (distance >= coreDistance) continue;
 
             const push = (coreDistance - distance) * 0.34;

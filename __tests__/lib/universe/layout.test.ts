@@ -83,4 +83,21 @@ describe('buildOrganicUniverseLayout', () => {
   it('keeps the core point constant', () => {
     expect(UNIVERSE_CORE_POINT).toEqual({ x: 50, y: 50 });
   });
+
+  it('clusters planets tightly around the viewport centre', () => {
+    const depts = Array.from({ length: 8 }, (_, i) => ({
+      id: `d${i}`,
+      name: `Dept ${i}`,
+      color: '#000',
+    }));
+    const metrics = Object.fromEntries(
+      depts.map((d) => [d.id, { nodes: 3, spaces: 1, folders: 1, health: 1 }]),
+    );
+    const out = buildOrganicUniverseLayout(depts, metrics);
+    for (const p of out) {
+      const dx = p.x - UNIVERSE_CORE_POINT.x;
+      const dy = p.y - UNIVERSE_CORE_POINT.y;
+      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(11);
+    }
+  });
 });

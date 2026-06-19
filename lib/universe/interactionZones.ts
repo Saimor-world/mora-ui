@@ -5,10 +5,10 @@
 
 /** Normalised viewport rect — tight halo around the planet cluster, not a full-width band. */
 export const COSMOS_ZONE = {
-    minX: 0.42,
-    maxX: 0.58,
-    minY: 0.24,
-    maxY: 0.70,
+    minX: 0.44,
+    maxX: 0.56,
+    minY: 0.30,
+    maxY: 0.64,
 } as const;
 
 export type UniverseInteractionZone = 'cosmos' | 'peripheral';
