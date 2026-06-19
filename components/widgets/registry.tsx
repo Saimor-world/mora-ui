@@ -17,6 +17,7 @@ import { useTree } from '@/lib/queries/useTree';
 import type { LarryArtifact } from '@/lib/api/larryClient';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import { buildNightwatchGlanceSuggestions } from '@/lib/nightwatch/glanceSuggestions';
 import type { CoreTreeNode } from '@/lib/types/core';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
 
@@ -1142,6 +1143,22 @@ const NW_ARC_C = 163.4; // 2*PI*r (r=26)
 
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
+function nwMonitorIsDown(host: string | undefined, downHosts: Set<string>, status?: string): boolean {
+    if (status) {
+        const s = status.toLowerCase();
+        if (s === 'down' || s === 'critical' || s === 'degraded' || s === 'warn') return true;
+        if (s === 'ok' || s === 'up' || s === 'online' || s === 'running') return false;
+    }
+    return !!host && downHosts.has(host);
+}
+
+function nwSuggestionTone(t: 'alert' | 'warn' | 'ok' | 'info'): StatusTone {
+    if (t === 'alert') return 'alert';
+    if (t === 'warn') return 'warn';
+    if (t === 'info') return 'info';
+    return 'ok';
+}
+
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data: incidents = [], isLoading: incidentsLoading } = useNightwatchIncidents();
     const { data: monitors = [], isLoading: monitorsLoading } = useNightwatchMonitors();
@@ -1154,8 +1171,13 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
     const critical = open.filter((i) => i.severity === 'critical').length;
     const warnings = open.filter((i) => i.severity === 'warning').length;
     const resolved = incidents.filter((i) => _NW_RESOLVED.has((i.status || '').toLowerCase())).length;
-    const onlineCount = monitors.filter((m) => !m.host || !downHosts.has(m.host)).length;
+    const onlineCount = monitors.filter((m) => !nwMonitorIsDown(m.host, downHosts, m.status)).length;
     const downCount = monitors.length - onlineCount;
+
+    const suggestions = useMemo(
+        () => (loaded ? buildNightwatchGlanceSuggestions(incidents, monitors, 3) : []),
+        [incidents, monitors, loaded],
+    );
 
     const tsNow = Date.now();
     const bars = Array.from({ length: 7 }, (_, idx) => {
@@ -1221,7 +1243,7 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                     <div className="flex flex-wrap gap-1">
                         {monitors.slice(0, 4).map((monitor) => {
                             const label = monitor.name || monitor.host || 'Monitor';
-                            const isDown = !!monitor.host && downHosts.has(monitor.host);
+                            const isDown = nwMonitorIsDown(monitor.host, downHosts, monitor.status);
                             const isContainer = monitor.target_type === 'container';
                             return (
                                 <span
@@ -1242,6 +1264,19 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                         {monitors.length > 4 && (
                             <span className="text-[7px] tabular-nums text-white/30">+{monitors.length - 4}</span>
                         )}
+                    </div>
+                )}
+                {loaded && suggestions[0] && (
+                    <div
+                        className="truncate rounded-lg border px-2 py-1 text-[8px] leading-snug"
+                        style={{
+                            borderColor: `${statusToneColor(nwSuggestionTone(suggestions[0].tone))}22`,
+                            color: statusToneColor(nwSuggestionTone(suggestions[0].tone)),
+                            background: `${statusToneColor(nwSuggestionTone(suggestions[0].tone))}0a`,
+                        }}
+                        title={suggestions[0].label}
+                    >
+                        {suggestions[0].label}
                     </div>
                 )}
                 <div className="grid grid-cols-3 gap-1">
@@ -1300,7 +1335,9 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                 {[
                     { label: 'Kritisch', value: critical, color: critical > 0 ? 'rgb(248,113,113)' : undefined as string | undefined },
                     { label: 'Warnung', value: warnings, color: warnings > 0 ? 'rgb(251,191,36)' : undefined as string | undefined },
-                    { label: 'Gelöst', value: resolved, color: undefined as string | undefined },
+                    monitors.length > 0
+                        ? { label: 'Online', value: onlineCount, color: downCount > 0 ? 'rgb(251,191,36)' : 'rgb(52,211,153)' }
+                        : { label: 'Gelöst', value: resolved, color: undefined as string | undefined },
                 ].map(({ label, value, color }) => (
                     <div
                         key={label}
@@ -1325,14 +1362,14 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                     <div className="flex flex-wrap gap-1.5">
                         {[...monitors]
                             .sort((a, b) => {
-                                const aDown = !!a.host && downHosts.has(a.host);
-                                const bDown = !!b.host && downHosts.has(b.host);
+                                const aDown = nwMonitorIsDown(a.host, downHosts, a.status);
+                                const bDown = nwMonitorIsDown(b.host, downHosts, b.status);
                                 return Number(bDown) - Number(aDown);
                             })
                             .slice(0, 6)
                             .map((monitor) => {
                                 const label = monitor.name || monitor.host || 'Monitor';
-                                const isDown = !!monitor.host && downHosts.has(monitor.host);
+                                const isDown = nwMonitorIsDown(monitor.host, downHosts, monitor.status);
                                 const typeLabel = monitor.target_type === 'container' ? 'Container' : monitor.target_type === 'endpoint' ? 'Endpoint' : 'Host';
                                 return (
                                     <div
@@ -1350,6 +1387,27 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
                                     </div>
                                 );
                             })}
+                    </div>
+                </div>
+            )}
+
+            {/* Recommendations from live incident + monitor state */}
+            {loaded && suggestions.length > 0 && (
+                <div>
+                    <SectionLabel icon={<Sparkles size={10} className="opacity-70" />}>Empfehlungen</SectionLabel>
+                    <div className="flex flex-col gap-1">
+                        {suggestions.map((s) => {
+                            const tone = nwSuggestionTone(s.tone);
+                            return (
+                                <div
+                                    key={s.id}
+                                    className="flex items-start gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2.5 py-1.5"
+                                >
+                                    <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: statusToneColor(tone) }} />
+                                    <span className="min-w-0 text-[10px] leading-snug text-white/62">{s.label}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             )}
@@ -1566,7 +1624,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         render: ({ context }) => <DeptStatsWidget context={context} />,
     },
     nightwatch: {
-        type: 'nightwatch', label: 'Nightwatch', hint: 'Infrastruktur-Vorfälle & 7-Tage-Verlauf', icon: <Activity size={14} />,
+        type: 'nightwatch', label: 'Nightwatch', hint: 'Container, Monitore, Vorfälle & 7-Tage-Verlauf', icon: <Activity size={14} />,
         defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'department', 'universe'],
         render: ({ context }) => <NightwatchWidget context={context} />,
     },

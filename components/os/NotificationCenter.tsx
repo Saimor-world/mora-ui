@@ -46,8 +46,10 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { openNavigationOutcome } from '@/lib/utils/searchOpen';
 import { RadarCard } from '@/components/mora/RadarCard';
 import { MoraRadarToast } from '@/components/mora/MoraRadarToast';
+import { MoraMailToast } from '@/components/mora/MoraMailToast';
 import type { RadarNotification } from '@/lib/store/radarStore';
 import { useMailArrivalPrompt } from '@/lib/hooks/useMailArrivalPrompt';
+import { useMailPromptStore } from '@/lib/store/mailPromptStore';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES
@@ -402,6 +404,9 @@ export const NotificationCenter: React.FC = () => {
     const radarToastNotification = !isOpen && !focusModeEnabled
         ? radarNotifications.find((n) => n.status === 'pending' && n.tier === 'suggest' && Boolean(n.entity_id) && !hiddenRadarToastIds.includes(n.id))
         : undefined;
+    const mailPrompt = useMailPromptStore((s) => s.prompt);
+    const dismissMailPrompt = useMailPromptStore((s) => s.dismissPrompt);
+    const showMailToast = !isOpen && !focusModeEnabled && !radarToastNotification && Boolean(mailPrompt);
 
     const hideRadarToast = useCallback((id: string) => {
         setHiddenRadarToastIds((current) => {
@@ -427,6 +432,14 @@ export const NotificationCenter: React.FC = () => {
         realtime.connect();
         return () => realtime.off('mora.radar.new', handleRadarPush);
     }, [queryClient]);
+
+    useEffect(() => {
+        if (!showMailToast || !mailPrompt) return;
+        const timeout = window.setTimeout(() => {
+            dismissMailPrompt();
+        }, 12000);
+        return () => window.clearTimeout(timeout);
+    }, [dismissMailPrompt, mailPrompt, showMailToast]);
 
     useEffect(() => {
         if (!radarToastNotification) return;
@@ -605,6 +618,27 @@ export const NotificationCenter: React.FC = () => {
     return (
         <div className="relative">
             <AnimatePresence>
+                {showMailToast && mailPrompt && (
+                    <MoraMailToast
+                        key={mailPrompt.id}
+                        prompt={mailPrompt}
+                        onOpen={() => {
+                            openPane({
+                                id: 'mail-main',
+                                type: 'mail',
+                                title: 'Mail',
+                                size: { width: 860, height: 640 },
+                                position: { x: 160, y: 120 },
+                            });
+                            dismissMailPrompt();
+                        }}
+                        onDismiss={dismissMailPrompt}
+                        onShowAll={() => {
+                            dismissMailPrompt();
+                            setOpen(true);
+                        }}
+                    />
+                )}
                 {radarToastNotification && (
                     <MoraRadarToast
                         key={radarToastNotification.id}

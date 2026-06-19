@@ -24,6 +24,8 @@ export interface NightwatchMonitorItem {
     name?: string;
     host?: string;
     target_type?: string;
+    /** CORE metadata.status — ok | down | degraded | running | … */
+    status?: string;
 }
 
 /** Read Nightwatch monitors for the current tenant (read-only). [] when unavailable. */
