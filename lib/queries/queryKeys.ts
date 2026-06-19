@@ -44,6 +44,12 @@ export const STALE_TIMES = {
 
   // Larry workspace artifacts — dashboard ingest can arrive any time.
   larryArtifacts: 60 * 1000, // 1 minute
+
+  // Team roster + online status — WebSocket invalidates between polls.
+  teamMembers: 30 * 1000, // 30 seconds
+
+  // Nightwatch glance widgets — keep cached across surface transitions.
+  nightwatchIncidents: 60 * 1000, // 1 minute
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -87,4 +93,9 @@ export const queryKeys = {
     limit != null
       ? (['larryArtifacts', companyId, limit] as const)
       : (['larryArtifacts', companyId] as const),
+
+  teamMembers: () => ['teamMembers'] as const,
+
+  nightwatchIncidents: (includeResolved = true) =>
+    ['nightwatchIncidents', includeResolved] as const,
 };

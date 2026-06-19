@@ -10,9 +10,9 @@ import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useLarryArtifacts } from '@/lib/queries/useLarryArtifacts';
+import { useNightwatchIncidents } from '@/lib/queries/useNightwatchIncidents';
 import { useNavStore } from '@/lib/store/navStore';
 import type { LarryArtifact } from '@/lib/api/larryClient';
-import { fetchAllNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
@@ -775,17 +775,9 @@ const NW_ARC_C = 163.4; // 2*PI*r (r=26)
 const _NW_RESOLVED = new Set(['resolved', 'dismissed', 'closed']);
 
 const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
-    const [incidents, setIncidents] = React.useState<NightwatchIncidentItem[]>([]);
-    const [loaded, setLoaded] = React.useState(false);
+    const { data: incidents = [], isPending } = useNightwatchIncidents();
+    const loaded = !isPending;
     const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
-
-    React.useEffect(() => {
-        let cancelled = false;
-        fetchAllNightwatchIncidents()
-            .then((data) => { if (!cancelled) { setIncidents(data); setLoaded(true); } })
-            .catch(() => { if (!cancelled) setLoaded(true); });
-        return () => { cancelled = true; };
-    }, []);
 
     const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
     const critical = open.filter((i) => i.severity === 'critical').length;

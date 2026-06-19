@@ -520,11 +520,19 @@ export const MoraShell: React.FC = () => {
             window.open('https://dash.saimor.world', '_blank');
         }, []),
         onCloseTopPane: useCallback(() => {
-            const { panes, removePane: rp } = usePaneStore.getState();
+            const { panes, activePaneId, removePane: rp } = usePaneStore.getState();
             const visiblePanes = panes.filter(p => !p.minimized);
-            if (visiblePanes.length > 0) {
-                rp(visiblePanes[visiblePanes.length - 1].id);
-            }
+            if (visiblePanes.length === 0) return;
+
+            const active = activePaneId
+                ? visiblePanes.find(p => p.id === activePaneId)
+                : undefined;
+            const frontmost = active ?? visiblePanes.reduce((top, pane) => {
+                if (!top || pane.zIndex > top.zIndex) return pane;
+                return top;
+            }, visiblePanes[0]);
+
+            rp(frontmost.id);
         }, []),
         onShowShortcuts: useCallback(() => setIsShortcutsOpen(prev => !prev), []),
     });
