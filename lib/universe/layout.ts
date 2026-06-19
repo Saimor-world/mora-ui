@@ -6,10 +6,10 @@
 
 /** Percentage bounds for planet placement — tighter cluster around viewport centre. */
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 24,
-    maxX: 76,
-    minY: 20,
-    maxY: 72,
+    minX: 28,
+    maxX: 72,
+    minY: 24,
+    maxY: 68,
 };
 
 export const UNIVERSE_CORE_POINT = {
@@ -136,10 +136,10 @@ export const buildOrganicUniverseLayout = (
         const metrics = metricsMap[dept.id];
         const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
         const vitality = Math.min(1, signal / maxSignal);
-        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.06;
-        const radiusBias = 0.52 + (1 - vitality) * 0.14 + radialJitter;
-        const rx = 10 + radiusBias * 16;
-        const ry = 7 + radiusBias * 11;
+        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.05;
+        const radiusBias = 0.42 + (1 - vitality) * 0.10 + radialJitter;
+        const rx = 8 + radiusBias * 12;
+        const ry = 5 + radiusBias * 8;
 
         return {
             ...dept,
@@ -161,13 +161,13 @@ export const buildOrganicUniverseLayout = (
         };
     });
 
-    const minDistance = count > 14 ? 6.2 : count > 8 ? 7.4 : 8.8;
+    const minDistance = count > 14 ? 5.2 : count > 8 ? 6.2 : 7.4;
     for (let iteration = 0; iteration < 28; iteration += 1) {
         for (const point of points) {
             const dx = point.x - UNIVERSE_CORE_POINT.x;
             const dy = (point.y - UNIVERSE_CORE_POINT.y) * 1.18;
             const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
-            const coreDistance = count > 10 ? 7.5 : 9;
+            const coreDistance = count > 10 ? 5.5 : 6.5;
             if (distance >= coreDistance) continue;
 
             const push = (coreDistance - distance) * 0.34;
