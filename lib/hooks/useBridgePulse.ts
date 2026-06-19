@@ -1,9 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/statsClient';
-
-const REFRESH_MS = 45_000;
+import { queryKeys, STALE_TIMES } from '@/lib/queries/queryKeys';
 
 export interface BridgePulseSnapshot {
     loaded: boolean;
@@ -38,39 +37,27 @@ function deriveAmbientIntensity(stats: SystemStats | null): number {
     return Math.min(1, cpu * 0.25 + mem * 0.15 + load * 0.35 + incidentPressure * 0.25);
 }
 
+/** Shared TanStack Query cache — one poll for OrgStats, BridgePulse, and Universe nebula. */
 export function useBridgePulse(enabled = true): BridgePulseSnapshot {
-    const [stats, setStats] = useState<SystemStats | null>(null);
-    const [loaded, setLoaded] = useState(false);
-
-    const refresh = useCallback(async () => {
-        try {
-            const next = await fetchSystemStats();
-            setStats(next);
-        } catch {
-            setStats(null);
-        } finally {
-            setLoaded(true);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!enabled) return;
-        let cancelled = false;
-        const run = async () => {
-            await refresh();
-            if (cancelled) return;
-        };
-        run();
-        const id = window.setInterval(refresh, REFRESH_MS);
-        return () => {
-            cancelled = true;
-            window.clearInterval(id);
-        };
-    }, [enabled, refresh]);
+    const { data: stats, isSuccess: loaded } = useQuery({
+        queryKey: queryKeys.bridgePulse(),
+        queryFn: async () => {
+            try {
+                return await fetchSystemStats();
+            } catch {
+                return null;
+            }
+        },
+        enabled,
+        staleTime: STALE_TIMES.bridgePulse,
+        refetchInterval: STALE_TIMES.bridgePulse,
+        refetchIntervalInBackground: false,
+        placeholderData: (previous) => previous,
+    });
 
     return {
         loaded,
-        stats,
+        stats: stats ?? null,
         cpu: stats?.metrics?.cpu ?? null,
         moraLoad: stats?.intelligence?.mora_load ?? null,
         activeAnalysts: stats?.intelligence?.active_analysts ?? null,
@@ -82,6 +69,6 @@ export function useBridgePulse(enabled = true): BridgePulseSnapshot {
         criticalIncidents: stats?.nightwatch?.critical ?? null,
         dashboardUrl: stats?.dashboard?.url ?? DEFAULT_URLS.dashboard,
         larryUrl: stats?.dashboard?.larry_url ?? DEFAULT_URLS.larry,
-        ambientIntensity: deriveAmbientIntensity(stats),
+        ambientIntensity: deriveAmbientIntensity(stats ?? null),
     };
 }

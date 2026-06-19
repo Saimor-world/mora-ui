@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useOrbStore } from '@/lib/store/orbStore';
+import { usePageVisibility } from '@/lib/hooks/usePageVisibility';
 
 /**
  * MYCELIUM NEURAL OVERLAY (V9 Cinematic Reference)
@@ -15,7 +16,7 @@ import { useOrbStore } from '@/lib/store/orbStore';
 const GRID_SIZE = 120;
 const MAX_CONNECTIONS_PER_PARTICLE = 3;
 const CONNECTION_DISTANCE = 160;
-const BASE_PARTICLE_DENSITY = 18000; // More particles for V9 depth
+const BASE_PARTICLE_DENSITY = 24000; // Fewer particles — connections are O(n·neighbors)
 
 interface Particle {
     x: number;
@@ -32,6 +33,7 @@ interface Particle {
 
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const pageVisible = usePageVisibility();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
@@ -50,12 +52,13 @@ export const MyceliumOverlay: React.FC = () => {
 
     useEffect(() => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas || !pageVisible) return;
 
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let animationFrameId: number;
+        let animationFrameId = 0;
+        let running = false;
         let particles: Particle[] = [];
         let width = window.innerWidth;
         let height = window.innerHeight;
@@ -95,6 +98,7 @@ export const MyceliumOverlay: React.FC = () => {
         resize();
 
         const draw = () => {
+            if (!running) return;
             ctx.clearRect(0, 0, width, height);
 
             const grid = new Map<string, Particle[]>();
@@ -174,13 +178,35 @@ export const MyceliumOverlay: React.FC = () => {
             animationFrameId = requestAnimationFrame(draw);
         };
 
-        draw();
+        const start = () => {
+            if (running) return;
+            running = true;
+            animationFrameId = requestAnimationFrame(draw);
+        };
+
+        const stop = () => {
+            running = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = 0;
+            }
+        };
+
+        const handleVisibility = () => {
+            if (document.hidden) stop();
+            else start();
+        };
+
+        handleVisibility();
+        document.addEventListener('visibilitychange', handleVisibility);
+        start();
 
         return () => {
+            document.removeEventListener('visibilitychange', handleVisibility);
             window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animationFrameId);
+            stop();
         };
-    }, [shimmerIntensity]);
+    }, [shimmerIntensity, pageVisible]);
 
     return (
         <canvas

@@ -36,6 +36,7 @@ import {
     buildSoftUniverseRoute,
     buildOrganicUniverseLayout,
 } from '@/lib/universe/layout';
+import { ACCENT_STARS } from '@/lib/universe/backdrop';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentContext';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -123,6 +124,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const [universeFocusMode, setUniverseFocusMode] = useState<UniverseFocusMode>('explore');
     const prefersReducedMotion = useReducedMotion();
     const flyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const parallaxRafRef = useRef<number | null>(null);
+    const parallaxPendingRef = useRef({ x: 0, y: 0 });
+    const focusModeRef = useRef<UniverseFocusMode>('explore');
 
     const safeCompanies = useMemo(() => (Array.isArray(companiesData) ? companiesData : EMPTY_UNIVERSE_ITEMS), [companiesData]);
     const safeDepartments = useMemo(() => (Array.isArray(departmentsData) ? departmentsData : EMPTY_UNIVERSE_ITEMS), [departmentsData]);
@@ -640,6 +644,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     useEffect(() => () => {
         if (flyTimerRef.current) clearTimeout(flyTimerRef.current);
+        if (parallaxRafRef.current) cancelAnimationFrame(parallaxRafRef.current);
     }, []);
 
     const handleSemanticPreview = (pathId: string | null) => {
@@ -656,21 +661,32 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         const rect = event.currentTarget.getBoundingClientRect();
         const relativeX = ((event.clientX - rect.left) / rect.width) - 0.5;
         const relativeY = ((event.clientY - rect.top) / rect.height) - 0.5;
-        setParallaxOffset({
+        parallaxPendingRef.current = {
             x: relativeX * 18,
             y: relativeY * 14,
-        });
+        };
+
+        if (!parallaxRafRef.current) {
+            parallaxRafRef.current = requestAnimationFrame(() => {
+                parallaxRafRef.current = null;
+                setParallaxOffset(parallaxPendingRef.current);
+            });
+        }
 
         const normX = (event.clientX - rect.left) / rect.width;
         const normY = (event.clientY - rect.top) / rect.height;
         const zone = resolveUniverseInteractionZone(normX, normY);
         const nearPlanet = isNearAnyPlanet(normX, normY, visiblePlanets);
-        setUniverseFocusMode(resolveUniverseFocusMode({
+        const nextMode = resolveUniverseFocusMode({
             zone,
             nearPlanet,
             planetHovered: Boolean(hoverPlanetId),
             widgetHovered: false,
-        }));
+        });
+        if (nextMode !== focusModeRef.current) {
+            focusModeRef.current = nextMode;
+            setUniverseFocusMode(nextMode);
+        }
     }, [visiblePlanets, hoverPlanetId]);
 
     const resetUniverseParallax = useCallback(() => {
@@ -721,31 +737,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         };
     }, [totalSpaceCount, visiblePlanets.length]);
 
-    const accentStars = useMemo(
-        () => Array.from({ length: 72 }, (_, index) => {
-            const left = ((index * 19.7) % 96) + 2;
-            const top = ((index * 13.4) % 78) + 6;
-            const size = [0.9, 1.2, 1.6, 2.2, 2.8][index % 5];
-            const color = [
-                'rgba(255,255,255,0.92)',
-                'rgba(191,219,254,0.88)',
-                'rgba(167,243,208,0.78)',
-                'rgba(250,204,21,0.58)',
-                'rgba(196,181,253,0.64)',
-            ][index % 5];
-            return {
-                id: `accent-star-${index}`,
-                left,
-                top,
-                size,
-                color,
-                opacity: 0.34 + ((index % 6) * 0.075),
-            };
-        }),
-        []
-    );
+    const accentStars = ACCENT_STARS;
     const heroStars = useMemo(
-        () => Array.from({ length: 20 }, (_, index) => {
+        () => Array.from({ length: 8 }, (_, index) => {
             const left = ((index * 23.7) % 88) + 6;
             const top = ((index * 15.1) % 72) + 8;
             const size = [1.8, 2.4, 3.1, 3.8][index % 4];
@@ -771,7 +765,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
     const backgroundCalmFactor = (hasUniverseInteraction ? 0.82 : 1) * nebulaPulseFactor;
     const widgetGlanceOpacity = universeWidgetOpacity(universeFocusMode, hasUniverseInteraction);
-    const widgetGlanceBlur = universeFocusMode === 'explore' ? 'blur(1.6px)' : hasUniverseInteraction ? 'blur(1px)' : 'blur(0px)';
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
@@ -800,6 +793,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const handleUniversePointerLeave = useCallback(() => {
         resetUniverseParallax();
+        focusModeRef.current = 'explore';
         setUniverseFocusMode('explore');
         scheduleHoverRelease();
     }, [resetUniverseParallax, scheduleHoverRelease]);
@@ -867,7 +861,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 style={{
                     background: `linear-gradient(104deg, transparent 0%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 16%, ${ritualScene.aura.replace(/[\d.]+\)$/, '0.10)')} 32%, ${ritualScene.accent.replace(/[\d.]+\)$/, '0.06)')} 48%, transparent 84%)`,
                     transform: 'scale(1.2)',
-                    filter: 'blur(34px)',
+                    filter: 'blur(20px)',
                     mixBlendMode: 'screen',
                 }}
             />
@@ -889,7 +883,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 style={{
                     background: 'conic-gradient(from 218deg at 50% 50%, transparent 0deg, rgba(45,212,191,0.05) 58deg, rgba(59,130,246,0.06) 112deg, rgba(167,139,250,0.035) 168deg, transparent 250deg, rgba(250,204,21,0.022) 306deg, transparent 360deg)',
                     transform: 'scale(1.34)',
-                    filter: 'blur(42px)',
+                    filter: 'blur(24px)',
                     mixBlendMode: 'screen',
                 }}
             />
@@ -943,7 +937,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             width: `${star.size}px`,
                             height: `${star.size}px`,
                             background: star.color,
-                            boxShadow: `0 0 ${Math.max(8, star.size * 10)}px ${star.color}`,
+                            boxShadow: `0 0 ${Math.max(4, star.size * 6)}px ${star.color}`,
                             opacity: star.opacity,
                         }}
                     />
@@ -965,20 +959,19 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 }}
             >
                 {heroStars.map((star) => (
-                    <motion.div
+                    <div
                         key={star.id}
-                        className="absolute rounded-full"
+                        className="absolute rounded-full animate-pulse"
                         style={{
                             left: `${star.left}%`,
                             top: `${star.top}%`,
                             width: `${star.size}px`,
                             height: `${star.size}px`,
                             background: star.color,
-                            boxShadow: `0 0 ${star.size * 16}px ${star.color}`,
+                            boxShadow: `0 0 ${star.size * 12}px ${star.color}`,
+                            animationDuration: `${star.duration}s`,
+                            animationDelay: `${star.delay}s`,
                         }}
-                        initial={{ opacity: 0.42, scale: 1 }}
-                        animate={{ opacity: [0.42, 1, 0.54], scale: [1, 1.18, 1] }}
-                        transition={{ duration: star.duration, delay: star.delay, repeat: Infinity, ease: 'easeInOut' }}
                     />
                 ))}
             </motion.div>
@@ -990,7 +983,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
                 animate={{
                     opacity: widgetGlanceOpacity,
-                    filter: widgetGlanceBlur,
                 }}
                 transition={{ duration: 0.55, ease: 'easeOut' }}
             >

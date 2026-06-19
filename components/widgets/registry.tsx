@@ -287,11 +287,20 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     };
 
     if (compact) {
+        const leadOnline = online[0];
+        const leadAway = away[0];
         return (
             <button type="button" onClick={context.openTeam} className="flex h-full w-full flex-col justify-center gap-2 text-left">
-                <div className="flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
-                    <span className="text-[10px] text-white/68">{online.length} online</span>
+                <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400' : 'bg-white/20'}`} />
+                        <span className="text-[10px] text-white/68 truncate">
+                            {online.length > 0 ? `${online.length} online` : 'Niemand online'}
+                        </span>
+                    </div>
+                    {peers.length > 0 && (
+                        <span className="shrink-0 text-[9px] tabular-nums text-white/32">{peers.length} ges.</span>
+                    )}
                 </div>
                 <div className="flex -space-x-1.5">
                     {[...online, ...away].slice(0, 4).map((p) => {
@@ -307,8 +316,13 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                             </div>
                         );
                     })}
-                    {peers.length === 0 && <span className="text-[10px] text-white/38">Niemand online</span>}
                 </div>
+                {(leadOnline || leadAway) && (
+                    <span className="truncate text-[9px] text-white/42">
+                        {leadOnline ? leadOnline.name : leadAway?.name}
+                        {online.length > 1 ? ` +${online.length - 1}` : away.length > 0 && online.length === 0 ? ` · ${away.length} abw.` : ''}
+                    </span>
+                )}
             </button>
         );
     }
@@ -335,6 +349,7 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const compact = context.compact;
 
     if (compact) {
+        const urgent = attention.filter((a) => (a.severity ?? 0) >= 2).length;
         return (
             <button type="button" onClick={context.openMora} className="flex h-full w-full flex-col justify-center gap-1.5 text-left">
                 <div className="flex items-center justify-between">
@@ -347,7 +362,12 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     </span>
                 </div>
                 {attention[0] ? (
-                    <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{attention[0].title}</span>
+                    <>
+                        <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{attention[0].title}</span>
+                        {urgent > 0 && (
+                            <span className="text-[9px] text-amber-300/65">{urgent} brauchen Aufmerksamkeit</span>
+                        )}
+                    </>
                 ) : (
                     <span className="flex items-center gap-1.5 text-[10px] text-white/40">
                         <CheckCircle2 size={11} className="text-emerald-400/55" /> Alles ruhig
@@ -438,7 +458,7 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 
     return (
         <div className={`flex h-full flex-col justify-center ${compact ? 'gap-1' : 'gap-2'}`}>
-            {rows.map(({ label, value }) => (
+            {rows.slice(0, compact ? 3 : rows.length).map(({ label, value }) => (
                 <div key={label} className="flex items-center gap-1.5">
                     <span className={`shrink-0 text-right uppercase tracking-[.12em] text-white/35 ${compact ? 'w-[52px] text-[7px]' : 'w-[72px] text-[9px]'}`}>{label}</span>
                     <div className="flex-1 h-1 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -455,6 +475,12 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                 </div>
             ))}
             {pulseLine}
+            {compact && s?.documents != null && (
+                <div className="mt-1 flex items-center justify-between text-[9px] text-white/38">
+                    <span>{s.members ?? '–'} Mitglieder</span>
+                    <span className="tabular-nums">{s.documents} Docs</span>
+                </div>
+            )}
             {!compact && context.openDashboard && (
                 <button
                     type="button"
@@ -502,7 +528,7 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
             >
                 <div className="flex items-center gap-2">
                     <span
-                        className="h-2 w-2 shrink-0 rounded-full animate-pulse"
+                        className="h-2 w-2 shrink-0 rounded-full"
                         style={{ background: pulse.ambientIntensity > 0.5 ? 'rgb(251,191,36)' : 'rgb(52,211,153)' }}
                     />
                     <span className={`text-[11px] font-medium ${statusTone}`}>{statusLabel}</span>
@@ -510,7 +536,8 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
                 <div className="grid grid-cols-2 gap-1 text-[9px] tabular-nums text-white/45">
                     <span>CPU {pulse.cpu != null ? `${Math.round(pulse.cpu)}%` : '–'}</span>
                     <span>MÔRA {pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'}</span>
-                    {pulse.larryNodes != null && <span className="col-span-2">Larry · {pulse.larryNodes}</span>}
+                    {pulse.bridgeNodes != null && <span>Bridge {pulse.bridgeNodes}</span>}
+                    {pulse.larryNodes != null && <span>Larry {pulse.larryNodes}</span>}
                 </div>
             </button>
         );
@@ -545,14 +572,36 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = ({ context }) =>
     );
 };
 
-const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => (
+const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
+    const compact = context.compact;
+    const actions = [
+        { icon: <FolderOpen size={compact ? 16 : 20} />, label: 'Finder', onClick: context.openFinder },
+        { icon: <Sparkles size={compact ? 16 : 20} />, label: 'MÔRA', onClick: context.openMora },
+        { icon: <Compass size={compact ? 16 : 20} />, label: 'Erkunden', onClick: context.goExplore },
+        { icon: <Plug size={compact ? 16 : 20} />, label: 'Apps', onClick: context.openIntegrations },
+    ] as const;
+
+    if (compact) {
+        return (
+            <div className="grid h-full grid-cols-2 gap-1.5 content-center">
+                {actions.map(({ icon, label, onClick }) => (
+                    <button
+                        key={label}
+                        type="button"
+                        onClick={onClick}
+                        className="flex flex-col items-center justify-center gap-1 rounded-lg border border-white/[0.07] bg-white/[0.04] py-2 transition-colors hover:border-white/[0.16] hover:bg-white/[0.08]"
+                    >
+                        <span className="text-white/50">{icon}</span>
+                        <span className="text-[8px] uppercase tracking-[.12em] text-white/42">{label}</span>
+                    </button>
+                ))}
+            </div>
+        );
+    }
+
+    return (
     <div className="grid h-full grid-cols-2 gap-2 content-start">
-        {([
-            { icon: <FolderOpen size={20} />, label: 'Finder',       onClick: context.openFinder },
-            { icon: <Sparkles  size={20} />, label: 'MÔRA',          onClick: context.openMora },
-            { icon: <Compass   size={20} />, label: 'Erkunden',      onClick: context.goExplore },
-            { icon: <Plug      size={20} />, label: 'Integrationen', onClick: context.openIntegrations },
-        ] as const).map(({ icon, label, onClick }) => (
+        {actions.map(({ icon, label, onClick }) => (
             <button
                 key={label}
                 type="button"
@@ -564,7 +613,8 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = ({ context }) =
             </button>
         ))}
     </div>
-);
+    );
+};
 
 const LARRY_KIND_META: Record<string, { label: string; icon: React.ReactNode }> = {
     canvas: { label: 'Canvas', icon: <Layout size={11} /> },
@@ -622,6 +672,12 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     if (compact) {
         const latest = artifacts[0];
         const meta = larryKindMeta(String(latest.kind));
+        const kindCounts = artifacts.reduce<Record<string, number>>((acc, a) => {
+            const k = String(a.kind);
+            acc[k] = (acc[k] ?? 0) + 1;
+            return acc;
+        }, {});
+        const kindSummary = Object.entries(kindCounts).slice(0, 2).map(([k, n]) => `${larryKindMeta(k).label} ${n}`).join(' · ');
         return (
             <button
                 type="button"
@@ -639,6 +695,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
                     {meta.label}
                 </span>
                 <span className="line-clamp-2 text-[10px] leading-snug text-white/62">{latest.title}</span>
+                {kindSummary && <span className="truncate text-[9px] text-white/35">{kindSummary}</span>}
             </button>
         );
     }
@@ -690,11 +747,14 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
 
 const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     const [now, setNow] = React.useState<Date | null>(null);
+    const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
+    const tickMs = compact ? 15_000 : 1_000;
+
     React.useEffect(() => {
         setNow(new Date());
-        const t = window.setInterval(() => setNow(new Date()), 1000);
+        const t = window.setInterval(() => setNow(new Date()), tickMs);
         return () => window.clearInterval(t);
-    }, []);
+    }, [tickMs]);
     if (!now) {
         return <div className="h-full w-full" aria-hidden />;
     }
@@ -718,7 +778,7 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         return { x1: 50 + (major ? 35 : 37) * Math.cos(a), y1: 50 + (major ? 35 : 37) * Math.sin(a), x2: 50 + 42 * Math.cos(a), y2: 50 + 42 * Math.sin(a), major };
     });
     const date = now.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
+    const timeLabel = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
 
     const face = (
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-label={`Uhr ${h}:${String(m).padStart(2,'0')}`}>
@@ -740,8 +800,9 @@ const ClockWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
     if (compact) {
         return (
             <div className="flex h-full w-full flex-col items-center justify-center">
-                <div className="aspect-square h-[88%] w-[88%] max-h-full max-w-full">{face}</div>
-                <div className="mt-0.5 text-[7px] uppercase tracking-[0.14em] text-white/30" suppressHydrationWarning>{date}</div>
+                <div className="aspect-square h-[78%] w-[78%] max-h-full max-w-full">{face}</div>
+                <div className="mt-0.5 text-[8px] tabular-nums text-white/42" suppressHydrationWarning>{timeLabel}</div>
+                <div className="text-[7px] uppercase tracking-[0.14em] text-white/30" suppressHydrationWarning>{date}</div>
             </div>
         );
     }
@@ -813,6 +874,7 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
     const areaFill = critical > 0 ? 'rgba(248,113,113,0.08)' : warnings > 0 ? 'rgba(251,191,36,0.08)' : 'rgba(52,211,153,0.06)';
 
     if (compact) {
+        const topOpen = open[0];
         return (
             <button
                 type="button"
@@ -838,6 +900,9 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = ({ context }) => 
                         <div className="text-[8px] uppercase tracking-[.14em] text-white/32">
                             {!loaded ? 'Lädt…' : open.length === 0 ? 'Alles ruhig' : `${open.length} offen`}
                         </div>
+                        {topOpen && (
+                            <div className="mt-1 truncate text-[9px] text-white/48">{topOpen.title || topOpen.host}</div>
+                        )}
                     </div>
                 </div>
                 <div className="grid grid-cols-3 gap-1">
@@ -964,6 +1029,7 @@ const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
         { label: 'Ordner',   value: folders },
     ];
     const maxVal = Math.max(...rows.map((r) => r.value), 1);
+    const topSpaces = [...spaces].sort((a, b) => (b.folder_count ?? 0) - (a.folder_count ?? 0));
     return (
         <div className={`flex h-full flex-col ${compact ? 'gap-2 p-1' : 'justify-center gap-3'}`}>
             {rows.map(({ label, value }) => (
@@ -984,9 +1050,12 @@ const DeptStatsWidget: React.FC<{ context: WidgetContext }> = ({ context }) => {
             ))}
             {compact && spaces.length > 0 && (
                 <div className="mt-1 flex flex-col gap-1 border-t border-white/[0.06] pt-2">
-                    {spaces.slice(0, 4).map((space) => (
-                        <div key={space.id} className="truncate text-[10px] text-white/52">
-                            {space.name}
+                    {topSpaces.slice(0, 4).map((space) => (
+                        <div key={space.id} className="flex items-center justify-between gap-2 text-[10px]">
+                            <span className="truncate text-white/52">{space.name}</span>
+                            {(space.folder_count ?? 0) > 0 && (
+                                <span className="shrink-0 tabular-nums text-white/32">{space.folder_count}</span>
+                            )}
                         </div>
                     ))}
                     {spaces.length > 4 && (

@@ -370,6 +370,9 @@ export const MoraShell: React.FC = () => {
     const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
+    /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
+    const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
+    const starFieldDensity = universeLightAmbient ? 'low' : 'medium';
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -725,24 +728,24 @@ export const MoraShell: React.FC = () => {
                 <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
             </div>
             <StarField
-                density="medium"
-                opacity={0.97}
+                density={starFieldDensity}
+                opacity={universeLightAmbient ? 0.72 : 0.97}
                 paused={pauseHeavyBackground}
             />
 
-            {/* Mycelium neural network — living particle threads, screen-blended over starfield */}
-            {!pauseHeavyBackground && <MyceliumOverlay />}
+            {/* Mycelium neural network — hidden on Universe (DeptSpaceMap / cosmos has its own depth) */}
+            {!pauseHeavyBackground && !isUniverseExploreSurface && <MyceliumOverlay />}
 
             {/* Neural Grid �" Tesla-style tech texture, reacts to Mora state */}
             <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
 
             {/* Ambient Dust � scene-reactive floating particles */}
             <AmbientDust
-                count={32}
+                count={universeLightAmbient ? 8 : 32}
                 color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
                 sizeRange={[0.8, 2.5]}
                 durationRange={[18, 36]}
-                opacity={0.28}
+                opacity={universeLightAmbient ? 0.14 : 0.28}
             />
 
             {/* ================================================================

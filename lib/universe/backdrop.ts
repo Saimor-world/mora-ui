@@ -31,7 +31,7 @@ export const UNIVERSE_NEBULA: Record<RitualSceneId, string> = {
         radial-gradient(800px 480px at 22% 78%, rgba(99,102,241,0.10) 0%, transparent 56%)`,
 };
 
-export const ACCENT_STARS = Array.from({ length: 72 }, (_, index) => {
+export const ACCENT_STARS = Array.from({ length: 28 }, (_, index) => {
     const left = ((index * 19.7) % 96) + 2;
     const top = ((index * 13.4) % 78) + 6;
     const size = [0.9, 1.2, 1.6, 2.2, 2.8][index % 5];

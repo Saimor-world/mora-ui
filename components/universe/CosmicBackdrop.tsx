@@ -75,7 +75,7 @@ export function CosmicBackdrop({ deptTint, calmFactor = 1, parallax = { x: 0, y:
                             width: `${star.size}px`,
                             height: `${star.size}px`,
                             background: star.color,
-                            boxShadow: `0 0 ${Math.max(8, star.size * 10)}px ${star.color}`,
+                            boxShadow: `0 0 ${Math.max(4, star.size * 6)}px ${star.color}`,
                             opacity: star.opacity,
                         }}
                     />

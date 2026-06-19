@@ -102,7 +102,9 @@ export const StarField: React.FC<StarFieldProps> = ({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        const densityScale = density === 'low' ? 0.45 : density === 'high' ? 1.8 : 1.0;
+        const densityScale = density === 'low' ? 0.28 : density === 'high' ? 1.8 : 1.0;
+        const drawNebulaLayer = density !== 'low';
+        const drawStarGlow = density !== 'low';
 
         let farLayer:  StarLayer[] = [];
         let midLayer:  StarLayer[] = [];
@@ -165,7 +167,7 @@ export const StarField: React.FC<StarFieldProps> = ({
             });
         };
 
-        const drawLayer = (layer: StarLayer[], t: number, warpStreak: number) => {
+        const drawLayer = (layer: StarLayer[], t: number, warpStreak: number, frameIndex: number) => {
             layer.forEach((s) => {
                 s.twinklePhase += s.twinkleSpeed;
                 const twinkle = 0.35 + Math.sin(s.twinklePhase) * 0.65;
@@ -184,8 +186,8 @@ export const StarField: React.FC<StarFieldProps> = ({
                     ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                     ctx.fill();
 
-                    // Glow for bright near stars
-                    if (s.size > 1.2 && alpha > 0.45) {
+                    // Glow for bright near stars — skip on low density / every other frame
+                    if (drawStarGlow && s.size > 1.2 && alpha > 0.45 && frameIndex % 2 === 0) {
                         const glow = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.size * 3.5);
                         glow.addColorStop(0, `${s.color}30`);
                         glow.addColorStop(1, 'transparent');
@@ -242,8 +244,10 @@ export const StarField: React.FC<StarFieldProps> = ({
 
             ctx.clearRect(0, 0, w, h);
 
-            // Nebula first (background)
-            drawNebula(t);
+            // Nebula first (background) — skipped on low density (Universe has its own nebula)
+            if (drawNebulaLayer) {
+                drawNebula(t);
+            }
 
             // Warp interpolation
             const targetWarp = warp ? 1 : 0;
@@ -253,9 +257,9 @@ export const StarField: React.FC<StarFieldProps> = ({
             ctx.setLineDash([]);
 
             // Three depth layers — far drawn first (dimmest, slowest)
-            drawLayer(farLayer,  t, warpSpeed);
-            drawLayer(midLayer,  t, warpSpeed);
-            drawLayer(nearLayer, t, warpSpeed);
+            drawLayer(farLayer,  t, warpSpeed, frameCount);
+            drawLayer(midLayer,  t, warpSpeed, frameCount);
+            drawLayer(nearLayer, t, warpSpeed, frameCount);
 
             // Shooting stars
             drawShooters();
