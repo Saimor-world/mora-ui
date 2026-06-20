@@ -27,6 +27,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
+import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -134,8 +135,9 @@ export const HomeSurface: React.FC = () => {
     const setUser     = useSessionStore((s) => s.setUser);
     const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
     const { data: companies = [] }   = useCompanies();
-    const { data: homeView }         = useHomeView();
-    const { data: homeStatus }       = useHomeStatus();
+    const { data: homeView, isError: homeViewError, isLoading: homeViewLoading } = useHomeView();
+    const { data: homeStatus, isError: homeStatusError } = useHomeStatus();
+    const homeDataUnavailable = homeViewError || homeStatusError;
     const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
     const { data: departments = [] } = useDepartments(resolvedCompanyId);
     const { data: treeData = [] }    = useTree(resolvedCompanyId);
@@ -871,6 +873,7 @@ export const HomeSurface: React.FC = () => {
                     className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36 flex justify-center"
                 >
                     <div className="flex w-full max-w-[1320px] flex-col min-h-0">
+                    <HomeDataSourceError show={homeDataUnavailable && !homeViewLoading} />
                     <div className="min-h-0 flex-1">
                     <HomeCockpit
                         firstName={firstName}
@@ -1017,7 +1020,7 @@ export const HomeSurface: React.FC = () => {
                 </motion.div>
 
                 {/* View-Highlights: Aufmerksamkeit + Nächste Aufgaben aus dem Backend */}
-                <HomeViewHighlights view={homeView} />
+                <HomeViewHighlights view={homeView} unavailable={homeDataUnavailable && !homeViewLoading} />
 
                 {/* Schnellzugriff — compact icon-action grid replaces old suggestion cards */}
                 {moraSuggestions.length > 0 && (

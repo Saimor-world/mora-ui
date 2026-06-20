@@ -53,3 +53,12 @@ it('returns the home status probe data from the endpoint', async () => {
     expect(result.current.data!.placeholders_detected[0].label).toBe('Mail fuer OpenClaw vorbereiten');
     expect(coreGet).toHaveBeenCalledWith('/v3/views/home/status', { isOptional: true });
 });
+
+it('surfaces query error when home view endpoint fails', async () => {
+    (coreGet as jest.Mock).mockRejectedValue(new Error('CORE unreachable'));
+
+    const { result } = renderHook(() => useHomeView(), { wrapper });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
+});

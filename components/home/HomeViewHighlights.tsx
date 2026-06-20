@@ -19,9 +19,22 @@ function sevDotColor(severity: number | null): string {
 
 interface Props {
     view: HomeView | undefined;
+    unavailable?: boolean;
 }
 
-export function HomeViewHighlights({ view }: Props) {
+export function HomeViewHighlights({ view, unavailable = false }: Props) {
+    if (unavailable) {
+        return (
+            <div
+                data-testid="home-highlights-unavailable"
+                className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 text-sm text-amber-100/80"
+                role="alert"
+            >
+                Datenquelle nicht erreichbar — Signale und Aufgaben können nicht geladen werden.
+            </div>
+        );
+    }
+
     const attention = view?.attention ?? [];
     const nextSteps = view?.next_steps ?? [];
 
