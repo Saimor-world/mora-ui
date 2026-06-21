@@ -192,6 +192,48 @@ const LiveRow: React.FC<{
     </button>
 );
 
+const CAL_COLORS = [
+    'rgba(var(--scene-rgb,16,185,129),0.8)',
+    'rgba(139,92,246,0.75)',
+    'rgba(59,130,246,0.75)',
+    'rgba(236,72,153,0.7)',
+];
+
+function isHomeGlance(context: WidgetContext) {
+    return context.surface === 'home' && Boolean(context.homeGlance) && !context.compact;
+}
+
+function glanceRowLimit(context: WidgetContext, homeDefault = 2, desktopDefault = 4) {
+    if (context.glanceLimit != null) return context.glanceLimit;
+    return isHomeGlance(context) ? homeDefault : desktopDefault;
+}
+
+const AlleAnzeigenLink: React.FC<{ onClick?: () => void; extra?: number; label?: string }> = ({
+    onClick, extra, label = 'Alle anzeigen',
+}) => {
+    if (!onClick) return null;
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            className="mt-1 self-start text-[9px] font-medium uppercase tracking-[0.16em] text-cyan-200/58 transition-colors hover:text-cyan-100/88"
+        >
+            {label}{extra != null && extra > 0 ? ` (+${extra})` : ''} →
+        </button>
+    );
+};
+
+function nameInitials(name: string): string {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || '??';
+}
+function nameHue(name: string): number {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
+    return h;
+}
+
 // ── Widget bodies ───────────────────────────────────────────────────────────
 
 const MoraWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
@@ -320,56 +362,146 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     }
 
     return (
-        <div className="flex h-full flex-col gap-2 overflow-hidden">
-            <DayLine
-                icon={<CalendarDays size={10} />}
-                label="Termin"
-                value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
-                empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
-                onClick={nextCal ? context.openCalendar : context.openIntegrations}
-            />
-            <DayLine
-                icon={<Mail size={10} />}
-                label="Mail"
-                value={nextMail ? `${nextMail.subject}${nextMail.from ? ` · ${nextMail.from}` : ''}` : ''}
-                empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
-                onClick={nextMail ? context.openMail : context.openIntegrations}
-            />
-            <DayLine
-                icon={<CheckCircle2 size={10} />}
-                label="Aufgabe"
-                value={nextTask?.title ?? ''}
-                empty="Noch keine Aufgaben"
-                onClick={context.openMora}
-            />
-            {hasMore && (
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (cal.length > 1 && context.openCalendar) context.openCalendar();
-                        else if (mail.length > 1 && context.openMail) context.openMail();
-                        else context.openMora?.();
-                    }}
-                    className="self-start text-[10px] uppercase tracking-[0.14em] text-cyan-200/55 transition-colors hover:text-cyan-100/85"
-                >
-                    mehr →
-                </button>
+        <div className="flex h-full flex-col gap-2.5 overflow-hidden">
+            {isHomeGlance(context) ? (
+                <>
+                    <div>
+                        <SectionLabel icon={<CalendarDays size={10} className="opacity-70" />}>
+                            Termine
+                            {cal.length > 0 && (
+                                <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{cal.length}</span>
+                            )}
+                        </SectionLabel>
+                        {cal.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                                {cal.slice(0, glanceRowLimit(context)).map((c, i) => (
+                                    <button
+                                        key={c.id}
+                                        type="button"
+                                        onClick={context.openCalendar}
+                                        className="flex items-stretch overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] text-left transition-colors hover:bg-white/[0.05]"
+                                    >
+                                        <div className="w-1 shrink-0 rounded-l-xl" style={{ background: CAL_COLORS[i % CAL_COLORS.length] }} />
+                                        <div className="flex min-w-0 flex-1 items-center gap-2 px-2.5 py-1.5">
+                                            {c.time && <span className="w-9 shrink-0 text-[10px] tabular-nums text-white/42">{c.time}</span>}
+                                            <span className="min-w-0 flex-1 truncate text-[11px] text-white/76">{c.title}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                                {cal.length > glanceRowLimit(context) && (
+                                    <AlleAnzeigenLink onClick={context.openCalendar} extra={cal.length - glanceRowLimit(context)} />
+                                )}
+                            </div>
+                        ) : calConfigured ? (
+                            <Empty>Keine Termine heute</Empty>
+                        ) : (
+                            <ConnectCTA label="Kalender verbinden" onClick={context.openIntegrations} />
+                        )}
+                    </div>
+                    <div>
+                        <SectionLabel icon={<Mail size={10} className="opacity-70" />}>
+                            Posteingang
+                            {mail.length > 0 && (
+                                <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{mail.length}</span>
+                            )}
+                        </SectionLabel>
+                        {mail.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                                {mail.slice(0, glanceRowLimit(context)).map((m) => {
+                                    const initials = nameInitials(m.from || '?');
+                                    const hue = nameHue(m.from || '');
+                                    return (
+                                        <button
+                                            key={m.id}
+                                            type="button"
+                                            onClick={context.openMail}
+                                            className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.025] px-2.5 py-1.5 text-left transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
+                                        >
+                                            <div
+                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-medium"
+                                                style={{ background: `hsla(${hue},55%,40%,0.25)`, color: `hsla(${hue},80%,75%,0.9)` }}
+                                            >
+                                                {initials}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-[11px] text-white/76">{m.subject}</div>
+                                                <div className="truncate text-[9px] text-white/38">{m.from}</div>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                                {mail.length > glanceRowLimit(context) && (
+                                    <AlleAnzeigenLink onClick={context.openMail} extra={mail.length - glanceRowLimit(context)} />
+                                )}
+                            </div>
+                        ) : mailConfigured ? (
+                            <Empty>Posteingang leer</Empty>
+                        ) : (
+                            <ConnectCTA label="Mail verbinden" onClick={context.openIntegrations} />
+                        )}
+                    </div>
+                    <div>
+                        <SectionLabel icon={<CheckCircle2 size={10} className="opacity-70" />}>
+                            Aufgaben
+                            {tasks.length > 0 && (
+                                <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{tasks.length}</span>
+                            )}
+                        </SectionLabel>
+                        {tasks.length > 0 ? (
+                            <div className="flex flex-col gap-1">
+                                {tasks.slice(0, glanceRowLimit(context)).map((t) => (
+                                    <div key={t.id} className="flex items-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
+                                        <span className="h-3.5 w-3.5 shrink-0 rounded-full border" style={{ borderColor: 'rgba(var(--scene-rgb,16,185,129),0.4)' }} />
+                                        <span className="min-w-0 flex-1 truncate text-[11px] text-white/72">{t.title}</span>
+                                    </div>
+                                ))}
+                                {tasks.length > glanceRowLimit(context) && (
+                                    <AlleAnzeigenLink onClick={context.openMora} extra={tasks.length - glanceRowLimit(context)} />
+                                )}
+                            </div>
+                        ) : (
+                            <Empty>MÔRA hat noch keine Aufgaben erkannt.</Empty>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <>
+                    <DayLine
+                        icon={<CalendarDays size={10} />}
+                        label="Termin"
+                        value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
+                        empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
+                        onClick={nextCal ? context.openCalendar : context.openIntegrations}
+                    />
+                    <DayLine
+                        icon={<Mail size={10} />}
+                        label="Mail"
+                        value={nextMail ? `${nextMail.subject}${nextMail.from ? ` · ${nextMail.from}` : ''}` : ''}
+                        empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
+                        onClick={nextMail ? context.openMail : context.openIntegrations}
+                    />
+                    <DayLine
+                        icon={<CheckCircle2 size={10} />}
+                        label="Aufgabe"
+                        value={nextTask?.title ?? ''}
+                        empty="Noch keine Aufgaben"
+                        onClick={context.openMora}
+                    />
+                    {hasMore && (
+                        <AlleAnzeigenLink
+                            onClick={() => {
+                                if (cal.length > 1 && context.openCalendar) context.openCalendar();
+                                else if (mail.length > 1 && context.openMail) context.openMail();
+                                else context.openMora?.();
+                            }}
+                        />
+                    )}
+                </>
             )}
         </div>
     );
 });
 MeinTagWidget.displayName = 'MeinTagWidget';
-
-function nameInitials(name: string): string {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase() || '??';
-}
-function nameHue(name: string): number {
-    let h = 0;
-    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-    return h;
-}
 
 const TeamWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { peers } = usePresence();
@@ -454,23 +586,33 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }
         );
     }
 
+    const limit = glanceRowLimit(context, 3, 5);
+    const visibleOnline = online.slice(0, limit);
+    const visibleAway = away.slice(0, Math.max(0, limit - visibleOnline.length));
+    const hiddenCount = Math.max(0, peers.length - visibleOnline.length - visibleAway.length);
+
     return (
         <div className="flex h-full flex-col gap-2 overflow-hidden">
-            <div className="flex items-center gap-2">
-                <span className={`h-2 w-2 shrink-0 rounded-full ${online.length > 0 ? 'bg-emerald-400' : 'bg-white/20'}`} />
-                <span className="text-[12px] text-white/72">{online.length} {online.length === 1 ? 'Person' : 'Personen'} online</span>
-            </div>
-            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-                {online.slice(0, 3).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={true} />)}
-                {away.slice(0, 2).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={false} />)}
-                {peers.length === 0 && <Empty>Gerade niemand online.</Empty>}
-                {peers.length > 5 && (
-                    <button type="button" onClick={context.openTeam} className="self-start text-[10px] uppercase tracking-[0.14em] text-violet-200/55 hover:text-violet-100/80">
-                        mehr →
-                    </button>
+            <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 shrink-0 rounded-full ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
+                    <span className="text-[12px] text-white/72">{online.length} {online.length === 1 ? 'Person' : 'Personen'} online</span>
+                </div>
+                {isHomeGlance(context) && peers.length > 0 && (
+                    <MicroProgress value={onlineRatio * 100} tone={tone} className="w-16" />
                 )}
             </div>
-            <ActionButton icon={<Users size={13} />} label="Team öffnen" onClick={context.openTeam} />
+            <div className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-hidden">
+                {visibleOnline.map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={true} />)}
+                {visibleAway.map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={false} />)}
+                {peers.length === 0 && <Empty>Gerade niemand online.</Empty>}
+            </div>
+            {(hiddenCount > 0 || isHomeGlance(context)) && (
+                <AlleAnzeigenLink onClick={context.openTeam} extra={hiddenCount} />
+            )}
+            {!isHomeGlance(context) && (
+                <ActionButton icon={<Users size={13} />} label="Team öffnen" onClick={context.openTeam} />
+            )}
         </div>
     );
 });
@@ -516,14 +658,32 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
         );
     }
 
+    const limit = glanceRowLimit(context, 3, 6);
+
     return (
         <div className="flex h-full flex-col gap-1.5 overflow-hidden">
-            {attention.length > 0 && (
+            {!isHomeGlance(context) && (
                 <div className="mb-0.5 flex items-center justify-between">
                     <span className="text-[9px] uppercase tracking-[.16em] text-white/35">Signale</span>
                     <span
                         className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tabular-nums"
-                        style={{ background: 'rgba(251,191,36,0.15)', color: 'rgb(251,191,36)' }}
+                        style={{
+                            background: attention.length > 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.06)',
+                            color: attention.length > 0 ? 'rgb(251,191,36)' : 'rgba(255,255,255,0.35)',
+                        }}
+                    >
+                        {attention.length}
+                    </span>
+                </div>
+            )}
+            {isHomeGlance(context) && (
+                <div className="mb-0.5 flex items-center justify-end">
+                    <span
+                        className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tabular-nums"
+                        style={{
+                            background: attention.length > 0 ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.06)',
+                            color: attention.length > 0 ? 'rgb(251,191,36)' : 'rgba(255,255,255,0.35)',
+                        }}
                     >
                         {attention.length}
                     </span>
@@ -531,7 +691,7 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
             )}
             {attention.length > 0 ? (
                 <>
-                    {attention.slice(0, 3).map((a) => (
+                    {attention.slice(0, limit).map((a) => (
                         <button
                             key={a.id}
                             type="button"
@@ -545,15 +705,23 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                             </div>
                         </button>
                     ))}
-                    {attention.length > 3 && (
-                        <button type="button" onClick={context.openMora} className="self-start text-[10px] uppercase tracking-[0.14em] text-amber-200/55 hover:text-amber-100/80">
-                            mehr →
-                        </button>
+                    {attention.length > limit && (
+                        <AlleAnzeigenLink onClick={context.openMora} extra={attention.length - limit} />
                     )}
                 </>
             ) : (
-                <div className="flex h-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-4 text-[12px] text-white/45">
+                <div className="flex items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-[12px] text-white/45">
                     <CheckCircle2 size={14} className="text-emerald-400/60" /> Keine offenen Signale
+                </div>
+            )}
+            {isHomeGlance(context) && changes.length > 0 && (
+                <div className="mt-1 border-t border-white/[0.05] pt-1.5">
+                    <SectionLabel icon={<TrendingUp size={10} className="opacity-70" />}>Änderungen</SectionLabel>
+                    {changes.slice(0, 2).map((c) => (
+                        <div key={c.id} className="mb-1 truncate rounded-lg border border-violet-400/12 bg-violet-400/[0.05] px-2.5 py-1.5 text-[10px] text-white/68">
+                            {c.title}
+                        </div>
+                    ))}
                 </div>
             )}
         </div>
@@ -698,7 +866,7 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = React.memo(({ co
                 : pulse.cognitionRate === 'elevated' ? 'info' : 'ok';
     const mem = pulse.stats?.metrics?.memory_usage ?? null;
 
-    if (compact) {
+    if (compact && !isHomeGlance(context)) {
         return (
             <GlanceShell tone={tone} alert={(pulse.criticalIncidents ?? 0) > 0} onClick={context.openDashboard}>
                 <div className="flex items-center gap-2">
@@ -721,7 +889,7 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = React.memo(({ co
     }
 
     return (
-        <div className="flex h-full flex-col gap-2">
+        <div className="flex h-full flex-col gap-2 overflow-hidden">
             <div className="flex items-center gap-2">
                 <span
                     className="h-2 w-2 shrink-0 rounded-full animate-pulse"
@@ -737,14 +905,15 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = React.memo(({ co
                 <Stat label="MÔRA Load" value={pulse.moraLoad != null ? `${Math.round(pulse.moraLoad * 100)}%` : '–'} icon={<Radio size={10} />} />
                 <Stat label="Analysten" value={pulse.activeAnalysts ?? '–'} icon={<Users size={10} />} />
                 <Stat label="Knoten" value={pulse.bridgeNodes ?? '–'} icon={<Building2 size={10} />} />
-                {pulse.larryNodes != null && (
-                    <Stat label="Larry" value={pulse.larryNodes} icon={<Sparkles size={10} />} />
-                )}
             </div>
-            <div className="mt-auto flex gap-2">
-                <ActionButton icon={<Activity size={13} />} label="Nightwatch" onClick={context.openNightwatch} />
-                <ActionButton icon={<ExternalLink size={13} />} label="Dashboard" onClick={context.openDashboard} />
-            </div>
+            {isHomeGlance(context) ? (
+                <AlleAnzeigenLink onClick={context.openDashboard} label="Dashboard öffnen" />
+            ) : (
+                <div className="mt-auto flex gap-2">
+                    <ActionButton icon={<Activity size={13} />} label="Nightwatch" onClick={context.openNightwatch} />
+                    <ActionButton icon={<ExternalLink size={13} />} label="Dashboard" onClick={context.openDashboard} />
+                </div>
+            )}
         </div>
     );
 });
@@ -906,7 +1075,9 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
     }, [context]);
 
     const tone: StatusTone = artifacts.length > 0 ? 'info' : 'neutral';
-    const visibleRows = compact ? artifacts.slice(0, 2) : artifacts.slice(0, 6);
+    const visibleRows = compact && !isHomeGlance(context)
+        ? artifacts.slice(0, 2)
+        : artifacts.slice(0, isHomeGlance(context) ? glanceRowLimit(context, 3, 6) : 6);
 
     if (isLoading) {
         return (
@@ -938,9 +1109,9 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
             );
         }
         return (
-            <div className="flex h-full flex-col justify-center gap-2">
+            <div className="flex h-full flex-col justify-center gap-2 overflow-hidden">
                 <Empty>Noch keine Workspace-Artefakte</Empty>
-                {context.openDashboard && (
+                {!isHomeGlance(context) && context.openDashboard && (
                     <button
                         type="button"
                         onClick={context.openDashboard}
@@ -990,7 +1161,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
     }
 
     return (
-        <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex h-full flex-col gap-1.5 overflow-hidden">
             <div className="mb-0.5 flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-white/38">
                     <Layout size={10} className="text-cyan-300/55" />
@@ -1017,9 +1188,9 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                 ))}
             </div>
             {artifacts.length > visibleRows.length && (
-                <span className="text-[9px] text-white/32">+ {artifacts.length - visibleRows.length} weitere im Dashboard</span>
+                <AlleAnzeigenLink onClick={context.openDashboard} extra={artifacts.length - visibleRows.length} label="Alle Artefakte" />
             )}
-            {context.openDashboard && (
+            {!isHomeGlance(context) && context.openDashboard && (
                 <button
                     type="button"
                     onClick={context.openDashboard}
@@ -1036,7 +1207,7 @@ LarryWorkWidget.displayName = 'LarryWorkWidget';
 
 const ClockWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const [now, setNow] = React.useState<Date | null>(null);
-    const compact = context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2);
+    const compact = (context.compact || (context.gridSize && context.gridSize.w <= 2 && context.gridSize.h <= 2)) && !isHomeGlance(context);
     const tickMs = compact ? 15_000 : 1_000;
 
     React.useEffect(() => {
@@ -1158,7 +1329,7 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
     const { data: monitors = [], isLoading: monitorsLoading } = useNightwatchMonitors();
     const loaded = !incidentsLoading;
     const monitorsLoaded = !monitorsLoading;
-    const compact = context.compact || (context.gridSize && context.gridSize.h <= 4);
+    const compact = context.compact || (context.gridSize && context.gridSize.h <= 4) || isHomeGlance(context);
 
     const open = incidents.filter((i) => !_NW_RESOLVED.has((i.status || 'open').toLowerCase()));
     const downHosts = new Set(open.map((i) => i.host).filter(Boolean) as string[]);

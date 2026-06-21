@@ -55,6 +55,10 @@ export interface WidgetContext {
     gridSize?: { w: number; h: number };
     /** Compact rendering (universe glance panels, small cells). */
     compact?: boolean;
+    /** Home lock-screen: rich fixed rows, no inner scroll — opens sheet via Alle anzeigen. */
+    homeGlance?: boolean;
+    /** Max list rows before truncation (default 3 on homeGlance). */
+    glanceLimit?: number;
 }
 
 export interface WidgetDefinition {
