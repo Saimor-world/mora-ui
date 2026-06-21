@@ -1334,7 +1334,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             */}
             <div className="absolute inset-0 z-[12] pointer-events-none">
                 {visiblePlanets
-                    .map((p, idx) => {
+                    .map((p, planetIndex) => {
                     // REAL METRICS from API or tree data
                     const deptStats = departmentMetrics[p.id];
                     const nodeCount = deptStats?.nodes || 0;
@@ -1376,12 +1376,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         clearHoverRelease();
                                         setLockedTooltipDeptId(p.id);
                                     }}
-                                    style={{ opacity: isDimmed ? 0.38 : 0.4, cursor: 'pointer', filter: 'grayscale(0.6)', transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)' }}
+                                    style={{
+                                        opacity: isDimmed ? 0.38 : 0.4,
+                                        cursor: 'pointer',
+                                        filter: 'grayscale(0.6)',
+                                        transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)',
+                                    }}
                                 >
                                     <Planet
                                         department={p as any}
                                         spaces={spacesList}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                        stackOrder={planetIndex}
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
                                         showLabel={!isHomeUniversePreview}
@@ -1405,6 +1411,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                         department={p as any}
                                         spaces={spacesList}
                                         position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                        stackOrder={planetIndex}
                                         isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                         size={planetSize}
                                         showLabel={!isHomeUniversePreview}

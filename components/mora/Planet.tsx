@@ -70,6 +70,7 @@ interface PlanetProps {
     labelSide?: 'left' | 'right';
     hoverEnterDwellMs?: number;
     hoverLeaveDwellMs?: number;
+    stackOrder?: number;
 }
 
 export const Planet: React.FC<PlanetProps> = ({
@@ -92,6 +93,7 @@ export const Planet: React.FC<PlanetProps> = ({
     labelSide = 'right',
     hoverEnterDwellMs = PLANET_HOVER_ENTER_DWELL_MS,
     hoverLeaveDwellMs = PLANET_HOVER_LEAVE_DWELL_MS,
+    stackOrder = 0,
 }) => {
     const isStandardMode = useNavStore((s) => s.isStandardMode);
     const [isPointerOver, setIsPointerOver] = useState(false);
@@ -180,11 +182,12 @@ export const Planet: React.FC<PlanetProps> = ({
             aria-label={`${department.name} öffnen`}
             data-testid={`planet-${department.id}`}
             data-planet-name={department.name}
-            className="absolute group pointer-events-auto border-0 bg-transparent p-6 -m-6 text-left cursor-pointer touch-manipulation"
+            className="absolute group pointer-events-auto border-0 bg-transparent p-2 -m-2 text-left cursor-pointer touch-manipulation"
             style={{
                 left: position.x,
                 top: position.y,
                 transform: 'translate(-50%, -50%)',
+                zIndex: 12 + stackOrder,
             }}
             onPointerEnter={handleMouseEnter}
             onPointerLeave={handleMouseLeave}
@@ -219,7 +222,7 @@ export const Planet: React.FC<PlanetProps> = ({
             />
 
             {/* Functional rings: capacity halo + structural orbit */}
-            <div className="absolute inset-[-34px] pointer-events-none flex items-center justify-center">
+            <div className="absolute inset-[-22px] pointer-events-none flex items-center justify-center">
                 <svg viewBox="0 0 100 100" className="w-full h-full overflow-visible">
                     <motion.circle
                         cx="50"

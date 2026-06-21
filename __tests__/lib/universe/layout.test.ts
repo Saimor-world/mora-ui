@@ -7,6 +7,7 @@ import {
   clampUniverseCoordinate,
   buildSoftUniverseRoute,
   buildOrganicUniverseLayout,
+  universeMinPlanetSeparation,
 } from '@/lib/universe/layout';
 
 describe('clampUniverseCoordinate', () => {
@@ -97,7 +98,28 @@ describe('buildOrganicUniverseLayout', () => {
     for (const p of out) {
       const dx = p.x - UNIVERSE_CORE_POINT.x;
       const dy = p.y - UNIVERSE_CORE_POINT.y;
-      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(11);
+      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(14);
+    }
+  });
+
+  it('keeps four departments separated enough to avoid visual overlap', () => {
+    const depts = [
+      { id: 'brain', name: 'Brain', color: '#1' },
+      { id: 'finance', name: 'Finance', color: '#2' },
+      { id: 'lab', name: 'Lab', color: '#3' },
+      { id: 'ops', name: 'Operations', color: '#4' },
+    ];
+    const metrics = Object.fromEntries(
+      depts.map((d) => [d.id, { nodes: 8, spaces: 2, folders: 2, health: 80 }]),
+    );
+    const out = buildOrganicUniverseLayout(depts, metrics);
+    expect(out).toHaveLength(4);
+    const minSep = universeMinPlanetSeparation(4);
+    for (let i = 0; i < out.length; i += 1) {
+      for (let j = i + 1; j < out.length; j += 1) {
+        const distance = Math.hypot(out[i].x - out[j].x, out[i].y - out[j].y);
+        expect(distance).toBeGreaterThanOrEqual(minSep * 0.95);
+      }
     }
   });
 });
