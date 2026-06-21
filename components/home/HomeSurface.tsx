@@ -28,6 +28,7 @@ import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
 import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
+import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -823,10 +824,10 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
         >
-            {/* Reading scrim: the cosmos stays visible at the edges but the working
-                surface gets a calm, darker centre so panels read clearly. */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_90%_at_50%_42%,rgba(4,3,14,0.62)_0%,rgba(4,3,14,0.44)_46%,rgba(4,3,14,0.30)_100%)]" />
-            <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            {/* Light vignette — cosmos stays visible; no modal glass box */}
+            <CosmicBackdrop calmFactor={0.38} />
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_130%_95%_at_50%_38%,rgba(4,3,14,0.38)_0%,rgba(4,3,14,0.18)_42%,transparent_78%)]" />
+            <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/08 to-transparent" />
 
             {/* Home is now a single curated widget glance (rendered inside HomeCockpit).
                 The editable widget desktop lives in Universe — no duplicate right panel. */}
@@ -870,9 +871,8 @@ export const HomeSurface: React.FC = () => {
             {!websiteEntryContext && (
                 <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute bottom-28 left-4 right-4 top-32 z-[1] lg:left-6 lg:right-6 lg:top-36 flex justify-center"
+                    className="pointer-events-auto absolute inset-x-0 bottom-24 top-[7.5rem] z-[1] flex min-h-0 flex-col px-5 lg:px-10 xl:px-14 2xl:px-16"
                 >
-                    <div className="flex w-full max-w-[1320px] flex-col min-h-0">
                     <HomeDataSourceError show={homeDataUnavailable && !homeViewLoading} />
                     <div className="min-h-0 flex-1">
                     <HomeCockpit
@@ -907,7 +907,6 @@ export const HomeSurface: React.FC = () => {
                         onOpenPrivateArea={openPrivateArea}
                         showOrgOverview={user?.role !== 'member'}
                     />
-                    </div>
                     </div>
                 </div>
             )}

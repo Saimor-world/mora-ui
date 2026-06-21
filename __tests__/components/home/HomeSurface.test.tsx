@@ -207,11 +207,12 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
 // ── rendering ──────────────────────────────────────────────────────────────
 
 describe('HomeSurface — rendering', () => {
-    it('frames Home in the cockpit workspace container', () => {
+    it('frames Home in the full-bleed cockpit workspace', () => {
         renderWithDepts();
-        // openflow-workspace is the cockpit layout container, still positioned at lg:left-6
-        expect(screen.getByTestId('openflow-workspace')).toHaveClass('lg:left-6');
-        // HomeCockpit renders its zone labels instead of the old OpenFlowLagebild
+        const workspace = screen.getByTestId('openflow-workspace');
+        expect(workspace).toHaveClass('inset-x-0');
+        expect(workspace).not.toHaveClass('max-w-[1320px]');
+        expect(screen.getByTestId('home-cockpit')).toBeInTheDocument();
         expect(screen.getByText('Mein Tag')).toBeInTheDocument();
         expect(screen.getByText('Signale')).toBeInTheDocument();
     });

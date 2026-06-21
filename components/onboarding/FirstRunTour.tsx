@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Compass, Sparkles, Activity, ArrowRight, X, type LucideIcon } from 'lucide-react';
 import { isFirstRunTourDone, markFirstRunTourDone } from '@/lib/onboarding/firstRunStore';
@@ -15,14 +15,14 @@ interface TourStep {
     accent: string;
 }
 
-const STEPS: TourStep[] = [
+const HOME_STEPS: TourStep[] = [
     {
-        id: 'universe',
-        icon: Compass,
-        title: 'Dein Universe',
-        body: 'Alle Bereiche und ihre Verbindungen — als Karte deiner Arbeit.',
-        target: { selector: '[data-testid="universe-toggle"]', offsetY: -8 },
-        accent: 'rgba(103,232,249,0.70)',
+        id: 'home-cockpit',
+        icon: Activity,
+        title: 'Dein Home',
+        body: 'Widgets, Signale und MÔRA-Status — alles auf einen Blick, ohne Scroll-Chaos.',
+        target: { selector: '[data-testid="home-cockpit"]', offsetY: 8 },
+        accent: 'rgba(52,211,153,0.70)',
     },
     {
         id: 'mora',
@@ -33,39 +33,67 @@ const STEPS: TourStep[] = [
         accent: 'rgba(167,139,250,0.70)',
     },
     {
-        id: 'tageslage',
-        icon: Activity,
-        title: 'Lagebild',
-        body: 'Nur echte Signale — kein Lärm, kein Padding.',
-        target: { selector: '[data-testid="openflow-lagebild"]', offsetX: -16 },
-        accent: 'rgba(251,191,36,0.70)',
+        id: 'universe',
+        icon: Compass,
+        title: 'Dein Universe',
+        body: 'Wechsle in Explore, um Bereiche und Verbindungen als Topographie zu sehen.',
+        target: { selector: '[data-testid="universe-toggle"]', offsetY: -8 },
+        accent: 'rgba(103,232,249,0.70)',
     },
 ];
 
-const APPEAR_DELAY_MS = 9000;
+const APPEAR_DELAY_MS = 12000;
+const SESSION_SEEN_KEY = 'saimor_first_run_tour_session';
+
+function hasSeenTourThisSession(): boolean {
+    if (typeof window === 'undefined') return true;
+    try {
+        return window.sessionStorage.getItem(SESSION_SEEN_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
+function markTourSeenThisSession(): void {
+    if (typeof window === 'undefined') return;
+    try {
+        window.sessionStorage.setItem(SESSION_SEEN_KEY, '1');
+    } catch {
+        // ignore storage failures
+    }
+}
 
 export const FirstRunTour: React.FC = () => {
     const activeMode = useNavStore((s) => s.activeMode);
+    const coreMode = useNavStore((s) => s.coreMode);
     const [active, setActive] = useState(false);
     const [stepIdx, setStepIdx] = useState(0);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
+    const steps = useMemo(() => HOME_STEPS, []);
+
     useEffect(() => {
         if (isFirstRunTourDone()) return;
-        const t = setTimeout(() => setActive(true), APPEAR_DELAY_MS);
+        if (hasSeenTourThisSession()) return;
+        if (coreMode !== 'home') return;
+        const t = setTimeout(() => {
+            if (isFirstRunTourDone() || hasSeenTourThisSession()) return;
+            setActive(true);
+            markTourSeenThisSession();
+        }, APPEAR_DELAY_MS);
         return () => clearTimeout(t);
-    }, []);
+    }, [coreMode]);
 
     useEffect(() => {
         if (!active) return;
-        const step = STEPS[stepIdx];
+        const step = steps[stepIdx];
         const el = document.querySelector(step.target.selector);
         if (el) setTargetRect(el.getBoundingClientRect());
         else setTargetRect(null);
-    }, [active, stepIdx]);
+    }, [active, stepIdx, steps]);
 
     const handleNext = () => {
-        if (stepIdx < STEPS.length - 1) setStepIdx(stepIdx + 1);
+        if (stepIdx < steps.length - 1) setStepIdx(stepIdx + 1);
         else handleDismiss();
     };
 
@@ -74,74 +102,46 @@ export const FirstRunTour: React.FC = () => {
         setActive(false);
     };
 
-    // Suppress in playground mode AND in any website-entry preview session.
-    // The tour is meant to onboard users to THEIR OWN workspace, not a demo.
+    if (isFirstRunTourDone()) return null;
     if (activeMode === 'public_playground') return null;
     if (typeof window !== 'undefined' && loadWebsiteEntryContext()) return null;
+    if (coreMode !== 'home') return null;
     if (!active) return null;
-    const step = STEPS[stepIdx];
-    const Icon = step.icon;
 
-    // Card position: prefer right side of target, fallback to center-bottom
-    const cardLeft = targetRect
-        ? Math.min(targetRect.right + 20, window.innerWidth - 360)
-        : window.innerWidth - 360 - 24;
-    const cardTop = targetRect
-        ? Math.max(16, targetRect.top + (step.target.offsetY ?? 0))
-        : window.innerHeight / 2 - 80;
+    const step = steps[stepIdx];
+    const Icon = step.icon;
 
     return (
         <AnimatePresence>
             <motion.div
                 key={step.id}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.28 }}
-                className="fixed inset-0 z-[7500] pointer-events-none"
+                className="pointer-events-none fixed bottom-24 right-5 z-[7500] sm:right-8"
             >
-                {/* Subtle target indicator — thin ring only, no glow */}
                 {targetRect && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="absolute pointer-events-none rounded-2xl"
+                        className="pointer-events-none fixed rounded-2xl"
                         style={{
                             left: targetRect.left - 6,
                             top: targetRect.top - 6,
                             width: targetRect.width + 12,
                             height: targetRect.height + 12,
-                            border: `1px solid ${step.accent.replace('0.70', '0.38')}`,
+                            border: `1px solid ${step.accent.replace('0.70', '0.28')}`,
                         }}
                     />
                 )}
 
-                {/* Tooltip card */}
                 <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.24, delay: 0.08 }}
-                    className="absolute pointer-events-auto"
-                    style={{
-                        left: cardLeft,
-                        top: cardTop,
-                        width: 320,
-                    }}
+                    transition={{ duration: 0.24, delay: 0.06 }}
+                    className="pointer-events-auto w-[min(340px,calc(100vw-2.5rem))]"
                 >
-                    {/* Connector line from ring to card */}
-                    {targetRect && (
-                        <div
-                            className="absolute pointer-events-none"
-                            style={{
-                                right: '100%',
-                                top: 20,
-                                width: 20,
-                                height: 1,
-                                background: `linear-gradient(90deg, transparent, ${step.accent.replace('0.70', '0.28')})`,
-                            }}
-                        />
-                    )}
-
                     <div
                         className="relative overflow-hidden rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.55)]"
                         style={{
@@ -150,7 +150,6 @@ export const FirstRunTour: React.FC = () => {
                             backdropFilter: 'blur(32px)',
                         }}
                     >
-                        {/* Accent top line */}
                         <div
                             className="absolute left-0 top-0 h-[1px] w-full"
                             style={{ background: `linear-gradient(90deg, transparent, ${step.accent}, transparent)` }}
@@ -158,7 +157,6 @@ export const FirstRunTour: React.FC = () => {
 
                         <div className="p-4">
                             <div className="flex items-start gap-3">
-                                {/* Icon */}
                                 <div
                                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
                                     style={{
@@ -185,9 +183,8 @@ export const FirstRunTour: React.FC = () => {
                             </div>
 
                             <div className="mt-3.5 flex items-center justify-between gap-2">
-                                {/* Step dots */}
                                 <div className="flex items-center gap-1.5">
-                                    {STEPS.map((s, i) => (
+                                    {steps.map((s, i) => (
                                         <div
                                             key={s.id}
                                             className="rounded-full transition-all"
@@ -222,7 +219,7 @@ export const FirstRunTour: React.FC = () => {
                                             color: step.accent.replace('0.70', '0.92'),
                                         }}
                                     >
-                                        {stepIdx === STEPS.length - 1 ? 'Fertig' : 'Weiter'}
+                                        {stepIdx === steps.length - 1 ? 'Fertig' : 'Weiter'}
                                         <ArrowRight size={11} />
                                     </button>
                                 </div>
