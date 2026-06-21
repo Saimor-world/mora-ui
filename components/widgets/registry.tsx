@@ -233,12 +233,6 @@ const MoraWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }
 });
 MoraWidget.displayName = 'MoraWidget';
 
-const CAL_COLORS = [
-    'rgba(var(--scene-rgb,16,185,129),0.8)',
-    'rgba(139,92,246,0.75)',
-    'rgba(59,130,246,0.75)',
-    'rgba(236,72,153,0.7)',
-];
 
 const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { data: homeView } = useHomeView();
@@ -249,9 +243,33 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     const calConfigured = context.data?.calendarConfigured ?? false;
     const compact = context.compact;
 
+    const nextCal = cal[0];
+    const nextMail = mail[0];
+    const nextTask = tasks[0];
+    const hasMore = cal.length > 1 || mail.length > 1 || tasks.length > 1;
+    const tone: StatusTone =
+        (cal.length + mail.length + tasks.length) > 0 ? 'info'
+            : (mailConfigured || calConfigured) ? 'ok' : 'neutral';
+
+    const DayLine: React.FC<{
+        icon: React.ReactNode;
+        label: string;
+        value: string;
+        empty: string;
+        onClick?: () => void;
+    }> = ({ icon, label, value, empty, onClick }) => (
+        <button
+            type="button"
+            onClick={onClick}
+            className="group flex w-full min-w-0 items-center gap-2 rounded-lg border border-white/[0.05] bg-white/[0.02] px-2 py-1.5 text-left transition-colors hover:border-white/[0.12] hover:bg-white/[0.05]"
+        >
+            <span className="shrink-0 opacity-55">{icon}</span>
+            <span className="shrink-0 text-[8px] uppercase tracking-[0.14em] text-white/32 w-[52px]">{label}</span>
+            <span className="min-w-0 flex-1 truncate text-[11px] text-white/72 group-hover:text-white/88">{value || empty}</span>
+        </button>
+    );
+
     if (compact) {
-        const nextCal = cal[0];
-        const nextMail = mail[0];
         const openPrimary = () => {
             if (nextCal && context.openCalendar) context.openCalendar();
             else if (nextMail && context.openMail) context.openMail();
@@ -259,120 +277,84 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
             else if (context.openCalendar) context.openCalendar();
             else context.openIntegrations?.();
         };
-        const tone: StatusTone =
-            (cal.length + mail.length + tasks.length) > 0 ? 'info'
-                : (mailConfigured || calConfigured) ? 'ok' : 'neutral';
         return (
-            <GlanceShell tone={tone} onClick={openPrimary}>
+            <GlanceShell tone={tone}>
                 <div className="flex items-center justify-between gap-1">
                     <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Mein Tag</span>
                     <CalendarDays size={10} className="text-white/28" />
                 </div>
-                {nextCal ? (
-                    <div className="truncate text-[10px] text-white/68">
-                        {nextCal.time ? `${nextCal.time} · ` : ''}{nextCal.title}
-                    </div>
-                ) : calConfigured ? (
-                    <div className="text-[10px] text-white/40">Keine Termine heute</div>
-                ) : (
-                    <div className="text-[10px] text-white/40">Kalender nicht verbunden</div>
-                )}
-                <div className="flex flex-wrap gap-1.5 text-[8px] tabular-nums text-white/38">
-                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{cal.length} Termine</span>
-                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{mail.length} Mails</span>
-                    <span className="rounded-full border border-white/[0.07] px-1.5 py-0.5">{tasks.length} Aufgaben</span>
+                <div className="flex flex-col gap-1">
+                    <DayLine
+                        icon={<CalendarDays size={10} />}
+                        label="Termin"
+                        value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
+                        empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
+                        onClick={nextCal ? context.openCalendar : context.openIntegrations}
+                    />
+                    <DayLine
+                        icon={<Mail size={10} />}
+                        label="Mail"
+                        value={nextMail ? nextMail.subject : ''}
+                        empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
+                        onClick={nextMail ? context.openMail : context.openIntegrations}
+                    />
+                    <DayLine
+                        icon={<CheckCircle2 size={10} />}
+                        label="Aufgabe"
+                        value={nextTask?.title ?? ''}
+                        empty="Noch keine Aufgaben"
+                        onClick={tasks.length > 0 ? context.openMora : context.openMora}
+                    />
                 </div>
-                {nextMail && (
-                    <div className="truncate text-[9px] text-white/42">{nextMail.subject}</div>
+                {(hasMore || context.openCalendar) && (
+                    <button
+                        type="button"
+                        onClick={openPrimary}
+                        className="mt-0.5 self-start text-[9px] uppercase tracking-[0.14em] text-cyan-200/55 transition-colors hover:text-cyan-100/85"
+                    >
+                        {hasMore ? 'mehr →' : 'öffnen →'}
+                    </button>
                 )}
             </GlanceShell>
         );
     }
 
     return (
-        <div className="flex h-full flex-col gap-3 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'thin' }}>
-            {/* Termine — colored left-border blocks */}
-            <div>
-                <SectionLabel icon={<CalendarDays size={10} className="opacity-70" />}>Termine</SectionLabel>
-                {cal.length > 0 ? (
-                    <div className="flex flex-col gap-1.5">
-                        {cal.slice(0, 3).map((c, i) => (
-                            <button
-                                key={c.id}
-                                type="button"
-                                onClick={context.openCalendar}
-                                className="flex items-stretch overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02] text-left transition-colors hover:bg-white/[0.05]"
-                            >
-                                <div className="w-1 shrink-0 rounded-l-xl" style={{ background: CAL_COLORS[i % CAL_COLORS.length] }} />
-                                <div className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2">
-                                    {c.time && <span className="w-9 shrink-0 text-[10px] tabular-nums text-white/40">{c.time}</span>}
-                                    <span className="min-w-0 flex-1 truncate text-[12px] text-white/75">{c.title}</span>
-                                </div>
-                            </button>
-                        ))}
-                    </div>
-                ) : calConfigured ? (
-                    <Empty>Keine Termine heute</Empty>
-                ) : (
-                    <ConnectCTA label="Kalender verbinden" onClick={context.openIntegrations} />
-                )}
-            </div>
-
-            {/* Posteingang — sender avatar circles */}
-            <div>
-                <SectionLabel icon={<Mail size={10} className="opacity-70" />}>Posteingang</SectionLabel>
-                {mail.length > 0 ? (
-                    <div className="flex flex-col gap-1.5">
-                        {mail.slice(0, 3).map((m) => {
-                            const initials = nameInitials(m.from || '?');
-                            const hue = nameHue(m.from || '');
-                            return (
-                                <button
-                                    key={m.id}
-                                    type="button"
-                                    onClick={context.openMail}
-                                    className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2 text-left transition-colors hover:border-white/[0.14] hover:bg-white/[0.05]"
-                                >
-                                    <div
-                                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-medium"
-                                        style={{ background: `hsla(${hue},55%,40%,0.25)`, color: `hsla(${hue},80%,75%,0.9)` }}
-                                    >
-                                        {initials}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="truncate text-[12px] text-white/75">{m.subject}</div>
-                                        <div className="truncate text-[10px] text-white/38">{m.from}</div>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                ) : mailConfigured ? (
-                    <Empty>Posteingang leer</Empty>
-                ) : (
-                    <ConnectCTA label="Mail verbinden" onClick={context.openIntegrations} />
-                )}
-            </div>
-
-            {/* Aufgaben — open circle checkboxes */}
-            <div className="min-h-0">
-                <SectionLabel icon={<CheckCircle2 size={10} className="opacity-70" />}>Aufgaben</SectionLabel>
-                {tasks.length > 0 ? (
-                    <div className="flex flex-col gap-1.5">
-                        {tasks.slice(0, 4).map((t) => (
-                            <div key={t.id} className="flex items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.03] px-3 py-2">
-                                <span
-                                    className="h-4 w-4 shrink-0 rounded-full border"
-                                    style={{ borderColor: 'rgba(var(--scene-rgb,16,185,129),0.4)' }}
-                                />
-                                <span className="min-w-0 flex-1 text-[12px] text-white/72">{t.title}</span>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <Empty>MÔRA hat noch keine Aufgaben erkannt.</Empty>
-                )}
-            </div>
+        <div className="flex h-full flex-col gap-2 overflow-hidden">
+            <DayLine
+                icon={<CalendarDays size={10} />}
+                label="Termin"
+                value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
+                empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
+                onClick={nextCal ? context.openCalendar : context.openIntegrations}
+            />
+            <DayLine
+                icon={<Mail size={10} />}
+                label="Mail"
+                value={nextMail ? `${nextMail.subject}${nextMail.from ? ` · ${nextMail.from}` : ''}` : ''}
+                empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
+                onClick={nextMail ? context.openMail : context.openIntegrations}
+            />
+            <DayLine
+                icon={<CheckCircle2 size={10} />}
+                label="Aufgabe"
+                value={nextTask?.title ?? ''}
+                empty="Noch keine Aufgaben"
+                onClick={context.openMora}
+            />
+            {hasMore && (
+                <button
+                    type="button"
+                    onClick={() => {
+                        if (cal.length > 1 && context.openCalendar) context.openCalendar();
+                        else if (mail.length > 1 && context.openMail) context.openMail();
+                        else context.openMora?.();
+                    }}
+                    className="self-start text-[10px] uppercase tracking-[0.14em] text-cyan-200/55 transition-colors hover:text-cyan-100/85"
+                >
+                    mehr →
+                </button>
+            )}
         </div>
     );
 });
@@ -473,15 +455,20 @@ const TeamWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }
     }
 
     return (
-        <div className="flex h-full flex-col gap-2">
-            <div className="flex items-center gap-2 mb-0.5">
-                <span className={`h-2 w-2 rounded-full shrink-0 ${online.length > 0 ? 'bg-emerald-400 animate-pulse' : 'bg-white/20'}`} />
+        <div className="flex h-full flex-col gap-2 overflow-hidden">
+            <div className="flex items-center gap-2">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${online.length > 0 ? 'bg-emerald-400' : 'bg-white/20'}`} />
                 <span className="text-[12px] text-white/72">{online.length} {online.length === 1 ? 'Person' : 'Personen'} online</span>
             </div>
-            <div className="flex-1 min-h-0 flex flex-col gap-2 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
-                {online.slice(0, 5).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={true} />)}
-                {away.slice(0, 3).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={false} />)}
+            <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+                {online.slice(0, 3).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={true} />)}
+                {away.slice(0, 2).map((p) => <AvatarRow key={p.sessionId} name={p.name} isOnline={false} />)}
                 {peers.length === 0 && <Empty>Gerade niemand online.</Empty>}
+                {peers.length > 5 && (
+                    <button type="button" onClick={context.openTeam} className="self-start text-[10px] uppercase tracking-[0.14em] text-violet-200/55 hover:text-violet-100/80">
+                        mehr →
+                    </button>
+                )}
             </div>
             <ActionButton icon={<Users size={13} />} label="Team öffnen" onClick={context.openTeam} />
         </div>
@@ -530,9 +517,9 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     }
 
     return (
-        <div className="flex h-full flex-col gap-1.5 overflow-y-auto" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex h-full flex-col gap-1.5 overflow-hidden">
             {attention.length > 0 && (
-                <div className="flex items-center justify-between mb-0.5">
+                <div className="mb-0.5 flex items-center justify-between">
                     <span className="text-[9px] uppercase tracking-[.16em] text-white/35">Signale</span>
                     <span
                         className="flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-medium tabular-nums"
@@ -543,20 +530,27 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                 </div>
             )}
             {attention.length > 0 ? (
-                attention.slice(0, 6).map((a) => (
-                    <button
-                        key={a.id}
-                        type="button"
-                        onClick={context.openMora}
-                        className="flex items-stretch overflow-hidden rounded-xl border border-amber-300/15 bg-amber-400/[0.04] text-left transition-colors hover:border-amber-300/28 hover:bg-amber-400/[0.08]"
-                    >
-                        <div className="w-0.5 shrink-0" style={{ background: 'rgba(251,191,36,0.5)' }} />
-                        <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
-                            <AlertTriangle size={11} className="shrink-0 text-amber-300/65" />
-                            <span className="min-w-0 flex-1 truncate text-[12px] text-white/72">{a.title}</span>
-                        </div>
-                    </button>
-                ))
+                <>
+                    {attention.slice(0, 3).map((a) => (
+                        <button
+                            key={a.id}
+                            type="button"
+                            onClick={context.openMora}
+                            className="flex items-stretch overflow-hidden rounded-xl border border-amber-300/15 bg-amber-400/[0.04] text-left transition-colors hover:border-amber-300/28 hover:bg-amber-400/[0.08]"
+                        >
+                            <div className="w-0.5 shrink-0" style={{ background: 'rgba(251,191,36,0.5)' }} />
+                            <div className="flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
+                                <AlertTriangle size={11} className="shrink-0 text-amber-300/65" />
+                                <span className="min-w-0 flex-1 truncate text-[12px] text-white/72">{a.title}</span>
+                            </div>
+                        </button>
+                    ))}
+                    {attention.length > 3 && (
+                        <button type="button" onClick={context.openMora} className="self-start text-[10px] uppercase tracking-[0.14em] text-amber-200/55 hover:text-amber-100/80">
+                            mehr →
+                        </button>
+                    )}
+                </>
             ) : (
                 <div className="flex h-full items-center justify-center gap-2 rounded-xl border border-white/[0.06] bg-white/[0.02] px-3 py-4 text-[12px] text-white/45">
                     <CheckCircle2 size={14} className="text-emerald-400/60" /> Keine offenen Signale
