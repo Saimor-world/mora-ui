@@ -1,6 +1,10 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
-import { CORE_BASE_URL } from '@/lib/api/coreBase';
+import {
+  coreUnreachableUserMessage,
+  fetchCoreUpstream,
+  probePublicCoreHealth,
+} from '@/lib/api/coreReachability';
 
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
@@ -18,7 +22,7 @@ export async function POST(request: NextRequest) {
 
   let upstream: Response;
   try {
-    upstream = await fetch(`${CORE_BASE_URL}/v3/entry/website-preview/claim`, {
+    upstream = await fetchCoreUpstream('/v3/entry/website-preview/claim', {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({
@@ -30,9 +34,10 @@ export async function POST(request: NextRequest) {
       redirect: "manual",
     });
   } catch (error) {
-    console.error("[website-entry-claim] Core claim failed:", error);
+    const publicHealthy = await probePublicCoreHealth();
+    console.error("[website-entry-claim] Core claim failed:", error, { publicHealthy });
     return NextResponse.json(
-      { success: false, detail: "Mora Core ist lokal nicht erreichbar." },
+      { success: false, detail: coreUnreachableUserMessage() },
       { status: 503, headers: { "cache-control": "no-store" } }
     );
   }

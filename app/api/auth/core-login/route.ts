@@ -1,12 +1,16 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
-import { CORE_BASE_URL } from '@/lib/api/coreBase';
+import {
+  coreUnreachableUserMessage,
+  fetchCoreUpstream,
+  probePublicCoreHealth,
+} from '@/lib/api/coreReachability';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
   let upstream: Response;
   try {
-    upstream = await fetch(`${CORE_BASE_URL}/v3/auth/login`, {
+    upstream = await fetchCoreUpstream('/v3/auth/login', {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body,
@@ -15,11 +19,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     const fallback = buildLocalDemoLoginFallback(body);
     if (fallback) return fallback;
-    console.error("[core-login] Core auth proxy failed:", error);
+    const publicHealthy = await probePublicCoreHealth();
+    console.error("[core-login] Core auth proxy failed:", error, { publicHealthy });
     return NextResponse.json(
       {
         success: false,
-        detail: "Mora Core ist lokal nicht erreichbar. Starte CORE auf dem konfigurierten Port (SAIMOR_CORE_URL) oder nutze den lokalen Demo-Zugang.",
+        detail: coreUnreachableUserMessage(),
       },
       { status: 503 }
     );

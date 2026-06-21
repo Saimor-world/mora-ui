@@ -1,15 +1,29 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 
-import { CORE_BASE_URL } from '@/lib/api/coreBase';
+import {
+  coreUnreachableUserMessage,
+  fetchCoreUpstream,
+  probePublicCoreHealth,
+} from '@/lib/api/coreReachability';
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const upstream = await fetch(`${CORE_BASE_URL}/v3/auth/register`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Accept": "application/json" },
-    body,
-    redirect: "manual",
-  });
+  let upstream: Response;
+  try {
+    upstream = await fetchCoreUpstream('/v3/auth/register', {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body,
+      redirect: "manual",
+    });
+  } catch (error) {
+    const publicHealthy = await probePublicCoreHealth();
+    console.error("[core-register] Core register proxy failed:", error, { publicHealthy });
+    return NextResponse.json(
+      { success: false, detail: coreUnreachableUserMessage() },
+      { status: 503, headers: { "cache-control": "no-store" } }
+    );
+  }
 
   const responseText = await upstream.text();
   const response = new NextResponse(responseText, {
