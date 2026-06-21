@@ -10,7 +10,7 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2 } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
@@ -45,6 +45,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { ProfileTab } from '@/apps/settings/ProfileTab';
 import { queueAccountSettingsSync } from '@/lib/userSettings/persistAccountSettings';
 import { useUserSettings } from '@/lib/queries/useUserSettings';
+import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
@@ -56,7 +57,7 @@ export default function SettingsApp({ paneId }: AppProps) {
     const { data: session } = useRuntimeSession();
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
-    const { activeCompanyId, isStandardMode, setIsStandardMode, activeMode } = useNavStore();
+    const { activeCompanyId, isStandardMode, setIsStandardMode, activeMode, coreMode, navigateToCore } = useNavStore();
     const { user, updateUserSettings } = useSessionStore();
     const { data: companies = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
     const { data: departments = [] } = useDepartments(activeCompanyId);
@@ -127,6 +128,14 @@ export default function SettingsApp({ paneId }: AppProps) {
         updateUserSettings(updates);
         queueAccountSettingsSync(updates);
     }, [updateUserSettings]);
+
+    const handleRestartProductTour = () => {
+        requestProductTourRestart({ syncUserSettings });
+        if (coreMode !== 'home') {
+            navigateToCore();
+        }
+        toast.success('Produkt-Tour startet auf Home.');
+    };
 
         const activeCompany = useMemo(() => safeCompanies.find(c => c.id === activeCompanyId) || null, [safeCompanies, activeCompanyId]);
 
@@ -1750,6 +1759,27 @@ SMTP_TLS=true`}</pre>
                                     <span>Mora Core + Gateway</span>
                                     <span>-</span>
                                     <span>{process.env.NODE_ENV}</span>
+                                </div>
+                            </div>
+
+                            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+                                <div className="flex items-start gap-3">
+                                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-emerald-400/20 bg-emerald-500/10">
+                                        <Compass size={16} className="text-emerald-200" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="text-sm text-white/82">Produkt-Tour</div>
+                                        <p className="mt-1 text-xs leading-relaxed text-white/45">
+                                            MÔRA führt kurz durch Home, Universe und Dock — dezent neben dem Orb, jederzeit überspringbar.
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={handleRestartProductTour}
+                                            className="mt-3 inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-100 transition-colors hover:bg-emerald-500/16"
+                                        >
+                                            Produkt-Tour erneut starten
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>

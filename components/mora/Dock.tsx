@@ -1337,7 +1337,7 @@ export const Dock = () => {
     }, [ritualSettings.autoTime, updateUserSettings]);
 
     return (
-        <div className="fixed bottom-4 left-4 right-4 z-[740] flex flex-col items-center pointer-events-none">
+        <div data-testid="mora-dock" className="fixed bottom-4 left-4 right-4 z-[740] flex flex-col items-center pointer-events-none">
             <RunningWindowsBar
                 panes={runningPanes}
                 activePaneId={activePaneId}

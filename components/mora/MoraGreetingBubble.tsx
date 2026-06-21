@@ -16,6 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
+import { isProductTourDismissed } from '@/lib/onboarding/productTourStore';
 
 const STORAGE_KEY = 'saimor_mora_greeted_v1';
 const APPEAR_DELAY_MS = 1500;
@@ -29,6 +30,8 @@ export const MoraGreetingBubble: React.FC = () => {
 
     useEffect(() => {
         if (!user || typeof window === 'undefined') return;
+        const settings = (user.settings ?? {}) as Record<string, unknown>;
+        if (!isProductTourDismissed(settings)) return;
         const userKey = `${STORAGE_KEY}_${user.id ?? user.email ?? 'anon'}`;
         const alreadyGreeted = window.localStorage.getItem(userKey);
         if (alreadyGreeted) return;

@@ -9,10 +9,12 @@ jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
 }));
 
-// Mock the firstRunStore so tour appears immediately (no 9s delay in tests)
-jest.mock('@/lib/onboarding/firstRunStore', () => ({
-    isFirstRunTourDone: jest.fn(() => false),
-    markFirstRunTourDone: jest.fn(),
+jest.mock('@/lib/onboarding/productTourStore', () => ({
+    isProductTourDismissed: jest.fn(() => false),
+    markProductTourDismissed: jest.fn(),
+    migrateProductTourDismissToServer: jest.fn(),
+    PRODUCT_TOUR_RESTART_EVENT: 'saimor:product-tour-restart',
+    PRODUCT_TOUR_STATE_EVENT: 'saimor:product-tour-state-changed',
 }));
 
 jest.mock('@/lib/store/navStore', () => {
@@ -20,21 +22,39 @@ jest.mock('@/lib/store/navStore', () => {
     return {
         ...actual,
         useNavStore: (selector: (s: unknown) => unknown) => selector({
-            activeMode: 'tenant_hq',
+            activeMode: 'real_hq',
             coreMode: 'home',
         }),
     };
 });
 
-import { isFirstRunTourDone, markFirstRunTourDone } from '@/lib/onboarding/firstRunStore';
+jest.mock('@/lib/store/sessionStore', () => ({
+    useSessionStore: (selector: (s: unknown) => unknown) => selector({ user: { settings: {} } }),
+}));
+
+const loadWebsiteEntryContext = jest.fn(() => null);
+const isWebsiteEntryPreviewSession = jest.fn(() => false);
+
+jest.mock('@/lib/websiteEntryStorage', () => ({
+    loadWebsiteEntryContext: () => loadWebsiteEntryContext(),
+    isWebsiteEntryPreviewSession: () => isWebsiteEntryPreviewSession(),
+}));
+
+jest.mock('@/lib/userSettings/persistAccountSettings', () => ({
+    queueAccountSettingsSync: jest.fn(),
+}));
+
+import { isProductTourDismissed, markProductTourDismissed } from '@/lib/onboarding/productTourStore';
 
 beforeEach(() => {
     jest.useFakeTimers();
     localStorage.clear();
     sessionStorage.clear();
-    (isFirstRunTourDone as jest.Mock).mockReturnValue(false);
-    (markFirstRunTourDone as jest.Mock).mockImplementation(() => {
-        localStorage.setItem('saimor_first_run_tour_v1', 'done');
+    loadWebsiteEntryContext.mockReturnValue(null as never);
+    isWebsiteEntryPreviewSession.mockReturnValue(false as never);
+    (isProductTourDismissed as jest.Mock).mockReturnValue(false);
+    (markProductTourDismissed as jest.Mock).mockImplementation(() => {
+        localStorage.setItem('saimor_product_tour_dismissed', '1');
     });
 });
 
@@ -42,28 +62,38 @@ afterEach(() => {
     jest.useRealTimers();
 });
 
-it('shows first step on mount', async () => {
+it('shows first MÔRA step after appear delay', async () => {
     render(<FirstRunTour />);
-    act(() => { jest.advanceTimersByTime(12000); });
+    act(() => { jest.advanceTimersByTime(3800); });
     await waitFor(() => {
-        expect(screen.getByText(/Dein Home/i)).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: /Dein Home/i })).toBeInTheDocument();
+        expect(screen.getByText(/^MÔRA$/i)).toBeInTheDocument();
     });
 });
 
-it('advances on next button', async () => {
+it('advances on weiter button', async () => {
     render(<FirstRunTour />);
-    act(() => { jest.advanceTimersByTime(12000); });
-    await waitFor(() => screen.getByText(/Dein Home/i));
+    act(() => { jest.advanceTimersByTime(3800); });
+    await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
     fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
-    expect(screen.getByRole('heading', { name: /Mora/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Dein Universe/i })).toBeInTheDocument();
 });
 
-it('persists dismissal to localStorage', async () => {
+it('persists permanent dismissal via nicht mehr anzeigen', async () => {
     render(<FirstRunTour />);
-    act(() => { jest.advanceTimersByTime(12000); });
-    await waitFor(() => screen.getByText(/Dein Home/i));
-    // Two Überspringen targets exist (icon btn + text btn); click the text one
-    const skipButtons = screen.getAllByRole('button', { name: /überspringen/i });
-    fireEvent.click(skipButtons[0]);
-    expect(localStorage.getItem('saimor_first_run_tour_v1')).toBe('done');
+    act(() => { jest.advanceTimersByTime(3800); });
+    await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
+    fireEvent.click(screen.getByRole('checkbox', { name: /nicht mehr anzeigen/i }));
+    fireEvent.click(screen.getByRole('button', { name: /ausblenden/i }));
+    expect(markProductTourDismissed).toHaveBeenCalled();
+});
+
+it('shows faster for website entry demo path', async () => {
+    loadWebsiteEntryContext.mockReturnValue({ companyName: 'Acme', title: 'Scan' } as never);
+
+    render(<FirstRunTour />);
+    act(() => { jest.advanceTimersByTime(2200); });
+    await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /Dein Home/i })).toBeInTheDocument();
+    });
 });

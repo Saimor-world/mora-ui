@@ -1,12 +1,14 @@
 'use client';
-const KEY = 'saimor_first_run_tour_v1';
 
-export function isFirstRunTourDone(): boolean {
-    if (typeof window === 'undefined') return true;
-    return window.localStorage.getItem(KEY) === 'done';
-}
-
-export function markFirstRunTourDone(): void {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(KEY, 'done');
-}
+export {
+    PRODUCT_TOUR_SETTINGS_KEY,
+    PRODUCT_TOUR_RESTART_EVENT,
+    PRODUCT_TOUR_STATE_EVENT,
+    isProductTourDismissed,
+    migrateProductTourDismissToServer,
+    markProductTourDismissed,
+    resetProductTour,
+    requestProductTourRestart,
+    isFirstRunTourDone,
+    markFirstRunTourDone,
+} from '@/lib/onboarding/productTourStore';

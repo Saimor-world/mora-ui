@@ -825,11 +825,9 @@ export const MoraShell: React.FC = () => {
             {/* Dock (Bottom Navigation) */}
             {!hasFullscreenPane && <Dock />}
 
-            {/* First-visit Mora greeting (one-time, localStorage-gated) */}
-            {!hasFullscreenPane && activeMode !== 'public_playground' && <MoraGreetingBubble />}
-
-            {/* First-run tour: 3-step spotlight, appears 9s after first login */}
+            {/* MÔRA product tour — ambient intro near orb; greeting deferred until tour dismissed */}
             {!hasFullscreenPane && activeMode !== 'public_playground' && <FirstRunTour />}
+            {!hasFullscreenPane && activeMode !== 'public_playground' && <MoraGreetingBubble />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight
