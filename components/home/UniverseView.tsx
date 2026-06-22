@@ -1012,8 +1012,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             {/* MAP CONTENT — planets and semantic connections, always visible behind widgets */}
             <div>
 
-            {/* 2. CENTER HUB (The Core) */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 -translate-y-8">
+            {/* 2. CENTER HUB (The Core) — sits on the true orbit centre (50,50) so
+                 planets and semantic lines align with the logo; no -translate-y. */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
                 <motion.div
                     className="text-center pointer-events-auto flex flex-col items-center"
                     initial={{ opacity: 0, scale: 0.8 }}

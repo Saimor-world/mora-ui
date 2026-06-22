@@ -471,7 +471,7 @@ export const buildOrganicUniverseLayout = (
 
         // Few planets spread wide and clear the core; many planets stay compact
         // so an 8+ constellation still reads as one cluster near the centre.
-        const countRadiusFactor = count <= 4 ? 1.32 : count <= 6 ? 1.08 : count <= 10 ? 0.74 : 0.6;
+        const countRadiusFactor = count <= 4 ? 1.5 : count <= 6 ? 1.12 : count <= 10 ? 0.74 : 0.6;
 
         const rx = (7.5 + radiusBias * 11) * countRadiusFactor;
 
@@ -522,7 +522,7 @@ export const buildOrganicUniverseLayout = (
     const minDistance = universeMinPlanetSeparation(count);
 
     // Min radial gap from the central Saimôr core so no planet hides behind it.
-    const coreDistance = count > 10 ? 4.5 : count <= 4 ? 11 : count <= 6 ? 8 : 5.5;
+    const coreDistance = count > 10 ? 4.5 : count <= 4 ? 13 : count <= 6 ? 8.5 : 5.5;
 
     const iterations = compactCluster ? 36 : 28;
 
