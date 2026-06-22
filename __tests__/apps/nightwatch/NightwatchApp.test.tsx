@@ -85,9 +85,10 @@ describe('NightwatchApp', () => {
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
-    // Still renders the panel, no crash, falls back to empty state
+    // Still renders the panel, but never presents missing data as a healthy empty state.
     expect(await screen.findByTestId('nightwatch-app')).toBeInTheDocument();
-    expect(await screen.findByText(/Keine offenen Vorfälle/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Keine belastbaren Betriebsdaten/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Keine offenen Vorfälle/i)).not.toBeInTheDocument();
   });
 
   it('opens an incident in a document pane (read-only navigation)', async () => {

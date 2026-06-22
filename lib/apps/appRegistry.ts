@@ -146,7 +146,7 @@ export const APP_REGISTRY: AppManifest[] = [
     color: 'slate',
     category: 'people',
     defaultSize: { width: 760, height: 600 },
-    requiresRole: ['owner', 'admin'],
+    requiresRole: ['system_owner', 'owner', 'admin'],
   },
 
   // ── Productivity ─────────────────────────────────────────────────────────
@@ -205,6 +205,7 @@ export const APP_REGISTRY: AppManifest[] = [
     color: 'slate',
     category: 'system',
     defaultSize: { width: 720, height: 480 },
+    requiresRole: ['system_owner'],
   },
   {
     id: 'settings',

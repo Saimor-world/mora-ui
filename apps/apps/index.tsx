@@ -79,6 +79,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
     const pane = getPane(paneId);
     const isActive = usePaneStore(s => s.activePaneId === paneId);
     const userRole = useSessionStore(s => s.user?.role);
+    const [query, setQuery] = React.useState('');
 
     if (!pane) return null;
 
@@ -86,16 +87,20 @@ export default function AppLibraryApp({ paneId }: AppProps) {
     const visibleApps = APP_REGISTRY.filter(manifest => {
         if (LAUNCHER_EXCLUDE.has(manifest.id)) return false;
         if (!isPaneEnabled(manifest.id as PaneType)) return false;
-        if (manifest.requiresRole && userRole && !manifest.requiresRole.includes(userRole as 'owner' | 'admin' | 'member')) return false;
+        if (manifest.requiresRole && (!userRole || !manifest.requiresRole.includes(userRole))) return false;
         return true;
     });
 
+    const normalizedQuery = query.trim().toLocaleLowerCase('de');
     const universeGroups = getAppUniverseGroups()
         .map((group) => ({
             ...group,
             apps: group.appIds
                 .map((appId) => visibleApps.find((app) => app.id === appId))
-                .filter(Boolean) as typeof visibleApps,
+                .filter(Boolean)
+                .filter((app) => !normalizedQuery || [app?.name, app?.description, app?.category]
+                    .filter(Boolean)
+                    .some((value) => value!.toLocaleLowerCase('de').includes(normalizedQuery))) as typeof visibleApps,
         }))
         .filter((group) => group.apps.length > 0);
 
@@ -129,18 +134,39 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="overflow-y-auto p-4 space-y-5">
+            <div className="app-library">
+                <header className="app-library__hero">
+                    <div>
+                        <p className="app-library__eyebrow">Arbeitsräume</p>
+                        <h3>Was möchtest du öffnen?</h3>
+                        <p>{visibleApps.length} Werkzeuge, nach Aufgabe geordnet. Technische Systembereiche erscheinen nur mit passender Rolle.</p>
+                    </div>
+                    <label className="app-library__search">
+                        <Search size={15} aria-hidden="true" />
+                        <input
+                            value={query}
+                            onChange={(event) => setQuery(event.target.value)}
+                            placeholder="Apps durchsuchen"
+                            aria-label="Apps durchsuchen"
+                        />
+                    </label>
+                </header>
+
+                <div className="app-library__groups">
                 {universeGroups.map(group => (
-                    <div key={group.id}>
-                        <div className="pb-2.5 pl-0.5">
-                            <p className="text-[10px] uppercase tracking-widest text-white/30">
+                    <section key={group.id} className="app-library__group">
+                        <div className="app-library__group-head">
+                            <div>
+                            <p>
                                 {group.label}
                             </p>
-                            <p className="mt-1 text-[11px] text-white/36">
+                            <span>
                                 {group.description}
-                            </p>
+                            </span>
+                            </div>
+                            <span>{group.apps.length}</span>
                         </div>
-                        <div className="grid grid-cols-4 gap-3">
+                        <div className="app-library__grid">
                             {group.apps.map(app => {
                                 const IconComp = ICON_MAP[app.icon] ?? Grid;
                                 const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
@@ -150,25 +176,32 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                                         type="button"
                                         onClick={() => handleAppClick(app.id, app.name, app.defaultSize)}
                                         title={app.description}
-                                        className="relative flex flex-col items-center gap-2 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-2 pb-3 pt-4 text-left transition-all hover:border-white/15 hover:bg-white/[0.07] group cursor-pointer"
+                                        className="app-library__card group"
+                                        data-tone={app.color}
                                     >
                                         {app.isNew && (
                                             <span className="absolute right-2 top-2 rounded-full border border-emerald-500/30 bg-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold uppercase leading-none tracking-wide text-emerald-300">
                                                 Neu
                                             </span>
                                         )}
-                                        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl border ${colors.bg} ${colors.border}`}>
+                                        <div className={`app-library__icon border ${colors.bg} ${colors.border}`}>
                                             <IconComp size={22} className={colors.icon} />
                                         </div>
-                                        <span className="text-center text-[11px] font-medium leading-tight text-white/65 transition-colors group-hover:text-white/90">
-                                            {app.name}
-                                        </span>
+                                        <div className="app-library__card-copy">
+                                            <strong>{app.name}</strong>
+                                            <span>{app.description}</span>
+                                        </div>
+                                        <span className="app-library__open">Öffnen</span>
                                     </button>
                                 );
                             })}
                         </div>
-                    </div>
+                    </section>
                 ))}
+                {universeGroups.length === 0 && (
+                    <div className="app-library__none">Keine App passt zu „{query}“.</div>
+                )}
+                </div>
             </div>
         </GlassPanel>
     );

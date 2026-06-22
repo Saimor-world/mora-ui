@@ -34,6 +34,14 @@ export type AppColor =
   | 'blue' | 'purple' | 'green' | 'orange'
   | 'rose' | 'teal' | 'amber' | 'indigo' | 'slate';
 
+export type AppRole =
+  | 'system_owner'
+  | 'owner'
+  | 'admin'
+  | 'manager'
+  | 'member'
+  | 'demo';
+
 export interface AppManifest {
   id: string;
   name: string;
@@ -46,7 +54,7 @@ export interface AppManifest {
   /** Only one instance at a time. */
   singleton?: boolean;
   /** Hide from AppLibrary for non-matching roles. */
-  requiresRole?: ('owner' | 'admin' | 'member')[];
+  requiresRole?: AppRole[];
   /** Shows "NEW" badge in AppLibrary. */
   isNew?: boolean;
 }

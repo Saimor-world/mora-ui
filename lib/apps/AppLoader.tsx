@@ -4,6 +4,9 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { Sparkles } from 'lucide-react';
 import type { AppProps } from './types';
+import { ShieldAlert } from 'lucide-react';
+import { getAppManifest } from './appRegistry';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 function AppSkeleton() {
   return (
@@ -75,10 +78,22 @@ interface AppLoaderProps extends AppProps {
 
 export function AppLoader({ appId, paneId, initialData, onClose, onNavigate }: AppLoaderProps) {
   const App = APP_MAP[appId];
+  const role = useSessionStore((state) => state.user?.role);
+  const manifest = getAppManifest(appId);
   if (!App) {
     return (
       <div className="p-4 text-sm text-red-400 font-mono">
         {`App "${appId}" not found`}
+      </div>
+    );
+  }
+  if (manifest?.requiresRole && (!role || !manifest.requiresRole.includes(role))) {
+    return (
+      <div className="app-state app-state--denied" role="alert" data-testid={`app-access-denied-${appId}`}>
+        <div className="app-state__icon"><ShieldAlert size={24} /></div>
+        <p className="app-state__eyebrow">Geschützter Systembereich</p>
+        <h3>{manifest.name}</h3>
+        <p>Diese App ist für deine aktuelle Rolle nicht freigegeben.</p>
       </div>
     );
   }

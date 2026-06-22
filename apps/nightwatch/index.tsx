@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshCw, Shield, ShieldCheck, Clock } from 'lucide-react';
+import { Activity, AlertTriangle, Box, Clock, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -81,6 +81,7 @@ function MonitorChip({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDo
             title={hostHint || label}
         >
             <PulseDot color={isDown ? 'bg-red-400' : 'bg-emerald-400'} animate={isDown} size="xs" />
+            {monitor.target_type === 'container' ? <Box size={10} className="text-white/32" /> : <Server size={10} className="text-white/32" />}
             <span className="truncate text-[11px] font-medium text-white/78">{label}</span>
             <span className={`shrink-0 text-[9px] uppercase tracking-[0.14em] ${isDown ? 'text-red-300/75' : 'text-emerald-300/65'}`}>
                 {isDown ? 'Down' : 'Online'}
@@ -151,6 +152,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     const [incidents, setIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [monitors, setMonitors] = useState<NightwatchMonitorItem[]>([]);
+    const [history, setHistory] = useState<NightwatchIncidentItem[]>([]);
+    const [available, setAvailable] = useState(true);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
@@ -167,12 +170,16 @@ export default function NightwatchApp({ paneId }: AppProps) {
             const [inc, mon] = await Promise.all([fetchNightwatchIncidents(), fetchNightwatchMonitors()]);
             if (!mountedRef.current) return;
             setIncidents(inc);
+            setHistory(inc);
             setMonitors(mon);
+            setAvailable(true);
             setLastRefresh(new Date());
         } catch {
             if (!mountedRef.current) return;
             setIncidents([]);
             setMonitors([]);
+            setHistory([]);
+            setAvailable(false);
         } finally {
             if (mountedRef.current) {
                 setLoading(false);
@@ -201,12 +208,36 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     const criticalCount = incidents.filter((i) => i.severity === 'critical').length;
     const warningCount = incidents.filter((i) => i.severity === 'warning').length;
+    const downMonitorCount = sortedMonitors.filter((monitor) => {
+        const status = monitor.status?.toLowerCase();
+        return status === 'down' || status === 'critical' || (!!monitor.host && downHosts.has(monitor.host));
+    }).length;
+    const onlineMonitorCount = Math.max(0, monitors.length - downMonitorCount);
+
+    const sevenDayTrend = useMemo(() => {
+        const days = Array.from({ length: 7 }, (_, offset) => {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() - (6 - offset));
+            return { key: date.toISOString().slice(0, 10), label: date.toLocaleDateString('de-DE', { weekday: 'short' }), count: 0 };
+        });
+        const byKey = new Map(days.map((day) => [day.key, day]));
+        history.forEach((incident) => {
+            if (!incident.detected_at) return;
+            const day = byKey.get(new Date(incident.detected_at).toISOString().slice(0, 10));
+            if (day) day.count += 1;
+        });
+        return days;
+    }, [history]);
+    const trendMax = Math.max(1, ...sevenDayTrend.map((day) => day.count));
 
     const systemStatus: 'ok' | 'warning' | 'critical' =
         criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'ok';
 
     const statusLine = loading
         ? 'Verbinde…'
+        : !available
+            ? 'Datenquelle nicht erreichbar'
         : systemStatus === 'ok'
             ? 'Alle Systeme normal'
             : systemStatus === 'critical'
@@ -215,6 +246,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     const statusTone =
         loading ? 'text-white/35'
+            : !available ? 'text-red-300/85'
             : systemStatus === 'ok' ? 'text-emerald-300/85'
                 : systemStatus === 'critical' ? 'text-red-300/85'
                     : 'text-amber-300/85';
@@ -313,6 +345,45 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     </div>
                 </div>
 
+                {!loading && available && (
+                    <section className="nightwatch-overview" aria-label="Nightwatch Übersicht">
+                        <div>
+                            <span><ShieldCheck size={13} />Online</span>
+                            <strong>{onlineMonitorCount}</strong>
+                            <small>bestätigte Monitore</small>
+                        </div>
+                        <div data-tone={downMonitorCount > 0 ? 'critical' : 'quiet'}>
+                            <span><Server size={13} />Down</span>
+                            <strong>{downMonitorCount}</strong>
+                            <small>nicht erreichbar</small>
+                        </div>
+                        <div data-tone={criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'quiet'}>
+                            <span><AlertTriangle size={13} />Vorfälle</span>
+                            <strong>{incidents.length}</strong>
+                            <small>{criticalCount} kritisch · {warningCount} Warnung</small>
+                        </div>
+                        <div className="nightwatch-trend">
+                            <span><Activity size={13} />7 Tage</span>
+                            <div className="nightwatch-trend__bars" aria-label={`${history.length} Vorfälle im Verlauf`}>
+                                {sevenDayTrend.map((day) => (
+                                    <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(8, (day.count / trendMax) * 100)}%` }} />
+                                ))}
+                            </div>
+                            <small>{history.length} erfasste Ereignisse</small>
+                        </div>
+                    </section>
+                )}
+
+                {!loading && !available && (
+                    <div className="nightwatch-unavailable" role="alert">
+                        <AlertTriangle size={16} />
+                        <div>
+                            <strong>Keine belastbaren Betriebsdaten</strong>
+                            <span>Nightwatch kann CORE gerade nicht bestätigen. Leere Listen werden nicht als „alles ruhig“ dargestellt.</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Monitor chips — compact, no sprawling grid */}
                 <section className="relative space-y-2">
                     <div className="flex items-center gap-2">
@@ -329,7 +400,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <div key={i} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
                             ))}
                         </div>
-                    ) : monitors.length === 0 ? (
+                    ) : !available ? null : monitors.length === 0 ? (
                         <p className="text-[11px] text-white/38">Noch keine Monitore eingerichtet.</p>
                     ) : (
                         <div className="flex flex-wrap gap-2">
@@ -363,7 +434,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
                             ))}
                         </div>
-                    ) : incidents.length === 0 ? (
+                    ) : !available ? null : incidents.length === 0 ? (
                         <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
                             <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />
                             <div>

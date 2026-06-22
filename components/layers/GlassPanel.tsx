@@ -6,6 +6,7 @@ import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion
 import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { getAppManifest } from '@/lib/apps/appRegistry';
 
 interface GlassPanelProps {
     /** Child content to render inside the panel */
@@ -135,7 +136,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const isStandardMode = isStandardModeProp || globalStandardMode;
     const allowMaximize = showMaximizeButton ?? (showCloseButton || showMinimizeButton);
     const activePaneId = usePaneStore((state) => state.activePaneId);
+    const paneType = usePaneStore((state) => paneId ? state.panes.find((pane) => pane.id === paneId)?.type : undefined);
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
+    const appManifest = paneType ? getAppManifest(paneType) : undefined;
     const effectiveIsActive = paneId ? activePaneId === paneId : isActive;
     const hasPaneStack = visiblePaneCount > 1;
     const hasDensePaneStack = visiblePaneCount > 2;
@@ -423,6 +426,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             {/* Background Dim Layer (if enabled) */}
             {dimBackground && (
                 <motion.div
+                    key={`${paneId ?? 'glass-panel'}-dim`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: dimOpacity }}
                     exit={{ opacity: 0 }}
@@ -434,6 +438,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
             {/* UPGRADE C1: Enhanced Glass Panel with drag and resize */}
             <motion.div
+                key={paneId ?? 'glass-panel'}
                 ref={panelRef}
                 drag={draggable && !isMaximized}
                 dragControls={dragControls}
@@ -478,6 +483,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 }}
                 className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
                 data-active={effectiveIsActive ? 'true' : 'false'}
+                data-app-id={appManifest?.id}
+                data-app-tone={appManifest?.color ?? 'slate'}
+                data-app-category={appManifest?.category}
                 data-pane-stack={hasPaneStack ? 'true' : 'false'}
                 data-pane-density={hasDensePaneStack ? 'dense' : 'normal'}
                 style={{
@@ -511,12 +519,12 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
                 {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize || tabs.length > 0) && (
-                    <div className="shrink-0 border-b" style={{ borderColor: 'var(--mora-glass-border)' }}>
+                    <div className="pane-chrome shrink-0">
                         {/* Title Bar */}
                         {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize) && (
                             <div
-                                className="flex items-center justify-between pointer-events-auto"
-                                style={{ padding: paddingValue, cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
+                                className="pane-titlebar pointer-events-auto"
+                                style={{ cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
                                 onPointerDown={(e) => draggable && !isMaximized && dragControls.start(e)}
                                 onDoubleClick={(e) => {
                                     if (!allowMaximize) return;
@@ -525,42 +533,41 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     toggleMaximize();
                                 }}
                             >
-                                {/* Back Button */}
-                                {showBackButton && onBack && (
-                                    <button
-                                        data-testid="nav-back-to-space"
-                                        onClick={(e) => { e.stopPropagation(); onBack(); }}
-                                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-violet-100/80 transition-all group"
-                                    >
-                                        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-                                        <span className="text-sm">Back</span>
-                                    </button>
-                                )}
-
-                                {!showBackButton && <div className="min-w-[40px] md:min-w-[80px]" />}
-
-                                {/* Title */}
-                                {title && (
-                                    typeof title === 'string' ? (
-                                        <h2 
-                                            className="text-lg font-medium tracking-wide text-violet-50 uppercase truncate flex-1 px-3 md:px-6 text-center"
-                                            title={title}
+                                <div className="pane-identity">
+                                    {showBackButton && onBack && (
+                                        <button
+                                            data-testid="nav-back-to-space"
+                                            onClick={(e) => { e.stopPropagation(); onBack(); }}
+                                            className="pane-control pane-control--back group"
+                                            aria-label="Zurück"
                                         >
-                                            {title}
-                                        </h2>
-                                    ) : (
-                                        <div className="text-lg font-medium tracking-wide text-violet-50 uppercase truncate flex-1 px-3 md:px-6 flex justify-center">
-                                            {title}
+                                            <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+                                        </button>
+                                    )}
+                                    <div className="pane-app-mark" aria-hidden="true">
+                                        <span />
+                                    </div>
+                                    <div className="pane-title-copy">
+                                        {title && (
+                                            typeof title === 'string' ? (
+                                                <h2 title={title}>{title}</h2>
+                                            ) : (
+                                                <div className="pane-title-custom">{title}</div>
+                                            )
+                                        )}
+                                        <div className="pane-context-line">
+                                            <span>{appManifest?.description ?? 'SAIMÔR Arbeitsbereich'}</span>
+                                            {appManifest?.category && <span className="pane-category">{appManifest.category}</span>}
                                         </div>
-                                    )
-                                )}
+                                    </div>
+                                </div>
 
                                 {/* Action Buttons */}
-                                <div className="flex items-center gap-1 justify-end min-w-[40px] md:min-w-[80px]">
+                                <div className="pane-window-controls">
                                     {showMinimizeButton && onMinimize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onMinimize(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-yellow-500/20 text-violet-100/60 hover:text-yellow-400 transition-all"
+                                            className="pane-control pane-control--minimize"
                                             aria-label="Minimize panel"
                                         >
                                             <Minus className="w-4 h-4" />
@@ -569,7 +576,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     {allowMaximize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-cyan-500/20 text-violet-100/60 hover:text-cyan-300 transition-all"
+                                            className="pane-control pane-control--maximize"
                                             aria-label={isMaximized ? "Restore panel" : "Maximize panel"}
                                         >
                                             {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -578,7 +585,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                     {showCloseButton && onClose && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onClose(); }}
-                                            className="p-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-violet-100/60 hover:text-red-400 transition-all"
+                                            className="pane-control pane-control--close"
                                             aria-label="Close panel"
                                         >
                                             <X className="w-4 h-4" />
@@ -590,14 +597,14 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
                         {/* UPGRADE C1: Tab Bar */}
                         {tabs.length > 0 && (
-                            <div className="flex items-center border-t border-white/5" style={{ padding: `0 ${paddingValue}` }}>
+                            <div className="pane-tabs">
                                 {tabs.map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => onTabChange?.(tab.id)}
-                                        className={`px-4 py-2 text-sm font-medium transition-all border-b-2 ${activeTabId === tab.id
-                                            ? 'text-violet-400 border-violet-400 bg-violet-400/5'
-                                            : 'text-violet-300/60 border-transparent hover:text-violet-300 hover:border-violet-300/50'
+                                        className={`pane-tab ${activeTabId === tab.id
+                                            ? 'pane-tab--active'
+                                            : ''
                                             }`}
                                     >
                                         {tab.title}
