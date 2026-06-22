@@ -253,7 +253,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         return () => {
             cancelled = true;
         };
-    }, [activeCompanyId, setPersonalSpaceId]);
+    }, [activeCompanyId, setPersonalSpaceId, setUniverseScope, user?.role]);
 
     // ─── MEMBERSHIP HELPERS ───
     const isMember = useCallback((deptId: string): boolean => {
