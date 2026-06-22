@@ -82,8 +82,8 @@ export function WidgetGrid({
         [items, isGlanceSurface, surface],
     );
 
-    const panelBackground = isGlanceSurface ? 'rgba(8, 11, 24, 0.52)' : 'rgba(8, 11, 24, 0.82)';
-    const panelBorder = isGlanceSurface ? 'border-white/[0.05]' : 'border-white/[0.12]';
+    const panelBackground = isGlanceSurface ? 'rgba(6, 9, 22, 0.62)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBorder = isGlanceSurface ? 'border-white/[0.10]' : 'border-white/[0.12]';
 
     if (!mounted || !hydrated || surface === 'home') return null;
 
@@ -220,20 +220,25 @@ export function WidgetGrid({
                                 isClockOrb
                                     ? 'rounded-full border-0 bg-transparent shadow-none'
                                     : chromeless
-                                        ? `rounded-xl border ${panelBorder} shadow-[0_8px_28px_rgba(0,0,0,0.28)]`
+                                        ? `rounded-2xl border ${panelBorder} backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.07)]`
                                         : `rounded-2xl border ${panelBorder} backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]`
                             }`}
                             style={isClockOrb ? undefined : { backgroundColor: panelBackground }}
                             onPointerEnter={() => setHoveredWidgetId(w.i)}
                             onPointerLeave={() => setHoveredWidgetId((current) => (current === w.i ? null : current))}
                         >
-                            {!chromeless && (
+                            {!isClockOrb && (
                                 <>
-                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), transparent)' }} />
-                                    <div
-                                        className="pointer-events-none absolute inset-0 opacity-[0.5]"
-                                        style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }}
-                                    />
+                                    <div className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-2xl bg-white/[0.08]" />
+                                    {!chromeless && (
+                                        <>
+                                            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-2xl" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.04), transparent)' }} />
+                                            <div
+                                                className="pointer-events-none absolute inset-0 opacity-[0.5]"
+                                                style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.05), transparent 55%)' }}
+                                            />
+                                        </>
+                                    )}
                                 </>
                             )}
                             {(editMode || !isGlanceSurface) && (

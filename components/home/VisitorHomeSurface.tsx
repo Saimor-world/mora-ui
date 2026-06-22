@@ -181,7 +181,7 @@ export function VisitorHomeSurface() {
         <main className="pointer-events-auto relative z-10 h-full overflow-y-auto px-5 pb-32 pt-20 text-white sm:px-8 lg:px-12">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-6">
 
-                {/* MÔRA greeting */}
+                {/* MÔRA greeting — context-aware, not a banner repeat */}
                 <motion.div
                     className="flex items-center gap-4"
                     initial={{ opacity: 0, y: -10 }}
@@ -197,7 +197,11 @@ export function VisitorHomeSurface() {
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.45, duration: 0.7 }}
                         >
-                            Willkommen in deinem Preview-Raum — dein Security-Scan ist fertig.
+                            {findings.length > 0
+                                ? `${findings.length} ${findings.length === 1 ? 'Befund' : 'Befunde'} analysiert — ${findings[0]?.title ?? 'Details unten'} ist am dringlichsten.`
+                                : score !== null
+                                    ? `Security Score ${score} — ${score < 50 ? 'kritische Maßnahmen erforderlich.' : score < 80 ? 'mittlere Risiken erkannt.' : 'solide Basis, Details unten.'}`
+                                    : 'Dein Dossier ist angelegt. Ergebnisse werden geladen.'}
                         </motion.p>
                     </div>
                 </motion.div>
