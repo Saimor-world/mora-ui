@@ -522,7 +522,10 @@ export const buildOrganicUniverseLayout = (
     const minDistance = universeMinPlanetSeparation(count);
 
     // Min radial gap from the central Saimôr core so no planet hides behind it.
-    const coreDistance = count > 10 ? 4.5 : count <= 4 ? 13 : count <= 6 ? 8.5 : 5.5;
+    // The 100×100 layout space is stretched to a ~2.25:1 viewport, so vertical
+    // units render shorter — a top planet needs a large gap (~18u ≈ 106px) to
+    // clear the solid core sphere on a short window.
+    const coreDistance = count > 10 ? 4.5 : count <= 4 ? 18 : count <= 6 ? 11 : 6;
 
     const iterations = compactCluster ? 36 : 28;
 
