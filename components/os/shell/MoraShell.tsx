@@ -61,6 +61,7 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { authLogout } from '@/lib/api/coreClient';
+import { coreUnreachableUserMessage } from '@/lib/api/coreReachability';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
@@ -668,7 +669,7 @@ export const MoraShell: React.FC = () => {
     if (!isBootstrapped) {
         if (bootTimedOut) {
             return (
-                <ErrorScreen message="CORE-Backend antwortet nicht. Starte den Server neu (bash scripts/start-local-truth.sh) oder prüfe deine Netzwerkverbindung." />
+                <ErrorScreen message={coreUnreachableUserMessage()} />
             );
         }
         return <LoadingScreen />;

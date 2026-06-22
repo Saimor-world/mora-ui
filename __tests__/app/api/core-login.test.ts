@@ -88,7 +88,7 @@ describe('/api/auth/core-login', () => {
 
     it('does not expose the local demo fallback unless explicitly enabled', async () => {
         delete process.env.SAIMOR_ENABLE_LOCAL_DEMO_FALLBACK;
-        process.env.NODE_ENV = 'production';
+        process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
         global.fetch = jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:8081')) as any;
         jest.spyOn(console, 'error').mockImplementation(() => {});
@@ -108,7 +108,7 @@ describe('/api/auth/core-login', () => {
 
     it('returns a local demo fallback when Core is unavailable and the dev flag is enabled', async () => {
         process.env.SAIMOR_ENABLE_LOCAL_DEMO_FALLBACK = '1';
-        process.env.NODE_ENV = 'development';
+        process.env = { ...process.env, NODE_ENV: 'development' };
         global.fetch = jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:8081')) as any;
         jest.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -127,7 +127,7 @@ describe('/api/auth/core-login', () => {
     });
 
     it('returns service unavailable for non-demo credentials when Core is unavailable', async () => {
-        process.env.NODE_ENV = 'production';
+        process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
         global.fetch = jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:8081')) as any;
         jest.spyOn(console, 'error').mockImplementation(() => {});

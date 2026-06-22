@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { LoadingScreen, ErrorScreen } from '@/components/os/shell/ShellStatusScreens';
+import { coreUnreachableUserMessage } from '@/lib/api/coreReachability';
 
 describe('LoadingScreen', () => {
   it('shows the OS booting state', () => {
@@ -16,6 +17,14 @@ describe('ErrorScreen', () => {
     render(<ErrorScreen message="Backend nicht erreichbar" />);
     expect(screen.getByText('Verbindung unterbrochen')).toBeInTheDocument();
     expect(screen.getByText('Backend nicht erreichbar')).toBeInTheDocument();
+  });
+
+  it('keeps connection guidance free of local server commands', () => {
+    const message = coreUnreachableUserMessage();
+    render(<ErrorScreen message={message} />);
+
+    expect(screen.getByText(message)).toBeInTheDocument();
+    expect(screen.queryByText(/start-local-truth/i)).not.toBeInTheDocument();
   });
 
   it('offers a retry button', () => {
