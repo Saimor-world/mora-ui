@@ -44,7 +44,7 @@ export default function PlaygroundPage() {
             router.push(destination);
             return;
         }
-    }, []);
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
