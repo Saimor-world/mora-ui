@@ -15,7 +15,7 @@ describe('coreReachability', () => {
     });
 
     it('uses production-safe messaging outside local dev runtimes', () => {
-        process.env.NODE_ENV = 'production';
+        process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
 
         expect(isLocalDevRuntime()).toBe(false);
@@ -25,7 +25,7 @@ describe('coreReachability', () => {
     });
 
     it('uses local dev messaging in development', () => {
-        process.env.NODE_ENV = 'development';
+        process.env = { ...process.env, NODE_ENV: 'development' };
         process.env.SAIMOR_CORE_URL = 'http://127.0.0.1:8081';
 
         expect(isLocalDevRuntime()).toBe(true);
@@ -34,7 +34,7 @@ describe('coreReachability', () => {
     });
 
     it('orders internal docker URL before public API URL', () => {
-        process.env.NODE_ENV = 'production';
+        process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
         process.env.NEXT_PUBLIC_SAIMOR_CORE_URL = 'https://api.saimor.world';
 
@@ -46,7 +46,7 @@ describe('coreReachability', () => {
     });
 
     it('falls back to the public API URL when internal routing fails', async () => {
-        process.env.NODE_ENV = 'production';
+        process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
         process.env.NEXT_PUBLIC_SAIMOR_CORE_URL = 'https://api.saimor.world';
 
