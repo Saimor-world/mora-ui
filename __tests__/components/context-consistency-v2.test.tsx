@@ -123,6 +123,15 @@ beforeEach(() => {
     mockSearchSemantic.mockResolvedValue([]);
     mockSearchGlobal.mockResolvedValue({ results: [] });
     mockCoreGet.mockResolvedValue({ events: [] });
+    mockGetPane.mockReturnValue({
+        id: 'search-main',
+        type: 'search',
+        title: 'Suche',
+        size: { width: 640, height: 500 },
+        position: { x: 100, y: 100 },
+        zIndex: 10,
+        minimized: false,
+    });
 });
 
 afterEach(() => {

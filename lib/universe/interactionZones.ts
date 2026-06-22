@@ -80,9 +80,12 @@ export function resolveUniverseFocusMode(input: {
     return 'peripheral';
 }
 
-/** Opacity for peripheral glance widgets given focus mode. */
+/** Opacity for peripheral glance widgets given focus mode.
+ *  Widgets stay legible at all times — they recede when exploring planets,
+ *  but never fade to ghost levels. Hovering a widget brings it fully forward. */
 export function universeWidgetOpacity(focusMode: UniverseFocusMode, planetFocused: boolean): number {
-    if (focusMode === 'explore') return planetFocused ? 0.14 : 0.18;
-    if (planetFocused) return 0.22;
-    return 0.38;
+    if (focusMode === 'widget') return 0.96;
+    if (focusMode === 'explore') return planetFocused ? 0.46 : 0.56;
+    if (planetFocused) return 0.66;
+    return 0.84;
 }

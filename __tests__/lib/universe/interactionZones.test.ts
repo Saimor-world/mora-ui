@@ -80,12 +80,18 @@ describe('interactionZones', () => {
     });
 
     describe('universeWidgetOpacity', () => {
-        it('dims widgets in explore mode', () => {
-            expect(universeWidgetOpacity('explore', false)).toBeLessThan(0.2);
+        it('recedes widgets in explore mode but keeps them legible', () => {
+            const exploreOpacity = universeWidgetOpacity('explore', false);
+            expect(exploreOpacity).toBeLessThan(universeWidgetOpacity('peripheral', false));
+            expect(exploreOpacity).toBeGreaterThanOrEqual(0.4);
         });
 
-        it('keeps widgets readable in peripheral mode', () => {
-            expect(universeWidgetOpacity('peripheral', false)).toBeGreaterThanOrEqual(0.35);
+        it('keeps widgets prominent in peripheral mode', () => {
+            expect(universeWidgetOpacity('peripheral', false)).toBeGreaterThanOrEqual(0.7);
+        });
+
+        it('brings a hovered widget fully forward', () => {
+            expect(universeWidgetOpacity('widget', false)).toBeGreaterThanOrEqual(0.9);
         });
     });
 });

@@ -10,17 +10,18 @@
 
 
 
-/** Percentage bounds for planet placement — centred cluster with room to separate. */
+/** Percentage bounds for planet placement — wide enough to breathe across the
+ *  canvas, still clear of the corner widget clusters (x<26 / x>74, y<24 / y>72). */
 
 export const UNIVERSE_SAFE_BOUNDS = {
 
-    minX: 30,
+    minX: 26,
 
-    maxX: 70,
+    maxX: 74,
 
-    minY: 26,
+    minY: 24,
 
-    maxY: 66,
+    maxY: 72,
 
 };
 
@@ -40,7 +41,7 @@ export const UNIVERSE_CORE_POINT = {
 
 export const universeMinPlanetSeparation = (count: number) => {
 
-    if (count <= 4) return 10.5;
+    if (count <= 4) return 13;
 
     if (count <= 8) return 7.5;
 
@@ -468,9 +469,13 @@ export const buildOrganicUniverseLayout = (
 
         const radiusBias = 0.34 + (1 - vitality) * 0.09 + radialJitter;
 
-        const rx = 6.5 + radiusBias * 10;
+        // Few planets spread wide and clear the core; many planets stay compact
+        // so an 8+ constellation still reads as one cluster near the centre.
+        const countRadiusFactor = count <= 4 ? 1.32 : count <= 6 ? 1.08 : count <= 10 ? 0.74 : 0.6;
 
-        const ry = 4.5 + radiusBias * 7.5;
+        const rx = (7.5 + radiusBias * 11) * countRadiusFactor;
+
+        const ry = (5.5 + radiusBias * 8.5) * countRadiusFactor;
 
 
 
@@ -516,7 +521,8 @@ export const buildOrganicUniverseLayout = (
 
     const minDistance = universeMinPlanetSeparation(count);
 
-    const coreDistance = count > 10 ? 4.5 : count <= 6 ? 5.5 : 5.0;
+    // Min radial gap from the central Saimôr core so no planet hides behind it.
+    const coreDistance = count > 10 ? 4.5 : count <= 4 ? 11 : count <= 6 ? 8 : 5.5;
 
     const iterations = compactCluster ? 36 : 28;
 
