@@ -1,16 +1,19 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle, Box, Clock, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Box, Clock, ExternalLink, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
+    fetchAllNightwatchIncidents,
     fetchNightwatchIncidents,
     fetchNightwatchMonitors,
     type NightwatchMonitorItem,
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+
+const NIGHTWATCH_DASHBOARD_URL = 'https://dash.saimor.world/nightwatch';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +55,15 @@ function severityConfig(sev?: string) {
         text: 'text-sky-300/85',
         label: 'Info',
     };
+}
+
+function isMonitorDown(monitor: NightwatchMonitorItem, incidentHosts: Set<string>): boolean {
+    const status = monitor.status?.toLowerCase();
+    return status === 'down'
+        || status === 'critical'
+        || status === 'unhealthy'
+        || status === 'exited'
+        || (!!monitor.host && incidentHosts.has(monitor.host));
 }
 
 // ── sub-components ────────────────────────────────────────────────────────────
@@ -167,10 +179,14 @@ export default function NightwatchApp({ paneId }: AppProps) {
     const load = useCallback(async (isRefresh = false) => {
         if (isRefresh) setRefreshing(true);
         try {
-            const [inc, mon] = await Promise.all([fetchNightwatchIncidents(), fetchNightwatchMonitors()]);
+            const [inc, mon, allIncidents] = await Promise.all([
+                fetchNightwatchIncidents(),
+                fetchNightwatchMonitors(),
+                fetchAllNightwatchIncidents(),
+            ]);
             if (!mountedRef.current) return;
             setIncidents(inc);
-            setHistory(inc);
+            setHistory(allIncidents);
             setMonitors(mon);
             setAvailable(true);
             setLastRefresh(new Date());
@@ -201,17 +217,14 @@ export default function NightwatchApp({ paneId }: AppProps) {
     );
 
     const sortedMonitors = useMemo(() => {
-        const down = monitors.filter((m) => m.host && downHosts.has(m.host));
-        const up = monitors.filter((m) => !m.host || !downHosts.has(m.host));
+        const down = monitors.filter((monitor) => isMonitorDown(monitor, downHosts));
+        const up = monitors.filter((monitor) => !isMonitorDown(monitor, downHosts));
         return [...down, ...up];
     }, [monitors, downHosts]);
 
     const criticalCount = incidents.filter((i) => i.severity === 'critical').length;
     const warningCount = incidents.filter((i) => i.severity === 'warning').length;
-    const downMonitorCount = sortedMonitors.filter((monitor) => {
-        const status = monitor.status?.toLowerCase();
-        return status === 'down' || status === 'critical' || (!!monitor.host && downHosts.has(monitor.host));
-    }).length;
+    const downMonitorCount = sortedMonitors.filter((monitor) => isMonitorDown(monitor, downHosts)).length;
     const onlineMonitorCount = Math.max(0, monitors.length - downMonitorCount);
 
     const sevenDayTrend = useMemo(() => {
@@ -335,6 +348,16 @@ export default function NightwatchApp({ paneId }: AppProps) {
                         )}
                         <button
                             type="button"
+                            onClick={() => window.open(NIGHTWATCH_DASHBOARD_URL, '_blank', 'noopener,noreferrer')}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/42 transition-colors hover:bg-white/[0.08] hover:text-white/72"
+                            aria-label="Larry Dashboard öffnen"
+                            title="Vollständige Container- und Kapazitätsansicht öffnen"
+                        >
+                            <ExternalLink size={11} />
+                            <span className="hidden sm:inline">Dashboard</span>
+                        </button>
+                        <button
+                            type="button"
                             onClick={() => load(true)}
                             disabled={refreshing}
                             className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-40"
@@ -408,7 +431,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <MonitorChip
                                     key={m.id}
                                     monitor={m}
-                                    isDown={!!m.host && downHosts.has(m.host)}
+                                    isDown={isMonitorDown(m, downHosts)}
                                 />
                             ))}
                         </div>
