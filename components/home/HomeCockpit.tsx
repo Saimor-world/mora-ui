@@ -412,6 +412,8 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         openIntegrations: onOpenIntegrations,
 
+        openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
+
         openMora: onOpenMora,
 
         openTeam: onOpenTeam,

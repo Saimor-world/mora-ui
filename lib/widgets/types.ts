@@ -45,6 +45,8 @@ export interface WidgetContext {
     openMail?: () => void;
     openTeam?: () => void;
     openIntegrations?: () => void;
+    /** Open the App Library pane (NOT integrations). */
+    openApps?: () => void;
     openNightwatch?: () => void;
     /** Larry / dash.saimor.world — ops dashboard */
     openDashboard?: () => void;

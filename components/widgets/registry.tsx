@@ -4,7 +4,7 @@ import React, { useCallback, useMemo } from 'react';
 import {
     Sparkles, CalendarDays, Mail, Users, AlertTriangle, CheckCircle2,
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
-    ArrowRight, Activity, Cpu, ExternalLink, Radio, PenLine, Layout, Target, Inbox, FileText,
+    ArrowRight, Activity, Cpu, ExternalLink, Radio, PenLine, Layout, LayoutGrid, Target, Inbox, FileText,
 } from 'lucide-react';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
@@ -925,7 +925,7 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ c
         { icon: <FolderOpen size={compact ? 16 : 20} />, label: 'Finder', onClick: context.openFinder },
         { icon: <Sparkles size={compact ? 16 : 20} />, label: 'MÔRA', onClick: context.openMora },
         { icon: <Compass size={compact ? 16 : 20} />, label: 'Erkunden', onClick: context.goExplore },
-        { icon: <Plug size={compact ? 16 : 20} />, label: 'Apps', onClick: context.openIntegrations },
+        { icon: <LayoutGrid size={compact ? 16 : 20} />, label: 'Apps', onClick: context.openApps ?? context.openIntegrations },
     ] as const;
 
     if (compact) {

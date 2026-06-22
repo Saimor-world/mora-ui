@@ -132,6 +132,7 @@ export const DepartmentSurface: React.FC = () => {
               }),
               openTeam: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: GLASS_SHEET_SIZE }),
               openIntegrations: () => openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE }),
+              openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
               openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
               openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
               openLarryNode: (nodeId, title) => openPane({
