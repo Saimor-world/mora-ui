@@ -38,22 +38,26 @@ jest.mock('@/lib/store/navStore', () => ({
 }));
 
 jest.mock('@/lib/api/nightwatchClient', () => ({
+  fetchAllNightwatchIncidents: jest.fn(),
   fetchNightwatchIncidents: jest.fn(),
   fetchNightwatchMonitors: jest.fn(),
 }));
 
 import NightwatchApp from '@/apps/nightwatch/index';
-import { fetchNightwatchIncidents, fetchNightwatchMonitors } from '@/lib/api/nightwatchClient';
+import { fetchAllNightwatchIncidents, fetchNightwatchIncidents, fetchNightwatchMonitors } from '@/lib/api/nightwatchClient';
 import { APP_IDS } from '@/lib/apps/AppLoader';
 import { getAppManifest } from '@/lib/apps/appRegistry';
 import { SURFACE_TIERS } from '@/lib/surface/surfaceRegistry';
 
 const incidents = fetchNightwatchIncidents as jest.Mock;
+const incidentHistory = fetchAllNightwatchIncidents as jest.Mock;
 const monitors = fetchNightwatchMonitors as jest.Mock;
 
 beforeEach(() => {
   openPane.mockClear();
   incidents.mockReset();
+  incidentHistory.mockReset();
+  incidentHistory.mockResolvedValue([]);
   monitors.mockReset();
 });
 
@@ -77,6 +81,45 @@ describe('NightwatchApp', () => {
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
     expect(await screen.findByText(/Keine offenen Vorfälle/i)).toBeInTheDocument();
+  });
+
+  it('uses resolved incidents for the seven-day history', async () => {
+    incidents.mockResolvedValue([]);
+    incidentHistory.mockResolvedValue([
+      { id: 'old-1', title: 'resolved', severity: 'warning', status: 'resolved', detected_at: new Date().toISOString() },
+    ]);
+    monitors.mockResolvedValue([]);
+
+    render(<NightwatchApp paneId="nw-1" initialData={{}} />);
+
+    expect(await screen.findByLabelText('1 Vorfälle im Verlauf')).toBeInTheDocument();
+    expect(screen.getByText('1 erfasste Ereignisse')).toBeInTheDocument();
+  });
+
+  it('shows monitor status down even without a matching incident', async () => {
+    incidents.mockResolvedValue([]);
+    monitors.mockResolvedValue([{ id: 'm-1', name: 'Worker', host: 'worker', status: 'down' }]);
+
+    render(<NightwatchApp paneId="nw-1" initialData={{}} />);
+
+    expect(await screen.findAllByText('Down')).toHaveLength(2);
+    expect(screen.getByText('nicht erreichbar')).toBeInTheDocument();
+  });
+
+  it('links the glance pane to the full Larry dashboard', async () => {
+    incidents.mockResolvedValue([]);
+    monitors.mockResolvedValue([]);
+    const open = jest.spyOn(window, 'open').mockImplementation(() => null);
+
+    render(<NightwatchApp paneId="nw-1" initialData={{}} />);
+    (await screen.findByLabelText('Larry Dashboard öffnen')).click();
+
+    expect(open).toHaveBeenCalledWith(
+      'https://dash.saimor.world/nightwatch',
+      '_blank',
+      'noopener,noreferrer',
+    );
+    open.mockRestore();
   });
 
   it('degrades gracefully when the API fails', async () => {
