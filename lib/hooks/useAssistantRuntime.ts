@@ -30,6 +30,8 @@ export interface AssistantRuntimeSnapshot {
     status: 'ready' | 'degraded' | 'offline';
     source: 'local' | 'cloud' | 'unknown';
     provider: string | null;
+    /** Human-readable provider name (e.g. "Gemini") — for owner/advanced views, not the calm Control Center. */
+    providerLabel: string | null;
     model: string | null;
     routingProfile: string | null;
     healthyProviderCount: number;
@@ -50,12 +52,13 @@ const OFFLINE_SNAPSHOT: AssistantRuntimeSnapshot = {
     status: 'offline',
     source: 'unknown',
     provider: null,
+    providerLabel: null,
     model: null,
     routingProfile: null,
     healthyProviderCount: 0,
     configuredProviderCount: 0,
-    title: 'Kein AI-Pfad',
-    subtitle: 'Keine gesunden Provider',
+    title: 'MÔRA offline',
+    subtitle: 'Kein Antwortpfad aktiv',
     badge: 'Offline',
 };
 
@@ -99,35 +102,35 @@ function normalizeAssistantRuntime(payload: ProvidersPayload | null | undefined)
         healthyProviderCount > 0 ? 'ready' : configuredProviderCount > 0 ? 'degraded' : 'offline';
 
     const readableProvider = providerLabel(recommended);
+    // Control Center stays calm and CORE-invisible: surface MÔRA's status, not the
+    // provider or model id. Raw provider/model/providerLabel stay in the snapshot
+    // for an owner/advanced view.
     const title =
         status === 'offline'
             ? OFFLINE_SNAPSHOT.title
-            : source === 'local'
-                ? `Lokal - ${readableProvider}`
-                : source === 'cloud'
-                    ? `Cloud - ${readableProvider}`
-                    : readableProvider;
+            : status === 'degraded'
+                ? 'MÔRA eingeschränkt'
+                : 'MÔRA bereit';
 
     const subtitle =
         status === 'offline'
             ? OFFLINE_SNAPSHOT.subtitle
-            : model
-                ? model
-                : routingProfile
-                    ? `Profil ${routingProfile}`
-                    : `${healthyProviderCount} Provider gesund`;
+            : status === 'degraded'
+                ? 'Eingeschränkt verfügbar'
+                : 'Antworten laufen ruhig';
 
     return {
         status,
         source,
         provider: recommended,
+        providerLabel: status === 'offline' ? null : readableProvider,
         model,
         routingProfile,
         healthyProviderCount,
         configuredProviderCount,
         title,
         subtitle,
-        badge: source === 'local' ? 'Lokal' : source === 'cloud' ? 'Cloud' : 'AI',
+        badge: status === 'offline' ? 'Offline' : status === 'degraded' ? 'Eingeschränkt' : 'Bereit',
     };
 }
 
