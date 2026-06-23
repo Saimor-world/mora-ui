@@ -61,7 +61,6 @@ import { useOrbStore } from '@/lib/store/orbStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useAccountStore } from '@/lib/auth/useAccount';
 import { authLogout } from '@/lib/api/coreClient';
-import { coreUnreachableUserMessage } from '@/lib/api/coreReachability';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
@@ -668,8 +667,16 @@ export const MoraShell: React.FC = () => {
 
     if (!isBootstrapped) {
         if (bootTimedOut) {
+            // Boot can stall for two very different reasons: the CORE session
+            // expired (401 → profile never loads) or CORE is genuinely down.
+            // We can't always tell them apart client-side, so we stay honest:
+            // offer re-login (the common case) AND retry, instead of asserting
+            // "service unreachable" as fact.
             return (
-                <ErrorScreen message={coreUnreachableUserMessage()} />
+                <ErrorScreen
+                    message="Deine Sitzung ist abgelaufen oder der Dienst ist gerade nicht erreichbar. Melde dich neu an — oder versuche es erneut."
+                    onReauth={handleLogout}
+                />
             );
         }
         return <LoadingScreen />;

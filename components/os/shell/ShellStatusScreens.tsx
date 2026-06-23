@@ -51,7 +51,7 @@ export const LoadingScreen: React.FC = () => (
  * Full-screen connection-error state with diagnostics + retry.
  * Extracted verbatim from MoraShell.tsx — behavior-neutral.
  */
-export const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
+export const ErrorScreen: React.FC<{ message: string; onReauth?: () => void }> = ({ message, onReauth }) => {
     const [retrying, setRetrying] = React.useState(false);
 
     const handleRetry = () => {
@@ -74,7 +74,7 @@ export const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
 
                 <div className="space-y-2">
                     <div className="text-red-400/80 text-xs tracking-[0.4em] uppercase font-medium">
-                        Verbindung unterbrochen
+                        {onReauth ? 'Anmeldung erforderlich' : 'Verbindung unterbrochen'}
                     </div>
                     <div className="text-white/60 text-sm leading-relaxed">
                         {message}
@@ -106,14 +106,28 @@ export const ErrorScreen: React.FC<{ message: string }> = ({ message }) => {
                     </div>
                 </div>
 
-                {/* Retry Button */}
-                <button
-                    onClick={handleRetry}
-                    disabled={retrying}
-                    className="px-6 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/80 text-xs tracking-[0.15em] uppercase hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all disabled:opacity-40 disabled:cursor-wait"
-                >
-                    {retrying ? 'Verbinde...' : 'Erneut verbinden'}
-                </button>
+                {/* Recovery actions */}
+                <div className="flex flex-col items-center gap-2.5 w-full">
+                    {onReauth && (
+                        <button
+                            onClick={onReauth}
+                            className="px-6 py-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300/90 text-xs tracking-[0.15em] uppercase hover:bg-emerald-500/25 hover:border-emerald-500/40 transition-all"
+                        >
+                            Neu anmelden
+                        </button>
+                    )}
+                    <button
+                        onClick={handleRetry}
+                        disabled={retrying}
+                        className={`px-6 py-2.5 rounded-xl border text-xs tracking-[0.15em] uppercase transition-all disabled:opacity-40 disabled:cursor-wait ${
+                            onReauth
+                                ? 'bg-white/[0.03] border-white/10 text-white/50 hover:bg-white/[0.06] hover:text-white/70'
+                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400/80 hover:bg-emerald-500/20 hover:border-emerald-500/30'
+                        }`}
+                    >
+                        {retrying ? 'Verbinde...' : 'Erneut verbinden'}
+                    </button>
+                </div>
 
                 <div className="text-[9px] text-white/15 tracking-[0.3em] uppercase">SAIMÔR OS • Mora Core</div>
             </div>
