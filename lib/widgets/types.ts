@@ -40,6 +40,8 @@ export interface WidgetContext {
     /** Live truth from the host surface (mail/calendar previews, presence). */
     data?: WidgetData;
     openMora?: () => void;
+    /** Open the MÔRA chat pane directly on the Signale tab. */
+    openSignals?: () => void;
     openFinder?: () => void;
     openCalendar?: () => void;
     openMail?: () => void;

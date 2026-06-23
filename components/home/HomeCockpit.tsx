@@ -416,6 +416,8 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         openMora: onOpenMora,
 
+        openSignals: () => openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 }, data: { chatView: 'signals' } }),
+
         openTeam: onOpenTeam,
 
         openFinder: onOpenFinder,
@@ -730,7 +732,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     <motion.div {...fade(0.20)} className="min-h-[148px] md:col-span-4 md:min-h-0">
 
-                        <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-cyan-400/55 via-sky-300/35 to-transparent" context={glanceContext} />
+                        <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/55 via-teal-300/35 to-transparent" context={glanceContext} />
 
                     </motion.div>
 

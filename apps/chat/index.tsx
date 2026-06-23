@@ -197,7 +197,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     // Sprint 3: tab state for chat vs. memories view
-    const [chatView, setChatView] = useState<'chat' | 'memories' | 'signals'>('chat');
+    const [chatView, setChatView] = useState<'chat' | 'memories' | 'signals'>(() => {
+        const v = initialData?.chatView as string | undefined;
+        return v === 'signals' || v === 'memories' ? v : 'chat';
+    });
     // Engineering mode: same MÔRA surface, codex agent (replaces the standalone Codex app).
     const [agentMode, setAgentMode] = useState<'mora' | 'codex'>(
         (initialData?.agentMode as string | undefined) === 'codex' ? 'codex' : 'mora',

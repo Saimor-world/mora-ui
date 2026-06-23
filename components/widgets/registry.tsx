@@ -625,10 +625,12 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     const compact = context.compact;
     const urgent = attention.filter((a) => (a.severity ?? 0) >= 2).length;
     const tone: StatusTone = urgent > 0 ? 'alert' : attention.length > 0 ? 'warn' : 'ok';
+    // Signale lands on the chat's Signale tab where wired (Home); elsewhere falls back to MÔRA.
+    const openSignals = context.openSignals ?? context.openMora;
 
     if (compact) {
         return (
-            <GlanceShell tone={tone} alert={urgent > 0} onClick={context.openMora}>
+            <GlanceShell tone={tone} alert={urgent > 0} onClick={openSignals}>
                 <div className="flex items-center justify-between">
                     <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
                         <AlertTriangle size={9} className="opacity-60" /> Signale
@@ -695,7 +697,7 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         <button
                             key={a.id}
                             type="button"
-                            onClick={context.openMora}
+                            onClick={openSignals}
                             className="flex items-stretch overflow-hidden rounded-xl border border-amber-300/15 bg-amber-400/[0.04] text-left transition-colors hover:border-amber-300/28 hover:bg-amber-400/[0.08]"
                         >
                             <div className="w-0.5 shrink-0" style={{ background: 'rgba(251,191,36,0.5)' }} />
@@ -706,7 +708,7 @@ const SignalsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         </button>
                     ))}
                     {attention.length > limit && (
-                        <AlleAnzeigenLink onClick={context.openMora} extra={attention.length - limit} />
+                        <AlleAnzeigenLink onClick={openSignals} extra={attention.length - limit} />
                     )}
                 </>
             ) : (
