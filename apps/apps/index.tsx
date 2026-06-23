@@ -48,6 +48,7 @@ const LAUNCHER_EXCLUDE = new Set<string>([
     'website-dossier',
     'action-center',
     'meine-dateien',
+    'codex',
 ]);
 
 const COLOR_CLASS: Record<AppColor, { icon: string; bg: string; border: string; accent: string }> = {
@@ -87,6 +88,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
 
     const visibleApps = APP_REGISTRY.filter(manifest => {
         if (LAUNCHER_EXCLUDE.has(manifest.id)) return false;
+        if (manifest.launcherHidden) return false;
         if (!isPaneEnabled(manifest.id as PaneType)) return false;
         if (manifest.requiresRole && (!userRole || !manifest.requiresRole.includes(userRole))) return false;
         return true;

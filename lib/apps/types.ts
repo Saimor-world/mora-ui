@@ -57,4 +57,6 @@ export interface AppManifest {
   requiresRole?: AppRole[];
   /** Shows "NEW" badge in AppLibrary. */
   isNew?: boolean;
+  /** Hide from AppLibrary and launcher surfaces (pane may still exist for legacy sessions). */
+  launcherHidden?: boolean;
 }

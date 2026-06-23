@@ -18,9 +18,12 @@ describe('appUniverse', () => {
     expect(groups.find((group) => group.id === 'sources')?.appIds).toEqual(
       expect.arrayContaining(['mail', 'integrations', 'meine-dateien'])
     );
-    expect(groups.find((group) => group.id === 'agents_flows')?.appIds).toEqual(
-      expect.arrayContaining(['chat', 'action-center', 'work-session'])
+    const moraGroup = groups.find((group) => group.id === 'agents_flows');
+    expect(moraGroup?.label).toBe('MÔRA & Automatisierung');
+    expect(moraGroup?.appIds).toEqual(
+      expect.arrayContaining(['chat', 'scanner', 'work-session', 'nightwatch'])
     );
+    expect(moraGroup?.appIds).not.toContain('codex');
   });
 
   it('summarizes hidden surfaces from the tunnel catalog as product decisions', () => {

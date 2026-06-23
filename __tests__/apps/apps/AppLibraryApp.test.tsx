@@ -50,16 +50,17 @@ describe('AppLibraryApp', () => {
 
     expect(screen.getByTestId('app-library')).toBeInTheDocument();
     expect(screen.getByTestId('app-library-card-finder')).toBeInTheDocument();
-    expect(screen.getByTestId('app-library-card-codex')).toHaveTextContent('Engineering');
+    expect(screen.queryByTestId('app-library-card-codex')).not.toBeInTheDocument();
     expect(screen.getByTestId('app-library-group-work')).toBeInTheDocument();
+    expect(screen.getByTestId('app-library-group-agents_flows')).toBeInTheDocument();
   });
 
   it('filters apps by search query', () => {
     render(<AppLibraryApp paneId="apps-main" />);
 
-    fireEvent.change(screen.getByLabelText('Apps durchsuchen'), { target: { value: 'engineering' } });
+    fireEvent.change(screen.getByLabelText('Apps durchsuchen'), { target: { value: 'nightwatch' } });
 
-    expect(screen.getByTestId('app-library-card-codex')).toBeInTheDocument();
+    expect(screen.getByTestId('app-library-card-nightwatch')).toBeInTheDocument();
     expect(screen.queryByTestId('app-library-card-finder')).not.toBeInTheDocument();
   });
 

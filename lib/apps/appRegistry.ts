@@ -107,7 +107,7 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 900, height: 680 },
     singleton: true,
     requiresRole: ['system_owner', 'owner', 'admin'],
-    isNew: true,
+    launcherHidden: true,
   },
 
   // ── Workspace ─────────────────────────────────────────────────────────────
