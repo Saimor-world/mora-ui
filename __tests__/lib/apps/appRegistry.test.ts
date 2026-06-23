@@ -41,7 +41,8 @@ describe('appRegistry', () => {
     expect(newIds).toContain('tasks');
     expect(newIds).toContain('timeline');
     expect(newIds).toContain('canvas');
-    expect(newIds).toContain('codex');
+    // codex is now launcherHidden (engineering mode lives in MÔRA chat) — no NEW badge.
+    expect(newIds).not.toContain('codex');
   });
 
   it('apps requiring roles have at least one valid role', () => {

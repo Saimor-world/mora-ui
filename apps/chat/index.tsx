@@ -196,6 +196,10 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const [isFullscreen, setIsFullscreen] = useState(false);
     // Sprint 3: tab state for chat vs. memories view
     const [chatView, setChatView] = useState<'chat' | 'memories'>('chat');
+    // Engineering mode: same MÔRA surface, codex agent (replaces the standalone Codex app).
+    const [agentMode, setAgentMode] = useState<'mora' | 'codex'>(
+        (initialData?.agentMode as string | undefined) === 'codex' ? 'codex' : 'mora',
+    );
     const [memoriesSearchQuery, setMemoriesSearchQuery] = useState('');
     const [ambiguityChoice, setAmbiguityChoice] = useState<{
         query: string;
@@ -848,11 +852,15 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     ? [{ role: 'assistant' as const, content: communicationContextMessage }, ...historyForStream]
                     : historyForStream;
 
-                const chatContext = buildChatContext({
+                const baseChatContext = buildChatContext({
                     session_id: "chat_pane",
                     pane_id: paneId,
                     ...(isMoraPerceiveV1Enabled() && perceptionBundle ? { perception: perceptionBundle } : {}),
-                }) as Record<string, unknown> | undefined;
+                });
+                // Engineering mode routes to the codex agent (mirrors apps/codex) via context.
+                const chatContext = (agentMode === 'codex'
+                    ? { ...baseChatContext, agent: 'codex', persona: 'engineering' }
+                    : baseChatContext) as Record<string, unknown> | undefined;
 
                 if (useFramePath) {
                     // mora.dialogue.v1: typed frames via /v3/chat/stream
@@ -1009,9 +1017,27 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
                         }`}>Môra</h3>
                     <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
-                        }`}>Deine KI-Begleiterin</p>
+                        }`}>{agentMode === 'codex' ? 'Engineering-Modus · Code & Systemarbeit' : 'Deine KI-Begleiterin'}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
+                    {/* Engineering mode toggle — codex agent inside MÔRA */}
+                    <button
+                        type="button"
+                        onClick={() => setAgentMode((m) => (m === 'codex' ? 'mora' : 'codex'))}
+                        aria-pressed={agentMode === 'codex'}
+                        title={agentMode === 'codex' ? 'Zurück zu Môra' : 'Engineering-Modus (Code, Refactors, Systemarbeit)'}
+                        data-testid="chat-engineering-toggle"
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${
+                            agentMode === 'codex'
+                                ? 'border-indigo-300/30 bg-indigo-500/15 text-indigo-100'
+                                : isStandardMode
+                                    ? 'border-[#E1E1E1] text-[#605E5C] hover:text-[#1F1F1F]'
+                                    : 'border-white/10 bg-white/[0.04] text-white/45 hover:text-white/80'
+                        }`}
+                    >
+                        <Bot size={12} />
+                        Engineering
+                    </button>
                     <MoraContextChip variant="compact" snapshot={moraCtx} />
                     {/* Fullscreen toggle */}
                     <button
