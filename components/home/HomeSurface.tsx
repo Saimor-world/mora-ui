@@ -221,7 +221,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -545,7 +545,8 @@ export const HomeSurface: React.FC = () => {
                 item.paneType === 'document'                                 ? 'document' :
                 item.paneType === 'finder' || item.paneType === 'meine-dateien' ? 'finder' :
                 item.paneType === 'notes'                                    ? 'notes' :
-                item.paneType === 'chat'                                     ? 'chat' : 'other'
+                item.paneType === 'chat'                                     ? 'chat' :
+                item.paneType === 'codex'                                    ? 'codex' : 'other'
             ) as RecentKind,
             openedAt: item.openedAt,
             paneData: item.paneData,
@@ -695,6 +696,10 @@ export const HomeSurface: React.FC = () => {
         }
         if (item.kind === 'chat') {
             revealPane('chat-main', { type: 'chat', title: 'Mora', size: { width: 860, height: 680 } });
+            return;
+        }
+        if (item.kind === 'codex') {
+            revealPane('codex-main', { type: 'codex', title: 'Codex', size: { width: 900, height: 680 } });
             return;
         }
         openFinder();

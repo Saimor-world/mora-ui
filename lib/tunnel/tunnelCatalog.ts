@@ -77,7 +77,7 @@ function paneEntries(): TunnelEntry[] {
     'grid', 'search', 'scanner', 'users', 'mail', 'calendar', 'integrations',
     'browser', 'website-dossier', 'terminal', 'company-detail', 'mora-hub',
     'apps', 'timeline', 'tasks', 'canvas', 'space', 'actions', 'action-center',
-    'work-session',
+    'work-session', 'codex',
   ]);
 
   const allPaneTypes = Object.keys(SURFACE_TIERS) as PaneType[];

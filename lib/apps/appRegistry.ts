@@ -97,6 +97,18 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 720, height: 640 },
     isNew: true,
   },
+  {
+    id: 'codex',
+    name: 'Codex',
+    description: 'Engineering-Agent für Code, Refactors und Systemarbeit',
+    icon: 'Bot',
+    color: 'indigo',
+    category: 'intelligence',
+    defaultSize: { width: 900, height: 680 },
+    singleton: true,
+    requiresRole: ['system_owner', 'owner', 'admin'],
+    isNew: true,
+  },
 
   // ── Workspace ─────────────────────────────────────────────────────────────
   {

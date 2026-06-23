@@ -3,8 +3,8 @@ import type { AppManifest } from '@/lib/apps/types';
 import { getAppUniverseGroups } from '@/lib/openflow/appUniverse';
 
 describe('appRegistry', () => {
-  it('contains exactly 23 app entries', () => {
-    expect(APP_REGISTRY).toHaveLength(23);
+  it('contains exactly 24 app entries', () => {
+    expect(APP_REGISTRY).toHaveLength(24);
   });
 
   it('every app has required fields', () => {
@@ -41,6 +41,7 @@ describe('appRegistry', () => {
     expect(newIds).toContain('tasks');
     expect(newIds).toContain('timeline');
     expect(newIds).toContain('canvas');
+    expect(newIds).toContain('codex');
   });
 
   it('apps requiring roles have at least one valid role', () => {

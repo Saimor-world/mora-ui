@@ -19,7 +19,7 @@ const GROUPS: AppUniverseGroup[] = [
     id: 'agents_flows',
     label: 'Agenten & Flows',
     description: 'MORA, Scanner, Action Center und Arbeitssitzungen.',
-    appIds: ['chat', 'scanner', 'action-center', 'work-session', 'nightwatch'],
+    appIds: ['chat', 'codex', 'scanner', 'action-center', 'work-session', 'nightwatch'],
   },
   {
     id: 'people',

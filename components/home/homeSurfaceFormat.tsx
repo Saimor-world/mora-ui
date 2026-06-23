@@ -1,8 +1,8 @@
 import React from 'react';
-import { FileText, FolderOpen, StickyNote, MessageCircle } from 'lucide-react';
+import { FileText, FolderOpen, StickyNote, MessageCircle, Bot } from 'lucide-react';
 
 /** Kind of a recent-activity entry shown on the Home surface. */
-export type RecentKind = 'document' | 'finder' | 'notes' | 'chat' | 'other';
+export type RecentKind = 'document' | 'finder' | 'notes' | 'chat' | 'codex' | 'other';
 
 /** Human, German relative-time label (e.g. "vor 5 Min.", "gerade eben"). */
 export function relativeTime(isoStr: string): string {
@@ -35,6 +35,7 @@ export function kindIcon(kind: RecentKind): React.ReactNode {
         case 'finder':   return <FolderOpen size={13} className="text-white/40" />;
         case 'notes':    return <StickyNote size={13} className="text-white/40" />;
         case 'chat':     return <MessageCircle size={13} className="text-white/40" />;
+        case 'codex':    return <Bot size={13} className="text-indigo-300/70" />;
         default:         return <FileText size={13} className="text-white/40" />;
     }
 }
@@ -46,6 +47,7 @@ export function kindLabel(kind: RecentKind): string {
         case 'finder':   return 'Finder';
         case 'notes':    return 'Notizen';
         case 'chat':     return 'Mora';
+        case 'codex':    return 'Codex';
         default:         return 'Aktivität';
     }
 }
