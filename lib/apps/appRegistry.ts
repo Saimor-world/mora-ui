@@ -99,8 +99,8 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'codex',
-    name: 'Codex',
-    description: 'Engineering-Agent für Code, Refactors und Systemarbeit',
+    name: 'Engineering',
+    description: 'Codex — Agent für Code, Refactors und Systemarbeit',
     icon: 'Bot',
     color: 'indigo',
     category: 'intelligence',

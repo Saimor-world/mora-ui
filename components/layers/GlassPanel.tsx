@@ -7,6 +7,16 @@ import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { getAppManifest } from '@/lib/apps/appRegistry';
+import type { AppCategory } from '@/lib/apps/types';
+
+const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
+    core: 'Kern',
+    intelligence: 'Intelligence',
+    workspace: 'Arbeitsbereich',
+    people: 'Menschen',
+    system: 'System',
+    creative: 'Studio',
+};
 
 interface GlassPanelProps {
     /** Child content to render inside the panel */
@@ -557,7 +567,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                         )}
                                         <div className="pane-context-line">
                                             <span>{appManifest?.description ?? 'SAIMÔR Arbeitsbereich'}</span>
-                                            {appManifest?.category && <span className="pane-category">{appManifest.category}</span>}
+                                            {appManifest?.category && (
+                                                <span className="pane-category">
+                                                    {APP_CATEGORY_LABELS[appManifest.category] ?? appManifest.category}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
