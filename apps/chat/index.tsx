@@ -40,7 +40,7 @@ import { isMoraDialogueV1Enabled } from '@/lib/featureFlags';
 import type { MoraFrame } from '@/lib/types/moraFrame';
 import { executeAgenticLoop } from '@/lib/api/cognitionClient';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
-import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList, WifiOff, RefreshCw } from 'lucide-react';
+import { Send, Sparkles, Loader2, Bot, User, Brain, BookmarkPlus, Lightbulb, Check, Maximize2, Minimize2, LayoutList, WifiOff, RefreshCw, BarChart3 } from 'lucide-react';
 import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
@@ -61,6 +61,8 @@ import { buildCommunicationOperationalContextMessage, useCommunicationSurface } 
 // Sprint 3: Mora episodic memory hooks
 import { fetchMoraMemories, type MoraMemory } from '@/lib/api/memoryClient';
 import { MemoriesView } from './components/MemoriesView';
+import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
+import { MemoryStats } from '@/components/mora/MoraMemory';
 import { SaveInsightButton, MemoryHint, RelevantMemories } from './components/MemoryComponents';
 import { SetupRequiredCard, InputLoadingPlaceholder, OfflineCard, ChatSuggestions, ChatSuggestionsMemo } from './components/ChatStatusCards';
 
@@ -195,7 +197,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
     const [showMemories, setShowMemories] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     // Sprint 3: tab state for chat vs. memories view
-    const [chatView, setChatView] = useState<'chat' | 'memories'>('chat');
+    const [chatView, setChatView] = useState<'chat' | 'memories' | 'signals'>('chat');
     // Engineering mode: same MÔRA surface, codex agent (replaces the standalone Codex app).
     const [agentMode, setAgentMode] = useState<'mora' | 'codex'>(
         (initialData?.agentMode as string | undefined) === 'codex' ? 'codex' : 'mora',
@@ -1051,7 +1053,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             </div>
             {/* Sprint 3: Tab bar — Chat / Erinnerungen */}
             <div className={`flex gap-0 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
-                {(['chat', 'memories'] as const).map((tab) => (
+                {(['chat', 'memories', 'signals'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setChatView(tab)}
@@ -1065,7 +1067,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                                     : 'border-transparent text-white/40 hover:text-white/70'
                         }`}
                     >
-                        {tab === 'chat' ? 'Chat' : 'Erinnerungen'}
+                        {tab === 'chat' ? 'Chat' : tab === 'memories' ? 'Erinnerungen' : 'Signale'}
                     </button>
                 ))}
             </div>
@@ -1091,8 +1093,28 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
                 />
             )}
 
+            {/* Signale tab — live Mora signals in the same pane (mirrors Mora Center stats) */}
+            {chatView === 'signals' && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-emerald-400" />
+                        <span className="text-xs font-medium text-white/80">Mora-Signale</span>
+                    </div>
+                    <MemoryStats compact companyId={activeCompanyId} />
+                    <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-3">
+                        <MoraUpdatesFeed
+                            scope={viewLevel === 'department' ? 'department' : 'company'}
+                            title="Live-Signale"
+                            maxEvents={8}
+                            showHilToggle={false}
+                            className="min-h-[260px]"
+                        />
+                    </div>
+                </div>
+            )}
+
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView === 'memories' ? 'hidden' : ''}`}>
+            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
                 {/* Empty state — shown when no messages yet */}
                 {messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
@@ -1489,7 +1511,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             </div>
 
             {/* Input — hidden when viewing memories tab */}
-            {chatView === 'memories' ? null : moraCtx.isOperational === null ? (
+            {chatView !== 'chat' ? null : moraCtx.isOperational === null ? (
                 bootstrapTimedOut
                     ? <OfflineCard onRetry={() => { setBootstrapTimedOut(false); window.location.reload(); }} />
                     : <InputLoadingPlaceholder />
