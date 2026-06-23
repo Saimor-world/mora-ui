@@ -289,7 +289,10 @@ const resolveUniverseCollisions = (
 
             const dx = point.x - UNIVERSE_CORE_POINT.x;
 
-            const dy = (point.y - UNIVERSE_CORE_POINT.y) * 1.18;
+            // Vertical units render shorter than horizontal (stretched 100×100
+            // viewBox), so weight y BELOW 1 here — that pushes top/bottom planets
+            // further out in real pixels and keeps them clear of the core sphere.
+            const dy = (point.y - UNIVERSE_CORE_POINT.y) * 0.82;
 
             const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
 
@@ -301,7 +304,7 @@ const resolveUniverseCollisions = (
 
             point.x += (dx / distance) * push;
 
-            point.y += ((dy / distance) * push) / 1.18;
+            point.y += ((dy / distance) * push) / 0.82;
 
             clampUniversePoint(point);
 

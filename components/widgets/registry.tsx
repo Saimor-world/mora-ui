@@ -795,8 +795,8 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ conte
             {pulseLine}
             {compact && s && (
                 <div className="mt-1 flex items-center justify-between text-[8px] text-white/38">
-                    <span>{s.members ?? '–'} Mitglieder</span>
-                    <span className="tabular-nums">{s.tasks ?? 0} Tasks · {s.documents} Docs</span>
+                    <span>{s.members != null ? `${s.members} Mitglieder` : ''}</span>
+                    <span className="tabular-nums">{s.tasks ?? 0} Tasks · {s.documents ?? 0} Docs</span>
                 </div>
             )}
             {!compact && context.openDashboard && (
