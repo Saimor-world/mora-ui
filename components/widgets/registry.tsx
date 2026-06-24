@@ -21,6 +21,7 @@ import { buildNightwatchGlanceSuggestions } from '@/lib/nightwatch/glanceSuggest
 import type { CoreTreeNode } from '@/lib/types/core';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
 import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
+import { FeedItemCard, FeedThumbnailStrip } from '@/components/feeds/FeedItemCard';
 
 type StatusTone = 'ok' | 'warn' | 'alert' | 'info' | 'neutral';
 
@@ -289,6 +290,7 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
 
     const nextFeed = feeds[0];
     const openFeed = context.openFeed ?? context.openIntegrations;
+    const feedState = context.data?.rssState ?? context.data?.cloudState ?? 'error';
 
     const connectionLabel = (
         state: IntegrationConnectionState,
@@ -374,8 +376,8 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         icon={<Radio size={10} />}
                         label="Feed"
                         value={nextFeed ? nextFeed.title : ''}
-                        empty={connectionLabel(context.data?.cloudState ?? 'error', 'Feed leer', 'RSS verbinden')}
-                        onClick={nextFeed || (context.data?.cloudState ?? 'error') === 'configured' ? openFeed : (context.data?.cloudState ?? 'error') === 'loading' ? undefined : context.openIntegrations}
+                        empty={connectionLabel(feedState, 'Feed leer', 'RSS verbinden')}
+                        onClick={nextFeed || feedState === 'configured' ? openFeed : feedState === 'loading' ? undefined : context.openIntegrations}
                     />
                     <DayLine
                         icon={<CheckCircle2 size={10} />}
@@ -474,6 +476,32 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         )}
                     </div>
                     <div>
+                        <SectionLabel icon={<Radio size={10} className="opacity-70" />}>
+                            Dein Feed
+                            {feeds.length > 0 && (
+                                <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{feeds.length}</span>
+                            )}
+                        </SectionLabel>
+                        {feeds.length > 0 ? (
+                            <div className="flex flex-col gap-1.5">
+                                <FeedThumbnailStrip
+                                    items={feeds}
+                                    limit={3}
+                                    onClickItem={() => openFeed?.()}
+                                    onClickMore={openFeed}
+                                />
+                                {feeds.slice(0, glanceRowLimit(context, 2, 3)).map((item) => (
+                                    <FeedItemCard key={item.id} item={item} compact onOpen={openFeed} />
+                                ))}
+                                {feeds.length > glanceRowLimit(context, 2, 3) && (
+                                    <AlleAnzeigenLink onClick={openFeed} extra={feeds.length - glanceRowLimit(context, 2, 3)} label="Feed öffnen" />
+                                )}
+                            </div>
+                        ) : (
+                            <ConnectionEmpty state={feedState} configuredLabel="Feed leer" connectLabel="RSS verbinden" />
+                        )}
+                    </div>
+                    <div>
                         <SectionLabel icon={<CheckCircle2 size={10} className="opacity-70" />}>
                             Aufgaben
                             {tasks.length > 0 && (
@@ -535,6 +563,67 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     );
 });
 MeinTagWidget.displayName = 'MeinTagWidget';
+
+const DeinFeedWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
+    const feeds = context.data?.feedPreview ?? [];
+    const feedState = context.data?.rssState ?? context.data?.cloudState ?? 'error';
+    const openFeed = context.openFeed ?? context.openIntegrations;
+    const compact = context.compact;
+    const tone: StatusTone = feeds.length > 0 ? 'info' : feedState === 'configured' ? 'ok' : 'neutral';
+
+    if (compact) {
+        return (
+            <GlanceShell tone={tone} onClick={openFeed}>
+                <div className="flex items-center justify-between gap-1">
+                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Dein Feed</span>
+                    {feeds.length > 0 && (
+                        <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{feeds.length}</span>
+                    )}
+                </div>
+                {feeds.length > 0 ? (
+                    <FeedThumbnailStrip items={feeds} limit={3} onClickItem={() => openFeed?.()} onClickMore={openFeed} />
+                ) : (
+                    <span className="text-[10px] text-white/40">
+                        {feedState === 'unconfigured' ? 'RSS verbinden' : feedState === 'configured' ? 'Feed leer' : 'Lädt…'}
+                    </span>
+                )}
+                {feeds[0] && (
+                    <div className="truncate text-[9px] text-white/48">{feeds[0].title}</div>
+                )}
+            </GlanceShell>
+        );
+    }
+
+    const limit = glanceRowLimit(context, 3, 6);
+    return (
+        <div className="flex h-full flex-col gap-2 overflow-hidden">
+            <SectionLabel icon={<Radio size={10} className="opacity-70" />}>
+                Dein Feed
+                {feeds.length > 0 && (
+                    <span className="ml-1 rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[8px] tabular-nums text-white/40">{feeds.length}</span>
+                )}
+            </SectionLabel>
+            {feeds.length > 0 ? (
+                <>
+                    <FeedThumbnailStrip items={feeds} limit={3} onClickItem={() => openFeed?.()} onClickMore={openFeed} />
+                    <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-hidden">
+                        {feeds.slice(0, limit).map((item) => (
+                            <FeedItemCard key={item.id} item={item} compact onOpen={openFeed} />
+                        ))}
+                    </div>
+                    {feeds.length > limit && (
+                        <AlleAnzeigenLink onClick={openFeed} extra={feeds.length - limit} label="Feed öffnen" />
+                    )}
+                </>
+            ) : feedState === 'unconfigured' ? (
+                <ConnectCTA label="RSS verbinden" onClick={context.openIntegrations} />
+            ) : (
+                <Empty>{feedState === 'configured' ? 'Feed leer — Quellen sind verbunden.' : 'Feed-Status wird geladen…'}</Empty>
+            )}
+        </div>
+    );
+});
+DeinFeedWidget.displayName = 'DeinFeedWidget';
 
 const TeamWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const { peers } = usePresence();
@@ -1782,6 +1871,11 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         type: 'meinTag', label: 'Mein Tag', hint: 'Kalender, Mail & Aufgaben', icon: <CalendarDays size={14} />,
         defaultW: 4, defaultH: 6, minW: 3, minH: 4, surfaces: ['home', 'universe'],
         render: ({ context }) => <MeinTagWidget context={context} />,
+    },
+    deinFeed: {
+        type: 'deinFeed', label: 'Dein Feed', hint: 'RSS-Signale mit Vorschaubildern', icon: <Radio size={14} />,
+        defaultW: 3, defaultH: 4, minW: 2, minH: 3, surfaces: ['home', 'universe'],
+        render: ({ context }) => <DeinFeedWidget context={context} />,
     },
     team: {
         type: 'team', label: 'Team', hint: 'Wer ist gerade da', icon: <Users size={14} />,

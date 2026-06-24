@@ -21,6 +21,7 @@ import {
     type UniverseFocusMode,
 } from '@/lib/universe/interactionZones';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
@@ -159,16 +160,11 @@ export const DepartmentSurface: React.FC = () => {
                 mailState: integrationStates.mail,
                 calendarState: integrationStates.calendar,
                 cloudState: integrationStates.cloud,
+                rssState: integrationStates.rss,
               },
               openMail: openMailPane,
               openCalendar: openCalendarPane,
-              openFeed: () => openPane({
-                id: 'integrations-main',
-                type: 'integrations',
-                title: 'Integrationen',
-                size: GLASS_SHEET_SIZE,
-                data: { focus: 'rss' },
-              }),
+              openFeed: () => openPane(feedsPaneRequest()),
               openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: GLASS_SHEET_SIZE }),
               openFinder: () => openPane({
                 id: 'finder-dept',

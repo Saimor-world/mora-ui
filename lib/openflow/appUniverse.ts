@@ -13,7 +13,7 @@ const GROUPS: AppUniverseGroup[] = [
     id: 'sources',
     label: 'Quellen',
     description: 'Mail, Cloud, Integrationen, Dossiers und verbundene Datenquellen.',
-    appIds: ['mail', 'integrations', 'meine-dateien', 'website-dossier', 'search'],
+    appIds: ['mail', 'feeds', 'integrations', 'meine-dateien', 'website-dossier', 'search'],
   },
   {
     id: 'agents_flows',

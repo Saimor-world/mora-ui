@@ -54,6 +54,9 @@ export const STALE_TIMES = {
 
   // Bridge / system stats — shared across OrgStats + BridgePulse + Universe nebula.
   bridgePulse: 60 * 1000, // 1 minute
+
+  // RSS / Atom items — glance + reader panes.
+  rssFeed: 60 * 1000, // 1 minute
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -106,4 +109,6 @@ export const queryKeys = {
   nightwatchMonitors: () => ['nightwatchMonitors'] as const,
 
   bridgePulse: () => ['bridgePulse'] as const,
+
+  rssFeed: (limit = 30) => ['integrations', 'rss', 'items', limit] as const,
 };

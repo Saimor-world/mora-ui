@@ -17,7 +17,7 @@ export type PaneType =
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
     | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
     | 'timeline' | 'tasks' | 'canvas' | 'nightwatch' | 'codex'
-    | 'wall';
+    | 'wall' | 'feeds';
 
 /**
  * Every pane type mapped to its tier.
@@ -58,6 +58,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     wall:            'app',       // Community Wall — Security Signals
 
     mail:            'app',
+    feeds:           'app',
     integrations:    'app',
     terminal:        'app',
 

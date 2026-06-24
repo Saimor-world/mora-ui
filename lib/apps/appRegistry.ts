@@ -189,6 +189,16 @@ export const APP_REGISTRY: AppManifest[] = [
     category: 'core',
     defaultSize: { width: 960, height: 680 },
   },
+  {
+    id: 'feeds',
+    name: 'Dein Feed',
+    description: 'RSS- und Atom-Quellen mit Vorschaubildern',
+    icon: 'Rss',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 920, height: 640 },
+    isNew: true,
+  },
 
   // ── System ────────────────────────────────────────────────────────────────
   {

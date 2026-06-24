@@ -32,9 +32,16 @@ export function resolveIntegrationConnectionStates(
         error,
     };
 
+    const rssConfigured = Boolean(
+        overview?.rss?.configured
+        || (overview?.rss?.feeds?.length ?? 0) > 0
+        || (overview?.rss?.count ?? 0) > 0,
+    );
+
     return {
         mail: resolveIntegrationConnectionState({ ...shared, configured: overview?.mail?.configured }),
         calendar: resolveIntegrationConnectionState({ ...shared, configured: overview?.calendar?.configured }),
         cloud: resolveIntegrationConnectionState({ ...shared, configured: overview?.cloud_storage?.configured }),
+        rss: resolveIntegrationConnectionState({ ...shared, configured: rssConfigured }),
     } as const;
 }

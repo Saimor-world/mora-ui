@@ -34,6 +34,7 @@ function renderMeinTag(state: IntegrationConnectionState) {
                 mailState: state,
                 calendarState: state,
                 cloudState: state,
+                rssState: state,
             },
         },
     });
@@ -64,5 +65,6 @@ describe('Mein Tag integration state', () => {
         renderMeinTag('configured');
         expect(screen.getByText('Posteingang leer')).toBeInTheDocument();
         expect(screen.getByText('Keine Termine heute')).toBeInTheDocument();
+        expect(screen.getByText('Feed leer')).toBeInTheDocument();
     });
 });

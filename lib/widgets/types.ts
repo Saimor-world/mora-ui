@@ -26,7 +26,7 @@ import type { IntegrationConnectionState } from '@/lib/integrations/connectionSt
 
 export interface WidgetMailItem { id: string; subject: string; from: string; snippet?: string; date?: string }
 export interface WidgetCalItem { id: string; title: string; date?: string; time?: string; location?: string }
-export interface WidgetFeedItem { id: string; sourceTitle: string; title: string; summary?: string; published?: string; link?: string }
+export interface WidgetFeedItem { id: string; sourceTitle: string; title: string; summary?: string; published?: string; link?: string; imageUrl?: string }
 
 export interface WidgetData {
     mailPreview?: WidgetMailItem[];
@@ -35,6 +35,7 @@ export interface WidgetData {
     mailState: IntegrationConnectionState;
     calendarState: IntegrationConnectionState;
     cloudState: IntegrationConnectionState;
+    rssState: IntegrationConnectionState;
     onlineCount?: number;
 }
 

@@ -34,7 +34,7 @@ interface CompanyLayoutState {
 /** Edge-band glance layout — only cols 5–6 stay open for the planet cluster. */
 const DEFAULT_DEPARTMENT: WidgetInstance[] = [
     { i: 'deptStats-1', type: 'deptStats', x: 0, y: 0, w: 3, h: 4 },
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 4, w: 3, h: 4 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 4, w: 3, h: 3 },
     { i: 'signals-1', type: 'signals', x: 10, y: 0, w: 2, h: 3 },
     { i: 'quickActions-1', type: 'quickActions', x: 7, y: 0, w: 3, h: 2 },
     { i: 'team-1', type: 'team', x: 10, y: 3, w: 2, h: 3 },
@@ -50,11 +50,13 @@ const UNIVERSE_BAND_WIDTH = UNIVERSE_GLANCE_BAND.bandWidth;
 // + Schnellzugriff + MÔRA. Fewer, larger panels so the planet cluster keeps the
 // centre and the vertical edges stay open. Vertical compaction anchors them top.
 const DEFAULT_UNIVERSE: WidgetInstance[] = [
-    { i: 'meinTag-1', type: 'meinTag', x: 0, y: 0, w: 3, h: 5 },
-    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 5, w: 3, h: 4 },
-    { i: 'orgStats-1', type: 'orgStats', x: 9, y: 0, w: 3, h: 4 },
-    { i: 'quickActions-1', type: 'quickActions', x: 9, y: 4, w: 3, h: 3 },
-    { i: 'mora-1', type: 'mora', x: 9, y: 7, w: 3, h: 2 },
+    { i: 'meinTag-1', type: 'meinTag', x: 0, y: 0, w: 3, h: 4 },
+    { i: 'deinFeed-1', type: 'deinFeed', x: 0, y: 4, w: 3, h: 4 },
+    { i: 'nightwatch-1', type: 'nightwatch', x: 0, y: 8, w: 3, h: 3 },
+    { i: 'bridgePulse-1', type: 'bridgePulse', x: 9, y: 0, w: 3, h: 3 },
+    { i: 'signals-1', type: 'signals', x: 9, y: 3, w: 2, h: 3 },
+    { i: 'quickActions-1', type: 'quickActions', x: 9, y: 6, w: 3, h: 2 },
+    { i: 'mora-1', type: 'mora', x: 9, y: 8, w: 3, h: 2 },
 ];
 
 /**

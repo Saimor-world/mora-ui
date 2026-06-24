@@ -12,7 +12,7 @@ import {
 
     FileText, Folder, Mail, MessageSquare, Plug, Settings,
 
-    Sparkles, Users, BarChart2, Brain, TrendingUp,
+    Sparkles, Users, BarChart2, Brain, TrendingUp, FolderOpen, Compass, Radio, Activity,
 
 } from 'lucide-react';
 
@@ -34,6 +34,9 @@ import { PersonalHomeZone } from '@/components/home/PersonalHomeZone';
 
 import { usePaneStore } from '@/lib/store/paneStore';
 
+import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
+
+import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
 
 
@@ -75,6 +78,8 @@ export interface HomeCockpitProps {
     calendarState:     IntegrationConnectionState;
 
     cloudState:        IntegrationConnectionState;
+
+    rssState:          IntegrationConnectionState;
 
     teamActivities:    CockpitTeamActivity[];
 
@@ -134,7 +139,7 @@ export interface HomeCockpitProps {
 
 
 
-function WidgetGlanceCard({ type, accent, context, className = '' }: {
+function WidgetGlanceCard({ type, accent, context, className = '', compact = false }: {
 
     type: string;
 
@@ -144,35 +149,42 @@ function WidgetGlanceCard({ type, accent, context, className = '' }: {
 
     className?: string;
 
+    compact?: boolean;
+
 }) {
 
     const def = WIDGET_REGISTRY[type];
 
     if (!def) return null;
 
-    const widgetContext: WidgetContext = { ...context, homeGlance: true, glanceLimit: 2, compact: false };
+    const widgetContext: WidgetContext = {
+        ...context,
+        homeGlance: !compact,
+        glanceLimit: compact ? 1 : 2,
+        compact,
+    };
 
     const openSheet = WIDGET_SHEET_OPEN[type];
+
+    const shellMin = compact ? 'min-h-[108px]' : 'min-h-[148px]';
 
     return (
 
         <div
 
-            className={`relative flex h-full min-h-[168px] flex-col overflow-hidden rounded-[1.35rem] border border-white/[0.10] shadow-[0_16px_52px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-xl ${className}`}
+            className={`relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.15rem] border border-white/[0.09] shadow-[0_10px_36px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md ${className}`}
 
-            style={{ backgroundColor: 'rgba(8, 6, 22, 0.58)' }}
+            style={{ backgroundColor: compact ? 'rgba(8, 6, 22, 0.48)' : 'rgba(8, 6, 22, 0.54)' }}
 
         >
 
             <div className={`pointer-events-none absolute left-0 top-0 h-[2px] w-full ${accent}`} />
 
-            <div className="pointer-events-none absolute inset-0 opacity-[0.38]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.09), transparent 54%)' }} />
+            <div className="pointer-events-none absolute inset-0 opacity-[0.28]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.07), transparent 54%)' }} />
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-16 rounded-t-[1.35rem]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.05), transparent)' }} />
+            <div className={`relative z-[1] flex shrink-0 items-center justify-between ${compact ? 'px-3 pt-2 pb-1' : 'px-4 pt-3 pb-1.5'}`}>
 
-            <div className="relative z-[1] flex shrink-0 items-center justify-between px-4 pt-3.5 pb-1.5">
-
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/42">
+                <div className={`flex items-center gap-1.5 font-semibold uppercase tracking-[0.22em] text-white/40 ${compact ? 'text-[9px]' : 'text-[10px]'}`}>
 
                     {def.icon}
 
@@ -182,15 +194,15 @@ function WidgetGlanceCard({ type, accent, context, className = '' }: {
 
             </div>
 
-            <div className="relative z-[1] min-h-0 flex-1 overflow-hidden px-4 pb-2" data-testid={`home-widget-${type}`}>
+            <div className={`relative z-[1] min-h-0 flex-1 overflow-hidden ${compact ? 'px-3 pb-1.5' : 'px-4 pb-2'}`} data-testid={`home-widget-${type}`}>
 
                 {def.render({ context: widgetContext })}
 
             </div>
 
-            {openSheet && (
+            {openSheet && !compact && (
 
-                <div className="relative z-[1] shrink-0 border-t border-white/[0.06] px-4 py-2.5">
+                <div className="relative z-[1] shrink-0 border-t border-white/[0.06] px-4 py-2">
 
                     <button
 
@@ -222,7 +234,9 @@ function WidgetGlanceCard({ type, accent, context, className = '' }: {
 
 const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 
-    meinTag: (c) => { c.openMail?.() ?? c.openCalendar?.() ?? c.openFeed?.() ?? c.openIntegrations?.(); },
+    meinTag: (c) => { c.openFeed?.() ?? c.openMail?.() ?? c.openCalendar?.() ?? c.openIntegrations?.(); },
+
+    deinFeed: (c) => { c.openFeed?.() ?? c.openIntegrations?.(); },
 
     team: (c) => { c.openTeam?.(); },
 
@@ -239,6 +253,182 @@ const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
     orgStats: (c) => { c.openDashboard?.(); },
 
 };
+
+
+
+function HomeMicroSparkline({ values, color = 'rgba(52,211,153,0.75)' }: { values: readonly number[]; color?: string }) {
+
+    if (values.length === 0) return null;
+
+    const max = Math.max(...values, 1);
+
+    const w = 48;
+
+    const h = 12;
+
+    const pts = values.map((v, i) => ({
+
+        x: values.length === 1 ? w / 2 : (i / (values.length - 1)) * w,
+
+        y: h - Math.max((v / max) * (h - 2), v > 0 ? 2 : 0),
+
+    }));
+
+    const d = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+
+    return (
+
+        <svg viewBox={`0 0 ${w} ${h}`} className="h-[12px] w-[48px] shrink-0 opacity-75" aria-hidden="true">
+
+            <path d={d} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        </svg>
+
+    );
+
+}
+
+
+
+function ArbeitseinstiegeStrip({
+
+    mailPreview,
+
+    calendarPreview,
+
+    onlineCount,
+
+    recentCount,
+
+    onOpenFinder,
+
+    onOpenMora,
+
+    onOpenMail,
+
+    onOpenTeam,
+
+    onGoExplore,
+
+    onOpenNightwatch,
+
+    incidentCount,
+
+}: {
+
+    mailPreview: CockpitMailPreview[];
+
+    calendarPreview: CockpitCalPreview[];
+
+    onlineCount: number;
+
+    recentCount: number;
+
+    onOpenFinder: () => void;
+
+    onOpenMora: () => void;
+
+    onOpenMail: () => void;
+
+    onOpenTeam: () => void;
+
+    onGoExplore: () => void;
+
+    onOpenNightwatch?: () => void;
+
+    incidentCount: number;
+
+}) {
+
+    const pulse = useBridgePulse(true);
+
+    const mailSpark = React.useMemo(() => {
+
+        const n = mailPreview.length;
+
+        return [Math.max(0, n - 2), Math.max(0, n - 1), n, n];
+
+    }, [mailPreview.length]);
+
+    const bridgeSpark = React.useMemo(() => {
+
+        const cpu = pulse.cpu ?? 0;
+
+        const load = (pulse.moraLoad ?? 0) * 100;
+
+        const incidents = pulse.openIncidents ?? 0;
+
+        return [cpu * 0.85, cpu, load * 0.4 + cpu * 0.15, incidents > 0 ? cpu + 12 : cpu * 0.92];
+
+    }, [pulse.cpu, pulse.moraLoad, pulse.openIncidents]);
+
+    const activitySpark = React.useMemo(() => {
+
+        const n = recentCount;
+
+        return [Math.max(0, n - 2), Math.max(0, n - 1), n];
+
+    }, [recentCount]);
+
+    const chips = [
+
+        { id: 'finder', label: 'Finder', icon: <FolderOpen size={13} />, onClick: onOpenFinder, spark: activitySpark, color: 'rgba(52,211,153,0.75)' },
+
+        { id: 'mora', label: 'MÔRA', icon: <Sparkles size={13} />, onClick: onOpenMora, spark: bridgeSpark, color: 'rgba(167,139,250,0.8)' },
+
+        { id: 'mail', label: 'Post', icon: <Mail size={13} />, onClick: onOpenMail, spark: mailSpark, color: 'rgba(139,92,246,0.78)' },
+
+        { id: 'team', label: 'Team', icon: <Users size={13} />, onClick: onOpenTeam, spark: [Math.max(0, onlineCount - 1), onlineCount, onlineCount], color: 'rgba(34,211,238,0.75)' },
+
+        { id: 'explore', label: 'Universe', icon: <Compass size={13} />, onClick: onGoExplore, spark: calendarPreview.length > 0 ? [1, 2, calendarPreview.length] : [0, 1, 1], color: 'rgba(251,191,36,0.78)' },
+
+        ...(onOpenNightwatch ? [{ id: 'nightwatch', label: 'Nightwatch', icon: <Activity size={13} />, onClick: onOpenNightwatch, spark: [incidentCount, incidentCount, incidentCount], color: incidentCount > 0 ? 'rgba(248,113,113,0.85)' : 'rgba(52,211,153,0.65)' }] : []),
+
+    ];
+
+    return (
+
+        <div data-testid="arbeitseinstiege-strip" className="flex flex-col gap-2">
+
+            <div className="text-[10px] font-semibold uppercase tracking-[0.26em] text-white/32">Arbeitseinstiege</div>
+
+            <div className="flex gap-2 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
+
+                {chips.map((chip) => (
+
+                    <button
+
+                        key={chip.id}
+
+                        type="button"
+
+                        onClick={chip.onClick}
+
+                        className="flex min-w-[88px] shrink-0 flex-col gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.035] px-3 py-2.5 text-left transition-all hover:border-white/[0.16] hover:bg-white/[0.07]"
+
+                    >
+
+                        <span className="flex items-center gap-1.5 text-[11px] text-white/72">
+
+                            <span className="opacity-65">{chip.icon}</span>
+
+                            {chip.label}
+
+                        </span>
+
+                        <HomeMicroSparkline values={[...chip.spark]} color={chip.color} />
+
+                    </button>
+
+                ))}
+
+            </div>
+
+        </div>
+
+    );
+
+}
 
 
 
@@ -362,7 +552,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         firstName, greeting, todayLabel,
 
-        mailPreview, calendarPreview, feedPreview = [], mailState, calendarState, cloudState,
+        mailPreview, calendarPreview, feedPreview = [], mailState, calendarState, cloudState, rssState,
 
         teamActivities, teamMessages, onlineCount, unreadTeamMessages,
 
@@ -410,19 +600,13 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         glanceLimit: 2,
 
-        data: { mailPreview, calendarPreview, feedPreview, mailState, calendarState, cloudState, onlineCount },
+        data: { mailPreview, calendarPreview, feedPreview, mailState, calendarState, cloudState, rssState, onlineCount },
 
         openMail: onOpenMail,
 
         openCalendar: onOpenCalendar,
 
-        openFeed: () => openPane({
-            id: 'integrations-main',
-            type: 'integrations',
-            title: 'Integrationen',
-            size: GLASS_SHEET_SIZE,
-            data: { focus: 'rss' },
-        }),
+        openFeed: () => openPane(feedsPaneRequest()),
 
         openIntegrations: onOpenIntegrations,
 
@@ -714,39 +898,79 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
 
 
-            {/* ── 3. Widget bento grid — primary visual space ──
-                 Two tall heroes (Mein Tag + Nightwatch) span both rows so their
-                 content-heavy bodies (gauge, monitor list, stats) get full height
-                 and never clip; Team + Bridge-Puls stack in the right column.
-                 Each row MUST sum to 12 or cards overflow into an implicit row.
-                 Row 1: meinTag(4) + nightwatch(4) + team(4) = 12
-                 Row 2: meinTag(4, row-span) + nightwatch(4, row-span) + bridgePulse(4) = 12 */}
+            {/* ── 3. Arbeitseinstiege + compact bento glances ──
+                 Home is a personal cockpit — no cosmos hero. Mein Tag stays tall left;
+                 Nightwatch is a compact edge glance, not a centre column. */}
+
+            <motion.div {...fade(0.06)} className="shrink-0 rounded-[1.1rem] border border-white/[0.06] bg-black/14 px-4 py-3 backdrop-blur-sm">
+
+                <ArbeitseinstiegeStrip
+
+                    mailPreview={mailPreview}
+
+                    calendarPreview={calendarPreview}
+
+                    onlineCount={onlineCount}
+
+                    recentCount={recentActivityItems.length}
+
+                    onOpenFinder={onOpenFinder}
+
+                    onOpenMora={onOpenMora}
+
+                    onOpenMail={onOpenMail}
+
+                    onOpenTeam={onOpenTeam}
+
+                    onGoExplore={onGoExplore}
+
+                    onOpenNightwatch={onOpenNightwatch}
+
+                    incidentCount={incidentStatusPanels.length}
+
+                />
+
+            </motion.div>
+
+
 
             <div className="min-h-0 flex-1">
 
-                <div className="grid h-full min-h-0 grid-cols-1 gap-4 md:grid-cols-12 md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-5">
+                <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-12 md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)] md:gap-4">
 
-                    <motion.div {...fade(0.08)} className="min-h-[180px] md:col-span-4 md:row-span-2 md:min-h-0">
+                    <motion.div {...fade(0.08)} className="min-h-[148px] md:col-span-5 md:row-span-2 md:min-h-0">
 
-                        <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/65 via-sky-300/42 to-transparent" context={glanceContext} className="min-h-[180px]" />
-
-                    </motion.div>
-
-                    <motion.div {...fade(0.12)} className="min-h-[200px] md:col-span-4 md:row-span-2 md:min-h-0">
-
-                        <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} className="min-h-[200px]" />
+                        <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/65 via-sky-300/42 to-transparent" context={glanceContext} />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.16)} className="min-h-[160px] md:col-span-4 md:min-h-0">
+                    <motion.div {...fade(0.12)} className="min-h-[108px] md:col-span-3 md:min-h-0">
 
-                        <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/65 via-indigo-300/42 to-transparent" context={glanceContext} />
+                        <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/65 via-indigo-300/42 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.20)} className="min-h-[148px] md:col-span-4 md:min-h-0">
+                    <motion.div {...fade(0.14)} className="min-h-[108px] md:col-span-4 md:min-h-0">
 
-                        <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/55 via-teal-300/35 to-transparent" context={glanceContext} />
+                        <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/55 via-teal-300/35 to-transparent" context={glanceContext} compact />
+
+                    </motion.div>
+
+                    <motion.div {...fade(0.18)} className="min-h-[108px] md:col-span-3 md:min-h-0">
+
+                        <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} compact />
+
+                    </motion.div>
+
+                    <motion.div {...fade(0.20)} className="min-h-[108px] md:col-span-4 md:min-h-0">
+
+                        <WidgetGlanceCard type="deinFeed" accent="bg-gradient-to-r from-emerald-400/55 via-cyan-300/32 to-transparent" context={glanceContext} compact />
+
+                    </motion.div>
+
+                    <motion.div {...fade(0.22)} className="min-h-[108px] md:col-span-4 md:min-h-0">
+
+                        <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-amber-400/50 via-cyan-300/30 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 

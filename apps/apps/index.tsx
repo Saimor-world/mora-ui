@@ -6,7 +6,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import {
     Activity, Bot, Calendar, Clock, Folder, FileText, Globe, Grid, Inbox, Mail,
-    MessageCircle, PenTool, Plug, ScanLine, Search, Settings, ShieldCheck,
+    MessageCircle, PenTool, Plug, Rss, ScanLine, Search, Settings, ShieldCheck,
     SquareCheckBig, StickyNote, Terminal, Timer, UserCog, Users,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -31,6 +31,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
     MessageCircle,
     PenTool,
     Plug,
+    Rss,
     ScanLine,
     Search,
     Settings,

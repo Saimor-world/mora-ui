@@ -41,6 +41,7 @@ import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentContext';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
+import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
@@ -138,13 +139,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [openPane]);
 
     const openFeedPane = useCallback(() => {
-        openPane({
-            id: 'integrations-main',
-            type: 'integrations',
-            title: 'Integrationen',
-            size: GLASS_SHEET_SIZE,
-            data: { focus: 'rss' },
-        });
+        openPane(feedsPaneRequest());
     }, [openPane]);
 
     const [universeMode, setUniverseMode] = useState<'map' | 'desktop'>('map');
@@ -1032,6 +1027,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 <div className="pointer-events-none">
                     <WidgetGrid
                         surface="universe"
+                        focusMode={universeFocusMode}
                         context={{
                             surface: 'universe',
                             data: {
@@ -1041,6 +1037,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 mailState: integrationStates.mail,
                                 calendarState: integrationStates.calendar,
                                 cloudState: integrationStates.cloud,
+                                rssState: integrationStates.rss,
                             },
                             openMail: openMailPane,
                             openCalendar: openCalendarPane,

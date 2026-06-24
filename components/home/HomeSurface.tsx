@@ -29,6 +29,7 @@ import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectio
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
 import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
+import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
@@ -229,7 +230,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'feeds' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -345,6 +346,28 @@ export const HomeSurface: React.FC = () => {
             size: { width: 980, height: 740 },
         });
     }, [revealPane]);
+
+    const openFeed = useCallback(() => {
+        const rssConfigured = Boolean(
+            integrationsOverview?.rss?.configured
+            || (integrationsOverview?.rss?.feeds?.length ?? 0) > 0
+            || (integrationsOverview?.rss?.count ?? 0) > 0,
+        );
+        if (!rssConfigured) {
+            revealPane('integrations-main', {
+                type: 'integrations',
+                title: 'Integrationen',
+                size: { width: 980, height: 740 },
+                data: { focus: 'rss' },
+            });
+            return;
+        }
+        revealPane('feeds-main', {
+            type: 'feeds',
+            title: 'Dein Feed',
+            size: { width: 920, height: 640 },
+        });
+    }, [integrationsOverview?.rss, revealPane]);
 
     const openBrowserConnect = useCallback(() => {
         revealPane('browser-connect', {
@@ -898,6 +921,7 @@ export const HomeSurface: React.FC = () => {
                         mailState={integrationStates.mail}
                         calendarState={integrationStates.calendar}
                         cloudState={integrationStates.cloud}
+                        rssState={integrationStates.rss}
                         teamActivities={teamActivities}
                         teamMessages={teamMessages}
                         onlineCount={onlineTeamCount}
@@ -1302,7 +1326,7 @@ export const HomeSurface: React.FC = () => {
                             <HomeSignalCard icon={<CalendarDays size={14} />} label="Kalender" title={nextCalendarEvent.title} detail={nextCalendarEvent.time || nextCalendarEvent.date} tone="amber" onClick={openCalendarSetup} />
                         )}
                         {latestFeed && (
-                            <HomeSignalCard icon={<Globe size={14} />} label="Feed" title={latestFeed.title} detail={latestFeed.sourceTitle || 'RSS'} tone="cyan" onClick={openIntegrations} />
+                            <HomeSignalCard icon={<Globe size={14} />} label="Feed" title={latestFeed.title} detail={latestFeed.sourceTitle || 'RSS'} tone="cyan" onClick={openFeed} />
                         )}
                         {hasTeamSignal && (
                             <HomeSignalCard

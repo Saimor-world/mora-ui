@@ -92,6 +92,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="integrations" paneId={pane.id} initialData={pane.data} />;
         case 'mail':
             return <AppLoader appId="mail" paneId={pane.id} initialData={pane.data} />;
+        case 'feeds':
+            return <AppLoader appId="feeds" paneId={pane.id} initialData={pane.data} />;
         case 'website-dossier':
             return <AppLoader appId="website-dossier" paneId={pane.id} initialData={pane.data} />;
         case 'actions':
