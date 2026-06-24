@@ -21,6 +21,9 @@ import {
     type UniverseFocusMode,
 } from '@/lib/universe/interactionZones';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 
 /**
  * Department surface — zoomed into one planet, cosmos still visible.
@@ -36,6 +39,17 @@ export const DepartmentSurface: React.FC = () => {
 
   const { data: departments = [] } = useDepartments(activeCompanyId);
   const { data: treeData = [] } = useTree(activeCompanyId);
+  const {
+    overview: integrationsOverview,
+    isLoading: integrationsLoading,
+    error: integrationsError,
+  } = useCommunicationSurface();
+  const { mailPreview, calendarPreview } = useCommunicationLiveData();
+  const integrationStates = resolveIntegrationConnectionStates(
+    integrationsOverview,
+    integrationsLoading,
+    integrationsError,
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +136,13 @@ export const DepartmentSurface: React.FC = () => {
             context={{
               surface: 'department',
               departmentId: activeDepartmentId,
+              data: {
+                mailPreview,
+                calendarPreview,
+                mailState: integrationStates.mail,
+                calendarState: integrationStates.calendar,
+                cloudState: integrationStates.cloud,
+              },
               openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: GLASS_SHEET_SIZE }),
               openFinder: () => openPane({
                 id: 'finder-dept',

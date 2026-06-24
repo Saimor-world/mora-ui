@@ -28,6 +28,8 @@ import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 
 import type { WidgetContext } from '@/lib/widgets/types';
 
+import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
+
 import { PersonalHomeZone } from '@/components/home/PersonalHomeZone';
 
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -66,9 +68,11 @@ export interface HomeCockpitProps {
 
     calendarPreview:   CockpitCalPreview[];
 
-    mailConfigured:    boolean;
+    mailState:         IntegrationConnectionState;
 
-    calendarConfigured: boolean;
+    calendarState:     IntegrationConnectionState;
+
+    cloudState:        IntegrationConnectionState;
 
     teamActivities:    CockpitTeamActivity[];
 
@@ -356,7 +360,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         firstName, greeting, todayLabel,
 
-        mailPreview, calendarPreview, mailConfigured, calendarConfigured,
+        mailPreview, calendarPreview, mailState, calendarState, cloudState,
 
         teamActivities, teamMessages, onlineCount, unreadTeamMessages,
 
@@ -404,7 +408,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         glanceLimit: 2,
 
-        data: { mailPreview, calendarPreview, mailConfigured, calendarConfigured, onlineCount },
+        data: { mailPreview, calendarPreview, mailState, calendarState, cloudState, onlineCount },
 
         openMail: onOpenMail,
 

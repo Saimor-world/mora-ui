@@ -22,14 +22,17 @@ export interface WidgetInstance {
 // backend. Rather than each widget re-polling its own hooks, the surface passes
 // the truth down so the Desktop shows exactly what the Cockpit shows.
 
+import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
+
 export interface WidgetMailItem { id: string; subject: string; from: string; snippet?: string; date?: string }
 export interface WidgetCalItem { id: string; title: string; date?: string; time?: string; location?: string }
 
 export interface WidgetData {
     mailPreview?: WidgetMailItem[];
     calendarPreview?: WidgetCalItem[];
-    mailConfigured?: boolean;
-    calendarConfigured?: boolean;
+    mailState: IntegrationConnectionState;
+    calendarState: IntegrationConnectionState;
+    cloudState: IntegrationConnectionState;
     onlineCount?: number;
 }
 

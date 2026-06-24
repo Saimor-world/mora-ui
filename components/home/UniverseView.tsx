@@ -42,6 +42,9 @@ import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentCo
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 import {
     UNIVERSE_HOVER_RELEASE_HOME_MS,
     UNIVERSE_HOVER_RELEASE_MS,
@@ -102,6 +105,17 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const surfaceProfile = useSurfaceProfile();
     const websiteEntryContext = useWebsiteEntryContext();
     const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !websiteEntryContext;
+    const {
+        overview: integrationsOverview,
+        isLoading: integrationsLoading,
+        error: integrationsError,
+    } = useCommunicationSurface();
+    const { mailPreview, calendarPreview } = useCommunicationLiveData();
+    const integrationStates = resolveIntegrationConnectionStates(
+        integrationsOverview,
+        integrationsLoading,
+        integrationsError,
+    );
 
     const [universeMode, setUniverseMode] = useState<'map' | 'desktop'>('map');
     const [showSystemStatus, setShowSystemStatus] = useState(false);
@@ -990,6 +1004,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         surface="universe"
                         context={{
                             surface: 'universe',
+                            data: {
+                                mailPreview,
+                                calendarPreview,
+                                mailState: integrationStates.mail,
+                                calendarState: integrationStates.calendar,
+                                cloudState: integrationStates.cloud,
+                            },
                             openMora: () => setOrbState('curious'),
                             openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: GLASS_SHEET_SIZE }),
                             openTeam: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: GLASS_SHEET_SIZE }),

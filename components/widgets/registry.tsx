@@ -20,6 +20,7 @@ import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { buildNightwatchGlanceSuggestions } from '@/lib/nightwatch/glanceSuggestions';
 import type { CoreTreeNode } from '@/lib/types/core';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
+import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
 
 type StatusTone = 'ok' | 'warn' | 'alert' | 'info' | 'neutral';
 
@@ -281,9 +282,31 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     const tasks = homeView?.next_steps ?? [];
     const mail = context.data?.mailPreview ?? [];
     const cal = context.data?.calendarPreview ?? [];
-    const mailConfigured = context.data?.mailConfigured ?? false;
-    const calConfigured = context.data?.calendarConfigured ?? false;
+    const mailState = context.data?.mailState ?? 'error';
+    const calState = context.data?.calendarState ?? 'error';
     const compact = context.compact;
+
+    const connectionLabel = (
+        state: IntegrationConnectionState,
+        configuredLabel: string,
+        connectLabel: string,
+    ) => {
+        if (state === 'configured') return configuredLabel;
+        if (state === 'unconfigured') return connectLabel;
+        if (state === 'loading') return 'Status wird geladen';
+        return 'Status nicht verfuegbar';
+    };
+
+    const ConnectionEmpty: React.FC<{
+        state: IntegrationConnectionState;
+        configuredLabel: string;
+        connectLabel: string;
+    }> = ({ state, configuredLabel, connectLabel }) => {
+        if (state === 'unconfigured') {
+            return <ConnectCTA label={connectLabel} onClick={context.openIntegrations} />;
+        }
+        return <Empty>{connectionLabel(state, configuredLabel, connectLabel)}</Empty>;
+    };
 
     const nextCal = cal[0];
     const nextMail = mail[0];
@@ -291,7 +314,9 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
     const hasMore = cal.length > 1 || mail.length > 1 || tasks.length > 1;
     const tone: StatusTone =
         (cal.length + mail.length + tasks.length) > 0 ? 'info'
-            : (mailConfigured || calConfigured) ? 'ok' : 'neutral';
+            : (mailState === 'configured' || calState === 'configured') ? 'ok'
+                : (mailState === 'error' || calState === 'error') ? 'warn'
+                    : 'neutral';
 
     const DayLine: React.FC<{
         icon: React.ReactNode;
@@ -330,15 +355,15 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         icon={<CalendarDays size={10} />}
                         label="Termin"
                         value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
-                        empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
-                        onClick={nextCal ? context.openCalendar : context.openIntegrations}
+                        empty={connectionLabel(calState, 'Keine Termine heute', 'Kalender verbinden')}
+                        onClick={nextCal || calState === 'configured' ? context.openCalendar : calState === 'loading' ? undefined : context.openIntegrations}
                     />
                     <DayLine
                         icon={<Mail size={10} />}
                         label="Mail"
                         value={nextMail ? nextMail.subject : ''}
-                        empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
-                        onClick={nextMail ? context.openMail : context.openIntegrations}
+                        empty={connectionLabel(mailState, 'Posteingang leer', 'Mail verbinden')}
+                        onClick={nextMail || mailState === 'configured' ? context.openMail : mailState === 'loading' ? undefined : context.openIntegrations}
                     />
                     <DayLine
                         icon={<CheckCircle2 size={10} />}
@@ -392,10 +417,8 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                                     <AlleAnzeigenLink onClick={context.openCalendar} extra={cal.length - glanceRowLimit(context)} />
                                 )}
                             </div>
-                        ) : calConfigured ? (
-                            <Empty>Keine Termine heute</Empty>
                         ) : (
-                            <ConnectCTA label="Kalender verbinden" onClick={context.openIntegrations} />
+                            <ConnectionEmpty state={calState} configuredLabel="Keine Termine heute" connectLabel="Kalender verbinden" />
                         )}
                     </div>
                     <div>
@@ -434,10 +457,8 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                                     <AlleAnzeigenLink onClick={context.openMail} extra={mail.length - glanceRowLimit(context)} />
                                 )}
                             </div>
-                        ) : mailConfigured ? (
-                            <Empty>Posteingang leer</Empty>
                         ) : (
-                            <ConnectCTA label="Mail verbinden" onClick={context.openIntegrations} />
+                            <ConnectionEmpty state={mailState} configuredLabel="Posteingang leer" connectLabel="Mail verbinden" />
                         )}
                     </div>
                     <div>
@@ -470,15 +491,15 @@ const MeinTagWidget: React.FC<{ context: WidgetContext }> = React.memo(({ contex
                         icon={<CalendarDays size={10} />}
                         label="Termin"
                         value={nextCal ? `${nextCal.time ? `${nextCal.time} · ` : ''}${nextCal.title}` : ''}
-                        empty={calConfigured ? 'Keine Termine heute' : 'Kalender verbinden'}
-                        onClick={nextCal ? context.openCalendar : context.openIntegrations}
+                        empty={connectionLabel(calState, 'Keine Termine heute', 'Kalender verbinden')}
+                        onClick={nextCal || calState === 'configured' ? context.openCalendar : calState === 'loading' ? undefined : context.openIntegrations}
                     />
                     <DayLine
                         icon={<Mail size={10} />}
                         label="Mail"
                         value={nextMail ? `${nextMail.subject}${nextMail.from ? ` · ${nextMail.from}` : ''}` : ''}
-                        empty={mailConfigured ? 'Posteingang leer' : 'Mail verbinden'}
-                        onClick={nextMail ? context.openMail : context.openIntegrations}
+                        empty={connectionLabel(mailState, 'Posteingang leer', 'Mail verbinden')}
+                        onClick={nextMail || mailState === 'configured' ? context.openMail : mailState === 'loading' ? undefined : context.openIntegrations}
                     />
                     <DayLine
                         icon={<CheckCircle2 size={10} />}
