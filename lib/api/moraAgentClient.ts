@@ -21,8 +21,21 @@ export interface ChatContext {
     layer?: string;
     route_path?: string;
     pane_id?: string;
+    /** Client-only workspace awareness. CORE treats this as non-authoritative UI context. */
+    workspace?: WorkspaceContext;
     /** Real Mora P1: structured perception bundle, included when feature flag is on. */
     perception?: PerceptionBundle;
+}
+
+export interface WorkspacePaneContext {
+    id: string;
+    type: string;
+    title: string;
+}
+
+export interface WorkspaceContext {
+    focused_pane?: WorkspacePaneContext;
+    visible_panes: WorkspacePaneContext[];
 }
 
 export interface AgentChatRequest {
@@ -78,6 +91,14 @@ function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext
 
 export function buildChatContext(overrides?: ChatContext): ChatContext | undefined {
     const navState = useNavStore.getState();
+    const paneState = usePaneStore.getState();
+    const workspacePanes = paneState.panes
+        .filter((pane) => !pane.minimized && pane.type !== 'chat' && pane.type !== 'mora-hub')
+        .sort((a, b) => b.zIndex - a.zIndex);
+    const focusedWorkspacePane = workspacePanes[0];
+    const toWorkspacePane = (pane: typeof focusedWorkspacePane): WorkspacePaneContext | undefined => pane
+        ? { id: pane.id, type: pane.type, title: pane.title }
+        : undefined;
     const routePath = typeof window !== 'undefined'
         ? `${window.location.pathname}${window.location.search ?? ''}`
         : undefined;
@@ -89,14 +110,16 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
             space_id: navState.activeSpaceId || undefined,
             folder_id: navState.activeFolderId || undefined,
             node_id: (() => {
-                const ps = usePaneStore.getState();
-                if (!ps.activePaneId) return undefined;
-                const pane = ps.panes.find(p => p.id === ps.activePaneId);
+                const pane = focusedWorkspacePane;
                 return pane?.type === 'document' ? pane.data?.nodeId : undefined;
             })(),
             view_level: viewLevel,
             layer: mapLayerFromViewLevel(viewLevel),
             route_path: routePath,
+            workspace: {
+                focused_pane: toWorkspacePane(focusedWorkspacePane),
+                visible_panes: workspacePanes.slice(0, 12).map((pane) => toWorkspacePane(pane)!),
+            },
         },
         overrides
     );

@@ -24,6 +24,7 @@ import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/cha
 import { toToolTrace, type ToolTraceStep } from '@/lib/chat/toolTrace';
 import { ToolTrace } from '@/components/chat/ToolTrace';
 import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
+import { parseChatIntent } from '@/lib/chat/parseChatIntent';
 import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -429,44 +430,11 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
         return () => window.removeEventListener('keydown', handler);
     }, [isFullscreen]);
 
-    // Parse command intents
-    const parseIntent = useCallback((text: string): { type: 'navigate' | 'search' | 'global_search' | 'chat', target?: string } => {
-        const lower = text.toLowerCase();
-
-        // Global Documents Request
-        if (lower.includes('alle dokumente') || lower.includes('alle dateien') || lower.includes('all documents') || lower.includes('everything')) {
-            return { type: 'global_search' };
-        }
-
-        // Navigation commands
-        if (lower.includes('zeig') || lower.includes('zeige') || lower.includes('show') || lower.includes('geh zu') || lower.includes('go to')) {
-            // Find department name
-            for (const dept of safeDepartments) {
-                if (lower.includes(dept.name.toLowerCase())) {
-                    return { type: 'navigate', target: dept.id };
-                }
-            }
-            const target = text
-                .replace(/^(zeige mir|zeig mir|zeige|zeig|go to|geh zu|show me|show)\s+/i, '')
-                .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
-                .trim();
-            if (target) {
-                return { type: 'search', target };
-            }
-        }
-
-        // Search commands
-        if (lower.includes('find') || lower.includes('such') || lower.includes('search') || lower.includes('öffne') || lower.includes('öffne')) {
-            // Priority regex for German/English search verbs
-            const target = text
-                .replace(/^(zeige mir|zeig mir|zeige|zeig|öffne|öffne|finde|find|suche|such|search|suche nach|search for|suche mir|find me)\s+/i, '')
-                .replace(/\s+(dokumente|dokument|documents|document|dateien|datei|files|file|ordner|folder|folders)$/i, '')
-                .trim();
-            return { type: 'search', target };
-        }
-
-        return { type: 'chat' };
-    }, [safeDepartments]);
+    // Parse explicit commands only; conversational mentions stay in normal chat.
+    const parseIntent = useCallback(
+        (text: string) => parseChatIntent(text, safeDepartments),
+        [safeDepartments],
+    );
 
     // Execute navigation
     const executeNavigation = useCallback((deptId: string) => {
