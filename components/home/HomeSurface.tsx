@@ -25,6 +25,7 @@ import { BriefingStack, type Briefing } from './BriefingStack';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import { HomeCockpit } from '@/components/home/HomeCockpit';
 import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
@@ -166,6 +167,8 @@ export const HomeSurface: React.FC = () => {
     const {
         overview: integrationsOverview,
         summary: communicationSummary,
+        isLoading: integrationsLoading,
+        error: integrationsError,
     } = useCommunicationSurface();
     const {
         mailPreview = [],
@@ -173,6 +176,11 @@ export const HomeSurface: React.FC = () => {
         feedPreview = [],
         cloudPreview = [],
     } = useCommunicationLiveData();
+    const integrationStates = resolveIntegrationConnectionStates(
+        integrationsOverview,
+        integrationsLoading,
+        integrationsError,
+    );
 
     // Real Nightwatch incidents -> OpenFlow signals and typed panels (read-only; empty on error).
     const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
@@ -886,8 +894,10 @@ export const HomeSurface: React.FC = () => {
                         todayLabel={todayLabel}
                         mailPreview={mailPreview}
                         calendarPreview={calendarPreview}
-                        mailConfigured={Boolean(integrationsOverview?.mail?.configured)}
-                        calendarConfigured={Boolean(integrationsOverview?.calendar?.configured)}
+                        feedPreview={feedPreview}
+                        mailState={integrationStates.mail}
+                        calendarState={integrationStates.calendar}
+                        cloudState={integrationStates.cloud}
                         teamActivities={teamActivities}
                         teamMessages={teamMessages}
                         onlineCount={onlineTeamCount}

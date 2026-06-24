@@ -21,6 +21,9 @@ import {
     type UniverseFocusMode,
 } from '@/lib/universe/interactionZones';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 
 /**
  * Department surface — zoomed into one planet, cosmos still visible.
@@ -36,6 +39,33 @@ export const DepartmentSurface: React.FC = () => {
 
   const { data: departments = [] } = useDepartments(activeCompanyId);
   const { data: treeData = [] } = useTree(activeCompanyId);
+  const {
+    overview: integrationsOverview,
+    isLoading: integrationsLoading,
+    error: integrationsError,
+  } = useCommunicationSurface();
+  const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
+  const integrationStates = resolveIntegrationConnectionStates(
+    integrationsOverview,
+    integrationsLoading,
+    integrationsError,
+  );
+
+  const openMailPane = useCallback(() => {
+    if (!integrationsOverview?.mail?.configured) {
+      openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE });
+      return;
+    }
+    openPane({ id: 'mail-main', type: 'mail', title: 'Post', size: { width: 960, height: 720 } });
+  }, [integrationsOverview?.mail?.configured, openPane]);
+
+  const openCalendarPane = useCallback(() => {
+    if (!integrationsOverview?.calendar?.configured) {
+      openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE });
+      return;
+    }
+    openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 840, height: 620 } });
+  }, [integrationsOverview?.calendar?.configured, openPane]);
 
   useEffect(() => {
     let cancelled = false;
@@ -122,6 +152,23 @@ export const DepartmentSurface: React.FC = () => {
             context={{
               surface: 'department',
               departmentId: activeDepartmentId,
+              data: {
+                mailPreview,
+                calendarPreview,
+                feedPreview,
+                mailState: integrationStates.mail,
+                calendarState: integrationStates.calendar,
+                cloudState: integrationStates.cloud,
+              },
+              openMail: openMailPane,
+              openCalendar: openCalendarPane,
+              openFeed: () => openPane({
+                id: 'integrations-main',
+                type: 'integrations',
+                title: 'Integrationen',
+                size: GLASS_SHEET_SIZE,
+                data: { focus: 'rss' },
+              }),
               openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: GLASS_SHEET_SIZE }),
               openFinder: () => openPane({
                 id: 'finder-dept',

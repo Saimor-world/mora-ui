@@ -42,6 +42,9 @@ import { incidentBelongsToDepartment } from '@/lib/openflow/departmentIncidentCo
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
+import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
+import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 import {
     UNIVERSE_HOVER_RELEASE_HOME_MS,
     UNIVERSE_HOVER_RELEASE_MS,
@@ -102,6 +105,47 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const surfaceProfile = useSurfaceProfile();
     const websiteEntryContext = useWebsiteEntryContext();
     const isPublicDemoSurface = surfaceProfile.isPublicDemoSurface && !websiteEntryContext;
+    const {
+        overview: integrationsOverview,
+        isLoading: integrationsLoading,
+        error: integrationsError,
+    } = useCommunicationSurface();
+    const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
+    const integrationStates = resolveIntegrationConnectionStates(
+        integrationsOverview,
+        integrationsLoading,
+        integrationsError,
+    );
+
+    const openMailPane = useCallback(() => {
+        if (!integrationsOverview?.mail?.configured) {
+            openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE });
+            return;
+        }
+        openPane({ id: 'mail-main', type: 'mail', title: 'Post', size: { width: 960, height: 720 } });
+    }, [integrationsOverview?.mail?.configured, openPane]);
+
+    const openCalendarPane = useCallback(() => {
+        if (!integrationsOverview?.calendar?.configured) {
+            openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE });
+            return;
+        }
+        openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 840, height: 620 } });
+    }, [integrationsOverview?.calendar?.configured, openPane]);
+
+    const openIntegrationsPane = useCallback(() => {
+        openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE });
+    }, [openPane]);
+
+    const openFeedPane = useCallback(() => {
+        openPane({
+            id: 'integrations-main',
+            type: 'integrations',
+            title: 'Integrationen',
+            size: GLASS_SHEET_SIZE,
+            data: { focus: 'rss' },
+        });
+    }, [openPane]);
 
     const [universeMode, setUniverseMode] = useState<'map' | 'desktop'>('map');
     const [showSystemStatus, setShowSystemStatus] = useState(false);
@@ -990,10 +1034,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         surface="universe"
                         context={{
                             surface: 'universe',
+                            data: {
+                                mailPreview,
+                                calendarPreview,
+                                feedPreview,
+                                mailState: integrationStates.mail,
+                                calendarState: integrationStates.calendar,
+                                cloudState: integrationStates.cloud,
+                            },
+                            openMail: openMailPane,
+                            openCalendar: openCalendarPane,
+                            openIntegrations: openIntegrationsPane,
+                            openFeed: openFeedPane,
                             openMora: () => setOrbState('curious'),
                             openFinder: () => openPane({ id: 'finder-universe', type: 'finder', title: 'Finder', size: GLASS_SHEET_SIZE }),
                             openTeam: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: GLASS_SHEET_SIZE }),
-                            openIntegrations: () => openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE }),
                             openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
                             openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
                             openDashboard: () => window.open(bridgePulse.dashboardUrl, '_blank', 'noopener,noreferrer'),

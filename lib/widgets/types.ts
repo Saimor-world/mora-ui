@@ -22,14 +22,19 @@ export interface WidgetInstance {
 // backend. Rather than each widget re-polling its own hooks, the surface passes
 // the truth down so the Desktop shows exactly what the Cockpit shows.
 
+import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
+
 export interface WidgetMailItem { id: string; subject: string; from: string; snippet?: string; date?: string }
 export interface WidgetCalItem { id: string; title: string; date?: string; time?: string; location?: string }
+export interface WidgetFeedItem { id: string; sourceTitle: string; title: string; summary?: string; published?: string; link?: string }
 
 export interface WidgetData {
     mailPreview?: WidgetMailItem[];
     calendarPreview?: WidgetCalItem[];
-    mailConfigured?: boolean;
-    calendarConfigured?: boolean;
+    feedPreview?: WidgetFeedItem[];
+    mailState: IntegrationConnectionState;
+    calendarState: IntegrationConnectionState;
+    cloudState: IntegrationConnectionState;
     onlineCount?: number;
 }
 
@@ -47,6 +52,8 @@ export interface WidgetContext {
     openMail?: () => void;
     openTeam?: () => void;
     openIntegrations?: () => void;
+    /** Open integrations pane focused on RSS feeds. */
+    openFeed?: () => void;
     /** Open the App Library pane (NOT integrations). */
     openApps?: () => void;
     openNightwatch?: () => void;

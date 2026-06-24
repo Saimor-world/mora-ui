@@ -28,6 +28,8 @@ import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 
 import type { WidgetContext } from '@/lib/widgets/types';
 
+import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
+
 import { PersonalHomeZone } from '@/components/home/PersonalHomeZone';
 
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -66,9 +68,13 @@ export interface HomeCockpitProps {
 
     calendarPreview:   CockpitCalPreview[];
 
-    mailConfigured:    boolean;
+    feedPreview?:      Array<{ id: string; sourceTitle: string; title: string; summary?: string }>;
 
-    calendarConfigured: boolean;
+    mailState:         IntegrationConnectionState;
+
+    calendarState:     IntegrationConnectionState;
+
+    cloudState:        IntegrationConnectionState;
 
     teamActivities:    CockpitTeamActivity[];
 
@@ -216,7 +222,7 @@ function WidgetGlanceCard({ type, accent, context, className = '' }: {
 
 const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 
-    meinTag: (c) => { c.openCalendar?.() ?? c.openIntegrations?.(); },
+    meinTag: (c) => { c.openMail?.() ?? c.openCalendar?.() ?? c.openFeed?.() ?? c.openIntegrations?.(); },
 
     team: (c) => { c.openTeam?.(); },
 
@@ -356,7 +362,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         firstName, greeting, todayLabel,
 
-        mailPreview, calendarPreview, mailConfigured, calendarConfigured,
+        mailPreview, calendarPreview, feedPreview = [], mailState, calendarState, cloudState,
 
         teamActivities, teamMessages, onlineCount, unreadTeamMessages,
 
@@ -404,11 +410,19 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         glanceLimit: 2,
 
-        data: { mailPreview, calendarPreview, mailConfigured, calendarConfigured, onlineCount },
+        data: { mailPreview, calendarPreview, feedPreview, mailState, calendarState, cloudState, onlineCount },
 
         openMail: onOpenMail,
 
         openCalendar: onOpenCalendar,
+
+        openFeed: () => openPane({
+            id: 'integrations-main',
+            type: 'integrations',
+            title: 'Integrationen',
+            size: GLASS_SHEET_SIZE,
+            data: { focus: 'rss' },
+        }),
 
         openIntegrations: onOpenIntegrations,
 
