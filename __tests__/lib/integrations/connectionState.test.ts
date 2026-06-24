@@ -14,15 +14,17 @@ describe('integration connection state', () => {
         expect(resolveIntegrationConnectionState(input)).toBe(expected);
     });
 
-    it('derives mail, calendar and cloud from the same overview truth', () => {
+    it('derives mail, calendar, cloud and rss from the same overview truth', () => {
         expect(resolveIntegrationConnectionStates({
             mail: { configured: true },
             calendar: { configured: false },
             cloud_storage: { configured: true },
+            rss: { configured: true },
         }, false)).toEqual({
             mail: 'configured',
             calendar: 'unconfigured',
             cloud: 'configured',
+            rss: 'configured',
         });
     });
 });
