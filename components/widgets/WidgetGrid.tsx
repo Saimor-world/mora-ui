@@ -82,7 +82,7 @@ export function WidgetGrid({
         [items, isGlanceSurface, surface],
     );
 
-    const panelBackground = isGlanceSurface ? 'rgba(6, 9, 22, 0.62)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBackground = isGlanceSurface ? 'rgba(6, 9, 22, 0.52)' : 'rgba(8, 11, 24, 0.82)';
     const panelBorder = isGlanceSurface ? 'border-white/[0.10]' : 'border-white/[0.12]';
 
     if (!mounted || !hydrated || surface === 'home') return null;

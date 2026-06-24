@@ -213,22 +213,23 @@ describe('HomeSurface — rendering', () => {
         expect(workspace).toHaveClass('inset-x-0');
         expect(workspace).not.toHaveClass('max-w-[1320px]');
         expect(screen.getByTestId('home-cockpit')).toBeInTheDocument();
-        expect(screen.getByText('Mein Tag')).toBeInTheDocument();
-        expect(screen.getByText('Signale')).toBeInTheDocument();
+        expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
+        expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
+        expect(screen.getByTestId('arbeitseinstiege-strip')).toBeInTheDocument();
     });
 
     it('renders HomeCockpit zones for normal OS home', async () => {
         renderWithDepts();
         await waitFor(() => {
-            // HomeCockpit replaced OpenFlowLagebild as the default home surface
-            expect(screen.getByText('Mein Tag')).toBeInTheDocument();
-            expect(screen.getByText('Signale')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-nightwatch')).toBeInTheDocument();
         });
     });
 
     it('does not render Home status placeholders as normal recommendations', async () => {
         renderWithDepts();
-        await waitFor(() => expect(screen.getByText('Mein Tag')).toBeInTheDocument());
+        await waitFor(() => expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument());
 
         expect(screen.queryByText('Mail für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
@@ -242,7 +243,7 @@ describe('HomeSurface — rendering', () => {
         renderWithDepts();
         await waitFor(() => {
             // HomeCockpit renders even without a user — greeting adapts but zones remain
-            expect(screen.getByText('Mein Tag')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
         });
     });
 
