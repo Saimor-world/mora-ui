@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Rss, Plus, RefreshCw, Trash2, ExternalLink } from "lucide-react";
+import { Rss, Plus, RefreshCw, Trash2, ExternalLink, Pencil, Check, X } from "lucide-react";
 import { coreDelete, coreGet, corePost } from "@/lib/api/coreClient";
 import { toast } from "sonner";
 import { broadcastCommunicationSync } from "@/lib/integrations/communicationEvents";
@@ -30,6 +30,8 @@ export const RssIntegration: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const [fetchErrors, setFetchErrors] = useState<Array<{ url: string; message: string }>>([]);
+    const [editingUrl, setEditingUrl] = useState<string | null>(null);
+    const [editingTitle, setEditingTitle] = useState("");
 
     const load = useCallback(async () => {
         setIsLoading(true);
@@ -85,6 +87,28 @@ export const RssIntegration: React.FC = () => {
             await load();
         } catch (err: any) {
             toast.error(err?.message || "Feed konnte nicht entfernt werden");
+        }
+    }, [load]);
+
+    const updateFeedTitle = useCallback(async (feedUrl: string, nextTitle: string) => {
+        const trimmed = nextTitle.trim();
+        if (!trimmed) {
+            toast.error("Name darf nicht leer sein");
+            return;
+        }
+        try {
+            await corePost("/v3/integrations/rss", {
+                url: feedUrl,
+                title: trimmed,
+                enabled: true,
+            });
+            toast.success("Quelle aktualisiert");
+            broadcastCommunicationSync("rss-save");
+            setEditingUrl(null);
+            setEditingTitle("");
+            await load();
+        } catch (err: any) {
+            toast.error(err?.message || "Quelle konnte nicht aktualisiert werden");
         }
     }, [load]);
 
@@ -145,17 +169,64 @@ export const RssIntegration: React.FC = () => {
                             {feeds.map((feed) => (
                                 <div key={feed.url} className="flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2">
                                     <div className="min-w-0 flex-1">
-                                        <div className="truncate text-sm text-white/78">{feed.title || feed.url}</div>
-                                        <div className="truncate text-[11px] text-white/35">{feed.url}</div>
+                                        {editingUrl === feed.url ? (
+                                            <div className="flex items-center gap-2">
+                                                <input
+                                                    value={editingTitle}
+                                                    onChange={(event) => setEditingTitle(event.target.value)}
+                                                    className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/25 px-2 py-1 text-sm text-white focus:border-emerald-400/35 focus:outline-none"
+                                                    autoFocus
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void updateFeedTitle(feed.url, editingTitle)}
+                                                    className="rounded-lg p-1.5 text-emerald-200/70 transition-colors hover:bg-emerald-500/10"
+                                                    title="Speichern"
+                                                >
+                                                    <Check size={14} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setEditingUrl(null);
+                                                        setEditingTitle("");
+                                                    }}
+                                                    className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/5"
+                                                    title="Abbrechen"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div className="truncate text-sm text-white/78">{feed.title || feed.url}</div>
+                                                <div className="truncate text-[11px] text-white/35">{feed.url}</div>
+                                            </>
+                                        )}
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => void removeFeed(feed.url)}
-                                        className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-red-500/10 hover:text-red-200"
-                                        title="Feed entfernen"
-                                    >
-                                        <Trash2 size={14} />
-                                    </button>
+                                    {editingUrl !== feed.url && (
+                                        <>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setEditingUrl(feed.url);
+                                                    setEditingTitle(feed.title || "");
+                                                }}
+                                                className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-white/5 hover:text-white/70"
+                                                title="Name bearbeiten"
+                                            >
+                                                <Pencil size={14} />
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => void removeFeed(feed.url)}
+                                                className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-red-500/10 hover:text-red-200"
+                                                title="Feed entfernen"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </>
+                                    )}
                                 </div>
                             ))}
                         </div>

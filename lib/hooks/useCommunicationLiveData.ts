@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { coreGet } from "@/lib/api/coreClient";
 import { normalizeList } from "@/lib/api/http";
 import { parseRssItem } from "@/lib/rss/parseRssItem";
+import { sortFeedItemsByDateDesc } from "@/lib/rss/feedDates";
 import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from "@/lib/integrations/communicationEvents";
 
 type MailPreviewItem = {
@@ -191,18 +192,20 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 );
 
                 setFeedPreview(
-                    feedItems.slice(0, 5).map((item: any) => {
-                        const parsed = parseRssItem(item);
-                        return {
-                            id: parsed.id,
-                            sourceTitle: parsed.sourceTitle,
-                            title: parsed.title,
-                            link: parsed.link,
-                            published: parsed.published,
-                            summary: parsed.summary,
-                            imageUrl: parsed.imageUrl,
-                        };
-                    })
+                    sortFeedItemsByDateDesc(
+                        feedItems.slice(0, 5).map((item: any) => {
+                            const parsed = parseRssItem(item);
+                            return {
+                                id: parsed.id,
+                                sourceTitle: parsed.sourceTitle,
+                                title: parsed.title,
+                                link: parsed.link,
+                                published: parsed.published,
+                                summary: parsed.summary,
+                                imageUrl: parsed.imageUrl,
+                            };
+                        })
+                    )
                 );
 
                 const cloudConnectors = Array.isArray(myContentData?.cloud_storage?.connectors)

@@ -3,50 +3,120 @@
 import React from 'react';
 import { ExternalLink, Rss } from 'lucide-react';
 import type { RssFeedItem } from '@/lib/rss/parseRssItem';
+import { formatFeedDateLabel, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
+import { FeedImageLightbox } from '@/components/feeds/FeedImageLightbox';
 
-function formatRelativeDe(iso?: string | null): string | null {
-    if (!iso) return null;
-    const ts = new Date(iso).getTime();
-    if (Number.isNaN(ts)) return null;
-    const diffMin = Math.round((Date.now() - ts) / 60_000);
-    if (diffMin < 1) return 'gerade';
-    if (diffMin < 60) return `vor ${diffMin} Min.`;
-    const diffH = Math.round(diffMin / 60);
-    if (diffH < 24) return `vor ${diffH} Std.`;
-    return `vor ${Math.round(diffH / 24)} T.`;
-}
-
-const FeedImage: React.FC<{ imageUrl?: string; title: string; compact?: boolean }> = ({ imageUrl, title, compact }) => {
+const FeedImage: React.FC<{
+    imageUrl?: string;
+    title: string;
+    compact?: boolean;
+    hero?: boolean;
+    onExpand?: () => void;
+}> = ({ imageUrl, title, compact, hero, onExpand }) => {
     const [failed, setFailed] = React.useState(false);
     const showImage = Boolean(imageUrl) && !failed;
 
+    const sizeClass = hero
+        ? 'h-44 w-full sm:h-56'
+        : compact
+            ? 'h-14 w-14'
+            : 'h-40 w-full sm:h-48 sm:w-56';
+
     if (showImage) {
+        const image = (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+                src={imageUrl}
+                alt=""
+                className="h-full w-full object-cover"
+                loading="lazy"
+                onError={() => setFailed(true)}
+            />
+        );
+
         return (
             <div
-                className={`relative shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-black/30 ${
-                    compact ? 'h-14 w-14' : 'h-28 w-full sm:h-32 sm:w-36'
-                }`}
+                className={`relative shrink-0 overflow-hidden rounded-xl border border-white/[0.08] bg-black/30 ${sizeClass}`}
             >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={imageUrl}
-                    alt=""
-                    className="h-full w-full object-cover"
-                    loading="lazy"
-                    onError={() => setFailed(true)}
-                />
+                {onExpand ? (
+                    <button
+                        type="button"
+                        onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onExpand();
+                        }}
+                        className="block h-full w-full cursor-zoom-in"
+                        aria-label={`${title} vergrößern`}
+                    >
+                        {image}
+                    </button>
+                ) : image}
             </div>
         );
     }
 
     return (
         <div
-            className={`flex shrink-0 items-center justify-center rounded-xl border border-emerald-300/12 bg-emerald-500/[0.06] ${
-                compact ? 'h-14 w-14' : 'h-28 w-full sm:h-32 sm:w-36'
-            }`}
+            className={`flex shrink-0 items-center justify-center rounded-xl border border-emerald-300/12 bg-emerald-500/[0.06] ${sizeClass}`}
         >
-            <Rss size={compact ? 16 : 22} className="text-emerald-200/45" />
+            <Rss size={compact ? 16 : hero ? 28 : 22} className="text-emerald-200/45" />
         </div>
+    );
+};
+
+export const FeedHeroPreview: React.FC<{
+    item: RssFeedItem;
+    onOpen?: () => void;
+}> = ({ item, onOpen }) => {
+    const [lightboxOpen, setLightboxOpen] = React.useState(false);
+    const when = formatLastUpdatedLabel(item.published);
+    const summary = item.summary?.replace(/<[^>]+>/g, '').trim();
+
+    const heroBody = (
+        <div className="group flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] text-left transition-colors hover:border-emerald-300/22 hover:bg-emerald-300/[0.04]">
+            <FeedImage
+                imageUrl={item.imageUrl}
+                title={item.title}
+                hero
+                onExpand={item.imageUrl ? () => setLightboxOpen(true) : undefined}
+            />
+            <div className="flex min-h-0 flex-1 flex-col gap-1 p-3">
+                <div className="truncate text-[10px] uppercase tracking-[0.16em] text-emerald-200/45">
+                    {item.sourceTitle}
+                </div>
+                <div className="line-clamp-2 text-[14px] font-medium leading-snug text-white/88">
+                    {item.title}
+                </div>
+                {summary && (
+                    <p className="line-clamp-2 text-[12px] leading-relaxed text-white/42">
+                        {summary}
+                    </p>
+                )}
+                {when && <div className="mt-auto text-[10px] text-white/38">{when}</div>}
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            {item.link ? (
+                <a href={item.link} target="_blank" rel="noreferrer" onClick={onOpen} className="block min-h-0 flex-1">
+                    {heroBody}
+                </a>
+            ) : (
+                <button type="button" onClick={onOpen} className="block min-h-0 w-full flex-1 text-left">
+                    {heroBody}
+                </button>
+            )}
+            {lightboxOpen && item.imageUrl && (
+                <FeedImageLightbox
+                    imageUrl={item.imageUrl}
+                    title={item.title}
+                    onClose={() => setLightboxOpen(false)}
+                />
+            )}
+        </>
     );
 };
 
@@ -55,7 +125,8 @@ export const FeedItemCard: React.FC<{
     compact?: boolean;
     onOpen?: () => void;
 }> = ({ item, compact, onOpen }) => {
-    const when = formatRelativeDe(item.published);
+    const [lightboxOpen, setLightboxOpen] = React.useState(false);
+    const when = formatFeedDateLabel(item.published);
     const body = (
         <div
             className={`group flex overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] text-left transition-colors hover:border-emerald-300/22 hover:bg-emerald-300/[0.04] ${
@@ -63,17 +134,22 @@ export const FeedItemCard: React.FC<{
             }`}
         >
             <div className={compact ? '' : 'p-2.5 sm:pr-0'}>
-                <FeedImage imageUrl={item.imageUrl} title={item.title} compact={compact} />
+                <FeedImage
+                    imageUrl={item.imageUrl}
+                    title={item.title}
+                    compact={compact}
+                    onExpand={!compact && item.imageUrl ? () => setLightboxOpen(true) : undefined}
+                />
             </div>
             <div className={`min-w-0 flex-1 ${compact ? 'py-0.5 pr-1' : 'p-3 sm:pl-2'}`}>
                 <div className="truncate text-[10px] uppercase tracking-[0.16em] text-emerald-200/45">
                     {item.sourceTitle}
                 </div>
-                <div className={`mt-1 font-medium text-white/82 ${compact ? 'line-clamp-2 text-[12px] leading-snug' : 'line-clamp-2 text-[14px]'}`}>
+                <div className={`mt-1 font-medium text-white/82 ${compact ? 'line-clamp-2 text-[12px] leading-snug' : 'line-clamp-2 text-[15px]'}`}>
                     {item.title}
                 </div>
                 {!compact && item.summary && (
-                    <p className="mt-1.5 line-clamp-2 text-[12px] leading-relaxed text-white/42">
+                    <p className="mt-1.5 line-clamp-3 text-[12px] leading-relaxed text-white/42">
                         {item.summary.replace(/<[^>]+>/g, '').trim()}
                     </p>
                 )}
@@ -89,18 +165,27 @@ export const FeedItemCard: React.FC<{
         </div>
     );
 
-    if (item.link) {
-        return (
-            <a href={item.link} target="_blank" rel="noreferrer" onClick={onOpen} className="block">
-                {body}
-            </a>
-        );
-    }
-
-    return (
+    const wrapped = item.link ? (
+        <a href={item.link} target="_blank" rel="noreferrer" onClick={onOpen} className="block">
+            {body}
+        </a>
+    ) : (
         <button type="button" onClick={onOpen} className="block w-full">
             {body}
         </button>
+    );
+
+    return (
+        <>
+            {wrapped}
+            {lightboxOpen && item.imageUrl && (
+                <FeedImageLightbox
+                    imageUrl={item.imageUrl}
+                    title={item.title}
+                    onClose={() => setLightboxOpen(false)}
+                />
+            )}
+        </>
     );
 };
 
