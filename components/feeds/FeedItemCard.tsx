@@ -30,6 +30,7 @@ const FeedImage: React.FC<{
                 alt=""
                 className="h-full w-full object-cover"
                 loading="lazy"
+                decoding="async"
                 onError={() => setFailed(true)}
             />
         );

@@ -152,6 +152,7 @@ export const HomeSurface: React.FC = () => {
     const updatePane       = usePaneStore((s) => s.updatePane);
     const updatePanePos    = usePaneStore((s) => s.updatePanePosition);
     const updatePaneSize   = usePaneStore((s) => s.updatePaneSize);
+    const hasOpenPanes     = usePaneStore((s) => s.panes.some((pane) => !pane.minimized));
 
     const logoutAccount = useAccountStore((s) => s.logout);
     const recentItems   = useActivityStore((s) => s.recentItems);
@@ -862,7 +863,7 @@ export const HomeSurface: React.FC = () => {
     return (
         <div
             data-testid="home-universe-mission-control"
-            className="pointer-events-none absolute inset-0 z-[44] overflow-hidden"
+            className={`pointer-events-none absolute inset-0 overflow-hidden ${hasOpenPanes ? 'z-[20]' : 'z-[44]'}`}
         >
             {/* Light vignette — cosmos stays visible; no modal glass box */}
             <CosmicBackdrop calmFactor={0.38} />

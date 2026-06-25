@@ -12,6 +12,13 @@ export const GLASS_SHEET_PRESENTATION = {
     opacity: 0.38,
 } as const;
 
+export const GLASS_SHEET_PRESENTATION_FEED = {
+    dimBackground: true,
+    dimOpacity: 0.22,
+    blurIntensity: 12,
+    opacity: 0.4,
+} as const;
+
 /** ~70% viewport sheet — leaves starfield + dock breathing room */
 export const GLASS_SHEET_SIZE = {
     width: 920,

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { ExternalLink, Plug, RefreshCw, Rss, Settings } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { FeedItemCard } from '@/components/feeds/FeedItemCard';
@@ -10,15 +10,14 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { feedCadenceHint, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import type { AppProps } from '@/lib/apps/types';
-import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
+import { GLASS_SHEET_PRESENTATION_FEED } from '@/lib/os/glassSheet';
 
 export default function FeedsApp({ paneId }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(paneId);
     const isActive = usePaneStore((state) => state.activePaneId === paneId);
     const { overview } = useCommunicationSurface();
-    const { data: items = [], isLoading, isFetching, refetch, error, dataUpdatedAt } = useRssFeed(40);
-    const wasActiveRef = useRef(false);
+    const { data: items = [], isLoading, isFetching, refetch, error, dataUpdatedAt } = useRssFeed(30, Boolean(pane));
 
     const rssConfigured = Boolean(
         overview?.rss?.configured
@@ -41,12 +40,7 @@ export default function FeedsApp({ paneId }: AppProps) {
         await refetch();
     }, [refetch]);
 
-    useEffect(() => {
-        if (isActive && !wasActiveRef.current) {
-            void handleRefresh();
-        }
-        wasActiveRef.current = isActive;
-    }, [isActive, handleRefresh]);
+    if (!pane) return null;
 
     const lastUpdated = useMemo(() => {
         if (!dataUpdatedAt) return null;
@@ -79,7 +73,8 @@ export default function FeedsApp({ paneId }: AppProps) {
             initialY={pane?.position.y}
             onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
             onResize={(w, h) => updatePaneSize(paneId, w, h)}
-            {...GLASS_SHEET_PRESENTATION}
+            zIndex={pane.zIndex}
+            {...GLASS_SHEET_PRESENTATION_FEED}
         >
             <div className="flex h-full min-h-0 flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

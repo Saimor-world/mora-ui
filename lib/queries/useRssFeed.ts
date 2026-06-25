@@ -21,7 +21,7 @@ export function useRssFeed(limit = 30, enabled = true) {
         staleTime: STALE_TIMES.rssFeed,
         refetchInterval: STALE_TIMES.rssFeed,
         refetchIntervalInBackground: false,
-        refetchOnMount: 'always',
+        refetchOnMount: (query) => query.isStale(),
         placeholderData: (previous) => previous,
     });
 }

@@ -576,14 +576,32 @@ const DeinFeedWidget: React.FC<{ context: WidgetContext }> = React.memo(({ conte
     if (compact) {
         return (
             <GlanceShell tone={tone} onClick={openFeed}>
-                <div className="flex items-center justify-between gap-1">
-                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Dein Feed</span>
-                </div>
                 {heroItem ? (
-                    <>
-                        <div className="truncate text-[10px] font-medium text-white/72">{heroItem.title}</div>
-                        <div className="truncate text-[8px] text-white/40">{heroItem.sourceTitle}</div>
-                    </>
+                    <div className="flex items-center gap-2 min-w-0">
+                        {heroItem.imageUrl ? (
+                            <div
+                                className="h-10 w-10 shrink-0 overflow-hidden rounded-lg border border-white/[0.08] bg-black/25"
+                                data-testid="feed-hero-thumb"
+                            >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={heroItem.imageUrl}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                    loading="lazy"
+                                    decoding="async"
+                                />
+                            </div>
+                        ) : (
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-emerald-300/12 bg-emerald-500/[0.06]">
+                                <Radio size={14} className="text-emerald-200/50" />
+                            </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate text-[10px] font-medium text-white/72">{heroItem.title}</div>
+                            <div className="truncate text-[8px] text-white/40">{heroItem.sourceTitle}</div>
+                        </div>
+                    </div>
                 ) : (
                     <span className="text-[10px] text-white/40">
                         {feedState === 'unconfigured' ? 'RSS verbinden' : feedState === 'configured' ? 'Feed leer' : 'Lädt…'}
