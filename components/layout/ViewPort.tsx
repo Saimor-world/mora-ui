@@ -5,7 +5,6 @@ import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
 import { DepartmentSurface } from '@/components/layers/DepartmentSurface';
 import { SpaceLayer } from '@/components/layers/SpaceLayer';
-import { AmbientRoom } from '@/components/ambient/AmbientRoom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 /**
@@ -17,6 +16,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  *
  * core → CoreLayer → coreMode='home' → HomeSurface (day-start working surface)
  *                  → coreMode='explore' → UniverseView (planet map)
+ *
+ * ambient → AmbientRoomOverlay (portaled in MoraShell at z-880, above panes)
  *
  * CoreLayer owns the Home/Explore split so ViewPort stays a pure hierarchy router.
  */
@@ -92,20 +93,6 @@ export const ViewPort: React.FC = () => {
                         className="absolute inset-0 preserve-3d"
                     >
                         <SpaceLayer />
-                    </motion.div>
-                )}
-
-                {/* AMBIENT ROOM — Môra Field (fullscreen voice-driven workspace) */}
-                {effectiveViewLevel === 'ambient' && (
-                    <motion.div
-                        key="ambient"
-                        initial={rmVariants?.initial    ?? { opacity: 0, scale: 1.04, filter: 'blur(20px)' }}
-                        animate={rmVariants?.animate    ?? { opacity: 1, scale: 1, filter: 'none' }}
-                        exit={rmVariants?.exit          ?? { opacity: 0, scale: 0.96, filter: 'blur(16px)', transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } }}
-                        transition={rmVariants?.transition ?? { duration: 0.65, ease: [0.4, 0, 0.2, 1] }}
-                        className="absolute inset-0"
-                    >
-                        <AmbientRoom />
                     </motion.div>
                 )}
 

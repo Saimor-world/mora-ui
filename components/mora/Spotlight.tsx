@@ -23,6 +23,7 @@ import {
     LayoutGrid,
     ShieldCheck,
     Network,
+    Mic,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
 import { useDepartments } from "@/lib/queries/useDepartments";
@@ -353,6 +354,19 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["nightwatch", "infrastruktur", "infra", "server", "monitor", "vorfall", "incident"],
             onSelect: () => openFromSpotlight("nightwatch", "nightwatch-main", "Nightwatch", { width: 720, height: 640 })
+        });
+
+        result.push({
+            id: "action-ambient",
+            label: "Môra Field",
+            description: "Voice-Raum — Spracheingabe und Môra-Signale",
+            icon: <Mic size={16} className="text-violet-300" />,
+            category: "action",
+            keywords: ["ambient", "voice", "sprache", "mikrofon", "field", "raum", "mora field"],
+            onSelect: () => {
+                useNavStore.getState().navigateToAmbient();
+                onClose();
+            }
         });
 
         result.push({

@@ -757,7 +757,9 @@ export const Dock = () => {
             icon:        DOCK_ICON_MAP[entry.action] ?? Minus,
             label:       entry.label,
             description: entry.description,
-            shortcut:    entry.action === 'notes' ? 'Alt+N' : entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
+            shortcut:    entry.action === 'notes' ? 'Alt+N'
+                : entry.action === 'ambient' ? 'Alt+A'
+                : entry.shortcutSuffix ? `${mod}+${entry.shortcutSuffix}` : null,
             action:      entry.action,
         }));
 

@@ -102,6 +102,7 @@ export interface CoreDockItem {
 export function getCoreDockItems(): CoreDockItem[] {
     return [
         { action: 'home',     label: 'Home',     description: 'Lagebild',              shortcutSuffix: 'H' },
+        { action: 'ambient',  label: 'Raum',     description: 'Môra Field — Sprache',  shortcutSuffix: null },
         { action: 'chat',     label: 'MORA',     description: 'Mit MORA sprechen',     shortcutSuffix: 'J' },
         { action: 'finder',   label: 'Finder',   description: 'Objekte und Dateien',   shortcutSuffix: 'F' },
         { action: 'team',     label: 'Team',     description: 'Menschen und Rollen',   shortcutSuffix: 'U' },

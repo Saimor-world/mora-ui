@@ -149,14 +149,14 @@ describe('surfaceRegistry', () => {
     });
 
     describe('getCoreDockItems', () => {
-        it('returns exactly the six OS 1.0 Dock entries in the correct order', () => {
+        it('returns the OS 1.0 Dock entries in the correct order', () => {
             const items = getCoreDockItems();
-            expect(items).toHaveLength(6);
+            expect(items).toHaveLength(7);
             expect(items.map(i => i.action)).toEqual([
-                'home', 'chat', 'finder', 'team', 'map', 'settings',
+                'home', 'ambient', 'chat', 'finder', 'team', 'map', 'settings',
             ]);
             expect(items.map(i => i.label)).toEqual([
-                'Home', 'MORA', 'Finder', 'Team', 'Karte', 'Setup',
+                'Home', 'Raum', 'MORA', 'Finder', 'Team', 'Karte', 'Setup',
             ]);
         });
 

@@ -138,6 +138,7 @@ import { SystemStats } from '@/components/ui/SystemStats';
 import { QuickPreview } from '@/components/os/QuickPreview';
 import { SnapPreview } from '@/components/os/SnapPreview';
 import { AmbientAudioController } from '@/components/os/AmbientAudioController';
+import { AmbientRoomOverlay } from '@/components/ambient/AmbientRoomOverlay';
 import { InteractionAudioController } from '@/components/os/InteractionAudioController';
 import { MoraPulsePanel } from '@/components/os/MoraPulsePanel';
 import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
@@ -372,6 +373,7 @@ export const MoraShell: React.FC = () => {
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
+    const isAmbientRoomOpen = viewLevel === 'ambient';
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
     const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
@@ -833,12 +835,15 @@ export const MoraShell: React.FC = () => {
 
             {/* MoraInsightPopup �" 1.0 gated (future-tier: insight events surface) */}
 
+            {/* Môra Field — voice room portal (above pane stack) */}
+            <AmbientRoomOverlay />
+
             {/* Dock (Bottom Navigation) */}
-            {!hasFullscreenPane && <Dock />}
+            {!hasFullscreenPane && !isAmbientRoomOpen && <Dock />}
 
             {/* MÔRA product tour — ambient intro near orb; greeting deferred until tour dismissed */}
-            {!hasFullscreenPane && activeMode !== 'public_playground' && <FirstRunTour />}
-            {!hasFullscreenPane && activeMode !== 'public_playground' && <MoraGreetingBubble />}
+            {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <FirstRunTour />}
+            {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <MoraGreetingBubble />}
 
             {/* Spotlight (Cmd+K) */}
             <Spotlight

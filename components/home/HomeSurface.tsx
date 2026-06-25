@@ -278,8 +278,8 @@ export const HomeSurface: React.FC = () => {
     }, [revealPane]);
 
     const openLagefeld = useCallback(() => {
-        revealPane('lagefeld-main', { type: 'lagefeld', title: 'Lagefeld', size: { width: 1040, height: 720 } });
-    }, [revealPane]);
+        useNavStore.getState().navigateToAmbient();
+    }, []);
 
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;
@@ -944,6 +944,7 @@ export const HomeSurface: React.FC = () => {
                         onGoExplore={() => setCoreMode('explore')}
                         onOpenNightwatch={openNightwatch}
                         onOpenLagefeld={openLagefeld}
+                        onOpenFeed={openFeed}
                         privateAreaLabel={privateArea?.label}
                         privateFolderCount={privateArea?.folderCount}
                         privateDocumentCount={privateArea?.documentCount}

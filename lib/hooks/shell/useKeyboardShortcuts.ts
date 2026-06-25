@@ -110,8 +110,9 @@ export function useKeyboardShortcuts({
                 return;
             }
 
-            if (e.altKey && !meta && key === 'a') {
+            if (e.altKey && !meta && (key === 'a' || e.code === 'KeyA')) {
                 e.preventDefault();
+                e.stopPropagation();
                 onOpenAmbient?.();
                 return;
             }
@@ -128,8 +129,8 @@ export function useKeyboardShortcuts({
             }
         };
 
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
+        window.addEventListener('keydown', handleKeyDown, true);
+        return () => window.removeEventListener('keydown', handleKeyDown, true);
     }, [
         onToggleSpotlight,
         onOpenChat,
