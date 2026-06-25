@@ -117,6 +117,8 @@ export interface HomeCockpitProps {
 
     onOpenLagefeld?: () => void;
 
+    onOpenFeed?: () => void;
+
     /** Personal / private scope — server-backed home note + content counts */
 
     privateAreaLabel?: string | null;
@@ -316,6 +318,8 @@ function ArbeitseinstiegeStrip({
 
     onOpenLagefeld,
 
+    onOpenFeed,
+
     incidentCount,
 
 }: {
@@ -341,6 +345,8 @@ function ArbeitseinstiegeStrip({
     onOpenNightwatch?: () => void;
 
     onOpenLagefeld?: () => void;
+
+    onOpenFeed?: () => void;
 
     incidentCount: number;
 
@@ -376,6 +382,14 @@ function ArbeitseinstiegeStrip({
 
     }, [recentCount]);
 
+    const feedSpark = React.useMemo(() => {
+
+        const n = mailPreview.length;
+
+        return [Math.max(0, n - 1), n, n + 1];
+
+    }, [mailPreview.length]);
+
     const chips = [
 
         { id: 'finder', label: 'Finder', icon: <FolderOpen size={13} />, onClick: onOpenFinder, spark: activitySpark, color: 'rgba(52,211,153,0.75)' },
@@ -383,6 +397,8 @@ function ArbeitseinstiegeStrip({
         { id: 'mora', label: 'MÔRA', icon: <Sparkles size={13} />, onClick: onOpenMora, spark: bridgeSpark, color: 'rgba(167,139,250,0.8)' },
 
         ...(onOpenLagefeld ? [{ id: 'lagefeld', label: 'Raum', icon: <Network size={13} />, onClick: onOpenLagefeld, spark: bridgeSpark, color: 'rgba(45,212,191,0.8)' }] : []),
+
+        ...(onOpenFeed ? [{ id: 'feeds', label: 'Feed', icon: <Radio size={13} />, onClick: onOpenFeed, spark: feedSpark, color: 'rgba(52,211,153,0.72)' }] : []),
 
         { id: 'mail', label: 'Post', icon: <Mail size={13} />, onClick: onOpenMail, spark: mailSpark, color: 'rgba(139,92,246,0.78)' },
 
@@ -576,6 +592,8 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         onOpenLagefeld,
 
+        onOpenFeed,
+
         privateAreaLabel, privateFolderCount, privateDocumentCount, privateFileCount,
 
         onOpenPrivateArea,
@@ -631,8 +649,6 @@ export function HomeCockpit(props: HomeCockpitProps) {
         openFinder: onOpenFinder,
 
         openNightwatch: onOpenNightwatch,
-
-        openLagefeld: onOpenLagefeld,
 
         openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
 
@@ -939,6 +955,8 @@ export function HomeCockpit(props: HomeCockpitProps) {
                     onOpenNightwatch={onOpenNightwatch}
 
                     onOpenLagefeld={onOpenLagefeld}
+
+                    onOpenFeed={onOpenFeed}
 
                     incidentCount={incidentStatusPanels.length}
 
