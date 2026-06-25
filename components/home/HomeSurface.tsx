@@ -278,13 +278,8 @@ export const HomeSurface: React.FC = () => {
     }, [revealPane]);
 
     const openLagefeld = useCallback(() => {
-        revealPane('lagefeld-main', {
-            type: 'lagefeld',
-            title: 'Lagefeld',
-            size: { width: 1040, height: 720 },
-            data: { source: 'home' },
-        });
-    }, [revealPane]);
+        useNavStore.getState().navigateToAmbient();
+    }, []);
 
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;
