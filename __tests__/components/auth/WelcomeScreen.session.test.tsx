@@ -489,4 +489,59 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
             expect(mockLocationAssign).toHaveBeenCalledWith('/home');
         });
     });
+
+    it('claims a demo-trial workspace via lead key route', async () => {
+        const mockFetch = global.fetch as jest.Mock;
+        mockCoreGet.mockResolvedValue(null);
+        Object.defineProperty(window, 'location', {
+            configurable: true,
+            value: {
+                ...window.location,
+                hostname: 'localhost',
+                search: '?surface=demo-trial&lead_key=lead-demo-123&company=Acme+Trial&email=lead%40acme.de',
+                assign: mockLocationAssign,
+            },
+        });
+        mockFetch.mockResolvedValue({
+            ok: true,
+            json: async () => ({
+                success: true,
+                role: 'owner',
+                email: 'lead@acme.de',
+                tenant_id: 'trial-tenant-abc',
+                active_company_name: 'Acme Trial',
+                auth_type: 'demo_trial_claim',
+            }),
+        } as any);
+
+        renderWithStore();
+
+        await waitFor(() => {
+            expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByText('Account Erstellen'));
+        fireEvent.change(screen.getByPlaceholderText('ihre@email.de'), { target: { value: 'lead@acme.de' } });
+        fireEvent.change(screen.getByPlaceholderText('Name Ihrer Organisation'), { target: { value: 'Acme Trial' } });
+        fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'claim12345' } });
+        fireEvent.click(screen.getAllByText('Account Erstellen').at(-1)!);
+
+        await waitFor(() => {
+            expect(mockFetch).toHaveBeenCalledWith(
+                '/api/auth/demo-trial-claim',
+                expect.objectContaining({
+                    method: 'POST',
+                    body: JSON.stringify({
+                        leadKey: 'lead-demo-123',
+                        email: 'lead@acme.de',
+                        password: 'claim12345',
+                        fullName: 'Acme Trial',
+                    }),
+                })
+            );
+            expect(localStorage.getItem('saimor_tenant')).toBe('trial-tenant-abc');
+            expect(localStorage.getItem('last_workspace')).toBe('Acme Trial');
+            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+        });
+    });
 });

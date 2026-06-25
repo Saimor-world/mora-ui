@@ -43,7 +43,37 @@ interface SessionInfo {
     role?: string;
 }
 
+interface DemoTrialContext {
+    leadKey: string;
+    companyName: string;
+    email?: string;
+    fullName?: string;
+}
+
 const getCoreUrl = () => getCoreBaseUrl();
+
+function buildDemoTrialContext(search: string): DemoTrialContext | null {
+    try {
+        const params = new URLSearchParams(search);
+        const surface = params.get('surface')?.trim().toLowerCase();
+        const leadKey = params.get('lead_key')?.trim() || params.get('leadKey')?.trim();
+        if (surface !== 'demo-trial' && !leadKey) {
+            return null;
+        }
+
+        return {
+            leadKey: leadKey || '',
+            companyName:
+                params.get('company')?.trim() ||
+                params.get('company_name')?.trim() ||
+                'Demo Trial Workspace',
+            email: params.get('email')?.trim() || undefined,
+            fullName: params.get('full_name')?.trim() || undefined,
+        };
+    } catch {
+        return null;
+    }
+}
 
 /**
  * WelcomeScreen - Unified Authentication Entry Point
@@ -71,6 +101,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [showOnboarding, setShowOnboarding] = useState(false);
     const [registeredEmail, setRegisteredEmail] = useState('');
     const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
+    const [demoTrialContext, setDemoTrialContext] = useState<DemoTrialContext | null>(null);
     // Default true so the button is visible while the policy loads (no CLS/flash)
     const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     // Dev login available when NODE_ENV=development OR when DEV_LOGIN_EMAIL is explicitly set
@@ -97,6 +128,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 : 'Zugriff auf deine Organisation';
     const registerSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Private Instanz ausserhalb der Demo vorbereiten'
+        : demoTrialContext
+            ? 'Provisionierten Trial-Workspace mit deinem Account uebernehmen'
         : websiteEntryContext
             ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
             : surfaceProfile.isHqSurface
@@ -162,6 +195,15 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     useEffect(() => {
         try {
+            const demoContext = buildDemoTrialContext(window.location.search);
+            if (demoContext?.leadKey) {
+                setDemoTrialContext(demoContext);
+                setWebsiteEntryContext(null);
+                return;
+            } else {
+                setDemoTrialContext(null);
+            }
+
             const params = Object.fromEntries(new URLSearchParams(window.location.search).entries());
             const context = buildWebsiteEntryContext(params);
             if (context) {
@@ -189,13 +231,21 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     }, []);
 
     useEffect(() => {
-        if (mode !== 'register' || !websiteEntryContext) return;
+        if (mode !== 'register') return;
         setSelectedRole('owner');
+        if (demoTrialContext) {
+            setCompanyName((current) => current || demoTrialContext.companyName || demoTrialContext.fullName || '');
+            if (demoTrialContext.email) {
+                setEmail((current) => current || demoTrialContext.email || '');
+            }
+            return;
+        }
+        if (!websiteEntryContext) return;
         setCompanyName((current) => current || websiteEntryContext.companyName);
         if (websiteEntryContext.email) {
             setEmail((current) => current || websiteEntryContext.email || '');
         }
-    }, [mode, websiteEntryContext]);
+    }, [demoTrialContext, mode, websiteEntryContext]);
 
     // Mora Erwachen — consciousness-gradient session check
     useEffect(() => {
@@ -562,6 +612,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
 
     const handleRegister = async () => {
         const usingInvite = inviteCode.trim().length > 0;
+        const claimingDemoTrial = Boolean(demoTrialContext?.leadKey && !usingInvite && selectedRole === 'owner');
         const claimingWebsitePreview = Boolean(websiteEntryContext?.entryToken && !usingInvite && selectedRole === 'owner');
         const isLocalhost =
             typeof window !== 'undefined' &&
@@ -582,7 +633,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             return;
         }
 
-        if (!usingInvite && selectedRole === 'owner' && !claimingWebsitePreview && (!companyName || !companyName.trim())) {
+        if (!usingInvite && selectedRole === 'owner' && !claimingWebsitePreview && !claimingDemoTrial && (!companyName || !companyName.trim())) {
             toast.error('Organisationsname ist für Owner-Accounts erforderlich');
             return;
         }
@@ -593,18 +644,33 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         }
 
         setIsLoading(true);
-        const toastId = toast.loading(claimingWebsitePreview ? "Kundenaccount wird mit Dossier verbunden..." : "Account wird erstellt...");
+        const toastId = toast.loading(
+            claimingDemoTrial
+                ? "Trial-Workspace wird beansprucht..."
+                : claimingWebsitePreview
+                    ? "Kundenaccount wird mit Dossier verbunden..."
+                    : "Account wird erstellt..."
+        );
 
         try {
-            const response = await fetch(claimingWebsitePreview ? '/api/auth/website-entry-claim' : '/api/auth/core-register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(claimingWebsitePreview
+            const endpoint = claimingDemoTrial
+                ? '/api/auth/demo-trial-claim'
+                : claimingWebsitePreview
+                    ? '/api/auth/website-entry-claim'
+                    : '/api/auth/core-register';
+            const payload = claimingWebsitePreview
+                ? {
+                    entryToken: websiteEntryContext?.entryToken,
+                    email,
+                    password,
+                    fullName: companyName.trim() || websiteEntryContext?.companyName,
+                }
+                : claimingDemoTrial
                     ? {
-                        entryToken: websiteEntryContext?.entryToken,
+                        leadKey: demoTrialContext?.leadKey,
                         email,
                         password,
-                        fullName: companyName.trim() || websiteEntryContext?.companyName,
+                        fullName: companyName.trim() || demoTrialContext?.fullName || demoTrialContext?.companyName,
                     }
                     : {
                         email,
@@ -612,8 +678,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                         role: usingInvite ? undefined : selectedRole,
                         company_name: !usingInvite && selectedRole === 'owner' ? companyName.trim() : undefined,
                         logo_url: !usingInvite && selectedRole === 'owner' ? logoUrl : undefined,
-                        invite_code: usingInvite ? inviteCode.trim() : undefined
-                    })
+                        invite_code: usingInvite ? inviteCode.trim() : undefined,
+                    };
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -680,6 +750,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             if (claimingWebsitePreview) {
                 setViewMode('workspace');
                 toast.success('Kundenaccount ist mit dem HQ-Dossier verbunden.', { id: toastId });
+                window.location.assign('/home');
+                return;
+            }
+            if (claimingDemoTrial) {
+                setViewMode('workspace');
+                toast.success('Trial-Workspace ist jetzt mit deinem Account verbunden.', { id: toastId });
                 window.location.assign('/home');
                 return;
             }
