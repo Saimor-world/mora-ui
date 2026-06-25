@@ -14,6 +14,7 @@ import { buildChatContext, type ChatContext } from '@/lib/api/moraAgentClient';
 import { useMoraStore } from '@/lib/store/moraState';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
+import type { UiToolCall } from '@/lib/lagefeld/types';
 
 export type AmbientToolCall =
     | { tool: 'createNode';           input: { title: string; content: string; folder_id: string } }
@@ -47,6 +48,13 @@ type FieldResponse = {
     intent?: string;
     toolCalls?: FieldToolCall[];
 };
+
+const LAGEFELD_UI_TOOLS = new Set<UiToolCall['name']>([
+    'placeCard',
+    'connect',
+    'placeSymbol',
+    'proposeAction',
+]);
 
 export function useAmbientMora(): UseAmbientMoraReturn {
     const [isLoading, setIsLoading] = useState(false);
@@ -185,22 +193,35 @@ function mapFieldToolCalls(
     transcript: string,
     defaultFolderId?: string | null,
 ): AmbientToolCall[] {
-    return calls.flatMap((call): AmbientToolCall[] => {
+    const toolCalls: AmbientToolCall[] = [];
+    const lagefeldActions: UiToolCall[] = [];
+
+    for (const call of calls) {
         const payload = call.payload ?? {};
 
+        if (LAGEFELD_UI_TOOLS.has(call.type as UiToolCall['name'])) {
+            lagefeldActions.push({
+                name: call.type as UiToolCall['name'],
+                input: payload,
+            });
+            continue;
+        }
+
         if (call.type === 'search') {
-            return [{ tool: 'searchGlobal', input: { query: String(payload.query ?? transcript) } }];
+            toolCalls.push({ tool: 'searchGlobal', input: { query: String(payload.query ?? transcript) } });
+            continue;
         }
 
         if (call.type === 'open_pane') {
-            return [{
+            toolCalls.push({
                 tool: 'openPane',
                 input: {
                     type: String(payload.paneType ?? payload.pane_type ?? 'finder'),
                     title: call.label,
                     data: payload.data ?? payload,
                 },
-            }];
+            });
+            continue;
         }
 
         if (call.type === 'navigate') {
@@ -210,29 +231,47 @@ function mapFieldToolCalls(
             );
 
             if (departmentId) {
-                return [{ tool: 'navigateToDepartment', input: { departmentId: String(departmentId) } }];
+                toolCalls.push({ tool: 'navigateToDepartment', input: { departmentId: String(departmentId) } });
+                continue;
             }
 
-            return [{
+            toolCalls.push({
                 tool: 'openPane',
                 input: { type: 'finder', title: call.label ?? 'Finder', data: target },
-            }];
+            });
+            continue;
         }
 
         if (call.type === 'create_note') {
             const content = String(payload.content ?? transcript);
-            return [{
+            toolCalls.push({
                 tool: 'createNode',
                 input: {
                     title: content.trim().slice(0, 100),
                     content,
                     folder_id: defaultFolderId || '',
                 },
-            }];
+            });
+            continue;
         }
+    }
 
-        return [];
-    });
+    if (lagefeldActions.length > 0) {
+        toolCalls.push({
+            tool: 'openPane',
+            input: {
+                type: 'lagefeld',
+                title: 'Lagefeld',
+                data: {
+                    uiActions: lagefeldActions,
+                    source: 'ambient-room',
+                    prompt: transcript,
+                },
+            },
+        });
+    }
+
+    return toolCalls;
 }
 
 function buildIntent(calls: AmbientToolCall[], transcript: string): string {

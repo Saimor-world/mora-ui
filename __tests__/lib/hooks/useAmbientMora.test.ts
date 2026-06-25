@@ -161,6 +161,65 @@ describe('useAmbientMora', () => {
         });
     });
 
+    it('maps backend Lagefeld UI tool calls to a Lagefeld room pane', async () => {
+        mockCorePost.mockResolvedValue({
+            text: 'Ich lege dir die Lage sichtbar aus.',
+            intent: 'Lagefeld vorbereiten',
+            toolCalls: [
+                {
+                    type: 'placeCard',
+                    label: 'Signal',
+                    payload: {
+                        card_id: 's1',
+                        kind: 'signal',
+                        title: 'Nightwatch ist offen',
+                        x: 24,
+                        y: 48,
+                    },
+                },
+                {
+                    type: 'placeSymbol',
+                    label: 'Symbol',
+                    payload: { on_card: 's1', kind: 'eye' },
+                },
+            ],
+        });
+        const { result } = renderHook(() => useAmbientMora());
+        let res: any;
+        await act(async () => {
+            res = await result.current.sendToMora('Zeig mir die Lage im Raum');
+        });
+        expect(res.toolCalls).toEqual([
+            {
+                tool: 'openPane',
+                input: {
+                    type: 'lagefeld',
+                    title: 'Lagefeld',
+                    data: {
+                        source: 'ambient-room',
+                        prompt: 'Zeig mir die Lage im Raum',
+                        uiActions: [
+                            {
+                                name: 'placeCard',
+                                input: {
+                                    card_id: 's1',
+                                    kind: 'signal',
+                                    title: 'Nightwatch ist offen',
+                                    x: 24,
+                                    y: 48,
+                                },
+                            },
+                            {
+                                name: 'placeSymbol',
+                                input: { on_card: 's1', kind: 'eye' },
+                            },
+                        ],
+                    },
+                },
+            },
+        ]);
+    });
+
     it('maps backend department navigation to navigateToDepartment', async () => {
         mockCorePost.mockResolvedValue({
             text: 'Navigiere.',

@@ -103,6 +103,8 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
             return <AppLoader appId="work-session" paneId={pane.id} initialData={pane.data} />;
         case 'nightwatch':
             return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
+        case 'lagefeld':
+            return <AppLoader appId="lagefeld" paneId={pane.id} initialData={pane.data} />;
         case 'codex':
             return <AppLoader appId="codex" paneId={pane.id} initialData={pane.data} />;
 
