@@ -35,6 +35,30 @@ describe('parseRssItem', () => {
         expect(fromHtml.imageUrl).toBe('https://cdn.example.com/inline.jpg');
     });
 
+    it('uses core image_url and content_encoded html', () => {
+        const fromCore = parseRssItem({
+            title: 'XKCD',
+            image_url: 'https://imgs.xkcd.com/comics/test.png',
+            summary: 'Plain text only',
+        });
+        expect(fromCore.imageUrl).toBe('https://imgs.xkcd.com/comics/test.png');
+
+        const fromEncoded = parseRssItem({
+            title: 'Encoded',
+            content_encoded: '<img src="https://cdn.example.com/encoded.jpg" />',
+            summary: 'stripped text',
+        });
+        expect(fromEncoded.imageUrl).toBe('https://cdn.example.com/encoded.jpg');
+    });
+
+    it('reads media thumbnail objects', () => {
+        const item = parseRssItem({
+            title: 'Media',
+            media_thumbnail: { url: 'https://cdn.example.com/thumb.webp', medium: 'image' },
+        });
+        expect(item.imageUrl).toBe('https://cdn.example.com/thumb.webp');
+    });
+
     it('generates stable id when missing', () => {
         const item = parseRssItem({ title: 'Nur Titel', link: 'https://example.com/x' });
         expect(item.id).toBe('https://example.com/x');
