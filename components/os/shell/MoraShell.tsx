@@ -522,7 +522,7 @@ export const MoraShell: React.FC = () => {
             useNavStore.getState().navigateToCore();
         }, []),
         onOpenAmbient: useCallback(() => {
-            openVoiceOverlay();
+            useNavStore.getState().navigateToAmbient();
         }, []),
         onOpenLarry: useCallback(() => {
             window.open('https://dash.saimor.world', '_blank');

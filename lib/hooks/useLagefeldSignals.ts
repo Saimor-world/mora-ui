@@ -35,7 +35,7 @@ export function useLagefeldSignals(initialData?: Record<string, unknown>) {
   const { data: homeView } = useHomeView();
   const { data: homeStatus } = useHomeStatus();
   const { mailPreview, calendarPreview, feedPreview, cloudPreview } = useCommunicationLiveData();
-  const { communicationSummary } = useCommunicationSurface();
+  const { summary: communicationSummary } = useCommunicationSurface();
   const { data: nightwatchIncidents = [] } = useQuery({
     queryKey: ['nightwatch', 'incidents', 'lagefeld'],
     queryFn: () => fetchNightwatchIncidents(),
