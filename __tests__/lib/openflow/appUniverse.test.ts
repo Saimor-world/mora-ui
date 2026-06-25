@@ -21,7 +21,7 @@ describe('appUniverse', () => {
     const moraGroup = groups.find((group) => group.id === 'agents_flows');
     expect(moraGroup?.label).toBe('MÔRA & Automatisierung');
     expect(moraGroup?.appIds).toEqual(
-      expect.arrayContaining(['chat', 'scanner', 'work-session', 'nightwatch'])
+      expect.arrayContaining(['chat', 'scanner', 'work-session', 'nightwatch', 'lagefeld'])
     );
     expect(moraGroup?.appIds).not.toContain('codex');
   });

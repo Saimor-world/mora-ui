@@ -22,6 +22,7 @@ import {
     Brain,
     LayoutGrid,
     ShieldCheck,
+    Network,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
 import { useDepartments } from "@/lib/queries/useDepartments";
@@ -352,6 +353,16 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["nightwatch", "infrastruktur", "infra", "server", "monitor", "vorfall", "incident"],
             onSelect: () => openFromSpotlight("nightwatch", "nightwatch-main", "Nightwatch", { width: 720, height: 640 })
+        });
+
+        result.push({
+            id: "action-lagefeld",
+            label: "Lagefeld",
+            description: "Voice- und MÔRA-Signale als betretbarer Arbeitsraum",
+            icon: <Network size={16} className="text-cyan-300" />,
+            category: "action",
+            keywords: ["lagefeld", "lage", "raum", "field", "voice", "ambient", "signale"],
+            onSelect: () => openFromSpotlight("lagefeld", "lagefeld-main", "Lagefeld", { width: 1040, height: 720 })
         });
 
         result.push({
