@@ -26,6 +26,7 @@ import {
     Mic,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
+import { openVoiceOverlay } from "@/lib/os/openVoiceOverlay";
 import { useDepartments } from "@/lib/queries/useDepartments";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { useCompanies } from "@/lib/queries/useCompanies";
@@ -364,7 +365,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["ambient", "voice", "sprache", "mikrofon", "field", "raum", "mora field"],
             onSelect: () => {
-                useNavStore.getState().navigateToAmbient();
+                openVoiceOverlay();
                 onClose();
             }
         });

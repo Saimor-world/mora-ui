@@ -31,6 +31,7 @@ import { HomeCockpit } from '@/components/home/HomeCockpit';
 import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
+import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
 import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -279,8 +280,8 @@ export const HomeSurface: React.FC = () => {
     }, [revealPane]);
 
     const openLagefeld = useCallback(() => {
-        useNavStore.getState().navigateToAmbient();
-    }, []);
+        revealPane('lagefeld-main', { type: 'lagefeld', title: 'Lagefeld', size: { width: 1040, height: 720 } });
+    }, [revealPane]);
 
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;
@@ -741,7 +742,6 @@ export const HomeSurface: React.FC = () => {
         openFinder();
     }, [openFinder, revealPane]);
 
-    const navigateToAmbient = useNavStore((s) => s.navigateToAmbient);
     const isSpeechSupported = useMemo(() => {
         if (typeof window === 'undefined') return false;
         return !!((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition);
@@ -817,7 +817,7 @@ export const HomeSurface: React.FC = () => {
                 ? 'Steuere Saimôr OS per Sprachbefehl und unterhalte dich direkt mit Môra.'
                 : 'Oeffnet Môra Field. Wenn Sprache blockiert ist, zeigt der Raum die konkrete Mikrofon- oder Browser-Ursache.',
             icon: <Mic size={15} />,
-            onClick: navigateToAmbient,
+            onClick: openVoiceOverlay,
             actionText: 'Voice Room',
             tone: 'cyan',
         });
@@ -836,7 +836,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         return suggestions;
-    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, navigateToAmbient, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, openVoiceOverlay, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
 
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {

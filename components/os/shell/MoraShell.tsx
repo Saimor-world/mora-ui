@@ -373,7 +373,7 @@ export const MoraShell: React.FC = () => {
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
-    const isAmbientRoomOpen = viewLevel === 'ambient';
+    const isAmbientRoomOpen = useNavStore((s) => s.voiceOverlayOpen);
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
     const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
@@ -522,12 +522,16 @@ export const MoraShell: React.FC = () => {
             useNavStore.getState().navigateToCore();
         }, []),
         onOpenAmbient: useCallback(() => {
-            useNavStore.getState().navigateToAmbient();
+            useNavStore.getState().toggleVoiceOverlay();
         }, []),
         onOpenLarry: useCallback(() => {
             window.open('https://dash.saimor.world', '_blank');
         }, []),
         onCloseTopPane: useCallback(() => {
+            if (useNavStore.getState().voiceOverlayOpen) {
+                useNavStore.getState().setVoiceOverlayOpen(false);
+                return;
+            }
             const { panes, activePaneId, removePane: rp } = usePaneStore.getState();
             const visiblePanes = panes.filter(p => !p.minimized);
             if (visiblePanes.length === 0) return;
@@ -838,8 +842,8 @@ export const MoraShell: React.FC = () => {
             {/* Môra Field — voice room portal (above pane stack) */}
             <AmbientRoomOverlay />
 
-            {/* Dock (Bottom Navigation) */}
-            {!hasFullscreenPane && !isAmbientRoomOpen && <Dock />}
+            {/* Dock (Bottom Navigation) — stays visible during voice overlay for push-to-talk */}
+            {!hasFullscreenPane && <Dock />}
 
             {/* MÔRA product tour — ambient intro near orb; greeting deferred until tour dismissed */}
             {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <FirstRunTour />}

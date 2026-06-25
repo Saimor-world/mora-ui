@@ -54,7 +54,7 @@ import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { formatCompanyContextLabel } from '@/lib/os/surfaceProfile';
 import { filterCompaniesForSurface } from '@/lib/os/companySurfaceFilter';
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
-import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
+import { openVoiceOverlay, toggleVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
 import { deriveDockStructure, type DockDerivedSpace, type DockDerivedFolder } from '@/lib/dock/deriveDockStructure';
@@ -547,6 +547,7 @@ export const Dock = () => {
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
     const viewMode = useNavStore((s) => s.viewMode);
     const viewLevel = useNavStore((s) => s.viewLevel);
+    const voiceOverlayOpen = useNavStore((s) => s.voiceOverlayOpen);
     const isStandardMode = useNavStore((s) => s.isStandardMode);
     const activeMode = useNavStore((s) => s.activeMode);
     const updateUserSettings = useSessionStore((s) => s.updateUserSettings);
@@ -695,7 +696,7 @@ export const Dock = () => {
             // ── Core Work surfaces ──────────────────────────────────────
             case 'home':     navigateToCore(); break;
             case 'map':      useNavStore.getState().navigateToExplore(); break;
-            case 'ambient':  openVoiceOverlay(); break;
+            case 'ambient':  toggleVoiceOverlay(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
@@ -1464,8 +1465,8 @@ export const Dock = () => {
                                         label="Sprache"
                                         description="Voice-Overlay — Push-to-Talk (Alt+A, Leertaste)"
                                         shortcut="Alt+A"
-                                        active={viewLevel === 'ambient'}
-                                        onClick={openVoiceOverlay}
+                                        active={voiceOverlayOpen}
+                                        onClick={toggleVoiceOverlay}
                                         isStandardMode={isStandardMode}
                                     />
 

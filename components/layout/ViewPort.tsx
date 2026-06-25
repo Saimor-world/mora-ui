@@ -17,7 +17,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
  * core → CoreLayer → coreMode='home' → HomeSurface (day-start working surface)
  *                  → coreMode='explore' → UniverseView (planet map)
  *
- * ambient → AmbientRoomOverlay (portaled in MoraShell at z-880, above panes)
+ * ambient → AmbientRoomOverlay (portaled in MoraShell at z-880, above panes; does not change viewLevel)
  *
  * CoreLayer owns the Home/Explore split so ViewPort stays a pure hierarchy router.
  */

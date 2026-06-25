@@ -37,8 +37,12 @@ interface NavState {
    * null = use the cosmos center (no specific planet origin).
    */
   departmentEntryOrigin: { x: number; y: number } | null;
+  /** Voice mode overlay — sits above the active surface without changing viewLevel. */
+  voiceOverlayOpen: boolean;
 
   setViewLevel(level: ViewLevel): void;
+  setVoiceOverlayOpen(open: boolean): void;
+  toggleVoiceOverlay(): void;
   setCoreMode(mode: CoreMode): void;
   setViewMode(mode: ViewMode): void;
   setActiveCompany(id: string | null): void;
@@ -73,8 +77,11 @@ export const useNavStore = create<NavState>((set, get) => ({
   universeScope: 'org',
   universeScopeDeptId: null,
   departmentEntryOrigin: null,
+  voiceOverlayOpen: false,
 
   setViewLevel: (level) => set({ viewLevel: level }),
+  setVoiceOverlayOpen: (open) => set({ voiceOverlayOpen: open }),
+  toggleVoiceOverlay: () => set((state) => ({ voiceOverlayOpen: !state.voiceOverlayOpen })),
   setCoreMode: (mode) => set({ coreMode: mode }),
   setViewMode: (mode) => {
     if (typeof window !== 'undefined') {
@@ -136,6 +143,7 @@ export const useNavStore = create<NavState>((set, get) => ({
     activeDepartmentId: null,
     activeSpaceId: null,
     activeFolderId: null,
+    voiceOverlayOpen: false,
   }),
 
   navigateToExplore: () => set({
@@ -146,13 +154,7 @@ export const useNavStore = create<NavState>((set, get) => ({
     activeFolderId: null,
   }),
 
-  navigateToAmbient: () => set({
-    viewLevel: 'ambient',
-    activeDepartmentId: null,
-    activeSpaceId: null,
-    activeFolderId: null,
-    departmentEntryOrigin: null,
-  }),
+  navigateToAmbient: () => set({ voiceOverlayOpen: true }),
 
   // entryOrigin (planet viewport %) keeps the zoom anchored to the clicked
   // planet. When absent (e.g. breadcrumb/search jumps) the prior origin is

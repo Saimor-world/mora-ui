@@ -27,8 +27,10 @@ import { ArrowLeft, Mic, MicOff, RotateCcw } from 'lucide-react';
 import { MoraOrb }             from '@/components/mora/MoraOrb';
 import { AmbientDust }          from '@/components/organic/AmbientDust';
 import { AmbientIntentCard }    from '@/components/ambient/AmbientIntentCard';
+import { VoiceModeIndicator, type VoiceIndicatorState } from '@/components/ambient/VoiceModeIndicator';
 import { useAmbientMora }       from '@/lib/hooks/useAmbientMora';
 import { useSpeechSynthesis }   from '@/lib/hooks/useSpeechSynthesis';
+import { closeVoiceOverlay }    from '@/lib/os/openVoiceOverlay';
 import { useNavStore }          from '@/lib/store/navStore';
 import { useTree }              from '@/lib/queries/useTree';
 
@@ -106,8 +108,14 @@ function matchFolder(transcript: string, folders: FlatFolder[]): string | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export const AmbientRoom: React.FC = () => {
-    const navigateToCore  = useNavStore(s => s.navigateToCore);
+interface AmbientRoomProps {
+    /** overlay = glass panel above active surface; room = legacy fullscreen (unused). */
+    variant?: 'overlay' | 'room';
+    onClose?: () => void;
+}
+
+export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', onClose }) => {
+    const handleClose = onClose ?? closeVoiceOverlay;
     const activeCompanyId = useNavStore(s => s.activeCompanyId);
 
     const { data: tree = [] }                                = useTree(activeCompanyId);
@@ -407,7 +415,7 @@ export const AmbientRoom: React.FC = () => {
                 if (state === 'listening') stopListening(true);
                 else if (state === 'responding') setAmbientState('idle');
                 else if (state === 'error') setAmbientState('idle');
-                else navigateToCore();
+                else handleClose();
             }
         };
         const onKeyUp = (e: KeyboardEvent) => {
@@ -424,7 +432,7 @@ export const AmbientRoom: React.FC = () => {
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup',   onKeyUp);
         };
-    }, [startListening, stopListening, navigateToCore]); // ambientState read via ref — no stale closure
+    }, [startListening, stopListening, handleClose]); // ambientState read via ref — no stale closure
 
     // ── Orb click toggle ──────────────────────────────────────────────────────
     const handleOrbClick = () => {
@@ -464,13 +472,21 @@ export const AmbientRoom: React.FC = () => {
         : '';
 
     // ─────────────────────────────────────────────────────────────────────────
+    const isOverlay = variant === 'overlay';
+    const indicatorState: VoiceIndicatorState = ambientState;
+
     return (
         <div
-            className="absolute inset-0 flex flex-col items-center justify-start overflow-hidden select-none"
-            style={{
-                background: getBackgroundStyle(ambientState),
-            }}
+            data-testid="ambient-room"
+            className={`absolute inset-0 flex flex-col items-center select-none ${
+                isOverlay ? 'justify-end pb-32 pointer-events-none' : 'justify-start overflow-hidden'
+            }`}
+            style={isOverlay ? undefined : { background: getBackgroundStyle(ambientState) }}
         >
+            <VoiceModeIndicator state={indicatorState} />
+
+            {!isOverlay && (
+            <>
             {/* Animated cosmic background glow circles */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
                 <motion.div
@@ -512,11 +528,15 @@ export const AmbientRoom: React.FC = () => {
             </div>
 
             <AmbientDust count={56} color="rgba(150,220,255,0.16)" durationRange={[25, 55]} />
+            </>
+            )}
 
-            {/* Back button */}
+            {/* Close / back */}
             <button
-                onClick={navigateToCore}
-                className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase"
+                onClick={handleClose}
+                className={`absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase pointer-events-auto ${
+                    isOverlay ? 'top-16' : ''
+                }`}
             >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>Zurück</span>
@@ -525,7 +545,9 @@ export const AmbientRoom: React.FC = () => {
             {/* Reset button */}
             <button
                 onClick={handleSessionReset}
-                className="absolute top-6 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase"
+                className={`absolute top-6 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase pointer-events-auto ${
+                    isOverlay ? 'top-16' : ''
+                }`}
                 title="Gesprächsverlauf zurücksetzen"
             >
                 <RotateCcw className="w-3.5 h-3.5" />
@@ -533,12 +555,23 @@ export const AmbientRoom: React.FC = () => {
             </button>
 
             {/* Header */}
+            {!isOverlay && (
             <div className="mt-16 mb-2 text-[10px] tracking-[0.35em] uppercase text-cyan-200/45 font-medium">
                 Môra Field
             </div>
+            )}
 
-            {/* Orb section */}
-            <div className="flex flex-col items-center gap-6 mt-6 z-10 w-full px-8">
+            {/* Orb section — glass panel in overlay mode */}
+            <div className={`flex flex-col items-center gap-6 z-10 w-full px-8 pointer-events-auto ${
+                isOverlay
+                    ? 'max-w-xl rounded-[28px] border border-white/10 bg-[linear-gradient(165deg,rgba(12,24,32,0.88),rgba(8,12,28,0.92))] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl'
+                    : 'mt-6'
+            }`}>
+                {isOverlay && (
+                    <div className="text-[10px] tracking-[0.35em] uppercase text-cyan-200/45 font-medium">
+                        Môra Voice
+                    </div>
+                )}
 
                 <div className="relative flex items-center justify-center">
                     {/* Glowing state-responsive halo circle directly behind orb */}

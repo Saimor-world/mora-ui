@@ -63,6 +63,7 @@ export function resetAllStores(): void {
         activeFolderId: null,
         isStandardMode: false,
         nameConflict: null,
+        voiceOverlayOpen: false,
     } as any, true);
 
     useSessionStore.setState({

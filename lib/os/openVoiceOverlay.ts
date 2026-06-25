@@ -1,14 +1,18 @@
 import { useNavStore } from '@/lib/store/navStore';
 
-/** Opens the global Môra voice overlay (AmbientRoom), separate from the Lagefeld board. */
+/** Opens Môra voice overlay above the current surface (Home, Universe, panes). */
 export function openVoiceOverlay() {
-  useNavStore.getState().navigateToAmbient();
+  useNavStore.getState().setVoiceOverlayOpen(true);
 }
 
 export function closeVoiceOverlay() {
-  useNavStore.getState().navigateToCore();
+  useNavStore.getState().setVoiceOverlayOpen(false);
+}
+
+export function toggleVoiceOverlay() {
+  useNavStore.getState().toggleVoiceOverlay();
 }
 
 export function isVoiceOverlayOpen() {
-  return useNavStore.getState().viewLevel === 'ambient';
+  return useNavStore.getState().voiceOverlayOpen;
 }
