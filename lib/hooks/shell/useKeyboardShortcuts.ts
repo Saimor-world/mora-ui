@@ -8,12 +8,16 @@
  */
 
 import { useEffect } from 'react';
-import { getPlatformModifier } from '@/lib/hooks/usePlatformModifier';
+import {
+    getPlatformModifier,
+    getSpotlightShortcutKeys,
+    isSpotlightShortcut,
+} from '@/lib/hooks/usePlatformModifier';
 
 export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
-        { keys: [m, 'K'], label: 'Spotlight', description: 'Command Palette öffnen' },
+        { keys: getSpotlightShortcutKeys(m), label: 'Spotlight', description: 'Command Palette öffnen' },
         { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
@@ -68,7 +72,7 @@ export function useKeyboardShortcuts({
                 return;
             }
 
-            if (meta && key === 'k') {
+            if (isSpotlightShortcut(e)) {
                 e.preventDefault();
                 onToggleSpotlight();
                 return;

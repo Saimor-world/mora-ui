@@ -23,7 +23,7 @@ import { getCoreDockItems, getPlaygroundDockItems } from '@/lib/surface/surfaceR
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
 type DockPane = ReturnType<typeof usePaneStore.getState>['panes'][number];
 import { SearchPopup } from './SearchPopup';
-import { usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
+import { usePlatformModifier, getSpotlightShortcutLabel } from '@/lib/hooks/usePlatformModifier';
 import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 // import { ActionTray } from '@/components/os/ActionTray';
@@ -560,6 +560,7 @@ export const Dock = () => {
     const runningPanes = useMemo(() => panes.filter((pane) => pane.type !== 'search'), [panes]);
     const activePlanId = useWorkSessionStore((s) => s.activePlanId);
     const mod = usePlatformModifier();
+    const spotlightShortcut = getSpotlightShortcutLabel(mod);
 
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
@@ -1440,7 +1441,7 @@ export const Dock = () => {
                                         icon={Search}
                                         label="Suche"
                                         description="Saimôr OS durchsuchen"
-                                        shortcut={`${mod}+K`}
+                                        shortcut={spotlightShortcut}
                                         active={searchPopupOpen}
                                         onClick={() => setSearchPopupOpen(true)}
                                         isStandardMode={isStandardMode}

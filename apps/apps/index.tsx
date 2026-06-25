@@ -29,6 +29,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
     Inbox,
     Mail,
     MessageCircle,
+    Network,
     PenTool,
     Plug,
     Rss,

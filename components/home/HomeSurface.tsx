@@ -277,6 +277,10 @@ export const HomeSurface: React.FC = () => {
         revealPane('nightwatch-main', { type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } });
     }, [revealPane]);
 
+    const openLagefeld = useCallback(() => {
+        revealPane('lagefeld-main', { type: 'lagefeld', title: 'Lagefeld', size: { width: 1040, height: 720 } });
+    }, [revealPane]);
+
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;
         if (dossierNodeId) {
@@ -939,6 +943,7 @@ export const HomeSurface: React.FC = () => {
                         onOpenRecentActivity={openRecentActivity}
                         onGoExplore={() => setCoreMode('explore')}
                         onOpenNightwatch={openNightwatch}
+                        onOpenLagefeld={openLagefeld}
                         privateAreaLabel={privateArea?.label}
                         privateFolderCount={privateArea?.folderCount}
                         privateDocumentCount={privateArea?.documentCount}

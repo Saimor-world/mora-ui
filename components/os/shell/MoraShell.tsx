@@ -78,6 +78,7 @@ import {
     useKeyboardShortcuts
 } from '@/lib/hooks/shell';
 import { useMoraExecutions } from '@/lib/hooks/useMoraExecutions';
+import { getSpotlightShortcutLabel, usePlatformModifier } from '@/lib/hooks/usePlatformModifier';
 import { ExecutionToast } from '@/components/mora/ExecutionToast';
 import { WebsiteContextBanner } from '@/components/entry/WebsiteContextBanner';
 import { realtime } from '@/lib/api/realtimeClient';
@@ -344,6 +345,8 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, isAdminMode, setAdminMode]);
 
     const effectiveAdminMode = isAdminMode && !isPublicDemoSurface;
+    const mod = usePlatformModifier();
+    const spotlightShortcutLabel = getSpotlightShortcutLabel(mod);
 
     // Local State
     const [isSleeping, setIsSleeping] = useState(false);
@@ -787,8 +790,8 @@ export const MoraShell: React.FC = () => {
                             type="button"
                             onClick={() => setIsSpotlightOpen(true)}
                             className="flex h-11 w-11 items-center justify-center rounded-2xl border border-cyan-200/12 bg-cyan-100/[0.045] text-cyan-50/62 shadow-[0_14px_48px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.07)] backdrop-blur-[18px] transition-all hover:border-cyan-200/28 hover:bg-cyan-200/[0.09] hover:text-cyan-50"
-                            title="Suche öffnen"
-                            aria-label="Suche öffnen"
+                            title={`Spotlight öffnen (${spotlightShortcutLabel})`}
+                            aria-label={`Spotlight öffnen (${spotlightShortcutLabel})`}
                         >
                             <Search size={17} strokeWidth={1.6} />
                         </button>
