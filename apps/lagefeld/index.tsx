@@ -1,37 +1,31 @@
 'use client';
 
-import React, { useMemo } from 'react';
-import { Activity, Mic2 } from 'lucide-react';
+import React, { useMemo, useCallback } from 'react';
+import { Activity, MessageSquare, Mic2 } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { LagefeldCanvas } from '@/components/lagefeld/LagefeldCanvas';
-import { LANDESSOZIALGERICHT_FIELD } from '@/lib/lagefeld/fixtures';
+import { LagefeldEmptyState } from '@/components/lagefeld/LagefeldEmptyState';
 import { reduceUiActions } from '@/lib/lagefeld/reduceUiActions';
-import type { UiToolCall } from '@/lib/lagefeld/types';
-
-function isUiToolCall(value: unknown): value is UiToolCall {
-  if (!value || typeof value !== 'object') return false;
-  const maybe = value as Partial<UiToolCall>;
-  return (
-    typeof maybe.name === 'string'
-    && ['placeCard', 'connect', 'placeSymbol', 'proposeAction'].includes(maybe.name)
-    && !!maybe.input
-    && typeof maybe.input === 'object'
-    && !Array.isArray(maybe.input)
-  );
-}
-
-function readUiActions(initialData?: Record<string, unknown>): UiToolCall[] {
-  const raw = initialData?.uiActions;
-  if (!Array.isArray(raw)) return LANDESSOZIALGERICHT_FIELD;
-  const actions = raw.filter(isUiToolCall);
-  return actions.length ? actions : LANDESSOZIALGERICHT_FIELD;
-}
+import { useLagefeldSignals } from '@/lib/hooks/useLagefeldSignals';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
 export default function LagefeldApp({ initialData }: AppProps) {
-  const actions = useMemo(() => readUiActions(initialData), [initialData]);
-  const state = useMemo(() => reduceUiActions(actions), [actions]);
+  const { uiActions, hasSignals } = useLagefeldSignals(initialData);
+  const state = useMemo(() => reduceUiActions(uiActions), [uiActions]);
+  const openPane = usePaneStore((s) => s.openPane);
+
   const source = typeof initialData?.source === 'string' ? initialData.source : 'lagefeld';
   const prompt = typeof initialData?.prompt === 'string' ? initialData.prompt : undefined;
+
+  const openChat = useCallback(() => {
+    openPane({
+      id: 'chat-main',
+      type: 'chat',
+      title: 'Mora',
+      size: { width: 860, height: 680 },
+    });
+  }, [openPane]);
 
   return (
     <section className="flex h-full min-h-[560px] w-full flex-col overflow-hidden rounded-[24px] border border-cyan-200/[0.12] bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.94),rgba(3,7,18,0.98))] text-slate-100">
@@ -45,12 +39,33 @@ export default function LagefeldApp({ initialData }: AppProps) {
             Raum der aktuellen Lage
           </h1>
           <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/52">
-            Môra ordnet Signale, Unsicherheiten und nächste Schritte sichtbar an — noch ohne kritische Aktionen automatisch auszuführen.
+            Signale aus deinen echten Quellen — Mail, Kalender, Aufgaben und Môra-Beobachtungen.
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
-          <Mic2 className="h-3.5 w-3.5" />
-          {source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Arbeitsraum'}
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <div className="flex items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
+            {source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={openChat}
+              data-testid="lagefeld-open-chat"
+              className="inline-flex items-center gap-1.5 rounded-full border border-violet-300/20 bg-violet-500/12 px-3 py-1.5 text-[11px] font-medium text-violet-100/90 transition-colors hover:border-violet-200/32 hover:bg-violet-500/20"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Mit Mora schreiben
+            </button>
+            <button
+              type="button"
+              onClick={openVoiceOverlay}
+              data-testid="lagefeld-open-voice"
+              className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition-colors hover:border-cyan-200/30 hover:bg-cyan-500/18"
+            >
+              <Mic2 className="h-3.5 w-3.5" />
+              Sprache
+            </button>
+          </div>
         </div>
       </header>
 
@@ -62,7 +77,11 @@ export default function LagefeldApp({ initialData }: AppProps) {
       ) : null}
 
       <main className="flex-1 p-6">
-        <LagefeldCanvas state={state} />
+        {hasSignals ? (
+          <LagefeldCanvas state={state} />
+        ) : (
+          <LagefeldEmptyState onOpenChat={openChat} onOpenVoice={openVoiceOverlay} />
+        )}
       </main>
     </section>
   );

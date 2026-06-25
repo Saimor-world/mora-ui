@@ -230,7 +230,7 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'feeds' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex';
+            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'feeds' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex' | 'lagefeld';
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -278,8 +278,13 @@ export const HomeSurface: React.FC = () => {
     }, [revealPane]);
 
     const openLagefeld = useCallback(() => {
-        useNavStore.getState().navigateToAmbient();
-    }, []);
+        revealPane('lagefeld-main', {
+            type: 'lagefeld',
+            title: 'Lagefeld',
+            size: { width: 1040, height: 720 },
+            data: { source: 'home' },
+        });
+    }, [revealPane]);
 
     const openWebsiteDossier = useCallback(() => {
         if (!websiteEntryContext) return;

@@ -23,7 +23,7 @@ export function getKeyboardShortcuts(mod?: string) {
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
         { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
-        { keys: ['Alt', 'A'], label: 'Ambient', description: 'Môra Field öffnen' },
+        { keys: ['Alt', 'A'], label: 'Sprache', description: 'Voice-Overlay öffnen (Push-to-Talk)' },
         { keys: [m, 'L'], label: 'Larry', description: 'Larry Dashboard öffnen' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },

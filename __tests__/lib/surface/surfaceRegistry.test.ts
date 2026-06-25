@@ -156,7 +156,7 @@ describe('surfaceRegistry', () => {
                 'home', 'ambient', 'chat', 'finder', 'team', 'map', 'settings',
             ]);
             expect(items.map(i => i.label)).toEqual([
-                'Home', 'Raum', 'MORA', 'Finder', 'Team', 'Karte', 'Setup',
+                'Home', 'Sprache', 'MORA', 'Finder', 'Team', 'Karte', 'Setup',
             ]);
         });
 

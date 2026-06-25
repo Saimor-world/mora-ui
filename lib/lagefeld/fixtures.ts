@@ -1,5 +1,6 @@
 import type { UiToolCall } from './types';
 
+/** Test-only fixture — never used as production fallback. */
 const fieldId = 'landessozialgericht-demo';
 
 export const LANDESSOZIALGERICHT_FIELD: UiToolCall[] = [

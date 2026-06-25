@@ -100,7 +100,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'lagefeld',
     name: 'Lagefeld',
-    description: 'Voice- und MÔRA-Signale als betretbarer Arbeitsraum',
+    description: 'Situationsboard — echte Signale aus Mail, Kalender und Môra',
     icon: 'Network',
     color: 'teal',
     category: 'intelligence',
