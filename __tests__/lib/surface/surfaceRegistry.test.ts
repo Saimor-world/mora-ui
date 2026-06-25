@@ -27,7 +27,7 @@ describe('surfaceRegistry', () => {
                 'team', 'mail', 'integrations', 'calendar', 'terminal',
                 'notes', 'finder', 'scanner', 'users', 'company-detail',
                 'chat', 'mora-hub', 'actions', 'action-center', 'work-session', 'meine-dateien',
-                'timeline', 'tasks', 'canvas',  // ← new app-platform types
+                'timeline', 'tasks', 'canvas', 'lagefeld',  // ← new app-platform types
             ];
 
             for (const paneType of ALL_KNOWN_PANE_TYPES) {
@@ -66,6 +66,7 @@ describe('surfaceRegistry', () => {
             expect(SURFACE_TIERS['timeline']).toBe('app');
             expect(SURFACE_TIERS['tasks']).toBe('app');
             expect(SURFACE_TIERS['canvas']).toBe('app');
+            expect(SURFACE_TIERS['lagefeld']).toBe('app');
         });
 
         it('promotes apps (AppLibrary) to app tier', () => {
@@ -113,6 +114,7 @@ describe('surfaceRegistry', () => {
             expect(isPaneEnabled('timeline')).toBe(true);
             expect(isPaneEnabled('tasks')).toBe(true);
             expect(isPaneEnabled('canvas')).toBe(true);
+            expect(isPaneEnabled('lagefeld')).toBe(true);
             expect(isPaneEnabled('apps')).toBe(true);
         });
 
@@ -135,6 +137,7 @@ describe('surfaceRegistry', () => {
             expect(FUTURE_PANE_TYPES).not.toContain('timeline');
             expect(FUTURE_PANE_TYPES).not.toContain('tasks');
             expect(FUTURE_PANE_TYPES).not.toContain('canvas');
+            expect(FUTURE_PANE_TYPES).not.toContain('lagefeld');
         });
 
         it('does not include core_work or app panes', () => {

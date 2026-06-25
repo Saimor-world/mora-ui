@@ -98,6 +98,16 @@ export const APP_REGISTRY: AppManifest[] = [
     isNew: true,
   },
   {
+    id: 'lagefeld',
+    name: 'Lagefeld',
+    description: 'Voice- und MÔRA-Signale als betretbarer Arbeitsraum',
+    icon: 'Network',
+    color: 'teal',
+    category: 'intelligence',
+    defaultSize: { width: 1040, height: 720 },
+    isNew: true,
+  },
+  {
     id: 'codex',
     name: 'Engineering',
     description: 'Codex — Agent für Code, Refactors und Systemarbeit',
