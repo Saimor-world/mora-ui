@@ -34,6 +34,7 @@ jest.mock('@/lib/surface/surfaceRegistry', () => ({
 
 jest.mock('@/lib/hooks/usePlatformModifier', () => ({
     usePlatformModifier: () => 'Ctrl',
+    getSpotlightShortcutLabel: () => 'Ctrl+K',
 }));
 
 jest.mock('@/components/mora/SearchPopup', () => ({

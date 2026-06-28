@@ -23,14 +23,14 @@ describe('LagefeldApp', () => {
   });
 
   it('shows honest empty state instead of demo court data', () => {
-    render(<LagefeldApp />);
+    render(<LagefeldApp paneId="test-pane" />);
     expect(screen.getByTestId('lagefeld-empty')).toBeInTheDocument();
     expect(screen.getByText(/noch keine signale/i)).toBeInTheDocument();
     expect(screen.queryByText(/Gericht/i)).not.toBeInTheDocument();
   });
 
   it('opens chat pane from Mit Mora schreiben', () => {
-    render(<LagefeldApp />);
+    render(<LagefeldApp paneId="test-pane" />);
     fireEvent.click(screen.getByTestId('lagefeld-open-chat'));
     expect(usePaneStore.getState().panes.some((p) => p.type === 'chat')).toBe(true);
   });
