@@ -7,8 +7,8 @@ const DEUTUNG_ID = 'lage-deutung';
 // Column anchors — signals flow in from the left, Môra's reading sits in the
 // centre, gated actions leave on the right.
 const COL_SIGNAL_X = 24;
-const COL_DEUTUNG_X = 300;
-const COL_ACTION_X = 580;
+const COL_DEUTUNG_X = 262;
+const COL_ACTION_X = 500;
 
 function mapSource(source: OpenFlowSourceKind): 'mail' | 'calendar' | 'incident' | undefined {
   if (source === 'mail') return 'mail';

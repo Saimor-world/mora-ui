@@ -1,16 +1,17 @@
 'use client';
 
 import React from 'react';
-import type { Card, FieldState } from '@/lib/lagefeld/types';
+import { motion } from 'framer-motion';
+import type { Card, Connection, FieldState } from '@/lib/lagefeld/types';
 
 const CARD_W = 190;
 
-const KIND_STYLE: Record<Card['kind'], { border: string; glow: string; label: string }> = {
-  signal: { border: 'rgba(96, 165, 250, 0.42)', glow: 'rgba(37, 99, 235, 0.18)', label: 'Signal' },
-  uncertainty: { border: 'rgba(251, 191, 36, 0.48)', glow: 'rgba(217, 119, 6, 0.18)', label: 'Unklar' },
-  interpretation: { border: 'rgba(196, 181, 253, 0.42)', glow: 'rgba(124, 58, 237, 0.18)', label: 'Deutung' },
-  action: { border: 'rgba(52, 211, 153, 0.46)', glow: 'rgba(5, 150, 105, 0.18)', label: 'Handlung' },
-  object: { border: 'rgba(148, 163, 184, 0.36)', glow: 'rgba(71, 85, 105, 0.16)', label: 'Objekt' },
+const KIND_STYLE: Record<Card['kind'], { border: string; glow: string; label: string; accent: string }> = {
+  signal: { border: 'rgba(96, 165, 250, 0.42)', glow: 'rgba(37, 99, 235, 0.18)', label: 'Signal', accent: 'rgba(96, 165, 250, 0.9)' },
+  uncertainty: { border: 'rgba(251, 191, 36, 0.48)', glow: 'rgba(217, 119, 6, 0.18)', label: 'Unklar', accent: 'rgba(251, 191, 36, 0.9)' },
+  interpretation: { border: 'rgba(196, 181, 253, 0.5)', glow: 'rgba(124, 58, 237, 0.22)', label: 'Deutung', accent: 'rgba(196, 181, 253, 0.95)' },
+  action: { border: 'rgba(52, 211, 153, 0.46)', glow: 'rgba(5, 150, 105, 0.18)', label: 'Handlung', accent: 'rgba(52, 211, 153, 0.9)' },
+  object: { border: 'rgba(148, 163, 184, 0.36)', glow: 'rgba(71, 85, 105, 0.16)', label: 'Objekt', accent: 'rgba(148, 163, 184, 0.9)' },
 };
 
 const SYMBOL_LABELS: Record<string, string> = {
@@ -20,6 +21,13 @@ const SYMBOL_LABELS: Record<string, string> = {
   check: '✓',
   loop: '↻',
   alert: '!',
+};
+
+const RELATION_STROKE: Record<Connection['relation'], string> = {
+  waits_on: 'rgba(196, 181, 253, 0.5)',
+  relates_to: 'rgba(125, 211, 252, 0.45)',
+  contradicts: 'rgba(248, 113, 113, 0.55)',
+  needs_decision: 'rgba(251, 191, 36, 0.6)',
 };
 
 function center(card: Card) {
@@ -43,6 +51,31 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
         border: '1px solid rgba(148, 163, 184, 0.18)',
       }}
     >
+      {/* Môra's living presence — a soft attention that drifts across the field
+          while she reads. Signals you are not looking at a static dashboard. */}
+      <motion.div
+        aria-hidden="true"
+        data-testid="mora-presence"
+        style={{
+          position: 'absolute',
+          width: 220,
+          height: 220,
+          borderRadius: '50%',
+          pointerEvents: 'none',
+          filter: 'blur(36px)',
+          background:
+            'radial-gradient(circle, rgba(45, 212, 191, 0.20), rgba(168, 85, 247, 0.12) 55%, transparent 72%)',
+          mixBlendMode: 'screen',
+        }}
+        initial={{ x: 60, y: 40, opacity: 0.5 }}
+        animate={{
+          x: [60, 320, 180, 60],
+          y: [40, 150, 250, 40],
+          opacity: [0.45, 0.65, 0.5, 0.45],
+        }}
+        transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
       <svg
         aria-hidden="true"
         style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
@@ -53,27 +86,49 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
           if (!from || !to) return null;
           const start = center(from);
           const end = center(to);
+          const stroke = RELATION_STROKE[edge.relation] ?? 'rgba(226, 232, 240, 0.36)';
+          const dashed = edge.relation === 'needs_decision' || edge.relation === 'contradicts';
           return (
-            <line
+            <motion.line
               key={`${edge.from}-${edge.to}-${index}`}
               data-testid="lagefeld-edge"
               x1={start.x}
               y1={start.y}
               x2={end.x}
               y2={end.y}
-              stroke="rgba(226, 232, 240, 0.36)"
-              strokeWidth={1.3}
-              strokeDasharray={edge.relation === 'needs_decision' ? '4 4' : undefined}
+              stroke={stroke}
+              strokeWidth={1.4}
+              strokeLinecap="round"
+              strokeDasharray={dashed ? '5 6' : undefined}
+              initial={{ pathLength: 0, opacity: 0 }}
+              animate={
+                dashed
+                  ? { pathLength: 1, opacity: 1, strokeDashoffset: [0, -22] }
+                  : { pathLength: 1, opacity: 1 }
+              }
+              transition={
+                dashed
+                  ? {
+                      pathLength: { duration: 0.6, delay: 0.2 + index * 0.05 },
+                      opacity: { duration: 0.4, delay: 0.2 + index * 0.05 },
+                      strokeDashoffset: { duration: 1.1, repeat: Infinity, ease: 'linear' },
+                    }
+                  : { duration: 0.6, delay: 0.2 + index * 0.05 }
+              }
             />
           );
         })}
       </svg>
 
-      {state.cards.map((card) => {
+      {state.cards.map((card, index) => {
         const style = KIND_STYLE[card.kind];
+        const isAlert = card.status === 'alert';
+        const baseShadow = '0 20px 48px rgba(0, 0, 0, 0.28)';
+        const alertShadow = `0 0 0 1px rgba(248, 113, 113, 0.5), 0 18px 44px rgba(220, 38, 38, 0.28)`;
         return (
-          <article
+          <motion.article
             key={card.id}
+            data-testid={`lagefeld-card-${card.kind}`}
             style={{
               position: 'absolute',
               left: card.x,
@@ -84,9 +139,37 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
               color: 'rgba(248, 250, 252, 0.94)',
               background: `linear-gradient(145deg, ${style.glow}, rgba(15, 23, 42, 0.86))`,
               border: `1px solid ${style.border}`,
-              boxShadow: '0 20px 48px rgba(0, 0, 0, 0.28)',
             }}
+            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+            animate={
+              isAlert
+                ? { opacity: 1, y: 0, scale: 1, boxShadow: [baseShadow, alertShadow, baseShadow] }
+                : { opacity: 1, y: 0, scale: 1, boxShadow: baseShadow }
+            }
+            transition={
+              isAlert
+                ? {
+                    opacity: { duration: 0.4, delay: index * 0.06 },
+                    y: { duration: 0.4, delay: index * 0.06 },
+                    scale: { duration: 0.4, delay: index * 0.06 },
+                    boxShadow: { duration: 2.2, repeat: Infinity, ease: 'easeInOut' },
+                  }
+                : { duration: 0.4, delay: index * 0.06, ease: [0.4, 0, 0.2, 1] }
+            }
           >
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 12,
+                bottom: 12,
+                width: 3,
+                borderRadius: 3,
+                background: style.accent,
+                opacity: 0.8,
+              }}
+            />
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 10, letterSpacing: '0.12em', textTransform: 'uppercase', opacity: 0.72 }}>
                 {style.label}
@@ -115,7 +198,7 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
                 Freigeben
               </button>
             ) : null}
-          </article>
+          </motion.article>
         );
       })}
     </div>
