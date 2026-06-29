@@ -27,6 +27,7 @@ import { ArrowLeft, Mic, MicOff, RotateCcw } from 'lucide-react';
 import { MoraOrb }             from '@/components/mora/MoraOrb';
 import { AmbientDust }          from '@/components/organic/AmbientDust';
 import { AmbientIntentCard }    from '@/components/ambient/AmbientIntentCard';
+import { extractLagefeldPreview } from '@/lib/lagefeld/extractVoicePreview';
 import { VoiceModeIndicator, type VoiceIndicatorState } from '@/components/ambient/VoiceModeIndicator';
 import { useAmbientMora }       from '@/lib/hooks/useAmbientMora';
 import { useSpeechSynthesis }   from '@/lib/hooks/useSpeechSynthesis';
@@ -760,6 +761,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                         <AmbientIntentCard
                             intent={moraIntent}
                             toolCalls={moraTools as any}
+                            fieldPreview={extractLagefeldPreview(moraTools as any)}
                             onExecute={handleExecute}
                             onDismiss={handleDismiss}
                             disabled={false}

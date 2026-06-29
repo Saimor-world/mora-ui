@@ -14,15 +14,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { AmbientIntentCard } from '@/components/ambient/AmbientIntentCard';
 import type { AmbientToolCall } from '@/lib/hooks/useAmbientMora';
 
-// framer-motion passthrough
+// framer-motion passthrough — proxy any motion.<tag> to a plain element so
+// nested components (LagefeldCanvas uses motion.article / motion.line) render.
 jest.mock('framer-motion', () => {
     const React = require('react');
-    return {
-        motion: {
-            div: React.forwardRef(({ children, ...rest }: any, ref: any) =>
-                React.createElement('div', { ref, ...rest }, children)
+    const motion = new Proxy({}, {
+        get: (_target, tag: string) =>
+            React.forwardRef(({ children, ...rest }: any, ref: any) =>
+                React.createElement(tag, { ref, ...rest }, children)
             ),
-        },
+    });
+    return {
+        motion,
         AnimatePresence: ({ children }: any) => <>{children}</>,
     };
 });
@@ -150,5 +153,27 @@ describe('AmbientIntentCard', () => {
             />
         );
         expect(screen.getByText(/Sprint Retro/i)).toBeInTheDocument();
+    });
+
+    it('renders a live Lagefeld preview when fieldPreview is provided', () => {
+        const fieldPreview = {
+            cards: [
+                { id: 's1', kind: 'signal' as const, title: 'Mahnung', x: 24, y: 40, symbols: [] },
+                { id: 'd1', kind: 'interpretation' as const, title: 'Zugespitzt', x: 262, y: 56, symbols: [] },
+            ],
+            connections: [{ from: 's1', to: 'd1', relation: 'relates_to' as const }],
+        };
+        render(
+            <AmbientIntentCard
+                intent="Lagefeld formen"
+                toolCalls={[{ tool: 'openPane', input: { type: 'lagefeld' } }]}
+                fieldPreview={fieldPreview}
+                onExecute={jest.fn()}
+                onDismiss={jest.fn()}
+            />
+        );
+        expect(screen.getByTestId('intent-lagefeld-preview')).toBeInTheDocument();
+        // action label reflects the field, not the generic "lagefeld öffnen"
+        expect(screen.getByText(/Lagefeld — 2 Karten/i)).toBeInTheDocument();
     });
 });
