@@ -1,19 +1,26 @@
 'use client';
 
 import React, { useMemo, useCallback } from 'react';
-import { Activity, MessageSquare, Mic2 } from 'lucide-react';
+import { Activity, MessageSquare, Mic2, Sparkles, RotateCcw } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { LagefeldCanvas } from '@/components/lagefeld/LagefeldCanvas';
 import { LagefeldEmptyState } from '@/components/lagefeld/LagefeldEmptyState';
 import { reduceUiActions } from '@/lib/lagefeld/reduceUiActions';
 import { useLagefeldSignals } from '@/lib/hooks/useLagefeldSignals';
+import { useLagefeldDeutung } from '@/lib/hooks/useLagefeldDeutung';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
 export default function LagefeldApp({ initialData }: AppProps) {
-  const { uiActions, hasSignals } = useLagefeldSignals(initialData);
-  const state = useMemo(() => reduceUiActions(uiActions), [uiActions]);
+  const { uiActions, openFlow, hasSignals } = useLagefeldSignals(initialData);
+  const { deuten, actions: deutungActions, isLoading: deuting, error: deutungError, reset } = useLagefeldDeutung();
+  const effectiveActions = deutungActions ?? uiActions;
+  const state = useMemo(() => reduceUiActions(effectiveActions), [effectiveActions]);
   const openPane = usePaneStore((s) => s.openPane);
+
+  const requestDeutung = useCallback(() => {
+    void deuten(openFlow).catch(() => { /* surfaced via deutungError */ });
+  }, [deuten, openFlow]);
 
   const source = typeof initialData?.source === 'string' ? initialData.source : 'lagefeld';
   const prompt = typeof initialData?.prompt === 'string' ? initialData.prompt : undefined;
@@ -44,9 +51,30 @@ export default function LagefeldApp({ initialData }: AppProps) {
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
           <div className="flex items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
-            {source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
+            {deutungActions ? 'Môras Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
           </div>
           <div className="flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              onClick={requestDeutung}
+              disabled={deuting || !hasSignals}
+              data-testid="lagefeld-deuten"
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/24 bg-amber-400/12 px-3 py-1.5 text-[11px] font-medium text-amber-100/90 transition-colors hover:border-amber-200/40 hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Sparkles className={`h-3.5 w-3.5 ${deuting ? 'animate-pulse' : ''}`} />
+              {deuting ? 'Môra deutet…' : deutungActions ? 'Neu deuten' : 'Mit Môra deuten'}
+            </button>
+            {deutungActions ? (
+              <button
+                type="button"
+                onClick={reset}
+                data-testid="lagefeld-deuten-reset"
+                className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:border-white/28 hover:bg-white/[0.1]"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Übersicht
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={openChat}
@@ -77,6 +105,14 @@ export default function LagefeldApp({ initialData }: AppProps) {
       ) : null}
 
       <main className="flex-1 p-6">
+        {deutungError ? (
+          <div
+            data-testid="lagefeld-deuten-error"
+            className="mb-3 rounded-xl border border-amber-300/24 bg-amber-400/[0.08] px-4 py-2.5 text-[12px] text-amber-100/80"
+          >
+            {deutungError}
+          </div>
+        ) : null}
         {hasSignals ? (
           <LagefeldCanvas state={state} />
         ) : (
