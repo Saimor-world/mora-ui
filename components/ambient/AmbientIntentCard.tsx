@@ -10,8 +10,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Zap, Brain } from 'lucide-react';
+import { Zap, Brain, Activity } from 'lucide-react';
 import type { AmbientToolCall } from '@/lib/hooks/useAmbientMora';
+import { LagefeldCanvas } from '@/components/lagefeld/LagefeldCanvas';
+import type { FieldState } from '@/lib/lagefeld/types';
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -20,6 +22,8 @@ export interface AmbientIntentCardProps {
     intent: string;
     /** Parsed tool calls — used to render the action line */
     toolCalls: AmbientToolCall[];
+    /** Live preview of the Lagefeld Môra is forming, if any */
+    fieldPreview?: FieldState | null;
     /** Called when user clicks Ausführen */
     onExecute: () => void;
     /** Called when user clicks Verstanden (no action) */
@@ -33,12 +37,18 @@ export interface AmbientIntentCardProps {
 export const AmbientIntentCard: React.FC<AmbientIntentCardProps> = ({
     intent,
     toolCalls,
+    fieldPreview = null,
     onExecute,
     onDismiss,
     disabled = false,
 }) => {
     const hasAction = toolCalls.length > 0;
-    const actionLabel = hasAction ? describeAction(toolCalls[0]) : null;
+    const hasPreview = !!fieldPreview && fieldPreview.cards.length > 0;
+    const actionLabel = hasAction
+        ? hasPreview
+            ? `Lagefeld — ${fieldPreview!.cards.length} Karten`
+            : describeAction(toolCalls[0])
+        : null;
 
     return (
         <motion.div
@@ -82,6 +92,33 @@ export const AmbientIntentCard: React.FC<AmbientIntentCardProps> = ({
                         </div>
                         <div className="text-sm text-white/70">
                             {actionLabel}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Live Lagefeld preview — Môra's field forming, not just a text line */}
+            {hasPreview && (
+                <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase text-cyan-300/50">
+                        <Activity className="w-3 h-3" />
+                        Lagefeld entsteht
+                    </div>
+                    <div
+                        data-testid="intent-lagefeld-preview"
+                        aria-label="Lagefeld-Vorschau"
+                        style={{
+                            position: 'relative',
+                            height: 168,
+                            overflow: 'hidden',
+                            borderRadius: 14,
+                            border: '1px solid rgba(148,163,184,0.16)',
+                            maskImage: 'linear-gradient(to bottom, black 76%, transparent)',
+                            WebkitMaskImage: 'linear-gradient(to bottom, black 76%, transparent)',
+                        }}
+                    >
+                        <div style={{ width: '200%', transform: 'scale(0.5)', transformOrigin: 'top left', pointerEvents: 'none' }}>
+                            <LagefeldCanvas state={fieldPreview!} />
                         </div>
                     </div>
                 </div>
