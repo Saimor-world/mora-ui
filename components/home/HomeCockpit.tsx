@@ -830,7 +830,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     {showOrgOverview && homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
 
-                        <div className="flex flex-wrap gap-1.5">
+                        <div className="flex flex-wrap gap-1.5 border-t border-white/[0.05] pt-2 opacity-90">
 
                             {[
 
@@ -971,7 +971,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.28) transparent' }}
             >
 
-                <div className="grid min-h-full grid-cols-1 gap-3 md:h-full md:min-h-[344px] md:grid-cols-12 md:grid-rows-[repeat(3,minmax(104px,1fr))] md:gap-4">
+                <div className="grid min-h-full grid-cols-1 gap-3 md:min-h-[344px] md:grid-cols-12 md:grid-rows-[repeat(3,minmax(112px,auto))] md:gap-4">
 
                     <motion.div {...fade(0.08)} className="min-h-[148px] md:col-span-5 md:row-span-3 md:min-h-0">
 

@@ -43,23 +43,24 @@ export function RitualSceneStyler() {
         root.setProperty('--scene-rgb', SCENE_RGB[scene.id]);
     }, [scene.accent, scene.accentHex, scene.aura, scene.id]);
 
-    // Visible overlay — the actual dramatic re-tint
+    // Visible overlay — a quiet ambient tint, not a full-bleed wash. Scenes should
+    // read as mood lighting in the corners, not a colored film over the whole OS.
     return (
         <AnimatePresence mode="wait">
             <motion.div
                 key={scene.id}
                 className="pointer-events-none fixed inset-0 z-[11]"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: 0.46 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.2, ease: 'easeInOut' }}
                 style={{
                     background: [
-                        `radial-gradient(ellipse 90% 60% at 50% 0%, ${scene.accent} 0%, transparent 65%)`,
-                        `radial-gradient(ellipse 60% 40% at 15% 80%, ${scene.aura} 0%, transparent 55%)`,
-                        `radial-gradient(ellipse 40% 30% at 85% 70%, ${scene.accent.replace(/[\d.]+\)$/, '0.4)')} 0%, transparent 50%)`,
+                        `radial-gradient(ellipse 52% 38% at 50% 0%, ${scene.accent} 0%, transparent 48%)`,
+                        `radial-gradient(ellipse 38% 26% at 8% 92%, ${scene.aura} 0%, transparent 42%)`,
+                        `radial-gradient(ellipse 26% 20% at 94% 78%, ${scene.accent.replace(/[\d.]+\)$/, '0.32)')} 0%, transparent 40%)`,
                     ].join(', '),
-                    mixBlendMode: 'screen',
+                    mixBlendMode: 'soft-light',
                 }}
             />
         </AnimatePresence>
