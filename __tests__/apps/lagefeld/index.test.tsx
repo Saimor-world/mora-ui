@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { renderWithProviders } from '../../test-utils';
 import LagefeldApp from '@/apps/lagefeld/index';
 import { usePaneStore } from '@/lib/store/paneStore';
 
@@ -23,14 +24,14 @@ describe('LagefeldApp', () => {
   });
 
   it('shows honest empty state instead of demo court data', () => {
-    render(<LagefeldApp paneId="test-pane" />);
+    renderWithProviders(<LagefeldApp paneId="test-pane" />);
     expect(screen.getByTestId('lagefeld-empty')).toBeInTheDocument();
     expect(screen.getByText(/noch keine signale/i)).toBeInTheDocument();
     expect(screen.queryByText(/Gericht/i)).not.toBeInTheDocument();
   });
 
   it('opens chat pane from Mit Mora schreiben', () => {
-    render(<LagefeldApp paneId="test-pane" />);
+    renderWithProviders(<LagefeldApp paneId="test-pane" />);
     fireEvent.click(screen.getByTestId('lagefeld-open-chat'));
     expect(usePaneStore.getState().panes.some((p) => p.type === 'chat')).toBe(true);
   });

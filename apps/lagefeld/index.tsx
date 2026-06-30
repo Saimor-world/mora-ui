@@ -8,12 +8,15 @@ import { LagefeldEmptyState } from '@/components/lagefeld/LagefeldEmptyState';
 import { reduceUiActions } from '@/lib/lagefeld/reduceUiActions';
 import { useLagefeldSignals } from '@/lib/hooks/useLagefeldSignals';
 import { useLagefeldDeutung } from '@/lib/hooks/useLagefeldDeutung';
+import { useMoraEngine } from '@/lib/queries/useMoraEngine';
+import { MoraEngineBadge } from '@/components/mora/MoraEngineBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
 export default function LagefeldApp({ initialData }: AppProps) {
   const { uiActions, openFlow, hasSignals } = useLagefeldSignals(initialData);
   const { deuten, actions: deutungActions, isLoading: deuting, error: deutungError, reset } = useLagefeldDeutung();
+  const moraEngine = useMoraEngine();
   const effectiveActions = deutungActions ?? uiActions;
   const state = useMemo(() => reduceUiActions(effectiveActions), [effectiveActions]);
   const openPane = usePaneStore((s) => s.openPane);
@@ -50,6 +53,7 @@ export default function LagefeldApp({ initialData }: AppProps) {
           </p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-2">
+          <MoraEngineBadge engine={moraEngine} />
           <div className="flex items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
             {deutungActions ? 'Môras Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
           </div>
