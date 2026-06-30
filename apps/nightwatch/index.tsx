@@ -151,7 +151,7 @@ function IncidentRow({
                     <button
                         type="button"
                         onClick={onOpen}
-                        aria-label="Vorfall oeffnen"
+                        aria-label="Vorfall öffnen"
                         className="rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/82"
                     >
                         Öffnen
