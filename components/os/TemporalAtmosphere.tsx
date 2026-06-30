@@ -150,7 +150,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                 />
             )}
 
-            {/* Layer 1: Band + scene haze â€” slow drift, amplified when audio is on */}
+            {/* Layer 1: Band + scene haze — slow drift, amplified when audio is on */}
 
             <motion.div
                 className="absolute inset-0"

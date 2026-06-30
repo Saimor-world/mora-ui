@@ -170,7 +170,7 @@ function WidgetGlanceCard({ type, accent, context, className = '', compact = fal
 
     const openSheet = WIDGET_SHEET_OPEN[type];
 
-    const shellMin = compact ? 'min-h-[108px]' : 'min-h-[148px]';
+    const shellMin = compact ? 'min-h-[104px]' : 'min-h-[148px]';
 
     return (
 
@@ -678,7 +678,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
     return (
 
-        <div data-testid="home-cockpit" className="flex h-full flex-col gap-5 overflow-hidden">
+        <div data-testid="home-cockpit" className="flex h-full flex-col gap-4 overflow-hidden xl:gap-5">
 
 
 
@@ -966,9 +966,12 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
 
 
-            <div className="min-h-0 flex-1">
+            <div
+                className="min-h-0 flex-1 overflow-y-auto pr-1 pb-2"
+                style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.28) transparent' }}
+            >
 
-                <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:grid-cols-12 md:grid-rows-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] md:gap-4">
+                <div className="grid min-h-full grid-cols-1 gap-3 md:h-full md:min-h-[344px] md:grid-cols-12 md:grid-rows-[repeat(3,minmax(104px,1fr))] md:gap-4">
 
                     <motion.div {...fade(0.08)} className="min-h-[148px] md:col-span-5 md:row-span-3 md:min-h-0">
 
@@ -976,31 +979,31 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     </motion.div>
 
-                    <motion.div {...fade(0.12)} className="min-h-[108px] md:col-span-3 md:min-h-0">
+                    <motion.div {...fade(0.12)} className="min-h-[104px] md:col-span-3 md:min-h-0">
 
                         <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/65 via-indigo-300/42 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.14)} className="min-h-[108px] md:col-span-4 md:min-h-0">
+                    <motion.div {...fade(0.14)} className="min-h-[104px] md:col-span-4 md:min-h-0">
 
                         <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/55 via-teal-300/35 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.18)} className="min-h-[108px] md:col-span-3 md:row-start-2 md:min-h-0">
+                    <motion.div {...fade(0.18)} className="min-h-[104px] md:col-span-3 md:row-start-2 md:min-h-0">
 
                         <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.20)} className="min-h-[108px] md:col-span-4 md:row-start-2 md:min-h-0">
+                    <motion.div {...fade(0.20)} className="min-h-[104px] md:col-span-4 md:row-start-2 md:min-h-0">
 
                         <WidgetGlanceCard type="deinFeed" accent="bg-gradient-to-r from-emerald-400/55 via-cyan-300/32 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
-                    <motion.div {...fade(0.22)} className="min-h-[108px] md:col-span-7 md:row-start-3 md:min-h-0">
+                    <motion.div {...fade(0.22)} className="min-h-[104px] md:col-span-7 md:row-start-3 md:min-h-0">
 
                         <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-amber-400/50 via-cyan-300/30 to-transparent" context={glanceContext} compact />
 

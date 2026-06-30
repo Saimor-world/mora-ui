@@ -57,6 +57,15 @@ const HOME_STEPS: TourStep[] = [
 const DEMO_APPEAR_DELAY_MS = 2200;
 const DEFAULT_APPEAR_DELAY_MS = 3800;
 const SESSION_SEEN_KEY = 'saimor_product_tour_session';
+const CARD_WIDTH = 320;
+const CARD_ESTIMATED_HEIGHT = 224;
+const CARD_MARGIN = 18;
+const DOCK_RESERVED_HEIGHT = 112;
+
+interface TourPlacement {
+    left: number;
+    top: number;
+}
 
 function hasSeenTourThisSession(): boolean {
     if (typeof window === 'undefined') return true;
@@ -86,6 +95,49 @@ function resolveAppearDelay(activeMode: string): number {
     return isDemoEntryPath(activeMode) ? DEMO_APPEAR_DELAY_MS : DEFAULT_APPEAR_DELAY_MS;
 }
 
+function shouldAutoShowTour(activeMode: string): boolean {
+    return isDemoEntryPath(activeMode);
+}
+
+function clamp(n: number, min: number, max: number): number {
+    if (max < min) return min;
+    return Math.min(max, Math.max(min, n));
+}
+
+function computeTourPlacement(
+    stepId: string,
+    targetRect: DOMRect | null,
+    viewport: { width: number; height: number },
+): TourPlacement {
+    const maxLeft = viewport.width - CARD_WIDTH - CARD_MARGIN;
+    const maxTop = viewport.height - DOCK_RESERVED_HEIGHT - CARD_ESTIMATED_HEIGHT;
+    const fallback = {
+        left: clamp(viewport.width - CARD_WIDTH - CARD_MARGIN, CARD_MARGIN, maxLeft),
+        top: clamp(viewport.height - DOCK_RESERVED_HEIGHT - CARD_ESTIMATED_HEIGHT, CARD_MARGIN, maxTop),
+    };
+
+    if (!targetRect || viewport.width <= 0 || viewport.height <= 0) return fallback;
+
+    if (stepId === 'dock') {
+        return {
+            left: clamp(targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2, CARD_MARGIN, maxLeft),
+            top: clamp(targetRect.top - CARD_ESTIMATED_HEIGHT - 16, CARD_MARGIN, maxTop),
+        };
+    }
+
+    if (stepId === 'universe') {
+        return {
+            left: clamp(targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2, CARD_MARGIN, maxLeft),
+            top: clamp(targetRect.bottom + 14, CARD_MARGIN, maxTop),
+        };
+    }
+
+    return {
+        left: clamp(CARD_MARGIN + 12, CARD_MARGIN, maxLeft),
+        top: clamp(targetRect.top + 92, CARD_MARGIN, maxTop),
+    };
+}
+
 export const FirstRunTour: React.FC = () => {
     const activeMode = useNavStore((s) => s.activeMode);
     const coreMode = useNavStore((s) => s.coreMode);
@@ -100,6 +152,7 @@ export const FirstRunTour: React.FC = () => {
     const [stepIdx, setStepIdx] = useState(0);
     const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
     const [dontShowAgain, setDontShowAgain] = useState(false);
+    const [viewport, setViewport] = useState({ width: 0, height: 0 });
 
     const steps = useMemo(() => HOME_STEPS, []);
     const syncUserSettings = useCallback(
@@ -145,6 +198,7 @@ export const FirstRunTour: React.FC = () => {
         if (dismissed) return;
         if (hasSeenTourThisSession()) return;
         if (coreMode !== 'home') return;
+        if (!shouldAutoShowTour(activeMode)) return;
 
         const delay = resolveAppearDelay(activeMode);
         const t = window.setTimeout(() => {
@@ -158,10 +212,21 @@ export const FirstRunTour: React.FC = () => {
 
     useEffect(() => {
         if (!active) return;
-        const step = steps[stepIdx];
-        const el = document.querySelector(step.target.selector);
-        if (el) setTargetRect(el.getBoundingClientRect());
-        else setTargetRect(null);
+        const updateTarget = () => {
+            const step = steps[stepIdx];
+            const el = document.querySelector(step.target.selector);
+            setViewport({ width: window.innerWidth, height: window.innerHeight });
+            if (el) setTargetRect(el.getBoundingClientRect());
+            else setTargetRect(null);
+        };
+
+        updateTarget();
+        window.addEventListener('resize', updateTarget);
+        window.addEventListener('scroll', updateTarget, true);
+        return () => {
+            window.removeEventListener('resize', updateTarget);
+            window.removeEventListener('scroll', updateTarget, true);
+        };
     }, [active, stepIdx, steps]);
 
     const handleNext = () => {
@@ -185,6 +250,7 @@ export const FirstRunTour: React.FC = () => {
     const step = steps[stepIdx];
     const Icon = step.icon;
     const isLastStep = stepIdx === steps.length - 1;
+    const placement = computeTourPlacement(step.id, targetRect, viewport);
 
     return (
         <AnimatePresence>
@@ -195,7 +261,7 @@ export const FirstRunTour: React.FC = () => {
                 exit={{ opacity: 0, y: 8 }}
                 transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                 className="pointer-events-none fixed z-[8000]"
-                style={{ right: '168px', bottom: '108px' }}
+                style={{ left: placement.left, top: placement.top }}
                 data-testid="product-tour-card"
             >
                 {targetRect && (

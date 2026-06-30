@@ -356,4 +356,39 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             jest.useRealTimers();
         }
     });
+
+    it('stops push-to-talk even when pointer up happens before the next render', async () => {
+        const qc = createTestQueryClient();
+        renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+        const mic = screen.getByRole('button', { name: /Spracherkennung starten/i });
+        await act(async () => {
+            fireEvent.pointerDown(mic);
+            fireEvent.pointerUp(mic);
+        });
+
+        const instance = MockSpeechRecognition.lastInstance;
+        expect(instance).not.toBeNull();
+        expect(instance!.start).toHaveBeenCalledTimes(1);
+        expect(instance!.stop).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to text input when browser speech recognition has a network error', async () => {
+        const qc = createTestQueryClient();
+        renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+        await act(async () => {
+            fireEvent.keyDown(window, { code: 'Space' });
+        });
+
+        const instance = MockSpeechRecognition.lastInstance;
+        expect(instance).not.toBeNull();
+
+        await act(async () => {
+            instance!.onerror({ error: 'network' });
+        });
+
+        expect(screen.getByText(/Spracherkennung ist gerade nicht erreichbar/i)).toBeInTheDocument();
+        expect(screen.getByPlaceholderText(/Gedanken eingeben/i)).toBeInTheDocument();
+    });
 });
