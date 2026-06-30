@@ -62,9 +62,17 @@ afterEach(() => {
     jest.useRealTimers();
 });
 
-it('shows first MÔRA step after appear delay', async () => {
+it('does not auto-show in regular HQ sessions', async () => {
     render(<FirstRunTour />);
     act(() => { jest.advanceTimersByTime(3800); });
+    expect(screen.queryByRole('heading', { name: /Dein Home/i })).not.toBeInTheDocument();
+});
+
+it('shows first MÔRA step after explicit restart', async () => {
+    render(<FirstRunTour />);
+    act(() => {
+        window.dispatchEvent(new Event('saimor:product-tour-restart'));
+    });
     await waitFor(() => {
         expect(screen.getByRole('heading', { name: /Dein Home/i })).toBeInTheDocument();
         expect(screen.getByText(/^MÔRA$/i)).toBeInTheDocument();
@@ -73,7 +81,9 @@ it('shows first MÔRA step after appear delay', async () => {
 
 it('advances on weiter button', async () => {
     render(<FirstRunTour />);
-    act(() => { jest.advanceTimersByTime(3800); });
+    act(() => {
+        window.dispatchEvent(new Event('saimor:product-tour-restart'));
+    });
     await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
     fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
     expect(screen.getByRole('heading', { name: /Dein Universe/i })).toBeInTheDocument();
@@ -81,7 +91,9 @@ it('advances on weiter button', async () => {
 
 it('persists permanent dismissal via nicht mehr anzeigen', async () => {
     render(<FirstRunTour />);
-    act(() => { jest.advanceTimersByTime(3800); });
+    act(() => {
+        window.dispatchEvent(new Event('saimor:product-tour-restart'));
+    });
     await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
     fireEvent.click(screen.getByRole('checkbox', { name: /nicht mehr anzeigen/i }));
     fireEvent.click(screen.getByRole('button', { name: /ausblenden/i }));

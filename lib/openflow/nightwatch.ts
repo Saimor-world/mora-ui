@@ -9,6 +9,7 @@ export interface NightwatchIncidentItem {
     summary?: string;
     severity?: string;  // 'info' | 'warning' | 'critical'
     status?: string;    // 'open' | 'healing' | 'escalated' | 'resolved' | ...
+    acked?: boolean;
     host?: string;
     detected_at?: string;
     updated_at?: string;
