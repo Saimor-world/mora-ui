@@ -217,6 +217,6 @@ describe('MoraShell mode indicator banner', () => {
         seedShellStores('private_preview');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Private Preview/i)).toBeInTheDocument();
-        expect(screen.getByText(/Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden gelöscht./i)).toBeInTheDocument();
+        expect(screen.getByText(/Deine Sitzung endet nach 24 Stunden; deine Daten werden nach 20 Tagen gelöscht./i)).toBeInTheDocument();
     });
 });

@@ -31,7 +31,7 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
         bgClass = 'bg-amber-500/5';
         glowColor = 'shadow-[0_0_20px_rgba(245,158,11,0.15)]';
         badgeText = 'Private Preview';
-        modeText = 'Zeitlich begrenzte Voransicht. Daten werden nach 24 Stunden gelöscht.';
+        modeText = 'Zeitlich begrenzte Voransicht. Deine Sitzung endet nach 24 Stunden; deine Daten werden nach 20 Tagen gelöscht.';
     } else if (activeMode === 'visitor') {
         borderClass = 'border-emerald-500/30';
         bgClass = 'bg-emerald-500/5';
