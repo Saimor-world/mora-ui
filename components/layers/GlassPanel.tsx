@@ -152,6 +152,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const effectiveIsActive = paneId ? activePaneId === paneId : isActive;
     const hasPaneStack = visiblePaneCount > 1;
     const hasDensePaneStack = visiblePaneCount > 2;
+    const titleLabel = typeof title === 'string' && title.trim() ? title.trim() : 'Fenster';
 
     // UPGRADE C1: Drag and resize state
     const dragControls = useDragControls();
@@ -582,7 +583,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onMinimize(); }}
                                             className="pane-control pane-control--minimize"
-                                            aria-label="Minimize panel"
+                                            aria-label={`${titleLabel} minimieren`}
                                         >
                                             <Minus className="w-4 h-4" />
                                         </button>
@@ -591,7 +592,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                         <button
                                             onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
                                             className="pane-control pane-control--maximize"
-                                            aria-label={isMaximized ? "Restore panel" : "Maximize panel"}
+                                            aria-label={isMaximized ? `${titleLabel} wiederherstellen` : `${titleLabel} maximieren`}
                                         >
                                             {isMaximized ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                                         </button>
@@ -600,7 +601,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                         <button
                                             onClick={(e) => { e.stopPropagation(); onClose(); }}
                                             className="pane-control pane-control--close"
-                                            aria-label="Close panel"
+                                            aria-label={`${titleLabel} schliessen`}
                                         >
                                             <X className="w-4 h-4" />
                                         </button>
