@@ -938,7 +938,7 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ conte
                     className="mt-auto flex items-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                 >
                     <ExternalLink size={10} />
-                    Larry Dashboard
+                    Desk öffnen
                 </button>
             )}
         </>
@@ -1105,6 +1105,10 @@ QuickActionsWidget.displayName = 'QuickActionsWidget';
 type LarryKindMeta = { label: string; icon: React.ReactNode; color: string; bg: string; border: string };
 
 const LARRY_KIND_META: Record<string, LarryKindMeta> = {
+    thread: { label: 'Faden', icon: <Target size={10} />, color: 'rgb(45,212,191)', bg: 'rgba(45,212,191,0.12)', border: 'rgba(45,212,191,0.22)' },
+    knot: { label: 'Knoten', icon: <PenLine size={10} />, color: 'rgb(167,139,250)', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.22)' },
+    spark: { label: 'Funke', icon: <Sparkles size={10} />, color: 'rgb(251,191,36)', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.22)' },
+    pattern: { label: 'Muster', icon: <Layout size={10} />, color: 'rgb(125,211,252)', bg: 'rgba(125,211,252,0.12)', border: 'rgba(125,211,252,0.22)' },
     canvas: { label: 'Canvas', icon: <Layout size={10} />, color: 'rgb(34,211,238)', bg: 'rgba(34,211,238,0.12)', border: 'rgba(34,211,238,0.22)' },
     mission: { label: 'Mission', icon: <Target size={10} />, color: 'rgb(251,191,36)', bg: 'rgba(251,191,36,0.12)', border: 'rgba(251,191,36,0.22)' },
     note: { label: 'Notiz', icon: <PenLine size={10} />, color: 'rgb(167,139,250)', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.22)' },
@@ -1118,6 +1122,14 @@ const LARRY_KIND_FALLBACK: LarryKindMeta = {
     color: 'rgb(34,211,238)',
     bg: 'rgba(34,211,238,0.1)',
     border: 'rgba(34,211,238,0.18)',
+};
+
+const WEAVE_STATE_META: Record<string, { label: string; color: string }> = {
+    draft: { label: 'gesponnen', color: 'rgb(167,139,250)' },
+    queued: { label: 'gesponnen', color: 'rgb(167,139,250)' },
+    running: { label: 'gewoben', color: 'rgb(45,212,191)' },
+    done: { label: 'verwoben', color: 'rgb(74,222,128)' },
+    failed: { label: 'gerissen', color: 'rgb(248,113,113)' },
 };
 
 function larryKindMeta(kind: string): LarryKindMeta {
@@ -1175,6 +1187,11 @@ const LarryArtifactRow: React.FC<{
                 </span>
                 <span className={`mt-0.5 flex flex-wrap items-center gap-1 ${compact ? 'text-[7px]' : 'text-[9px]'}`}>
                     <LarryKindPill kind={String(artifact.kind)} compact={compact} />
+                    {artifact.state && WEAVE_STATE_META[String(artifact.state)] && (
+                        <span style={{ color: WEAVE_STATE_META[String(artifact.state)].color }}>
+                            {WEAVE_STATE_META[String(artifact.state)].label}
+                        </span>
+                    )}
                     {when && <span className="text-white/32">{when}</span>}
                     {!compact && sub && <span className="truncate text-white/38">{sub}</span>}
                 </span>
@@ -1216,7 +1233,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
             <GlanceShell tone="neutral">
                 <div className="flex items-center gap-2 text-[10px] text-white/40">
                     <Layout size={10} className="text-white/28" />
-                    Workspace lädt…
+                    Das Gewebe lädt…
                 </div>
             </GlanceShell>
         );
@@ -1228,13 +1245,13 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                 <GlanceShell tone="neutral" onClick={context.openDashboard}>
                     <div className="flex items-center justify-between gap-1">
                         <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
-                            <Layout size={9} className="opacity-60" /> Workspace
+                            <Layout size={9} className="opacity-60" /> Gewebe
                         </span>
                     </div>
-                    <span className="text-[10px] text-white/40">Noch keine Artefakte</span>
+                    <span className="text-[10px] text-white/40">Das Gewebe ist noch leer</span>
                     {context.openDashboard && (
                         <span className="flex items-center gap-1 text-[8px] text-cyan-200/55">
-                            <ExternalLink size={9} /> Larry öffnen
+                            <ExternalLink size={9} /> Desk öffnen
                         </span>
                     )}
                 </GlanceShell>
@@ -1242,7 +1259,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
         }
         return (
             <div className="flex h-full flex-col justify-center gap-2 overflow-hidden">
-                <Empty>Noch keine Workspace-Artefakte</Empty>
+                <Empty>Das Gewebe ist noch leer</Empty>
                 {!isHomeGlance(context) && context.openDashboard && (
                     <button
                         type="button"
@@ -1250,7 +1267,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                         className="flex items-center justify-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                     >
                         <ExternalLink size={10} />
-                        Larry Dashboard
+                        Desk öffnen
                     </button>
                 )}
             </div>
@@ -1262,7 +1279,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
             <GlanceShell tone={tone}>
                 <div className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-1 text-[8px] uppercase tracking-[.16em] text-white/32">
-                        <Layout size={9} className="text-cyan-300/55" /> Workspace
+                        <Layout size={9} className="text-cyan-300/55" /> Gewebe
                     </span>
                     <span className="rounded-full border border-white/[0.08] bg-white/[0.04] px-1.5 py-0.5 text-[9px] tabular-nums text-white/45">
                         {artifacts.length}
@@ -1329,7 +1346,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                     className="mt-auto flex items-center gap-1.5 pt-1 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                 >
                     <ExternalLink size={10} />
-                    Larry Dashboard
+                    Desk öffnen
                 </button>
             )}
         </div>
@@ -1901,12 +1918,12 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         render: ({ context }) => <OrgStatsWidget context={context} />,
     },
     bridgePulse: {
-        type: 'bridgePulse', label: 'Bridge Puls', hint: 'Core, Larry Dashboard & Live-Last', icon: <Radio size={14} />,
+        type: 'bridgePulse', label: 'Bridge Puls', hint: 'Core, Desk & Live-Last', icon: <Radio size={14} />,
         defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'universe'],
         render: ({ context }) => <BridgePulseWidget context={context} />,
     },
     larryWork: {
-        type: 'larryWork', label: 'Workspace', hint: 'Larry Canvas, Missionen & Notizen aus dem Dashboard', icon: <Layout size={14} />,
+        type: 'larryWork', label: 'Gewebe', hint: 'Fäden, Funken & Knoten aus dem Desk', icon: <Layout size={14} />,
         defaultW: 3, defaultH: 5, minW: 2, minH: 3, surfaces: ['home', 'universe'],
         render: ({ context }) => <LarryWorkWidget context={context} />,
     },

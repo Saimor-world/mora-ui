@@ -1003,7 +1003,13 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     </motion.div>
 
-                    <motion.div {...fade(0.22)} className="min-h-[104px] md:col-span-7 md:row-start-3 md:min-h-0">
+                    <motion.div {...fade(0.21)} className="min-h-[104px] md:col-span-3 md:row-start-3 md:min-h-0">
+
+                        <WidgetGlanceCard type="larryWork" accent="bg-gradient-to-r from-teal-400/60 via-cyan-300/38 to-transparent" context={glanceContext} compact />
+
+                    </motion.div>
+
+                    <motion.div {...fade(0.22)} className="min-h-[104px] md:col-span-4 md:row-start-3 md:min-h-0">
 
                         <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-amber-400/50 via-cyan-300/30 to-transparent" context={glanceContext} compact />
 

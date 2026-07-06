@@ -1,11 +1,16 @@
 import { coreGet, normalizeList } from './http';
 
-export type LarryArtifactKind = 'mission' | 'note' | 'canvas' | 'inbox' | 'brief';
+// Gewebe-Vokabular (spec: mora-work docs/specs/2026-07-06-das-gewebe.md); alte kinds als Fallback
+export type LarryArtifactKind = 'thread' | 'knot' | 'spark' | 'pattern' | 'mission' | 'note' | 'canvas' | 'inbox' | 'brief';
 
 export interface LarryArtifact {
     id: string;
     type: string;
     kind: LarryArtifactKind | string;
+    form?: string | null;
+    state?: string | null;
+    agent?: string | null;
+    preview?: string | null;
     title: string;
     owner?: string | null;
     source_page?: string | null;
