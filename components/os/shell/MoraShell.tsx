@@ -19,15 +19,15 @@
  * - useRealtime: WebSocket connection
  * - useKeyboardShortcuts: Global shortcuts
  *
- * �"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
+ * ----------------------------------------------------------------
  * COMPOSITING LAYER STACK  (last updated 2026-06-12)
- * �"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
- *  z-0       MoraLivingBackground �" scene-reactive deep base + aurora + tints
- *  z-[1]     ForestLightCanopy �" organic nebula blobs (non-universe views)
- *  z-[1]     StarField �" twinkling star canvas (mix-blend-mode: screen)
- *  z-[2]     TemporalAtmosphere �" atmospheric hazes, scene + time reactive
- *  z-[4]     RitualSceneStyler �" scene colour overlay + CSS vars
- *  z-[30]    ViewPort �" surface router (CoreLayer / DepartmentSurface / …)
+ * ----------------------------------------------------------------
+ *  z-0       MoraLivingBackground — scene-reactive deep base + aurora + tints
+ *  z-[1]     ForestLightCanopy — organic nebula blobs (non-universe views)
+ *  z-[1]     StarField — twinkling star canvas (mix-blend-mode: screen)
+ *  z-[2]     TemporalAtmosphere — atmospheric hazes, scene + time reactive
+ *  z-[4]     RitualSceneStyler — scene colour overlay + CSS vars
+ *  z-[30]    ViewPort — surface router (CoreLayer / DepartmentSurface / …)
  *    CoreLayer (home mode):
  *      absolute   blurred UniverseView bg (opacity 0.34)
  *      absolute   radial-gradient center glow overlay
@@ -36,18 +36,18 @@
  *      motion.div full-width dark overlay
  *    CoreLayer (explore mode):
  *      absolute   UniverseView (full, pointer-events-auto)
- *  z-[100]   PaneManager �" pane chrome + GlassPanel (draggable windows)
- *  z-[740]   Dock �" bottom navigation bar
+ *  z-[100]   PaneManager — pane chrome + GlassPanel (draggable windows)
+ *  z-[740]   Dock — bottom navigation bar
  *  z-[928]   Mycelium summary overlay
  *  z-[929]   Navigation outcome toast
  *  z-[930]   Mora field response
  *  z-[950]   Modal overlays (pointer-events-none passthrough)
  *  z-[1000]  Fatal-error / connection-lost full-screen blocks
- * �"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
+ * ----------------------------------------------------------------
  * Phase 2 note: CoreLayer home-mode vignettes (5 overlay divs) are a
  * candidate for consolidation into a single SVG feMerge filter, but
- * they're not a perf bottleneck �" defer until a visible regression appears.
- * �"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"��"�
+ * they're not a perf bottleneck — defer until a visible regression appears.
+ * ----------------------------------------------------------------
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -103,7 +103,7 @@ import { Dock } from '@/components/mora/Dock';
 import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 import { FirstRunTour } from '@/components/onboarding/FirstRunTour';
 import { useMoraSpeaks } from '@/lib/queries/useMoraSpeaks';
-// 1.0 gated (future-tier) �" see docs/plans/2026-03-27-surface-hierarchy-1.0.md
+// 1.0 gated (future-tier) — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
 // import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
 import { Spotlight } from '@/components/mora/Spotlight';
 import { KeyboardShortcutsOverlay } from '@/components/mora/KeyboardShortcutsOverlay';
@@ -194,7 +194,7 @@ export const MoraShell: React.FC = () => {
         return () => window.clearTimeout(timer);
     }, [isBootstrapped]);
 
-    // Store �" migrated to new stores
+    // Store — migrated to new stores
     const user = useSessionStore((s) => s.user);
     const resetStore = useSessionStore((s) => s.resetStore);
     const isLoggingOut = useSessionStore((s) => s.isLoggingOut);
@@ -241,7 +241,7 @@ export const MoraShell: React.FC = () => {
     }, [filteredCompanies, activeCompanyId, activeCompany]);
 
     const displayCompany = React.useMemo(() => {
-        // Visitor mode: identity comes only from websiteEntryContext �" no API company
+        // Visitor mode: identity comes only from websiteEntryContext — no API company
         if (activeMode === 'visitor' && websiteEntryContext?.companyName) {
             return {
                 id: `visitor-${websiteEntryContext.id || 'scan'}`,
@@ -303,7 +303,7 @@ export const MoraShell: React.FC = () => {
             return hasDemoCompany ? ['demo'] : ['workspace'];
         }
         if (surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface) {
-            // Single-deployment surfaces: workspace only �" no demo mode clutter.
+            // Single-deployment surfaces: workspace only — no demo mode clutter.
             return ['workspace'];
         }
         if (role === 'system_owner') {
@@ -357,7 +357,7 @@ export const MoraShell: React.FC = () => {
     const [activeSnapZone, setActiveSnapZone] = useState<SnapZone>(null);
     const [hasFullscreenPane, setHasFullscreenPane] = useState(false);
     const [diagnosticsEnabled, setDiagnosticsEnabled] = useState(false);
-    // Drop state machine �" mutually exclusive phases prevent drift between two old booleans.
+    // Drop state machine — mutually exclusive phases prevent drift between two old booleans.
     // idle: no drag in progress.  dragging: files held over shell.  batch_ready: dropped.
     const [shellDrop, setShellDrop] = useState<
         | { phase: 'idle' }
@@ -367,7 +367,7 @@ export const MoraShell: React.FC = () => {
     const isShellDropActive = shellDrop.phase === 'dragging';
     const myceliumDropBatch  = shellDrop.phase === 'batch_ready' ? shellDrop : null;
     const [myceliumSummary, setMyceliumSummary] = useState<MyceliumShellSummary | null>(null);
-    // workSessionSummary �" banner wiring is still parked; pane opening is live through work-session.
+    // workSessionSummary — banner wiring is still parked; pane opening is live through work-session.
     const [navigationOutcome, setNavigationOutcome] = useState<ShellNavigationOutcome | null>(null);
     const shellDropDepthRef = useRef(0);
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
@@ -490,7 +490,7 @@ export const MoraShell: React.FC = () => {
         return () => window.removeEventListener(NAVIGATION_RESULT_EVENT, handleNavigationResult as EventListener);
     }, []);
 
-    // WORK_SESSION_PLAN_EVENT listener �" parked until the shell banner is product-polished.
+    // WORK_SESSION_PLAN_EVENT listener — parked until the shell banner is product-polished.
 
     // Hooks
     const apiOrbState = useAwareness();
@@ -715,7 +715,7 @@ export const MoraShell: React.FC = () => {
             <ModeIndicatorBanner activeMode={activeMode} />
             <AmbientAudioController />
             <InteractionAudioController />
-            {/* MoraPulsePanel hidden �" ambient context lives in HomeSurface now */}
+            {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
@@ -725,18 +725,18 @@ export const MoraShell: React.FC = () => {
 
             {/* ================================================================
                 LAYER 1: BACKGROUND
-                z-0   MoraLivingBackground � scene-reactive deep base + tints
-                z-1   ForestLightCanopy � organic nebula/light blobs
-                z-1   StarField � twinkling star canvas
-                z-2   TemporalAtmosphere � atmospheric hazes
-                z-11  RitualSceneStyler � scene colour overlay + CSS vars (above z-10 content)
+                z-0   MoraLivingBackground — scene-reactive deep base + tints
+                z-1   ForestLightCanopy — organic nebula/light blobs
+                z-1   StarField — twinkling star canvas
+                z-2   TemporalAtmosphere — atmospheric hazes
+                z-11  RitualSceneStyler — scene colour overlay + CSS vars (above z-10 content)
             ================================================================= */}
 
             <RitualSceneStyler />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground} />
 
-            {/* Background Layers � ForestLightCanopy fades to 6% in Universe instead
+            {/* Background Layers — ForestLightCanopy fades to 6% in Universe instead
                 of disappearing, so Home and Universe share the same atmospheric truth */}
             <div
                 className="transition-opacity duration-[1400ms] ease-in-out"
@@ -753,10 +753,10 @@ export const MoraShell: React.FC = () => {
             {/* Mycelium neural network — hidden on Universe (DeptSpaceMap / cosmos has its own depth) */}
             {!pauseHeavyBackground && !isUniverseExploreSurface && <MyceliumOverlay />}
 
-            {/* Neural Grid �" Tesla-style tech texture, reacts to Mora state */}
+            {/* Neural Grid — Tesla-style tech texture, reacts to Mora state */}
             <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
 
-            {/* Ambient Dust � scene-reactive floating particles */}
+            {/* Ambient Dust — scene-reactive floating particles */}
             <AmbientDust
                 count={universeLightAmbient ? 8 : 32}
                 color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
@@ -813,7 +813,7 @@ export const MoraShell: React.FC = () => {
                     </div>
                 )}
 
-                {/* Shell-level breadcrumb �" visible inside dept/space/folder layers */}
+                {/* Shell-level breadcrumb — visible inside dept/space/folder layers */}
 
                 {/* ViewPort - Routes to Universe/Department/Space/Folder */}
                 <div className="flex-1 relative h-full w-full">
@@ -835,9 +835,9 @@ export const MoraShell: React.FC = () => {
                 LAYER 3: UI OVERLAYS
             ================================================================= */}
 
-            {/* Resonance Room �" 1.0 gated (future-tier surface) */}
+            {/* Resonance Room — 1.0 gated (future-tier surface) */}
 
-            {/* MoraInsightPopup �" 1.0 gated (future-tier: insight events surface) */}
+            {/* MoraInsightPopup — 1.0 gated (future-tier: insight events surface) */}
 
             {/* Môra Field — voice room portal (above pane stack) */}
             <AmbientRoomOverlay />
@@ -867,7 +867,7 @@ export const MoraShell: React.FC = () => {
             {/* Window Snap Preview (when dragging near edges) */}
             <SnapPreview zone={activeSnapZone} visible={activeSnapZone !== null} />
 
-            {/* Memory Sidebar �" 1.0 gated (future-tier surface) */}
+            {/* Memory Sidebar — 1.0 gated (future-tier surface) */}
 
             {/* === PREMIUM INTELLIGENCE LAYER === */}
             {/*
@@ -882,7 +882,7 @@ export const MoraShell: React.FC = () => {
                 LAYER 4: INTERACTION
             ================================================================= */}
 
-            {/* Cursor effects �" CursorAgent, AgencyCursor, CursorTrailEffect, GhostOverlay: 1.0 gated (future-tier) */}
+            {/* Cursor effects — CursorAgent, AgencyCursor, CursorTrailEffect, GhostOverlay: 1.0 gated (future-tier) */}
             {!isLoggingOut && <UserCursor enabled={true} />}
 
             <MyceliumDropfield
@@ -1126,7 +1126,7 @@ export const MoraShell: React.FC = () => {
                 </div>
             )}
 
-            {/* WorkSession banner �" parked while the promoted work-session pane carries the product surface
+            {/* WorkSession banner — parked while the promoted work-session pane carries the product surface
             {workSessionSummary && !isShellDropActive && (
                 <div className={`fixed left-1/2 z-[929] w-[min(720px,calc(100vw-2rem))] -translate-x-1/2 ${myceliumSummary ? 'bottom-[31rem]' : navigationOutcome ? 'bottom-[14.5rem]' : 'bottom-24'}`}>
                     {(() => {

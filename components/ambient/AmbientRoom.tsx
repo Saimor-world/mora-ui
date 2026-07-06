@@ -194,7 +194,14 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
 
     // ── Start / Stop listening ─────────────────────────────────────────────────
     const startListening = useCallback(() => {
-        if (!SpeechAPI || ambientState === 'listening') return;
+        if (!SpeechAPI) {
+            setFallbackMode(true);
+            setSpeechSupported(false);
+            setErrorMsg('Spracherkennung ist hier nicht verfuegbar. Du kannst unten schreiben.');
+            setAmbientState('error');
+            return;
+        }
+        if (ambientStateRef.current === 'listening') return;
 
         stopModeRef.current = null;
 
@@ -202,6 +209,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
         if (micPermission === 'denied') {
             setFallbackMode(true);
             setSpeechSupported(false);
+            setErrorMsg('Mikrofon-Zugriff verweigert. Du kannst unten schreiben.');
+            setAmbientState('error');
             return;
         }
 
@@ -242,14 +251,17 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                 setLiveText('');
                 return;
             } else if (err === 'network') {
-                setErrorMsg('Netzwerkfehler bei der Spracherkennung.');
+                setFallbackMode(true);
+                setSpeechSupported(false);
+                setErrorMsg('Spracherkennung ist gerade nicht erreichbar. Du kannst unten schreiben.');
             } else if (err === 'audio-capture') {
                 setErrorMsg('Kein Mikrofon gefunden oder nicht erreichbar.');
                 setFallbackMode(true);
+                setSpeechSupported(false);
             }
             recognitionRef.current = null;
             spaceHeldRef.current = false;
-            setAmbientState(err === 'not-allowed' || err === 'service-not-allowed' || err === 'audio-capture' ? 'error' : 'idle');
+            setAmbientState(err === 'not-allowed' || err === 'service-not-allowed' || err === 'network' || err === 'audio-capture' ? 'error' : 'idle');
             setLiveText('');
         };
 
@@ -280,7 +292,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
         setMoraText('');
         setMoraIntent('');
         setMoraTools([]);
-    }, [SpeechAPI, ambientState, micPermission]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [SpeechAPI, micPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stopListening = useCallback((abort = false) => {
         if (abort) {
@@ -441,6 +453,18 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
         if (ambientState === 'listening') stopListening();
         else if (ambientState === 'idle')  startListening();
     };
+
+    const handleMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        startListening();
+    }, [startListening]);
+
+    const handleMicPointerRelease = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        if (ambientStateRef.current === 'listening' || recognitionRef.current) {
+            stopListening();
+        }
+    }, [stopListening]);
 
     // ── Fallback text submit ──────────────────────────────────────────────────
     const handleFallbackSubmit = (e: React.FormEvent) => {
@@ -650,9 +674,11 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.25 }}
-                            onPointerDown={e => { e.preventDefault(); startListening(); }}
-                            onPointerUp={e => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
-                            onPointerLeave={e => { e.preventDefault(); if (ambientState === 'listening') stopListening(); }}
+                            onPointerDown={handleMicPointerDown}
+                            onPointerUp={handleMicPointerRelease}
+                            onPointerLeave={handleMicPointerRelease}
+                            onPointerCancel={handleMicPointerRelease}
+                            aria-label={ambientState === 'listening' ? 'Spracherkennung stoppen' : 'Spracherkennung starten'}
                             className="relative flex items-center justify-center rounded-full transition-all focus:outline-none"
                             style={{
                                 width:      64,
@@ -691,8 +717,12 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.25 }}
-                        className="text-[11px] tracking-[0.25em] uppercase font-medium h-5 text-center"
+                        className="max-w-md text-center text-[11px] font-medium"
                         style={{
+                            minHeight: 20,
+                            letterSpacing: ambientState === 'error' ? 0 : '0.25em',
+                            textTransform: ambientState === 'error' ? 'none' : 'uppercase',
+                            lineHeight: ambientState === 'error' ? 1.35 : undefined,
                             color: ambientState === 'done'  ? 'rgba(52,211,153,0.8)'
                                  : ambientState === 'error' ? 'rgba(239,68,68,0.7)'
                                  : 'rgba(255,255,255,0.3)',

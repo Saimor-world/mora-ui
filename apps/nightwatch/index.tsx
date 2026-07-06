@@ -9,6 +9,7 @@ import {
     fetchAllNightwatchIncidents,
     fetchNightwatchIncidents,
     fetchNightwatchMonitors,
+    updateNightwatchIncident,
     type NightwatchMonitorItem,
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -102,7 +103,19 @@ function MonitorChip({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDo
     );
 }
 
-function IncidentRow({ incident, onOpen }: { incident: NightwatchIncidentItem; onOpen: () => void }) {
+function IncidentRow({
+    incident,
+    onOpen,
+    onAck,
+    onResolve,
+    busy,
+}: {
+    incident: NightwatchIncidentItem;
+    onOpen: () => void;
+    onAck: () => void;
+    onResolve: () => void;
+    busy?: boolean;
+}) {
     const cfg = severityConfig(incident.severity);
     return (
         <article className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
@@ -134,14 +147,34 @@ function IncidentRow({ incident, onOpen }: { incident: NightwatchIncidentItem; o
                         </div>
                     )}
                 </div>
-                <button
-                    type="button"
-                    onClick={onOpen}
-                    aria-label="Vorfall öffnen"
-                    className="shrink-0 rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/82"
-                >
-                    Öffnen
-                </button>
+                <div className="flex shrink-0 flex-col gap-1.5">
+                    <button
+                        type="button"
+                        onClick={onOpen}
+                        aria-label="Vorfall oeffnen"
+                        className="rounded-lg border border-white/10 bg-white/[0.05] px-2.5 py-1 text-[10px] text-white/55 transition-colors hover:bg-white/[0.1] hover:text-white/82"
+                    >
+                        Öffnen
+                    </button>
+                    {!incident.acked && (
+                        <button
+                            type="button"
+                            onClick={onAck}
+                            disabled={busy}
+                            className="rounded-lg border border-amber-300/18 bg-amber-400/[0.06] px-2.5 py-1 text-[10px] text-amber-200/70 transition-colors hover:bg-amber-400/[0.1] disabled:opacity-40"
+                        >
+                            ACK
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={onResolve}
+                        disabled={busy}
+                        className="rounded-lg border border-emerald-300/18 bg-emerald-400/[0.06] px-2.5 py-1 text-[10px] text-emerald-200/70 transition-colors hover:bg-emerald-400/[0.1] disabled:opacity-40"
+                    >
+                        Lösen
+                    </button>
+                </div>
             </div>
         </article>
     );
@@ -168,6 +201,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
     const [available, setAvailable] = useState(true);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [actionBusyId, setActionBusyId] = useState<string | null>(null);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const mountedRef = useRef(true);
 
@@ -266,6 +300,20 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     const openIncident = (id: string, title?: string) =>
         openPane({ id: `document-${id}`, type: 'document', title: title || 'Vorfall', size: { width: 900, height: 700 }, data: { nodeId: id } });
+
+    const applyIncidentAction = useCallback(async (incident: NightwatchIncidentItem, action: 'ack' | 'resolve') => {
+        setActionBusyId(incident.id);
+        try {
+            await updateNightwatchIncident(
+                incident.id,
+                action,
+                action === 'resolve' ? 'Resolved from Mora OS Nightwatch.' : 'Acknowledged from Mora OS Nightwatch.',
+            );
+            await load(true);
+        } finally {
+            if (mountedRef.current) setActionBusyId(null);
+        }
+    }, [load]);
 
     const sortedIncidents = useMemo(() => {
         const order: Record<string, number> = { critical: 0, warning: 1, info: 2 };
@@ -472,6 +520,9 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                     key={i.id}
                                     incident={i}
                                     onOpen={() => openIncident(i.id, i.title)}
+                                    onAck={() => applyIncidentAction(i, 'ack')}
+                                    onResolve={() => applyIncidentAction(i, 'resolve')}
+                                    busy={actionBusyId === i.id}
                                 />
                             ))}
                         </div>

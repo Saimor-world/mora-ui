@@ -454,7 +454,7 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
     onActivate,
     onClose,
 }) => {
-    const shouldShow = panes.length > 1 || panes.some((pane) => pane.minimized);
+    const shouldShow = panes.length > 0;
     if (!shouldShow) return null;
 
     return (
@@ -698,7 +698,7 @@ export const Dock = () => {
             case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  toggleVoiceOverlay(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
-            case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
+            case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1080, height: 640 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Setup',          size: { width: 720, height: 640 } }); break;

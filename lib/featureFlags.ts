@@ -1,6 +1,6 @@
 ﻿/**
  * Real Mora feature flags.
- * See: docs/superpowers/specs/2026-04-25-real-mora-design.md Â§8.1
+ * See: docs/superpowers/specs/2026-04-25-real-mora-design.md §8.1
  *
  * Defaults: all OFF. Flip flags via env vars (NEXT_PUBLIC_MORA_*) once a
  * phase has been verified in production.

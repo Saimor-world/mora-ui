@@ -487,8 +487,8 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             source: 'chat',
         });
         return global
-            ? `� Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
-            : `� Ich öffne die Suche für **"${query}"**...`;
+            ? `Ich öffne das gesamte **Saimôr Mycelium**. Hier findest du alle Dokumente des Unternehmens.`
+            : `Ich öffne die Suche für **"${query}"**...`;
     }, [activeCompanyId, openPane]);
 
     const executeDirectOpenIntent = useCallback(async (query: string) => {
@@ -606,7 +606,7 @@ Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
             } finally {
                 setIsLoading(false);
             }
-            return; // � kein Agent-Call, kein parseIntent
+            return; // Kein Agent-Call, kein parseIntent
         }
         // ── Ende Recall-Intent ──────────────────────────────────────────────────────
 

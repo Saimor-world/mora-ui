@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
-import { Activity, MessageSquare, Mic2, Sparkles, RotateCcw } from 'lucide-react';
+import React, { useCallback, useMemo } from 'react';
+import { Activity, MessageSquare, Mic2, RotateCcw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
+import { GlassPanel } from '@/components/layers/GlassPanel';
 import { LagefeldCanvas } from '@/components/lagefeld/LagefeldCanvas';
 import { LagefeldEmptyState } from '@/components/lagefeld/LagefeldEmptyState';
 import { reduceUiActions } from '@/lib/lagefeld/reduceUiActions';
@@ -13,13 +14,23 @@ import { MoraEngineBadge } from '@/components/mora/MoraEngineBadge';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
-export default function LagefeldApp({ initialData }: AppProps) {
+export default function LagefeldApp({ paneId, initialData }: AppProps) {
   const { uiActions, openFlow, hasSignals } = useLagefeldSignals(initialData);
   const { deuten, actions: deutungActions, isLoading: deuting, error: deutungError, reset } = useLagefeldDeutung();
   const moraEngine = useMoraEngine();
   const effectiveActions = deutungActions ?? uiActions;
   const state = useMemo(() => reduceUiActions(effectiveActions), [effectiveActions]);
-  const openPane = usePaneStore((s) => s.openPane);
+  const {
+    openPane,
+    removePane,
+    getPane,
+    minimizePane,
+    focusPane,
+    updatePanePosition,
+    updatePaneSize,
+  } = usePaneStore();
+  const isActive = usePaneStore((s) => s.activePaneId === paneId);
+  const pane = getPane(paneId);
 
   const requestDeutung = useCallback(() => {
     void deuten(openFlow).catch(() => { /* surfaced via deutungError */ });
@@ -37,92 +48,134 @@ export default function LagefeldApp({ initialData }: AppProps) {
     });
   }, [openPane]);
 
+  const closeLagefeld = useCallback(() => {
+    removePane(paneId);
+  }, [paneId, removePane]);
+
+  if (!pane) return null;
+
   return (
-    <section className="flex h-full min-h-[560px] w-full flex-col overflow-hidden rounded-[24px] border border-cyan-200/[0.12] bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.94),rgba(3,7,18,0.98))] text-slate-100">
-      <header className="flex items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100/45">
-            <Activity className="h-3.5 w-3.5" />
-            Lagefeld
+    <GlassPanel
+      title={(
+        <span className="flex items-center gap-2">
+          <Activity size={13} className="text-cyan-300/70" />
+          <span>Lagefeld</span>
+        </span>
+      )}
+      width={pane.size.width}
+      height={pane.size.height}
+      minWidth={760}
+      minHeight={560}
+      initialX={pane.position.x}
+      initialY={pane.position.y}
+      onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
+      onResize={(w, h) => updatePaneSize(paneId, w, h)}
+      onClose={closeLagefeld}
+      onMinimize={() => minimizePane(paneId)}
+      onFocus={() => focusPane(paneId)}
+      isActive={isActive}
+      zIndex={pane.zIndex}
+      showCloseButton
+      showMinimizeButton
+      showMaximizeButton
+      draggable
+      resizable
+      paneId={paneId}
+      dimBackground
+      dimOpacity={0.24}
+      blurIntensity={24}
+      opacity={0.38}
+      padding={0}
+    >
+      <section
+        data-testid="lagefeld-app"
+        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
+      >
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100/45">
+              <Activity className="h-3.5 w-3.5" />
+              Lagefeld
+            </div>
+            <h1 className="mt-2 text-2xl font-semibold text-white/92">
+              Raum der aktuellen Lage
+            </h1>
+            <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/52">
+              Signale aus deinen echten Quellen, Mail, Kalender, Aufgaben und Mora-Beobachtungen.
+            </p>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-white/92">
-            Raum der aktuellen Lage
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/52">
-            Signale aus deinen echten Quellen — Mail, Kalender, Aufgaben und Môra-Beobachtungen.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <MoraEngineBadge engine={moraEngine} />
-          <div className="flex items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
-            {deutungActions ? 'Môras Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
-          </div>
-          <div className="flex flex-wrap justify-end gap-2">
-            <button
-              type="button"
-              onClick={requestDeutung}
-              disabled={deuting || !hasSignals}
-              data-testid="lagefeld-deuten"
-              className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/24 bg-amber-400/12 px-3 py-1.5 text-[11px] font-medium text-amber-100/90 transition-colors hover:border-amber-200/40 hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Sparkles className={`h-3.5 w-3.5 ${deuting ? 'animate-pulse' : ''}`} />
-              {deuting ? 'Môra deutet…' : deutungActions ? 'Neu deuten' : 'Mit Môra deuten'}
-            </button>
-            {deutungActions ? (
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <MoraEngineBadge engine={moraEngine} />
+            <div className="flex items-center gap-2 rounded-full border border-cyan-100/12 bg-cyan-100/[0.06] px-3 py-1.5 text-[11px] text-cyan-100/60">
+              {deutungActions ? 'Moras Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard'}
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
               <button
                 type="button"
-                onClick={reset}
-                data-testid="lagefeld-deuten-reset"
-                className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:border-white/28 hover:bg-white/[0.1]"
+                onClick={requestDeutung}
+                disabled={deuting || !hasSignals}
+                data-testid="lagefeld-deuten"
+                className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/24 bg-amber-400/12 px-3 py-1.5 text-[11px] font-medium text-amber-100/90 transition-colors hover:border-amber-200/40 hover:bg-amber-400/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Übersicht
+                <Sparkles className={`h-3.5 w-3.5 ${deuting ? 'animate-pulse' : ''}`} />
+                {deuting ? 'Mora deutet...' : deutungActions ? 'Neu deuten' : 'Mit Mora deuten'}
               </button>
-            ) : null}
-            <button
-              type="button"
-              onClick={openChat}
-              data-testid="lagefeld-open-chat"
-              className="inline-flex items-center gap-1.5 rounded-full border border-violet-300/20 bg-violet-500/12 px-3 py-1.5 text-[11px] font-medium text-violet-100/90 transition-colors hover:border-violet-200/32 hover:bg-violet-500/20"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              Mit Mora schreiben
-            </button>
-            <button
-              type="button"
-              onClick={openVoiceOverlay}
-              data-testid="lagefeld-open-voice"
-              className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition-colors hover:border-cyan-200/30 hover:bg-cyan-500/18"
-            >
-              <Mic2 className="h-3.5 w-3.5" />
-              Sprache
-            </button>
+              {deutungActions ? (
+                <button
+                  type="button"
+                  onClick={reset}
+                  data-testid="lagefeld-deuten-reset"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-white/14 bg-white/[0.05] px-3 py-1.5 text-[11px] font-medium text-white/70 transition-colors hover:border-white/28 hover:bg-white/[0.1]"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Uebersicht
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={openChat}
+                data-testid="lagefeld-open-chat"
+                className="inline-flex items-center gap-1.5 rounded-full border border-violet-300/20 bg-violet-500/12 px-3 py-1.5 text-[11px] font-medium text-violet-100/90 transition-colors hover:border-violet-200/32 hover:bg-violet-500/20"
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                Mit Mora schreiben
+              </button>
+              <button
+                type="button"
+                onClick={openVoiceOverlay}
+                data-testid="lagefeld-open-voice"
+                className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/18 bg-cyan-500/10 px-3 py-1.5 text-[11px] font-medium text-cyan-100/85 transition-colors hover:border-cyan-200/30 hover:bg-cyan-500/18"
+              >
+                <Mic2 className="h-3.5 w-3.5" />
+                Sprache
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {prompt ? (
-        <div className="mx-6 mt-4 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white/62">
-          <span className="mr-2 text-[10px] uppercase tracking-[0.22em] text-white/34">Ausgangspunkt</span>
-          {prompt}
-        </div>
-      ) : null}
-
-      <main className="flex-1 p-6">
-        {deutungError ? (
-          <div
-            data-testid="lagefeld-deuten-error"
-            className="mb-3 rounded-xl border border-amber-300/24 bg-amber-400/[0.08] px-4 py-2.5 text-[12px] text-amber-100/80"
-          >
-            {deutungError}
+        {prompt ? (
+          <div className="mx-6 mt-4 shrink-0 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white/62">
+            <span className="mr-2 text-[10px] uppercase tracking-[0.22em] text-white/34">Ausgangspunkt</span>
+            {prompt}
           </div>
         ) : null}
-        {hasSignals ? (
-          <LagefeldCanvas state={state} />
-        ) : (
-          <LagefeldEmptyState onOpenChat={openChat} onOpenVoice={openVoiceOverlay} />
-        )}
-      </main>
-    </section>
+
+        <main className="min-h-0 flex-1 p-6">
+          {deutungError ? (
+            <div
+              data-testid="lagefeld-deuten-error"
+              className="mb-3 rounded-xl border border-amber-300/24 bg-amber-400/[0.08] px-4 py-2.5 text-[12px] text-amber-100/80"
+            >
+              {deutungError}
+            </div>
+          ) : null}
+          {hasSignals ? (
+            <LagefeldCanvas state={state} />
+          ) : (
+            <LagefeldEmptyState onOpenChat={openChat} onOpenVoice={openVoiceOverlay} />
+          )}
+        </main>
+      </section>
+    </GlassPanel>
   );
 }

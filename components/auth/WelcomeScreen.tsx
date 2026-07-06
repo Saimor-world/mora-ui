@@ -1573,7 +1573,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         PASSWORT RESET
                                     </h2>
                                     <p className="text-xs text-emerald-500/50 text-center mb-8 leading-relaxed tracking-wide">
-                                        Gib deine E-Mail-Adresse ein. Falls ein Konto existiert, erhältst du einen Reset-Link.
+                                        Nutze die E-Mail-Adresse deines Kontos. Aus Sicherheitsgründen bestätigen wir jede Anfrage gleich.
                                     </p>
                                     <div className="space-y-5">
                                         <div>
@@ -1585,6 +1585,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                                 value={forgotEmail}
                                                 onChange={(e) => setForgotEmail(e.target.value)}
                                                 onKeyDown={(e) => e.key === 'Enter' && void handleForgotPassword()}
+                                                autoComplete="email"
                                                 autoFocus
                                                 className="w-full bg-black/40 backdrop-blur-sm border border-white/10 rounded-xl px-4 py-3.5 text-emerald-50 placeholder:text-emerald-500/30 focus:outline-none focus:border-emerald-500/50 focus:bg-black/60 transition-all duration-300 shadow-inner"
                                                 placeholder="name@firma.de"
@@ -1603,7 +1604,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('login')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? Zurück zum Login'}
+                                            Zurück zum Login
                                         </button>
                                     </div>
                                 </div>
@@ -1633,7 +1634,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     E-Mail Gesendet
                                 </h2>
                                 <p className="text-xs text-emerald-500/60 leading-relaxed mb-8 max-w-xs mx-auto">
-                                    Falls diese E-Mail-Adresse mit einem Konto verknüpft ist, wurde ein Reset-Link gesendet. Bitte prüfe deinen Posteingang.
+                                    Falls diese E-Mail-Adresse mit einem Konto verknüpft ist, wurde ein Reset-Link gesendet. Bitte prüfe auch Spam und Kategorien.
                                 </p>
                                 <button
                                     onClick={() => {
@@ -1642,7 +1643,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     }}
                                     className="text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                 >
-                                    {'? Zurück zum Login'}
+                                    Zurück zum Login
                                 </button>
                             </div>
                         </div>

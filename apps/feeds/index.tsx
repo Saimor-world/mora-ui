@@ -40,14 +40,14 @@ export default function FeedsApp({ paneId }: AppProps) {
         await refetch();
     }, [refetch]);
 
-    if (!pane) return null;
-
     const lastUpdated = useMemo(() => {
         if (!dataUpdatedAt) return null;
         return formatLastUpdatedLabel(new Date(dataUpdatedAt).toISOString());
     }, [dataUpdatedAt]);
 
     const cadenceHint = useMemo(() => feedCadenceHint(items[0]?.sourceTitle), [items]);
+
+    if (!pane) return null;
 
     return (
         <GlassPanel
