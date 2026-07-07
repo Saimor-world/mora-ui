@@ -150,7 +150,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
 
         const centerX = size / 2;
         const centerY = size / 2;
-        const radius = size * 0.46;
+        const radius = size * 0.492;
 
         const noise = noiseRef.current;
 
@@ -212,17 +212,17 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                     const brightness = (plasma * 0.35 + 2.6) * Math.pow(falloff, 0.8);
 
                     const idx = (y * size + x) * 4;
-                    // milk at 90 (was 180) — still adds whiteness at center but less wash
-                    const milk = 90 * Math.pow(falloff, 1.1);
+                    // Controlled luminosity: enough core light without washing out the plasma.
+                    const milk = 54 * Math.pow(falloff, 1.18);
                     const grainSeed = ((x * 17 + y * 31) % 23) / 23 - 0.5;
-                    const grain = grainSeed * 7 * (1 - falloff * 0.5);
+                    const grain = grainSeed * 5 * (1 - falloff * 0.5);
 
                     data[idx]     = Math.min(255, baseColor.r * brightness * colorVariation + milk + grain);
                     data[idx + 1] = Math.min(255, baseColor.g * brightness * colorVariation + milk + grain);
                     data[idx + 2] = Math.min(255, baseColor.b * brightness * colorVariation + milk + grain);
                     // Alpha: opaque body, feathered 1px rim, breathe scale
                     const rimFade = Math.min(1, radius + 1 - dist);
-                    data[idx + 3] = Math.min(255, 255 * Math.pow(falloff, 0.12) * rimFade * 2.2 * breathe);
+                    data[idx + 3] = Math.min(255, 255 * Math.pow(falloff, 0.10) * rimFade * 2.35 * breathe);
                 }
             }
 
@@ -285,7 +285,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             ctx.globalCompositeOperation = 'screen';
 
             // 1. Emerald core — centred, enhances pixel render (not replaces)
-            ctx.globalAlpha = 0.28;
+            ctx.globalAlpha = 0.2;
             const coreGrad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, radius * 0.7);
             coreGrad.addColorStop(0,    color + 'EE');
             coreGrad.addColorStop(0.4,  color + '99');
@@ -297,8 +297,8 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             ctx.fill();
 
             // 2. Wide colour corona ring
-            ctx.globalAlpha = 0.25;
-            const coronaGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.2, centerX, centerY, radius * 1.05);
+            ctx.globalAlpha = 0.12;
+            const coronaGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.28, centerX, centerY, radius * 1.02);
             coronaGrad.addColorStop(0,    color + '00');
             coronaGrad.addColorStop(0.45, color + '88');
             coronaGrad.addColorStop(0.82, color + '33');
@@ -317,8 +317,8 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
             const specX = centerX - radius * 0.22;
             const specY = centerY - radius * 0.25;
             const specGrad = ctx.createRadialGradient(specX, specY, 0, specX, specY, radius * 0.18);
-            specGrad.addColorStop(0,   'rgba(255,255,255,0.88)');
-            specGrad.addColorStop(0.35,'rgba(255,255,255,0.30)');
+            specGrad.addColorStop(0,   'rgba(255,255,255,0.72)');
+            specGrad.addColorStop(0.35,'rgba(255,255,255,0.24)');
             specGrad.addColorStop(0.7, 'rgba(255,255,255,0.06)');
             specGrad.addColorStop(1,   'rgba(255,255,255,0)');
             ctx.fillStyle = specGrad;
@@ -457,38 +457,40 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({
                 className="absolute inset-0"
             />
 
-            {/* Solar Flares - rotating asymmetric glow */}
+            {/* Internal shimmer, intentionally subtle so it does not read as a second orb. */}
             <div
-                className="absolute inset-[-25%] rounded-full pointer-events-none animate-spin"
+                className="absolute inset-[-12%] rounded-full pointer-events-none animate-spin"
                 style={{
                     background: `conic-gradient(from 0deg,
-                        ${color}00 0%, ${color}30 5%, ${color}00 10%,
-                        ${color}00 25%, ${color}20 30%, ${color}00 35%,
-                        ${color}00 55%, ${color}25 60%, ${color}00 65%,
-                        ${color}00 85%, ${color}15 90%, ${color}00 95%
+                        ${color}00 0%, ${color}18 5%, ${color}00 11%,
+                        ${color}00 30%, ${color}12 36%, ${color}00 42%,
+                        ${color}00 62%, ${color}14 68%, ${color}00 74%,
+                        ${color}00 88%, ${color}10 93%, ${color}00 100%
                     )`,
-                    filter: 'blur(15px)',
+                    filter: 'blur(12px)',
+                    opacity: 0.42,
                     animationDuration: '30s'
                 }}
             />
 
-            {/* Outer glow ring - Corona - ENHANCED */}
+            {/* Soft bloom only; no visible outer disc. */}
             <div
-                className="absolute inset-[-35%] rounded-full pointer-events-none"
+                className="absolute inset-[-16%] rounded-full pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle at center, ${color}50 0%, ${color}25 40%, transparent 70%)`,
-                    filter: 'blur(35px)',
+                    background: `radial-gradient(circle at center, ${color}22 0%, ${color}12 38%, transparent 72%)`,
+                    filter: 'blur(24px)',
+                    opacity: 0.34,
                     animation: `pulse ${pulseDuration} ease-in-out infinite`
                 }}
             />
 
-            {/* Inner hot core glow - NEW */}
+            {/* Inner living core. */}
             <div
-                className="absolute inset-[15%] rounded-full pointer-events-none"
+                className="absolute inset-[18%] rounded-full pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle at 40% 40%, white 0%, ${color}AA 30%, transparent 60%)`,
-                    filter: 'blur(8px)',
-                    opacity: 0.4,
+                    background: `radial-gradient(circle at 40% 40%, rgba(255,255,255,0.76) 0%, ${color}88 28%, transparent 64%)`,
+                    filter: 'blur(10px)',
+                    opacity: 0.28,
                     mixBlendMode: 'screen'
                 }}
             />

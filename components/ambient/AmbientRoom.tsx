@@ -599,25 +599,27 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                 )}
 
                 <div className="relative flex items-center justify-center">
-                    {/* Glowing state-responsive halo circle directly behind orb */}
+                    {/* Soft state field behind Mora. Elliptic so it never reads as a second orb. */}
                     <motion.div
-                        className="absolute rounded-full filter blur-[60px] pointer-events-none"
+                        className="absolute pointer-events-none"
                         style={{
-                            width: 260,
-                            height: 260,
+                            width: 250,
+                            height: 150,
+                            borderRadius: '48% 52% 50% 50% / 58% 42% 56% 44%',
+                            filter: 'blur(54px)',
                         }}
                         animate={
                             ambientState === 'listening'
-                                ? { background: 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, transparent 70%)', scale: [1, 1.15, 1] }
+                                ? { background: 'radial-gradient(ellipse, rgba(16,185,129,0.28) 0%, transparent 72%)', scale: [1, 1.12, 1] }
                                 : ambientState === 'thinking' || ambientState === 'executing' || isLoading
-                                ? { background: 'radial-gradient(circle, rgba(59,130,246,0.35) 0%, transparent 70%)', scale: [1, 1.1, 1] }
+                                ? { background: 'radial-gradient(ellipse, rgba(59,130,246,0.26) 0%, transparent 72%)', scale: [1, 1.08, 1] }
                                 : ambientState === 'responding'
-                                ? { background: 'radial-gradient(circle, rgba(245,158,11,0.28) 0%, transparent 70%)', scale: [1, 1.05, 1] }
+                                ? { background: 'radial-gradient(ellipse, rgba(245,158,11,0.22) 0%, transparent 72%)', scale: [1, 1.05, 1] }
                                 : ambientState === 'done'
-                                ? { background: 'radial-gradient(circle, rgba(52,211,153,0.4) 0%, transparent 70%)', scale: [1, 1.25, 1] }
+                                ? { background: 'radial-gradient(ellipse, rgba(52,211,153,0.32) 0%, transparent 72%)', scale: [1, 1.18, 1] }
                                 : ambientState === 'error'
-                                ? { background: 'radial-gradient(circle, rgba(239,68,68,0.35) 0%, transparent 70%)', scale: [1, 1.15, 1] }
-                                : { background: 'radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%)', scale: [1, 1.05, 1] }
+                                ? { background: 'radial-gradient(ellipse, rgba(239,68,68,0.28) 0%, transparent 72%)', scale: [1, 1.1, 1] }
+                                : { background: 'radial-gradient(ellipse, rgba(45,212,191,0.18) 0%, transparent 72%)', scale: [1, 1.04, 1] }
                         }
                         transition={
                             ambientState === 'listening'

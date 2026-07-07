@@ -93,16 +93,16 @@ export function MoraOrb({
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
-            {/* CORONA RESONANCE — breathes in sync with the hub morph (one body) */}
+            {/* Soft presence field. Keep it atmospheric, not a second orb body. */}
             <motion.div
-                className="absolute inset-[-60%] rounded-full mix-blend-screen pointer-events-none"
+                className="absolute inset-[-38%] rounded-full mix-blend-screen pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle, ${color}40 0%, transparent 70%)`,
-                    filter: 'blur(60px)',
+                    background: `radial-gradient(circle, ${color}30 0%, ${color}12 34%, transparent 68%)`,
+                    filter: 'blur(54px)',
                 }}
                 animate={isHovered
-                    ? { opacity: 0.3, scale: 1.15 }
-                    : { opacity: [0.14, 0.22, 0.14], scale: [1, 1.05, 1] }}
+                    ? { opacity: 0.22, scale: 1.08 }
+                    : { opacity: [0.08, 0.15, 0.08], scale: [1, 1.035, 1] }}
                 transition={isHovered
                     ? { duration: 0.18, ease: 'easeOut' }
                     : { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' }}
@@ -112,8 +112,8 @@ export function MoraOrb({
                 <motion.div
                     className={`relative ${sz.hub} flex items-center justify-center overflow-hidden cursor-pointer`}
                 style={{
-                        background: `radial-gradient(circle at 50% 45%, ${color}1f 0%, rgba(2,10,8,0.45) 72%, rgba(1,6,5,0.65) 100%)`,
-                        boxShadow: `0 14px 44px rgba(0,0,0,0.5), 0 0 64px ${color}55, inset 0 0 0 1.5px ${color}66, inset 0 0 28px ${color}33`,
+                        background: 'transparent',
+                        boxShadow: `0 18px 54px rgba(0,0,0,0.34), 0 0 46px ${color}32`,
                 }}
                 animate={{
                     borderRadius: [
@@ -130,7 +130,7 @@ export function MoraOrb({
             >
                 {/* PLASMA CONTENT — MORA'S HEART. Fills + centred; the hub's
                     overflow-hidden + morphing borderRadius clip it into the liquid blob. */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-95 saturate-[1.15]">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-100 saturate-[1.24] contrast-[1.06]">
                     <PlasmaOrb
                         color={color}
                         state={state as any}
@@ -142,7 +142,7 @@ export function MoraOrb({
                 <AnimatePresence>
                     {isHovered && (
                         <motion.div
-                            className="absolute inset-[-16px] rounded-full border border-emerald-300/40 pointer-events-none"
+                            className="absolute inset-[-12px] rounded-full border border-emerald-300/30 pointer-events-none"
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 0.65, scale: 1.03 }}
                             exit={{ opacity: 0, scale: 1.1 }}
@@ -183,16 +183,18 @@ export function MoraOrb({
                 <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                        background: 'radial-gradient(52% 42% at 36% 30%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.08) 20%, transparent 42%)',
+                        background: 'radial-gradient(38% 30% at 36% 30%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.045) 28%, transparent 54%)',
                         mixBlendMode: 'screen',
+                        opacity: 0.55,
                     }}
                 />
                 {/* DEPTH — soft inner shadow lower-right gives the body sphere volume */}
                 <div
                     className="absolute inset-0 pointer-events-none"
                     style={{
-                        background: 'radial-gradient(85% 85% at 70% 76%, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.12) 38%, transparent 60%)',
+                        background: 'radial-gradient(62% 62% at 70% 76%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.05) 34%, transparent 58%)',
                         mixBlendMode: 'multiply',
+                        opacity: 0.42,
                     }}
                 />
             </motion.div>
