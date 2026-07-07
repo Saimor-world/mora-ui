@@ -70,10 +70,10 @@ const GEO_SHAPES = [
 // Per-scene deep-hued base gradients — these replace the static steel-blue base
 // so the ENTIRE backdrop shifts colour dramatically when the scene changes.
 const SCENE_BASE: Record<RitualSceneId, string> = {
-    flow:   'linear-gradient(160deg, #103828 0%, #0c2418 40%, #060f0a 100%)',  // rich forest
-    build:  'linear-gradient(160deg, #0a2848 0%, #071a32 40%, #030e1c 100%)',  // rich ocean
-    lounge: 'linear-gradient(160deg, #3a1c08 0%, #281205 40%, #140803 100%)', // rich ember
-    night:  'linear-gradient(160deg, #1a1640 0%, #110f2e 40%, #08061a 100%)', // rich void
+    flow:   'linear-gradient(160deg, #1c5a3e 0%, #17472f 40%, #0f2e1d 100%)',  // rich forest, lightened 2026-07-07
+    build:  'linear-gradient(160deg, #164a80 0%, #123a64 40%, #0c2444 100%)',  // rich ocean, lightened 2026-07-07
+    lounge: 'linear-gradient(160deg, #5c3010 0%, #46240a 40%, #2c1508 100%)', // rich ember, lightened 2026-07-07
+    night:  'linear-gradient(160deg, #2e2864 0%, #241f4e 40%, #171335 100%)', // rich void, lightened 2026-07-07
 };
 
 // Per-scene colour overlays painted on top of the base via screen blend.
