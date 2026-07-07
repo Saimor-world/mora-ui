@@ -836,7 +836,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         return suggestions;
-    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, openVoiceOverlay, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
 
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {

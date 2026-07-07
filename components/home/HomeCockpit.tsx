@@ -284,7 +284,7 @@ function HomeSignalCard({
         rose: 'from-rose-300/24 to-red-500/[0.06] text-rose-100 border-rose-200/20',
     };
     const classes = [
-        'group flex min-h-[112px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
+        'group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
         tones[tone],
         onClick ? 'hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.06]' : '',
     ].join(' ');
@@ -292,13 +292,13 @@ function HomeSignalCard({
         <>
             <div className="flex items-center justify-between gap-3">
                 <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/42">{label}</span>
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white/72 group-hover:text-white">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.08] text-white/72 group-hover:text-white">
                     {icon}
                 </span>
             </div>
             <div>
-                <div className="text-[clamp(22px,2.3vw,32px)] font-semibold leading-none text-white">{value}</div>
-                <div className="mt-2 text-[12px] leading-snug text-white/54">{detail}</div>
+                <div className="text-[clamp(21px,2vw,28px)] font-semibold leading-none text-white">{value}</div>
+                <div className="mt-1.5 text-[11px] leading-snug text-white/56">{detail}</div>
             </div>
         </>
     );
@@ -736,7 +736,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
         {
             label: 'Betrieb',
             value: incidentStatusPanels.length > 0 ? String(incidentStatusPanels.length) : 'OK',
-            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorfaelle' : 'Nightwatch meldet keine offenen Vorfaelle',
+            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorf?lle' : 'Nightwatch meldet keine offenen Vorf?lle',
             icon: <Activity size={16} />,
             onClick: onOpenNightwatch,
             tone: incidentStatusPanels.length > 0 ? 'rose' : 'emerald',
@@ -779,17 +779,17 @@ export function HomeCockpit(props: HomeCockpitProps) {
             {/* 1. HQ Lage */}
             <motion.div
                 {...fade(0)}
-                className="relative shrink-0 overflow-hidden rounded-[1.6rem] border border-white/[0.12] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.105),rgba(15,23,42,0.58))] px-5 py-5 shadow-[0_18px_54px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl xl:px-6"
+                className="relative shrink-0 overflow-hidden rounded-[1.45rem] border border-white/[0.12] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.105),rgba(15,23,42,0.58))] px-4 py-4 shadow-[0_18px_54px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl xl:px-5"
             >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/70 via-cyan-200/45 to-violet-300/50" />
-                <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] xl:items-stretch">
-                    <div className="flex min-w-0 flex-col justify-between gap-5">
-                        <div className="flex min-w-0 items-start gap-4">
+                <div className="grid gap-5 md:grid-cols-[minmax(0,0.96fr)_minmax(320px,0.78fr)] md:items-stretch">
+                    <div className="flex min-w-0 flex-col justify-between gap-4">
+                        <div className="flex min-w-0 items-start gap-3.5">
                             <button
                                 type="button"
                                 onClick={onOpenMora}
-                                aria-label={"M\u00d4RA oeffnen"}
-                                className="group relative flex h-14 w-14 shrink-0 items-center justify-center outline-none"
+                                aria-label={"M\u00d4RA \u00f6ffnen"}
+                                className="group relative flex h-12 w-12 shrink-0 items-center justify-center outline-none"
                             >
                                 <motion.span
                                     className="absolute inset-0 rounded-full"
@@ -798,7 +798,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                                     transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
                                 />
                                 <span
-                                    className="relative flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105"
+                                    className="relative flex h-10 w-10 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105"
                                     style={{
                                         background: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45), rgba(var(--scene-rgb, 16,185,129), 0.68) 46%, rgba(0,0,0,0.28))',
                                         boxShadow: '0 0 30px rgba(var(--scene-rgb, 16,185,129), 0.48), inset 0 1px 2px rgba(255,255,255,0.42)',
@@ -809,11 +809,11 @@ export function HomeCockpit(props: HomeCockpitProps) {
                             </button>
                             <div className="min-w-0">
                                 <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">HQ Lage - {todayLabel}</div>
-                                <h1 className="mt-2 text-[clamp(26px,3vw,44px)] font-semibold leading-[1.03] text-white/94">
+                                <h1 className="mt-2 text-[clamp(24px,2.6vw,40px)] font-semibold leading-[1.03] text-white/94">
                                     {greeting}{firstName ? <span className="font-light text-white/58">, {firstName}.</span> : '.'}
                                 </h1>
-                                <p className="mt-3 max-w-[720px] text-[13px] leading-6 text-white/58">
-                                    Betrieb, Gewebe, Post und Team liegen zusammen. Der naechste echte Faden ist sofort sichtbar.
+                                <p className="mt-2 max-w-[640px] text-[13px] leading-5 text-white/58">
+                                    Betrieb, Gewebe, Post und Team liegen zusammen. Der n?chste echte Faden ist sofort sichtbar.
                                 </p>
                             </div>
                         </div>
@@ -837,7 +837,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2.5">
                         {primarySignals.map((signal) => (
                             <HomeSignalCard
                                 key={signal.label}
