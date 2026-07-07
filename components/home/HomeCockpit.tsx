@@ -176,9 +176,9 @@ function WidgetGlanceCard({ type, accent, context, className = '', compact = fal
 
         <div
 
-            className={`relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.15rem] border border-white/[0.09] shadow-[0_10px_36px_rgba(0,0,0,0.32),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-md ${className}`}
+            className={`relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.11] shadow-[0_10px_32px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md ${className}`}
 
-            style={{ backgroundColor: compact ? 'rgba(8, 6, 22, 0.48)' : 'rgba(8, 6, 22, 0.54)' }}
+            style={{ background: compact ? 'linear-gradient(180deg, rgba(255,255,255,0.075), rgba(15,23,42,0.48))' : 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(15,23,42,0.54))' }}
 
         >
 
@@ -259,6 +259,56 @@ const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 };
 
 
+
+
+function HomeSignalCard({
+    label,
+    value,
+    detail,
+    icon,
+    onClick,
+    tone = 'emerald',
+}: {
+    label: string;
+    value: string;
+    detail: string;
+    icon: React.ReactNode;
+    onClick?: () => void;
+    tone?: 'emerald' | 'cyan' | 'violet' | 'amber' | 'rose';
+}) {
+    const tones: Record<'emerald' | 'cyan' | 'violet' | 'amber' | 'rose', string> = {
+        emerald: 'from-emerald-300/20 to-emerald-500/[0.05] text-emerald-100 border-emerald-200/16',
+        cyan: 'from-cyan-300/20 to-sky-500/[0.05] text-cyan-100 border-cyan-200/16',
+        violet: 'from-violet-300/20 to-indigo-500/[0.05] text-violet-100 border-violet-200/16',
+        amber: 'from-amber-300/22 to-orange-500/[0.05] text-amber-100 border-amber-200/18',
+        rose: 'from-rose-300/24 to-red-500/[0.06] text-rose-100 border-rose-200/20',
+    };
+    const classes = [
+        'group flex min-h-[112px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
+        tones[tone],
+        onClick ? 'hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.06]' : '',
+    ].join(' ');
+    const content = (
+        <>
+            <div className="flex items-center justify-between gap-3">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/42">{label}</span>
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.08] text-white/72 group-hover:text-white">
+                    {icon}
+                </span>
+            </div>
+            <div>
+                <div className="text-[clamp(22px,2.3vw,32px)] font-semibold leading-none text-white">{value}</div>
+                <div className="mt-2 text-[12px] leading-snug text-white/54">{detail}</div>
+            </div>
+        </>
+    );
+
+    if (onClick) {
+        return <button type="button" onClick={onClick} className={classes}>{content}</button>;
+    }
+
+    return <div className={classes}>{content}</div>;
+}
 
 function HomeMicroSparkline({ values, color = 'rgba(52,211,153,0.75)' }: { values: readonly number[]; color?: string }) {
 
@@ -674,6 +724,50 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
     const titledChanges = (homeView?.changes ?? []).filter(c => c.title && c.title.trim().length > 0);
 
+    const orgStats = homeView?.org_stats;
+    const orgStatItems = showOrgOverview ? [
+        { label: 'Abteilungen', value: orgStats?.departments ?? 0, icon: <Users size={11} /> },
+        { label: 'Dokumente', value: orgStats?.documents ?? 0, icon: <FileText size={11} /> },
+        { label: 'Ordner', value: orgStats?.folders ?? 0, icon: <Folder size={11} /> },
+        { label: 'Aufgaben', value: orgStats?.tasks ?? 0, icon: <CheckCircle2 size={11} /> },
+        ...(orgStats?.members != null ? [{ label: 'Mitglieder', value: orgStats.members, icon: <Users size={11} /> }] : []),
+    ].filter((stat) => stat.value > 0) : [];
+    const primarySignals = [
+        {
+            label: 'Betrieb',
+            value: incidentStatusPanels.length > 0 ? String(incidentStatusPanels.length) : 'OK',
+            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorfaelle' : 'Nightwatch meldet keine offenen Vorfaelle',
+            icon: <Activity size={16} />,
+            onClick: onOpenNightwatch,
+            tone: incidentStatusPanels.length > 0 ? 'rose' : 'emerald',
+        },
+        {
+            label: 'Gewebe',
+            value: moraSignalCount > 0 ? String(moraSignalCount) : 'wach',
+            detail: titledChanges[0]?.title ?? moraStatusLabel,
+            icon: <Network size={16} />,
+            onClick: onOpenMora,
+            tone: 'violet',
+        },
+        {
+            label: 'Post',
+            value: mailPreview.length > 0 ? String(mailPreview.length) : 'klar',
+            detail: mailPreview[0]?.subject ?? 'Keine neue Mail im Lagebild',
+            icon: <Mail size={16} />,
+            onClick: onOpenMail,
+            tone: 'cyan',
+        },
+        {
+            label: 'Team',
+            value: onlineCount > 0 ? String(onlineCount) : 'still',
+            detail: unreadTeamMessages > 0 ? String(unreadTeamMessages) + ' ungelesene Teamnachrichten' : 'Teamkanal ohne akuten Druck',
+            icon: <Users size={16} />,
+            onClick: onOpenTeam,
+            tone: 'amber',
+        },
+    ] as const;
+
+
 
 
     return (
@@ -682,255 +776,88 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
 
 
-            {/* ── 1. Greeting row ── */}
-
-            <motion.div {...fade(0)} className="flex shrink-0 items-start justify-between gap-5">
-
-                <div className="flex min-w-0 items-center gap-4">
-
-                    <button
-
-                        type="button"
-
-                        onClick={onOpenMora}
-
-                        aria-label="MÔRA öffnen"
-
-                        className="group relative flex h-12 w-12 shrink-0 items-center justify-center outline-none"
-
-                    >
-
-                        <motion.span
-
-                            className="absolute inset-0 rounded-full"
-
-                            style={{ background: 'radial-gradient(circle, rgba(var(--scene-rgb, 16,185,129), 0.32) 0%, transparent 70%)' }}
-
-                            animate={{ scale: [1, 1.22, 1], opacity: [0.55, 0.22, 0.55] }}
-
-                            transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
-
-                        />
-
-                        <span
-
-                            className="relative flex h-9 w-9 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105"
-
-                            style={{
-
-                                background: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45), rgba(var(--scene-rgb, 16,185,129), 0.62) 46%, rgba(0,0,0,0.32))',
-
-                                boxShadow: '0 0 26px rgba(var(--scene-rgb, 16,185,129), 0.5), inset 0 1px 2px rgba(255,255,255,0.4)',
-
-                            }}
-
-                        >
-
-                            <Sparkles size={14} className="text-white/95" />
-
-                        </span>
-
-                    </button>
-
-                    <div className="min-w-0">
-
-                        <h1 className="text-[clamp(24px,2.4vw,36px)] font-medium leading-[1.05] tracking-[-0.03em] text-white/92">
-
-                            {greeting}{firstName ? <span className="font-light text-white/46">, {firstName}.</span> : '.'}
-
-                        </h1>
-
-                        <div className="mt-1.5 text-[11px] text-white/34">{todayLabel}</div>
-
-                    </div>
-
-                </div>
-
-            </motion.div>
-
-
-
-            {/* ── 2. Hero strip: stats + MÔRA status + compact personal note ── */}
-
-            <motion.div {...fade(0.04)} className="flex shrink-0 flex-col gap-3 xl:flex-row xl:items-stretch">
-
-                <div className="relative flex min-w-0 flex-1 flex-col gap-2.5 rounded-[1.25rem] border border-white/[0.08] bg-black/18 px-4 py-3 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
-
-                    <div className="pointer-events-none absolute left-0 top-0 h-[1px] w-full bg-gradient-to-r from-emerald-400/40 via-violet-300/25 to-transparent" />
-
-                    <div className="flex flex-wrap items-center gap-2">
-
-                        <button
-
-                            type="button"
-
-                            onClick={onOpenMora}
-
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.04] px-3 py-1 text-[10px] text-white/52 transition-colors hover:text-white/78"
-
-                        >
-
-                            <span className="font-semibold" style={{ color: 'rgba(var(--scene-rgb, 16,185,129), 0.92)' }}>MÔRA</span>
-
-                            <span>{moraStatusLabel}</span>
-
-                        </button>
-
-                        {onlineCount > 0 && (
-
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.08] px-2.5 py-1 text-[10px] text-emerald-200/78">
-
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-
-                                {onlineCount} online
-
-                            </span>
-
-                        )}
-
-                        {mailPreview.length > 0 && (
-
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/18 bg-violet-400/[0.07] px-2.5 py-1 text-[10px] text-violet-200/72">
-
-                                <Mail size={10} />
-
-                                {mailPreview.length} {mailPreview.length === 1 ? 'Mail' : 'Mails'}
-
-                            </span>
-
-                        )}
-
-                        {incidentStatusPanels.length > 0 && (
-
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-rose-400/20 bg-rose-400/[0.08] px-2.5 py-1 text-[10px] text-rose-200/75">
-
-                                <span className="h-1.5 w-1.5 rounded-full bg-rose-400 animate-pulse" />
-
-                                {incidentStatusPanels.length} {incidentStatusPanels.length === 1 ? 'Vorfall' : 'Vorfälle'}
-
-                            </span>
-
-                        )}
-
-                        {calendarPreview[0] && (
-
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/18 bg-cyan-400/[0.07] px-2.5 py-1 text-[10px] text-cyan-200/72">
-
-                                <CalendarDays size={10} />
-
-                                {calendarPreview[0].time ?? 'Termin'}
-
-                            </span>
-
-                        )}
-
-                    </div>
-
-
-
-                    {showOrgOverview && homeView?.org_stats && (homeView.org_stats.departments > 0 || homeView.org_stats.documents > 0) && (
-
-                        <div className="flex flex-wrap gap-1.5">
-
-                            {[
-
-                                { label: 'Abteilungen', value: homeView.org_stats.departments, icon: <Users size={11} /> },
-
-                                { label: 'Dokumente', value: homeView.org_stats.documents, icon: <FileText size={11} /> },
-
-                                { label: 'Ordner', value: homeView.org_stats.folders, icon: <Folder size={11} /> },
-
-                                { label: 'Aufgaben', value: homeView.org_stats.tasks, icon: <CheckCircle2 size={11} /> },
-
-                                ...(homeView.org_stats.members != null ? [{ label: 'Mitglieder', value: homeView.org_stats.members, icon: <Users size={11} /> }] : []),
-
-                            ].filter(s => s.value > 0).map(stat => (
-
-                                <div key={stat.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.03] px-2.5 py-1 text-[10px] text-white/48">
-
-                                    <span className="opacity-55">{stat.icon}</span>
-
-                                    <span className="tabular-nums font-semibold text-white/82">{stat.value}</span>
-
+            {/* 1. HQ Lage */}
+            <motion.div
+                {...fade(0)}
+                className="relative shrink-0 overflow-hidden rounded-[1.6rem] border border-white/[0.12] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.105),rgba(15,23,42,0.58))] px-5 py-5 shadow-[0_18px_54px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl xl:px-6"
+            >
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/70 via-cyan-200/45 to-violet-300/50" />
+                <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(340px,0.85fr)] xl:items-stretch">
+                    <div className="flex min-w-0 flex-col justify-between gap-5">
+                        <div className="flex min-w-0 items-start gap-4">
+                            <button
+                                type="button"
+                                onClick={onOpenMora}
+                                aria-label={"M\u00d4RA oeffnen"}
+                                className="group relative flex h-14 w-14 shrink-0 items-center justify-center outline-none"
+                            >
+                                <motion.span
+                                    className="absolute inset-0 rounded-full"
+                                    style={{ background: 'radial-gradient(circle, rgba(var(--scene-rgb, 16,185,129), 0.32) 0%, transparent 70%)' }}
+                                    animate={{ scale: [1, 1.18, 1], opacity: [0.55, 0.24, 0.55] }}
+                                    transition={{ duration: 4.5, repeat: Infinity, ease: 'easeInOut' }}
+                                />
+                                <span
+                                    className="relative flex h-11 w-11 items-center justify-center rounded-full transition-transform duration-300 group-hover:scale-105"
+                                    style={{
+                                        background: 'radial-gradient(circle at 32% 28%, rgba(255,255,255,0.45), rgba(var(--scene-rgb, 16,185,129), 0.68) 46%, rgba(0,0,0,0.28))',
+                                        boxShadow: '0 0 30px rgba(var(--scene-rgb, 16,185,129), 0.48), inset 0 1px 2px rgba(255,255,255,0.42)',
+                                    }}
+                                >
+                                    <Sparkles size={16} className="text-white/95" />
+                                </span>
+                            </button>
+                            <div className="min-w-0">
+                                <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/42">HQ Lage - {todayLabel}</div>
+                                <h1 className="mt-2 text-[clamp(26px,3vw,44px)] font-semibold leading-[1.03] text-white/94">
+                                    {greeting}{firstName ? <span className="font-light text-white/58">, {firstName}.</span> : '.'}
+                                </h1>
+                                <p className="mt-3 max-w-[720px] text-[13px] leading-6 text-white/58">
+                                    Betrieb, Gewebe, Post und Team liegen zusammen. Der naechste echte Faden ist sofort sichtbar.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={onOpenMora}
+                                className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.06] px-3.5 py-2 text-[11px] text-white/66 transition-colors hover:border-white/[0.18] hover:text-white"
+                            >
+                                <Sparkles size={13} className="text-emerald-200/76" />
+                                <span>{"M\u00d4RA"} {moraStatusLabel}</span>
+                            </button>
+                            {orgStatItems.map((stat) => (
+                                <span key={stat.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.08] bg-white/[0.045] px-3 py-2 text-[11px] text-white/54">
+                                    <span className="opacity-65">{stat.icon}</span>
+                                    <span className="tabular-nums font-semibold text-white/86">{stat.value}</span>
                                     <span>{stat.label}</span>
-
-                                </div>
-
+                                </span>
                             ))}
-
-                            {(homeView.changes.length > 0 || homeView.attention.length > 0) && (
-
-                                <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-400/20 bg-violet-400/[0.07] px-2.5 py-1 text-[10px] text-violet-200/72">
-
-                                    <Brain size={11} className="opacity-80" />
-
-                                    <span className="tabular-nums font-semibold text-violet-100/86">{homeView.changes.length + homeView.attention.length}</span>
-
-                                    <span>Môra-Signale</span>
-
-                                </div>
-
-                            )}
-
                         </div>
+                    </div>
 
-                    )}
-
-
-
-                    {titledChanges.length > 0 && (
-
-                        <div className="flex flex-wrap gap-2 pt-0.5">
-
-                            {titledChanges.slice(0, 2).map(change => (
-
-                                <div key={change.id} className="inline-flex max-w-full items-center gap-2 rounded-xl border border-violet-400/12 bg-violet-400/[0.05] px-2.5 py-1.5">
-
-                                    <TrendingUp size={11} className="shrink-0 text-violet-300/58" />
-
-                                    <span className="truncate text-[11px] text-white/72">{change.title}</span>
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    )}
-
+                    <div className="grid grid-cols-2 gap-3">
+                        {primarySignals.map((signal) => (
+                            <HomeSignalCard
+                                key={signal.label}
+                                label={signal.label}
+                                value={signal.value}
+                                detail={signal.detail}
+                                icon={signal.icon}
+                                onClick={signal.onClick}
+                                tone={signal.tone}
+                            />
+                        ))}
+                    </div>
                 </div>
-
-
-
-                <div className="w-full xl:max-w-[min(420px,38%)]">
-
-                    <PersonalHomeZone
-
-                        privateLabel={privateAreaLabel}
-
-                        folderCount={privateFolderCount}
-
-                        documentCount={privateDocumentCount}
-
-                        fileCount={privateFileCount}
-
-                        onOpenPrivateArea={onOpenPrivateArea}
-
-                        variant="compact"
-
-                    />
-
-                </div>
-
             </motion.div>
-
-
 
             {/* ── 3. Arbeitseinstiege + compact bento glances ──
                  Home is a personal cockpit — no cosmos hero. Mein Tag stays tall left;
                  Nightwatch is a compact edge glance, not a centre column. */}
 
-            <motion.div {...fade(0.06)} className="shrink-0 rounded-[1.1rem] border border-white/[0.06] bg-black/14 px-4 py-3 backdrop-blur-sm">
+            <motion.div {...fade(0.06)} className="shrink-0 rounded-[1.2rem] border border-white/[0.09] bg-white/[0.055] px-4 py-3 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
 
                 <ArbeitseinstiegeStrip
 
@@ -1015,6 +942,17 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     </motion.div>
 
+                </div>
+
+                <div className="mt-3">
+                    <PersonalHomeZone
+                        privateLabel={privateAreaLabel}
+                        folderCount={privateFolderCount}
+                        documentCount={privateDocumentCount}
+                        fileCount={privateFileCount}
+                        onOpenPrivateArea={onOpenPrivateArea}
+                        variant="compact"
+                    />
                 </div>
 
             </div>
