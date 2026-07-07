@@ -26,10 +26,10 @@ export function usePlatformModifier(): string {
     return modifier;
 }
 
-/** Spotlight: Cmd+K on macOS, Alt+K on Windows/Linux (Ctrl+K is browser-owned). */
+/** Spotlight: Cmd+K on macOS, Strg+K on Windows/Linux. Alt+K remains a fallback. */
 export function getSpotlightShortcutKeys(mod?: string): string[] {
     const m = mod || getPlatformModifier();
-    return m === 'Cmd' ? [m, 'K'] : ['Alt', 'K'];
+    return [m, 'K'];
 }
 
 export function getSpotlightShortcutLabel(mod?: string): string {
@@ -42,5 +42,5 @@ export function isSpotlightShortcut(event: KeyboardEvent): boolean {
     if (getPlatformModifier() === 'Cmd') {
         return meta && key === 'k';
     }
-    return event.altKey && !meta && key === 'k';
+    return (meta && key === 'k') || (event.altKey && !meta && key === 'k');
 }

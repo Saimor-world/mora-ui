@@ -736,7 +736,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
         {
             label: 'Betrieb',
             value: incidentStatusPanels.length > 0 ? String(incidentStatusPanels.length) : 'OK',
-            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorf?lle' : 'Nightwatch meldet keine offenen Vorf?lle',
+            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorf\u00e4lle' : 'Nightwatch meldet keine offenen Vorf\u00e4lle',
             icon: <Activity size={16} />,
             onClick: onOpenNightwatch,
             tone: incidentStatusPanels.length > 0 ? 'rose' : 'emerald',
@@ -813,7 +813,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                                     {greeting}{firstName ? <span className="font-light text-white/58">, {firstName}.</span> : '.'}
                                 </h1>
                                 <p className="mt-2 max-w-[640px] text-[13px] leading-5 text-white/58">
-                                    Betrieb, Gewebe, Post und Team liegen zusammen. Der n?chste echte Faden ist sofort sichtbar.
+                                    {'Betrieb, Gewebe, Post und Team liegen zusammen. Der n\u00e4chste echte Faden ist sofort sichtbar.'}
                                 </p>
                             </div>
                         </div>

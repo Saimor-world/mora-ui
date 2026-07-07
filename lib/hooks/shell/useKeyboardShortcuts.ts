@@ -23,7 +23,7 @@ export function getKeyboardShortcuts(mod?: string) {
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
         { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
         { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
-        { keys: ['Alt', 'A'], label: 'Sprache', description: 'Voice-Overlay umschalten (Push-to-Talk)' },
+        { keys: [m, 'A'], label: 'Sprache', description: 'Voice-Overlay umschalten (Alt+A bleibt Fallback)' },
         { keys: [m, 'L'], label: 'Larry', description: 'Larry Dashboard öffnen' },
         { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
@@ -110,7 +110,7 @@ export function useKeyboardShortcuts({
                 return;
             }
 
-            if (e.altKey && !meta && (key === 'a' || e.code === 'KeyA')) {
+            if ((meta && key === 'a') || (e.altKey && !meta && (key === 'a' || e.code === 'KeyA'))) {
                 e.preventDefault();
                 e.stopPropagation();
                 onOpenAmbient?.();
