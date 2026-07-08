@@ -92,6 +92,7 @@ export default function TasksApp({ paneId }: AppProps) {
     const [isLoading, setIsLoading] = useState(true);
     const [addingColumn, setAddingColumn] = useState<TaskStatus | null>(null);
     const [newTitle, setNewTitle] = useState('');
+    const [newDue, setNewDue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Load tasks from API if endpoint exists, otherwise start empty
@@ -113,13 +114,17 @@ export default function TasksApp({ paneId }: AppProps) {
         if (!newTitle.trim()) return;
         setIsSubmitting(true);
         const tempId = `tmp-${Date.now()}`;
-        const optimistic: Task = { id: tempId, title: newTitle.trim(), status };
+        const due = newDue.trim() || undefined;
+        const optimistic: Task = { id: tempId, title: newTitle.trim(), status, due_date: due };
         setTasks(prev => [...prev, optimistic]);
         setAddingColumn(null);
         setNewTitle('');
+        setNewDue('');
 
         try {
-            const saved = await corePost('/v3/tasks', { title: newTitle.trim(), status }, { isOptional: true });
+            // A due date is the only thing Môra treats as urgent — she will speak
+            // up on her own when an open task falls due within 24 hours.
+            const saved = await corePost('/v3/tasks', { title: newTitle.trim(), status, due_date: due }, { isOptional: true });
             if (saved && typeof saved === 'object' && (saved as any).id) {
                 setTasks(prev => prev.map(t => t.id === tempId ? (saved as Task) : t));
             }
@@ -128,7 +133,7 @@ export default function TasksApp({ paneId }: AppProps) {
         } finally {
             setIsSubmitting(false);
         }
-    }, [newTitle]);
+    }, [newTitle, newDue]);
 
     const handleMoveTask = useCallback(async (taskId: string, newStatus: TaskStatus) => {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
@@ -193,7 +198,7 @@ export default function TasksApp({ paneId }: AppProps) {
                                         <span className="text-[10px] text-white/30 bg-white/[0.06] px-1.5 py-0.5 rounded-full">{colTasks.length}</span>
                                     </div>
                                     <button
-                                        onClick={() => { setAddingColumn(col.key); setNewTitle(''); }}
+                                        onClick={() => { setAddingColumn(col.key); setNewTitle(''); setNewDue(''); }}
                                         className="p-1 rounded hover:bg-white/10 text-white/30 hover:text-white/60 transition-colors"
                                         title="Aufgabe hinzufügen"
                                     >
@@ -212,9 +217,20 @@ export default function TasksApp({ paneId }: AppProps) {
                                             className="w-full bg-transparent text-xs text-white placeholder:text-white/30 focus:outline-none"
                                             onKeyDown={e => {
                                                 if (e.key === 'Enter') handleAddTask(col.key);
-                                                if (e.key === 'Escape') { setAddingColumn(null); setNewTitle(''); }
+                                                if (e.key === 'Escape') { setAddingColumn(null); setNewTitle(''); setNewDue(''); }
                                             }}
                                         />
+                                        <label className="flex items-center gap-1.5 text-[10px] text-white/35">
+                                            <Clock size={9} />
+                                            <span>Fällig</span>
+                                            <input
+                                                type="date"
+                                                value={newDue}
+                                                onChange={e => setNewDue(e.target.value)}
+                                                className="flex-1 bg-transparent text-[11px] text-white/70 focus:outline-none [color-scheme:dark]"
+                                                title="Optional. Môra meldet sich, wenn die Frist in unter 24 Stunden liegt."
+                                            />
+                                        </label>
                                         <div className="flex gap-1.5">
                                             <button
                                                 onClick={() => handleAddTask(col.key)}
@@ -223,7 +239,7 @@ export default function TasksApp({ paneId }: AppProps) {
                                             >
                                                 {isSubmitting ? <Loader2 size={10} className="animate-spin" /> : 'Hinzufügen'}
                                             </button>
-                                            <button onClick={() => { setAddingColumn(null); setNewTitle(''); }} className="px-2 py-1 text-[11px] text-white/30 hover:text-white/60 transition-colors">
+                                            <button onClick={() => { setAddingColumn(null); setNewTitle(''); setNewDue(''); }} className="px-2 py-1 text-[11px] text-white/30 hover:text-white/60 transition-colors">
                                                 Abbrechen
                                             </button>
                                         </div>
