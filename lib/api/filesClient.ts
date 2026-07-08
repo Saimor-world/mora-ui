@@ -1,4 +1,5 @@
 import { coreGet, corePost, coreDelete, CoreError, getCoreBaseUrl } from './coreClient';
+import { isForwardableCoreToken } from './http';
 
 export interface FilePreview {
     previewAvailable: boolean;
@@ -138,11 +139,13 @@ function readCookie(name: string): string | null {
 
 function getAuthToken(): string | null {
     if (typeof window === 'undefined') return null;
-    return readCookie(AUTH_COOKIE)
-        || (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null)
-        || process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT
-        || process.env.NEXT_PUBLIC_API_TOKEN
-        || null;
+    const token = [
+        readCookie(AUTH_COOKIE),
+        isLocalhost() ? localStorage.getItem('saimor_dev_token') : null,
+        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT,
+        process.env.NEXT_PUBLIC_API_TOKEN,
+    ].find(isForwardableCoreToken);
+    return token ?? null;
 }
 
 export const getFilePreview = async (nodeId: string): Promise<FilePreview> => {
@@ -352,4 +355,3 @@ export const getFileNode = async (fileId: string): Promise<FileNodeStatus> => {
 export const deleteCompanyFile = async (fileId: string): Promise<void> => {
     return coreDelete(`/v3/files/${fileId}`) as Promise<void>;
 };
-

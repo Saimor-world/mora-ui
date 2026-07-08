@@ -3,7 +3,7 @@
 // Covers: companies, departments, spaces, folders, nodes, tree.
 
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
-import { coreGet, corePost, corePatch, corePut, coreDelete, normalizeList, CoreError, getCoreBaseUrl, readCookie, isLocalhost, AUTH_COOKIE } from './http';
+import { coreGet, corePost, corePatch, corePut, coreDelete, normalizeList, CoreError, getCoreBaseUrl, readCookie, isLocalhost, AUTH_COOKIE, isForwardableCoreToken } from './http';
 
 // ========== COMPANY FUNCTIONS ==========
 
@@ -436,10 +436,12 @@ export async function uploadFile(file: File, folderId: string, title?: string): 
     formData.append('folder_id', folderId);
     if (title) formData.append('title', title);
 
-    const token = readCookie(AUTH_COOKIE) ||
-        (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null) ||
-        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
-        process.env.NEXT_PUBLIC_API_TOKEN;
+    const token = [
+        readCookie(AUTH_COOKIE),
+        isLocalhost() ? localStorage.getItem('saimor_dev_token') : null,
+        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT,
+        process.env.NEXT_PUBLIC_API_TOKEN,
+    ].find(isForwardableCoreToken);
 
     if (!token) throw new CoreError('Unauthorized', 401);
 
@@ -467,10 +469,12 @@ export async function importCompanyStructure(file: File): Promise<any> {
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = readCookie(AUTH_COOKIE) ||
-        (isLocalhost() ? localStorage.getItem('saimor_dev_token') : null) ||
-        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
-        process.env.NEXT_PUBLIC_API_TOKEN;
+    const token = [
+        readCookie(AUTH_COOKIE),
+        isLocalhost() ? localStorage.getItem('saimor_dev_token') : null,
+        process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT,
+        process.env.NEXT_PUBLIC_API_TOKEN,
+    ].find(isForwardableCoreToken);
 
     if (!token) throw new CoreError('Unauthorized', 401);
 

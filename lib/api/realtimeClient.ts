@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { coreGet, corePost } from '@/lib/api/coreClient';
+import { isForwardableCoreToken } from '@/lib/api/http';
 import { logger } from '@/lib/utils/logger';
 
 const AUTH_COOKIE = "mora_auth_token";
@@ -64,7 +65,7 @@ export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
     const eventTypes = serializeEventTypes(opts?.eventTypes);
 
     if (coreWsUrl) {
-        return `${coreWsUrl}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
+        return `${coreWsUrl}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
     }
 
     if (coreApiUrl.startsWith('/')) {
@@ -72,13 +73,13 @@ export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
         const useLocalCore = process.env.NEXT_PUBLIC_LOCAL_CORE === 'true';
 
         if (useLocalCore && ['localhost', '127.0.0.1', '::1'].includes(hostname)) {
-            return `ws://localhost:8081/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
+            return `ws://localhost:8081/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
         }
-        return `wss://${apiHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
+        return `wss://${apiHost}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
     }
 
     const wsHost = coreApiUrl.replace(/^http/, 'ws');
-    return `${wsHost}/v3/realtime/subscribe?token=${token}&event_types=${eventTypes}`;
+    return `${wsHost}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
 }
 
 class RealtimeClient {
@@ -173,13 +174,14 @@ class RealtimeClient {
             typeof window !== 'undefined' &&
             ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
-        let token = readCookie(AUTH_COOKIE) ||
-            (isLocalhost ? localStorage.getItem('saimor_dev_token') : null) ||
-            process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT ||
-            process.env.NEXT_PUBLIC_API_TOKEN ||
-            null;
+        const token = [
+            readCookie(AUTH_COOKIE),
+            isLocalhost ? localStorage.getItem('saimor_dev_token') : null,
+            process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT,
+            process.env.NEXT_PUBLIC_API_TOKEN,
+        ].find(isForwardableCoreToken);
 
-        return token;
+        return token ?? null;
     }
 
     public connect() {
