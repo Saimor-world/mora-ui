@@ -29,6 +29,21 @@ function buildBackendUrl(slug: string): string {
   return `${base}/${path}`;
 }
 
+function isForwardableCoreToken(token: string | null | undefined): token is string {
+  const value = token?.trim();
+  if (!value || value === 'undefined' || value === 'null') return false;
+  if (value.startsWith('sess_') || value.startsWith('sk_')) return true;
+  const parts = value.split('.');
+  return parts.length === 3 && parts.every(Boolean);
+}
+
+function sanitizeAuthorization(headers: Headers): void {
+  const authorization = headers.get('authorization');
+  if (!authorization) return;
+  const match = authorization.match(/^Bearer\s+(.+)$/i);
+  if (!match || !isForwardableCoreToken(match[1])) headers.delete('authorization');
+}
+
 function copyRequestHeaders(req: NextRequest): Headers {
   const headers = new Headers(req.headers);
   // These are either meaningless or can break upstream fetch.
@@ -37,13 +52,14 @@ function copyRequestHeaders(req: NextRequest): Headers {
   headers.delete('content-length');
   // Undici rejects this header and throws `UND_ERR_NOT_SUPPORTED`.
   headers.delete('expect');
+  sanitizeAuthorization(headers);
   return headers;
 }
 
 function attachAuthFromCookie(req: NextRequest, headers: Headers): void {
   if (headers.get('authorization')) return;
-  const token = req.cookies.get('mora_auth_token')?.value;
-  if (!token) return;
+  const token = req.cookies.get('mora_auth_token')?.value || req.cookies.get('mora_session')?.value;
+  if (!isForwardableCoreToken(token)) return;
   headers.set('authorization', `Bearer ${token}`);
 }
 

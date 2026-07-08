@@ -69,12 +69,26 @@ export function readCookie(name: string): string | null {
     }
 }
 
+export function isForwardableCoreToken(token: string | null | undefined): token is string {
+    const value = token?.trim();
+    if (!value || value === 'undefined' || value === 'null') return false;
+    if (value.startsWith('sess_') || value.startsWith('sk_')) return true;
+    const parts = value.split('.');
+    return parts.length === 3 && parts.every(Boolean);
+}
+
+function clearCoreAuthToken(name: string): void {
+    if (typeof window === 'undefined') return;
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax`;
+}
+
 export function isTokenExpired(token: string): boolean {
-    // Opaque session tokens issued by Core login (sess_...) carry server-side TTL.
-    // The server validates them on each request — no client-side expiry check needed.
-    if (token.startsWith('sess_')) return false;
+    const value = token.trim();
+    if (!isForwardableCoreToken(value)) return true;
+    // Opaque session/API tokens are server-side credentials; CORE validates TTL.
+    if (value.startsWith('sess_') || value.startsWith('sk_')) return false;
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        const payload = JSON.parse(atob(value.split('.')[1]));
         const exp = payload.exp * 1000; // Convert to milliseconds
         return Date.now() >= exp;
     } catch {
@@ -89,16 +103,26 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     };
 
     if (!options.skipAuth) {
-        const token = readCookie(AUTH_COOKIE) || readCookie('mora_session');
-        const devToken = !token && isLocalhost()
+        const authToken = readCookie(AUTH_COOKIE);
+        const sessionToken = readCookie('mora_session');
+        const devToken = isLocalhost()
             ? (typeof window !== 'undefined' ? localStorage.getItem('saimor_dev_token') : null)
             : null;
-        const finalToken = token || devToken;
+
+        if (authToken && !isForwardableCoreToken(authToken)) clearCoreAuthToken(AUTH_COOKIE);
+        if (sessionToken && !isForwardableCoreToken(sessionToken)) clearCoreAuthToken('mora_session');
+        if (devToken && !isForwardableCoreToken(devToken) && typeof window !== 'undefined') {
+            localStorage.removeItem('saimor_dev_token');
+        }
+
+        const finalToken = [authToken, sessionToken, devToken].find(isForwardableCoreToken);
 
         if (finalToken) {
             if (isTokenExpired(finalToken)) {
                 if (typeof window !== 'undefined') {
                     localStorage.removeItem('saimor_dev_token');
+                    if (authToken === finalToken) clearCoreAuthToken(AUTH_COOKIE);
+                    if (sessionToken === finalToken) clearCoreAuthToken('mora_session');
                 }
             } else {
                 headers['Authorization'] = `Bearer ${finalToken}`;
