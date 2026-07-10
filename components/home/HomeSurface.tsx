@@ -27,7 +27,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
-import { HomeCockpit } from '@/components/home/HomeCockpit';
+import { OrganizationHome } from '@/components/home/OrganizationHome';
 import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
@@ -877,7 +877,7 @@ export const HomeSurface: React.FC = () => {
                 <form
                     action="/api/auth/logout"
                     method="get"
-                    className="pointer-events-auto absolute right-4 top-24 z-[2] lg:right-6"
+                    className="pointer-events-auto absolute right-4 top-24 z-[2] hidden sm:block lg:right-6"
                     onSubmit={() => {
                         window.setTimeout(() => {
                             clearClientSessionArtifacts();
@@ -912,11 +912,11 @@ export const HomeSurface: React.FC = () => {
             {!websiteEntryContext && (
                 <div
                     data-testid="openflow-workspace"
-                    className="pointer-events-auto absolute inset-x-0 bottom-24 top-[7.5rem] z-[1] flex min-h-0 flex-col px-5 lg:px-10 xl:px-14 2xl:px-16"
+                    className="pointer-events-auto absolute inset-x-0 bottom-[5.5rem] top-[4.75rem] z-[1] flex min-h-0 flex-col px-3 sm:bottom-24 sm:top-[7.5rem] sm:px-5 lg:px-10 xl:px-14 2xl:px-16"
                 >
                     <HomeDataSourceError show={homeDataUnavailable && !homeViewLoading} />
                     <div className="min-h-0 flex-1">
-                    <HomeCockpit
+                    <OrganizationHome
                         firstName={firstName}
                         greeting={greeting}
                         todayLabel={todayLabel}

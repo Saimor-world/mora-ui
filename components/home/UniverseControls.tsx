@@ -139,7 +139,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     );
 
     return (
-        <div className="fixed top-4 left-1/2 z-50 flex max-w-[min(96vw,920px)] -translate-x-1/2 items-center gap-2 rounded-2xl border border-white/[0.10] bg-black/45 px-2 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl">
+        <div className="fixed left-3 right-3 top-3 z-50 flex min-w-0 items-center justify-between gap-1 rounded-2xl border border-white/[0.10] bg-black/55 px-1.5 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(96vw,920px)] sm:-translate-x-1/2 sm:justify-center sm:gap-2 sm:px-2">
             {showDeptBack && (
                 <button
                     type="button"
@@ -152,7 +152,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 </button>
             )}
             {/* Context mode badge — compact, no switcher clutter */}
-            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2.5 py-1 text-[10px] uppercase tracking-[0.18em]">
+            <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.04] px-2 py-1 text-[9px] uppercase tracking-[0.15em] sm:px-2.5 sm:text-[10px] sm:tracking-[0.18em]">
                 {showModeSwitches ? (
                     <>
                         {visibleModes.includes('owner') && (
@@ -174,11 +174,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="flex items-center gap-2 rounded-xl px-3 py-1 text-[12px] text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/95"
+                className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1 text-[11px] text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/95 sm:flex-none sm:px-3 sm:text-[12px]"
             >
-                <span className="font-medium">{shellContext.title}</span>
+                <span className="truncate font-medium">{shellContext.title}</span>
                 {shellContext.contextLabel && (
-                    <span className="text-[10px] text-white/35" style={{ color: shellContext.accent }}>
+                    <span className="hidden text-[10px] text-white/35 sm:inline" style={{ color: shellContext.accent }}>
                         {contextLabelOverride || shellContext.contextLabel}
                     </span>
                 )}
@@ -209,7 +209,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
-                className="flex shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] p-1.5 text-white/45 transition-colors hover:text-emerald-200 xl:flex"
+                className="hidden shrink-0 items-center justify-center rounded-xl border border-white/[0.08] bg-white/[0.03] p-1.5 text-white/45 transition-colors hover:text-emerald-200 sm:flex"
                 title="Control Center"
             >
                 <PanelTopOpen size={14} />
@@ -228,14 +228,14 @@ const CoreSurfaceButton: React.FC<{
         type="button"
         onClick={onClick}
         data-testid={label === 'Universe' ? 'universe-toggle' : undefined}
-        className={`flex items-center gap-2 rounded-xl px-3 py-2 text-[10px] uppercase tracking-[0.18em] transition-all ${
+        className={`flex items-center gap-2 rounded-xl px-2 py-2 text-[10px] uppercase tracking-[0.18em] transition-all sm:px-3 ${
             isActive
                 ? 'border border-cyan-400/22 bg-cyan-500/[0.10] text-cyan-100'
                 : 'border border-transparent bg-transparent text-white/46 hover:border-white/10 hover:bg-white/[0.05] hover:text-white/78'
         }`}
     >
         <Icon size={13} />
-        <span>{label}</span>
+        <span className="hidden sm:inline">{label}</span>
     </button>
 );
 

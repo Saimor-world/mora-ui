@@ -143,7 +143,7 @@ export interface HomeCockpitProps {
 
 
 
-function WidgetGlanceCard({ type, accent, context, className = '', compact = false }: {
+export function WidgetGlanceCard({ type, accent, context, className = '', compact = false }: {
 
     type: string;
 
@@ -261,7 +261,7 @@ const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 
 
 
-function HomeSignalCard({
+export function HomeSignalCard({
     label,
     value,
     detail,

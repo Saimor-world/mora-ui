@@ -215,7 +215,8 @@ describe('HomeSurface — rendering', () => {
         expect(screen.getByTestId('home-cockpit')).toBeInTheDocument();
         expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
         expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
-        expect(screen.getByTestId('arbeitseinstiege-strip')).toBeInTheDocument();
+        expect(screen.getByTestId('home-priority-card')).toBeInTheDocument();
+        expect(screen.getByTestId('home-status-grid')).toBeInTheDocument();
     });
 
     it('renders HomeCockpit zones for normal OS home', async () => {
@@ -223,7 +224,7 @@ describe('HomeSurface — rendering', () => {
         await waitFor(() => {
             expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
             expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
-            expect(screen.getByTestId('home-widget-nightwatch')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-team')).toBeInTheDocument();
         });
     });
 
