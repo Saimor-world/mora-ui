@@ -23,6 +23,14 @@ import { requestCommandDeckOpen, SAIMOR_COMMAND_DECK_STATE_EVENT } from '@/lib/o
 import { useAssistantRuntime } from '@/lib/hooks/useAssistantRuntime';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { openMoraCenter } from '@/lib/utils/openMoraCenter';
+import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
+import {
+    describeMoraPlaygroundTarget,
+    setMoraPlaygroundTarget,
+    useMoraPlaygroundTarget,
+} from '@/lib/os/moraPlayground';
 
 const ORB_LABELS: Record<string, string> = {
     idle: 'Standby',
@@ -63,6 +71,8 @@ export const MoraPulsePanel: React.FC = () => {
     const viewLevel = useNavStore((state) => state.viewLevel);
     const orbState = useOrbStore((state) => state.orbState);
     const { data: departments = [] } = useDepartments(activeCompanyId);
+    const openPane = usePaneStore((state) => state.openPane);
+    const playgroundTarget = useMoraPlaygroundTarget();
     const { data: activeSpaces = [] } = useSpaces(activeDepartmentId);
     const { data: activeFolders = [] } = useFolders(activeSpaceId);
 
@@ -107,6 +117,16 @@ export const MoraPulsePanel: React.FC = () => {
     useEffect(() => {
         const timer = window.setInterval(() => setNow(new Date()), 30000);
         return () => window.clearInterval(timer);
+    }, []);
+
+    useEffect(() => {
+        const captureTarget = (event: PointerEvent) => {
+            const element = event.target;
+            if (!(element instanceof Element) || element.closest('[data-mora-playground-root]')) return;
+            setMoraPlaygroundTarget(describeMoraPlaygroundTarget(element));
+        };
+        document.addEventListener('pointerdown', captureTarget, true);
+        return () => document.removeEventListener('pointerdown', captureTarget, true);
     }, []);
 
     useEffect(() => {
@@ -164,7 +184,11 @@ export const MoraPulsePanel: React.FC = () => {
     ]);
 
     return (
-        <div className="pointer-events-none fixed right-6 top-6 z-[78] hidden lg:block">
+        <div
+            className="pointer-events-none fixed right-3 top-3 z-[78] w-[calc(100vw-1.5rem)] max-w-[268px] max-h-[calc(100vh-6rem)] overflow-y-auto sm:right-6 sm:top-6"
+            data-mora-playground-root
+            aria-label="Mora Playground"
+        >
             <div
                 className={`pointer-events-auto relative overflow-hidden rounded-[28px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(28,78,64,0.22),_rgba(0,0,0,0.78)_55%)] shadow-[0_24px_80px_rgba(0,0,0,0.42)] backdrop-blur-2xl transition-all duration-300 ${isDeckOpen ? 'w-[220px] opacity-50' : 'w-[268px]'}`}
             >
@@ -250,6 +274,33 @@ export const MoraPulsePanel: React.FC = () => {
                             Control Center offen
                         </div>
                     )}
+                    <div className="rounded-2xl border border-cyan-300/12 bg-cyan-400/[0.05] px-3 py-2.5">
+                        <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/55">Playground-Fokus</div>
+                        <div className="mt-1 truncate text-[11px] text-white/78">
+                            {playgroundTarget ? playgroundTarget.label : 'W\u00e4hle ein Element im OS'}
+                        </div>
+                        <div className="mt-1 text-[10px] text-white/35">
+                            {playgroundTarget
+                                ? playgroundTarget.kind + (playgroundTarget.id ? ' \u00b7 ' + playgroundTarget.id : '')
+                                : 'Mora h\u00e4lt den aktuellen Kontext bereit.'}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openMoraCenter(openPane, 'overview')}
+                            className="rounded-xl border border-emerald-300/15 bg-emerald-400/[0.08] px-2.5 py-2 text-[10px] font-medium text-emerald-100/80 transition-colors hover:bg-emerald-400/[0.16]"
+                        >
+                            Playground \u00f6ffnen
+                        </button>
+                        <button
+                            type="button"
+                            onClick={openVoiceOverlay}
+                            className="rounded-xl border border-violet-300/15 bg-violet-400/[0.08] px-2.5 py-2 text-[10px] font-medium text-violet-100/80 transition-colors hover:bg-violet-400/[0.16]"
+                        >
+                            Voice \u00f6ffnen
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
