@@ -193,13 +193,13 @@ export function OrganizationHome(props: HomeCockpitProps) {
     return (
         <div
             data-testid="home-cockpit"
-            className="h-full min-h-0 overflow-y-auto overscroll-contain pr-1"
+            className="organization-home h-full min-h-0 overflow-y-auto overscroll-contain pr-1"
             style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.28) transparent' }}
         >
             <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 pb-7 sm:gap-5">
                 <motion.div
                     {...fade(0)}
-                    className="relative grid overflow-hidden rounded-[1.5rem] border border-white/[0.11] bg-[radial-gradient(circle_at_10%_0%,rgba(var(--scene-rgb,16,185,129),0.17),transparent_36%),linear-gradient(135deg,rgba(12,20,28,0.86),rgba(10,12,27,0.74))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:gap-8"
+                    className="organization-home-card relative grid overflow-hidden rounded-[1.5rem] border border-white/[0.11] bg-[radial-gradient(circle_at_10%_0%,rgba(var(--scene-rgb,16,185,129),0.17),transparent_36%),linear-gradient(135deg,rgba(12,20,28,0.86),rgba(10,12,27,0.74))] p-4 shadow-[0_18px_54px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-xl sm:p-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)] lg:gap-8"
                 >
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/70 via-cyan-200/40 to-violet-300/45" />
                     <div className="min-w-0">
@@ -258,7 +258,7 @@ export function OrganizationHome(props: HomeCockpitProps) {
                     </section>
 
                     <aside className="flex flex-col gap-4 lg:col-span-4">
-                        <motion.div {...fade(0.10)} data-testid="home-status-grid" className="rounded-[1.35rem] border border-white/[0.09] bg-white/[0.045] p-3.5 backdrop-blur-lg sm:p-4">
+                        <motion.div {...fade(0.10)} data-testid="home-status-grid" className="organization-home-card rounded-[1.35rem] border border-white/[0.09] bg-white/[0.045] p-3.5 backdrop-blur-lg sm:p-4">
                             <div className="px-1 pb-3">
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">Organisation</div>
                                 <h2 className="mt-1 text-[17px] font-medium text-white/84">Vier Wahrheiten, ein Lagebild</h2>
@@ -282,7 +282,7 @@ export function OrganizationHome(props: HomeCockpitProps) {
                 </div>
 
                 {(resumeItems.length > 0 || activeDepartments.length > 0) && (
-                    <motion.div {...fade(0.18)} data-testid="home-resume-strip" className="rounded-[1.25rem] border border-white/[0.07] bg-black/[0.12] p-4 backdrop-blur-sm">
+                    <motion.div {...fade(0.18)} data-testid="home-resume-strip" className="organization-home-card rounded-[1.25rem] border border-white/[0.07] bg-black/[0.12] p-4 backdrop-blur-sm">
                         <div className="mb-3 flex items-center justify-between gap-4">
                             <div>
                                 <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-white/34">Weiterarbeiten</div>

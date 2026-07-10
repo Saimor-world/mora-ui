@@ -448,6 +448,50 @@
     /* keep pills round */
   }
 
+  /* Standard mode is a different visual grammar, not a pale filter over the
+     immersive scene. Keep the shared information hierarchy while giving Home
+     an actual light canvas and semantic surfaces. */
+  .standard-mode .home-atmosphere,
+  .standard-mode .ritual-scene-overlay {
+    display: none !important;
+  }
+
+  .standard-mode [data-testid="home-universe-mission-control"] {
+    background: #F3F3F3 !important;
+  }
+
+  .standard-mode .organization-home {
+    color: #1F1F1F;
+    scrollbar-color: rgba(31, 31, 31, 0.24) transparent !important;
+  }
+
+  .standard-mode .organization-home-card {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    border-color: #DEDEDE !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: none !important;
+  }
+
+  .standard-mode .organization-home [class*="text-white"] {
+    color: rgba(31, 31, 31, 0.72) !important;
+  }
+
+  .standard-mode .organization-home h1,
+  .standard-mode .organization-home h2,
+  .standard-mode .organization-home [class~="text-white"] {
+    color: #1F1F1F !important;
+  }
+
+  .standard-mode .organization-home [class*="border-white"] {
+    border-color: #DEDEDE !important;
+  }
+
+  .standard-mode .organization-home [class*="bg-black"],
+  .standard-mode .organization-home [class*="bg-white"] {
+    background-color: #F7F7F7 !important;
+  }
+
 
   /* Glass Effect Utilities */
 
