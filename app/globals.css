@@ -492,6 +492,84 @@
     background-color: #F7F7F7 !important;
   }
 
+  /* Accent tints (emerald-100, cyan-200, …) are designed for dark glass.
+     On the light canvas they wash out to invisibility — remap them to their
+     dark, saturated counterparts so state colours still mean something. */
+  .standard-mode .organization-home [class*="text-emerald-1"],
+  .standard-mode .organization-home [class*="text-emerald-2"],
+  .standard-mode .organization-home [class*="text-teal-1"],
+  .standard-mode .organization-home [class*="text-teal-2"] {
+    color: #047857 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-cyan-1"],
+  .standard-mode .organization-home [class*="text-cyan-2"],
+  .standard-mode .organization-home [class*="text-sky-1"],
+  .standard-mode .organization-home [class*="text-sky-2"] {
+    color: #0E7490 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-rose-1"],
+  .standard-mode .organization-home [class*="text-rose-2"] {
+    color: #BE123C !important;
+  }
+
+  .standard-mode .organization-home [class*="text-violet-1"],
+  .standard-mode .organization-home [class*="text-violet-2"] {
+    color: #6D28D9 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-amber-1"],
+  .standard-mode .organization-home [class*="text-amber-2"] {
+    color: #B45309 !important;
+  }
+
+  /* Môra pulse panel + capsule: same grammar shift as Home — a real light
+     surface instead of dark glass floating over a light canvas. */
+  .standard-mode [data-mora-playground-root] .mora-pulse-glow {
+    display: none !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="bg-["],
+  .standard-mode [data-mora-playground-root] [class*="bg-black"] {
+    background: #FFFFFF !important;
+    background-image: none !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="bg-white"],
+  .standard-mode [data-mora-playground-root] [class*="bg-emerald"],
+  .standard-mode [data-mora-playground-root] [class*="bg-cyan"],
+  .standard-mode [data-mora-playground-root] [class*="bg-violet"] {
+    background-color: #F5F5F5 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="border-white"],
+  .standard-mode [data-mora-playground-root] [class*="border-emerald"],
+  .standard-mode [data-mora-playground-root] [class*="border-cyan"],
+  .standard-mode [data-mora-playground-root] [class*="border-violet"] {
+    border-color: #DEDEDE !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-white"] {
+    color: rgba(31, 31, 31, 0.75) !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-emerald"] {
+    color: #047857 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-cyan"] {
+    color: #0E7490 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-violet"] {
+    color: #6D28D9 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="shadow-"] {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  }
+
 
   /* Glass Effect Utilities */
 

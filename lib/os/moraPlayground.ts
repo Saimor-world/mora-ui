@@ -42,12 +42,14 @@ export function describeMoraPlaygroundTarget(element: Element): MoraPlaygroundTa
   const el = element.closest('button,a,[role="button"],input,textarea,select,[data-mora-element]') ?? element;
   const html = el as HTMLElement;
   const id = el.getAttribute('data-mora-element') || el.getAttribute('data-testid') || el.id || null;
+  // Text content is only a trustworthy label for compact elements; a large
+  // container would smear half the page into the focus label.
+  const text = (html.innerText || el.textContent || '').replace(/\s+/g, ' ').trim();
   const label = (
     el.getAttribute('aria-label') ||
     el.getAttribute('title') ||
     (el instanceof HTMLInputElement ? el.placeholder : '') ||
-    html.innerText ||
-    el.textContent ||
+    (text.length > 0 && text.length <= 160 ? text : '') ||
     el.tagName.toLowerCase()
   ).replace(/\s+/g, ' ').trim().slice(0, 120);
 

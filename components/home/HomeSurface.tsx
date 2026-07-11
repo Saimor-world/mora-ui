@@ -842,7 +842,12 @@ export const HomeSurface: React.FC = () => {
     const firstName = (() => {
         const rawName = user?.name?.trim();
         if (!rawName) return null;
-        return rawName.includes('@') ? rawName.split('@')[0] : rawName.split(' ')[0];
+        // An email address is not a name. Greeting without a name is dignified;
+        // greeting with a raw mail handle ("nextchaptergermany") is not.
+        if (rawName.includes('@')) return null;
+        const first = rawName.split(' ')[0];
+        if (!first) return null;
+        return first.charAt(0).toUpperCase() + first.slice(1);
     })();
 
     const greeting = (() => {
@@ -986,7 +991,7 @@ export const HomeSurface: React.FC = () => {
                                     ? <span>{displayCompanyName}</span>
                                     : firstName
                                         ? <><span>{greeting}</span><span className="text-white/44">, {firstName}.</span></>
-                                        : 'Workspace'}
+                                        : <span>{greeting}.</span>}
                             </h1>
                             <div className="mt-0.5 text-[10px] text-white/28">{todayLabel}</div>
                         </div>
