@@ -327,7 +327,7 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
 
     useEffect(() => {
-        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface;
+        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface;
         if (!isSingleCompanySurface || !safeCompanies.length) return;
 
         if (viewMode !== 'workspace') {
@@ -1331,4 +1331,3 @@ export const MoraShell: React.FC = () => {
 };
 
 export default MoraShell;
-

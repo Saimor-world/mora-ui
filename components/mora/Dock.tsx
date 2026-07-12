@@ -58,6 +58,7 @@ import { openVoiceOverlay, toggleVoiceOverlay } from '@/lib/os/openVoiceOverlay'
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
 import { deriveDockStructure, type DockDerivedSpace, type DockDerivedFolder } from '@/lib/dock/deriveDockStructure';
+import { ensureGuidedDemoCompany } from '@/lib/api/orgClient';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -535,7 +536,7 @@ export const Dock = () => {
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
     const user = useSessionStore((s) => s.user);
-    const { data: companies = [] } = useCompanies();
+    const { data: companies = [], refetch: refetchCompanies } = useCompanies();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
@@ -567,6 +568,7 @@ export const Dock = () => {
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
+    const [isProvisioningDemo, setIsProvisioningDemo] = useState(false);
     const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
@@ -780,6 +782,26 @@ export const Dock = () => {
             : dockItems.filter((item) => ['home', 'chat', 'finder', 'team'].includes(item.action)),
         [activeMode, dockItems],
     );
+    const canManageGuidedDemo = Boolean(
+        surfaceProfile.isHqSurface
+        && ['owner', 'admin', 'system_owner'].includes(user?.role || '')
+    );
+    const hasTenantDemo = switcherCompanies.some((company) => company.is_demo);
+    const canProvisionGuidedDemo = canManageGuidedDemo && !hasTenantDemo;
+
+    const openGuidedDemo = useCallback(async () => {
+        if (isProvisioningDemo) return;
+        setIsProvisioningDemo(true);
+        try {
+            const result = await ensureGuidedDemoCompany('mittelstand');
+            await refetchCompanies();
+            useNavStore.getState().setViewMode('demo');
+            setActiveCompany(result.company_id);
+            setShowCompanySwitcher(false);
+        } finally {
+            setIsProvisioningDemo(false);
+        }
+    }, [isProvisioningDemo, refetchCompanies, setActiveCompany]);
 
     const orbStateLabel = useMemo(() => {
         switch (orbState) {
@@ -1564,7 +1586,7 @@ export const Dock = () => {
                                             />
 
                                             <AnimatePresence>
-                                                {showCompanySwitcher && switcherCompanies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                                {showCompanySwitcher && (switcherCompanies.length > 1 || canProvisionGuidedDemo) && surfaceProfile.companySwitcherEnabled && (
                                                     <motion.div
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
@@ -1581,6 +1603,7 @@ export const Dock = () => {
                                                                 <button
                                                                     key={company.id}
                                                                     onClick={() => {
+                                                                        useNavStore.getState().setViewMode(company.is_demo ? 'demo' : 'workspace');
                                                                         setActiveCompany(company.id);
                                                                         setShowCompanySwitcher(false);
                                                                     }}
@@ -1602,6 +1625,21 @@ export const Dock = () => {
                                                                     )}
                                                                 </button>
                                                             ))}
+                                                            {canProvisionGuidedDemo && (
+                                                                <button
+                                                                    onClick={openGuidedDemo}
+                                                                    disabled={isProvisioningDemo}
+                                                                    className="mt-1 w-full rounded-xl border border-amber-300/15 bg-amber-300/8 px-3 py-2.5 text-left text-amber-100 transition hover:bg-amber-300/12 disabled:opacity-50"
+                                                                >
+                                                                    <div className="flex items-center gap-2 text-xs font-medium">
+                                                                        <Sparkles size={14} className="text-amber-300" />
+                                                                        {isProvisioningDemo ? 'Demo wird vorbereitet…' : 'Mittelstands-Demo öffnen'}
+                                                                    </div>
+                                                                    <div className="mt-1 text-[9px] leading-relaxed text-amber-100/55">
+                                                                        Eigene, simulierte Firma · vollständig von echten Daten getrennt
+                                                                    </div>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </motion.div>
                                                 )}
