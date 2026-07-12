@@ -200,7 +200,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     title="Organisation wechseln"
                 >
                     <Globe className="h-3 w-3" />
-                    <span className="text-[10px] text-emerald-300/68">{companyCountLabel || operationalCompanyCount}</span>
+                    <span className="text-[10px] text-emerald-300/68">
+                        {companyCountLabel || (surfaceProfile.isHqSurface ? companies.length : operationalCompanyCount)}
+                    </span>
                 </button>
             )}
 
