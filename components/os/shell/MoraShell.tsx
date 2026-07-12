@@ -204,7 +204,10 @@ export const MoraShell: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const storeOrbState = useOrbStore((s) => s.orbState);
-    const { data: companiesData = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
+    const { data: companiesData = [] } = useCompanies({
+        enabled: activeMode !== 'visitor',
+        includeDemo: true,
+    });
     const companies = companiesData;
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();

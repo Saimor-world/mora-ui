@@ -536,7 +536,7 @@ export const Dock = () => {
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
     const user = useSessionStore((s) => s.user);
-    const { data: companies = [], refetch: refetchCompanies } = useCompanies();
+    const { data: companies = [], refetch: refetchCompanies } = useCompanies({ includeDemo: true });
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
@@ -784,7 +784,7 @@ export const Dock = () => {
     );
     const canManageGuidedDemo = Boolean(
         surfaceProfile.isHqSurface
-        && ['owner', 'admin', 'system_owner'].includes(user?.role || '')
+        && (!user || ['owner', 'admin', 'system_owner'].includes(user.role || ''))
     );
     const hasTenantDemo = switcherCompanies.some((company) => company.is_demo);
     const canProvisionGuidedDemo = canManageGuidedDemo && !hasTenantDemo;

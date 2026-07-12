@@ -138,7 +138,7 @@ export const HomeSurface: React.FC = () => {
     const resetStore  = useSessionStore((s) => s.resetStore);
     const setUser     = useSessionStore((s) => s.setUser);
     const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
-    const { data: companies = [] }   = useCompanies();
+    const { data: companies = [] }   = useCompanies({ includeDemo: true });
     const { data: homeView, isError: homeViewError, isLoading: homeViewLoading } = useHomeView();
     const { data: homeStatus, isError: homeStatusError } = useHomeStatus();
     const homeDataUnavailable = homeViewError || homeStatusError;
