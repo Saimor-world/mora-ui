@@ -19,6 +19,10 @@ describe('filterCompaniesForSurface', () => {
         company('hq', 'Saimôr HQ', TENANT_HQ),
     ];
 
+    it('keeps the company switcher enabled on HQ', () => {
+        expect(resolveSurfaceProfile('hq.saimor.world').companySwitcherEnabled).toBe(true);
+    });
+
     it('shows only the HQ company on localhost/local-truth surfaces', () => {
         const result = filterCompaniesForSurface(companies, {
             surfaceProfile: resolveSurfaceProfile('127.0.0.1'),

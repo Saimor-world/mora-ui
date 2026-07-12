@@ -60,7 +60,7 @@ const LOCAL_TRUTH_PROFILE: SurfaceProfileSnapshot = {
 /**
  * HQ: hq.saimor.world — real single-company production deployment.
  * Guided /entry surface, Gemini AI, real data, no demo labels.
- * Single-company architecture: companySwitcherEnabled = false.
+ * Owners can switch explicitly between real work and a tenant-local guided demo.
  */
 const HQ_PROFILE: SurfaceProfileSnapshot = {
     id: 'hq',
@@ -70,7 +70,7 @@ const HQ_PROFILE: SurfaceProfileSnapshot = {
     workspaceTabLabel: 'HQ',
     fallbackCompanyName: '',
     roleBadgeLabel: 'HQ-Modus',
-    companySwitcherEnabled: false,
+    companySwitcherEnabled: true,
 };
 
 // ─── Resolver ─────────────────────────────────────────────────────────────────
