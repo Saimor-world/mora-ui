@@ -134,8 +134,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         companies.length > 1 &&
         !disableContextSwitch &&
         !surfaceProfile.isLocalTruthSurface &&
-        !surfaceProfile.isHqSurface &&
-        !activeCompanyId
+        (surfaceProfile.isHqSurface || !activeCompanyId)
     );
 
     return (
@@ -197,7 +196,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 <button
                     type="button"
                     onClick={handleContextClick}
-                    className="flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-white/55 transition-colors hover:text-emerald-200"
+                    className={`flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-white/55 transition-colors hover:text-emerald-200 ${surfaceProfile.isHqSurface ? 'sm:hidden' : ''}`}
                     title="Organisation wechseln"
                 >
                     <Globe className="h-3 w-3" />
