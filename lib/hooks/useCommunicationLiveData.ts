@@ -6,6 +6,7 @@ import { normalizeList } from "@/lib/api/http";
 import { parseRssItem } from "@/lib/rss/parseRssItem";
 import { sortFeedItemsByDateDesc } from "@/lib/rss/feedDates";
 import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from "@/lib/integrations/communicationEvents";
+import { useNavStore } from "@/lib/store/navStore";
 
 type MailPreviewItem = {
     id: string;
@@ -124,6 +125,7 @@ function toIsoDate(value: Date) {
 }
 
 export function useCommunicationLiveData(autoLoad: boolean = true): CommunicationLiveData {
+    const activeCompanyId = useNavStore((state) => state.activeCompanyId);
     const [mailPreview, setMailPreview] = useState<MailPreviewItem[]>([]);
     const [calendarPreview, setCalendarPreview] = useState<CalendarPreviewItem[]>([]);
     const [feedPreview, setFeedPreview] = useState<FeedPreviewItem[]>([]);
@@ -156,14 +158,19 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const start = new Date();
                 const end = new Date();
                 end.setDate(end.getDate() + 14);
+                const companyQuery = activeCompanyId
+                    ? `company_id=${encodeURIComponent(activeCompanyId)}`
+                    : "";
+                const scopedQuery = companyQuery ? `?${companyQuery}` : "";
+                const scopedTail = companyQuery ? `&${companyQuery}` : "";
 
                 const [mailData, calendarData, feedData, myContentData] = await Promise.all([
-                    coreGet("/v3/mail/messages", { isOptional: true }),
+                    coreGet(`/v3/mail/messages${scopedQuery}`, { isOptional: true }),
                     coreGet(
-                        `/v3/calendar/events?start_date=${toIsoDate(start)}&end_date=${toIsoDate(end)}`,
+                        `/v3/calendar/events?start_date=${toIsoDate(start)}&end_date=${toIsoDate(end)}${scopedTail}`,
                         { isOptional: true }
                     ),
-                    coreGet("/v3/integrations/rss/items?limit=5", { isOptional: true }),
+                    coreGet(`/v3/integrations/rss/items?limit=5${scopedTail}`, { isOptional: true }),
                     coreGet("/v3/users/me/content", { isOptional: true }),
                 ]);
 
@@ -252,7 +259,7 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
 
         inFlightRef.current = request;
         await request;
-    }, []);
+    }, [activeCompanyId]);
 
     const refresh = useCallback(async () => {
         await refreshData();
