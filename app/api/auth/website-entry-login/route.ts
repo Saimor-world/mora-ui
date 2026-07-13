@@ -57,13 +57,10 @@ export async function POST(request: NextRequest) {
     );
   }
   if (upstream.ok && preserveOwnerSession && currentSessionToken) {
-    response.cookies.set(OWNER_RETURN_COOKIE, currentSessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: OWNER_RETURN_MAX_AGE,
-    });
+    response.headers.append(
+      'set-cookie',
+      `${OWNER_RETURN_COOKIE}=${encodeURIComponent(currentSessionToken)}; Path=/; Max-Age=${OWNER_RETURN_MAX_AGE}; SameSite=Lax; HttpOnly${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+    );
   }
 
   return response;

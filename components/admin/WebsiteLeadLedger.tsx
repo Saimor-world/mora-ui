@@ -180,7 +180,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                         {sourceLabel}
                     </div>
                     <div className="rounded-full border border-white/10 bg-black/20 px-3 py-1.5 text-xs text-cyan-50/70">
-                        {total} Firma{total === 1 ? '' : 'en'}
+                        {total} {total === 1 ? 'Firma' : 'Firmen'}
                     </div>
                 </div>
             </div>
