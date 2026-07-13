@@ -149,6 +149,30 @@ const ConnectCTA: React.FC<{ label: string; onClick?: () => void }> = ({ label, 
     </button>
 );
 
+// Compact glance empty-state: a card that reads as an inviting, clickable
+// connect affordance instead of a hollow card with a whisper of escaping text.
+const GlanceConnectPrompt: React.FC<{ icon: React.ReactNode; label: string }> = ({ icon, label }) => (
+    <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-2 text-center">
+        <span
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-dashed"
+            style={{
+                borderColor: 'rgba(var(--scene-rgb, 16,185,129), 0.32)',
+                background: 'rgba(var(--scene-rgb, 16,185,129), 0.06)',
+                color: 'rgba(var(--scene-rgb, 16,185,129), 0.85)',
+            }}
+        >
+            {icon}
+        </span>
+        <span
+            className="flex items-center gap-1 text-[10px] font-medium"
+            style={{ color: 'rgba(var(--scene-rgb, 16,185,129), 0.82)' }}
+        >
+            {label}
+            <ArrowRight size={10} className="opacity-60" />
+        </span>
+    </div>
+);
+
 const Stat: React.FC<{ label: string; value: React.ReactNode; icon?: React.ReactNode }> = ({ label, value, icon }) => (
     <div
         className="flex flex-col gap-1 rounded-xl border px-3 py-2.5"
@@ -602,9 +626,11 @@ const DeinFeedWidget: React.FC<{ context: WidgetContext }> = React.memo(({ conte
                             <div className="truncate text-[8px] text-white/40">{heroItem.sourceTitle}</div>
                         </div>
                     </div>
+                ) : feedState === 'unconfigured' ? (
+                    <GlanceConnectPrompt icon={<Radio size={14} />} label="RSS verbinden" />
                 ) : (
                     <span className="text-[10px] text-white/40">
-                        {feedState === 'unconfigured' ? 'RSS verbinden' : feedState === 'configured' ? 'Feed leer' : 'Lädt…'}
+                        {feedState === 'configured' ? 'Feed leer' : 'Lädt…'}
                     </span>
                 )}
             </GlanceShell>
@@ -1054,31 +1080,33 @@ BridgePulseWidget.displayName = 'BridgePulseWidget';
 const QuickActionsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ context }) => {
     const compact = context.compact;
     const actions = [
-        { icon: <FolderOpen size={compact ? 16 : 20} />, label: 'Finder', onClick: context.openFinder },
-        { icon: <Sparkles size={compact ? 16 : 20} />, label: 'MÔRA', onClick: context.openMora },
-        { icon: <Compass size={compact ? 16 : 20} />, label: 'Erkunden', onClick: context.goExplore },
-        { icon: <LayoutGrid size={compact ? 16 : 20} />, label: 'Apps', onClick: context.openApps ?? context.openIntegrations },
+        { icon: <FolderOpen size={compact ? 14 : 20} />, label: 'Finder', onClick: context.openFinder },
+        { icon: <Sparkles size={compact ? 14 : 20} />, label: 'MÔRA', onClick: context.openMora },
+        { icon: <Compass size={compact ? 14 : 20} />, label: 'Erkunden', onClick: context.goExplore },
+        { icon: <LayoutGrid size={compact ? 14 : 20} />, label: 'Apps', onClick: context.openApps ?? context.openIntegrations },
     ] as const;
 
     if (compact) {
         return (
             <GlanceShell tone="info">
-                <div className="flex items-center justify-between gap-1">
-                    <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Schnellzugriff</span>
-                    <Compass size={10} className="text-white/28" />
-                </div>
-                <div className="grid grid-cols-2 gap-1 content-center">
-                    {actions.map(({ icon, label, onClick }) => (
-                        <button
-                            key={label}
-                            type="button"
-                            onClick={onClick}
-                            className="flex flex-col items-center justify-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.04] py-1.5 transition-colors hover:border-white/[0.16] hover:bg-white/[0.08]"
-                        >
-                            <span className="text-white/50">{icon}</span>
-                            <span className="text-[7px] uppercase tracking-[.12em] text-white/42">{label}</span>
-                        </button>
-                    ))}
+                <div className="flex min-h-0 flex-1 flex-col gap-1">
+                    <div className="flex shrink-0 items-center justify-between gap-1">
+                        <span className="text-[8px] uppercase tracking-[.16em] text-white/32">Schnellzugriff</span>
+                        <Compass size={10} className="text-white/28" />
+                    </div>
+                    <div className="grid min-h-0 flex-1 grid-cols-2 grid-rows-2 gap-1">
+                        {actions.map(({ icon, label, onClick }) => (
+                            <button
+                                key={label}
+                                type="button"
+                                onClick={onClick}
+                                className="flex min-h-0 flex-col items-center justify-center gap-0.5 rounded-lg border border-white/[0.07] bg-white/[0.04] transition-colors hover:border-white/[0.16] hover:bg-white/[0.08]"
+                            >
+                                <span className="text-white/50">{icon}</span>
+                                <span className="text-[7px] uppercase tracking-[.12em] text-white/42">{label}</span>
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </GlanceShell>
         );
