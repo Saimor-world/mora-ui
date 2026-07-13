@@ -55,8 +55,8 @@ export const AdminHome: React.FC = () => {
             <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-amber-500/5">
                 <div className="flex items-center gap-2">
                     <Settings2 size={16} className="text-amber-400" />
-                    <span className="text-sm font-medium text-amber-400">Administration</span>
-                    <span className="text-xs text-white/30">-- Bereiche, Sichtbarkeit und Organisationsstruktur</span>
+                    <span className="text-sm font-medium text-amber-400">Kunden & Administration</span>
+                    <span className="text-xs text-white/30">-- Vorschauen, Bereiche, Sichtbarkeit und Organisationsstruktur</span>
                 </div>
                 <button
                     onClick={() => setAdminMode(false)}

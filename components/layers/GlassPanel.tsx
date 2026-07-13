@@ -165,6 +165,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         width: typeof window !== 'undefined' ? window.innerWidth : 1920,
         height: typeof window !== 'undefined' ? window.innerHeight : 1080,
     });
+    const isCompactViewport = viewportSize.width < 720;
+    const compactPanelSize = {
+        width: Math.max(304, viewportSize.width - 16),
+        height: Math.max(360, viewportSize.height - 148),
+    };
     useEffect(() => {
         const onResize = () => setViewportSize({ width: window.innerWidth, height: window.innerHeight });
         window.addEventListener('resize', onResize);
@@ -401,24 +406,18 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 ? 0
                 : 4;
     const effectiveSaturation = isStandardMode ? 100 : (effectiveIsActive ? (hasPaneStack ? 112 : 118) : 100);
-    const panelBackgroundColor = isStandardMode
-        ? 'var(--mora-glass-bg, #FFFFFF)'
-        : effectiveIsActive
-            ? 'var(--scene-panel-bg, rgba(13, 9, 33, 0.82))'
-            : hasDensePaneStack
-                ? 'var(--scene-panel-bg, rgba(8, 5, 22, 0.9))'
-                : 'var(--scene-panel-bg, rgba(10, 7, 26, 0.84))';
+    const panelBackgroundColor = isStandardMode ? 'var(--mora-glass-bg)' : 'var(--scene-panel-bg)';
     const panelBoxShadow = effectiveIsActive
         ? hasDensePaneStack
-            ? `0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px var(--scene-border, rgba(124, 58, 237, 0.18)), inset 0 1px 0 rgba(255, 255, 255, 0.08)`
-            : `0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px var(--scene-border, rgba(124, 58, 237, 0.22)), inset 0 1px 0 rgba(255, 255, 255, 0.1)`
+            ? `0 14px 34px rgba(0, 0, 0, 0.52), 0 0 0 1px var(--scene-border), inset 0 1px 0 rgba(255, 255, 255, 0.08)`
+            : `0 18px 56px rgba(0, 0, 0, 0.62), 0 0 0 1px var(--scene-border), inset 0 1px 0 rgba(255, 255, 255, 0.1)`
         : hasPaneStack
             ? '0 6px 18px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.035)'
             : '0 10px 28px rgba(0, 0, 0, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.04)';
     const panelBackgroundImage = isStandardMode
         ? undefined
         : effectiveIsActive
-            ? `radial-gradient(circle at 14% 0%, var(--scene-accent, rgba(124,58,237,0.22)), transparent 38%), radial-gradient(circle at 88% 8%, var(--scene-aura, rgba(34,211,238,0.14)), transparent 34%), linear-gradient(160deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))`
+            ? `radial-gradient(circle at 14% 0%, var(--scene-accent), transparent 38%), radial-gradient(circle at 88% 8%, var(--scene-aura), transparent 34%), linear-gradient(160deg, rgba(255,255,255,0.032), rgba(255,255,255,0.006) 52%, rgba(0,0,0,0.16))`
             : 'linear-gradient(160deg, rgba(255,255,255,0.018), rgba(0,0,0,0.12))';
 
     // Safe Portal Rendering (Client-side only)
@@ -450,7 +449,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             <motion.div
                 key={paneId ?? 'glass-panel'}
                 ref={panelRef}
-                drag={draggable && !isMaximized}
+                drag={draggable && !isMaximized && !isCompactViewport}
                 dragControls={dragControls}
                 dragListener={false}
                 dragMomentum={false}
@@ -474,10 +473,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     opacity: 1,
                     scale: 1,
                     filter: 'blur(0px)',
-                    x: panelPosition.x,
-                    y: panelPosition.y,
-                    width: panelSize.width,
-                    height: panelSize.height
+                    x: isCompactViewport && !isMaximized ? 8 : panelPosition.x,
+                    y: isCompactViewport && !isMaximized ? 64 : panelPosition.y,
+                    width: isCompactViewport && !isMaximized ? compactPanelSize.width : panelSize.width,
+                    height: isCompactViewport && !isMaximized ? compactPanelSize.height : panelSize.height
                 }}
                 exit={disableAnimations ? undefined : {
                     opacity: 0,
@@ -502,17 +501,17 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     zIndex: zIndex, // Use store-managed z-index directly
                     left: 0,
                     top: 0,
-                    width: isMaximized ? '100vw' : panelWidth,
-                    height: isMaximized ? '100vh' : panelHeight,
-                    maxWidth: isMaximized ? '100vw' : 'calc(100vw - 32px)',
+                    width: isMaximized ? '100vw' : isCompactViewport ? compactPanelSize.width : panelWidth,
+                    height: isMaximized ? '100vh' : isCompactViewport ? compactPanelSize.height : panelHeight,
+                    maxWidth: isMaximized ? '100vw' : isCompactViewport ? 'calc(100vw - 16px)' : 'calc(100vw - 32px)',
                     // Keep panels above dock (≈100px) and below top bar (≈48px) + breathing room
-                    maxHeight: isMaximized ? '100vh' : 'calc(100vh - 160px)',
+                    maxHeight: isMaximized ? '100vh' : isCompactViewport ? 'calc(100vh - 148px)' : 'calc(100vh - 160px)',
                     backgroundColor: panelBackgroundColor,
                     backgroundImage: panelBackgroundImage,
                     backdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     WebkitBackdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     boxShadow: panelBoxShadow,
-                    borderRadius: isStandardMode ? '4px' : '24px',
+                    borderRadius: isStandardMode ? '4px' : isCompactViewport ? '18px' : '24px',
                     overflow: 'hidden'
                     // borderRadius is now set conditionally above based on isStandardMode
                 }}

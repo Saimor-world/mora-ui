@@ -58,6 +58,7 @@ import { openVoiceOverlay, toggleVoiceOverlay } from '@/lib/os/openVoiceOverlay'
 import { AccountIdentityPod } from '@/components/os/shell/AccountIdentityPod';
 import { MINIMIZED_ICON_MAP, type DockItem } from './dockTypes';
 import { deriveDockStructure, type DockDerivedSpace, type DockDerivedFolder } from '@/lib/dock/deriveDockStructure';
+import { ensureGuidedDemoCompany } from '@/lib/api/orgClient';
 
 /**
  * V12 COMMAND CENTER DOCK
@@ -535,7 +536,7 @@ export const Dock = () => {
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
     const user = useSessionStore((s) => s.user);
-    const { data: companies = [] } = useCompanies();
+    const { data: companies = [], refetch: refetchCompanies } = useCompanies({ includeDemo: true });
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const activeDepartmentId = useNavStore((s) => s.activeDepartmentId);
     const activeSpaceId = useNavStore((s) => s.activeSpaceId);
@@ -567,6 +568,7 @@ export const Dock = () => {
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
+    const [isProvisioningDemo, setIsProvisioningDemo] = useState(false);
     const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
     const [isCommandDeckPinned, setIsCommandDeckPinned] = useState(false);
     const assistantRuntime = useAssistantRuntime();
@@ -773,6 +775,33 @@ export const Dock = () => {
 
         return items;
     }, [mod, DOCK_ICON_MAP, activeMode, user?.role]);
+
+    const mobileDockItems = useMemo(
+        () => activeMode === 'public_playground'
+            ? dockItems.slice(0, 4)
+            : dockItems.filter((item) => ['home', 'chat', 'finder', 'team'].includes(item.action)),
+        [activeMode, dockItems],
+    );
+    const canManageGuidedDemo = Boolean(
+        surfaceProfile.isHqSurface
+        && (!user || ['owner', 'admin', 'system_owner'].includes(user.role || ''))
+    );
+    const hasTenantDemo = switcherCompanies.some((company) => company.is_demo);
+    const canProvisionGuidedDemo = canManageGuidedDemo && !hasTenantDemo;
+
+    const openGuidedDemo = useCallback(async () => {
+        if (isProvisioningDemo) return;
+        setIsProvisioningDemo(true);
+        try {
+            const result = await ensureGuidedDemoCompany('mittelstand');
+            await refetchCompanies();
+            useNavStore.getState().setViewMode('demo');
+            setActiveCompany(result.company_id);
+            setShowCompanySwitcher(false);
+        } finally {
+            setIsProvisioningDemo(false);
+        }
+    }, [isProvisioningDemo, refetchCompanies, setActiveCompany]);
 
     const orbStateLabel = useMemo(() => {
         switch (orbState) {
@@ -1407,15 +1436,15 @@ export const Dock = () => {
 
                             <div
                                 data-testid="dock"
-                                className={`relative flex flex-nowrap items-center justify-center gap-3 overflow-visible px-4 py-2 mx-auto w-fit rounded-full transition-all ${
+                                className={`relative mx-auto flex w-fit max-w-[calc(100vw-1rem)] flex-nowrap items-center justify-center gap-1 overflow-visible rounded-full px-2 py-1.5 transition-all sm:gap-3 sm:px-4 sm:py-2 ${
                                     isStandardMode
                                         ? 'bg-white border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
                                         : 'backdrop-blur-3xl'
                                 }`}
                                 style={isStandardMode ? {} : {
                                     background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.55) 0%, rgba(10, 13, 28, 0.45) 54%, rgba(2, 7, 10, 0.6) 100%)',
-                                    border: `1px solid var(--scene-border, rgba(125,224,255,0.28))`,
-                                    boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 40px var(--scene-accent, rgba(34,211,238,0.10)), inset 0 1px 0 rgba(255,255,255,0.07)`,
+                                    border: `1px solid var(--scene-border)`,
+                                    boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 40px var(--scene-accent), inset 0 1px 0 rgba(255,255,255,0.07)`,
                                     transition: 'border-color 1.2s ease, box-shadow 1.2s ease',
                                     willChange: 'transform',
                                 }}
@@ -1432,7 +1461,7 @@ export const Dock = () => {
                                         <div
                                             className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none"
                                             style={{
-                                                background: `linear-gradient(90deg, transparent 10%, var(--scene-accent, rgba(34,211,238,0.7)), var(--scene-accent, rgba(34,211,238,0.4)), transparent 90%)`,
+                                                background: `linear-gradient(90deg, transparent 10%, var(--scene-accent), var(--scene-aura), transparent 90%)`,
                                                 transition: 'background 1.2s ease',
                                             }}
                                         />
@@ -1440,7 +1469,7 @@ export const Dock = () => {
                                 )}
 
                                 {/* LEFT: Search, Control Center, Audio */}
-                                <div className="flex items-center gap-1 shrink-0">
+                                <div className="hidden items-center gap-1 shrink-0 sm:flex">
                                     <CapsuleDockIcon
                                         icon={Search}
                                         label="Suche"
@@ -1463,7 +1492,7 @@ export const Dock = () => {
                                     <CapsuleDockIcon
                                         icon={Mic}
                                         label="Sprache"
-                                        description="Voice-Overlay - Push-to-Talk (Strg+A oder Alt+A)"
+                                        description="Voice-Overlay · Tippen zum Sprechen (Strg+A oder Alt+A)"
                                         shortcut={`${mod}+A`}
                                         active={voiceOverlayOpen}
                                         onClick={toggleVoiceOverlay}
@@ -1504,27 +1533,32 @@ export const Dock = () => {
                                 </div>
 
                                 {/* Divider */}
-                                <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+                                <div className={`hidden h-8 w-px sm:block ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
 
                                 {/* CENTER: App Icons */}
-                                <div className="flex items-center gap-1 shrink-0">
-                                    {dockItems.map((item) => (
-                                        <MagneticDockIconMemo
-                                            key={item.action}
-                                            item={item}
-                                            isStandardMode={isStandardMode}
-                                            onAction={handleDockClick}
-                                        />
-                                    ))}
+                                <div className="flex items-center gap-0.5 shrink-0 sm:gap-1">
+                                    {dockItems.map((item) => {
+                                        const isMobilePrimary = mobileDockItems.some((mobileItem) => mobileItem.action === item.action);
+                                        return (
+                                            <div key={item.action} className={isMobilePrimary ? 'flex' : 'hidden sm:flex'}>
+                                                <MagneticDockIconMemo
+                                                    item={item}
+                                                    isStandardMode={isStandardMode}
+                                                    onAction={handleDockClick}
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                    {!websiteEntryContext && <AdminModeSwitcher />}
                                 </div>
 
                                 {/* Divider */}
-                                <div className={`h-8 w-px ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
+                                <div className={`hidden h-8 w-px sm:block ${isStandardMode ? 'bg-gray-200' : 'bg-gradient-to-b from-transparent via-white/12 to-transparent'}`} />
 
                                 {/* RIGHT: Status, Company Badge, Mora Orb */}
                                 <div className="flex items-center gap-1 shrink-0">
                                     {!websiteEntryContext && (
-                                        <div className="flex items-center gap-1 shrink-0">
+                                        <div className="hidden items-center gap-1 shrink-0 sm:flex">
                                             <FocusModeWidget />
                                             <NotificationCenter />
                                             {activePlanId && (
@@ -1538,7 +1572,7 @@ export const Dock = () => {
                                     )}
 
                                     {!websiteEntryContext && (
-                                        <div className="relative shrink-0">
+                                        <div className="relative hidden shrink-0 sm:block">
                                             <CapsuleDockIcon
                                                 icon={Building2}
                                                 label={displayCompany?.name || surfaceProfile.fallbackCompanyName}
@@ -1553,7 +1587,7 @@ export const Dock = () => {
                                             />
 
                                             <AnimatePresence>
-                                                {showCompanySwitcher && switcherCompanies.length > 1 && surfaceProfile.companySwitcherEnabled && (
+                                                {showCompanySwitcher && (switcherCompanies.length > 1 || canProvisionGuidedDemo) && surfaceProfile.companySwitcherEnabled && (
                                                     <motion.div
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
@@ -1570,6 +1604,7 @@ export const Dock = () => {
                                                                 <button
                                                                     key={company.id}
                                                                     onClick={() => {
+                                                                        useNavStore.getState().setViewMode(company.is_demo ? 'demo' : 'workspace');
                                                                         setActiveCompany(company.id);
                                                                         setShowCompanySwitcher(false);
                                                                     }}
@@ -1591,6 +1626,21 @@ export const Dock = () => {
                                                                     )}
                                                                 </button>
                                                             ))}
+                                                            {canProvisionGuidedDemo && (
+                                                                <button
+                                                                    onClick={openGuidedDemo}
+                                                                    disabled={isProvisioningDemo}
+                                                                    className="mt-1 w-full rounded-xl border border-amber-300/15 bg-amber-300/8 px-3 py-2.5 text-left text-amber-100 transition hover:bg-amber-300/12 disabled:opacity-50"
+                                                                >
+                                                                    <div className="flex items-center gap-2 text-xs font-medium">
+                                                                        <Sparkles size={14} className="text-amber-300" />
+                                                                        {isProvisioningDemo ? 'Demo wird vorbereitet…' : 'Mittelstands-Demo öffnen'}
+                                                                    </div>
+                                                                    <div className="mt-1 text-[9px] leading-relaxed text-amber-100/55">
+                                                                        Eigene, simulierte Firma · vollständig von echten Daten getrennt
+                                                                    </div>
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     </motion.div>
                                                 )}

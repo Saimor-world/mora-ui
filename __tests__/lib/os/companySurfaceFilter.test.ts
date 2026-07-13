@@ -19,6 +19,10 @@ describe('filterCompaniesForSurface', () => {
         company('hq', 'Saimôr HQ', TENANT_HQ),
     ];
 
+    it('keeps the company switcher enabled on HQ', () => {
+        expect(resolveSurfaceProfile('hq.saimor.world').companySwitcherEnabled).toBe(true);
+    });
+
     it('shows only the HQ company on localhost/local-truth surfaces', () => {
         const result = filterCompaniesForSurface(companies, {
             surfaceProfile: resolveSurfaceProfile('127.0.0.1'),
@@ -39,6 +43,38 @@ describe('filterCompaniesForSurface', () => {
         });
 
         expect(result.map((item) => item.name)).toEqual(['Saimôr HQ']);
+    });
+
+    it('keeps a tenant-local guided demo visible to an HQ owner', () => {
+        const ownerTenant = 'tenant-nextchapter';
+        const ownerCompanies = [
+            company('nextchapter', 'Next Chapter Germany', ownerTenant),
+            company('guided-demo', 'Brandt & Söhne Gebäudetechnik', ownerTenant, true),
+        ];
+        const result = filterCompaniesForSurface(ownerCompanies, {
+            surfaceProfile: resolveSurfaceProfile('hq.saimor.world'),
+            role: 'owner',
+            tenantId: ownerTenant,
+            viewMode: 'workspace',
+        });
+
+        expect(result.map((item) => item.id)).toEqual(['nextchapter', 'guided-demo']);
+    });
+
+    it('does not expose the guided demo to a regular member', () => {
+        const ownerTenant = 'tenant-nextchapter';
+        const ownerCompanies = [
+            company('nextchapter', 'Next Chapter Germany', ownerTenant),
+            company('guided-demo', 'Brandt & Söhne Gebäudetechnik', ownerTenant, true),
+        ];
+        const result = filterCompaniesForSurface(ownerCompanies, {
+            surfaceProfile: resolveSurfaceProfile('hq.saimor.world'),
+            role: 'team_member',
+            tenantId: ownerTenant,
+            viewMode: 'workspace',
+        });
+
+        expect(result.map((item) => item.id)).toEqual(['nextchapter']);
     });
 
     it('keeps system-owner portfolio behavior on standard surfaces', () => {

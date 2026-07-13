@@ -143,7 +143,7 @@ export interface HomeCockpitProps {
 
 
 
-function WidgetGlanceCard({ type, accent, context, className = '', compact = false }: {
+export function WidgetGlanceCard({ type, accent, context, className = '', compact = false }: {
 
     type: string;
 
@@ -176,7 +176,7 @@ function WidgetGlanceCard({ type, accent, context, className = '', compact = fal
 
         <div
 
-            className={`relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.11] shadow-[0_10px_32px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md ${className}`}
+            className={`organization-home-card relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.11] shadow-[0_10px_32px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md ${className}`}
 
             style={{ background: compact ? 'linear-gradient(180deg, rgba(255,255,255,0.075), rgba(15,23,42,0.48))' : 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(15,23,42,0.54))' }}
 
@@ -261,7 +261,7 @@ const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 
 
 
-function HomeSignalCard({
+export function HomeSignalCard({
     label,
     value,
     detail,
@@ -284,7 +284,7 @@ function HomeSignalCard({
         rose: 'from-rose-300/24 to-red-500/[0.06] text-rose-100 border-rose-200/20',
     };
     const classes = [
-        'group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
+        'organization-home-card group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
         tones[tone],
         onClick ? 'hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.06]' : '',
     ].join(' ');

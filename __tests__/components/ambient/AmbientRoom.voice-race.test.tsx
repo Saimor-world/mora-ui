@@ -209,6 +209,83 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
         expect(mockSendToMora).toHaveBeenCalledWith('Direkt finalisiert', null, expect.any(String));
     });
 
+    it('keeps listening through a browser pause until the user explicitly stops', async () => {
+        jest.useFakeTimers();
+        try {
+            const qc = createTestQueryClient();
+            renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /Spracherkennung starten/i }));
+            });
+
+            const instance = MockSpeechRecognition.lastInstance;
+            expect(instance).not.toBeNull();
+
+            act(() => {
+                instance!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Das ist' }], { isFinal: true })],
+                });
+                instance!.onend();
+            });
+
+            expect(mockSendToMora).not.toHaveBeenCalled();
+            await act(async () => { jest.advanceTimersByTime(130); });
+            expect(instance!.start).toHaveBeenCalledTimes(2);
+
+            act(() => {
+                instance!.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'ein ganzer Gedanke' }], { isFinal: true })],
+                });
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /Spracherkennung stoppen/i }));
+                instance!.onend();
+            });
+
+            expect(mockSendToMora).toHaveBeenCalledWith(
+                'Das ist ein ganzer Gedanke',
+                null,
+                expect.any(String),
+            );
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
+    it('can stop cleanly inside the short recognition restart window', async () => {
+        jest.useFakeTimers();
+        try {
+            const qc = createTestQueryClient();
+            renderWithProviders(<AmbientRoom />, { queryClient: qc });
+
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /Spracherkennung starten/i }));
+            });
+            const instance = MockSpeechRecognition.lastInstance!;
+
+            act(() => {
+                instance.onresult({
+                    resultIndex: 0,
+                    results: [Object.assign([{ transcript: 'Kein Hänger' }], { isFinal: true })],
+                });
+                instance.onend();
+            });
+            await act(async () => {
+                fireEvent.click(screen.getByRole('button', { name: /Spracherkennung stoppen/i }));
+                await Promise.resolve();
+            });
+
+            expect(mockSendToMora).toHaveBeenCalledWith('Kein Hänger', null, expect.any(String));
+            await act(async () => { jest.advanceTimersByTime(130); });
+            expect(instance.start).toHaveBeenCalledTimes(1);
+        } finally {
+            jest.useRealTimers();
+        }
+    });
+
     it('immediately aborts and resets on cancel/abort stop', async () => {
         const qc = createTestQueryClient();
         renderWithProviders(<AmbientRoom />, { queryClient: qc });
@@ -282,7 +359,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             // (old code cleared it after 4 s; that was the one-shot end).
             await act(async () => { jest.advanceTimersByTime(1300); });
             expect(screen.getByText('Antwort von Mora')).toBeInTheDocument();
-            expect(screen.getByText(/Drücken & halten/i)).toBeInTheDocument();
+            expect(screen.getByText(/Tippen zum Sprechen/i)).toBeInTheDocument();
         } finally {
             jest.useRealTimers();
         }
@@ -332,7 +409,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             expect(mockSendToMora).toHaveBeenNthCalledWith(2, 'Bezug darauf', null, 'ambient-session-a');
 
             await act(async () => {
-                fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+                fireEvent.click(screen.getByRole('button', { name: /Voice-Verlauf zurücksetzen/i }));
             });
             await act(async () => { jest.advanceTimersByTime(1300); });
 
@@ -357,19 +434,23 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
         }
     });
 
-    it('stops push-to-talk even when pointer up happens before the next render', async () => {
+    it('keeps click-to-talk open until the second click', async () => {
         const qc = createTestQueryClient();
         renderWithProviders(<AmbientRoom />, { queryClient: qc });
 
         const mic = screen.getByRole('button', { name: /Spracherkennung starten/i });
         await act(async () => {
-            fireEvent.pointerDown(mic);
-            fireEvent.pointerUp(mic);
+            fireEvent.click(mic);
         });
 
         const instance = MockSpeechRecognition.lastInstance;
         expect(instance).not.toBeNull();
         expect(instance!.start).toHaveBeenCalledTimes(1);
+        expect(instance!.stop).not.toHaveBeenCalled();
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: /Spracherkennung stoppen/i }));
+        });
         expect(instance!.stop).toHaveBeenCalledTimes(1);
     });
 

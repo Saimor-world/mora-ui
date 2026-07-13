@@ -162,12 +162,12 @@ beforeEach(() => {
     useActivityStore.setState({ recentItems: [] });
 });
 
-function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE) {
+function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE, homeData?: any) {
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.departments('co-1'), depsData);
     qc.setQueryData(queryKeys.tree('co-1'), treeData);
     qc.setQueryData(queryKeys.companies(), [{ id: 'co-1', name: 'Test Corp' }]);
-    qc.setQueryData(queryKeys.viewHome(), {
+    qc.setQueryData(queryKeys.viewHome(), homeData ?? {
         company: { id: 'co-1', name: 'Test Corp', is_visitor: false },
         greeting: '',
         changes: [{ id: 'change-1', title: 'Tageslage aktualisiert', scope: 'mindloop_events', occurred_at: '2026-06-05T10:00:00Z', severity: 0.4 }],
@@ -215,7 +215,39 @@ describe('HomeSurface — rendering', () => {
         expect(screen.getByTestId('home-cockpit')).toBeInTheDocument();
         expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
         expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
-        expect(screen.getByTestId('arbeitseinstiege-strip')).toBeInTheDocument();
+        expect(screen.getByTestId('home-priority-card')).toBeInTheDocument();
+        expect(screen.getByTestId('home-status-grid')).toBeInTheDocument();
+    });
+
+    it('lets a critical system signal overrule the calm organizational lead', () => {
+        renderWithDepts(STABLE_DEPTS, STABLE_TREE, {
+            company: { id: 'co-1', name: 'Test Corp', is_visitor: false },
+            greeting: '',
+            changes: [],
+            attention: [{
+                id: 'storage-truth',
+                title: 'Einige Dateien sind nicht vollständig verfügbar',
+                detail: 'Die betroffenen Inhalte müssen erneut bereitgestellt werden.',
+                severity: 0.85,
+                category: 'risk',
+                scope: 'system',
+            }],
+            next_steps: [],
+            priority: {
+                state: 'attention',
+                domain: 'system',
+                eyebrow: 'System braucht Aufmerksamkeit',
+                title: 'Einige Dateien sind nicht vollständig verfügbar',
+                detail: 'Die betroffenen Inhalte müssen erneut bereitgestellt werden.',
+                severity: 0.85,
+                action: 'signals',
+            },
+        });
+
+        expect(screen.getByTestId('home-priority-card')).toHaveTextContent('System braucht Aufmerksamkeit');
+        expect(screen.getByTestId('home-priority-card')).toHaveTextContent('Einige Dateien sind nicht vollständig verfügbar');
+        expect(screen.queryByText('Kein akuter Handlungsdruck')).not.toBeInTheDocument();
+        expect(screen.getByTestId('home-status-grid')).toHaveTextContent('Einige Dateien sind nicht vollständig verfügbar');
     });
 
     it('renders HomeCockpit zones for normal OS home', async () => {
@@ -223,7 +255,7 @@ describe('HomeSurface — rendering', () => {
         await waitFor(() => {
             expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument();
             expect(screen.getByTestId('home-widget-signals')).toBeInTheDocument();
-            expect(screen.getByTestId('home-widget-nightwatch')).toBeInTheDocument();
+            expect(screen.getByTestId('home-widget-team')).toBeInTheDocument();
         });
     });
 

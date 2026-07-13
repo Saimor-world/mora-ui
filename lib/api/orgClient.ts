@@ -34,6 +34,17 @@ export async function fetchCompanies(includeDemo = false): Promise<CoreCompany[]
     }
 }
 
+export interface GuidedDemoResult {
+    tenant_id: string;
+    company_id: string;
+    content_pack: string;
+    has_data: boolean;
+}
+
+export async function ensureGuidedDemoCompany(pack = 'mittelstand'): Promise<GuidedDemoResult> {
+    return corePost('/v3/companies/guided-demo', { pack });
+}
+
 function hasLocalDemoFallbackSession() {
     return isLocalhost() && readCookie('mora_session') === 'local_demo_fallback';
 }

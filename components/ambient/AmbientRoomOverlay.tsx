@@ -70,7 +70,7 @@ export const AmbientRoomOverlay: React.FC = () => {
 
                     data-testid="ambient-room-overlay"
 
-                    className="fixed inset-0"
+                    className="pointer-events-none fixed inset-0"
 
                     style={{ zIndex: AMBIENT_ROOM_Z_INDEX }}
 
@@ -88,10 +88,9 @@ export const AmbientRoomOverlay: React.FC = () => {
 
                     <div
 
-                        className="absolute inset-0 bg-[#02050a]/55 backdrop-blur-[3px]"
+                        className="pointer-events-none absolute inset-0 bg-[#02050a]/18"
 
                         aria-hidden
-                        onClick={handleClose}
                     />
 
                     <AmbientRoom variant="overlay" onClose={handleClose} />

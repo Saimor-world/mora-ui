@@ -204,7 +204,10 @@ export const MoraShell: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const storeOrbState = useOrbStore((s) => s.orbState);
-    const { data: companiesData = [] } = useCompanies({ enabled: activeMode !== 'visitor' });
+    const { data: companiesData = [] } = useCompanies({
+        enabled: activeMode !== 'visitor',
+        includeDemo: true,
+    });
     const companies = companiesData;
     const { logout } = useAccountStore();
     const { reset: resetPanes, openPane } = usePaneStore();
@@ -327,7 +330,7 @@ export const MoraShell: React.FC = () => {
     }, [isPublicDemoSurface, hasDemoCompany, viewMode]);
 
     useEffect(() => {
-        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface || surfaceProfile.isHqSurface;
+        const isSingleCompanySurface = surfaceProfile.isLocalTruthSurface;
         if (!isSingleCompanySurface || !safeCompanies.length) return;
 
         if (viewMode !== 'workspace') {
@@ -715,6 +718,7 @@ export const MoraShell: React.FC = () => {
             <ModeIndicatorBanner activeMode={activeMode} />
             <AmbientAudioController />
             <InteractionAudioController />
+            <MoraPulsePanel />
             {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
@@ -1330,4 +1334,3 @@ export const MoraShell: React.FC = () => {
 };
 
 export default MoraShell;
-

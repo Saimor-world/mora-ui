@@ -114,6 +114,39 @@
     --card-foreground: 240 20% 94%;
     --popover: 245 40% 11%;
     --popover-foreground: 240 20% 94%;
+
+    /* === SHARED SURFACE LANGUAGE (Language C) ===
+       Backend state is expressed through semantic accents; surfaces consume
+       these tokens without inventing their own fallback palette. */
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 262 28% 14%;
+    --secondary-foreground: 262 15% 88%;
+    --muted: 262 22% 15%;
+    --muted-foreground: 262 8% 60%;
+    --accent: 188 86% 53%;
+    --accent-foreground: 262 50% 8%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 262 20% 20%;
+    --input: 262 22% 16%;
+    --ring: 262 83% 58%;
+    --radius: 0.75rem;
+
+    /* Ritual scenes may override these live; every consumer has a real base. */
+    --scene-accent: rgba(16, 185, 129, 0.34);
+    --scene-accent-hex: #10B981;
+    --scene-aura: rgba(34, 211, 238, 0.22);
+    --scene-glow: 0 0 28px rgba(16, 185, 129, 0.34);
+    --scene-border: rgba(16, 185, 129, 0.28);
+    --scene-panel-bg: rgba(10, 14, 28, 0.86);
+    --scene-rgb: 16, 185, 129;
+
+    --chart-1: 262 83% 58%;
+    --chart-2: 188 86% 53%;
+    --chart-3: 280 70% 65%;
+    --chart-4: 245 80% 65%;
+    --chart-5: 38 92% 58%;
   }
 
   /* === STANDARD MODE (LIGHT CORPORATE THEME - Like Excel/Word) === */
@@ -143,6 +176,11 @@
     --mora-glass-opacity: 1;
     --mora-glass-bg: #FFFFFF;
     --mora-glass-border: #E1E1E1;
+    --scene-panel-bg: #FFFFFF;
+    --scene-border: rgba(0, 120, 212, 0.22);
+    --scene-accent: rgba(0, 120, 212, 0.18);
+    --scene-aura: rgba(0, 120, 212, 0.10);
+    --scene-rgb: 0, 120, 212;
 
     /* Sharp corners like Office */
     --mora-radius-sm: 2px;
@@ -410,6 +448,128 @@
     /* keep pills round */
   }
 
+  /* Standard mode is a different visual grammar, not a pale filter over the
+     immersive scene. Keep the shared information hierarchy while giving Home
+     an actual light canvas and semantic surfaces. */
+  .standard-mode .home-atmosphere,
+  .standard-mode .ritual-scene-overlay {
+    display: none !important;
+  }
+
+  .standard-mode [data-testid="home-universe-mission-control"] {
+    background: #F3F3F3 !important;
+  }
+
+  .standard-mode .organization-home {
+    color: #1F1F1F;
+    scrollbar-color: rgba(31, 31, 31, 0.24) transparent !important;
+  }
+
+  .standard-mode .organization-home-card {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    border-color: #DEDEDE !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+    backdrop-filter: none !important;
+  }
+
+  .standard-mode .organization-home [class*="text-white"] {
+    color: rgba(31, 31, 31, 0.72) !important;
+  }
+
+  .standard-mode .organization-home h1,
+  .standard-mode .organization-home h2,
+  .standard-mode .organization-home [class~="text-white"] {
+    color: #1F1F1F !important;
+  }
+
+  .standard-mode .organization-home [class*="border-white"] {
+    border-color: #DEDEDE !important;
+  }
+
+  .standard-mode .organization-home [class*="bg-black"],
+  .standard-mode .organization-home [class*="bg-white"] {
+    background-color: #F7F7F7 !important;
+  }
+
+  /* Accent tints (emerald-100, cyan-200, …) are designed for dark glass.
+     On the light canvas they wash out to invisibility — remap them to their
+     dark, saturated counterparts so state colours still mean something. */
+  .standard-mode .organization-home [class*="text-emerald-1"],
+  .standard-mode .organization-home [class*="text-emerald-2"],
+  .standard-mode .organization-home [class*="text-teal-1"],
+  .standard-mode .organization-home [class*="text-teal-2"] {
+    color: #047857 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-cyan-1"],
+  .standard-mode .organization-home [class*="text-cyan-2"],
+  .standard-mode .organization-home [class*="text-sky-1"],
+  .standard-mode .organization-home [class*="text-sky-2"] {
+    color: #0E7490 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-rose-1"],
+  .standard-mode .organization-home [class*="text-rose-2"] {
+    color: #BE123C !important;
+  }
+
+  .standard-mode .organization-home [class*="text-violet-1"],
+  .standard-mode .organization-home [class*="text-violet-2"] {
+    color: #6D28D9 !important;
+  }
+
+  .standard-mode .organization-home [class*="text-amber-1"],
+  .standard-mode .organization-home [class*="text-amber-2"] {
+    color: #B45309 !important;
+  }
+
+  /* Môra pulse panel + capsule: same grammar shift as Home — a real light
+     surface instead of dark glass floating over a light canvas. */
+  .standard-mode [data-mora-playground-root] .mora-pulse-glow {
+    display: none !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="bg-["],
+  .standard-mode [data-mora-playground-root] [class*="bg-black"] {
+    background: #FFFFFF !important;
+    background-image: none !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="bg-white"],
+  .standard-mode [data-mora-playground-root] [class*="bg-emerald"],
+  .standard-mode [data-mora-playground-root] [class*="bg-cyan"],
+  .standard-mode [data-mora-playground-root] [class*="bg-violet"] {
+    background-color: #F5F5F5 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="border-white"],
+  .standard-mode [data-mora-playground-root] [class*="border-emerald"],
+  .standard-mode [data-mora-playground-root] [class*="border-cyan"],
+  .standard-mode [data-mora-playground-root] [class*="border-violet"] {
+    border-color: #DEDEDE !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-white"] {
+    color: rgba(31, 31, 31, 0.75) !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-emerald"] {
+    color: #047857 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-cyan"] {
+    color: #0E7490 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="text-violet"] {
+    color: #6D28D9 !important;
+  }
+
+  .standard-mode [data-mora-playground-root] [class*="shadow-"] {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12) !important;
+  }
+
 
   /* Glass Effect Utilities */
 
@@ -530,99 +690,6 @@
       radial-gradient(ellipse 60% 40% at 28% 22%, rgba(255,255,255,0.45) 0%, transparent 55%),
       radial-gradient(ellipse 35% 22% at 68% 72%, rgba(255,255,255,0.15) 0%, transparent 60%);
     pointer-events: none;
-  }
-
-
-  :root {
-    /* Cosmic Dawn — Violett als Primary */
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 98%;
-
-    /* Sekundär - tiefes Indigo */
-    --secondary: 262 28% 14%;
-    --secondary-foreground: 262 15% 88%;
-
-    /* Gedämpfte Töne - violett-indigo */
-    --muted: 262 22% 15%;
-    --muted-foreground: 262 8% 60%;
-
-    /* Akzent - Cyan für Kontrast */
-    --accent: 188 86% 53%;
-    --accent-foreground: 262 50% 8%;
-
-    /* Ritual scene colors — applied live by RitualSceneStyler. Defaults = flow. */
-    --scene-accent: rgba(16,185,129,0.34);
-    --scene-accent-hex: #10B981;
-    --scene-aura: rgba(34,211,238,0.22);
-    --scene-glow: 0 0 28px rgba(16,185,129,0.34);
-
-    /* Destruktiv - gedämpftes Rot */
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 96%;
-
-    /* Borders & Inputs - violet-tinted */
-    --border: 262 20% 20%;
-    --input: 262 22% 16%;
-    --ring: 262 83% 58%;
-
-    /* Sanfte Radien */
-    --radius: 0.75rem;
-
-    /* Charts - Cosmic Spektrum */
-    --chart-1: 262 83% 58%;
-    /* Violet */
-    --chart-2: 188 86% 53%;
-    /* Cyan */
-    --chart-3: 280 70% 65%;
-    /* Lila */
-    --chart-4: 245 80% 65%;
-    /* Indigo */
-    --chart-5: 38 92% 58%;
-    /* Amber */
-  }
-
-  /* --- THEMES --- */
-
-  /* Light Theme - Paper & Ink */
-  [data-theme='light'] {
-    --background: 40 20% 97%;
-    --foreground: 155 45% 10%;
-    --card: 40 20% 95%;
-    --card-foreground: 155 45% 10%;
-    --primary: 42 88% 45%;
-    /* Darker Gold */
-    --secondary: 155 20% 90%;
-    --secondary-foreground: 155 45% 10%;
-    --muted: 155 10% 90%;
-    --muted-foreground: 155 20% 40%;
-    --border: 155 10% 85%;
-    --input: 155 10% 90%;
-  }
-
-  /* Dark Theme - Deep Space */
-  [data-theme='dark'] {
-    --background: 220 15% 6%;
-    --foreground: 220 10% 95%;
-    --card: 220 15% 10%;
-    --card-foreground: 220 10% 95%;
-    --primary: 42 88% 52%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 220 10% 90%;
-    --muted: 220 10% 15%;
-    --muted-foreground: 220 10% 60%;
-    --border: 220 10% 20%;
-    --input: 220 10% 18%;
-  }
-
-  /* Glass Theme - Frost */
-  [data-theme='glass'] {
-    --background: 200 10% 10%;
-    /* Blue-ish dark */
-    --foreground: 200 10% 95%;
-    --card: 200 10% 15%;
-    /* More transparent in components */
-    --primary: 190 80% 60%;
-    /* Cyan/Ice */
   }
 }
 

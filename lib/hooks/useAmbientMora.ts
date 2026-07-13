@@ -12,6 +12,7 @@ import { useCallback, useState } from 'react';
 import { corePost } from '@/lib/api/http';
 import { buildChatContext, type ChatContext } from '@/lib/api/moraAgentClient';
 import { useMoraStore } from '@/lib/store/moraState';
+import { getMoraPlaygroundTarget } from '@/lib/os/moraPlayground';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import type { UiToolCall } from '@/lib/lagefeld/types';
@@ -170,6 +171,7 @@ export function useAmbientMora(): UseAmbientMoraReturn {
 }
 
 function buildFieldContext(context: ChatContext | undefined, defaultFolderId?: string | null): Record<string, unknown> {
+    const playgroundTarget = getMoraPlaygroundTarget();
     return {
         level: context?.view_level,
         entityId: context?.node_id || context?.folder_id || context?.space_id || context?.department_id || context?.company_id,
@@ -184,6 +186,7 @@ function buildFieldContext(context: ChatContext | undefined, defaultFolderId?: s
             layer: context?.layer,
             routePath: context?.route_path,
             defaultFolderId: defaultFolderId || undefined,
+            playgroundTarget: playgroundTarget || undefined,
         },
     };
 }
