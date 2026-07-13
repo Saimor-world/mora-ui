@@ -151,6 +151,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
 
     const recognitionRef = useRef<any>(null);
     const spaceHeldRef   = useRef(false);
+    const listeningDesiredRef = useRef(false);
+    const restartTimerRef = useRef<number | null>(null);
     const stopModeRef    = useRef<'stop' | 'abort' | null>(null);
     const transcriptRef  = useRef('');
     const liveTextRef    = useRef('');
@@ -214,6 +216,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             return;
         }
 
+        listeningDesiredRef.current = true;
+
         const recognition = new SpeechAPI();
         recognition.lang           = 'de-DE';
         recognition.continuous     = true;
@@ -231,9 +235,12 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             }
             liveTextRef.current = interim;
             setLiveText(interim);
-            if (final) {
-                transcriptRef.current += final;
-                setTranscript(prev => prev + final);
+            if (final.trim()) {
+                const combined = [transcriptRef.current.trim(), final.trim()]
+                    .filter(Boolean)
+                    .join(' ');
+                transcriptRef.current = combined;
+                setTranscript(combined);
             }
         };
 
@@ -245,10 +252,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                 setSpeechSupported(false);
                 setErrorMsg('Mikrofon-Zugriff verweigert. Bitte in Browser-Einstellungen erlauben.');
             } else if (err === 'no-speech') {
-                // Timeout without input — soft abort, don't show error
-                recognitionRef.current = null;
-                setAmbientState('idle');
-                setLiveText('');
+                // Chrome may close a continuous session during a short pause.
+                // `onend` restarts it while the user still wants the mic open.
                 return;
             } else if (err === 'network') {
                 setFallbackMode(true);
@@ -259,6 +264,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                 setFallbackMode(true);
                 setSpeechSupported(false);
             }
+            listeningDesiredRef.current = false;
             recognitionRef.current = null;
             spaceHeldRef.current = false;
             setAmbientState(err === 'not-allowed' || err === 'service-not-allowed' || err === 'network' || err === 'audio-capture' ? 'error' : 'idle');
@@ -267,8 +273,27 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
 
         recognition.onend = () => {
             const hasContent = (transcriptRef.current + ' ' + liveTextRef.current).trim().length > 0;
+            const stopMode = stopModeRef.current;
+            const shouldContinue = stopMode === null && listeningDesiredRef.current;
+
+            if (shouldContinue) {
+                recognitionRef.current = null;
+                restartTimerRef.current = window.setTimeout(() => {
+                    restartTimerRef.current = null;
+                    if (!listeningDesiredRef.current || ambientStateRef.current !== 'listening') return;
+                    try {
+                        recognition.start();
+                        recognitionRef.current = recognition;
+                    } catch {
+                        listeningDesiredRef.current = false;
+                        setAmbientState(hasContent ? 'thinking' : 'idle');
+                    }
+                }, 120);
+                return;
+            }
+
             setAmbientState(prev => {
-                if (stopModeRef.current === 'abort') {
+                if (stopMode === 'abort') {
                     return 'idle';
                 }
                 if (prev !== 'listening') return prev;
@@ -289,13 +314,20 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
         setAmbientState('listening');
         setTranscript('');
         setLiveText('');
+        transcriptRef.current = '';
+        liveTextRef.current = '';
         setMoraText('');
         setMoraIntent('');
         setMoraTools([]);
     }, [SpeechAPI, micPermission]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const stopListening = useCallback((abort = false) => {
+        listeningDesiredRef.current = false;
         if (abort) {
+            if (restartTimerRef.current !== null) {
+                window.clearTimeout(restartTimerRef.current);
+                restartTimerRef.current = null;
+            }
             stopModeRef.current = 'abort';
             recognitionRef.current?.abort();
             recognitionRef.current = null;
@@ -307,9 +339,28 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             transcriptRef.current = '';
         } else {
             stopModeRef.current = 'stop';
-            recognitionRef.current?.stop();
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            } else if (restartTimerRef.current !== null) {
+                window.clearTimeout(restartTimerRef.current);
+                restartTimerRef.current = null;
+                const hasContent = (transcriptRef.current + ' ' + liveTextRef.current).trim().length > 0;
+                stopModeRef.current = null;
+                setAmbientState(hasContent ? 'thinking' : 'idle');
+            }
             spaceHeldRef.current   = false;
         }
+    }, []);
+
+    useEffect(() => () => {
+        listeningDesiredRef.current = false;
+        if (restartTimerRef.current !== null) {
+            window.clearTimeout(restartTimerRef.current);
+            restartTimerRef.current = null;
+        }
+        stopModeRef.current = 'abort';
+        recognitionRef.current?.abort();
+        recognitionRef.current = null;
     }, []);
 
     // ── thinking → sendToMora ─────────────────────────────────────────────────
@@ -454,17 +505,13 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
         else if (ambientState === 'idle')  startListening();
     };
 
-    const handleMicPointerDown = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        startListening();
-    }, [startListening]);
-
-    const handleMicPointerRelease = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-        e.preventDefault();
+    const handleMicToggle = useCallback(() => {
         if (ambientStateRef.current === 'listening' || recognitionRef.current) {
             stopListening();
+        } else {
+            startListening();
         }
-    }, [stopListening]);
+    }, [startListening, stopListening]);
 
     // ── Fallback text submit ──────────────────────────────────────────────────
     const handleFallbackSubmit = (e: React.FormEvent) => {
@@ -486,9 +533,9 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
 
     // ── Status hint text ──────────────────────────────────────────────────────
     const statusHint =
-        ambientState === 'idle'       && !fallbackMode ? 'Drücken & halten · oder Leertaste'
+        ambientState === 'idle'       && !fallbackMode ? 'Tippen zum Sprechen · Leertaste halten'
         : ambientState === 'idle'     && fallbackMode  ? 'Eingabe unten'
-        : ambientState === 'listening'                 ? 'Hört zu … loslassen zum Beenden'
+        : ambientState === 'listening'                 ? 'Hört weiter zu … tippen zum Beenden'
         : ambientState === 'thinking' || isLoading     ? 'Môra verarbeitet …'
         : ambientState === 'responding'                ? 'Bereit zur Ausführung'
         : ambientState === 'executing'                 ? 'Führt aus …'
@@ -667,7 +714,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                     />
                 </div>
 
-                {/* Push-to-talk mic button */}
+                {/* Continuous voice toggle; Space remains optional push-to-talk. */}
                 <AnimatePresence mode="wait">
                     {(ambientState === 'idle' || ambientState === 'listening') && !fallbackMode && (
                         <motion.button
@@ -676,10 +723,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.9 }}
                             transition={{ duration: 0.25 }}
-                            onPointerDown={handleMicPointerDown}
-                            onPointerUp={handleMicPointerRelease}
-                            onPointerLeave={handleMicPointerRelease}
-                            onPointerCancel={handleMicPointerRelease}
+                            onClick={handleMicToggle}
                             aria-label={ambientState === 'listening' ? 'Spracherkennung stoppen' : 'Spracherkennung starten'}
                             className="relative flex items-center justify-center rounded-full transition-all focus:outline-none"
                             style={{
