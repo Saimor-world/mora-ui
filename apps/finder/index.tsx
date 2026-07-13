@@ -1895,7 +1895,9 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     </p>
                                 </div>
                             </div>
-                            <div className="relative z-10 grid grid-cols-3 gap-1.5 lg:min-w-[260px]">
+                            {/* Ordner + Inhalte only. The former "Ansicht" cell
+                                duplicated the Klein/Mittel/Groß toggle in the toolbar. */}
+                            <div className="relative z-10 grid grid-cols-2 gap-1.5 lg:min-w-[188px]">
                                 <div className="rounded-xl border border-emerald-300/[0.10] bg-black/16 px-2.5 py-1.5">
                                     <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Ordner</div>
                                     <div className="mt-0.5 text-base font-semibold text-emerald-100">{filteredFolders.length}</div>
@@ -1903,10 +1905,6 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 <div className="rounded-xl border border-cyan-300/[0.10] bg-black/16 px-2.5 py-1.5">
                                     <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Inhalte</div>
                                     <div className="mt-0.5 text-base font-semibold text-cyan-100">{displayFiles.length}</div>
-                                </div>
-                                <div className="rounded-xl border border-white/[0.08] bg-black/16 px-2.5 py-1.5">
-                                    <div className="text-[9px] uppercase tracking-[0.14em] text-white/26">Ansicht</div>
-                                    <div className="mt-0.5 text-xs font-semibold text-white/82">{densityLabel}</div>
                                 </div>
                             </div>
                         </div>
@@ -2178,26 +2176,10 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
-                    <div className="border-b border-cyan-200/[0.06] bg-[linear-gradient(90deg,rgba(6,182,212,0.08),rgba(16,185,129,0.035),rgba(168,85,247,0.055))] px-3 py-2 md:px-6">
-                        <div className="grid gap-2 text-[11px] sm:grid-cols-2 xl:grid-cols-4">
-                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
-                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Du bist hier</p>
-                                <p className="mt-1 truncate font-medium text-white/72">{currentPathLabel}</p>
-                            </div>
-                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
-                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Sicht</p>
-                                <p className="mt-1 truncate font-medium text-cyan-100/76">{isDeepView ? 'Gesamtsicht der Instanz' : 'Nur aktueller Pfad'}</p>
-                            </div>
-                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
-                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Suche</p>
-                                <p className="mt-1 truncate font-medium text-emerald-100/76">{searchQuery.trim() || 'Kein Filter aktiv'}</p>
-                            </div>
-                            <div className="rounded-xl border border-white/[0.07] bg-black/18 px-3 py-2">
-                                <p className="text-[9px] uppercase tracking-[0.16em] text-white/28">Inhalte</p>
-                                <p className="mt-1 truncate font-medium text-white/72">{filteredFolders.length} Ordner / {displayFiles.length} Dateien</p>
-                            </div>
-                        </div>
-                    </div>
+                    {/* The former "Du bist hier / Sicht / Suche / Inhalte" status band
+                        was removed: every cell duplicated the header (path title,
+                        Pfadfokus badge, search box, Ordner/Inhalte counts). A file
+                        explorer must show files, not restate its own chrome. */}
 
                     {/* Content Container with Animation */}
                     <div className="relative flex-1 overflow-y-auto bg-transparent px-3 pb-40 pt-4 md:px-6" onClick={() => setSelectedNodeId(null)} onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, null, 'background')}>
