@@ -14,8 +14,8 @@ export type ViewMode = 'owner' | 'demo' | 'workspace';
 interface UniverseControlsProps {
     viewMode: ViewMode;
     setViewMode: (mode: ViewMode) => void;
-    activeCompany: { id: string; name: string } | undefined;
-    companies?: { id: string; name: string }[];
+    activeCompany: { id: string; name: string; is_demo?: boolean } | undefined;
+    companies?: { id: string; name: string; is_demo?: boolean }[];
     onSwitchCompany?: (companyId: string) => void;
     visibleModes?: ViewMode[];
     workspaceLabel?: string;
@@ -107,13 +107,20 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         return coreMode === 'home' ? 'Home' : 'Universe';
     }, [coreMode, shellContext.scopeLabel, viewLevel]);
 
+    // Cycle order: real companies first, demos last — so the switch reads
+    // "real → real → demo", never a blind jump into a demo workspace.
+    const switchOrder = useMemo(
+        () => [...companies].sort((a, b) => Number(a.is_demo ?? false) - Number(b.is_demo ?? false)),
+        [companies]
+    );
+    const nextCompany = useMemo(() => {
+        if (!switchOrder.length || !activeCompany) return undefined;
+        const currentIndex = switchOrder.findIndex((company) => company.id === activeCompany.id);
+        return switchOrder[(currentIndex + 1) % switchOrder.length];
+    }, [switchOrder, activeCompany]);
+
     const handleContextClick = () => {
-        if (!companies.length || !activeCompany || !onSwitchCompany) return;
-
-        const currentIndex = companies.findIndex((company) => company.id === activeCompany.id);
-        const nextIndex = (currentIndex + 1) % companies.length;
-        const nextCompany = companies[nextIndex];
-
+        if (!nextCompany || !onSwitchCompany) return;
         onSwitchCompany(nextCompany.id);
     };
 
@@ -169,13 +176,19 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 )}
             </div>
 
-            {/* Company name — single line, opens Control Center */}
+            {/* Company name — single line, opens Control Center. A DEMO chip
+                makes a guided-demo company unmistakable next to a real one. */}
             <button
                 type="button"
                 onClick={handleOpenContextBridge}
                 className="flex min-w-0 flex-1 items-center gap-2 rounded-xl px-2 py-1 text-[11px] text-white/75 transition-colors hover:bg-white/[0.06] hover:text-white/95 sm:flex-none sm:px-3 sm:text-[12px]"
             >
                 <span className="truncate font-medium">{shellContext.title}</span>
+                {activeCompany?.is_demo && (
+                    <span className="shrink-0 rounded-full border border-amber-300/35 bg-amber-400/15 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-[0.16em] text-amber-200/90 sm:text-[9px]">
+                        Demo
+                    </span>
+                )}
                 {shellContext.contextLabel && (
                     <span className="hidden text-[10px] text-white/35 sm:inline" style={{ color: shellContext.accent }}>
                         {contextLabelOverride || shellContext.contextLabel}
@@ -197,7 +210,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     type="button"
                     onClick={handleContextClick}
                     className={`flex shrink-0 items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-2 py-1 text-white/55 transition-colors hover:text-emerald-200 ${surfaceProfile.isHqSurface ? 'sm:hidden' : ''}`}
-                    title="Organisation wechseln"
+                    title={nextCompany ? `Wechseln zu: ${nextCompany.name}${nextCompany.is_demo ? ' (Demo)' : ''}` : 'Organisation wechseln'}
                 >
                     <Globe className="h-3 w-3" />
                     <span className="text-[10px] text-emerald-300/68">
