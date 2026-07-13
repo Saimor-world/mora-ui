@@ -84,7 +84,7 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
     }
 
     return (
-        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[49] flex items-center gap-3 px-4 py-2 rounded-full border ${borderClass} ${bgClass} backdrop-blur-xl ${glowColor} transition-all pointer-events-auto`}>
+        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-3 px-4 py-2 rounded-full border ${borderClass} ${bgClass} backdrop-blur-xl ${glowColor} transition-all pointer-events-auto`}>
             <span className="flex h-2 w-2 relative">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
                     activeMode === 'public_playground' ? 'bg-cyan-400' : activeMode === 'personal_demo' ? 'bg-violet-400' : activeMode === 'visitor' ? 'bg-emerald-400' : 'bg-amber-400'
