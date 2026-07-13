@@ -36,7 +36,11 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
             const response = await fetch('/api/auth/owner-preview-return', { method: 'POST' });
             const payload = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(payload?.detail || 'Owner-Sitzung konnte nicht wiederhergestellt werden.');
-            window.location.href = payload?.destination || '/home';
+            const destination = payload?.destination || '/home';
+            const separator = destination.includes('?') ? '&' : '?';
+            // A unique URL forces a full document navigation even when the
+            // preview and the owner HQ both live at /home.
+            window.location.replace(`${destination}${separator}ownerReturn=${Date.now()}`);
         } catch (error) {
             setReturnError(error instanceof Error ? error.message : 'Rückkehr nicht möglich.');
             setIsReturning(false);

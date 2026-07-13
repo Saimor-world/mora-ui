@@ -8,6 +8,18 @@ import {
 
 const OWNER_SESSION_MAX_AGE = 60 * 60 * 24 * 7;
 
+function appendSessionCookie(
+    response: NextResponse,
+    name: string,
+    value: string,
+    options: { httpOnly?: boolean; maxAge: number },
+) {
+    response.headers.append(
+        'set-cookie',
+        `${name}=${value}; Path=/; Max-Age=${options.maxAge}; SameSite=Lax${options.httpOnly ? '; HttpOnly' : ''}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`,
+    );
+}
+
 export async function GET(request: NextRequest) {
     return NextResponse.json(
         { available: Boolean(request.cookies.get(OWNER_RETURN_COOKIE)?.value) },
@@ -45,20 +57,19 @@ export async function POST(request: NextRequest) {
         { success: true, destination: '/home' },
         { headers: { 'cache-control': 'no-store' } },
     );
-    response.cookies.set('mora_session', ownerToken!, {
+    // Append every cookie independently. In production the response crosses the
+    // Caddy/Next boundary; keeping the Set-Cookie fields separate prevents one
+    // session cookie from replacing another while the preview is being closed.
+    appendSessionCookie(response, 'mora_session', ownerToken!, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
         maxAge: OWNER_SESSION_MAX_AGE,
     });
-    response.cookies.set('mora_auth_token', ownerToken!, {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
+    appendSessionCookie(response, 'mora_auth_token', ownerToken!, {
         maxAge: OWNER_SESSION_MAX_AGE,
     });
-    response.cookies.delete(OWNER_RETURN_COOKIE);
+    appendSessionCookie(response, OWNER_RETURN_COOKIE, '', {
+        httpOnly: true,
+        maxAge: 0,
+    });
     return response;
 }
