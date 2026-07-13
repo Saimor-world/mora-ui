@@ -1492,7 +1492,7 @@ export const Dock = () => {
                                     <CapsuleDockIcon
                                         icon={Mic}
                                         label="Sprache"
-                                        description="Voice-Overlay - Push-to-Talk (Strg+A oder Alt+A)"
+                                        description="Voice-Overlay · Tippen zum Sprechen (Strg+A oder Alt+A)"
                                         shortcut={`${mod}+A`}
                                         active={voiceOverlayOpen}
                                         onClick={toggleVoiceOverlay}

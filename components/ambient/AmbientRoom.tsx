@@ -603,28 +603,25 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             </>
             )}
 
-            {/* Close / back */}
-            <button
-                onClick={handleClose}
-                className={`absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase pointer-events-auto ${
-                    isOverlay ? 'top-16' : ''
-                }`}
-            >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Zurück</span>
-            </button>
-
-            {/* Reset button */}
-            <button
-                onClick={handleSessionReset}
-                className={`absolute top-6 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full text-white/40 hover:text-white/70 hover:bg-white/[0.06] transition-all text-xs tracking-widest uppercase pointer-events-auto ${
-                    isOverlay ? 'top-16' : ''
-                }`}
-                title="Gesprächsverlauf zurücksetzen"
-            >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Reset</span>
-            </button>
+            {!isOverlay && (
+                <>
+                    <button
+                        onClick={handleClose}
+                        className="absolute left-6 top-6 z-20 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white/70 pointer-events-auto"
+                    >
+                        <ArrowLeft className="h-3.5 w-3.5" />
+                        <span>Zurück</span>
+                    </button>
+                    <button
+                        onClick={handleSessionReset}
+                        className="absolute right-6 top-6 z-20 flex items-center gap-2 rounded-full px-3 py-1.5 text-xs uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white/70 pointer-events-auto"
+                        title="Gesprächsverlauf zurücksetzen"
+                    >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>Reset</span>
+                    </button>
+                </>
+            )}
 
             {/* Header */}
             {!isOverlay && (
@@ -634,14 +631,34 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             )}
 
             {/* Orb section — glass panel in overlay mode */}
-            <div className={`flex flex-col items-center gap-6 z-10 w-full px-8 pointer-events-auto ${
+            <div className={`z-10 pointer-events-auto ${
                 isOverlay
-                    ? 'max-w-xl rounded-[28px] border border-white/10 bg-[linear-gradient(165deg,rgba(12,24,32,0.88),rgba(8,12,28,0.92))] px-6 py-8 shadow-[0_24px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl'
-                    : 'mt-6'
+                    ? 'flex w-[min(480px,calc(100vw-1.5rem))] flex-row flex-wrap items-center gap-3 rounded-[24px] border border-white/10 bg-[linear-gradient(165deg,rgba(12,24,32,0.91),rgba(8,12,28,0.94))] px-4 py-3 shadow-[0_20px_64px_rgba(0,0,0,0.42),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-2xl'
+                    : 'mt-6 flex w-full flex-col items-center gap-6 px-8'
             }`}>
                 {isOverlay && (
-                    <div className="text-[10px] tracking-[0.35em] uppercase text-cyan-200/45 font-medium">
-                        Môra Voice
+                    <div className="flex w-full items-center justify-between gap-3 border-b border-white/[0.06] pb-2">
+                        <div className="text-[9px] font-medium uppercase tracking-[0.3em] text-cyan-100/45">
+                            Môra Voice
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={handleSessionReset}
+                                className="rounded-full p-1.5 text-white/35 transition-colors hover:bg-white/[0.07] hover:text-white/70"
+                                title="Gesprächsverlauf zurücksetzen"
+                                aria-label="Voice-Verlauf zurücksetzen"
+                            >
+                                <RotateCcw className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                                onClick={handleClose}
+                                className="flex items-center gap-1 rounded-full px-2 py-1 text-[9px] uppercase tracking-[0.18em] text-white/40 transition-colors hover:bg-white/[0.07] hover:text-white/75"
+                                aria-label="Voice-Overlay schließen"
+                            >
+                                <ArrowLeft className="h-3.5 w-3.5" />
+                                Schließen
+                            </button>
+                        </div>
                     </div>
                 )}
 
@@ -650,10 +667,10 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                     <motion.div
                         className="absolute pointer-events-none"
                         style={{
-                            width: 250,
-                            height: 150,
+                            width: isOverlay ? 110 : 250,
+                            height: isOverlay ? 70 : 150,
                             borderRadius: '48% 52% 50% 50% / 58% 42% 56% 44%',
-                            filter: 'blur(54px)',
+                            filter: `blur(${isOverlay ? 28 : 54}px)`,
                         }}
                         animate={
                             ambientState === 'listening'
@@ -683,7 +700,10 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                             <motion.div
                                 key={i}
                                 className="absolute rounded-full border border-emerald-400/20"
-                                style={{ width: 220 + i * 60, height: 220 + i * 60 }}
+                                style={{
+                                    width: isOverlay ? 88 + i * 18 : 220 + i * 60,
+                                    height: isOverlay ? 88 + i * 18 : 220 + i * 60,
+                                }}
                                 initial={{ opacity: 0, scale: 0.85 }}
                                 animate={{ opacity: [0, 0.35, 0], scale: [0.85, 1.1, 1.2] }}
                                 transition={{ duration: 2.4, delay: i * 0.6, repeat: Infinity, ease: 'easeOut' }}
@@ -697,7 +717,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                             <motion.div
                                 key="done-flash"
                                 className="absolute rounded-full"
-                                style={{ width: 220, height: 220, background: 'radial-gradient(circle, rgba(52,211,153,0.22) 0%, transparent 70%)' }}
+                                style={{ width: isOverlay ? 96 : 220, height: isOverlay ? 96 : 220, background: 'radial-gradient(circle, rgba(52,211,153,0.22) 0%, transparent 70%)' }}
                                 initial={{ opacity: 0, scale: 0.9 }}
                                 animate={{ opacity: 1, scale: 1.1 }}
                                 exit={{ opacity: 0, scale: 1.2 }}
@@ -708,7 +728,7 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
 
                     <MoraOrb
                         state={orbState}
-                        size="lg"
+                        size={isOverlay ? 'sm' : 'lg'}
                         onClick={handleOrbClick}
                         interactive
                     />
@@ -727,8 +747,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                             aria-label={ambientState === 'listening' ? 'Spracherkennung stoppen' : 'Spracherkennung starten'}
                             className="relative flex items-center justify-center rounded-full transition-all focus:outline-none"
                             style={{
-                                width:      64,
-                                height:     64,
+                                width:      isOverlay ? 48 : 64,
+                                height:     isOverlay ? 48 : 64,
                                 background: ambientState === 'listening'
                                     ? 'radial-gradient(circle, rgba(16,185,129,0.35) 0%, rgba(16,185,129,0.12) 100%)'
                                     : 'rgba(124,58,237,0.18)',
@@ -763,10 +783,10 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -4 }}
                         transition={{ duration: 0.25 }}
-                        className="max-w-md text-center text-[11px] font-medium"
+                        className={`${isOverlay ? 'min-w-[12rem] flex-1 text-left text-[10px]' : 'max-w-md text-center text-[11px]'} font-medium`}
                         style={{
                             minHeight: 20,
-                            letterSpacing: ambientState === 'error' ? 0 : '0.25em',
+                            letterSpacing: ambientState === 'error' ? 0 : (isOverlay ? '0.14em' : '0.25em'),
                             textTransform: ambientState === 'error' ? 'none' : 'uppercase',
                             lineHeight: ambientState === 'error' ? 1.35 : undefined,
                             color: ambientState === 'done'  ? 'rgba(52,211,153,0.8)'

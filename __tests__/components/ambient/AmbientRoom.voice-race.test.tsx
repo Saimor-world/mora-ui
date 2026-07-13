@@ -409,7 +409,7 @@ describe('AmbientRoom voice input lifecycle and race prevention', () => {
             expect(mockSendToMora).toHaveBeenNthCalledWith(2, 'Bezug darauf', null, 'ambient-session-a');
 
             await act(async () => {
-                fireEvent.click(screen.getByRole('button', { name: /Reset/i }));
+                fireEvent.click(screen.getByRole('button', { name: /Voice-Verlauf zurücksetzen/i }));
             });
             await act(async () => { jest.advanceTimersByTime(1300); });
 
