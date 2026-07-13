@@ -7,6 +7,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import { toast } from 'sonner';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 type CorePreviewLead = {
     id: string;
@@ -30,6 +31,7 @@ type CorePreviewLead = {
 };
 
 export const WebsiteLeadLedger: React.FC = () => {
+    const userRole = useSessionStore((state) => state.user?.role);
     const [leads, setLeads] = useState<StoredWebsiteEntryContext[]>([]);
     const [coreLeads, setCoreLeads] = useState<CorePreviewLead[]>([]);
     const [status, setStatus] = useState<'loading' | 'core' | 'local' | 'empty'>('loading');
@@ -125,7 +127,7 @@ export const WebsiteLeadLedger: React.FC = () => {
     };
 
     const handleEnterPreview = async (lead: CorePreviewLead) => {
-        const toastId = toast.loading('Preview-Zugang wird vorbereitet...');
+        const toastId = toast.loading('Isolierte Kunden-Vorschau wird vorbereitet...');
         try {
             const res = await coreGet(`/v3/entry/website-previews/${lead.tenant_id}?raw=true`) as { dossier: any; company: any; entry_token?: string };
             const entryToken = res?.entry_token;
@@ -145,7 +147,7 @@ export const WebsiteLeadLedger: React.FC = () => {
                 throw new Error(errPayload?.detail || 'Login fehlgeschlagen');
             }
 
-            toast.success('Login erfolgreich! Leite weiter...', { id: toastId });
+            toast.success('Kunden-Vorschau geöffnet. Der Rückweg zu Saimôr HQ ist gesichert.', { id: toastId });
             window.location.href = '/home';
         } catch (err: any) {
             console.error('[handleEnterPreview] Failed:', err);
@@ -166,10 +168,10 @@ export const WebsiteLeadLedger: React.FC = () => {
         <section className="mb-8 rounded-2xl border border-cyan-300/14 bg-cyan-400/[0.045] p-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-100/54">Website Pipeline</div>
-                    <h2 className="mt-1 text-lg font-medium text-white/90">Website-Checks als HQ-Firmen</h2>
+                    <div className="text-[10px] uppercase tracking-[0.24em] text-cyan-100/54">Kunden-Vorschauen</div>
+                    <h2 className="mt-1 text-lg font-medium text-white/90">WORLD-Leads in ihrem eigenen HQ ansehen</h2>
                     <p className="mt-1 max-w-2xl text-sm leading-relaxed text-white/45">
-                        Firmen, die aus WORLD ins HQ übernommen wurden. Offene Previews sind noch nicht verbunden; Kundenaccount bedeutet, dass der Check bereits an den angegebenen Account gebunden ist.
+                        Jede Vorschau bleibt in ihrem eigenen Tenant. Du kannst sie als System-Owner betreten und anschließend mit einem Klick sicher zu Saimôr HQ zurückkehren.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -262,16 +264,16 @@ export const WebsiteLeadLedger: React.FC = () => {
                                         {lead.wall_approved ? 'Live auf Website' : 'Jetzt freischalten'}
                                     </div>
                                 </button>
-                                {!isClaimed && (
+                                {userRole === 'system_owner' && (
                                     <button
                                         onClick={() => handleEnterPreview(lead)}
                                         className="flex flex-col items-start rounded-lg border border-cyan-500/20 bg-cyan-500/5 px-3 py-2 text-left transition-colors hover:bg-cyan-500/10"
                                     >
                                         <div className="flex items-center gap-2 text-xs text-cyan-200/90">
                                             <ExternalLink size={10} className="text-cyan-400" />
-                                            Preview betreten
+                                            Kunden-Vorschau betreten
                                         </div>
-                                        <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200/40">Als Lead einloggen</div>
+                                        <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-cyan-200/40">Isoliert öffnen · Rückkehr zu HQ gesichert</div>
                                     </button>
                                 )}
                                 <a

@@ -5,8 +5,16 @@ import {
   fetchCoreUpstream,
   probePublicCoreHealth,
 } from '@/lib/api/coreReachability';
+import {
+  isSystemOwnerSession,
+  OWNER_RETURN_COOKIE,
+  OWNER_RETURN_MAX_AGE,
+  readCurrentSessionToken,
+} from '@/lib/api/ownerPreviewSession';
 
 export async function POST(request: NextRequest) {
+  const currentSessionToken = readCurrentSessionToken(request);
+  const preserveOwnerSession = await isSystemOwnerSession(currentSessionToken);
   const body = await request.json().catch(() => ({}));
   const token = typeof body?.entryToken === "string" ? body.entryToken.trim() : "";
   if (!token) {
@@ -47,6 +55,15 @@ export async function POST(request: NextRequest) {
       "set-cookie",
       `mora_auth_token=${sessionToken}; Path=/; Max-Age=86400; SameSite=Lax`
     );
+  }
+  if (upstream.ok && preserveOwnerSession && currentSessionToken) {
+    response.cookies.set(OWNER_RETURN_COOKIE, currentSessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: OWNER_RETURN_MAX_AGE,
+    });
   }
 
   return response;

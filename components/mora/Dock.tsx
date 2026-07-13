@@ -1549,6 +1549,7 @@ export const Dock = () => {
                                             </div>
                                         );
                                     })}
+                                    {!websiteEntryContext && <AdminModeSwitcher />}
                                 </div>
 
                                 {/* Divider */}
