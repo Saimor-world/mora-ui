@@ -270,7 +270,10 @@ export default function IntegrationsApp({ paneId }: AppProps) {
     const connectGoogleAll = useCallback(async () => {
         setIsConnectingGoogle(true);
         try {
-            const res = await corePost('/v1/integrations/google/connect', { return_to: getGoogleConnectReturnTo() });
+            // v3: the v1 guard only accepts JWTs and rejects the opaque sess_
+            // tokens every session-login user carries — the connect button
+            // 401'd in production for everyone. The v3 route validates sessions.
+            const res = await corePost('/v3/integrations/google/connect', { return_to: getGoogleConnectReturnTo() });
             if (!res?.auth_url) {
                 toast.error('Google OAuth ist serverseitig noch nicht konfiguriert.');
                 return;
