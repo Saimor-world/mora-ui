@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { MyceliumField3D } from './MyceliumField3D';
-import { mapNodesToMycelium, type MyceliumNode } from '@/lib/utils/myceliumDataMapper';
+import { applyMyceliumRelations, mapNodesToMycelium, type MyceliumNode } from '@/lib/utils/myceliumDataMapper';
 import { getRelationsForSpace } from '@/lib/api/relationsClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -77,10 +77,10 @@ export const MyceliumLayer: React.FC<MyceliumLayerProps> = ({
                 }));
 
                 // Map to Mycelium format with semantic connections
-                const myceliumData = mapNodesToMycelium(coreNodes, {
+                const myceliumData = applyMyceliumRelations(mapNodesToMycelium(coreNodes, {
                     useSemanticConnections: true,
                     activeNodeId
-                });
+                }), spaceGraph.relations);
 
                 setMyceliumNodes(myceliumData);
             } catch (err: any) {

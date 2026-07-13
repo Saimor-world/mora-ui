@@ -25,6 +25,34 @@ export interface MyceliumNode {
     connections: string[]; // IDs of connected nodes
 }
 
+export interface MyceliumRelationLike {
+    source_id?: string;
+    target_id?: string;
+    source?: string;
+    target?: string;
+}
+
+/** Replace visual guesses with CORE's persisted graph whenever edges exist. */
+export function applyMyceliumRelations(
+    nodes: MyceliumNode[],
+    relations: MyceliumRelationLike[] | undefined,
+): MyceliumNode[] {
+    if (!relations?.length) return nodes;
+    const known = new Set(nodes.map((node) => node.id));
+    const adjacency = new Map(nodes.map((node) => [node.id, new Set<string>()]));
+    for (const relation of relations) {
+        const source = relation.source_id || relation.source;
+        const target = relation.target_id || relation.target;
+        if (!source || !target || !known.has(source) || !known.has(target) || source === target) continue;
+        adjacency.get(source)?.add(target);
+        adjacency.get(target)?.add(source);
+    }
+    return nodes.map((node) => ({
+        ...node,
+        connections: Array.from(adjacency.get(node.id) || []),
+    }));
+}
+
 // Color mapping by node type
 const TYPE_COLORS: Record<string, string> = {
     document: '#10B981',    // Emerald

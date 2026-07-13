@@ -5,6 +5,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { usePageVisibility } from '@/lib/hooks/usePageVisibility';
+import { getMyceliumOverview, type MyceliumOverview } from '@/lib/api/relationsClient';
 
 /**
  * MYCELIUM NEURAL OVERLAY (V9 Cinematic Reference)
@@ -41,14 +42,33 @@ export const MyceliumOverlay: React.FC = () => {
     const orbState = useOrbStore((s) => s.orbState);
 
     const [shimmerIntensity, setShimmerIntensity] = useState(0);
+    const [overview, setOverview] = useState<MyceliumOverview | null>(null);
     const departmentCount = Array.isArray(departments) ? departments.length : 0;
 
     useEffect(() => {
-        if (departmentCount > 0) {
+        let cancelled = false;
+        const load = async () => {
+            try {
+                const next = await getMyceliumOverview(activeCompanyId);
+                if (!cancelled) setOverview(next);
+            } catch {
+                if (!cancelled) setOverview(null);
+            }
+        };
+        load();
+        const interval = window.setInterval(load, 30_000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(interval);
+        };
+    }, [activeCompanyId]);
+
+    useEffect(() => {
+        if (departmentCount > 0 || (overview?.edges || 0) > 0) {
             setShimmerIntensity(0.5);
             setTimeout(() => setShimmerIntensity(0), 1000);
         }
-    }, [departmentCount]);
+    }, [departmentCount, overview?.edges]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -65,7 +85,8 @@ export const MyceliumOverlay: React.FC = () => {
 
         const initParticles = () => {
             particles = [];
-            const particleCount = Math.floor((width * height) / BASE_PARTICLE_DENSITY);
+            const graphScale = Math.min(1.8, 0.8 + Math.sqrt(overview?.nodes || 0) / 18);
+            const particleCount = Math.floor((width * height) / BASE_PARTICLE_DENSITY * graphScale);
 
             for (let i = 0; i < particleCount; i++) {
                 const x = Math.random() * width;
@@ -206,13 +227,17 @@ export const MyceliumOverlay: React.FC = () => {
             window.removeEventListener('resize', resize);
             stop();
         };
-    }, [shimmerIntensity, pageVisible]);
+    }, [shimmerIntensity, pageVisible, overview?.nodes]);
 
     return (
         <canvas
             ref={canvasRef}
             className="fixed inset-0 pointer-events-none z-[1] opacity-50"
             style={{ mixBlendMode: 'screen' }}
+            aria-label={`Myzelium aktiv: ${overview?.nodes || 0} Objekte, ${overview?.edges || 0} Verbindungen`}
+            data-mycelium-status={overview?.status || 'unavailable'}
+            data-mycelium-nodes={overview?.nodes || 0}
+            data-mycelium-edges={overview?.edges || 0}
         />
     );
 };
