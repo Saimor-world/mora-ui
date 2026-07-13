@@ -19,9 +19,20 @@ export interface HomeViewChange {
 export interface HomeViewAttention {
     id: number | string;
     title: string;
+    detail?: string | null;
     severity: number | null;
     category: string;
     scope: string | null;
+}
+
+export interface HomeViewPriority {
+    state: 'attention' | 'change' | 'calm';
+    domain: 'system' | 'organization';
+    eyebrow: string;
+    title: string;
+    detail: string;
+    severity: number | null;
+    action: 'signals' | 'mora';
 }
 
 export interface HomeViewNextStep {
@@ -45,6 +56,7 @@ export interface HomeView {
     changes: HomeViewChange[];
     attention: HomeViewAttention[];
     next_steps: HomeViewNextStep[];
+    priority?: HomeViewPriority | null;
     org_stats?: HomeViewOrgStats;
 }
 

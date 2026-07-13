@@ -77,10 +77,14 @@ export function OrganizationHome(props: HomeCockpitProps) {
         () => (homeView?.changes ?? []).filter((change) => change.title?.trim()),
         [homeView?.changes],
     );
-    const moraSignalCount = titledChanges.length + (homeView?.attention?.length ?? 0);
+    const attentionItems = homeView?.attention ?? [];
+    const systemAttention = attentionItems.filter((item) => item.scope === 'system');
+    const moraSignalCount = titledChanges.length + attentionItems.length;
     const moraStatusLabel = moraSignalCount > 0
         ? `${moraSignalCount} ${moraSignalCount === 1 ? 'Signal' : 'Signale'}`
         : 'beobachtet im Hintergrund';
+
+    const openSignals = () => openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 }, data: { chatView: 'signals' } });
 
     const glanceContext: WidgetContext = {
         surface: 'home',
@@ -102,7 +106,7 @@ export function OrganizationHome(props: HomeCockpitProps) {
         openIntegrations: onOpenIntegrations,
         openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
         openMora: onOpenMora,
-        openSignals: () => openPane({ id: 'chat-main', type: 'chat', title: 'Mora', size: { width: 860, height: 680 }, data: { chatView: 'signals' } }),
+        openSignals,
         openTeam: onOpenTeam,
         openFinder: onOpenFinder,
         openNightwatch: onOpenNightwatch,
@@ -128,14 +132,25 @@ export function OrganizationHome(props: HomeCockpitProps) {
         : [];
 
     const nightwatchAction = onOpenNightwatch ?? onOpenMora;
+    const systemAttentionTitle = systemAttention[0]?.title;
     const primarySignals = [
         {
             label: 'Betrieb',
-            value: incidentStatusPanels.length > 0 ? String(incidentStatusPanels.length) : 'OK',
-            detail: incidentStatusPanels.length > 0 ? 'offene Nightwatch-Vorfälle' : 'keine offenen Vorfälle',
+            value: incidentStatusPanels.length > 0
+                ? String(incidentStatusPanels.length)
+                : systemAttention.length > 0
+                    ? String(systemAttention.length)
+                    : 'OK',
+            detail: incidentStatusPanels.length > 0
+                ? 'offene Nightwatch-Vorfälle'
+                : systemAttentionTitle ?? 'keine offenen Vorfälle',
             icon: <Activity size={16} />,
-            onClick: nightwatchAction,
-            tone: incidentStatusPanels.length > 0 ? 'rose' as const : 'emerald' as const,
+            onClick: incidentStatusPanels.length > 0
+                ? nightwatchAction
+                : systemAttention.length > 0
+                    ? openSignals
+                    : nightwatchAction,
+            tone: incidentStatusPanels.length > 0 || systemAttention.length > 0 ? 'rose' as const : 'emerald' as const,
         },
         {
             label: 'Gewebe',
@@ -163,6 +178,32 @@ export function OrganizationHome(props: HomeCockpitProps) {
         },
     ];
 
+    const backendPriority = homeView?.priority;
+    const fallbackAttention = attentionItems[0];
+    const truthPriority = backendPriority ?? (fallbackAttention
+        ? {
+            eyebrow: fallbackAttention.scope === 'system' ? 'System braucht Aufmerksamkeit' : 'Aufmerksamkeit nötig',
+            title: fallbackAttention.title,
+            detail: fallbackAttention.detail ?? 'Môra hat einen Zustand erkannt, der geprüft und geklärt werden muss.',
+            action: 'signals' as const,
+            severity: fallbackAttention.severity,
+        }
+        : titledChanges.length > 0
+            ? {
+                eyebrow: 'Neu im Gewebe',
+                title: titledChanges[0].title,
+                detail: 'Môra hat diese Veränderung als relevant für den gemeinsamen Kontext erkannt.',
+                action: 'mora' as const,
+                severity: titledChanges[0].severity,
+            }
+            : {
+                eyebrow: 'Lage ruhig',
+                title: 'Kein akuter Handlungsdruck',
+                detail: 'Betrieb und Gewebe laufen stabil. Du kannst bewusst in die nächste Arbeit einsteigen.',
+                action: 'mora' as const,
+                severity: null,
+            });
+
     const leadPriority = incidentStatusPanels.length > 0
         ? {
             eyebrow: 'Betrieb braucht Aufmerksamkeit',
@@ -171,21 +212,17 @@ export function OrganizationHome(props: HomeCockpitProps) {
             action: nightwatchAction,
             tone: 'text-rose-200',
         }
-        : titledChanges.length > 0
-            ? {
-                eyebrow: 'Neu im Gewebe',
-                title: titledChanges[0].title,
-                detail: 'Môra hat diese Veränderung als relevant für den gemeinsamen Kontext erkannt.',
-                action: onOpenMora,
-                tone: 'text-cyan-100',
-            }
-            : {
-                eyebrow: 'Lage ruhig',
-                title: 'Kein akuter Handlungsdruck',
-                detail: 'Betrieb und Gewebe laufen stabil. Du kannst bewusst in die nächste Arbeit einsteigen.',
-                action: onOpenMora,
-                tone: 'text-emerald-100',
-            };
+        : {
+            eyebrow: truthPriority.eyebrow,
+            title: truthPriority.title,
+            detail: truthPriority.detail,
+            action: truthPriority.action === 'signals' ? openSignals : onOpenMora,
+            tone: truthPriority.action === 'signals'
+                ? (truthPriority.severity ?? 0) >= 0.66 ? 'text-rose-100' : 'text-amber-100'
+                : backendPriority?.state === 'calm' || (!backendPriority && !fallbackAttention && titledChanges.length === 0)
+                    ? 'text-emerald-100'
+                    : 'text-cyan-100',
+        };
 
     const resumeItems = recentActivityItems.slice(0, 3);
     const activeDepartments = deptTiles.filter((item) => item.active).slice(0, 2);
