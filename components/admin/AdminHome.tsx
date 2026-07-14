@@ -6,6 +6,7 @@ import { useContextStore } from '@/lib/store/contextStore';
 import { useIntegrationsOverview } from '@/lib/hooks/useIntegrationsOverview';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { AdminRosterView } from './AdminRosterView';
+import { DemoWorkspacesPanel } from './DemoWorkspacesPanel';
 import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
 import { WebsiteLeadLedger } from './WebsiteLeadLedger';
 
@@ -70,6 +71,8 @@ export const AdminHome: React.FC = () => {
 
             <div className="flex-1 overflow-y-auto p-6">
                 <WebsiteLeadLedger />
+
+                <DemoWorkspacesPanel />
 
                 <section className="mb-6 border-y border-white/[0.07] py-5" aria-labelledby="owner-sources-title">
                     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-center">
