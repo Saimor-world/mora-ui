@@ -208,7 +208,7 @@ export function TunnelPageClient() {
                 Vorschauen erst nach Klick auf „Vorschau laden“ (verhindert Abstürze).
               </p>
               <p className="mt-2 max-w-2xl text-xs text-cyan-200/50 leading-relaxed">
-                Larry UI ist ein eigenes, reales Produkt auf dem Server (Port 3000) — getrennt von
+                Saimôr Desk ist ein eigenes, reales Produkt auf dem Server (Port 3000) — getrennt von
                 SAIMOR HQ. Wird hier nicht angerührt.
               </p>
             </div>

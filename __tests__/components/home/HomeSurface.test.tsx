@@ -186,7 +186,7 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE, homeDa
                 { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
                 { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
                 { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
-                { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
+                { label: 'Saim�r Desk', reason: 'No backend evidence contract found' },
             ],
             unknown: [{ id: 'next_steps', label: 'Nächster echter Schritt', reason: 'No tenant-scoped task node is available' }],
         },
@@ -194,7 +194,7 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE, homeDa
             { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
             { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
             { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
-            { label: 'Larry Dashboard', reason: 'No backend evidence contract found' },
+            { label: 'Saim�r Desk', reason: 'No backend evidence contract found' },
         ],
         unknowns: [
             { id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' },
@@ -266,7 +266,7 @@ describe('HomeSurface — rendering', () => {
         expect(screen.queryByText('Mail für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
         expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
-        expect(screen.queryByText('Larry Dashboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Saim�r Desk')).not.toBeInTheDocument();
         expect(screen.queryByText('Noch kein belegter nächster Schritt.')).not.toBeInTheDocument();
     });
 

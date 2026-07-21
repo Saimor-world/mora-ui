@@ -9,6 +9,36 @@ import type {
 import type { IncidentStatusPanel } from '@/lib/panel/types';
 import { priorityFromSeverity } from '@/lib/ui/status';
 import type { HomeStatus } from '@/lib/queries/useHomeView';
+import { ESTATE_LABELS } from '@/lib/estate';
+
+/** Decorative backend placeholders — never show OpenClaw/Larry product copy in UI. */
+export const LEGACY_SETUP_PLACEHOLDER_LABELS = [
+  'Mail für OpenClaw vorbereiten',
+  'Mail fuer OpenClaw vorbereiten',
+  'Kalender für OpenClaw vorbereiten',
+  'Kalender fuer OpenClaw vorbereiten',
+  'OpenClaw Infrastruktur',
+  'Larry Dashboard',
+] as const;
+
+export const RUNTIME_INFRASTRUCTURE_PLACEHOLDER_LABELS = [
+  'OpenClaw Infrastruktur',
+  'Runtime-Infrastruktur',
+  ESTATE_LABELS.desk,
+  'Larry Dashboard',
+] as const;
+
+export function isLegacySetupPlaceholder(label: string): boolean {
+  return (LEGACY_SETUP_PLACEHOLDER_LABELS as readonly string[]).includes(label);
+}
+
+export function isRuntimeInfrastructurePlaceholder(label: string): boolean {
+  return (RUNTIME_INFRASTRUCTURE_PLACEHOLDER_LABELS as readonly string[]).includes(label);
+}
+
+export function isDeskEntryPlaceholder(label: string): boolean {
+  return label === ESTATE_LABELS.desk || label === 'Larry Dashboard';
+}
 
 interface MailPreviewItem {
   id: string;
@@ -294,7 +324,9 @@ function buildConnectorSetupSignals(connectors: ConnectorStatus[]): OpenFlowSign
 }
 
 function hiddenPlaceholderLabels(homeStatus: HomeStatus | null | undefined): string[] {
-  return (homeStatus?.placeholders_detected || []).map((item) => item.label);
+  return (homeStatus?.placeholders_detected || [])
+    .map((item) => item.label)
+    .filter((label) => !isLegacySetupPlaceholder(label));
 }
 
 function hasUnknown(homeStatus: HomeStatus | null | undefined, id: string): boolean {

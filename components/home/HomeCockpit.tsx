@@ -38,6 +38,7 @@ import { useBridgePulse } from '@/lib/hooks/useBridgePulse';
 
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
+import { ESTATE } from '@/lib/estate';
 
 
 
@@ -700,7 +701,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
         openNightwatch: onOpenNightwatch,
 
-        openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
+        openDashboard: () => window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'),
 
         openLarryNode: (nodeId, title) => openPane({
 

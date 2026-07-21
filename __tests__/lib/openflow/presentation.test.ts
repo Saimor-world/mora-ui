@@ -382,6 +382,9 @@ describe('openflow presentation', () => {
     expect(view.nextSteps.map((item) => item.title)).not.toEqual(
       expect.arrayContaining(['Mail verbinden', 'Kalender verbinden'])
     );
+    expect(view.truthState?.hiddenPlaceholders).not.toEqual(
+      expect.arrayContaining(['Mail für OpenClaw vorbereiten', 'OpenClaw Infrastruktur'])
+    );
     expect(view.truthState?.nextStepsUnknown).toBe(true);
     expect(view.truthState?.runtimeUnknown).toBe(true);
     expect(view.truthState?.connectorHandshakeUnknown).toBe(true);

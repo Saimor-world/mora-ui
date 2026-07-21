@@ -58,7 +58,7 @@ export interface WidgetContext {
     /** Open the App Library pane (NOT integrations). */
     openApps?: () => void;
     openNightwatch?: () => void;
-    /** Larry / dash.saimor.world — ops dashboard */
+    /** Saimôr Desk / dash.saimor.world — ops dashboard */
     openDashboard?: () => void;
     /** Open a larry.* workspace artifact in the document pane */
     openLarryNode?: (nodeId: string, title?: string) => void;

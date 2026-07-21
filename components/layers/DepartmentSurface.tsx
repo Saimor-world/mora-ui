@@ -8,6 +8,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import { WidgetGrid } from '@/components/widgets/WidgetGrid';
+import { ESTATE } from '@/lib/estate';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 import { filterIncidentsForDepartment } from '@/lib/openflow/departmentIncidentContext';
 import { nightwatchIncidentsToIncidentStatusPanels, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -177,7 +178,7 @@ export const DepartmentSurface: React.FC = () => {
               openIntegrations: () => openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE }),
               openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
               openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
-              openDashboard: () => window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer'),
+              openDashboard: () => window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'),
               openLarryNode: (nodeId, title) => openPane({
                 id: `document-${nodeId}`,
                 type: 'document',

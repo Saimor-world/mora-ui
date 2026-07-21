@@ -9,10 +9,11 @@
  */
 
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import { corePost } from '@/lib/api/http';
 import { buildChatContext, type ChatContext } from '@/lib/api/moraAgentClient';
-import { useMoraStore } from '@/lib/store/moraState';
 import { getMoraPlaygroundTarget } from '@/lib/os/moraPlayground';
+import { createNode } from '@/lib/api/orgClient';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import type { UiToolCall } from '@/lib/lagefeld/types';
@@ -122,13 +123,13 @@ export function useAmbientMora(): UseAmbientMoraReturn {
             for (const call of response.uiActions ?? []) {
                 switch (call.tool) {
                     case 'createNode': {
-                        const addNode = useMoraStore.getState().addNode;
-                        await addNode({
+                        const newNode = await createNode({
                             title: call.input.title,
                             content: call.input.content,
                             folder_id: call.input.folder_id,
                             type: 'note',
                         });
+                        toast.success(`Item "${newNode.title}" added!`);
                         break;
                     }
 

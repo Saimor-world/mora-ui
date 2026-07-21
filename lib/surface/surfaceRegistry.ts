@@ -9,6 +9,8 @@
  *   future    - intentionally gated paths
  */
 
+import { ESTATE_LABELS } from '@/lib/estate';
+
 export type SurfaceTier = 'core_work' | 'app' | 'future';
 
 export type PaneType =
@@ -107,6 +109,7 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'team',     label: 'Team',     description: 'Menschen und Rollen',   shortcutSuffix: 'U' },
         { action: 'map',      label: 'Karte',    description: 'Organisation sehen',    shortcutSuffix: null },
         { action: 'settings', label: 'Setup',    description: 'Verwaltung',            shortcutSuffix: ',' },
+        { action: 'desk',     label: ESTATE_LABELS.desk, description: 'Operator-Lage: Agenten, Infrastruktur und Systemstatus', shortcutSuffix: 'L' },
     ];
 }
 

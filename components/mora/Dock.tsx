@@ -18,6 +18,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 import { getCoreDockItems, getPlaygroundDockItems } from '@/lib/surface/surfaceRegistry';
+import { ESTATE } from '@/lib/estate';
 
 // Derived from paneStore — consistent with other pane-opening components
 type OpenPaneFn = ReturnType<typeof usePaneStore.getState>['openPane'];
@@ -704,7 +705,7 @@ export const Dock = () => {
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Setup',          size: { width: 720, height: 640 } }); break;
-            case 'larry':    window.open('https://dash.saimor.world', '_blank'); break;
+            case 'desk':     window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'); break;
             // ── Curated demo destinations (public_playground only) ──────
             case 'dossier': {
                 const nodeId = typeof window !== 'undefined' ? localStorage.getItem('saimor_dossier_node') : null;
@@ -743,7 +744,7 @@ export const Dock = () => {
         notes:    FileText,
         settings: Settings,
         ambient:  Mic,
-        larry:    Sparkles,
+        desk:     Sparkles,
         dossier:   ShieldCheck,
         wall:      LayoutGrid,
         workspace: Compass,
@@ -767,10 +768,10 @@ export const Dock = () => {
             action:      entry.action,
         }));
 
-        // Larry Dashboard is OWNER ONLY (sensitive infra/agent data). Remove it
+        // Saimôr Desk is OWNER ONLY (sensitive infra/agent data). Remove it
         // from the dock for everyone except the owner, in every mode.
         if (user?.role !== 'owner') {
-            items = items.filter((item) => item.action !== 'larry');
+            items = items.filter((item) => item.action !== 'desk');
         }
 
         return items;

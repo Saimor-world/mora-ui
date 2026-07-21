@@ -33,7 +33,8 @@ import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 
-import { buildOpenFlowLagebild } from '@/lib/openflow/presentation';
+import { buildOpenFlowLagebild, isDeskEntryPlaceholder } from '@/lib/openflow/presentation';
+import { ESTATE, ESTATE_LABELS } from '@/lib/estate';
 import { nightwatchIncidentsToIncidentStatusPanels, nightwatchIncidentsToSignals, type NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
@@ -226,7 +227,7 @@ export const HomeSurface: React.FC = () => {
         incidentStatusPanels,
     ]);
     const hiddenHomePlaceholders = homeStatus?.placeholders_detected?.map((item) => item.label) ?? [];
-    const hidesLarryDashboard = hiddenHomePlaceholders.includes('Larry Dashboard');
+    const hidesDeskEntry = hiddenHomePlaceholders.some(isDeskEntryPlaceholder);
 
     // ── pane helper ───────────────────────────────────────────────────────
     const revealPane = useCallback((
@@ -768,16 +769,16 @@ export const HomeSurface: React.FC = () => {
             });
         }
 
-        // 0b. Larry Dashboard — OWNER ONLY. Contains sensitive infra/agent data.
+        // 0b. Saimôr Desk — OWNER ONLY. Contains sensitive infra/agent data.
         // MUST NOT be exposed to public playground / demo visitors.
-        if (user?.role === 'owner' && !hidesLarryDashboard) {
+        if (user?.role === 'owner' && !hidesDeskEntry) {
             suggestions.push({
-                id: 'larry-dashboard',
-                title: 'Larry Dashboard',
-                description: 'Echtzeit-Überblick über alle KI-Agenten, Infrastruktur und Systemstatus.',
+                id: 'saimor-desk',
+                title: ESTATE_LABELS.desk,
+                description: 'Operator-Lage: Agenten, Infrastruktur und Systemstatus.',
                 icon: <Activity size={15} />,
-                onClick: () => window.open('https://larry.saimor.world', '_blank'),
-                actionText: 'Dashboard öffnen',
+                onClick: () => window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'),
+                actionText: 'Desk öffnen',
                 tone: 'amber',
             });
         }
@@ -836,7 +837,7 @@ export const HomeSurface: React.FC = () => {
         }
 
         return suggestions;
-    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesLarryDashboard]);
+    }, [websiteEntryContext, overlayRecentActivityItems, isSpeechSupported, openWebsiteDossier, openRecentActivity, openVoiceOverlay, openUniverse, openPane, isPublicDemoSurface, user?.role, hidesDeskEntry]);
 
     // ── display values ─────────────────────────────────────────────────────
     const firstName = (() => {
@@ -1406,14 +1407,19 @@ export const HomeSurface: React.FC = () => {
                         <HomeMiniAction icon={<Mail size={13} />} label="Mail" onClick={openMail} />
                         <HomeMiniAction icon={<Wrench size={13} />} label={localTruthStatusLabel} onClick={openLocalTruth} />
                         <HomeMiniAction icon={<Globe size={13} />} label={browserStatusLabel} onClick={openBrowserConnect} />
-                        {/* Larry Dashboard — OWNER ONLY (sensitive infra/agent data). */}
-                        {user?.role === 'owner' && !hidesLarryDashboard && (
+                        {/* Saimôr Desk — OWNER ONLY (sensitive infra/agent data). */}
+                        {user?.role === 'owner' && !hidesDeskEntry && (
                             <HomeMiniAction
                                 icon={<ExternalLink size={13} />}
-                                label="Larry"
-                                onClick={() => typeof window !== 'undefined' && window.open('https://dash.saimor.world', '_blank', 'noopener,noreferrer')}
+                                label="Desk"
+                                onClick={() => typeof window !== 'undefined' && window.open(ESTATE.desk, '_blank', 'noopener,noreferrer')}
                             />
                         )}
+                        <HomeMiniAction
+                            icon={<ExternalLink size={13} />}
+                            label="YORI"
+                            onClick={() => typeof window !== 'undefined' && window.open(ESTATE.yori, '_blank', 'noopener,noreferrer')}
+                        />
                     </div>
                 </div>
             </aside>

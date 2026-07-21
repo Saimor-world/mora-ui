@@ -7,6 +7,7 @@ import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel
 import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } from '@/lib/openflow/types';
 import { TONES, toneForPriority } from '@/lib/ui/status';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
+import { isRuntimeInfrastructurePlaceholder } from '@/lib/openflow/presentation';
 
 interface OpenFlowLagebildProps {
   view: Lagebild;
@@ -273,7 +274,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
   const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);
   const nextStepsUnknown = Boolean(view.truthState?.nextStepsUnknown);
-  const hideRuntimePlaceholder = hiddenPlaceholders.includes('OpenClaw Infrastruktur');
+  const hideRuntimePlaceholder = hiddenPlaceholders.some(isRuntimeInfrastructurePlaceholder);
   const actionItems = nextSteps.slice(0, 2);
   const signalItems = [...attention, ...changed].slice(0, 4);
 
