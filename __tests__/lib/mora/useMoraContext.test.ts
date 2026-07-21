@@ -32,26 +32,11 @@ const BASE_SESSION_STORE = {
     user: null as null | Record<string, unknown>,
 };
 
-const BASE_MORA_STORE: {
-    coreError: string | null;
-    companies: any[];
-    departments: any[];
-    spacesByDepartment: Record<string, any[]>;
-    foldersBySpace: Record<string, any[]>;
-} = {
-    coreError: null,
-    companies: [] as any[],
-    departments: [] as any[],
-    spacesByDepartment: {} as Record<string, any[]>,
-    foldersBySpace: {} as Record<string, any[]>,
-};
-
 // Mutable state objects for overrides
 let orbOverrides: Partial<typeof BASE_ORB_STORE> = {};
 let chatOverrides: Partial<typeof BASE_CHAT_STORE> = {};
 let navOverrides: Partial<typeof BASE_NAV_STORE> = {};
 let sessionOverrides: Partial<typeof BASE_SESSION_STORE> = {};
-let moraOverrides: Partial<typeof BASE_MORA_STORE> = {};
 
 jest.mock('@/lib/store/orbStore', () => ({
     useOrbStore: (selector?: (s: any) => unknown) => {
@@ -77,13 +62,6 @@ jest.mock('@/lib/store/navStore', () => ({
 jest.mock('@/lib/store/sessionStore', () => ({
     useSessionStore: (selector?: (s: any) => unknown) => {
         const store = { ...BASE_SESSION_STORE, ...sessionOverrides };
-        return selector ? selector(store) : store;
-    },
-}));
-
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector?: (s: any) => unknown) => {
-        const store = { ...BASE_MORA_STORE, ...moraOverrides };
         return selector ? selector(store) : store;
     },
 }));
@@ -136,7 +114,6 @@ function mockStores(overrides: {
     lastAnswerSource?: string | null;
     lastAnswerSourceMode?: string | null;
     lastAnswerScopeLabel?: string | null;
-    coreError?: null | string;
 }) {
     orbOverrides = {
         orbState: overrides.orbState as any ?? 'idle',
@@ -152,10 +129,6 @@ function mockStores(overrides: {
         activeFolderId: overrides.activeFolderId ?? null,
     };
     sessionOverrides = { user: overrides.user ?? null };
-    moraOverrides = {
-        companies: overrides.companies ?? [],
-        coreError: overrides.coreError ?? null,
-    };
     // Sync TanStack Query mocks with store overrides
     mockCompaniesData = overrides.companies ?? [];
 }
@@ -165,7 +138,6 @@ beforeEach(() => {
     chatOverrides = {};
     navOverrides = {};
     sessionOverrides = {};
-    moraOverrides = {};
     mockCompaniesData = [];
     mockDepartmentsData = [];
     mockTreeData = [];

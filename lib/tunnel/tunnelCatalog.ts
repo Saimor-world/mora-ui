@@ -440,7 +440,7 @@ const ARCHIVE: TunnelEntry[] = [
     componentKey: 'EventsViewer',
     status: 'archive',
     location: '_archive/debug/EventsViewer.tsx',
-    whyHidden: 'Dev-Tool, nutzt useMoraStore',
+    whyHidden: 'Dev-Tool, archiviert — moraState entfernt',
     tags: ['legacy'],
   },
 ];

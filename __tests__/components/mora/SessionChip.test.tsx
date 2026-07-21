@@ -10,14 +10,6 @@ import { resetAllStores } from '../../test-utils';
 
 const mockOpenPane = jest.fn();
 
-// moraState is a legacy store being migrated — keep its mock
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector: (s: any) => unknown) =>
-        selector({ isStandardMode: false, orbState: 'idle', user: null, companies: [],
-                   activeCompanyId: null, viewMode: 'standard', setViewLevel: jest.fn(),
-                   setActiveDepartment: jest.fn(), setActiveCompany: jest.fn() }),
-}));
-
 const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (selector: (s: any) => unknown) =>
