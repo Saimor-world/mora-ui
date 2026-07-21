@@ -131,7 +131,7 @@ mora-ui/                    # Next.js Frontend
 ├── lib/
 │   ├── api/               # cognitionClient (executeAgenticLoop)
 │   ├── hooks/             # useAuthBootstrapper
-│   └── store/             # moraState (Zustand)
+│   └── store/             # navStore, sessionStore, orbStore, chatStore, paneStore (Zustand) + legacy moraState (being retired)
 └── app/                   # Next.js Pages
 
 saimor-core/               # FastAPI Backend
@@ -169,7 +169,7 @@ Mora verhält sich nicht wie ein typischer Chatbot. Sie ist:
 | Orb / MindLoop UI state | `useOrbStore` (`lib/store/orbStore.ts`) |
 | Chat messages / scope | `useChatStore` (`lib/store/chatStore.ts`) |
 | Floating windows | `usePaneStore` (`lib/store/paneStore.ts`) |
-| **`useMoraStore`** | ⚠️ **BEING MIGRATED** — do not add new calls |
+| **`useMoraStore`** | ⚠️ **BEING MIGRATED** — do not add new calls. No live runtime call sites remain outside `lib/store/moraState.ts` itself (tests + `_archive/` excluded, 2026-07-21). |
 
 ### TanStack Query Rules
 
