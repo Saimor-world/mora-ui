@@ -275,10 +275,13 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
     () => import("@/components/organic/BootSequence"),
     "BootSequence",
   ),
-  EventsViewer: dynamic(() => import("@/_archive/debug/EventsViewer"), {
-    ssr: false,
-    loading: PreviewFallback,
-  }),
+  EventsViewer: function EventsViewerArchivedStub() {
+    return (
+      <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-xs text-white/50">
+        EventsViewer ist archiviert (moraState entfernt).
+      </div>
+    );
+  },
   ConfirmCard: dynamic(
     () =>
       import("@/components/mora/dialogue/ConfirmCard").then((m) => ({
