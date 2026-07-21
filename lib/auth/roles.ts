@@ -1,4 +1,4 @@
-import type { UserRole } from '@/lib/store/moraState';
+import type { UserRole } from '@/lib/types/mora';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Centralized Role Guards — single source of truth for access decisions

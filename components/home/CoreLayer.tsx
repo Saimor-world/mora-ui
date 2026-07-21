@@ -10,7 +10,7 @@ import UniverseView from '@/components/home/UniverseView';
 /**
  * CoreLayer — Surface router for viewLevel='core'
  *
- * Reads coreMode from moraState and renders the appropriate surface:
+ * Reads coreMode from navStore and renders the appropriate surface:
  *   'home'    → HomeSurface (day-start working surface, default after login)
  *   'explore' → UniverseView (Universe planet map, explicit user action)
  *
@@ -18,11 +18,12 @@ import UniverseView from '@/components/home/UniverseView';
  * Animation: short crossfade (200ms), no scale/blur (surface switch ≠ layer zoom).
  *
  * Entry points that set coreMode:
- *   → 'home':    Dock "Start" / Mod+H, company switch (both in moraState)
+ *   → 'home':    Dock "Start" / Mod+H, company switch (both via navStore)
  *   → 'explore': HomeSurface "Erkunden →" button, breadcrumb root from dept/space
  *
  * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
- * @see lib/store/moraState.ts — CoreMode type + setCoreMode action
+ * @see lib/store/navStore.ts — setCoreMode action
+ * @see lib/types/mora.ts — CoreMode type
  */
 export const CoreLayer: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);

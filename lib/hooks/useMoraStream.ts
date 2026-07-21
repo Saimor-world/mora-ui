@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { getCoreBaseUrl } from "@/lib/api/coreClient";
-import type { LastChatScopeState, ScopeContract, UiScopeHints } from "@/lib/store/moraState";
+import type { LastChatScopeState, ScopeContract, UiScopeHints } from "@/lib/types/mora";
 import { useOrbStore } from "@/lib/store/orbStore";
 import { useChatStore } from "@/lib/store/chatStore";
 import type { OrbState } from "@/lib/api/awarenessClient";
