@@ -13,8 +13,9 @@ import {
     type NightwatchMonitorItem,
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import { ESTATE } from '@/lib/estate';
 
-const NIGHTWATCH_DASHBOARD_URL = 'https://dash.saimor.world/nightwatch';
+const NIGHTWATCH_DASHBOARD_URL = `${ESTATE.desk}/nightwatch`;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -398,8 +399,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
                             type="button"
                             onClick={() => window.open(NIGHTWATCH_DASHBOARD_URL, '_blank', 'noopener,noreferrer')}
                             className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/42 transition-colors hover:bg-white/[0.08] hover:text-white/72"
-                            aria-label="Larry Dashboard öffnen"
-                            title="Vollständige Container- und Kapazitätsansicht öffnen"
+                            aria-label="Nightwatch-Dashboard öffnen"
+                            title="Vollständige Container- und Kapazitätsansicht in Saimôr Desk öffnen"
                         >
                             <ExternalLink size={11} />
                             <span className="hidden sm:inline">Dashboard</span>

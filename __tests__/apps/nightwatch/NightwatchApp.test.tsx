@@ -106,13 +106,13 @@ describe('NightwatchApp', () => {
     expect(screen.getByText('nicht erreichbar')).toBeInTheDocument();
   });
 
-  it('links the glance pane to the full Larry dashboard', async () => {
+  it('links the glance pane to the full Saimôr Desk nightwatch view', async () => {
     incidents.mockResolvedValue([]);
     monitors.mockResolvedValue([]);
     const open = jest.spyOn(window, 'open').mockImplementation(() => null);
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
-    (await screen.findByLabelText('Larry Dashboard öffnen')).click();
+    (await screen.findByLabelText('Nightwatch-Dashboard öffnen')).click();
 
     expect(open).toHaveBeenCalledWith(
       'https://dash.saimor.world/nightwatch',

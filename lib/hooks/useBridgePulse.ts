@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { fetchSystemStats, type SystemStats } from '@/lib/api/statsClient';
 import { queryKeys, STALE_TIMES } from '@/lib/queries/queryKeys';
+import { ESTATE } from '@/lib/estate';
 
 export interface BridgePulseSnapshot {
     loaded: boolean;
@@ -23,8 +24,8 @@ export interface BridgePulseSnapshot {
 }
 
 const DEFAULT_URLS = {
-    dashboard: 'https://dash.saimor.world',
-    larry: 'https://larry.saimor.world',
+    dashboard: ESTATE.desk,
+    larry: ESTATE.runtime,
 };
 
 function deriveAmbientIntensity(stats: SystemStats | null): number {

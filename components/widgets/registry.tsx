@@ -20,6 +20,7 @@ import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { buildNightwatchGlanceSuggestions } from '@/lib/nightwatch/glanceSuggestions';
 import type { CoreTreeNode } from '@/lib/types/core';
 import type { WidgetContext, WidgetDefinition } from '@/lib/widgets/types';
+import { ESTATE_LABELS } from '@/lib/estate';
 import type { IntegrationConnectionState } from '@/lib/integrations/connectionState';
 import { FeedHeroPreview, FeedItemCard, FeedThumbnailStrip } from '@/components/feeds/FeedItemCard';
 import { sortFeedItemsByDateDesc } from '@/lib/rss/feedDates';
@@ -964,7 +965,7 @@ const OrgStatsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ conte
                     className="mt-auto flex items-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                 >
                     <ExternalLink size={10} />
-                    Desk öffnen
+                    {ESTATE_LABELS.desk} öffnen
                 </button>
             )}
         </>
@@ -1065,11 +1066,11 @@ const BridgePulseWidget: React.FC<{ context: WidgetContext }> = React.memo(({ co
                 <Stat label="Knoten" value={pulse.bridgeNodes ?? '–'} icon={<Building2 size={10} />} />
             </div>
             {isHomeGlance(context) ? (
-                <AlleAnzeigenLink onClick={context.openDashboard} label="Dashboard öffnen" />
+                <AlleAnzeigenLink onClick={context.openDashboard} label={`${ESTATE_LABELS.desk} öffnen`} />
             ) : (
                 <div className="mt-auto flex gap-2">
                     <ActionButton icon={<Activity size={13} />} label="Nightwatch" onClick={context.openNightwatch} />
-                    <ActionButton icon={<ExternalLink size={13} />} label="Dashboard" onClick={context.openDashboard} />
+                    <ActionButton icon={<ExternalLink size={13} />} label={ESTATE_LABELS.desk} onClick={context.openDashboard} />
                 </div>
             )}
         </div>
@@ -1279,7 +1280,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                     <span className="text-[10px] text-white/40">Das Gewebe ist noch leer</span>
                     {context.openDashboard && (
                         <span className="flex items-center gap-1 text-[8px] text-cyan-200/55">
-                            <ExternalLink size={9} /> Desk öffnen
+                            <ExternalLink size={9} /> {ESTATE_LABELS.desk} öffnen
                         </span>
                     )}
                 </GlanceShell>
@@ -1295,7 +1296,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                         className="flex items-center justify-center gap-1.5 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                     >
                         <ExternalLink size={10} />
-                        Desk öffnen
+                        {ESTATE_LABELS.desk} öffnen
                     </button>
                 )}
             </div>
@@ -1374,7 +1375,7 @@ const LarryWorkWidget: React.FC<{ context: WidgetContext }> = React.memo(({ cont
                     className="mt-auto flex items-center gap-1.5 pt-1 text-[10px] text-white/38 transition-colors hover:text-cyan-200/80"
                 >
                     <ExternalLink size={10} />
-                    Desk öffnen
+                    {ESTATE_LABELS.desk} öffnen
                 </button>
             )}
         </div>
@@ -1946,12 +1947,12 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
         render: ({ context }) => <OrgStatsWidget context={context} />,
     },
     bridgePulse: {
-        type: 'bridgePulse', label: 'Bridge Puls', hint: 'Core, Desk & Live-Last', icon: <Radio size={14} />,
+        type: 'bridgePulse', label: 'Bridge Puls', hint: `Core, ${ESTATE_LABELS.desk} & Live-Last`, icon: <Radio size={14} />,
         defaultW: 3, defaultH: 3, minW: 2, minH: 2, surfaces: ['home', 'universe'],
         render: ({ context }) => <BridgePulseWidget context={context} />,
     },
     larryWork: {
-        type: 'larryWork', label: 'Gewebe', hint: 'Fäden, Funken & Knoten aus dem Desk', icon: <Layout size={14} />,
+        type: 'larryWork', label: 'Gewebe', hint: `Fäden, Funken & Knoten aus dem ${ESTATE_LABELS.desk}`, icon: <Layout size={14} />,
         defaultW: 3, defaultH: 5, minW: 2, minH: 3, surfaces: ['home', 'universe'],
         render: ({ context }) => <LarryWorkWidget context={context} />,
     },

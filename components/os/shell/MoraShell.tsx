@@ -67,6 +67,7 @@ import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
 import { TENANT_DEMO } from '@/lib/constants/tenants';
+import { ESTATE } from '@/lib/estate';
 import { filterCompaniesForSurface, getPrimaryOperationalCompany } from '@/lib/os/companySurfaceFilter';
 
 // Shell Hooks
@@ -528,7 +529,7 @@ export const MoraShell: React.FC = () => {
             useNavStore.getState().toggleVoiceOverlay();
         }, []),
         onOpenLarry: useCallback(() => {
-            window.open('https://dash.saimor.world', '_blank');
+            window.open(ESTATE.desk, '_blank', 'noopener,noreferrer');
         }, []),
         onCloseTopPane: useCallback(() => {
             if (useNavStore.getState().voiceOverlayOpen) {
