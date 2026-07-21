@@ -29,14 +29,16 @@ jest.mock('@/lib/api/moraAgentClient', () => ({
     })),
 }));
 
-const mockAddNode = jest.fn().mockResolvedValue({});
+const mockCreateNode = jest.fn().mockResolvedValue({ title: 'Test' });
 const mockOpenPane = jest.fn();
 const mockNavigateToDepartment = jest.fn();
 
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: {
-        getState: () => ({ addNode: mockAddNode }),
-    },
+jest.mock('@/lib/api/orgClient', () => ({
+    createNode: (...args: unknown[]) => mockCreateNode(...args),
+}));
+
+jest.mock('sonner', () => ({
+    toast: { success: jest.fn(), error: jest.fn() },
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -311,7 +313,7 @@ describe('useAmbientMora', () => {
             tools: [{ tool: 'createNode', input: { title: 'Test', content: 'Inhalt', folder_id: 'f-1' } }],
             context: expect.objectContaining({ source: 'ambient-room' }),
         });
-        expect(mockAddNode).not.toHaveBeenCalled();
+        expect(mockCreateNode).not.toHaveBeenCalled();
     });
 
     it('executeMoraTools dispatches openPane to usePaneStore', async () => {

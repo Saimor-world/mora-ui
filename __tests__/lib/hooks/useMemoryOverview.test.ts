@@ -13,12 +13,6 @@ jest.mock('@/lib/api/coreClient', () => ({
     getMemoryOverview: jest.fn(),
 }));
 
-// moraState is legacy — keep its mock for this hook which reads from it
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: (selector: (s: any) => any) =>
-        selector({ activeCompanyId: 'co-test', companies: [] }),
-}));
-
 const mockGetMemoryOverview = getMemoryOverview as jest.MockedFunction<typeof getMemoryOverview>;
 
 beforeEach(resetAllStores);

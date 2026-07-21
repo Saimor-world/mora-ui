@@ -8,14 +8,6 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 
-// moraState is legacy/deprecated — keep its mock since it's being migrated
-jest.mock('@/lib/store/moraState', () => ({
-    useMoraStore: jest.fn((selector?: any) => {
-        const state = { departments: [], spacesByDepartment: {}, foldersBySpace: {} };
-        return typeof selector === 'function' ? selector(state) : state;
-    }),
-}));
-
 const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (sel?: (s: any) => unknown) => {
