@@ -22,20 +22,15 @@
  * ----------------------------------------------------------------
  * COMPOSITING LAYER STACK  (last updated 2026-06-12)
  * ----------------------------------------------------------------
+ *  z-0       ShellStaticBackdrop — instant CSS deep-space plate
  *  z-0       MoraLivingBackground — scene-reactive deep base + aurora + tints
- *  z-[1]     ForestLightCanopy — organic nebula blobs (non-universe views)
- *  z-[1]     StarField — twinkling star canvas (mix-blend-mode: screen)
+ *  z-[1]     ForestLightCanopy — organic nebula blobs (deferred, gated)
+ *  z-[1]     StarField — twinkling star canvas (deferred idle / capability gate)
  *  z-[2]     TemporalAtmosphere — atmospheric hazes, scene + time reactive
  *  z-[4]     RitualSceneStyler — scene colour overlay + CSS vars
  *  z-[30]    ViewPort — surface router (CoreLayer / DepartmentSurface / …)
  *    CoreLayer (home mode):
- *      absolute   blurred UniverseView bg (opacity 0.34)
- *      absolute   radial-gradient center glow overlay
- *      absolute   linear-gradient edge-darkening overlay
- *      motion.div left + right fade vignettes
- *      motion.div full-width dark overlay
- *    CoreLayer (explore mode):
- *      absolute   UniverseView (full, pointer-events-auto)
+ *      HomeSurface (UniverseView code-split; not in home bundle)
  *  z-[100]   PaneManager — pane chrome + GlassPanel (draggable windows)
  *  z-[740]   Dock — bottom navigation bar
  *  z-[928]   Mycelium summary overlay
@@ -51,6 +46,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
 // Store
@@ -69,6 +65,7 @@ import type { OrbState } from '@/lib/api/awarenessClient';
 import { TENANT_DEMO } from '@/lib/constants/tenants';
 import { ESTATE } from '@/lib/estate';
 import { filterCompaniesForSurface, getPrimaryOperationalCompany } from '@/lib/os/companySurfaceFilter';
+import { useAmbientCapability } from '@/lib/hooks/useAmbientCapability';
 
 // Shell Hooks
 import {
@@ -88,16 +85,33 @@ import { realtime } from '@/lib/api/realtimeClient';
 import { ViewPort } from '@/components/layout/ViewPort';
 import { ModeIndicatorBanner } from '@/components/os/shell/ModeIndicatorBanner';
 import { LoadingScreen, ErrorScreen } from '@/components/os/shell/ShellStatusScreens';
+import { ShellStaticBackdrop } from '@/components/os/shell/ShellStaticBackdrop';
 import { useContextStore } from '@/lib/store/contextStore';
 import { AdminHome } from '@/components/admin/AdminHome';
 
-// Background Layers
-import { StarField } from '@/components/visual/StarField';
-import { NeuralGrid } from '@/components/visual/NeuralGrid';
+// Background Layers — CSS plate first; heavy canvas/DOM ambient deferred via dynamic()
 import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
-import { ForestLightCanopy } from '@/components/visual/ForestLightCanopy';
-import { AmbientDust } from '@/components/organic/AmbientDust';
-import { MyceliumOverlay } from '@/components/organic/MyceliumOverlay';
+
+const StarField = dynamic(
+    () => import('@/components/visual/StarField').then((m) => ({ default: m.StarField })),
+    { ssr: false },
+);
+const NeuralGrid = dynamic(
+    () => import('@/components/visual/NeuralGrid').then((m) => ({ default: m.NeuralGrid })),
+    { ssr: false },
+);
+const ForestLightCanopy = dynamic(
+    () => import('@/components/visual/ForestLightCanopy').then((m) => ({ default: m.ForestLightCanopy })),
+    { ssr: false },
+);
+const AmbientDust = dynamic(
+    () => import('@/components/organic/AmbientDust').then((m) => ({ default: m.AmbientDust })),
+    { ssr: false },
+);
+const MyceliumOverlay = dynamic(
+    () => import('@/components/organic/MyceliumOverlay').then((m) => ({ default: m.MyceliumOverlay })),
+    { ssr: false },
+);
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
@@ -381,7 +395,10 @@ export const MoraShell: React.FC = () => {
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
     const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
-    const starFieldDensity = universeLightAmbient ? 'low' : 'medium';
+    const ambient = useAmbientCapability();
+    const mountHeavyAmbient = ambient.enableHeavy && ambient.heavyReady && !pauseHeavyBackground;
+    const starFieldDensity =
+        ambient.density === 'low' || universeLightAmbient ? 'low' : 'medium';
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -729,46 +746,49 @@ export const MoraShell: React.FC = () => {
             <SystemStats />
 
             {/* ================================================================
-                LAYER 1: BACKGROUND
+                LAYER 1: BACKGROUND (progressive island)
+                z-0   ShellStaticBackdrop — instant CSS plate (always)
                 z-0   MoraLivingBackground — scene-reactive deep base + tints
-                z-1   ForestLightCanopy — organic nebula/light blobs
-                z-1   StarField — twinkling star canvas
+                z-1   ForestLightCanopy / StarField / Mycelium / NeuralGrid / Dust
+                      — deferred until idle; skipped on reduced-motion / Save-Data
                 z-2   TemporalAtmosphere — atmospheric hazes
-                z-11  RitualSceneStyler — scene colour overlay + CSS vars (above z-10 content)
+                z-11  RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
             <RitualSceneStyler />
+            <ShellStaticBackdrop />
             <MoraLivingBackground />
-            <TemporalAtmosphere paused={pauseHeavyBackground} />
+            <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
 
-            {/* Background Layers — ForestLightCanopy fades to 6% in Universe instead
-                of disappearing, so Home and Universe share the same atmospheric truth */}
-            <div
-                className="transition-opacity duration-[1400ms] ease-in-out"
-                style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
-            >
-                <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-            </div>
-            <StarField
-                density={starFieldDensity}
-                opacity={universeLightAmbient ? 0.72 : 0.97}
-                paused={pauseHeavyBackground}
-            />
+            {mountHeavyAmbient && (
+                <>
+                    {/* ForestLightCanopy fades to 6% in Universe — shared atmospheric truth */}
+                    <div
+                        className="transition-opacity duration-[1400ms] ease-in-out"
+                        style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
+                    >
+                        <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
+                    </div>
+                    <StarField
+                        density={starFieldDensity}
+                        opacity={universeLightAmbient ? 0.72 : 0.97}
+                        paused={pauseHeavyBackground}
+                    />
 
-            {/* Mycelium neural network — hidden on Universe (DeptSpaceMap / cosmos has its own depth) */}
-            {!pauseHeavyBackground && !isUniverseExploreSurface && <MyceliumOverlay />}
+                    {/* Mycelium — hidden on Universe (cosmos has its own depth) */}
+                    {!isUniverseExploreSurface && <MyceliumOverlay />}
 
-            {/* Neural Grid — Tesla-style tech texture, reacts to Mora state */}
-            <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
+                    <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
 
-            {/* Ambient Dust — scene-reactive floating particles */}
-            <AmbientDust
-                count={universeLightAmbient ? 8 : 32}
-                color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
-                sizeRange={[0.8, 2.5]}
-                durationRange={[18, 36]}
-                opacity={universeLightAmbient ? 0.14 : 0.28}
-            />
+                    <AmbientDust
+                        count={ambient.density === 'low' || universeLightAmbient ? 8 : 32}
+                        color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
+                        sizeRange={[0.8, 2.5]}
+                        durationRange={[18, 36]}
+                        opacity={universeLightAmbient ? 0.14 : 0.28}
+                    />
+                </>
+            )}
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT

@@ -56,7 +56,7 @@ beforeEach(() => {
         writable: true,
         value: FakeWebSocket,
     });
-    document.cookie = 'mora_auth_token=test-session';
+    document.cookie = 'mora_auth_token=sess_test-session';
 });
 
 afterEach(() => {

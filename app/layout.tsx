@@ -27,6 +27,14 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const isTunnelDev = pathname === "/tunnel";
+  // Auth / entry routes don't need the floating pane stack — keep first paint thin.
+  const isAuthEntryRoute =
+    pathname === "/" ||
+    pathname === "/login" ||
+    pathname === "/entry" ||
+    pathname === "/reset-password" ||
+    pathname.startsWith("/join") ||
+    pathname.startsWith("/oauth");
 
   // Fix hydration mismatch from browser extensions
   useEffect(() => {
@@ -103,11 +111,14 @@ export default function RootLayout({
             <MoraSessionProvider>
               <StandardModeHandler />
               {children}
-              {mounted && !isTunnelDev && (
+              {mounted && !isTunnelDev && !isAuthEntryRoute && (
                 <>
                   <PaneManager />
                   <Toaster position="top-right" />
                 </>
+              )}
+              {mounted && !isTunnelDev && isAuthEntryRoute && (
+                <Toaster position="top-right" />
               )}
             </MoraSessionProvider>
           </ErrorBoundary>
