@@ -26,6 +26,16 @@ jest.mock('@/components/home/UniverseView', () => ({
     default: () => <div data-testid="universe-view">UniverseView</div>,
 }));
 
+// next/dynamic → resolve loader sync via require path used in CoreLayer
+jest.mock('next/dynamic', () => ({
+    __esModule: true,
+    default: () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('@/components/home/UniverseView');
+        return mod.default || mod;
+    },
+}));
+
 // ── framer-motion: disable animations in tests ───────────────────────────────
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,

@@ -20,6 +20,15 @@ jest.mock('@/components/home/UniverseView', () => ({
     default: () => <div data-testid="universe-view">universe</div>,
 }));
 
+jest.mock('next/dynamic', () => ({
+    __esModule: true,
+    default: () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const mod = require('@/components/home/UniverseView');
+        return mod.default || mod;
+    },
+}));
+
 jest.mock('@/components/home/VisitorHomeSurface', () => ({
     VisitorHomeSurface: () => <div data-testid="visitor-home-surface">visitor home</div>,
 }));

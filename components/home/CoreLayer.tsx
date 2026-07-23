@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useNavStore } from '@/lib/store/navStore';
 import { HomeSurface } from '@/components/home/HomeSurface';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
-import UniverseView from '@/components/home/UniverseView';
 
 /**
  * CoreLayer — Surface router for viewLevel='core'
@@ -14,17 +14,24 @@ import UniverseView from '@/components/home/UniverseView';
  *   'home'    → HomeSurface (day-start working surface, default after login)
  *   'explore' → UniverseView (Universe planet map, explicit user action)
  *
- * This is NOT a new route — it is a surface mode switch within the shell.
- * Animation: short crossfade (200ms), no scale/blur (surface switch ≠ layer zoom).
- *
- * Entry points that set coreMode:
- *   → 'home':    Dock "Start" / Mod+H, company switch (both via navStore)
- *   → 'explore': HomeSurface "Erkunden →" button, breadcrumb root from dept/space
+ * UniverseView is code-split so the default home path does not pay for
+ * planets/widgets/canvas on first paint.
  *
  * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
  * @see lib/store/navStore.ts — setCoreMode action
  * @see lib/types/mora.ts — CoreMode type
  */
+const UniverseView = dynamic(() => import('@/components/home/UniverseView'), {
+    ssr: false,
+    loading: () => (
+        <div
+            className="absolute inset-0 bg-[#05080e]"
+            aria-hidden
+            data-testid="universe-view-loading"
+        />
+    ),
+});
+
 export const CoreLayer: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeMode = useNavStore((s) => s.activeMode);
