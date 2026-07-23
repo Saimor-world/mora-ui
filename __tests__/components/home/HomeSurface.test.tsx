@@ -162,6 +162,30 @@ beforeEach(() => {
     useActivityStore.setState({ recentItems: [] });
 });
 
+/**
+ * One source for both the fixture and the assertions below.
+ *
+ * These labels are only ever asserted *negatively* — placeholders must not
+ * reach the cockpit as if they were real recommendations. A negative assertion
+ * with a wrong needle passes silently, so typing the haystack and the needle
+ * separately is how this suite once stopped testing anything at all: the `ô`
+ * in 'Saimôr Desk' decayed into a U+FFFD replacement character on one side,
+ * the query never matched, and the green tick meant nothing. Sharing the
+ * constant makes needle and haystack impossible to drift apart, and
+ * `__tests__/source-encoding.test.ts` guards the character itself.
+ */
+const PLACEHOLDER_LABELS = [
+    'Mail für OpenClaw vorbereiten',
+    'Kalender für OpenClaw vorbereiten',
+    'OpenClaw Infrastruktur',
+    'Saimôr Desk',
+] as const;
+
+const PLACEHOLDER_CARDS = PLACEHOLDER_LABELS.map((label) => ({
+    label,
+    reason: 'No backend evidence contract found',
+}));
+
 function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE, homeData?: any) {
     const qc = createTestQueryClient();
     qc.setQueryData(queryKeys.departments('co-1'), depsData);
@@ -182,20 +206,10 @@ function renderWithDepts(depsData = STABLE_DEPTS, treeData = STABLE_TREE, homeDa
         runtime: { status: 'unknown', evidence: [] },
         home_cards: {
             verified: [{ id: 'changes', label: 'Was hat sich verändert?', source: 'mindloop_events' }],
-            placeholder: [
-                { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-                { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-                { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
-                { label: 'Saim�r Desk', reason: 'No backend evidence contract found' },
-            ],
+            placeholder: PLACEHOLDER_CARDS,
             unknown: [{ id: 'next_steps', label: 'Nächster echter Schritt', reason: 'No tenant-scoped task node is available' }],
         },
-        placeholders_detected: [
-            { label: 'Mail für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-            { label: 'Kalender für OpenClaw vorbereiten', reason: 'No backend evidence contract found' },
-            { label: 'OpenClaw Infrastruktur', reason: 'No backend evidence contract found' },
-            { label: 'Saim�r Desk', reason: 'No backend evidence contract found' },
-        ],
+        placeholders_detected: PLACEHOLDER_CARDS,
         unknowns: [
             { id: 'runtime_larry_openclaw', reason: 'No CORE evidence contract currently proves runtime state' },
             { id: 'connector_handshake', reason: 'Stored connector config is not a live handshake' },
@@ -263,11 +277,34 @@ describe('HomeSurface — rendering', () => {
         renderWithDepts();
         await waitFor(() => expect(screen.getByTestId('home-widget-meinTag')).toBeInTheDocument());
 
-        expect(screen.queryByText('Mail für OpenClaw vorbereiten')).not.toBeInTheDocument();
-        expect(screen.queryByText('Kalender für OpenClaw vorbereiten')).not.toBeInTheDocument();
-        expect(screen.queryByText('OpenClaw Infrastruktur')).not.toBeInTheDocument();
-        expect(screen.queryByText('Saim�r Desk')).not.toBeInTheDocument();
+        PLACEHOLDER_LABELS.forEach((label) => {
+            expect(screen.queryByText(label)).not.toBeInTheDocument();
+        });
         expect(screen.queryByText('Noch kein belegter nächster Schritt.')).not.toBeInTheDocument();
+    });
+
+    it.each(PLACEHOLDER_LABELS)('would actually notice %s on screen', (label) => {
+        // Positive control for the negative assertions above. Without it,
+        // nothing proves those queries *can* match — a mistyped or
+        // mis-encoded needle would make them pass while guarding nothing.
+        renderWithDepts(STABLE_DEPTS, STABLE_TREE, {
+            company: { id: 'co-1', name: 'Test Corp', is_visitor: false },
+            greeting: '',
+            changes: [],
+            attention: [],
+            next_steps: [],
+            priority: {
+                state: 'attention',
+                domain: 'system',
+                eyebrow: 'System braucht Aufmerksamkeit',
+                title: label,
+                detail: 'Kontrollfall: dieser Text wird bewusst gerendert.',
+                severity: 0.85,
+                action: 'signals',
+            },
+        });
+
+        expect(screen.getByTestId('home-priority-card')).toHaveTextContent(label);
     });
 
     it('renders cockpit when no user', async () => {
