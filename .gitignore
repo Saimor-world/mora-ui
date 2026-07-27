@@ -2,6 +2,8 @@
 .env.local_temp
 .env*.local
 .env
+.env.production
+.env.production.local
 *.env
 .next
 node_modules
