@@ -3,6 +3,8 @@
  * Prevents console.log pollution in production builds
  */
 
+import { createSafeErrorReport, reportClientError } from './error-reporting';
+
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 interface LogContext {
@@ -47,14 +49,14 @@ class Logger {
             })
         };
 
-        console.error(this.formatMessage('error', message, errorContext));
-
-        // TODO: Send to monitoring service (Sentry, etc.)
-        if (typeof window !== 'undefined' && !this.isDevelopment) {
-            // window.Sentry?.captureException(error || new Error(message), {
-            //     contexts: { custom: context }
-            // });
+        if (this.isDevelopment) {
+            console.error(this.formatMessage('error', message, errorContext));
+            return;
         }
+
+        const safeReport = createSafeErrorReport({ message, error, context });
+        console.error(this.formatMessage('error', safeReport.message, safeReport));
+        reportClientError(safeReport);
     }
 
     // Auth-specific logging helpers

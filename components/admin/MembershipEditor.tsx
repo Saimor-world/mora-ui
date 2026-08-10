@@ -1,7 +1,7 @@
 // components/admin/MembershipEditor.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Loader2, X } from 'lucide-react';
 import { updateUserMemberships, type AdminRosterUser } from '@/lib/api/coreClient';
 import { useNavStore } from '@/lib/store/navStore';
@@ -34,6 +34,22 @@ export const MembershipEditor: React.FC<MembershipEditorProps> = ({
     );
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const dialogPanelRef = useRef<HTMLDivElement>(null);
+    const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+    useEffect(() => {
+        const previouslyFocused = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+
+        closeButtonRef.current?.focus();
+
+        return () => {
+            if (previouslyFocused?.isConnected) {
+                previouslyFocused.focus();
+            }
+        };
+    }, []);
 
     const toggle = (id: string) =>
         setSelected((prev) => {
@@ -58,19 +74,56 @@ export const MembershipEditor: React.FC<MembershipEditorProps> = ({
         onSaved({ ...user, department_memberships: updatedMemberships });
     };
 
+    const handleDialogKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            event.stopPropagation();
+            onClose();
+            return;
+        }
+        if (event.key !== 'Tab') return;
+
+        const focusable = Array.from(
+            dialogPanelRef.current?.querySelectorAll<HTMLElement>(
+                'button:not([disabled]), input:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+            ) ?? [],
+        );
+        if (focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+            event.preventDefault();
+            first.focus();
+        }
+    };
+
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
             role="dialog"
-            aria-label={`Mitgliedschaften für ${user.name}`}
+            aria-modal="true"
+            aria-labelledby="membership-editor-title"
+            onKeyDown={handleDialogKeyDown}
         >
-            <div className="bg-[#0e1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <div ref={dialogPanelRef} className="bg-[#0e1117] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-xl">
                 <div className="flex items-start justify-between mb-4">
                     <div>
-                        <div className="text-sm font-medium text-white">{user.name}</div>
+                        <div id="membership-editor-title" className="text-sm font-medium text-white">
+                            Mitgliedschaften für {user.name}
+                        </div>
                         <div className="text-xs text-white/40">Abteilungsmitgliedschaften</div>
                     </div>
-                    <button onClick={onClose} className="text-white/30 hover:text-white/60 transition-colors">
+                    <button
+                        ref={closeButtonRef}
+                        type="button"
+                        aria-label="Mitgliedschaftsdialog schließen"
+                        onClick={onClose}
+                        className="text-white/30 hover:text-white/60 transition-colors"
+                    >
                         <X size={16} />
                     </button>
                 </div>
@@ -98,12 +151,14 @@ export const MembershipEditor: React.FC<MembershipEditorProps> = ({
 
                 <div className="flex gap-2 justify-end">
                     <button
+                        type="button"
                         onClick={onClose}
                         className="px-3 py-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
                     >
                         Abbrechen
                     </button>
                     <button
+                        type="button"
                         onClick={handleSave}
                         disabled={saving}
                         className="px-4 py-1.5 bg-white/10 hover:bg-white/15 text-white text-xs rounded-lg transition-colors disabled:opacity-50"

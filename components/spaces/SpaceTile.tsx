@@ -24,15 +24,30 @@ interface SpaceTileProps {
  * - "Enter" action button on hover
  */
 export const SpaceTile: React.FC<SpaceTileProps> = ({ space, onClick, index = 0 }) => {
+    const folderCount = space.folder_count ?? 0;
+    const folderCountLabel = folderCount === 1 ? '1 Ordner' : `${folderCount} Ordner`;
+    const updatedAt = space.updated_at
+        ? new Date(space.updated_at)
+        : null;
+    const updatedAtLabel = updatedAt && !Number.isNaN(updatedAt.getTime())
+        ? `Aktualisiert ${new Intl.DateTimeFormat('de-DE', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        }).format(updatedAt)}`
+        : null;
+
     return (
-        <motion.div
+        <motion.button
+            type="button"
+            aria-label={`Bereich ${space.name} öffnen`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05, duration: 0.4 }}
             whileHover={{ y: -5, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onClick(space.id)}
-            className="group relative w-full aspect-[4/3] rounded-xl overflow-hidden cursor-pointer"
+            className="group relative w-full aspect-[4/3] rounded-xl overflow-hidden cursor-pointer text-left"
             style={{
                 background: 'linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.01) 100%)',
                 backdropFilter: 'blur(10px)',
@@ -55,9 +70,9 @@ export const SpaceTile: React.FC<SpaceTileProps> = ({ space, onClick, index = 0 
                     <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 group-hover:border-emerald-500/50 transition-colors">
                         <Folder className="w-5 h-5 text-emerald-400" />
                     </div>
-                    <button className="p-1 rounded-md hover:bg-white/5 text-white/30 hover:text-white/70 transition-colors">
+                    <span aria-hidden="true" className="p-1 rounded-md text-white/30">
                         <MoreVertical size={16} />
-                    </button>
+                    </span>
                 </div>
 
                 {/* Body */}
@@ -66,12 +81,16 @@ export const SpaceTile: React.FC<SpaceTileProps> = ({ space, onClick, index = 0 
                         {space.name}
                     </h3>
                     <div className="flex items-center gap-3 text-xs text-white/40">
-                        <span className="flex items-center gap-1">
-                            <Clock size={12} />
-                            2h ago
-                        </span>
-                        <span>•</span>
-                        <span>{(space as any).folder_count || 0} folders</span>
+                        {updatedAtLabel && (
+                            <>
+                                <span className="flex items-center gap-1">
+                                    <Clock aria-hidden="true" size={12} />
+                                    {updatedAtLabel}
+                                </span>
+                                <span aria-hidden="true">•</span>
+                            </>
+                        )}
+                        <span>{folderCountLabel}</span>
                     </div>
                 </div>
 
@@ -82,6 +101,6 @@ export const SpaceTile: React.FC<SpaceTileProps> = ({ space, onClick, index = 0 
                     </div>
                 </div>
             </div>
-        </motion.div>
+        </motion.button>
     );
 };

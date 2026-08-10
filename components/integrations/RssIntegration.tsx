@@ -156,7 +156,13 @@ export const RssIntegration: React.FC = () => {
                 <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
                     <div className="mb-3 flex items-center justify-between">
                         <div className="text-xs font-medium uppercase tracking-[0.18em] text-white/40">Quellen</div>
-                        <button onClick={() => void load()} className="text-white/35 transition-colors hover:text-white/70">
+                        <button
+                            type="button"
+                            aria-label="RSS-Quellen aktualisieren"
+                            title="RSS-Quellen aktualisieren"
+                            onClick={() => void load()}
+                            className="text-white/35 transition-colors hover:text-white/70"
+                        >
                             <RefreshCw size={14} className={isLoading ? "animate-spin" : ""} />
                         </button>
                     </div>
@@ -179,6 +185,7 @@ export const RssIntegration: React.FC = () => {
                                                 />
                                                 <button
                                                     type="button"
+                                                    aria-label={`Namen für ${feed.title || feed.url} speichern`}
                                                     onClick={() => void updateFeedTitle(feed.url, editingTitle)}
                                                     className="rounded-lg p-1.5 text-emerald-200/70 transition-colors hover:bg-emerald-500/10"
                                                     title="Speichern"
@@ -187,6 +194,7 @@ export const RssIntegration: React.FC = () => {
                                                 </button>
                                                 <button
                                                     type="button"
+                                                    aria-label={`Bearbeitung für ${feed.title || feed.url} abbrechen`}
                                                     onClick={() => {
                                                         setEditingUrl(null);
                                                         setEditingTitle("");
@@ -208,6 +216,7 @@ export const RssIntegration: React.FC = () => {
                                         <>
                                             <button
                                                 type="button"
+                                                aria-label={`Name von ${feed.title || feed.url} bearbeiten`}
                                                 onClick={() => {
                                                     setEditingUrl(feed.url);
                                                     setEditingTitle(feed.title || "");
@@ -219,6 +228,7 @@ export const RssIntegration: React.FC = () => {
                                             </button>
                                             <button
                                                 type="button"
+                                                aria-label={`Feed ${feed.title || feed.url} entfernen`}
                                                 onClick={() => void removeFeed(feed.url)}
                                                 className="rounded-lg p-1.5 text-white/35 transition-colors hover:bg-red-500/10 hover:text-red-200"
                                                 title="Feed entfernen"

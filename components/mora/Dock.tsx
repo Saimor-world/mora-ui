@@ -288,7 +288,7 @@ interface DockNowPlayingProps {
     onOpen: () => void;
 }
 
-const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
+export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     isStandardMode,
     isDeckOpen,
     trackName,
@@ -303,12 +303,18 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
     }
 
     return (
-        <div className={`hidden xl:flex max-w-[280px] items-center gap-2.5 rounded-[20px] border px-3 py-2 ${isStandardMode
+        <div
+            role="group"
+            aria-label="Audiowiedergabe"
+            className={`hidden xl:flex max-w-[280px] items-center gap-2.5 rounded-[20px] border px-3 py-2 ${isStandardMode
             ? 'border-gray-200 bg-gray-100'
             : 'border-white/10 bg-white/[0.04]'
-            }`}>
+            }`}
+        >
             <button
+                type="button"
                 onClick={onOpen}
+                aria-label={'Audio-Einstellungen \u00f6ffnen'}
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${isStandardMode
                     ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
@@ -318,7 +324,12 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 <Music2 size={16} />
             </button>
 
-            <button onClick={onOpen} className="min-w-0 text-left">
+            <button
+                type="button"
+                onClick={onOpen}
+                aria-label={`Audiotrack ${trackName || 'Mora Ambient'} \u00f6ffnen`}
+                className="min-w-0 text-left"
+            >
                 <div className={`text-[10px] uppercase tracking-[0.2em] ${isStandardMode ? 'text-gray-500' : 'text-white/35'}`}>
                     Audio
                 </div>
@@ -330,7 +341,7 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 </div>
             </button>
 
-            <div className="flex items-end gap-1 px-1">
+            <div className="flex items-end gap-1 px-1" aria-hidden="true">
                 {[10, 18, 12, 20, 14].map((baseH, index) => (
                     <motion.span
                         key={`bar-${index}`}
@@ -355,7 +366,10 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
 
             <div className="flex items-center gap-1">
                 <button
+                    type="button"
                     onClick={onToggle}
+                    aria-label={isPlaying ? 'Musik pausieren' : 'Musik abspielen'}
+                    aria-pressed={isPlaying}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
                         ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
@@ -366,6 +380,8 @@ const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 </button>
                 <button
                     onClick={onNext}
+                    type="button"
+                    aria-label={'N\u00e4chsten Audiotrack w\u00e4hlen'}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
                         ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'

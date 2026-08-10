@@ -54,6 +54,53 @@ describe('MembershipEditor', () => {
         expect(screen.getByText(/Max Mustermann/i)).toBeInTheDocument();
     });
 
+    it('exposes an accessible modal dialog and close action', () => {
+        renderEditor();
+
+        expect(screen.getByRole('dialog', { name: /Mitgliedschaften für Max Mustermann/i }))
+            .toHaveAttribute('aria-modal', 'true');
+
+        fireEvent.click(screen.getByRole('button', { name: /Mitgliedschaftsdialog schließen/i }));
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('closes once when Escape is pressed inside the dialog', () => {
+        renderEditor();
+
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('moves initial focus into the dialog and restores the previous focus on unmount', () => {
+        const trigger = document.createElement('button');
+        document.body.appendChild(trigger);
+        trigger.focus();
+
+        const { unmount } = renderEditor();
+
+        expect(screen.getByRole('button', { name: /Mitgliedschaftsdialog schließen/i }))
+            .toHaveFocus();
+
+        unmount();
+        expect(trigger).toHaveFocus();
+        trigger.remove();
+    });
+
+    it('keeps keyboard focus inside the modal', () => {
+        renderEditor();
+        const close = screen.getByRole('button', { name: /schlie/i });
+        const save = screen.getByRole('button', { name: /speichern/i });
+
+        save.focus();
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab' });
+        expect(close).toHaveFocus();
+
+        close.focus();
+        fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Tab', shiftKey: true });
+        expect(save).toHaveFocus();
+    });
+
     it('lists all available departments as checkboxes', () => {
         renderEditor();
         expect(screen.getByLabelText(/Engineering/i)).toBeInTheDocument();
