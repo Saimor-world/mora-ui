@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -86,7 +86,7 @@ export function useMemorySidebarShortcut() {
 // QUICK INPUT COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-const QuickMemoryInputInline: React.FC<{
+export const QuickMemoryInputInline: React.FC<{
     onSuccess?: () => Promise<void> | void;
     companyId?: string | null;
 }> = ({ onSuccess, companyId }) => {
@@ -129,7 +129,9 @@ const QuickMemoryInputInline: React.FC<{
                     disabled={isSubmitting}
                 />
                 <button
+                    type="button"
                     onClick={handleSubmit}
+                    aria-label={success ? 'Erinnerung gespeichert' : isSubmitting ? 'Erinnerung wird gespeichert' : 'Erinnerung speichern'}
                     disabled={!input.trim() || isSubmitting}
                     className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-white/30 hover:text-violet-400 disabled:opacity-30 transition-colors"
                 >
@@ -144,7 +146,7 @@ const QuickMemoryInputInline: React.FC<{
 // PENDING ITEM COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════
 
-const PendingItem: React.FC<{
+export const PendingItem: React.FC<{
     item: any;
     onApprove: () => void;
     onReject: () => void;
@@ -155,13 +157,17 @@ const PendingItem: React.FC<{
             <span className="text-[9px] text-amber-400/60 uppercase">{item.category}</span>
             <div className="flex gap-1">
                 <button
+                    type="button"
                     onClick={onApprove}
+                    aria-label={`Erinnerung freigeben: ${item.summary || item.insight || 'Unbenannter Eintrag'}`}
                     className="p-1 rounded bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
                 >
                     <Check size={12} />
                 </button>
                 <button
+                    type="button"
                     onClick={onReject}
+                    aria-label={`Erinnerung ablehnen: ${item.summary || item.insight || 'Unbenannter Eintrag'}`}
                     className="p-1 rounded bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
                 >
                     <X size={12} />
@@ -387,6 +393,7 @@ const DiagnosticsPanel: React.FC<{
                         ))}
                         {isOwner && step === 'idle' && (
                             <button
+                                type="button"
                                 onClick={handlePreview}
                                 className="mt-1 flex items-center gap-1.5 px-2 py-1 rounded-md bg-red-500/20 hover:bg-red-500/30 text-red-200 text-[10px] font-medium transition-colors"
                             >
@@ -531,6 +538,7 @@ const DiagnosticsPanel: React.FC<{
 
                     {step === 'idle' && (
                         <button
+                            type="button"
                             onClick={handlePreview}
                             className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 text-xs transition-colors"
                         >
@@ -552,10 +560,10 @@ const DiagnosticsPanel: React.FC<{
                                 <div className="flex justify-between"><span className="text-white/40">Übersprungen</span><span className="text-amber-300">{preview.skipped}</span></div>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => setStep('idle')} className="flex-1 px-3 py-1.5 rounded-lg border border-white/10 text-xs text-white/50 hover:bg-white/5 transition-colors">
+                                <button type="button" onClick={() => setStep('idle')} className="flex-1 px-3 py-1.5 rounded-lg border border-white/10 text-xs text-white/50 hover:bg-white/5 transition-colors">
                                     Abbrechen
                                 </button>
-                                <button onClick={handleApply} className="flex-1 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 text-xs transition-colors">
+                                <button type="button" onClick={handleApply} className="flex-1 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 text-xs transition-colors">
                                     Anwenden
                                 </button>
                             </div>
@@ -578,7 +586,7 @@ const DiagnosticsPanel: React.FC<{
                                 <div>Vorhanden: <span className="text-white/60">{result.already_present}</span></div>
                                 <div>Übersprungen: <span className="text-amber-300">{result.skipped}</span></div>
                             </div>
-                            <button onClick={() => { setStep('idle'); setResult(null); }} className="mt-1 text-[10px] text-white/30 hover:text-white/50">
+                            <button type="button" onClick={() => { setStep('idle'); setResult(null); }} className="mt-1 text-[10px] text-white/30 hover:text-white/50">
                                 Schließen
                             </button>
                         </div>
@@ -587,7 +595,7 @@ const DiagnosticsPanel: React.FC<{
                     {step === 'error' && (
                         <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-[10px] text-red-300">
                             {reconcileError}
-                            <button onClick={() => setStep('idle')} className="block mt-1 text-white/40 hover:text-white/60">Zurücksetzen</button>
+                            <button type="button" onClick={() => setStep('idle')} className="block mt-1 text-white/40 hover:text-white/60">Zurücksetzen</button>
                         </div>
                     )}
                 </div>
@@ -687,6 +695,10 @@ export const MemorySidebar: React.FC = () => {
         <>
             {/* Collapsed Tab (always visible on right edge) */}
             <motion.button
+                type="button"
+                aria-label={'MemorySidebar \u00f6ffnen'}
+                aria-expanded={isOpen}
+                aria-controls="memory-sidebar-panel"
                 initial={{ x: 100 }}
                 animate={{ x: isOpen ? 100 : 0 }}
                 className="fixed right-0 top-1/2 -translate-y-1/2 z-[400] p-2 bg-black/60 backdrop-blur-xl border border-white/10 border-r-0 rounded-l-xl hover:bg-black/80 transition-colors"
@@ -717,6 +729,9 @@ export const MemorySidebar: React.FC = () => {
 
                         {/* Panel */}
                         <motion.div
+                            id="memory-sidebar-panel"
+                            role="complementary"
+                            aria-label="MemorySidebar"
                             initial={{ x: 300 }}
                             animate={{ x: 0 }}
                             exit={{ x: 300 }}
@@ -728,6 +743,8 @@ export const MemorySidebar: React.FC = () => {
                                 // Collapsed view
                                 <div className="flex flex-col items-center py-4 gap-4">
                                     <button
+                                        type="button"
+                                        aria-label="MemorySidebar ausklappen"
                                         onClick={() => setCollapsed(false)}
                                         className="p-2 text-white/40 hover:text-white/70 transition-colors"
                                     >
@@ -753,12 +770,16 @@ export const MemorySidebar: React.FC = () => {
                                         </div>
                                         <div className="flex items-center gap-1">
                                             <button
+                                                type="button"
+                                                aria-label="MemorySidebar einklappen"
                                                 onClick={() => setCollapsed(true)}
                                                 className="p-1 text-white/30 hover:text-white/60 transition-colors"
                                             >
                                                 <ChevronRight size={14} />
                                             </button>
                                             <button
+                                                type="button"
+                                                aria-label={'MemorySidebar schlie\u00dfen'}
                                                 onClick={() => setOpen(false)}
                                                 className="p-1 text-white/30 hover:text-white/60 transition-colors"
                                             >
@@ -772,6 +793,8 @@ export const MemorySidebar: React.FC = () => {
                                         {(['memories', 'diagnostics'] as const).map((tab) => (
                                             <button
                                                 key={tab}
+                                                type="button"
+                                                aria-pressed={activeTab === tab}
                                                 onClick={() => setActiveTab(tab)}
                                                 className={`flex-1 py-2 text-[10px] uppercase tracking-widest font-medium transition-colors ${activeTab === tab
                                                     ? 'text-violet-300 border-b-2 border-violet-500'
@@ -878,9 +901,9 @@ export const MemorySidebar: React.FC = () => {
                                                                     />
                                                                 ))}
                                                                 {pendingItems.length > 3 && (
-                                                                    <button className="w-full text-[10px] text-violet-400/70 hover:text-violet-400 py-1">
+                                                                    <p className="w-full text-[10px] text-violet-400/70 py-1 text-center">
                                                                         +{pendingItems.length - 3} weitere
-                                                                    </button>
+                                                                    </p>
                                                                 )}
                                                             </div>
                                                         </div>

@@ -8,7 +8,7 @@ export const ESTATE = {
   desk: 'https://dash.saimor.world',
   /** OpenClaw/runtime console — not a product name in UI */
   runtime: 'https://larry.saimor.world',
-  yori: 'https://frnt.saimor.world',
+  yori: 'https://yori.saimor.world',
   world: 'https://saimor.world',
 } as const;
 

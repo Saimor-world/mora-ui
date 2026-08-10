@@ -17,3 +17,4 @@ tmp/
 # Playwright
 playwright-report/
 test-results/
+.design-sync/
