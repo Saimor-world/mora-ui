@@ -43,6 +43,14 @@ export function loadWebsiteEntryContext(): StoredWebsiteEntryContext | null {
         if (!parsed || typeof parsed !== 'object') return null;
         if (typeof parsed.companyName !== 'string' || typeof parsed.title !== 'string') return null;
         if (!Array.isArray(parsed.rooms) || !Array.isArray(parsed.documents) || !Array.isArray(parsed.tasks)) return null;
+
+        // Auto-expire stale entry contexts older than 2 hours (120 minutes)
+        const storedAt = parsed.storedAt ? new Date(parsed.storedAt).getTime() : 0;
+        if (storedAt > 0 && Date.now() - storedAt >= 1000 * 60 * 60 * 2) {
+            window.localStorage.removeItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+            return null;
+        }
+
         return parsed as StoredWebsiteEntryContext;
     } catch {
         return null;
