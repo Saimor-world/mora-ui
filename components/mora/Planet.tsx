@@ -537,48 +537,33 @@ export const Planet: React.FC<PlanetProps> = ({
                                         </motion.span>
                                     );
                                 })}
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    <AnimatePresence>
-                        {isHoverEngaged && (
-                            <motion.div
-                                key="ambient-bloom"
-                                className="absolute flex flex-col items-center text-center"
-                                style={{ top: planetSize.diameter * 0.72 }}
-                                initial={{ opacity: 0, y: -8, scale: 0.92 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 6, scale: 0.94 }}
-                                transition={IOS_SPRING}
-                            >
-                                <span
-                                    className="max-w-[220px] truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-white/88"
-                                    style={{ textShadow: `0 0 20px ${effectiveGlow}99, 0 0 40px ${effectiveGlow}44` }}
-                                >
-                                    {department.name}
-                                </span>
-                                <span className="mt-1.5 flex items-center gap-1.5 text-[8px] tracking-[0.06em] text-white/52">
-                                    <span
-                                        className="inline-block h-1.5 w-1.5 rounded-full"
-                                        style={{ background: healthTone, boxShadow: `0 0 10px ${healthTone}` }}
-                                    />
-                                    {vitalityHint}
-                                </span>
-                            </motion.div>
-                        )}
-                    </AnimatePresence>
-                    {!isHoverEngaged && isPointerOver && (
-                        <motion.span
-                            className="absolute text-[8px] uppercase tracking-[0.2em] text-white/32"
-                            style={{ top: planetSize.diameter * 0.5 }}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 0.65 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.28 }}
+                    {/* Always visible department label badge with bioluminescent glow */}
+                    <div
+                        className="absolute flex flex-col items-center text-center pointer-events-none transition-all duration-300"
+                        style={{ top: planetSize.diameter * 0.72 }}
+                    >
+                        <span
+                            className="max-w-[240px] truncate text-[11px] font-bold uppercase tracking-[0.22em] text-emerald-100/95"
+                            style={{ textShadow: `0 0 16px ${effectiveGlow}cc, 0 0 32px ${effectiveGlow}66, 0 2px 6px rgba(0,0,0,0.9)` }}
                         >
                             {department.name}
-                        </motion.span>
-                    )}
+                        </span>
+                        <AnimatePresence>
+                            {isHoverEngaged && (
+                                <motion.span
+                                    initial={{ opacity: 0, y: -4 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: 2 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="mt-1 flex items-center gap-1.5 text-[9px] font-medium tracking-[0.08em] text-emerald-300/90"
+                                >
+                                    <span>{health}% Status</span>
+                                    <span>•</span>
+                                    <span>{spaces.length || 1} {spaces.length === 1 ? 'Bereich' : 'Bereiche'}</span>
+                                </motion.span>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
             )}
             {showLabel && !ambientLabel && (
