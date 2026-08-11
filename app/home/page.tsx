@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
  * After authentication, users land here.
  * MoraShell is code-split so `/` and `/login` never pay for the full OS ambient stack.
  */
-const MoraShell = dynamic(
+const MoraShell = nextDynamic(
     () => import('@/components/os/shell/MoraShell').then((m) => ({ default: m.MoraShell })),
     {
         ssr: false,
