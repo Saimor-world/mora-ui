@@ -40,15 +40,10 @@ export const UNIVERSE_CORE_POINT = {
 /** Minimum centre-to-centre gap in viewport % (clears ~118px planet + halo on 1080p). */
 
 export const universeMinPlanetSeparation = (count: number) => {
-
-    if (count <= 4) return 13;
-
-    if (count <= 8) return 7.5;
-
-    if (count <= 14) return 5.5;
-
-    return 4.5;
-
+    if (count <= 4) return 18;
+    if (count <= 8) return 14;
+    if (count <= 14) return 10;
+    return 7.5;
 };
 
 
@@ -400,12 +395,7 @@ const expandUniverseCluster = (points: UniverseLayoutPoint[], targetMinDistance:
 
 };
 
-export const universeMinPlanetSeparation = (count: number) => {
-    if (count <= 4) return 18;
-    if (count <= 8) return 14;
-    if (count <= 14) return 10;
-    return 7.5;
-};
+
 
 export const buildOrganicUniverseLayout = (
     departments: Array<any>,
