@@ -257,18 +257,18 @@ export const MyceliumOverlay: React.FC = () => {
                 }
             }
 
-            // Floating Neural Spores (Spores that orbit the hyphae root anchors)
+            // Floating Neural Spores (Spores that orbit the hyphae root anchors in tight halos)
             particles = [];
-            const sporeCount = 160;
+            const sporeCount = 120;
             for (let i = 0; i < sporeCount; i++) {
                 const targetDept = anchors.departments[i % anchors.departments.length];
                 particles.push({
-                    x: targetDept.x + (Math.random() - 0.5) * 220,
-                    y: targetDept.y + (Math.random() - 0.5) * 220,
-                    vx: (Math.random() - 0.5) * 0.4,
-                    vy: (Math.random() - 0.5) * 0.4,
-                    size: Math.random() * 2.8 + 1.0,
-                    alpha: Math.random() * 0.7 + 0.3,
+                    x: targetDept.x + (Math.random() - 0.5) * 110,
+                    y: targetDept.y + (Math.random() - 0.5) * 110,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    size: Math.random() * 2.2 + 0.8,
+                    alpha: Math.random() * 0.65 + 0.25,
                     pulse: Math.random() * Math.PI * 2,
                     color: targetDept.color,
                     anchorX: targetDept.x,
