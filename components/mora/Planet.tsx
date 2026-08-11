@@ -535,8 +535,11 @@ export const Planet: React.FC<PlanetProps> = ({
                                         >
                                             {chip.text}
                                         </motion.span>
-                                    );
                                 })}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* Always visible department label badge with bioluminescent glow */}
                     <div
                         className="absolute flex flex-col items-center text-center pointer-events-none transition-all duration-300"
