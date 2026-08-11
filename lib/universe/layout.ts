@@ -400,87 +400,53 @@ const expandUniverseCluster = (points: UniverseLayoutPoint[], targetMinDistance:
 
 };
 
-
+export const universeMinPlanetSeparation = (count: number) => {
+    if (count <= 4) return 18;
+    if (count <= 8) return 14;
+    if (count <= 14) return 10;
+    return 7.5;
+};
 
 export const buildOrganicUniverseLayout = (
-
     departments: Array<any>,
-
     metricsMap: Record<string, { nodes: number; spaces: number; folders: number; health: number }>,
-
 ) => {
-
     const count = departments.length;
-
     if (count === 0) return [];
 
-
-
     const maxSignal = Math.max(
-
         1,
-
         ...departments.map((dept) => {
-
             const metrics = metricsMap[dept.id];
-
             return (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
-
         })
-
     );
 
-
-
     const orderedDepartments = departments
-
         .map((dept) => ({
-
             dept,
-
             seed: stableUniverseHash(`${dept.id || ''}:${dept.name || ''}`),
-
         }))
-
         .sort((a, b) => a.seed - b.seed);
-
-
 
     const compactCluster = count <= 6;
 
-
-
     const points = orderedDepartments.map(({ dept, seed }, index) => {
-
         const angleStep = (Math.PI * 2) / Math.max(1, count);
-
-        const angularJitterScale = compactCluster ? 0.10 : 0.14;
-
+        const angularJitterScale = compactCluster ? 0.08 : 0.12;
         const angularJitter = ((((seed >>> 8) % 100) / 100) - 0.5)
-
-            * Math.min(angularJitterScale, angleStep * (compactCluster ? 0.18 : 0.28));
-
+            * Math.min(angularJitterScale, angleStep * (compactCluster ? 0.15 : 0.25));
         const angle = (-Math.PI / 2) + (index * angleStep) + angularJitter;
-
         const metrics = metricsMap[dept.id];
-
         const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
-
         const vitality = Math.min(1, signal / maxSignal);
+        const radialJitter = (((seed >>> 12) % 100) / 100) * 0.03;
+        const radiusBias = 0.40 + (1 - vitality) * 0.10 + radialJitter;
 
-        const radialJitter = (((seed >>> 12) % 100) / 100) * (compactCluster ? 0.03 : 0.04);
-
-        const radiusBias = 0.34 + (1 - vitality) * 0.09 + radialJitter;
-
-        // Few planets spread wide and clear the core; many planets stay compact
-        // so an 8+ constellation still reads as one cluster near the centre.
-        const countRadiusFactor = count <= 4 ? 1.5 : count <= 6 ? 1.12 : count <= 10 ? 0.74 : 0.6;
-
-        const rx = (7.5 + radiusBias * 11) * countRadiusFactor;
-
-        const ry = (5.5 + radiusBias * 8.5) * countRadiusFactor;
-
-
+        // Generous orbit radius scaling so department planet nodes breathe clear of the central core
+        const countRadiusFactor = count <= 4 ? 2.1 : count <= 6 ? 1.85 : count <= 10 ? 1.5 : 1.2;
+        const rx = (12 + radiusBias * 10) * countRadiusFactor;
+        const ry = (9.5 + radiusBias * 8) * countRadiusFactor;
 
         return {
 
