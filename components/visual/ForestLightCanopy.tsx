@@ -53,42 +53,42 @@ export const ForestLightCanopy: React.FC<ForestLightCanopyProps> = ({ orbState, 
 
     return (
         <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
-            {/* MASSIVE VIOLET CROWN — fills top 70% of screen */}
+            {/* SOFT ACCENT CROWN */}
             <div
-                className="absolute inset-x-0 top-0 h-[70vh]"
+                className="absolute inset-x-0 top-0 h-[40vh]"
                 style={{
-                    background: 'radial-gradient(ellipse 130% 80% at 50% -15%, rgba(124,58,237,0.65) 0%, rgba(99,40,200,0.35) 40%, transparent 72%)',
+                    background: 'radial-gradient(ellipse 130% 60% at 50% -15%, rgba(124,58,237,0.12) 0%, rgba(99,40,200,0.06) 40%, transparent 72%)',
                     mixBlendMode: 'screen',
                 }}
             />
 
-            {/* EMERALD MORA CORE — Mora's heart always visible */}
+            {/* EMERALD MORA CORE */}
             <div
-                className="absolute inset-x-0 top-0 h-[50vh]"
+                className="absolute inset-x-0 top-0 h-[35vh]"
                 style={{
-                    background: `radial-gradient(ellipse 80% 55% at 50% -8%, ${palette.glow} 0%, transparent 65%)`,
-                    opacity: 0.65,
+                    background: `radial-gradient(ellipse 80% 45% at 50% -8%, ${palette.glow} 0%, transparent 65%)`,
+                    opacity: 0.15,
                     mixBlendMode: 'screen',
                     transition: 'background 2s ease',
                 }}
             />
 
-            {/* LEFT AURORA — secondary color wash */}
+            {/* LEFT AURORA */}
             <div
-                className="absolute top-0 left-0 w-[60vw] h-[50vh]"
+                className="absolute top-0 left-0 w-[40vw] h-[35vh]"
                 style={{
                     background: `radial-gradient(ellipse 90% 80% at 0% 0%, ${palette.secondary} 0%, transparent 70%)`,
-                    opacity: 0.55,
+                    opacity: 0.12,
                     transition: 'background 2.5s ease',
                 }}
             />
 
-            {/* RIGHT AURORA — accent side */}
+            {/* RIGHT AURORA */}
             <div
-                className="absolute top-0 right-0 w-[55vw] h-[45vh]"
+                className="absolute top-0 right-0 w-[40vw] h-[35vh]"
                 style={{
                     background: `radial-gradient(ellipse 90% 80% at 100% 0%, ${palette.accent} 0%, transparent 70%)`,
-                    opacity: 0.50,
+                    opacity: 0.10,
                     transition: 'background 2.5s ease',
                 }}
             />
