@@ -232,7 +232,7 @@ export const MyceliumOverlay: React.FC = () => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-[1] opacity-50"
+            className="fixed inset-0 pointer-events-none z-[2] opacity-85 transition-opacity duration-700"
             style={{ mixBlendMode: 'screen' }}
             aria-label={`Myzelium aktiv: ${overview?.nodes || 0} Objekte, ${overview?.edges || 0} Verbindungen`}
             data-mycelium-status={overview?.status || 'unavailable'}

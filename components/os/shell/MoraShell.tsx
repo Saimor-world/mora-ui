@@ -775,8 +775,8 @@ export const MoraShell: React.FC = () => {
                         paused={pauseHeavyBackground}
                     />
 
-                    {/* Mycelium — hidden on Universe (cosmos has its own depth) */}
-                    {!isUniverseExploreSurface && <MyceliumOverlay />}
+                    {/* Mycelium — living gravitational web connecting nodes and departments */}
+                    <MyceliumOverlay />
 
                     <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
 
