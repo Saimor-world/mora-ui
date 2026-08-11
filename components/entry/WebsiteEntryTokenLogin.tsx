@@ -97,7 +97,7 @@ export function WebsiteEntryTokenLogin({
                 
                 if (res && (res as any).success) {
                     setStatus('success');
-                    toast.success('HQ Preview bereit. Myzel-Struktur wird geladen...');
+                    toast.success('Security-Check Vorschau-Raum bereit. Myzel-Struktur wird geladen...');
 
                     // Let the caller do any pre-redirect setup (e.g. set activeMode).
                     onSuccess?.(res as WebsitePreviewSession);
