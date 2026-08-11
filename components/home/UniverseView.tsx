@@ -1196,31 +1196,31 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </filter>
                 </defs>
 
-                {/* Ambient focus-to-core field */}
-                {coreConnections
-                    .filter((connection) => activeCoreBeamPlanetIds.has(connection.id))
-                    .map((connection) => (
-                    <motion.path
-                        key={`core-${connection.id}`}
-                        d={connection.d}
-                        fill="none"
-                        stroke="url(#coreBeam)"
-                        strokeWidth={connection.highlighted ? 0.14 + connection.intensity * 0.12 : 0.06 + connection.intensity * 0.06}
-                        strokeLinecap="round"
-                        filter="url(#beamGlow)"
-                        initial={{ pathLength: 0, opacity: 0 }}
-                        animate={{
-                            pathLength: 1,
-                            opacity: isHomeUniversePreview
-                                ? (connection.highlighted ? 0.18 : 0.055 + connection.intensity * 0.025)
-                                : (connection.highlighted ? 0.28 : 0.07 + connection.intensity * 0.035)
-                        }}
-                        transition={{
-                            pathLength: { duration: 0.82, ease: "easeOut" },
-                            opacity: { duration: 0.44, ease: "easeOut" },
-                        }}
-                    />
-                ))}
+                {/* Always visible living energy beams connecting Saimôr Core to every planet */}
+                {coreConnections.map((connection) => {
+                    const isBeamActive = activeCoreBeamPlanetIds.has(connection.id);
+                    return (
+                        <g key={`core-${connection.id}`}>
+                            <motion.path
+                                d={connection.d}
+                                fill="none"
+                                stroke={connection.color || "rgba(16, 185, 129, 0.5)"}
+                                strokeWidth={isBeamActive ? 0.35 : 0.18}
+                                strokeDasharray="3 6"
+                                strokeLinecap="round"
+                                filter="url(#beamGlow)"
+                                animate={{
+                                    strokeDashoffset: [0, -36],
+                                    opacity: isBeamActive ? 0.9 : 0.55,
+                                }}
+                                transition={{
+                                    strokeDashoffset: { duration: 3, repeat: Infinity, ease: "linear" },
+                                    opacity: { duration: 0.4 },
+                                }}
+                            />
+                        </g>
+                    );
+                })}
 
                 {/* Semantic silk paths */}
                 {visibleSemanticPaths.map((path) => {

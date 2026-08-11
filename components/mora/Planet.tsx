@@ -431,19 +431,19 @@ export const Planet: React.FC<PlanetProps> = ({
                         height: planetSize.diameter,
                         borderRadius: '9999px',
                         transformOrigin: '50% 50%',
-                        // Semi-transparent holographic glass sphere with refraction
+                        // Rich 3D bioluminescent orb with vivid core color and multi-layered aura
                         background: isStandardMode
-                            ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 60%, rgba(0,0,0,0.05) 100%)'
+                            ? 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.9) 0%, rgba(240,240,250,0.6) 60%, rgba(0,0,0,0.1) 100%)'
                             : `
-                                radial-gradient(ellipse 55% 45% at 30% 20%, rgba(255,255,255,0.20) 0%, transparent 60%),
-                                radial-gradient(circle at 50% 50%, ${effectiveBorder}15 0%, ${effectiveGlow}08 40%, rgba(13, 9, 33, 0.45) 85%, ${style.core}22 100%)
+                                radial-gradient(ellipse 65% 55% at 32% 28%, rgba(255,255,255,0.55) 0%, transparent 65%),
+                                radial-gradient(circle at 50% 50%, ${effectiveBorder}ee 0%, ${effectiveGlow}aa 38%, ${style.core || '#0f172a'}cc 70%, rgba(10, 15, 30, 0.95) 100%)
                             `,
-                        backdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
-                        WebkitBackdropFilter: isStandardMode ? 'none' : 'blur(12px) saturate(1.4)',
-                        border: `2.5px solid ${effectiveBorder}`,
+                        backdropFilter: isStandardMode ? 'none' : 'blur(16px) saturate(1.8)',
+                        WebkitBackdropFilter: isStandardMode ? 'none' : 'blur(16px) saturate(1.8)',
+                        border: `2px solid ${effectiveBorder}`,
                         boxShadow: isActive || isHovered
-                            ? `0 0 35px ${effectiveGlow}88, 0 0 70px ${effectiveGlow}55, inset 0 0 25px ${effectiveGlow}44`
-                            : `0 0 20px ${effectiveGlow}44, 0 0 45px ${effectiveGlow}22, inset 0 0 15px ${effectiveGlow}22`,
+                            ? `0 0 45px ${effectiveGlow}, 0 0 90px ${effectiveGlow}88, inset 0 0 25px rgba(255,255,255,0.4)`
+                            : `0 0 28px ${effectiveGlow}aa, 0 0 60px ${effectiveGlow}55, inset 0 0 18px rgba(255,255,255,0.25)`,
                     } as React.CSSProperties}
                     whileHover={undefined}
                     initial={{ scale: 1 }}
