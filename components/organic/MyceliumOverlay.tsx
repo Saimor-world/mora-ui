@@ -382,7 +382,7 @@ export const MyceliumOverlay: React.FC = () => {
             window.removeEventListener('resize', resize);
             stop();
         };
-    }, [pageVisible, departments]);
+    }, [pageVisible, departments, hoverDepartmentId]);
 
     return (
         <div className="fixed inset-0 pointer-events-none z-[9]">
