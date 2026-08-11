@@ -204,49 +204,7 @@ export const MyceliumOverlay: React.FC = () => {
                 }
             });
 
-            // 2. Connect Department Planets to adjacent Planets (Inter-Department Synapses)
-            for (let i = 0; i < anchors.departments.length; i++) {
-                const nextI = (i + 1) % anchors.departments.length;
-                const d1 = anchors.departments[i];
-                const d2 = anchors.departments[nextI];
-                const midX = (d1.x + d2.x) * 0.5 + (Math.cos(i * 2) * 35);
-                const midY = (d1.y + d2.y) * 0.5 + (Math.sin(i * 2) * 35);
-
-                hyphaeBranches.push({
-                    startX: d1.x,
-                    startY: d1.y,
-                    endX: d2.x,
-                    endY: d2.y,
-                    controlX: midX,
-                    controlY: midY,
-                    color: 'rgba(6, 182, 212, 0.75)',
-                    weight: 1.4,
-                    targetName: `${d1.name}-${d2.name}`,
-                    deptId: d1.id,
-                });
-            }
-
-            // 3. Connect Planets to Widget Anchors (OS Widget Integration)
-            anchors.departments.forEach((dept, i) => {
-                const widget = anchors.widgets[i % anchors.widgets.length];
-                const midX = (dept.x + widget.x) * 0.5;
-                const midY = (dept.y + widget.y) * 0.5;
-
-                hyphaeBranches.push({
-                    startX: dept.x,
-                    startY: dept.y,
-                    endX: widget.x,
-                    endY: widget.y,
-                    controlX: midX,
-                    controlY: midY,
-                    color: 'rgba(52, 211, 153, 0.65)',
-                    weight: 1.2,
-                    targetName: `Widget-${i}`,
-                    deptId: dept.id,
-                });
-            });
-
-            // 4. Floating Neural Spores (Spores that orbit the hyphae root anchors)
+            // Floating Neural Spores (Spores that orbit the hyphae root anchors)
             particles = [];
             const sporeCount = 160;
             for (let i = 0; i < sporeCount; i++) {

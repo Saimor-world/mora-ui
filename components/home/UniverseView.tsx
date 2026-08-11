@@ -1258,27 +1258,14 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     );
                 })}
 
-                {/* Semantic silk paths */}
+                {/* Semantic silk paths (only shown on hover or active planet focus) */}
                 {visibleSemanticPaths.map((path) => {
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
-                    const baseOpacity = isHomeUniversePreview
-                        ? (
-                            path.highlighted || isPreviewedPath
-                                ? 0.65
-                                : isFocusedPath
-                                    ? 0.35
-                                    : 0.20
-                        )
-                        : (
-                            path.highlighted || isPreviewedPath
-                                ? 0.85
-                                : isFocusedPath
-                                    ? 0.55
-                                    : Math.max(0.25, 0.20 + path.strength * 0.40)
-                        );
+                    if (!path.highlighted && !isFocusedPath && !isPreviewedPath) return null;
 
+                    const baseOpacity = isHomeUniversePreview ? 0.45 : 0.75;
                     const isActive = path.highlighted || isFocusedPath;
 
                     return (
