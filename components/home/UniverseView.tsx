@@ -1265,73 +1265,49 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const isPreviewedPath = semanticPreviewPathId === path.id;
                     if (!path.highlighted && !isFocusedPath && !isPreviewedPath) return null;
 
-                    const baseOpacity = isHomeUniversePreview ? 0.45 : 0.75;
-                    const isActive = path.highlighted || isFocusedPath;
+                    const baseOpacity = isHomeUniversePreview ? 0.45 : 0.85;
 
                     return (
                         <g key={path.id}>
-                            {/* Wide diffuse glow layer */}
+                            {/* Soft ambient glow layer */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={1.2 + path.strength * 0.6}
-                                strokeDasharray={driverMeta.dashArray}
+                                strokeWidth={0.24}
                                 strokeLinecap="round"
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{
-                                    pathLength: 1,
-                                    opacity: baseOpacity * 0.45,
-                                }}
-                                transition={{
-                                    pathLength: { duration: 2.1, ease: "easeInOut" },
-                                    opacity: { duration: 0.5, ease: "easeOut" }
-                                }}
-                                filter="url(#silkGlow)"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: baseOpacity * 0.35 }}
+                                transition={{ duration: 0.3 }}
                             />
-                            {/* Base connection line */}
+                            {/* Fine silken highlight line */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.45 + path.strength * 0.3}
-                                strokeDasharray={driverMeta.dashArray}
+                                strokeWidth={0.10}
                                 strokeLinecap="round"
-                                initial={{ pathLength: 0, opacity: 0 }}
-                                animate={{
-                                    pathLength: 1,
-                                    opacity: baseOpacity * 0.85,
-                                }}
-                                transition={{
-                                    pathLength: { duration: 1.8, ease: "easeInOut" },
-                                    opacity: { duration: 0.4, ease: "easeOut" }
-                                }}
-                                filter="url(#silkGlow)"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: baseOpacity * 0.85 }}
+                                transition={{ duration: 0.3 }}
                             />
-                            {/* Flowing laser energy beam overlay */}
+                            {/* Subtle laser energy pulse */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke="#ffffff"
-                                strokeWidth={0.35 + path.strength * 0.2}
-                                strokeDasharray="4 12"
+                                strokeWidth={0.12}
+                                strokeDasharray="2 8"
                                 strokeLinecap="round"
-                                initial={{ pathLength: 0, strokeDashoffset: 0 }}
+                                initial={{ opacity: 0 }}
                                 animate={{
-                                    pathLength: 1,
-                                    strokeDashoffset: -40,
-                                    opacity: baseOpacity * (isActive ? 1.0 : 0.8),
+                                    strokeDashoffset: -24,
+                                    opacity: baseOpacity * 0.9,
                                 }}
                                 transition={{
-                                    pathLength: { duration: 1.8, ease: "easeInOut" },
-                                    strokeDashoffset: {
-                                        repeat: Infinity,
-                                        duration: 2.8,
-                                        ease: "linear",
-                                    },
-                                    opacity: { duration: 0.4, ease: "easeOut" }
+                                    strokeDashoffset: { repeat: Infinity, duration: 2.4, ease: "linear" },
+                                    opacity: { duration: 0.3 }
                                 }}
-                                filter="url(#accentGlow)"
                             />
                         </g>
                     );
