@@ -175,6 +175,7 @@ class RealtimeClient {
             ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
 
         const token = [
+            readCookie('mora_session'),
             readCookie(AUTH_COOKIE),
             isLocalhost ? localStorage.getItem('saimor_dev_token') : null,
             process.env.NEXT_PUBLIC_SAIMOR_CORE_JWT,

@@ -658,7 +658,7 @@ export const SpaceLayer: React.FC = () => {
 
             {inspectedFolder && (
                 <motion.div
-                    className="absolute bottom-28 left-8 z-40 w-[312px] overflow-hidden p-4 glass-panel"
+                    className="pointer-events-auto absolute bottom-28 left-8 z-40 w-[280px] overflow-hidden rounded-[22px] border border-white/10 bg-black/30 p-4 backdrop-blur-2xl shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
                     initial={{ opacity: 0, y: 14 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.45, delay: 0.14 }}
@@ -666,20 +666,28 @@ export const SpaceLayer: React.FC = () => {
                     <div
                         className="pointer-events-none absolute inset-x-0 top-0 h-24"
                         style={{
-                            background: `radial-gradient(circle at top, ${inspectedFolder.resolvedColor}2e 0%, transparent 72%)`,
+                            background: `radial-gradient(circle at top left, ${inspectedFolder.resolvedColor}22 0%, transparent 75%)`,
                         }}
                     />
                     <div className="relative">
                         <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0">
-                                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/35">
-                                    <Sparkles size={12} className="text-emerald-300/72" />
-                                    {inspectedFolder.isActive ? 'Aktiver Ordner' : LANE_CONFIG[inspectedFolder.lane].label}
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className="h-2 w-2 rounded-full"
+                                        style={{
+                                            background: inspectedFolder.resolvedColor || '#34d399',
+                                            boxShadow: `0 0 10px ${inspectedFolder.resolvedColor || '#34d399'}`,
+                                        }}
+                                    />
+                                    <div className="text-[9.5px] font-medium uppercase tracking-[0.2em] text-white/45">
+                                        {inspectedFolder.isActive ? 'Aktiver Ordner' : LANE_CONFIG[inspectedFolder.lane].label}
+                                    </div>
                                 </div>
-                                <div className="mt-2 truncate text-base text-white/88">
+                                <div className="mt-1 truncate text-[18px] font-light text-white/90">
                                     {inspectedFolder.folder.name}
                                 </div>
-                                <div className="mt-1 text-xs text-white/42">
+                                <div className="mt-0.5 text-[10px] text-white/40">
                                     Letztes Update {inspectedFolder.activityLabel}
                                 </div>
                             </div>
@@ -687,24 +695,24 @@ export const SpaceLayer: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => openFocusedFolder(inspectedFolder.folder.id)}
-                                className="rounded-full border border-emerald-400/18 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 transition-colors hover:bg-emerald-500/16"
+                                className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[9.5px] font-medium uppercase tracking-[0.18em] text-white/70 transition-all hover:border-emerald-400/30 hover:bg-emerald-500/12 hover:text-emerald-200"
                             >
                                 Öffnen
                             </button>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-2 gap-2">
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Relevanz</div>
-                                <div className="mt-1 text-sm text-white/82">{Math.round(inspectedFolder.intensity * 100)}%</div>
+                        <div className="mt-3.5 grid grid-cols-2 gap-1.5">
+                            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2">
+                                <div className="text-[8.5px] font-medium uppercase tracking-[0.16em] text-white/35">Relevanz</div>
+                                <div className="mt-0.5 text-sm font-medium text-white/82">{Math.round(inspectedFolder.intensity * 100)}%</div>
                             </div>
-                            <div className="rounded-2xl border border-white/10 bg-white/[0.03] px-3 py-3">
-                                <div className="text-[9px] uppercase tracking-[0.18em] text-white/35">Dokumente</div>
-                                <div className="mt-1 text-sm text-white/82">{formatDocCount(inspectedFolder.docCount)}</div>
+                            <div className="rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-2">
+                                <div className="text-[8.5px] font-medium uppercase tracking-[0.16em] text-white/35">Dokumente</div>
+                                <div className="mt-0.5 text-sm font-medium text-white/82">{formatDocCount(inspectedFolder.docCount)}</div>
                             </div>
                         </div>
 
-                        <p className="mt-4 text-[11px] leading-relaxed text-white/44">
+                        <p className="mt-3 text-[10.5px] leading-relaxed text-white/45">
                             Die linke Karte zeigt den aktuell stärksten oder gerade geöffneten Ordner. Aktualität und Dokumentzahl kommen aus echten Ordnerdaten.
                         </p>
                     </div>

@@ -154,6 +154,14 @@ export function useAuthBootstrapper() {
         if (profile.role) localStorage.setItem('saimor_role', profile.role);
         if (profile.tenant_id) localStorage.setItem('saimor_tenant', profile.tenant_id);
 
+        // If authenticated as a real HQ tenant, clear stale website entry preview context
+        // so that Saimor Desk and OS sub-systems never mismatch preview and HQ tenants.
+        if (profile.tenant_id && !profile.tenant_id.startsWith('tenant-preview-') && !profile.tenant_id.startsWith('tenant-demo-')) {
+            if (typeof window !== 'undefined') {
+                localStorage.removeItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
+            }
+        }
+
         // Resolve and set active mode in navStore
         let determinedMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' = 'real_hq';
         if (profile.tenant_id === 'tenant-public-playground') {
