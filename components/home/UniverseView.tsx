@@ -1201,58 +1201,56 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 {coreConnections.map((connection) => {
                     const isBeamActive = activeCoreBeamPlanetIds.has(connection.id);
                     const planetColors: Record<string, { stroke: string; glow: string }> = {
-                        intelligence: { stroke: 'rgba(6, 182, 212, 0.95)', glow: 'rgba(6, 182, 212, 0.45)' },
-                        product:      { stroke: 'rgba(168, 85, 247, 0.95)', glow: 'rgba(168, 85, 247, 0.45)' },
-                        rd:           { stroke: 'rgba(59, 130, 246, 0.95)', glow: 'rgba(59, 130, 246, 0.45)' },
-                        growth:       { stroke: 'rgba(234, 179, 8, 0.95)', glow: 'rgba(234, 179, 8, 0.45)' },
+                        intelligence: { stroke: 'rgba(6, 182, 212, 0.85)', glow: 'rgba(6, 182, 212, 0.25)' },
+                        product:      { stroke: 'rgba(168, 85, 247, 0.85)', glow: 'rgba(168, 85, 247, 0.25)' },
+                        rd:           { stroke: 'rgba(59, 130, 246, 0.85)', glow: 'rgba(59, 130, 246, 0.25)' },
+                        growth:       { stroke: 'rgba(234, 179, 8, 0.85)', glow: 'rgba(234, 179, 8, 0.25)' },
                     };
-                    const colorMeta = planetColors[connection.id] || { stroke: 'rgba(16, 185, 129, 0.95)', glow: 'rgba(16, 185, 129, 0.45)' };
+                    const colorMeta = planetColors[connection.id] || { stroke: 'rgba(16, 185, 129, 0.85)', glow: 'rgba(16, 185, 129, 0.25)' };
 
                     return (
                         <g key={`core-${connection.id}`}>
-                            {/* Wide ambient aura beam */}
+                            {/* Soft diffuse ambient glow */}
                             <motion.path
                                 d={connection.d}
                                 fill="none"
                                 stroke={colorMeta.glow}
-                                strokeWidth={2.4}
+                                strokeWidth={0.28}
                                 strokeLinecap="round"
                                 filter="url(#beamGlow)"
                                 animate={{
-                                    opacity: isBeamActive ? 0.75 : 0.45,
+                                    opacity: isBeamActive ? 0.65 : 0.35,
                                 }}
                                 transition={{ duration: 0.5 }}
                             />
 
-                            {/* Crisp energy conductor line */}
+                            {/* Ultra-fine silken laser conductor line */}
                             <motion.path
                                 d={connection.d}
                                 fill="none"
                                 stroke={colorMeta.stroke}
-                                strokeWidth={isBeamActive ? 1.2 : 0.75}
+                                strokeWidth={isBeamActive ? 0.16 : 0.10}
                                 strokeLinecap="round"
-                                filter="url(#beamGlow)"
                                 animate={{
-                                    opacity: isBeamActive ? 1.0 : 0.85,
+                                    opacity: isBeamActive ? 0.95 : 0.65,
                                 }}
                                 transition={{ duration: 0.4 }}
                             />
 
-                            {/* Flowing laser action-potential pulse */}
+                            {/* Flowing laser energy pulse */}
                             <motion.path
                                 d={connection.d}
                                 fill="none"
                                 stroke="#ffffff"
-                                strokeWidth={isBeamActive ? 0.9 : 0.6}
-                                strokeDasharray="3 9"
+                                strokeWidth={0.12}
+                                strokeDasharray="2 10"
                                 strokeLinecap="round"
-                                filter="url(#accentGlow)"
                                 animate={{
-                                    strokeDashoffset: [0, -36],
-                                    opacity: isBeamActive ? 0.95 : 0.75,
+                                    strokeDashoffset: [0, -24],
+                                    opacity: isBeamActive ? 0.9 : 0.6,
                                 }}
                                 transition={{
-                                    strokeDashoffset: { duration: 2.2, repeat: Infinity, ease: "linear" },
+                                    strokeDashoffset: { duration: 2.8, repeat: Infinity, ease: "linear" },
                                     opacity: { duration: 0.4 },
                                 }}
                             />
