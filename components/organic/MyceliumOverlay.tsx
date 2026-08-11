@@ -204,6 +204,59 @@ export const MyceliumOverlay: React.FC = () => {
                 }
             });
 
+            // 2. Organic Curved Synaptic Ring (Connecting planets in a glowing bio-neural ring)
+            const depts = anchors.departments;
+            if (depts.length >= 4) {
+                // Ring order: PRODUCT (top) -> R&D (right) -> GROWTH (bottom) -> INTELLIGENCE (left) -> PRODUCT
+                const ringOrder = [
+                    depts.find(d => d.id === 'product') || depts[0],
+                    depts.find(d => d.id === 'rd') || depts[1],
+                    depts.find(d => d.id === 'growth') || depts[2],
+                    depts.find(d => d.id === 'intelligence') || depts[3],
+                ];
+
+                for (let i = 0; i < ringOrder.length; i++) {
+                    const d1 = ringOrder[i];
+                    const d2 = ringOrder[(i + 1) % ringOrder.length];
+                    const midX = (d1.x + d2.x) * 0.5;
+                    const midY = (d1.y + d2.y) * 0.5;
+
+                    // Smooth outward bulge away from Saimôr Core center
+                    const dirX = midX - anchors.core.x;
+                    const dirY = midY - anchors.core.y;
+                    const len = Math.sqrt(dirX * dirX + dirY * dirY) || 1;
+                    const bulge = 40;
+                    const ctrlX = midX + (dirX / len) * bulge;
+                    const ctrlY = midY + (dirY / len) * bulge;
+
+                    hyphaeBranches.push({
+                        startX: d1.x,
+                        startY: d1.y,
+                        endX: d2.x,
+                        endY: d2.y,
+                        controlX: ctrlX,
+                        controlY: ctrlY,
+                        color: d1.color.replace(/[\d\.]+\)$/, '0.45)'),
+                        weight: 0.85,
+                        targetName: `${d1.name}-${d2.name}`,
+                        deptId: d1.id,
+                    });
+
+                    // Add pulse along the synaptic ring
+                    pulses.push({
+                        progress: Math.random(),
+                        speed: 0.003 + Math.random() * 0.006,
+                        color: 'rgba(255, 255, 255, 0.95)',
+                        fromX: d1.x,
+                        fromY: d1.y,
+                        toX: d2.x,
+                        toY: d2.y,
+                        controlX: ctrlX,
+                        controlY: ctrlY,
+                    });
+                }
+            }
+
             // Floating Neural Spores (Spores that orbit the hyphae root anchors)
             particles = [];
             const sporeCount = 160;
