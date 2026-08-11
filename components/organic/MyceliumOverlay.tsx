@@ -116,24 +116,33 @@ export const MyceliumOverlay: React.FC = () => {
             const centerX = width * 0.5;
             const centerY = height * 0.5;
 
-            // Department Planet positions relative to central corridor
+            // Department Planet positions matching exact UniverseView topology
+            const deptPosMap: Record<string, { xPct: number; yPct: number; color: string }> = {
+                product:      { xPct: 0.50, yPct: 0.18, color: 'rgba(168, 85, 247, 0.88)' },
+                intelligence: { xPct: 0.31, yPct: 0.55, color: 'rgba(6, 182, 212, 0.88)' },
+                rd:           { xPct: 0.69, yPct: 0.55, color: 'rgba(59, 130, 246, 0.88)' },
+                growth:       { xPct: 0.50, yPct: 0.82, color: 'rgba(234, 179, 8, 0.88)' },
+            };
+
             const deptList = Array.isArray(departments) && departments.length > 0 ? departments : [
-                { id: 'intelligence', name: 'INTELLIGENCE', color: 'rgba(6, 182, 212, 0.85)' },
-                { id: 'product', name: 'PRODUCT', color: 'rgba(168, 85, 247, 0.85)' },
-                { id: 'rd', name: 'R&D', color: 'rgba(59, 130, 246, 0.85)' },
-                { id: 'growth', name: 'GROWTH', color: 'rgba(234, 179, 8, 0.85)' },
+                { id: 'intelligence', name: 'INTELLIGENCE' },
+                { id: 'product',      name: 'PRODUCT' },
+                { id: 'rd',           name: 'R&D' },
+                { id: 'growth',       name: 'GROWTH' },
             ];
 
             const deptAnchors = deptList.map((dept, index) => {
-                const angle = (index / deptList.length) * Math.PI * 2 - Math.PI / 2;
-                const rx = width * 0.18;
-                const ry = height * 0.28;
+                const pos = deptPosMap[dept.id.toLowerCase()] || {
+                    xPct: 0.50 + Math.cos((index / deptList.length) * Math.PI * 2 - Math.PI / 2) * 0.22,
+                    yPct: 0.50 + Math.sin((index / deptList.length) * Math.PI * 2 - Math.PI / 2) * 0.28,
+                    color: 'rgba(16, 185, 129, 0.85)',
+                };
                 return {
                     id: dept.id,
-                    x: centerX + Math.cos(angle) * rx,
-                    y: centerY + Math.sin(angle) * ry,
+                    x: width * pos.xPct,
+                    y: height * pos.yPct,
                     name: dept.name,
-                    color: (dept as any).color || 'rgba(16, 185, 129, 0.85)',
+                    color: pos.color,
                 };
             });
 
@@ -155,6 +164,7 @@ export const MyceliumOverlay: React.FC = () => {
         let hyphaeBranches: (HyphaeBranch & { deptId?: string })[] = [];
         let pulses: HyphaePulse[] = [];
         let particles: Particle[] = [];
+        const mouseTrailParticles: { x: number; y: number; vx: number; vy: number; alpha: number; size: number; color: string }[] = [];
 
         const initHyphaeMesh = () => {
             hyphaeBranches = [];
@@ -354,6 +364,37 @@ export const MyceliumOverlay: React.FC = () => {
                 ctx.fill();
                 ctx.shadowBlur = 0;
             });
+
+            // 4. Mouse Trail Particles — bio-luminescent cursor trail
+            if (mouse.active && mouseTrailParticles.length < 50) {
+                mouseTrailParticles.push({
+                    x: mouse.x + (Math.random() - 0.5) * 12,
+                    y: mouse.y + (Math.random() - 0.5) * 12,
+                    vx: (Math.random() - 0.5) * 0.8,
+                    vy: (Math.random() - 0.5) * 0.8 - 0.4,
+                    alpha: 0.9,
+                    size: Math.random() * 2.8 + 1.2,
+                    color: ['rgba(6,182,212,0.95)', 'rgba(52,211,153,0.95)', 'rgba(168,85,247,0.95)', 'rgba(251,191,36,0.95)'][Math.floor(Math.random() * 4)],
+                });
+            }
+
+            for (let i = mouseTrailParticles.length - 1; i >= 0; i--) {
+                const tp = mouseTrailParticles[i];
+                tp.x += tp.vx;
+                tp.y += tp.vy;
+                tp.alpha -= 0.025;
+                if (tp.alpha <= 0) {
+                    mouseTrailParticles.splice(i, 1);
+                    continue;
+                }
+                ctx.beginPath();
+                ctx.arc(tp.x, tp.y, tp.size, 0, Math.PI * 2);
+                ctx.fillStyle = tp.color.replace(/[\d\.]+\)$/, `${tp.alpha})`);
+                ctx.shadowColor = tp.color;
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
 
             animationFrameId = requestAnimationFrame(draw);
         };
