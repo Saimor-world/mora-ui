@@ -1204,7 +1204,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <motion.path
                                 d={connection.d}
                                 fill="none"
-                                stroke={connection.color || "rgba(16, 185, 129, 0.5)"}
+                                stroke="rgba(16, 185, 129, 0.55)"
                                 strokeWidth={isBeamActive ? 0.35 : 0.18}
                                 strokeDasharray="3 6"
                                 strokeLinecap="round"
