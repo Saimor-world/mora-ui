@@ -171,23 +171,25 @@ export const MyceliumOverlay: React.FC = () => {
                     controlX: midX,
                     controlY: midY,
                     color: dept.color,
-                    weight: 1.4,
+                    weight: 2.2,
                     targetName: dept.name,
                     deptId: dept.id,
                 });
 
-                // Add active action potential pulses along main hyphae
-                pulses.push({
-                    progress: Math.random(),
-                    speed: 0.003 + Math.random() * 0.005,
-                    color: dept.color,
-                    fromX: anchors.core.x,
-                    fromY: anchors.core.y,
-                    toX: dept.x,
-                    toY: dept.y,
-                    controlX: midX,
-                    controlY: midY,
-                });
+                // Add 2 active action potential pulses per main hypha
+                for (let pIdx = 0; pIdx < 2; pIdx++) {
+                    pulses.push({
+                        progress: Math.random(),
+                        speed: 0.004 + Math.random() * 0.008,
+                        color: dept.color,
+                        fromX: anchors.core.x,
+                        fromY: anchors.core.y,
+                        toX: dept.x,
+                        toY: dept.y,
+                        controlX: midX,
+                        controlY: midY,
+                    });
+                }
             });
 
             // 2. Connect Department Planets to adjacent Planets (Inter-Department Synapses)
@@ -205,8 +207,8 @@ export const MyceliumOverlay: React.FC = () => {
                     endY: d2.y,
                     controlX: midX,
                     controlY: midY,
-                    color: 'rgba(6, 182, 212, 0.45)',
-                    weight: 0.9,
+                    color: 'rgba(6, 182, 212, 0.75)',
+                    weight: 1.4,
                     targetName: `${d1.name}-${d2.name}`,
                     deptId: d1.id,
                 });
@@ -225,8 +227,8 @@ export const MyceliumOverlay: React.FC = () => {
                     endY: widget.y,
                     controlX: midX,
                     controlY: midY,
-                    color: 'rgba(16, 185, 129, 0.35)',
-                    weight: 0.7,
+                    color: 'rgba(52, 211, 153, 0.65)',
+                    weight: 1.2,
                     targetName: `Widget-${i}`,
                     deptId: dept.id,
                 });
@@ -234,16 +236,16 @@ export const MyceliumOverlay: React.FC = () => {
 
             // 4. Floating Neural Spores (Spores that orbit the hyphae root anchors)
             particles = [];
-            const sporeCount = 110;
+            const sporeCount = 160;
             for (let i = 0; i < sporeCount; i++) {
                 const targetDept = anchors.departments[i % anchors.departments.length];
                 particles.push({
-                    x: targetDept.x + (Math.random() - 0.5) * 180,
-                    y: targetDept.y + (Math.random() - 0.5) * 180,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    size: Math.random() * 2.2 + 0.8,
-                    alpha: Math.random() * 0.6 + 0.25,
+                    x: targetDept.x + (Math.random() - 0.5) * 220,
+                    y: targetDept.y + (Math.random() - 0.5) * 220,
+                    vx: (Math.random() - 0.5) * 0.4,
+                    vy: (Math.random() - 0.5) * 0.4,
+                    size: Math.random() * 2.8 + 1.0,
+                    alpha: Math.random() * 0.7 + 0.3,
                     pulse: Math.random() * Math.PI * 2,
                     color: targetDept.color,
                     anchorX: targetDept.x,
@@ -385,10 +387,10 @@ export const MyceliumOverlay: React.FC = () => {
     }, [pageVisible, departments, hoverDepartmentId]);
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-[9]">
+        <div className="fixed inset-0 pointer-events-none z-[25]">
             <canvas
                 ref={canvasRef}
-                className="w-full h-full opacity-95 transition-opacity duration-700"
+                className="w-full h-full opacity-100 transition-opacity duration-700"
                 style={{ mixBlendMode: 'screen' }}
             />
         </div>
