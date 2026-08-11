@@ -871,10 +871,8 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className={`pointer-events-none absolute inset-0 overflow-hidden ${hasOpenPanes ? 'z-[20]' : 'z-[44]'}`}
         >
-            {/* Light vignette — cosmos stays visible; no modal glass box */}
+            {/* Atmosphere layer — transparent over UniverseView */}
             <div className="home-atmosphere pointer-events-none absolute inset-0">
-                <CosmicBackdrop calmFactor={0.38} />
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_130%_95%_at_50%_38%,rgba(4,3,14,0.38)_0%,rgba(4,3,14,0.18)_42%,transparent_78%)]" />
                 <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/08 to-transparent" />
             </div>
 

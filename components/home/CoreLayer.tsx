@@ -74,35 +74,25 @@ export const CoreLayer: React.FC = () => {
 
     return (
         <div className="absolute inset-0">
+            {/* UniverseView is ALWAYS the living base layer of the OS */}
+            <div className="absolute inset-0 z-0">
+                <UniverseView />
+            </div>
+
+            {/* HomeSurface overlays on top when coreMode === 'home' */}
             <AnimatePresence initial={false}>
-                {coreMode === 'home' ? (
+                {coreMode === 'home' && (
                     <motion.div
                         key="home"
-                        className="absolute inset-0"
+                        className="absolute inset-0 z-10 pointer-events-none"
                         variants={homeVariants}
                         initial="initial"
                         animate="animate"
                         exit="exit"
                     >
-                        {/* No blurred UniverseView duplicate here — MoraLivingBackground
-                            (z-0, scene-reactive) already provides the cosmic depth behind
-                            Home. The old duplicate drifted with mouse parallax (the "ramp")
-                            and washed the panels out. Home and Universe now share ONE
-                            background truth. */}
                         {activeMode === 'visitor' || activeMode === 'private_preview'
                             ? <VisitorHomeSurface />
                             : <HomeSurface />}
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="explore"
-                        className="absolute inset-0"
-                        variants={exploreVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                    >
-                        <UniverseView />
                     </motion.div>
                 )}
             </AnimatePresence>
