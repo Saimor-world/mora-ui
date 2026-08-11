@@ -14,10 +14,10 @@ import { getMyceliumOverview, type MyceliumOverview } from '@/lib/api/relationsC
  * Visualized as a living, glowing network of cyan silk threads.
  */
 
-const GRID_SIZE = 120;
-const MAX_CONNECTIONS_PER_PARTICLE = 3;
-const CONNECTION_DISTANCE = 160;
-const BASE_PARTICLE_DENSITY = 24000; // Fewer particles — connections are O(n·neighbors)
+const GRID_SIZE = 140;
+const MAX_CONNECTIONS_PER_PARTICLE = 4;
+const CONNECTION_DISTANCE = 220;
+const BASE_PARTICLE_DENSITY = 9500; // Increased particle density for vibrant mycelium web
 
 interface Particle {
     x: number;
@@ -41,7 +41,7 @@ export const MyceliumOverlay: React.FC = () => {
     const activeFolderId = useNavStore((s) => s.activeFolderId);
     const orbState = useOrbStore((s) => s.orbState);
 
-    const [shimmerIntensity, setShimmerIntensity] = useState(0);
+    const [shimmerIntensity, setShimmerIntensity] = useState(0.2);
     const [overview, setOverview] = useState<MyceliumOverview | null>(null);
     const departmentCount = Array.isArray(departments) ? departments.length : 0;
 
@@ -66,7 +66,7 @@ export const MyceliumOverlay: React.FC = () => {
     useEffect(() => {
         if (departmentCount > 0 || (overview?.edges || 0) > 0) {
             setShimmerIntensity(0.5);
-            setTimeout(() => setShimmerIntensity(0), 1000);
+            setTimeout(() => setShimmerIntensity(0.2), 1000);
         }
     }, [departmentCount, overview?.edges]);
 
@@ -85,7 +85,7 @@ export const MyceliumOverlay: React.FC = () => {
 
         const initParticles = () => {
             particles = [];
-            const graphScale = Math.min(1.8, 0.8 + Math.sqrt(overview?.nodes || 0) / 18);
+            const graphScale = Math.min(2.0, 1.0 + Math.sqrt(overview?.nodes || 4) / 12);
             const particleCount = Math.floor((width * height) / BASE_PARTICLE_DENSITY * graphScale);
 
             for (let i = 0; i < particleCount; i++) {
@@ -95,10 +95,10 @@ export const MyceliumOverlay: React.FC = () => {
                 particles.push({
                     x,
                     y,
-                    vx: (Math.random() - 0.5) * 0.4, // Faster horizontal drift
-                    vy: (Math.random() - 0.5) * 0.1,
-                    size: Math.random() * 2 + 0.8,
-                    alpha: Math.random() * 0.4 + 0.1,
+                    vx: (Math.random() - 0.5) * 0.45,
+                    vy: (Math.random() - 0.5) * 0.18,
+                    size: Math.random() * 2.4 + 1.0,
+                    alpha: Math.random() * 0.5 + 0.25,
                     pulse: Math.random() * Math.PI * 2,
                     cellX: Math.floor(x / GRID_SIZE),
                     cellY: Math.floor(y / GRID_SIZE),
@@ -141,10 +141,10 @@ export const MyceliumOverlay: React.FC = () => {
                 grid.get(key)!.push(p);
 
                 p.connections = 0;
-                p.pulse += 0.015;
+                p.pulse += 0.018;
             });
 
-            // Draw connections (Silken Threads)
+            // Draw connections (Silken Emerald & Cyan Mycelium Threads)
             particles.forEach(p => {
                 if (p.connections >= MAX_CONNECTIONS_PER_PARTICLE) return;
 
@@ -164,11 +164,11 @@ export const MyceliumOverlay: React.FC = () => {
 
                             if (distSq < CONNECTION_DISTANCE * CONNECTION_DISTANCE) {
                                 const dist = Math.sqrt(distSq);
-                                const opacity = (0.3 * (1 - dist / CONNECTION_DISTANCE)) + (shimmerIntensity * 0.2);
+                                const opacity = (0.45 * (1 - dist / CONNECTION_DISTANCE)) + (shimmerIntensity * 0.25);
 
                                 ctx.beginPath();
-                                ctx.strokeStyle = `rgba(6, 182, 212, ${opacity * 0.6})`;
-                                ctx.lineWidth = 0.5;
+                                ctx.strokeStyle = `rgba(16, 185, 129, ${opacity * 1.2})`;
+                                ctx.lineWidth = 0.85;
                                 ctx.moveTo(p.x, p.y);
                                 ctx.lineTo(p2.x, p2.y);
                                 ctx.stroke();
@@ -181,15 +181,16 @@ export const MyceliumOverlay: React.FC = () => {
                 }
             });
 
-            // Draw particles (Neural Spores)
+            // Draw particles (Glowing Neural Spores)
             particles.forEach(p => {
-                const alpha = Math.min(1, p.alpha + Math.sin(p.pulse) * 0.1 + shimmerIntensity);
+                const alpha = Math.min(1, p.alpha + Math.sin(p.pulse) * 0.18 + shimmerIntensity);
 
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
 
-                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2);
-                grad.addColorStop(0, `rgba(6, 182, 212, ${alpha})`);
+                const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * 2.5);
+                grad.addColorStop(0, `rgba(52, 211, 153, ${alpha})`);
+                grad.addColorStop(0.5, `rgba(6, 182, 212, ${alpha * 0.6})`);
                 grad.addColorStop(1, 'rgba(6, 182, 212, 0)');
 
                 ctx.fillStyle = grad;
@@ -232,7 +233,7 @@ export const MyceliumOverlay: React.FC = () => {
     return (
         <canvas
             ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-[2] opacity-85 transition-opacity duration-700"
+            className="fixed inset-0 pointer-events-none z-[9] opacity-90 transition-opacity duration-700"
             style={{ mixBlendMode: 'screen' }}
             aria-label={`Myzelium aktiv: ${overview?.nodes || 0} Objekte, ${overview?.edges || 0} Verbindungen`}
             data-mycelium-status={overview?.status || 'unavailable'}
