@@ -177,7 +177,7 @@ export function WidgetGlanceCard({ type, accent, context, className = '', compac
 
         <div
 
-            className={`organization-home-card relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.06] shadow-[0_8px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md bg-slate-950/20 ${className}`}
+            className={`organization-home-card relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.06] shadow-[0_4px_16px_rgba(0,0,0,0.15)] backdrop-blur-md bg-black/10 ${className}`}
 
         >
 
@@ -283,7 +283,7 @@ export function HomeSignalCard({
         rose: 'from-rose-300/24 to-red-500/[0.06] text-rose-100 border-rose-200/20',
     };
     const classes = [
-        'organization-home-card group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-slate-950/20 backdrop-blur-md bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
+        'organization-home-card group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-black/10 backdrop-blur-md bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-all',
         tones[tone],
         onClick ? 'hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.06]' : '',
     ].join(' ');
@@ -778,7 +778,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
             {/* 1. HQ Lage */}
             <motion.div
                 {...fade(0)}
-                className="relative shrink-0 overflow-hidden rounded-[1.45rem] border border-white/[0.06] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(15,23,42,0.30))] px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-md xl:px-5"
+                className="relative shrink-0 overflow-hidden rounded-[1.45rem] border border-white/[0.06] bg-black/10 px-4 py-4 shadow-[0_4px_16px_rgba(0,0,0,0.15)] backdrop-blur-md xl:px-5"
             >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/40 via-cyan-200/25 to-violet-300/30" />
                 <div className="grid gap-5 md:grid-cols-[minmax(0,0.96fr)_minmax(320px,0.78fr)] md:items-stretch">

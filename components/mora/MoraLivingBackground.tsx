@@ -69,39 +69,35 @@ const GEO_SHAPES = [
 
 // Per-scene deep-hued base gradients — these replace the static steel-blue base
 // so the ENTIRE backdrop shifts colour dramatically when the scene changes.
+// Per-scene deep-hued base gradients — subtle cosmic foundation
 const SCENE_BASE: Record<RitualSceneId, string> = {
-    flow:   'linear-gradient(160deg, #1c5a3e 0%, #17472f 40%, #0f2e1d 100%)',  // rich forest, lightened 2026-07-07
-    build:  'linear-gradient(160deg, #164a80 0%, #123a64 40%, #0c2444 100%)',  // rich ocean, lightened 2026-07-07
-    lounge: 'linear-gradient(160deg, #5c3010 0%, #46240a 40%, #2c1508 100%)', // rich ember, lightened 2026-07-07
-    night:  'linear-gradient(160deg, #2e2864 0%, #241f4e 40%, #171335 100%)', // rich void, lightened 2026-07-07
+    flow:   'linear-gradient(160deg, #091a13 0%, #07140e 40%, #040d09 100%)',
+    build:  'linear-gradient(160deg, #081628 0%, #06101e 40%, #040914 100%)',
+    lounge: 'linear-gradient(160deg, #180d07 0%, #120905 40%, #0a0503 100%)',
+    night:  'linear-gradient(160deg, #0d0b1e 0%, #0a0818 40%, #060510 100%)',
 };
 
-// Per-scene colour overlays painted on top of the base via screen blend.
-// Opacities bumped so they read clearly on the deeper, darker bases.
+// Per-scene color overlays — soft ambient accents (12-18% opacity max)
 const SCENE_TINT: Record<RitualSceneId, string> = {
-    // Flow: fresh emerald + teal
     flow: [
-        'radial-gradient(ellipse 120% 85% at 15% 20%, rgba(16,185,129,0.72) 0%, transparent 62%)',
-        'radial-gradient(ellipse 80% 65% at 80% 72%, rgba(34,211,238,0.50) 0%, transparent 58%)',
-        'radial-gradient(ellipse 55% 45% at 55% 98%, rgba(6,182,212,0.28) 0%, transparent 52%)',
+        'radial-gradient(ellipse 120% 85% at 15% 20%, rgba(16,185,129,0.18) 0%, transparent 62%)',
+        'radial-gradient(ellipse 80% 65% at 80% 72%, rgba(34,211,238,0.12) 0%, transparent 58%)',
+        'radial-gradient(ellipse 55% 45% at 55% 98%, rgba(6,182,212,0.08) 0%, transparent 52%)',
     ].join(', '),
-    // Build: sharp sky-blue + amber
     build: [
-        'radial-gradient(ellipse 120% 85% at 18% 18%, rgba(14,165,233,0.78) 0%, transparent 60%)',
-        'radial-gradient(ellipse 80% 65% at 82% 65%, rgba(251,191,36,0.52) 0%, transparent 58%)',
-        'radial-gradient(ellipse 60% 48% at 50% 100%, rgba(56,189,248,0.34) 0%, transparent 52%)',
+        'radial-gradient(ellipse 120% 85% at 18% 18%, rgba(14,165,233,0.18) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 82% 65%, rgba(251,191,36,0.12) 0%, transparent 58%)',
+        'radial-gradient(ellipse 60% 48% at 50% 100%, rgba(56,189,248,0.08) 0%, transparent 52%)',
     ].join(', '),
-    // Lounge: warm amber + rose
     lounge: [
-        'radial-gradient(ellipse 120% 85% at 22% 28%, rgba(251,146,60,0.76) 0%, transparent 60%)',
-        'radial-gradient(ellipse 80% 65% at 80% 62%, rgba(244,114,182,0.58) 0%, transparent 58%)',
-        'radial-gradient(ellipse 60% 48% at 45% 98%, rgba(239,68,68,0.32) 0%, transparent 52%)',
+        'radial-gradient(ellipse 120% 85% at 22% 28%, rgba(251,146,60,0.18) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 80% 62%, rgba(244,114,182,0.12) 0%, transparent 58%)',
+        'radial-gradient(ellipse 60% 48% at 45% 98%, rgba(239,68,68,0.08) 0%, transparent 52%)',
     ].join(', '),
-    // Night: deep indigo + violet
     night: [
-        'radial-gradient(ellipse 120% 85% at 18% 25%, rgba(99,102,241,0.80) 0%, transparent 60%)',
-        'radial-gradient(ellipse 80% 65% at 82% 75%, rgba(139,92,246,0.60) 0%, transparent 58%)',
-        'radial-gradient(ellipse 65% 55% at 50% 50%, rgba(30,27,75,0.40) 0%, transparent 62%)',
+        'radial-gradient(ellipse 120% 85% at 18% 25%, rgba(99,102,241,0.18) 0%, transparent 60%)',
+        'radial-gradient(ellipse 80% 65% at 82% 75%, rgba(139,92,246,0.14) 0%, transparent 58%)',
+        'radial-gradient(ellipse 65% 55% at 50% 50%, rgba(30,27,75,0.10) 0%, transparent 62%)',
     ].join(', '),
 };
 
