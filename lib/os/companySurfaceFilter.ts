@@ -43,13 +43,8 @@ export function filterCompaniesForSurface(
 
     if (surfaceProfile.isHqSurface) {
         const primary = getPrimaryOperationalCompany(companies);
-        const canManage = role === 'owner' || role === 'admin' || role === 'system_owner';
-        const tenantDemos = canManage
-            ? companies.filter((company) => company.is_demo && (!tenantId || company.tenant_id === tenantId))
-            : [];
-        return primary
-            ? [primary, ...tenantDemos.filter((company) => company.id !== primary.id)]
-            : tenantDemos;
+        // On real HQ surface, NEVER pollute active workspace list with demo companies
+        return primary ? [primary] : [];
     }
 
     if (surfaceProfile.isPublicDemoSurface) {
