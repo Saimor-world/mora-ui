@@ -3,7 +3,7 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
 
-export const dynamicMode = 'force-dynamic';
+export const dynamic = 'force-dynamic';
 
 /**
  * /home - Main OS Entry Point
