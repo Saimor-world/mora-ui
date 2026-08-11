@@ -535,6 +535,7 @@ export const Planet: React.FC<PlanetProps> = ({
                                         >
                                             {chip.text}
                                         </motion.span>
+                                    );
                                 })}
                             </motion.div>
                         )}
