@@ -65,11 +65,6 @@ export const MyceliumOverlay: React.FC = () => {
     const [overview, setOverview] = useState<MyceliumOverview | null>(null);
     const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: -1000, y: -1000, active: false });
 
-    // Hide Mycelium constellation overlay on HOME operational dashboard
-    if (viewLevel === 'core' && coreMode === 'home') {
-        return null;
-    }
-
     // Fetch Mycelium Overview stats from API
     useEffect(() => {
         let cancelled = false;
@@ -392,6 +387,11 @@ export const MyceliumOverlay: React.FC = () => {
             stop();
         };
     }, [pageVisible, departments, hoverDepartmentId]);
+
+    // Hide Mycelium constellation overlay on HOME operational dashboard
+    if (viewLevel === 'core' && coreMode === 'home') {
+        return null;
+    }
 
     return (
         <div className="fixed inset-0 pointer-events-none z-[5]">
