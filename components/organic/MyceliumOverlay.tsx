@@ -57,11 +57,18 @@ export const MyceliumOverlay: React.FC = () => {
     const pageVisible = usePageVisibility();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const hoverDepartmentId = useNavStore((s) => s.hoverDepartmentId);
+    const viewLevel = useNavStore((s) => s.viewLevel);
+    const coreMode = useNavStore((s) => s.coreMode);
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const orbState = useOrbStore((s) => s.orbState);
 
     const [overview, setOverview] = useState<MyceliumOverview | null>(null);
     const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: -1000, y: -1000, active: false });
+
+    // Hide Mycelium constellation overlay on HOME operational dashboard
+    if (viewLevel === 'core' && coreMode === 'home') {
+        return null;
+    }
 
     // Fetch Mycelium Overview stats from API
     useEffect(() => {

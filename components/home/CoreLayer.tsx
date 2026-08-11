@@ -74,14 +74,8 @@ export const CoreLayer: React.FC = () => {
 
     return (
         <div className="absolute inset-0">
-            {/* UniverseView is ALWAYS the living base layer of the OS */}
-            <div className="absolute inset-0 z-0">
-                <UniverseView />
-            </div>
-
-            {/* HomeSurface overlays on top when coreMode === 'home' */}
-            <AnimatePresence initial={false}>
-                {coreMode === 'home' && (
+            <AnimatePresence initial={false} mode="wait">
+                {coreMode === 'home' ? (
                     <motion.div
                         key="home"
                         className="absolute inset-0 z-10 pointer-events-none"
@@ -93,6 +87,17 @@ export const CoreLayer: React.FC = () => {
                         {activeMode === 'visitor' || activeMode === 'private_preview'
                             ? <VisitorHomeSurface />
                             : <HomeSurface />}
+                    </motion.div>
+                ) : (
+                    <motion.div
+                        key="explore"
+                        className="absolute inset-0 z-10"
+                        variants={exploreVariants}
+                        initial="initial"
+                        animate="animate"
+                        exit="exit"
+                    >
+                        <UniverseView />
                     </motion.div>
                 )}
             </AnimatePresence>
