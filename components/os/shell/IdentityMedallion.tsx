@@ -82,14 +82,14 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
                 className="pointer-events-none absolute inset-[-28%] rounded-full opacity-80"
                 style={{
                     background: `radial-gradient(circle at 50% 50%, ${resolvedColors.halo} 0%, transparent 68%)`,
-                    filter: "blur(22px)",
+                    filter: "blur(14px)",
                 }}
             />
             <div
                 className="pointer-events-none absolute inset-[-14%] rounded-full animate-pulse"
                 style={{
                     background: `radial-gradient(circle at 40% 35%, ${resolvedColors.glow} 0%, transparent 72%)`,
-                    filter: "blur(16px)",
+                    filter: "blur(10px)",
                     animationDuration: '4.8s',
                 }}
             />
@@ -104,26 +104,10 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
             />
 
             <div
-                className="absolute inset-[6%] rounded-full"
-                style={{
-                    border: `1px solid ${resolvedColors.glow}`,
-                    boxShadow: `inset 0 0 18px ${resolvedColors.glow}`,
-                }}
-            />
-
-            <div
-                className="absolute inset-[11%] rounded-full"
-                style={{
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.08)",
-                }}
-            />
-
-            <div
                 className="absolute inset-[7%] overflow-hidden rounded-full border border-white/10"
                 style={{
                     background: colors.core,
-                    boxShadow: "inset 0 0 16px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -10px 18px rgba(0,0,0,0.24)",
+                    boxShadow: "inset 0 0 16px rgba(0,0,0,0.42), inset 0 1px 0 rgba(255,255,255,0.08)",
                 }}
             >
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_22%,rgba(255,255,255,0.18),transparent_24%)]" />
@@ -133,17 +117,9 @@ export const IdentityMedallion: React.FC<IdentityMedallionProps> = ({
                     style={{
                         background: "conic-gradient(from 210deg at 50% 50%, transparent 0deg, rgba(255,255,255,0.18) 58deg, transparent 122deg, rgba(255,255,255,0.05) 204deg, transparent 360deg)",
                         filter: "blur(6px)",
-                        animation: "identity-swirl 12s linear infinite",
+                        animation: "identity-swirl 18s linear infinite",
                     }}
                 />
-                <div
-                    className="absolute inset-[12%] rounded-full"
-                    style={{
-                        border: "1px solid rgba(255,255,255,0.05)",
-                        boxShadow: "inset 0 0 14px rgba(255,255,255,0.04)",
-                    }}
-                />
-                <div className="absolute inset-[16%] rounded-full border border-white/8" />
                 {showImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

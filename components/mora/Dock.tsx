@@ -354,10 +354,10 @@ export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                             opacity: 0.25,
                         }}
                         transition={isPlaying ? {
-                            duration: 0.72 + index * 0.11,
+                            duration: 1.0 + index * 0.15,
                             repeat: Infinity,
                             ease: 'easeInOut',
-                            delay: index * 0.09,
+                            delay: index * 0.1,
                         } : { duration: 0.3 }}
                         style={{ height: baseH }}
                     />
@@ -450,7 +450,7 @@ const DockPod: React.FC<DockPodProps> = ({
     <div
         className={`rounded-[24px] border ${isStandardMode
             ? 'border-gray-200 bg-white/85 shadow-[0_8px_24px_rgba(15,23,42,0.06)]'
-            : 'border-cyan-200/[0.10] bg-[linear-gradient(180deg,rgba(123,233,255,0.055),rgba(83,65,160,0.055)_48%,rgba(2,10,14,0.20))] shadow-[0_18px_70px_rgba(0,0,0,0.20),0_0_34px_rgba(34,211,238,0.055),inset_0_1px_0_rgba(255,255,255,0.075)] backdrop-blur-[22px]'
+            : 'border-cyan-200/[0.10] bg-[linear-gradient(180deg,rgba(123,233,255,0.055),rgba(83,65,160,0.055)_48%,rgba(2,10,14,0.20))] shadow-[0_18px_40px_rgba(0,0,0,0.20),0_0_34px_rgba(34,211,238,0.055),inset_0_1px_0_rgba(255,255,255,0.075)] backdrop-blur-[22px]'
             } ${className}`}
     >
         {children}
@@ -1401,8 +1401,8 @@ export const Dock = () => {
             <div className="relative w-full max-w-[1480px] mx-auto pointer-events-auto">
                 {!isStandardMode && (
                     <>
-                        <div className="pointer-events-none absolute inset-x-[7%] bottom-[-14px] h-px bg-gradient-to-r from-transparent via-cyan-200/40 to-transparent" />
-                        <div className="pointer-events-none absolute inset-x-[15%] bottom-[-26px] h-16 rounded-full bg-cyan-300/[0.055] blur-[34px]" />
+                        <div className="pointer-events-none absolute inset-x-[7%] bottom-[-14px] h-px bg-gradient-to-r from-transparent via-cyan-200/20 to-transparent" />
+                        <div className="pointer-events-none absolute inset-x-[15%] bottom-[-26px] h-16 rounded-full bg-cyan-300/[0.055] blur-[18px]" />
                     </>
                 )}
                 <AnimatePresence>
@@ -1461,7 +1461,7 @@ export const Dock = () => {
                                 style={isStandardMode ? {} : {
                                     background: 'linear-gradient(180deg, rgba(12, 26, 34, 0.55) 0%, rgba(10, 13, 28, 0.45) 54%, rgba(2, 7, 10, 0.6) 100%)',
                                     border: `1px solid var(--scene-border)`,
-                                    boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 40px var(--scene-accent), inset 0 1px 0 rgba(255,255,255,0.07)`,
+                                    boxShadow: `0 24px 60px rgba(0,0,0,0.55), 0 0 20px var(--scene-accent), inset 0 1px 0 rgba(255,255,255,0.07)`,
                                     transition: 'border-color 1.2s ease, box-shadow 1.2s ease',
                                     willChange: 'transform',
                                 }}
@@ -1476,7 +1476,7 @@ export const Dock = () => {
                                             }}
                                         />
                                         <div
-                                            className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none"
+                                            className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none opacity-70"
                                             style={{
                                                 background: `linear-gradient(90deg, transparent 10%, var(--scene-accent), var(--scene-aura), transparent 90%)`,
                                                 transition: 'background 1.2s ease',
@@ -1537,7 +1537,7 @@ export const Dock = () => {
                                                         className="w-[1.5px] bg-emerald-400 rounded-full"
                                                         animate={{ height: [h * 0.3, h, h * 0.3] }}
                                                         transition={{
-                                                            duration: 0.6 + i * 0.15,
+                                                            duration: 0.9 + i * 0.25,
                                                             repeat: Infinity,
                                                             ease: 'easeInOut',
                                                         }}

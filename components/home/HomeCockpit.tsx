@@ -177,15 +177,13 @@ export function WidgetGlanceCard({ type, accent, context, className = '', compac
 
         <div
 
-            className={`organization-home-card relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.11] shadow-[0_10px_32px_rgba(0,0,0,0.24),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md ${className}`}
-
-            style={{ background: compact ? 'linear-gradient(180deg, rgba(255,255,255,0.075), rgba(15,23,42,0.48))' : 'linear-gradient(180deg, rgba(255,255,255,0.09), rgba(15,23,42,0.54))' }}
+            className={`organization-home-card relative flex h-full ${shellMin} flex-col overflow-hidden rounded-[1.05rem] border border-white/[0.06] shadow-[0_8px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur-md bg-slate-950/20 ${className}`}
 
         >
 
             <div className={`pointer-events-none absolute left-0 top-0 h-[2px] w-full ${accent}`} />
 
-            <div className="pointer-events-none absolute inset-0 opacity-[0.28]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.07), transparent 54%)' }} />
+            <div className="pointer-events-none absolute inset-0 opacity-[0.12]" style={{ background: 'linear-gradient(155deg, rgba(var(--scene-rgb, 16,185,129), 0.07), transparent 54%)' }} />
 
             <div className={`relative z-[1] flex shrink-0 items-center justify-between ${compact ? 'px-3 pt-2 pb-1' : 'px-4 pt-3 pb-1.5'}`}>
 
@@ -285,7 +283,7 @@ export function HomeSignalCard({
         rose: 'from-rose-300/24 to-red-500/[0.06] text-rose-100 border-rose-200/20',
     };
     const classes = [
-        'organization-home-card group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
+        'organization-home-card group flex min-h-[94px] flex-col justify-between rounded-2xl border bg-slate-950/20 backdrop-blur-md bg-gradient-to-br p-3.5 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-all',
         tones[tone],
         onClick ? 'hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.06]' : '',
     ].join(' ');
@@ -780,9 +778,9 @@ export function HomeCockpit(props: HomeCockpitProps) {
             {/* 1. HQ Lage */}
             <motion.div
                 {...fade(0)}
-                className="relative shrink-0 overflow-hidden rounded-[1.45rem] border border-white/[0.12] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.105),rgba(15,23,42,0.58))] px-4 py-4 shadow-[0_18px_54px_rgba(0,0,0,0.26),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-xl xl:px-5"
+                className="relative shrink-0 overflow-hidden rounded-[1.45rem] border border-white/[0.06] bg-[radial-gradient(circle_at_18%_0%,rgba(45,212,191,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.06),rgba(15,23,42,0.30))] px-4 py-4 shadow-[0_8px_24px_rgba(0,0,0,0.2),inset_0_1px_0_rgba(255,255,255,0.11)] backdrop-blur-md xl:px-5"
             >
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/70 via-cyan-200/45 to-violet-300/50" />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-emerald-300/40 via-cyan-200/25 to-violet-300/30" />
                 <div className="grid gap-5 md:grid-cols-[minmax(0,0.96fr)_minmax(320px,0.78fr)] md:items-stretch">
                     <div className="flex min-w-0 flex-col justify-between gap-4">
                         <div className="flex min-w-0 items-start gap-3.5">
@@ -858,7 +856,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
                  Home is a personal cockpit — no cosmos hero. Mein Tag stays tall left;
                  Nightwatch is a compact edge glance, not a centre column. */}
 
-            <motion.div {...fade(0.06)} className="shrink-0 rounded-[1.2rem] border border-white/[0.09] bg-white/[0.055] px-4 py-3 backdrop-blur-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+            <motion.div {...fade(0.06)} className="shrink-0 rounded-[1.2rem] border border-white/[0.06] bg-black/15 px-4 py-3 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
 
                 <ArbeitseinstiegeStrip
 
@@ -903,43 +901,43 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
                     <motion.div {...fade(0.08)} className="min-h-[148px] md:col-span-5 md:row-span-3 md:min-h-0">
 
-                        <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/65 via-sky-300/42 to-transparent" context={glanceContext} />
+                        <WidgetGlanceCard type="meinTag" accent="bg-gradient-to-r from-cyan-400/40 via-sky-300/25 to-transparent" context={glanceContext} />
 
                     </motion.div>
 
                     <motion.div {...fade(0.12)} className="min-h-[104px] md:col-span-3 md:min-h-0">
 
-                        <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/65 via-indigo-300/42 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="team" accent="bg-gradient-to-r from-violet-400/40 via-indigo-300/25 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
                     <motion.div {...fade(0.14)} className="min-h-[104px] md:col-span-4 md:min-h-0">
 
-                        <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/55 via-teal-300/35 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="signals" accent="bg-gradient-to-r from-emerald-400/35 via-teal-300/20 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
                     <motion.div {...fade(0.18)} className="min-h-[104px] md:col-span-3 md:row-start-2 md:min-h-0">
 
-                        <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/50 via-orange-300/30 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="nightwatch" accent="bg-gradient-to-r from-rose-400/30 via-orange-300/18 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
                     <motion.div {...fade(0.20)} className="min-h-[104px] md:col-span-4 md:row-start-2 md:min-h-0">
 
-                        <WidgetGlanceCard type="deinFeed" accent="bg-gradient-to-r from-emerald-400/55 via-cyan-300/32 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="deinFeed" accent="bg-gradient-to-r from-emerald-400/35 via-cyan-300/20 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
                     <motion.div {...fade(0.21)} className="min-h-[104px] md:col-span-3 md:row-start-3 md:min-h-0">
 
-                        <WidgetGlanceCard type="larryWork" accent="bg-gradient-to-r from-teal-400/60 via-cyan-300/38 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="larryWork" accent="bg-gradient-to-r from-teal-400/35 via-cyan-300/22 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
                     <motion.div {...fade(0.22)} className="min-h-[104px] md:col-span-4 md:row-start-3 md:min-h-0">
 
-                        <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-amber-400/50 via-cyan-300/30 to-transparent" context={glanceContext} compact />
+                        <WidgetGlanceCard type="bridgePulse" accent="bg-gradient-to-r from-amber-400/30 via-cyan-300/18 to-transparent" context={glanceContext} compact />
 
                     </motion.div>
 
@@ -962,7 +960,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
             {(recentActivityItems.length > 0 || deptTiles.some((d) => d.active)) && (
 
-                <motion.div {...fade(0.30)} className="shrink-0 rounded-[1.1rem] border border-white/[0.06] bg-black/12 px-4 py-3 backdrop-blur-sm">
+                <motion.div {...fade(0.30)} className="shrink-0 rounded-[1.1rem] border border-white/[0.06] bg-black/15 px-4 py-3 backdrop-blur-md">
 
                     <WeiterarbeitenStrip
 

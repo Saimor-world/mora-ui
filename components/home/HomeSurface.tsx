@@ -972,7 +972,7 @@ export const HomeSurface: React.FC = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: 'easeOut' }}
-                    className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10"
+                    className="pointer-events-auto relative overflow-hidden glass-card p-5 z-10 backdrop-blur-md bg-slate-950/20 shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
                 >
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-violet-300/70 via-cyan-200/55 to-violet-200/50" />
                     <div className="flex items-center gap-3">
@@ -1040,7 +1040,7 @@ export const HomeSurface: React.FC = () => {
                     )}
 
                     {activeMode !== 'public_playground' && (
-                        <div className="mt-4 rounded-[18px] border border-white/[0.075] bg-black/[0.18] p-3" style={{ borderTop: '1px solid rgba(34,211,238,0.16)' }}>
+                        <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-black/[0.15] p-3 backdrop-blur-md" style={{ borderTop: '1px solid rgba(34,211,238,0.16)' }}>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-cyan-100/48">
@@ -1081,7 +1081,7 @@ export const HomeSurface: React.FC = () => {
                         initial={{ opacity: 0, y: 14 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.22, duration: 0.5, ease: 'easeOut' }}
-                        className="pointer-events-auto relative overflow-hidden glass-card p-4 z-10"
+                        className="pointer-events-auto relative overflow-hidden glass-card p-4 z-10 backdrop-blur-md bg-slate-950/20 shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
                     >
                         <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-cyan-300/70 via-violet-200/55 to-amber-200/50" />
                         <div className="mb-3 text-[10px] uppercase tracking-[0.24em] text-white/28">Schnellzugriff</div>
@@ -1120,11 +1120,11 @@ export const HomeSurface: React.FC = () => {
             <section className="absolute left-[400px] right-[360px] top-[148px] bottom-[184px] hidden items-center justify-center 2xl:right-[390px] xl:flex">
                 <div className="pointer-events-auto relative w-full max-w-[690px]">
                     <div
-                        className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full blur-[130px]"
-                        style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.13)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(245,158,11,0.11)' : 'rgba(34,211,238,0.12)' }}
+                        className="absolute inset-x-[4%] top-1/2 h-80 -translate-y-1/2 rounded-full blur-[60px]"
+                        style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'rgba(244,63,94,0.06)' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'rgba(245,158,11,0.05)' : 'rgba(34,211,238,0.06)' }}
                     />
                     <div className="absolute left-1/2 top-1/2 h-[460px] w-[460px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/[0.045]" />
-                    <div className="relative overflow-hidden glass-card px-6 py-6 shadow-[0_34px_130px_rgba(0,0,0,0.4)]">
+                    <div className="relative overflow-hidden glass-card px-6 py-6 shadow-[0_8px_24px_rgba(0,0,0,0.2)] backdrop-blur-md bg-slate-950/20">
                         <div
                             className="pointer-events-none absolute left-0 top-0 h-[2px] w-full"
                             style={{ background: websiteEntryContext.score !== undefined && websiteEntryContext.score < 40 ? 'linear-gradient(90deg,rgba(251,113,133,0.55),rgba(244,63,94,0.70),rgba(251,113,133,0.55))' : websiteEntryContext.score !== undefined && websiteEntryContext.score < 70 ? 'linear-gradient(90deg,rgba(251,191,36,0.50),rgba(245,158,11,0.65),rgba(251,191,36,0.50))' : 'linear-gradient(90deg,rgba(52,211,153,0.50),rgba(16,185,129,0.65),rgba(52,211,153,0.50))' }}
@@ -1310,7 +1310,7 @@ export const HomeSurface: React.FC = () => {
 
             {websiteEntryContext && (
             <aside className="absolute bottom-[12rem] right-6 w-[318px] 2xl:right-10">
-                <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden glass-card p-4 shadow-[0_24px_80px_rgba(0,0,0,0.30)]">
+                <div data-tageslage-panel className="pointer-events-auto relative overflow-hidden glass-card p-4 shadow-[0_8px_24px_rgba(0,0,0,0.2)] backdrop-blur-md bg-slate-950/20">
                     <div className="pointer-events-none absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-amber-300/55 via-violet-300/45 to-cyan-200/50" />
                     <div className="flex items-start justify-between gap-4">
                         <div>
