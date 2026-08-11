@@ -387,7 +387,7 @@ export const MyceliumOverlay: React.FC = () => {
     }, [pageVisible, departments, hoverDepartmentId]);
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-[25]">
+        <div className="fixed inset-0 pointer-events-none z-[5]">
             <canvas
                 ref={canvasRef}
                 className="w-full h-full opacity-100 transition-opacity duration-700"
