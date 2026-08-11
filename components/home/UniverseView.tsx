@@ -1200,22 +1200,59 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 {/* Always visible living energy beams connecting Saimôr Core to every planet */}
                 {coreConnections.map((connection) => {
                     const isBeamActive = activeCoreBeamPlanetIds.has(connection.id);
+                    const planetColors: Record<string, { stroke: string; glow: string }> = {
+                        intelligence: { stroke: 'rgba(6, 182, 212, 0.95)', glow: 'rgba(6, 182, 212, 0.45)' },
+                        product:      { stroke: 'rgba(168, 85, 247, 0.95)', glow: 'rgba(168, 85, 247, 0.45)' },
+                        rd:           { stroke: 'rgba(59, 130, 246, 0.95)', glow: 'rgba(59, 130, 246, 0.45)' },
+                        growth:       { stroke: 'rgba(234, 179, 8, 0.95)', glow: 'rgba(234, 179, 8, 0.45)' },
+                    };
+                    const colorMeta = planetColors[connection.id] || { stroke: 'rgba(16, 185, 129, 0.95)', glow: 'rgba(16, 185, 129, 0.45)' };
+
                     return (
                         <g key={`core-${connection.id}`}>
+                            {/* Wide ambient aura beam */}
                             <motion.path
                                 d={connection.d}
                                 fill="none"
-                                stroke="rgba(16, 185, 129, 0.55)"
-                                strokeWidth={isBeamActive ? 0.35 : 0.18}
-                                strokeDasharray="3 6"
+                                stroke={colorMeta.glow}
+                                strokeWidth={2.4}
                                 strokeLinecap="round"
                                 filter="url(#beamGlow)"
                                 animate={{
+                                    opacity: isBeamActive ? 0.75 : 0.45,
+                                }}
+                                transition={{ duration: 0.5 }}
+                            />
+
+                            {/* Crisp energy conductor line */}
+                            <motion.path
+                                d={connection.d}
+                                fill="none"
+                                stroke={colorMeta.stroke}
+                                strokeWidth={isBeamActive ? 1.2 : 0.75}
+                                strokeLinecap="round"
+                                filter="url(#beamGlow)"
+                                animate={{
+                                    opacity: isBeamActive ? 1.0 : 0.85,
+                                }}
+                                transition={{ duration: 0.4 }}
+                            />
+
+                            {/* Flowing laser action-potential pulse */}
+                            <motion.path
+                                d={connection.d}
+                                fill="none"
+                                stroke="#ffffff"
+                                strokeWidth={isBeamActive ? 0.9 : 0.6}
+                                strokeDasharray="3 9"
+                                strokeLinecap="round"
+                                filter="url(#accentGlow)"
+                                animate={{
                                     strokeDashoffset: [0, -36],
-                                    opacity: isBeamActive ? 0.9 : 0.55,
+                                    opacity: isBeamActive ? 0.95 : 0.75,
                                 }}
                                 transition={{
-                                    strokeDashoffset: { duration: 3, repeat: Infinity, ease: "linear" },
+                                    strokeDashoffset: { duration: 2.2, repeat: Infinity, ease: "linear" },
                                     opacity: { duration: 0.4 },
                                 }}
                             />
@@ -1231,35 +1268,35 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     const baseOpacity = isHomeUniversePreview
                         ? (
                             path.highlighted || isPreviewedPath
-                                ? 0.42
+                                ? 0.65
                                 : isFocusedPath
-                                    ? 0.16
-                                    : 0
+                                    ? 0.35
+                                    : 0.20
                         )
                         : (
                             path.highlighted || isPreviewedPath
-                                ? 0.52
+                                ? 0.85
                                 : isFocusedPath
-                                    ? 0.20
-                                    : Math.max(0.055, 0.04 + path.strength * 0.065)
+                                    ? 0.55
+                                    : Math.max(0.25, 0.20 + path.strength * 0.40)
                         );
 
                     const isActive = path.highlighted || isFocusedPath;
 
                     return (
                         <g key={path.id}>
-                            {/* Wide diffuse glow layer — deeper-space feel */}
+                            {/* Wide diffuse glow layer */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.22 + path.strength * 0.16}
+                                strokeWidth={1.2 + path.strength * 0.6}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.28,
+                                    opacity: baseOpacity * 0.45,
                                 }}
                                 transition={{
                                     pathLength: { duration: 2.1, ease: "easeInOut" },
@@ -1272,13 +1309,13 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.04 + path.strength * 0.05}
+                                strokeWidth={0.45 + path.strength * 0.3}
                                 strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, opacity: 0 }}
                                 animate={{
                                     pathLength: 1,
-                                    opacity: baseOpacity * 0.5,
+                                    opacity: baseOpacity * 0.85,
                                 }}
                                 transition={{
                                     pathLength: { duration: 1.8, ease: "easeInOut" },
@@ -1290,21 +1327,21 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <motion.path
                                 d={path.d}
                                 fill="none"
-                                stroke={driverMeta.accent}
-                                strokeWidth={0.065 + path.strength * 0.09}
-                                strokeDasharray="5 15"
+                                stroke="#ffffff"
+                                strokeWidth={0.35 + path.strength * 0.2}
+                                strokeDasharray="4 12"
                                 strokeLinecap="round"
                                 initial={{ pathLength: 0, strokeDashoffset: 0 }}
                                 animate={{
                                     pathLength: 1,
                                     strokeDashoffset: -40,
-                                    opacity: baseOpacity * (isActive ? 1.0 : 0.7),
+                                    opacity: baseOpacity * (isActive ? 1.0 : 0.8),
                                 }}
                                 transition={{
                                     pathLength: { duration: 1.8, ease: "easeInOut" },
                                     strokeDashoffset: {
                                         repeat: Infinity,
-                                        duration: 3.5,
+                                        duration: 2.8,
                                         ease: "linear",
                                     },
                                     opacity: { duration: 0.4, ease: "easeOut" }
