@@ -10,19 +10,12 @@
 
 
 
-/** Percentage bounds for planet placement — wide enough to breathe across the
- *  canvas, still clear of the corner widget clusters (x<26 / x>74, y<24 / y>72). */
-
+/** Percentage bounds for planet placement — safe central corridor clearing the left (0..30%) and right (70..100%) widget columns. */
 export const UNIVERSE_SAFE_BOUNDS = {
-
-    minX: 26,
-
-    maxX: 74,
-
-    minY: 24,
-
-    maxY: 72,
-
+    minX: 31,
+    maxX: 69,
+    minY: 18,
+    maxY: 82,
 };
 
 
@@ -40,10 +33,10 @@ export const UNIVERSE_CORE_POINT = {
 /** Minimum centre-to-centre gap in viewport % (clears ~118px planet + halo on 1080p). */
 
 export const universeMinPlanetSeparation = (count: number) => {
-    if (count <= 4) return 18;
-    if (count <= 8) return 14;
-    if (count <= 14) return 10;
-    return 7.5;
+    if (count <= 4) return 14;
+    if (count <= 8) return 11;
+    if (count <= 14) return 8;
+    return 6;
 };
 
 
@@ -434,9 +427,10 @@ export const buildOrganicUniverseLayout = (
         const radiusBias = 0.40 + (1 - vitality) * 0.10 + radialJitter;
 
         // Generous orbit radius scaling so department planet nodes breathe clear of the central core
-        const countRadiusFactor = count <= 4 ? 2.1 : count <= 6 ? 1.85 : count <= 10 ? 1.5 : 1.2;
-        const rx = (12 + radiusBias * 10) * countRadiusFactor;
-        const ry = (9.5 + radiusBias * 8) * countRadiusFactor;
+        // Scale orbit radii so planets stay within the central corridor (31% .. 69%) without hit-clamping
+        const countRadiusFactor = count <= 4 ? 1.35 : count <= 6 ? 1.18 : count <= 10 ? 1.0 : 0.85;
+        const rx = (8.5 + radiusBias * 5.5) * countRadiusFactor; // Max ~16% -> x in 34% .. 66%
+        const ry = (13.5 + radiusBias * 9) * countRadiusFactor;  // Max ~26% -> y in 24% .. 76%
 
         return {
 
