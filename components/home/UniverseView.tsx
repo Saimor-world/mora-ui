@@ -1258,55 +1258,46 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     );
                 })}
 
-                {/* Semantic silk paths (only shown on hover or active planet focus) */}
+                {/* Real Data-Driven Semantic Paths (Dynamic relation strength between departments) */}
                 {visibleSemanticPaths.map((path) => {
                     const driverMeta = SEMANTIC_DRIVER_META[path.dominantDriver];
                     const isFocusedPath = focusedSemanticPathIds.has(path.id);
                     const isPreviewedPath = semanticPreviewPathId === path.id;
-                    if (!path.highlighted && !isFocusedPath && !isPreviewedPath) return null;
-
-                    const baseOpacity = isHomeUniversePreview ? 0.45 : 0.85;
+                    const isActive = path.highlighted || isFocusedPath || isPreviewedPath;
+                    const baseOpacity = isHomeUniversePreview
+                        ? (isActive ? 0.85 : 0.25)
+                        : (isActive ? 0.95 : (0.25 + path.strength * 0.45));
 
                     return (
                         <g key={path.id}>
-                            {/* Soft ambient glow layer */}
+                            {/* Fine silken semantic connection line */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke={driverMeta.accent}
-                                strokeWidth={0.24}
+                                strokeWidth={isActive ? 0.16 : (0.08 + path.strength * 0.06)}
+                                strokeDasharray={driverMeta.dashArray}
                                 strokeLinecap="round"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: baseOpacity * 0.35 }}
-                                transition={{ duration: 0.3 }}
+                                animate={{
+                                    opacity: baseOpacity * (isActive ? 1.0 : 0.70),
+                                }}
+                                transition={{ duration: 0.4 }}
                             />
-                            {/* Fine silken highlight line */}
-                            <motion.path
-                                d={path.d}
-                                fill="none"
-                                stroke={driverMeta.accent}
-                                strokeWidth={0.10}
-                                strokeLinecap="round"
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: baseOpacity * 0.85 }}
-                                transition={{ duration: 0.3 }}
-                            />
-                            {/* Subtle laser energy pulse */}
+                            {/* Action-potential light pulse traveling along real data link */}
                             <motion.path
                                 d={path.d}
                                 fill="none"
                                 stroke="#ffffff"
-                                strokeWidth={0.12}
-                                strokeDasharray="2 8"
+                                strokeWidth={0.10}
+                                strokeDasharray="2 10"
                                 strokeLinecap="round"
-                                initial={{ opacity: 0 }}
                                 animate={{
-                                    strokeDashoffset: -24,
-                                    opacity: baseOpacity * 0.9,
+                                    strokeDashoffset: [0, -24],
+                                    opacity: isActive ? 0.95 : 0.50,
                                 }}
                                 transition={{
-                                    strokeDashoffset: { repeat: Infinity, duration: 2.4, ease: "linear" },
-                                    opacity: { duration: 0.3 }
+                                    strokeDashoffset: { repeat: Infinity, duration: Math.max(1.8, 3.2 / (path.strength || 1)), ease: "linear" },
+                                    opacity: { duration: 0.4 },
                                 }}
                             />
                         </g>
