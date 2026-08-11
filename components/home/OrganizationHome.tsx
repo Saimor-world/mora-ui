@@ -9,10 +9,12 @@ import {
     FileText,
     Folder,
     Mail,
+    Mic,
     Network,
     Sparkles,
     Users,
 } from 'lucide-react';
+import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 import { usePaneStore } from '@/lib/store/paneStore';
 import type { WidgetContext } from '@/lib/widgets/types';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
@@ -251,6 +253,14 @@ export function OrganizationHome(props: HomeCockpitProps) {
                             <button type="button" onClick={onOpenMora} className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.055] px-3 py-2 text-[11px] text-white/68 transition-colors hover:border-white/[0.18] hover:text-white">
                                 <Sparkles size={13} className="text-emerald-200/76" />
                                 <span>{moraStatusLabel}</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={openVoiceOverlay}
+                                className="inline-flex items-center gap-2 rounded-full border border-cyan-400/35 bg-cyan-500/15 px-3 py-2 text-[11px] font-medium text-cyan-200 transition-all hover:border-cyan-300/60 hover:bg-cyan-500/25 hover:shadow-[0_0_16px_rgba(6,182,212,0.35)]"
+                            >
+                                <Mic size={13} className="text-cyan-300 animate-pulse" />
+                                <span>Môra Voice</span>
                             </button>
                             {orgStatItems.slice(0, 3).map((stat) => (
                                 <span key={stat.label} className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.075] bg-black/[0.12] px-3 py-2 text-[11px] text-white/52">
