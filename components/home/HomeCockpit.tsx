@@ -245,7 +245,7 @@ const WIDGET_SHEET_OPEN: Record<string, (ctx: WidgetContext) => void> = {
 
     team: (c) => { c.openTeam?.(); },
 
-    signals: (c) => { c.openMora?.(); },
+    signals: (c) => { c.openNightwatch ? c.openNightwatch() : c.openMora?.(); },
 
     bridgePulse: (c) => { c.openDashboard?.(); },
 
