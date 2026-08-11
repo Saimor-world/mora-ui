@@ -56,6 +56,7 @@ export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const pageVisible = usePageVisibility();
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+    const hoverDepartmentId = useNavStore((s) => s.hoverDepartmentId);
     const { data: departments = [] } = useDepartments(activeCompanyId);
     const orbState = useOrbStore((s) => s.orbState);
 
@@ -126,6 +127,7 @@ export const MyceliumOverlay: React.FC = () => {
                 const rx = width * 0.18;
                 const ry = height * 0.28;
                 return {
+                    id: dept.id,
                     x: centerX + Math.cos(angle) * rx,
                     y: centerY + Math.sin(angle) * ry,
                     name: dept.name,
@@ -148,7 +150,7 @@ export const MyceliumOverlay: React.FC = () => {
         let anchors = getAnchors();
 
         // Generate organic curved hyphae branches connecting core to planets and widgets
-        let hyphaeBranches: HyphaeBranch[] = [];
+        let hyphaeBranches: (HyphaeBranch & { deptId?: string })[] = [];
         let pulses: HyphaePulse[] = [];
         let particles: Particle[] = [];
 
@@ -171,6 +173,7 @@ export const MyceliumOverlay: React.FC = () => {
                     color: dept.color,
                     weight: 1.4,
                     targetName: dept.name,
+                    deptId: dept.id,
                 });
 
                 // Add active action potential pulses along main hyphae
@@ -205,6 +208,7 @@ export const MyceliumOverlay: React.FC = () => {
                     color: 'rgba(6, 182, 212, 0.45)',
                     weight: 0.9,
                     targetName: `${d1.name}-${d2.name}`,
+                    deptId: d1.id,
                 });
             }
 
@@ -224,12 +228,13 @@ export const MyceliumOverlay: React.FC = () => {
                     color: 'rgba(16, 185, 129, 0.35)',
                     weight: 0.7,
                     targetName: `Widget-${i}`,
+                    deptId: dept.id,
                 });
             });
 
             // 4. Floating Neural Spores (Spores that orbit the hyphae root anchors)
             particles = [];
-            const sporeCount = 90;
+            const sporeCount = 110;
             for (let i = 0; i < sporeCount; i++) {
                 const targetDept = anchors.departments[i % anchors.departments.length];
                 particles.push({
@@ -248,10 +253,12 @@ export const MyceliumOverlay: React.FC = () => {
         };
 
         const resize = () => {
+            const dpr = window.devicePixelRatio || 1;
             width = window.innerWidth;
             height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            ctx.scale(dpr, dpr);
             anchors = getAnchors();
             initHyphaeMesh();
         };
@@ -267,7 +274,8 @@ export const MyceliumOverlay: React.FC = () => {
 
         const draw = () => {
             if (!running) return;
-            ctx.clearRect(0, 0, width, height);
+            const dpr = window.devicePixelRatio || 1;
+            ctx.clearRect(0, 0, width * dpr, height * dpr);
 
             const mouse = mouseRef.current;
 
@@ -275,15 +283,16 @@ export const MyceliumOverlay: React.FC = () => {
             hyphaeBranches.forEach((branch) => {
                 let ctrlX = branch.controlX;
                 let ctrlY = branch.controlY;
+                const isHoverSurge = hoverDepartmentId && (branch.deptId === hoverDepartmentId || branch.targetName.includes(hoverDepartmentId));
 
                 // Mouse gravitational attraction bending hyphae threads toward cursor
                 if (mouse.active) {
                     const dx = mouse.x - ctrlX;
                     const dy = mouse.y - ctrlY;
                     const distSq = dx * dx + dy * dy;
-                    if (distSq < 250 * 250) {
+                    if (distSq < 280 * 280) {
                         const dist = Math.sqrt(distSq);
-                        const pull = (1 - dist / 250) * 35;
+                        const pull = (1 - dist / 280) * 45;
                         ctrlX += (dx / dist) * pull;
                         ctrlY += (dy / dist) * pull;
                     }
@@ -292,10 +301,10 @@ export const MyceliumOverlay: React.FC = () => {
                 ctx.beginPath();
                 ctx.moveTo(branch.startX, branch.startY);
                 ctx.quadraticCurveTo(ctrlX, ctrlY, branch.endX, branch.endY);
-                ctx.strokeStyle = branch.color;
-                ctx.lineWidth = branch.weight;
-                ctx.shadowColor = branch.color;
-                ctx.shadowBlur = 12;
+                ctx.strokeStyle = isHoverSurge ? '#34d399' : branch.color;
+                ctx.lineWidth = isHoverSurge ? branch.weight * 2.6 : branch.weight;
+                ctx.shadowColor = isHoverSurge ? '#34d399' : branch.color;
+                ctx.shadowBlur = isHoverSurge ? 24 : 12;
                 ctx.stroke();
                 ctx.shadowBlur = 0;
             });

@@ -39,8 +39,10 @@ interface NavState {
   departmentEntryOrigin: { x: number; y: number } | null;
   /** Voice mode overlay — sits above the active surface without changing viewLevel. */
   voiceOverlayOpen: boolean;
+  hoverDepartmentId: string | null;
 
   setViewLevel(level: ViewLevel): void;
+  setHoverDepartmentId(id: string | null): void;
   setVoiceOverlayOpen(open: boolean): void;
   toggleVoiceOverlay(): void;
   setCoreMode(mode: CoreMode): void;
@@ -78,8 +80,10 @@ export const useNavStore = create<NavState>((set, get) => ({
   universeScopeDeptId: null,
   departmentEntryOrigin: null,
   voiceOverlayOpen: false,
+  hoverDepartmentId: null,
 
   setViewLevel: (level) => set({ viewLevel: level }),
+  setHoverDepartmentId: (id) => set({ hoverDepartmentId: id }),
   setVoiceOverlayOpen: (open) => set({ voiceOverlayOpen: open }),
   toggleVoiceOverlay: () => set((state) => ({ voiceOverlayOpen: !state.voiceOverlayOpen })),
   setCoreMode: (mode) => set({ coreMode: mode }),

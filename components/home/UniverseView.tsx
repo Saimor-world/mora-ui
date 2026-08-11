@@ -645,6 +645,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     }, [activeDepartmentId]);
 
     const handlePlanetHover = useCallback((planetId: string, hovered: boolean) => {
+        useNavStore.getState().setHoverDepartmentId(hovered ? planetId : null);
         if (hovered) {
             clearHoverRelease();
             setHoverPlanetId(planetId);
