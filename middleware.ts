@@ -64,8 +64,11 @@ export async function middleware(request: NextRequest) {
     }
 
     const hasCoreSession = !!request.cookies.get("mora_session")?.value;
-    const hasLegacyToken = !!request.cookies.get("mora_auth_token")?.value;
-    if (hasCoreSession || (isLocalhost && hasLegacyToken)) {
+    // mora_auth_token is the readable bridge for website-entry preview sessions
+    // (HttpOnly mora_session may be absent on the HQ host when login went via BFF
+    // or when CORE Set-Cookie was cross-origin). Accept it in production too.
+    const hasAuthToken = !!request.cookies.get("mora_auth_token")?.value;
+    if (hasCoreSession || hasAuthToken) {
         return NextResponse.next();
     }
 

@@ -2,9 +2,14 @@
 
 import React, { useState } from 'react';
 import { WebsiteEntryTokenLogin } from './WebsiteEntryTokenLogin';
+import { WebsiteEntryPersistence } from './WebsiteEntryPersistence';
 import { scoreBreakdown, buildScoreNarrative } from '@/lib/dossier/scoreBreakdown';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { useNavStore } from '@/lib/store/navStore';
+import {
+    markWebsiteEntryContextForHomeOpen,
+    markWebsiteEntryPreviewSession,
+} from '@/lib/websiteEntryStorage';
 
 interface Props {
     context: WebsiteEntryContext;
@@ -34,6 +39,10 @@ export function SecurityCheckEntry({ context }: Props) {
     }
 
     function handleReady() {
+        // Persist scan context so /home bootstrap skips stale-session teardown
+        // (fresh preview visitors have no last_activity → tier 'neustart').
+        markWebsiteEntryPreviewSession();
+        markWebsiteEntryContextForHomeOpen(context);
         useNavStore.getState().setActiveMode('private_preview');
         setAuthReady(true);
         if (waiting) window.location.href = '/home';
@@ -45,6 +54,10 @@ export function SecurityCheckEntry({ context }: Props) {
             <div className="pointer-events-none absolute top-[-200px] left-[-100px] h-[600px] w-[700px] rounded-full bg-violet-600/[0.10] blur-[140px]" />
             <div className="pointer-events-none absolute bottom-[-200px] right-[-100px] h-[500px] w-[600px] rounded-full bg-cyan-500/[0.07] blur-[120px]" />
             <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.014)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.014)_1px,transparent_1px)] bg-[size:80px_80px]" />
+
+            {/* Persist entry context immediately (same as other /entry paths) so a later
+                /home mount does not treat this visitor as a stale neustart session. */}
+            <WebsiteEntryPersistence context={context} />
 
             {/* Private preview auth runs in the background while the visitor reads. */}
             {context.entryToken ? (

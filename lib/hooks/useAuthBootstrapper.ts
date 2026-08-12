@@ -13,7 +13,10 @@ import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
 import { isLocalRuntimeHost, useRuntimeSession } from '@/lib/auth/runtimeSession';
-import { WEBSITE_ENTRY_CONTEXT_STORAGE_KEY } from '@/lib/websiteEntryStorage';
+import {
+    WEBSITE_ENTRY_CONTEXT_STORAGE_KEY,
+    isWebsiteEntryPreviewSession,
+} from '@/lib/websiteEntryStorage';
 import type { UserProfile } from '@/lib/api/authClient';
 import type { User, UserRole } from '@/lib/types/mora';
 
@@ -92,11 +95,20 @@ export function useAuthBootstrapper() {
         // --- Stale session check (neustart tier → 72h+) ---
         if (!staleTeardownRan.current) {
             const lastActivity = localStorage.getItem('last_activity');
-            // Website entry preview: no last_activity exists for unauthenticated scan visitors.
-            // getSessionTier(null) returns 'neustart', which would fire clearClientSessionArtifacts()
-            // and wipe saimor_website_entry_context — skip teardown for these visitors entirely.
+            // Website / Security-Check preview: fresh visitors often have no last_activity, so
+            // getSessionTier(null) === 'neustart'. Do NOT tear down a brand-new preview session
+            // (that wiped mora_auth_token and bounced /home → login gate).
             const hasWebsiteEntryForTeardown = !!localStorage.getItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
-            if (!hasWebsiteEntryForTeardown && getSessionTier(lastActivity) === 'neustart' && pathname !== '/') {
+            const hasPreviewSessionMarker = isWebsiteEntryPreviewSession();
+            // HttpOnly mora_session is invisible here; mora_auth_token is the readable bridge.
+            const hasFreshCoreToken = !!readCookie('mora_auth_token');
+            const skipStaleTeardown =
+                hasWebsiteEntryForTeardown || hasPreviewSessionMarker || hasFreshCoreToken;
+            if (
+                !skipStaleTeardown &&
+                getSessionTier(lastActivity) === 'neustart' &&
+                pathname !== '/'
+            ) {
                 staleTeardownRan.current = true;
                 const teardown: Promise<unknown>[] = [authLogout()];
                 const shouldSignOutNextAuth =

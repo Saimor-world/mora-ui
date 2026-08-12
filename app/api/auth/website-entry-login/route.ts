@@ -51,9 +51,14 @@ export async function POST(request: NextRequest) {
   if (setCookie) response.headers.set("set-cookie", setCookie);
   const sessionToken = payload?.session_token || setCookie?.match(/mora_session=([^;]+)/)?.[1];
   if (sessionToken) {
+    // Readable bridge for HQ bootstrap (HttpOnly mora_session alone is invisible to JS).
+    // Align lifetime with the 20-day website-entry preview window.
+    const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
+    const domain =
+      process.env.NODE_ENV === "production" ? "; Domain=.saimor.world" : "";
     response.headers.append(
       "set-cookie",
-      `mora_auth_token=${sessionToken}; Path=/; Max-Age=86400; SameSite=Lax`
+      `mora_auth_token=${sessionToken}; Path=/; Max-Age=${20 * 24 * 60 * 60}; SameSite=Lax${secure}${domain}`
     );
   }
   if (upstream.ok && preserveOwnerSession && currentSessionToken) {
