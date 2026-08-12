@@ -126,7 +126,8 @@ export function useAuthBootstrapper() {
 
         // --- Unauthenticated redirect ---
         if (status === 'unauthenticated' && pathname !== '/') {
-            const hasCoreSession = !!readCookie('mora_session');
+            // HttpOnly mora_session is invisible to document.cookie; also accept mora_auth_token.
+            const hasCoreSession = !!readCookie('mora_session') || !!readCookie('mora_auth_token');
             const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
             const hasLegacyToken = isLocalhost ? localStorage.getItem('saimor_dev_token') : null;
             // Website entry preview: when a scan context is stored, allow unauthenticated

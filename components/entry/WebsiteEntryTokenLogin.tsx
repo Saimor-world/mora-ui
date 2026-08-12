@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2, LogOut, Play } from 'lucide-react';
 import { corePost, coreGet } from '@/lib/api/coreClient';
+import { writeCookie } from '@/lib/auth/cookies';
 import { toast } from 'sonner';
 
 /**
@@ -27,6 +28,10 @@ async function detectRealSession(): Promise<string | null> {
 type WebsitePreviewSession = {
     active_company_id?: string;
     guided_demo_company_id?: string;
+    session_token?: string;
+    tenant_id?: string;
+    email?: string;
+    success?: boolean;
 };
 
 export function WebsiteEntryTokenLogin({
@@ -92,12 +97,25 @@ export function WebsiteEntryTokenLogin({
                 await new Promise(r => setTimeout(r, 100));
 
                 // 3. The /v3/entry/website-preview endpoint creates the preview tenant
-                // and sets the 'mora_auth_token' cookie.
+                // and sets HttpOnly mora_session. We also mirror session_token into mora_auth_token.
                 const res = await corePost('/v3/entry/website-preview', { token }, { skipAuth: true });
                 
                 if (res && (res as any).success) {
                     setStatus('success');
                     toast.success('Security-Check Vorschau-Raum bereit. Myzel-Struktur wird geladen...');
+
+                    // CORE sets HttpOnly mora_session (invisible to document.cookie).
+                    // Mirror session_token into mora_auth_token so /home bootstrap and
+                    // coreClient Bearer auth can see the preview session.
+                    const sessionToken = (res as any).session_token as string | undefined;
+                    if (sessionToken) {
+                        writeCookie('mora_auth_token', sessionToken, 20);
+                        if (window.location.hostname.endsWith('saimor.world')) {
+                            const expires = new Date(Date.now() + 20 * 24 * 60 * 60 * 1000).toUTCString();
+                            document.cookie =
+                                `mora_auth_token=${encodeURIComponent(sessionToken)}; expires=${expires}; path=/; domain=.saimor.world; SameSite=Lax; Secure`;
+                        }
+                    }
 
                     // Let the caller do any pre-redirect setup (e.g. set activeMode).
                     onSuccess?.(res as WebsitePreviewSession);
