@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { Loader2, LogOut, Play } from 'lucide-react';
 import { corePost, coreGet } from '@/lib/api/coreClient';
 import { writeCookie } from '@/lib/auth/cookies';
+import { touchSessionActivity } from '@/lib/auth/sessionLifecycle';
+import { markWebsiteEntryPreviewSession } from '@/lib/websiteEntryStorage';
 import { toast } from 'sonner';
 
 /**
@@ -96,17 +98,47 @@ export function WebsiteEntryTokenLogin({
                 // Wait a tiny bit for cookies to propagate
                 await new Promise(r => setTimeout(r, 100));
 
-                // 3. The /v3/entry/website-preview endpoint creates the preview tenant
-                // and sets HttpOnly mora_session. We also mirror session_token into mora_auth_token.
-                const res = await corePost('/v3/entry/website-preview', { token }, { skipAuth: true });
-                
+                // 3. Prefer same-origin HQ BFF so Set-Cookie lands on hq.saimor.world
+                // (mora_auth_token + forwarded mora_session). Fall back to direct CORE
+                // only if the BFF is unavailable.
+                let res: WebsitePreviewSession | null = null;
+                try {
+                    const bff = await fetch('/api/auth/website-entry-login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Accept: 'application/json',
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify({ entryToken: token }),
+                    });
+                    const payload = await bff.json().catch(() => null);
+                    if (bff.ok && payload?.success) {
+                        res = payload as WebsitePreviewSession;
+                    } else if (bff.status >= 500) {
+                        throw new Error(`BFF unavailable (${bff.status})`);
+                    } else {
+                        throw new Error(
+                            (payload && (payload.detail || payload.message)) ||
+                                'Website entry login failed',
+                        );
+                    }
+                } catch (bffError) {
+                    console.warn('[WebsiteEntryTokenLogin] BFF login failed, falling back to CORE:', bffError);
+                    res = await corePost(
+                        '/v3/entry/website-preview',
+                        { token },
+                        { skipAuth: true },
+                    ) as WebsitePreviewSession;
+                }
+
                 if (res && (res as any).success) {
                     setStatus('success');
                     toast.success('Security-Check Vorschau-Raum bereit. Myzel-Struktur wird geladen...');
 
-                    // CORE sets HttpOnly mora_session (invisible to document.cookie).
-                    // Mirror session_token into mora_auth_token so /home bootstrap and
-                    // coreClient Bearer auth can see the preview session.
+                    // BFF already Set-Cookies mora_auth_token on the HQ host. Still mirror
+                    // session_token client-side (and Domain=.saimor.world) for CORE fallback
+                    // and for bootstrap that reads document.cookie.
                     const sessionToken = (res as any).session_token as string | undefined;
                     if (sessionToken) {
                         writeCookie('mora_auth_token', sessionToken, 20);
@@ -116,6 +148,9 @@ export function WebsiteEntryTokenLogin({
                                 `mora_auth_token=${encodeURIComponent(sessionToken)}; expires=${expires}; path=/; domain=.saimor.world; SameSite=Lax; Secure`;
                         }
                     }
+
+                    markWebsiteEntryPreviewSession();
+                    touchSessionActivity();
 
                     // Let the caller do any pre-redirect setup (e.g. set activeMode).
                     onSuccess?.(res as WebsitePreviewSession);
