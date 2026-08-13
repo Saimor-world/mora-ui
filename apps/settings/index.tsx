@@ -10,7 +10,7 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
@@ -47,6 +47,7 @@ import { queueAccountSettingsSync } from '@/lib/userSettings/persistAccountSetti
 import { useUserSettings } from '@/lib/queries/useUserSettings';
 import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
+import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -55,7 +56,7 @@ const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 export default function SettingsApp({ paneId }: AppProps) {
     const id = paneId;
     const { data: session } = useRuntimeSession();
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
     const { activeCompanyId, isStandardMode, setIsStandardMode, activeMode, coreMode, navigateToCore } = useNavStore();
     const { user, updateUserSettings } = useSessionStore();
@@ -161,6 +162,7 @@ export default function SettingsApp({ paneId }: AppProps) {
 
     const tabs = useMemo(() => [
         { id: 'profile', label: 'Profil', icon: User },
+        { id: 'workspace-control', label: 'Workspace', icon: Gauge },
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
@@ -555,6 +557,15 @@ useEffect(() => {
                     <div className="px-6 py-5 space-y-6">
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
+                    )}
+
+                    {activeTab === 'workspace-control' && (
+                        <WorkspaceControlTab onOpenIntegrations={() => openPane({
+                            id: 'integrations',
+                            type: 'integrations',
+                            title: 'Integrationen',
+                            size: { width: 860, height: 680 },
+                        })} />
                     )}
 
                     {activeTab === 'appearance' && (
