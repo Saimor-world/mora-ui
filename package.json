@@ -21,6 +21,7 @@
     "verify:mr16:smoke:live": "npm run verify:types && npm run verify:critical-flow:live && npx playwright test --config=playwright.live.config.ts e2e/finder-from-l3.spec.ts"
   },
   "dependencies": {
+    "@paddle/paddle-js": "^1.6.4",
     "@react-three/drei": "^9.122.0",
     "@react-three/fiber": "8.18.0",
     "@tanstack/react-query": "^5.90.6",

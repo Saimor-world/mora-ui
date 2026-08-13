@@ -1,7 +1,10 @@
-import { coreGet, corePut } from './http';
+import { coreGet, corePost, corePut } from './http';
 export type WorkspaceOnboarding = { tenant_id: string; product_intent: string | null; state: 'not_started' | 'in_progress' | 'complete'; completed_steps: string[]; started_at: string | null; completed_at: string | null };
 export type WorkspaceAccess = { access: { tenant_id: string; products: Array<{ key: string; label: string; access: 'direct' | 'included' }>; capabilities: string[]; entitlements: Array<{ id: string; product: string; status: string; effective_status: string; source: string }> }; onboarding: WorkspaceOnboarding; billing: { subscriptions: Array<{ id: string; product: string; plan_key: string; status: string; seats: number }> } };
-export type WorkspaceCatalog = { version: string; currency: string; plans: Array<{ key: string; product: string; label: string; interval: 'month' | 'year'; price: { amount_minor: number; currency: string }; included_seats: number; trial_days: number; checkout_ready: boolean }> };
+export type WorkspacePlan = { key: string; product: string; label: string; interval: 'month' | 'year'; price: { amount_minor: number; currency: string }; included_seats: number; trial_days: number; checkout_ready: boolean; additional_seats_ready?: boolean };
+export type WorkspaceCatalog = { version: string; currency: string; plans: WorkspacePlan[] };
+export type WorkspaceCheckoutIntent = { id: string; product: string; plan_key: string; seats: number; expires_at: string; paddle_checkout: { items: Array<{ priceId: string; quantity: number }>; custom_data: Record<string, string> } };
 export const fetchWorkspaceAccess = (): Promise<WorkspaceAccess | null> => coreGet('/v3/workspace/access', { isOptional: true });
 export const fetchWorkspaceCatalog = (): Promise<WorkspaceCatalog | null> => coreGet('/v3/workspace/catalog', { skipAuth: true, isOptional: true });
+export const createWorkspaceCheckoutIntent = (payload: { plan_key: string; seats: number }): Promise<WorkspaceCheckoutIntent> => corePost('/v3/workspace/checkout-intents', payload);
 export const updateWorkspaceOnboarding = (payload: { product_intent: string | null; state: WorkspaceOnboarding['state']; completed_steps: string[] }): Promise<WorkspaceOnboarding> => corePut('/v3/workspace/onboarding', payload);

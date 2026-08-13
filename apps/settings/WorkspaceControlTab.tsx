@@ -1,10 +1,15 @@
 'use client';
 import { ExternalLink, RefreshCw } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { useWorkspaceAccess, useWorkspaceCatalog } from '@/lib/queries/useWorkspaceAccess';
+import { createWorkspaceCheckoutIntent, type WorkspacePlan } from '@/lib/api/workspaceClient';
+import { isPaddleCheckoutConfigured, openWorkspaceCheckout } from '@/lib/billing/paddleCheckout';
 import { ESTATE } from '@/lib/estate';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 
 export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations: () => void }) {
+  const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const access = useWorkspaceAccess();
   const catalog = useWorkspaceCatalog();
   const communication = useCommunicationSurface();
@@ -25,6 +30,22 @@ export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations
   ];
   const readyLaunchSteps = launchSteps.filter((step) => step.ready).length;
   const nextLaunchStep = launchSteps.find((step) => !step.ready);
+  const purchasablePlans = (catalog.data?.plans ?? []).filter((plan) => plan.interval === 'month');
+  const startCheckout = async (plan: WorkspacePlan) => {
+    if (!plan.checkout_ready || !isPaddleCheckoutConfigured()) {
+      toast.info('Checkout wird gerade freigeschaltet. Tarif und Preis kommen bereits live aus CORE.');
+      return;
+    }
+    setCheckoutPlan(plan.key);
+    try {
+      const intent = await createWorkspaceCheckoutIntent({ plan_key: plan.key, seats: plan.included_seats });
+      if (!await openWorkspaceCheckout(intent)) throw new Error('Paddle ist in diesem Build nicht konfiguriert.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Checkout konnte nicht ge?ffnet werden.');
+    } finally {
+      setCheckoutPlan(null);
+    }
+  };
   return <div className="space-y-6" data-testid="workspace-control-tab">
     <header className="flex items-start justify-between gap-4"><div><p className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/60">Workspace-Wahrheit</p><h3 className="mt-1 text-xl font-light text-white">Dein Saim?r im ?berblick</h3><p className="mt-2 text-sm text-white/48">Produkte, Einrichtung und Abrechnung direkt aus CORE.</p></div><button type="button" onClick={() => access.refetch()} disabled={access.isFetching} aria-label="Workspace aktualisieren" className="rounded-xl border border-white/10 bg-white/[0.04] p-2 text-white/45 hover:bg-white/[0.08] disabled:opacity-40"><RefreshCw size={15} className={access.isFetching ? 'animate-spin' : ''} /></button></header>
     {!snapshot && !access.isLoading && <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100/70">CORE konnte den Status nicht best?tigen. Das OS zeigt keine erfundenen Werte.</div>}
@@ -41,6 +62,19 @@ export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations
       <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{connections.map((item) => <div key={item.label} className="rounded-xl border border-white/[0.06] bg-black/15 px-3 py-2"><div className="flex items-center gap-2"><span className={'h-1.5 w-1.5 rounded-full ' + (item.ready ? 'bg-emerald-400' : 'bg-white/20')} /><span className="text-xs text-white/65">{item.label}</span></div><div className="mt-1 text-[9px] uppercase tracking-wider text-white/28">{item.ready ? 'bereit' : 'offen'}</div></div>)}</div>
     </section>
     <section className="rounded-2xl border border-white/[0.08] bg-black/20 p-4"><h4 className="text-sm font-medium text-white/82">Produkte und Rechte</h4><div className="mt-3 space-y-2">{products.length ? products.map((product) => <div key={product.key} className="flex items-center justify-between rounded-xl border border-white/[0.06] bg-white/[0.025] px-3 py-2.5"><div><div className="text-sm text-white/80">{product.label}</div><div className="text-[10px] text-white/35">{product.access === 'included' ? 'im Paket enthalten' : 'direkt gebucht'}</div></div><span className="rounded-full bg-emerald-400/10 px-2 py-1 text-[10px] text-emerald-200/70">aktiv</span></div>) : <p className="py-2 text-sm text-white/42">Noch kein aktiver Produktzugang in CORE.</p>}</div></section>
+    <section className="rounded-2xl border border-amber-200/10 bg-amber-200/[0.025] p-4">
+      <div className="flex items-end justify-between gap-3"><div><p className="text-[10px] uppercase tracking-[0.16em] text-amber-200/55">Echte Tarife</p><h4 className="mt-1 text-sm font-medium text-white/82">Vom Einstieg zum vollst?ndigen System</h4></div><span className="text-[10px] text-white/30">14 Tage testen</span></div>
+      <div className="mt-4 grid gap-2 md:grid-cols-3">{purchasablePlans.map((plan) => {
+        const active = products.some((product) => product.key === plan.product);
+        const price = new Intl.NumberFormat('de-DE', { style: 'currency', currency: plan.price.currency }).format(plan.price.amount_minor / 100);
+        return <article key={plan.key} className={'rounded-2xl border p-4 ' + (active ? 'border-emerald-300/20 bg-emerald-300/[0.05]' : 'border-white/[0.07] bg-black/15')}>
+          <div className="text-xs text-white/52">{plan.label}</div><strong className="mt-2 block text-xl font-light text-white">{price}<span className="text-xs text-white/35"> / Monat</span></strong><p className="mt-1 text-[10px] text-white/32">{plan.included_seats} {plan.included_seats === 1 ? 'Platz' : 'Pl?tze'} inklusive</p>
+          <button type="button" onClick={() => startCheckout(plan)} disabled={active || checkoutPlan === plan.key} className="mt-4 w-full rounded-xl border border-amber-200/15 bg-amber-200/[0.07] px-3 py-2 text-xs text-amber-50/80 hover:bg-amber-200/[0.12] disabled:cursor-default disabled:opacity-45">{active ? 'Aktiv' : checkoutPlan === plan.key ? 'Wird vorbereitet?' : plan.checkout_ready ? 'Ausw?hlen' : 'Vormerken'}</button>
+        </article>;
+      })}</div>
+      {!purchasablePlans.length && <p className="mt-4 text-sm text-white/38">Der Tarifkatalog ist gerade nicht erreichbar.</p>}
+      <p className="mt-3 text-[10px] leading-relaxed text-white/28">Das OS bereitet nur den Kauf vor. Produktrechte werden ausschlie?lich nach einem signierten Zahlungsereignis in CORE aktiviert.</p>
+    </section>
     <div className="grid gap-3 md:grid-cols-2"><Action title="Dienste verbinden" text="Mail, Kalender, Cloud, Feeds und Assistenten." onClick={onOpenIntegrations} /><Action title="Abo und Kosten verwalten" text="Tarife, Pl?tze und Checkout in Saim?r Desk." onClick={() => window.open(ESTATE.desk + '/plans', '_blank', 'noopener,noreferrer')} external /></div>
   </div>;
 }
