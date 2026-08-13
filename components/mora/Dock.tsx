@@ -720,7 +720,7 @@ export const Dock = () => {
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
-            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Setup',          size: { width: 720, height: 640 } }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Saim?r Setup', size: { width: 920, height: 700 }, data: { section: 'workspace-control' } }); break;
             case 'desk':     window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'); break;
             // ── Curated demo destinations (public_playground only) ──────
             case 'dossier': {

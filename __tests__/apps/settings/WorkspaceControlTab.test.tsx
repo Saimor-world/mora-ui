@@ -25,18 +25,19 @@ describe('WorkspaceControlTab', () => {
     mockCatalog.mockReturnValue({ data: { plans: [] } });
     mockCommunication.mockReturnValue({
       summary: { mailConfigured: true, mailLocalMode: false, calendarConfigured: false },
-      overview: { cloud_storage: { configured: true }, rss: { configured: false }, capabilities: { assistant_available: true } },
+      overview: { cloud_storage: { configured: true }, rss: { configured: false }, capabilities: { assistant_available: true }, runtime: { local_truth: { services: { core: { reachable: true } } } } },
     });
   });
 
   it('renders CORE workspace truth and opens integrations', () => {
     const openIntegrations = jest.fn();
     render(<WorkspaceControlTab onOpenIntegrations={openIntegrations} />);
-    expect(screen.getByText('Saim?r OS')).toBeInTheDocument();
+    expect(screen.getAllByText('Saim?r OS')).toHaveLength(2);
     expect(screen.getByText('Bereit')).toBeInTheDocument();
     expect(screen.getByText('5 Pl?tze')).toBeInTheDocument();
     expect(screen.getByText('3/5 verbunden')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Kalender einrichten/i })).toBeInTheDocument();
+    expect(screen.getByText('3 von 4 Ebenen bereit')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Dienste verbinden/i }));
     expect(openIntegrations).toHaveBeenCalledTimes(1);
   });

@@ -108,7 +108,7 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'finder',   label: 'Finder',   description: 'Objekte und Dateien',   shortcutSuffix: 'F' },
         { action: 'team',     label: 'Team',     description: 'Menschen und Rollen',   shortcutSuffix: 'U' },
         { action: 'map',      label: 'Karte',    description: 'Organisation sehen',    shortcutSuffix: null },
-        { action: 'settings', label: 'Setup',    description: 'Verwaltung',            shortcutSuffix: ',' },
+        { action: 'settings', label: 'Setup',    description: 'Workspace startklar machen', shortcutSuffix: ',' },
         { action: 'desk',     label: ESTATE_LABELS.desk, description: 'Operator-Lage: Agenten, Infrastruktur und Systemstatus', shortcutSuffix: 'L' },
     ];
 }

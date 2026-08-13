@@ -241,12 +241,12 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'settings',
-    name: 'Einstellungen',
-    description: 'System und Arbeitsbereich konfigurieren',
+    name: 'Saim?r Setup',
+    description: 'Workspace starten, verbinden und verwalten',
     icon: 'Settings',
     color: 'slate',
     category: 'system',
-    defaultSize: { width: 920, height: 620 },
+    defaultSize: { width: 920, height: 700 },
     singleton: true,
   },
 

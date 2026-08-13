@@ -53,7 +53,7 @@ const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
 // ────────────────────────────────────────────────────────────────────────────
 
-export default function SettingsApp({ paneId }: AppProps) {
+export default function SettingsApp({ paneId, initialData }: AppProps) {
     const id = paneId;
     const { data: session } = useRuntimeSession();
     const { removePane, minimizePane, focusPane, getPane, openPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -82,7 +82,8 @@ export default function SettingsApp({ paneId }: AppProps) {
     const [createParentId, setCreateParentId] = useState<string | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const [activeTab, setActiveTab] = useState('profile');
+    const requestedSection = typeof initialData?.section === 'string' ? initialData.section : null;
+    const [activeTab, setActiveTab] = useState(requestedSection || 'profile');
     const [theme, setTheme] = useState('deep-space');
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
