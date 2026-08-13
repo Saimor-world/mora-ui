@@ -12,6 +12,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { corePost } from '@/lib/api/coreClient';
+import { fetchCompanies } from '@/lib/api/orgClient';
+import { updateWorkspaceOnboarding } from '@/lib/api/workspaceClient';
 import { toast } from 'sonner';
 
 /**
@@ -64,7 +66,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const queryClient = useQueryClient();
-    const { data: companiesData = [] } = useCompanies();
+    useCompanies();
 
     const steps = [
         { title: 'Willkommen', icon: Sparkles },
@@ -115,8 +117,8 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
         try {
             // 1. Get/Create Company
             // Company was already created during registration. Find its ID from TanStack cache.
-            await queryClient.invalidateQueries({ queryKey: queryKeys.companies() });
-            const companies = companiesData;
+            const companies = await fetchCompanies();
+            queryClient.setQueryData(queryKeys.companies(), companies);
 
             // Find the user's company
             let myCompany = companies.find(c => c.name === companyName && !c.is_demo);
@@ -155,7 +157,7 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                     if (process.env.NODE_ENV === 'development') {
                         console.warn(`Could not create department ${dept.name}:`, err);
                     }
-                    // Continue with other departments
+                    throw err;
                 }
             }
 
@@ -169,7 +171,13 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
                 }
             }
 
-            // 4. Mark onboarding as complete
+            await updateWorkspaceOnboarding({
+                product_intent: 'os',
+                state: 'complete',
+                completed_steps: ['company', 'departments', 'workspace_ready'],
+            });
+
+            // 4. Mark this device complete only after CORE confirms setup
             localStorage.setItem('onboarding_complete', 'true');
             localStorage.setItem('last_workspace', myCompany?.name || companyName);
 
@@ -179,14 +187,12 @@ export const OnboardingWizard: React.FC<OnboardingWizardProps> = ({
             if (process.env.NODE_ENV === 'development') {
                 console.error('Onboarding Fehler:', error);
             }
-            toast.error('Setup hatte Probleme, aber wir fahren fort. Bitte laden Sie die Seite ggf. neu.', { id: toastId });
-            // Mark as complete anyway so user isn't stuck
-            localStorage.setItem('onboarding_complete', 'true');
+            toast.error('Setup konnte nicht abgeschlossen werden. Ihre Eingaben bleiben erhalten – bitte erneut versuchen.', { id: toastId });
+            return;
         } finally {
             setIsLoading(false);
-            // ALWAYS call onComplete to prevent black screen
-            onComplete();
         }
+        onComplete();
     };
 
     const nextStep = () => {

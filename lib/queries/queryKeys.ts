@@ -57,6 +57,8 @@ export const STALE_TIMES = {
 
   // RSS / Atom items — glance + reader panes.
   rssFeed: 60 * 1000, // 1 minute
+  workspaceAccess: 60 * 1000,
+  workspaceCatalog: 30 * 60 * 1000,
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -111,4 +113,6 @@ export const queryKeys = {
   bridgePulse: () => ['bridgePulse'] as const,
 
   rssFeed: (limit = 30) => ['integrations', 'rss', 'items', limit] as const,
+  workspaceAccess: () => ['workspace', 'access'] as const,
+  workspaceCatalog: () => ['workspace', 'catalog'] as const,
 };
