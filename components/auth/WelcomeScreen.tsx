@@ -18,6 +18,7 @@ import { isAdmin, roleLabel } from '@/lib/auth/roles';
 
 import { bridgeNextAuthSignIn } from '@/lib/auth/nextAuthBridge';
 import { OnboardingWizard } from './OnboardingWizard';
+import { fetchWorkspaceAccess } from '@/lib/api/workspaceClient';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { buildWebsiteEntryContext, type WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import {
@@ -41,6 +42,10 @@ interface SessionInfo {
     userName?: string;
     userEmail?: string;
     role?: string;
+}
+
+export function shouldResumeWorkspaceSetup(role: string | undefined, workspace: { onboarding?: { state?: string } } | null): boolean {
+    return isAdmin(role || '') && Boolean(workspace) && workspace?.onboarding?.state !== 'complete';
 }
 
 interface DemoTrialContext {
@@ -432,6 +437,16 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             }
 
             toast.success("Willkommen zurück!");
+            if (isAdmin(sessionInfo?.role || '')) {
+                const workspace = await fetchWorkspaceAccess();
+                if (shouldResumeWorkspaceSetup(sessionInfo?.role, workspace)) {
+                    setCompanyName(targetCompany?.name || sessionInfo?.lastWorkspace || '');
+                    setRegisteredEmail(sessionInfo?.userEmail || '');
+                    setShowOnboarding(true);
+                    touchSessionActivity();
+                    return;
+                }
+            }
             touchSessionActivity();
             onAuthenticated();
         } catch (error) {

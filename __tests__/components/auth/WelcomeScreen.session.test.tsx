@@ -1,13 +1,14 @@
 ﻿import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { WelcomeScreen } from '@/components/auth/WelcomeScreen';
+import { WelcomeScreen, shouldResumeWorkspaceSetup } from '@/components/auth/WelcomeScreen';
 import * as coreClient from '@/lib/api/coreClient';
 import * as cookies from '@/lib/auth/cookies';
 import { signIn } from 'next-auth/react';
 import { renderWithProviders, resetAllStores } from '../../test-utils';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { fetchWorkspaceAccess } from '@/lib/api/workspaceClient';
 import {
     WEBSITE_ENTRY_CONTEXT_STORAGE_KEY,
     WEBSITE_ENTRY_PREVIEW_SESSION_KIND,
@@ -37,6 +38,10 @@ jest.mock('@/lib/api/coreClient', () => ({
     coreGet: jest.fn(),
     authLogout: jest.fn(),
     getCoreBaseUrl: jest.fn(() => '/api/core'),
+}));
+
+jest.mock('@/lib/api/workspaceClient', () => ({
+    fetchWorkspaceAccess: jest.fn(),
 }));
 
 jest.mock('@/lib/auth/cookies', () => ({
@@ -92,6 +97,7 @@ const mockCoreGet = coreClient.coreGet as jest.MockedFunction<typeof coreClient.
 const mockAuthLogout = coreClient.authLogout as jest.MockedFunction<typeof coreClient.authLogout>;
 const mockReadCookie = cookies.readCookie as jest.MockedFunction<typeof cookies.readCookie>;
 const mockSignIn = signIn as jest.MockedFunction<typeof signIn>;
+const mockFetchWorkspaceAccess = fetchWorkspaceAccess as jest.Mock;
 const mockLocationAssign = jest.fn();
 
 beforeEach(resetAllStores);
@@ -129,6 +135,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         mockReadCookie.mockReturnValue(null as any);
         (global.fetch as any) = jest.fn();
         mockSignIn.mockResolvedValue({ ok: true, error: null, status: 200, url: '/home' } as any);
+        mockFetchWorkspaceAccess.mockResolvedValue(null);
         Object.defineProperty(window, 'location', {
             configurable: true,
             value: { ...window.location, assign: mockLocationAssign, hostname: 'localhost' },
@@ -164,6 +171,27 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
             expect(screen.getByText(/Workspace Alpha/)).toBeInTheDocument();
             expect(screen.getByText('Fortsetzen')).toBeInTheDocument();
         });
+    });
+
+    it('derives owner setup continuation from CORE instead of local flags', () => {
+        expect(shouldResumeWorkspaceSetup('owner', { onboarding: { state: 'in_progress' } })).toBe(true);
+        expect(shouldResumeWorkspaceSetup('admin', { onboarding: { state: 'not_started' } })).toBe(true);
+        expect(shouldResumeWorkspaceSetup('owner', { onboarding: { state: 'complete' } })).toBe(false);
+        expect(shouldResumeWorkspaceSetup('member', { onboarding: { state: 'in_progress' } })).toBe(false);
+        expect(shouldResumeWorkspaceSetup('owner', null)).toBe(false);
+    });
+
+    it('does not force members through organization setup', async () => {
+        localStorage.setItem('last_activity', new Date(Date.now() - 6 * HOUR).toISOString());
+        localStorage.setItem('user_name', 'Member');
+        localStorage.setItem('saimor_role', 'member');
+        mockReadCookie.mockImplementation((name: string) => name === 'saimor_auth' ? 'test-token' : null as any);
+
+        renderWithStore();
+        await waitFor(() => expect(screen.getByText('Fortsetzen')).toBeInTheDocument());
+        fireEvent.click(screen.getByText('Fortsetzen'));
+
+        await waitFor(() => expect(mockFetchWorkspaceAccess).not.toHaveBeenCalled());
     });
 
     it('shows "erkennung" card with password prompt for expired token', async () => {
