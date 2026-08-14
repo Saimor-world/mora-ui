@@ -45,7 +45,17 @@ describe('filterCompaniesForSurface', () => {
         expect(result.map((item) => item.name)).toEqual(['Saimôr HQ']);
     });
 
-    it('keeps a tenant-local guided demo visible to an HQ owner', () => {
+    // Frueher zeigte HQ dem Eigentuemer sein eigenes gefuehrtes Demo neben der
+    // echten Firma. Seit 75d16e3 ("eliminate hardcoded demo company injection
+    // on real HQ surface") nicht mehr - und das ist richtig so: hq.saimor.world
+    // ist laut surfaceProfile.ts "real single-company production deployment",
+    // also genau eine Firma. Demos leben auf der oeffentlichen Demo-Oberflaeche
+    // (show.saimor.world), nicht in der Produktivumgebung eines Kunden.
+    //
+    // Der Test prueft weiterhin dieselbe Sorge wie vorher - dass ein Demo den
+    // echten Arbeitsbereich nicht verunreinigt - nur jetzt in die Richtung, die
+    // die Architektur vorgibt.
+    it('shows an HQ owner only the real company, never their guided demo', () => {
         const ownerTenant = 'tenant-nextchapter';
         const ownerCompanies = [
             company('nextchapter', 'Next Chapter Germany', ownerTenant),
@@ -58,7 +68,7 @@ describe('filterCompaniesForSurface', () => {
             viewMode: 'workspace',
         });
 
-        expect(result.map((item) => item.id)).toEqual(['nextchapter', 'guided-demo']);
+        expect(result.map((item) => item.id)).toEqual(['nextchapter']);
     });
 
     it('does not expose the guided demo to a regular member', () => {

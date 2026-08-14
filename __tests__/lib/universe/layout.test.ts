@@ -85,7 +85,14 @@ describe('buildOrganicUniverseLayout', () => {
     expect(UNIVERSE_CORE_POINT).toEqual({ x: 50, y: 50 });
   });
 
-  it('clusters planets tightly around the viewport centre', () => {
+  // Frueher stand hier ein fester Radius von 14 um den Mittelpunkt. Seit
+  // cc6cc2c ("restrict planet orbits to central corridor 31%..69% to prevent
+  // widget collision") ist die Vorgabe eine andere und praezisere: die Planeten
+  // muessen die Widget-Spalten links (0..30%) und rechts (70..100%) freihalten.
+  // Ein Radius sagt darueber nichts - ein Punkt bei 23 Einheiten Abstand kann
+  // im Korridor liegen oder daneben, je nach Richtung. Geprueft wird deshalb
+  // die Grenze selbst, nicht ein Ersatzmass dafuer.
+  it('keeps planets inside the central corridor that clears the widget columns', () => {
     const depts = Array.from({ length: 8 }, (_, i) => ({
       id: `d${i}`,
       name: `Dept ${i}`,
@@ -96,9 +103,10 @@ describe('buildOrganicUniverseLayout', () => {
     );
     const out = buildOrganicUniverseLayout(depts, metrics);
     for (const p of out) {
-      const dx = p.x - UNIVERSE_CORE_POINT.x;
-      const dy = p.y - UNIVERSE_CORE_POINT.y;
-      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(14);
+      expect(p.x).toBeGreaterThanOrEqual(UNIVERSE_SAFE_BOUNDS.minX);
+      expect(p.x).toBeLessThanOrEqual(UNIVERSE_SAFE_BOUNDS.maxX);
+      expect(p.y).toBeGreaterThanOrEqual(UNIVERSE_SAFE_BOUNDS.minY);
+      expect(p.y).toBeLessThanOrEqual(UNIVERSE_SAFE_BOUNDS.maxY);
     }
   });
 
