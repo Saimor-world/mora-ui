@@ -3,8 +3,8 @@ import type { AppManifest } from '@/lib/apps/types';
 import { getAppUniverseGroups } from '@/lib/openflow/appUniverse';
 
 describe('appRegistry', () => {
-  it('contains exactly 26 app entries', () => {
-    expect(APP_REGISTRY).toHaveLength(26);
+  it('contains exactly 27 app entries', () => {
+    expect(APP_REGISTRY).toHaveLength(27);
   });
 
   it('every app has required fields', () => {

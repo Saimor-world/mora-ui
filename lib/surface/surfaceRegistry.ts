@@ -19,7 +19,7 @@ export type PaneType =
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
     | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
     | 'timeline' | 'tasks' | 'canvas' | 'nightwatch' | 'lagefeld' | 'codex'
-    | 'wall' | 'feeds';
+    | 'wall' | 'feeds' | 'earth';
 
 /**
  * Every pane type mapped to its tier.
@@ -58,6 +58,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     codex:           'app',       // Engineering coding agent
     tasks:           'app',       // Kanban board
     canvas:          'app',       // Whiteboard
+    earth:           'app',       // Ortsansicht der Gemeinde — der bezahlte Teil von Earth
     wall:            'app',       // Community Wall — Security Signals
 
     mail:            'app',
