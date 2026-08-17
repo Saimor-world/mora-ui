@@ -3,6 +3,7 @@
 // All domain modules import from here, not from coreClient.ts directly.
 
 import type { OperationalState } from '@/lib/types/session';
+import { buendele } from './anfrageBuendelung';
 export type { OperationalState };
 
 /**
@@ -208,7 +209,16 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
 }
 
 export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'method' | 'body'> = {}): Promise<any> {
-    return coreRequest(path, { ...options, method: 'GET' });
+    // Gleiche Leseanfrage, gleicher Moment — eine Leitung. Beim Start des
+    // OS waren von 43 Anfragen an CORE nur 25 verschieden; zwei Komponenten
+    // fragten dasselbe wenige Millisekunden auseinander, weil sie nichts
+    // voneinander wissen. Siehe lib/api/anfrageBuendelung.ts.
+    //
+    // Nur GET: Ein zweites POST ist eine zweite Absicht, kein Duplikat.
+    // Und nur waehrend die Anfrage laeuft — kein Zwischenspeicher, sonst
+    // wuerde aus der Beschleunigung eine stille Veraltung.
+    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${JSON.stringify(options.headers ?? null)}`;
+    return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 
 export async function corePost(path: string, body: any, options: Omit<CoreRequestOptions, 'method'> = {}): Promise<any> {
