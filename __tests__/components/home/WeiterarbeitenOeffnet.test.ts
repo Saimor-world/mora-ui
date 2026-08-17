@@ -51,7 +51,11 @@ describe('Gegenprobe', () => {
     expect(quelle).toMatch(/item\.paneData\?\.folderId/);
   });
 
-  it('earth ist eine bekannte App und damit abgedeckt', () => {
-    expect(APP_IDS).toContain('earth');
+  it('deckt auch die Apps ab, die frueher in den Finder fielen', () => {
+    // Vor dem Umbau kannte der Oeffner nur document/finder/notes/chat/codex.
+    // Alles andere landete im Finder. Diese Stichprobe steht fuer den Rest.
+    for (const id of ['calendar', 'tasks', 'nightwatch', 'timeline', 'users']) {
+      expect(APP_IDS).toContain(id);
+    }
   });
 });

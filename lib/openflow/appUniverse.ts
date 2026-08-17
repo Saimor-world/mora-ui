@@ -7,7 +7,7 @@ const GROUPS: AppUniverseGroup[] = [
     id: 'work',
     label: 'Arbeit',
     description: 'Finder, Aufgaben, Kalender, Notizen und konkrete Arbeitsfenster.',
-    appIds: ['finder', 'document', 'notes', 'tasks', 'calendar', 'grid', 'timeline', 'earth'],
+    appIds: ['finder', 'document', 'notes', 'tasks', 'calendar', 'grid', 'timeline'],
   },
   {
     id: 'sources',

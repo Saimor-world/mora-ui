@@ -58,7 +58,6 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   timeline:        dynamic(() => import('@/apps/timeline'),      { ssr: false, loading: () => <AppSkeleton /> }),
   nightwatch:      dynamic(() => import('@/apps/nightwatch'),    { ssr: false, loading: () => <AppSkeleton /> }),
   lagefeld:        dynamic(() => import('@/apps/lagefeld'),      { ssr: false, loading: () => <AppSkeleton /> }),
-  earth:           dynamic(() => import('@/apps/earth'),         { ssr: false, loading: () => <AppSkeleton /> }),
   codex:           dynamic(() => import('@/apps/codex'),         { ssr: false, loading: () => <AppSkeleton /> }),
   canvas:          dynamic(() => import('@/apps/canvas'),        { ssr: false, loading: () => <AppSkeleton /> }),
   grid:            dynamic(() => import('@/apps/grid'),          { ssr: false, loading: () => <AppSkeleton /> }),

@@ -250,18 +250,6 @@ export const APP_REGISTRY: AppManifest[] = [
     singleton: true,
   },
 
-  {
-    id: 'earth',
-    name: 'Ortsansicht',
-    description: 'Haushalt, Pflege und Termine der eigenen Flaechen',
-    icon: 'MapPin',
-    color: 'green',
-    category: 'workspace',
-    defaultSize: { width: 760, height: 620 },
-    singleton: true,
-    isNew: true,
-  },
-
   // ── Creative ──────────────────────────────────────────────────────────────
   {
     id: 'canvas',
