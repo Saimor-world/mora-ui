@@ -5,7 +5,18 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
-import { AppLoader } from '@/lib/apps/AppLoader';
+import { AppLoader, APP_IDS } from '@/lib/apps/AppLoader';
+
+/**
+ * Die wenigen Faelle, in denen Fenstertyp und App-Kennung auseinandergehen.
+ * Ohne diese Tabelle waere der generische Weg unten eine stille
+ * Verhaltensaenderung: `space` oeffnete den Finder, `actions` das
+ * Action-Center — beides Namen aus frueheren Ausbaustufen.
+ */
+const PANE_ALIAS: Record<string, string> = {
+    space: 'finder',
+    actions: 'action-center',
+};
 
 // ── Legacy panes without a matching apps/ module ──────────────────────────────
 import { CompanyDetailPane } from '@/components/panes/CompanyDetailPane';
@@ -51,63 +62,19 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
         return <FullBleedWrapper pane={pane} appId={fullBleedAppId} />;
     }
 
-    switch (pane.type) {
-        // ── Migrated to App Platform ─────────────────────────────────────────
-        case 'finder':
-        case 'space':
-            return <AppLoader appId="finder" paneId={pane.id} initialData={pane.data} />;
-        case 'document':
-            return <AppLoader appId="document" paneId={pane.id} initialData={pane.data} />;
-        case 'notes':
-            return <AppLoader appId="notes" paneId={pane.id} initialData={pane.data} />;
-        case 'chat':
-            return <AppLoader appId="chat" paneId={pane.id} initialData={pane.data} />;
-        case 'search':
-            return <AppLoader appId="search" paneId={pane.id} initialData={pane.data} />;
-        case 'scanner':
-            return <AppLoader appId="scanner" paneId={pane.id} initialData={pane.data} />;
-        case 'users':
-            return <AppLoader appId="users" paneId={pane.id} initialData={pane.data} />;
-        case 'settings':
-            return <AppLoader appId="settings" paneId={pane.id} initialData={pane.data} />;
-        case 'calendar':
-            return <AppLoader appId="calendar" paneId={pane.id} initialData={pane.data} />;
-        case 'team':
-            return <AppLoader appId="team" paneId={pane.id} initialData={pane.data} />;
-        case 'terminal':
-            return <AppLoader appId="terminal" paneId={pane.id} initialData={pane.data} />;
-        case 'grid':
-            return <AppLoader appId="grid" paneId={pane.id} initialData={pane.data} />;
-        case 'tasks':
-            return <AppLoader appId="tasks" paneId={pane.id} initialData={pane.data} />;
-        case 'timeline':
-            return <AppLoader appId="timeline" paneId={pane.id} initialData={pane.data} />;
-        case 'canvas':
-            return <AppLoader appId="canvas" paneId={pane.id} initialData={pane.data} />;
-        case 'apps':
-            return <AppLoader appId="apps" paneId={pane.id} initialData={pane.data} />;
-        case 'meine-dateien':
-            return <AppLoader appId="meine-dateien" paneId={pane.id} initialData={pane.data} />;
-        case 'integrations':
-            return <AppLoader appId="integrations" paneId={pane.id} initialData={pane.data} />;
-        case 'mail':
-            return <AppLoader appId="mail" paneId={pane.id} initialData={pane.data} />;
-        case 'feeds':
-            return <AppLoader appId="feeds" paneId={pane.id} initialData={pane.data} />;
-        case 'website-dossier':
-            return <AppLoader appId="website-dossier" paneId={pane.id} initialData={pane.data} />;
-        case 'actions':
-        case 'action-center':
-            return <AppLoader appId="action-center" paneId={pane.id} initialData={pane.data} />;
-        case 'work-session':
-            return <AppLoader appId="work-session" paneId={pane.id} initialData={pane.data} />;
-        case 'nightwatch':
-            return <AppLoader appId="nightwatch" paneId={pane.id} initialData={pane.data} />;
-        case 'lagefeld':
-            return <AppLoader appId="lagefeld" paneId={pane.id} initialData={pane.data} />;
-        case 'codex':
-            return <AppLoader appId="codex" paneId={pane.id} initialData={pane.data} />;
+    // Fenstertyp und App-Kennung sind fast immer dasselbe Wort. Hier standen
+    // 24 gleichlautende Zweige — und wer beim Hinzufuegen einer App einen
+    // vergass, bekam keinen Fehler, sondern ein leeres Fenster: `default`
+    // gibt `null` zurueck und schweigt. Genau so ist die Ortsansicht beim
+    // ersten Anlauf unsichtbar geblieben, mit gruener Testsuite.
+    //
+    // Jetzt entscheidet die AppLoader-Karte: Was dort steht, wird gerendert.
+    const appId = PANE_ALIAS[pane.type] ?? pane.type;
+    if (APP_IDS.includes(appId)) {
+        return <AppLoader appId={appId} paneId={pane.id} initialData={pane.data} />;
+    }
 
+    switch (pane.type) {
         // ── No apps/ module yet — keep legacy pane ───────────────────────────
         case 'company-detail':
             return (

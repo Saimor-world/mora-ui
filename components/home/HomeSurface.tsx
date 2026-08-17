@@ -40,11 +40,16 @@ import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { consumeWebsiteEntryHomeOpenFlag, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import { relativeTime, normalizePrivateAreaLabel, kindIcon, kindLabel, type RecentKind } from '@/components/home/homeSurfaceFormat';
+import { APP_IDS } from '@/lib/apps/AppLoader';
+import { getAppManifest } from '@/lib/apps/appRegistry';
+import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { HomeChip, HomeCommandButton, HomeSignalCard, HomeMiniAction, SuggestionCard, DeptPlanetTile } from '@/components/home/homeCards';
 
 // ─── types ───────────────────────────────────────────────────────────────────
 
 interface RecentActivityItem {
+    /** Der echte Fenstertyp aus dem Verlauf — nicht die grobe Kategorie. */
+    paneType?: string;
     id: string;
     label: string;
     kind: RecentKind;
@@ -233,7 +238,12 @@ export const HomeSurface: React.FC = () => {
     const revealPane = useCallback((
         paneId: string,
         req: {
-            type: 'document' | 'finder' | 'meine-dateien' | 'notes' | 'chat' | 'team' | 'mail' | 'calendar' | 'integrations' | 'feeds' | 'browser' | 'website-dossier' | 'settings' | 'wall' | 'nightwatch' | 'codex' | 'lagefeld';
+            // Hier stand eine handgeschriebene Teilmenge der Fenstertypen. Sie
+            // war eine dritte Liste neben PaneManager und Weiterarbeiten, und
+            // jede App, die in ihr fehlte, liess sich von der Startseite aus
+            // nicht oeffnen. `PaneType` ist die Quelle — bleibt sie es hier
+            // auch, kann die Liste nicht mehr veralten.
+            type: PaneType;
             title: string;
             size: { width: number; height: number };
             data?: any;
@@ -588,6 +598,7 @@ export const HomeSurface: React.FC = () => {
             ) as RecentKind,
             openedAt: item.openedAt,
             paneData: item.paneData,
+            paneType: item.paneType,
         }))
     ), [recentItems]);
 
@@ -740,6 +751,22 @@ export const HomeSurface: React.FC = () => {
             revealPane('codex-main', { type: 'codex', title: 'Codex', size: { width: 900, height: 680 } });
             return;
         }
+
+        // Alles andere ueber den gespeicherten Fenstertyp. Vorher endete hier
+        // eine Kette von fuenf Kategorien, und wer nicht dazugehoerte, bekam
+        // kommentarlos den Finder — mit dem richtigen Namen im Verlauf, weil
+        // das Eintragen ja funktioniert hatte. Betroffen waren 22 der 27 Apps.
+        if (item.paneType && APP_IDS.includes(item.paneType)) {
+            const manifest = getAppManifest(item.paneType);
+            revealPane(`${item.paneType}-main`, {
+                type: item.paneType as PaneType,
+                title: item.label || manifest?.name || item.paneType,
+                size: manifest?.defaultSize ?? { width: 860, height: 640 },
+                data: item.paneData,
+            });
+            return;
+        }
+
         openFinder();
     }, [openFinder, revealPane]);
 
