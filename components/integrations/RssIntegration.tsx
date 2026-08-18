@@ -21,6 +21,22 @@ interface RssItem {
     summary?: string;
 }
 
+/**
+ * Der Rechnername einer Quelle — oder die Adresse selbst.
+ *
+ * `new URL(...)` wirft bei einer kaputten Adresse. Ausgerechnet in der
+ * Fehlerliste waere das fatal: Ein Feed mit unbrauchbarer URL ist genau
+ * der Fall, den diese Liste zeigen soll — und er wuerde sie zum Absturz
+ * bringen.
+ */
+function quellenName(url: string): string {
+    try {
+        return new URL(url).hostname;
+    } catch {
+        return url.slice(0, 48);
+    }
+}
+
 export const RssIntegration: React.FC = () => {
     const [feeds, setFeeds] = useState<RssFeed[]>([]);
     const [items, setItems] = useState<RssItem[]>([]);
@@ -30,6 +46,7 @@ export const RssIntegration: React.FC = () => {
     const [isSaving, setIsSaving] = useState(false);
 
     const [fetchErrors, setFetchErrors] = useState<Array<{ url: string; message: string }>>([]);
+    const [fehlerOffen, setFehlerOffen] = useState(false);
     const [editingUrl, setEditingUrl] = useState<string | null>(null);
     const [editingTitle, setEditingTitle] = useState("");
 
@@ -247,16 +264,26 @@ export const RssIntegration: React.FC = () => {
                     <div className="mb-3 flex items-center justify-between">
                         <div className="text-xs font-medium uppercase tracking-[0.18em] text-white/40">Aktuelle Signale</div>
                         {fetchErrors.length > 0 && (
-                            <span className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] text-red-300/70">
-                                {fetchErrors.length} Fehler
-                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setFehlerOffen((offen) => !offen)}
+                                aria-expanded={fehlerOffen}
+                                className="rounded-full bg-red-500/10 px-2 py-0.5 text-[10px] text-red-300/70 transition hover:bg-red-500/20 hover:text-red-200"
+                            >
+                                {fetchErrors.length} Fehler {fehlerOffen ? '▴' : '▾'}
+                            </button>
                         )}
                     </div>
-                    {fetchErrors.length > 0 && items.length === 0 && (
+                    {/* Vorher stand hier `items.length === 0`: Die Fehler waren nur
+                        sichtbar, wenn gar nichts ankam. Wer Signale bekommt und
+                        daneben „2 Fehler" liest, erfuhr nie, welche Quellen still
+                        ausgefallen sind — und eine tote Quelle faellt so
+                        monatelang niemandem auf. */}
+                    {fetchErrors.length > 0 && (fehlerOffen || items.length === 0) && (
                         <div className="mb-3 space-y-1.5">
-                            {fetchErrors.slice(0, 2).map((err) => (
+                            {fetchErrors.map((err) => (
                                 <div key={err.url} className="rounded-xl border border-red-500/15 bg-red-500/[0.05] px-3 py-2">
-                                    <div className="truncate text-[10px] text-red-300/60">{new URL(err.url).hostname}</div>
+                                    <div className="truncate text-[10px] text-red-300/60">{quellenName(err.url)}</div>
                                     <div className="mt-0.5 text-[11px] text-red-200/50">{err.message.slice(0, 80)}</div>
                                 </div>
                             ))}
