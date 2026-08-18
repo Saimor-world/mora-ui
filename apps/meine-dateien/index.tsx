@@ -38,6 +38,7 @@ import {
     type CompanyFileRecord,
 } from '@/lib/api/filesClient';
 import { toast } from '@/lib/toast';
+import { IndexUebersicht } from '@/components/dateien/IndexUebersicht';
 import type { AppProps } from '@/lib/apps/types';
 import { getCoreFileVisibilityLabel, isSharedVisibilityScope, isWorkspaceVisibilityScope } from '@/lib/utils/visibility';
 import {
@@ -852,15 +853,33 @@ function FileKindIcon({ file }: { file: UnifiedFile }) {
     return <FileText className={className} size={18} />;
 }
 
+/**
+ * Was zu sehen ist, solange keine Datei gewählt wurde.
+ *
+ * Bisher stand hier nur der erklärende Text — auf einer Fläche, die den
+ * größten Teil des Fensters einnimmt. Die Frage, die einen an dieser
+ * Stelle wirklich umtreibt, beantwortete er nicht: *Was liegt hier
+ * eigentlich alles, und wo liegt es doppelt?*
+ *
+ * Der Text bleibt (er erklärt die drei Ablageorte, die sonst niemand
+ * erklärt), rückt aber nach oben und macht darunter Platz für den
+ * Dateiindex.
+ */
 function EmptyPreview() {
     return (
-        <div className="flex h-full min-h-[420px] items-center justify-center p-6">
-            <div className="max-w-sm text-center">
-                <HardDrive size={30} className="mx-auto text-white/25" />
-                <h3 className="mt-4 text-lg font-medium text-white/78">Datei-Arbeitsplatz</h3>
-                <p className="mt-2 text-sm leading-relaxed text-white/40">
-                    Starte auf diesem Gerät, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
-                </p>
+        <div className="h-full min-h-[420px] overflow-y-auto p-6">
+            <div className="mx-auto max-w-2xl">
+                <div className="text-center">
+                    <HardDrive size={26} className="mx-auto text-white/25" />
+                    <h3 className="mt-3 text-base font-medium text-white/78">Datei-Arbeitsplatz</h3>
+                    <p className="mx-auto mt-2 max-w-sm text-[13px] leading-relaxed text-white/40">
+                        Starte auf diesem Gerät, sichere privat auf dem SAIMOR-Server oder teile bewusst in den Workspace. Nichts wird automatisch fuer das Team freigegeben.
+                    </p>
+                </div>
+
+                <div className="mt-7 border-t border-white/[0.06] pt-6">
+                    <IndexUebersicht />
+                </div>
             </div>
         </div>
     );
