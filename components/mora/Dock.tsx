@@ -4,7 +4,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search, Minus, Building2, ChevronUp,
-    Home, MessageCircle, FolderOpen, Users, FileText, Settings, FolderHeart,
+    Home, MessageCircle, FolderOpen, HardDrive, Users, FileText, Settings, FolderHeart,
     Music2, Pause, Play, SkipForward, Sparkles, Brain, X, Mic,
     ShieldCheck, LayoutGrid, Compass
 } from 'lucide-react';
@@ -718,6 +718,7 @@ export const Dock = () => {
             case 'ambient':  toggleVoiceOverlay(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
+            case 'dateien':  openPane({ id: 'dateien-main',  type: 'meine-dateien', title: 'Dateien',   size: { width: 1180, height: 780 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
             case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Saim?r Setup', size: { width: 920, height: 700 }, data: { section: 'workspace-control' } }); break;
@@ -755,6 +756,7 @@ export const Dock = () => {
         home:     Home,
         chat:     MessageCircle,
         finder:   FolderOpen,
+        dateien:  HardDrive,
         team:     Users,
         map:      Compass,
         notes:    FileText,

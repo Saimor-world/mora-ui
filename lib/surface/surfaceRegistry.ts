@@ -106,6 +106,11 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'home',     label: 'Home',     description: 'Lagebild',              shortcutSuffix: 'H' },
         { action: 'chat',     label: 'MORA',     description: 'Mit MORA sprechen',     shortcutSuffix: 'J' },
         { action: 'finder',   label: 'Finder',   description: 'Objekte und Dateien',   shortcutSuffix: 'F' },
+        // Getrennt vom Finder, solange beide Ebenen getrennt sind: Der Finder
+        // zeigt, was im Arbeitsbereich liegt, diese App zeigt den Index über
+        // *alle* Speicher — Gerät, Server, Cloud — nach Inhalt statt nach Ort.
+        // Ohne eigenen Eintrag war sie von nirgendwo aus erreichbar.
+        { action: 'dateien',  label: 'Dateien',  description: 'Alle Speicher, auch die Cloud', shortcutSuffix: null },
         { action: 'team',     label: 'Team',     description: 'Menschen und Rollen',   shortcutSuffix: 'U' },
         { action: 'map',      label: 'Karte',    description: 'Organisation sehen',    shortcutSuffix: null },
         { action: 'settings', label: 'Setup',    description: 'Workspace startklar machen', shortcutSuffix: ',' },
