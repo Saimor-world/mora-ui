@@ -49,12 +49,14 @@ import {
     writeLocalPrivateFiles,
     type LocalPrivateFileRecord,
 } from '@/lib/files/localPrivateFiles';
+import { fetchCloudConnectorItems } from '@/lib/api/contentClient';
+import { coreGet } from '@/lib/api/http';
 
 type LocalFileRecord = LocalPrivateFileRecord;
 
 type UnifiedFile = {
     id: string;
-    source: 'core' | 'local';
+    source: 'core' | 'local' | 'cloud';
     name: string;
     mime: string;
     size: number;
@@ -63,6 +65,10 @@ type UnifiedFile = {
     linkedFolderId?: string | null;
     fileId?: string;
     sourceAvailable?: boolean;
+    /** Nur bei source === 'cloud': woher der Eintrag stammt. */
+    cloudConnectorId?: string;
+    cloudConnectorLabel?: string;
+    cloudWebUrl?: string | null;
     visibilityScope?: string | null;
     text?: string;
     dataUrl?: string;
@@ -120,6 +126,48 @@ function toUnifiedFile(file: CompanyFileRecord): UnifiedFile {
     };
 }
 
+
+/**
+ * Ein Eintrag aus einem verbundenen Cloud-Speicher.
+ *
+ * Die dritte Quelle neben `core` (im Arbeitsbereich abgelegt) und `local`
+ * (nur in diesem Browser). Cloud-Dateien liegen woanders — bei Google,
+ * Dropbox, wo auch immer. Sie werden hier **gezeigt, nicht kopiert**: Das
+ * OS ist keine zweite Ablage, sondern der Ort, an dem man sieht, was man
+ * hat.
+ *
+ * Deshalb kein `fileId`: Wer eine Cloud-Datei öffnen will, geht zur
+ * Quelle. Sie hier herunterzuladen und nochmal zu speichern, würde zwei
+ * Wahrheiten erzeugen, von denen eine still veraltet.
+ */
+
+/**
+ * Die verbundenen Cloud-Speicher.
+ *
+ * `isOptional`: Wer keinen verbunden hat, bekommt null statt eines
+ * Fehlers — kein Speicher ist ein Zustand, kein Ausfall.
+ */
+async function fetchCloudConnectors(): Promise<any[]> {
+    const antwort = await coreGet('/v3/integrations/cloud', { isOptional: true });
+    if (!antwort) return [];
+    return antwort.connectors ?? antwort.items ?? (Array.isArray(antwort) ? antwort : []);
+}
+
+function cloudToUnifiedFile(eintrag: any, connectorId: string, connectorLabel: string): UnifiedFile {
+    return {
+        id: `cloud-${connectorId}-${eintrag.id ?? eintrag.name}`,
+        source: 'cloud',
+        name: eintrag.name ?? '(ohne Namen)',
+        mime: eintrag.mime_type ?? eintrag.mimeType ?? 'application/octet-stream',
+        size: Number(eintrag.size ?? 0) || 0,
+        updatedAt: eintrag.modified_at ?? eintrag.modifiedTime ?? undefined,
+        sourceAvailable: true,
+        cloudConnectorId: connectorId,
+        cloudConnectorLabel: connectorLabel,
+        cloudWebUrl: eintrag.web_url ?? eintrag.webViewLink ?? null,
+    };
+}
+
 function isWorkspaceVisible(file?: UnifiedFile | null): boolean {
     return isWorkspaceVisibilityScope(file?.visibilityScope);
 }
@@ -154,6 +202,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
 
     const [content, setContent] = useState<UserContentResponse | null>(null);
     const [coreFiles, setCoreFiles] = useState<CompanyFileRecord[]>([]);
+    const [cloudFiles, setCloudFiles] = useState<UnifiedFile[]>([]);
     const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [draftText, setDraftText] = useState('');
@@ -168,13 +217,27 @@ export default function MeineDateienApp({ paneId }: AppProps) {
     const loadContent = useCallback(async () => {
         setIsLoading(true);
         try {
-            const [myContent, files] = await Promise.all([
+            const [myContent, files, connectors] = await Promise.all([
                 fetchMyContent().catch(() => null),
                 activeCompanyId ? listCompanyFiles(activeCompanyId).catch(() => []) : Promise.resolve([]),
+                // Verbundene Cloud-Speicher. Faellt einer aus, fehlt seine
+                // Liste — die anderen bleiben. Ein Speicher, der gerade
+                // nicht antwortet, darf nicht die ganze Ansicht kosten.
+                fetchCloudConnectors().catch(() => []),
             ]);
             setContent(myContent);
             setCoreFiles(files);
             setLocalFiles(readLocalPrivateFiles());
+
+            const cloudListen = await Promise.all(
+                (connectors || []).map(async (c: any) => {
+                    const antwort = await fetchCloudConnectorItems(c.id, 50).catch(() => null);
+                    const eintraege = antwort?.items ?? [];
+                    const name = c.label || c.account_label || c.provider || 'Cloud';
+                    return eintraege.map((e: any) => cloudToUnifiedFile(e, c.id, name));
+                }),
+            );
+            setCloudFiles(cloudListen.flat());
         } finally {
             setIsLoading(false);
         }
@@ -213,8 +276,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             text: file.text,
             dataUrl: file.dataUrl,
         }));
-        return [...local, ...fromCore].sort((a, b) => Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''));
-    }, [coreFiles, localFiles]);
+        return [...local, ...fromCore, ...cloudFiles].sort((a, b) => Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''));
+    }, [coreFiles, localFiles, cloudFiles]);
 
     const selectedFile = useMemo(() => files.find((file) => file.id === selectedId) || files[0] || null, [files, selectedId]);
     const canEditSelected = selectedFile?.source === 'local' && (selectedFile.text != null || selectedFile.mime.startsWith('text/'));
