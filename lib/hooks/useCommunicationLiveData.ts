@@ -8,6 +8,21 @@ import { sortFeedItemsByDateDesc } from "@/lib/rss/feedDates";
 import { COMMUNICATION_SYNC_EVENT, getCommunicationSyncStorageKey } from "@/lib/integrations/communicationEvents";
 import { useNavStore } from "@/lib/store/navStore";
 
+/**
+ * Wie viele Cloud-Eintraege in die Lagevorschau gehen.
+ *
+ * Zwei war zu wenig: MORA sagte „ich sehe zwei Sachen", und das klang
+ * nach einer Auskunft ueber den Speicher, war aber eine Aussage ueber
+ * diese Zeile. Zwanzig sind genug fuer einen Eindruck und wenig genug,
+ * dass die Startseite nicht auf einen fremden Dienst wartet.
+ *
+ * Die vollstaendige Liste steht in „Meine Dateien" — dort ist der Ort,
+ * an dem man sucht. Hier ist der Ort, an dem man sieht, dass es etwas
+ * gibt.
+ */
+const CLOUD_VORSCHAU = 20;
+
+
 type MailPreviewItem = {
     id: string;
     subject: string;
@@ -228,7 +243,11 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                     const connectorResults = await Promise.all(
                         activeConnectors.map(async (connector: any) => {
                             const itemsPayload = await coreGet(
-                                `/v3/integrations/cloud/${connector.id}/items?limit=2`,
+                                // Vorher stand hier fest `limit=2`. MORA meldete
+                                // daraufhin zwei Dateien, auch wenn im Speicher
+                                // hunderte lagen — eine Vorschau, die als
+                                // Auskunft gelesen wurde.
+                                `/v3/integrations/cloud/${connector.id}/items?limit=${CLOUD_VORSCHAU}`,
                                 { isOptional: true }
                             );
                             const items = Array.isArray(itemsPayload?.items) ? itemsPayload.items : [];

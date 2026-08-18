@@ -47,7 +47,26 @@ const PROVIDER_LABELS: Record<string, string> = {
 };
 type CloudProvider = 'nextcloud' | 'extcloud' | 'sharepoint' | 'google_drive';
 const DIRECT_WEBDAV_PROVIDERS = new Set<CloudProvider>(['nextcloud', 'extcloud']);
-const DEFAULT_CLOUD_REDIRECT_URL = 'http://127.0.0.1:8081/v3/integrations/cloud/callback';
+/**
+ * Wohin der Anbieter nach der Anmeldung zurueckschickt.
+ *
+ * Hier stand fest `http://127.0.0.1:8081` — die Adresse des eigenen
+ * Rechners. In der Entwicklung stimmt das; in Produktion schickt Google
+ * den Nutzer damit ins Leere, denn 127.0.0.1 ist auf jedem Geraet ein
+ * anderes. Der Fehler faellt erst beim Verbinden auf, und dann sieht es
+ * aus, als laege es am Anbieter.
+ *
+ * Jetzt abgeleitet aus der tatsaechlichen CORE-Adresse. Nur wenn keine
+ * gesetzt ist, bleibt der lokale Wert — dann ist es auch wirklich eine
+ * lokale Umgebung.
+ */
+function standardRedirectUrl(): string {
+    const basis = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || '').trim().replace(/\/+$/, '');
+    if (basis.startsWith('http')) return `${basis}/v3/integrations/cloud/callback`;
+    return 'http://127.0.0.1:8081/v3/integrations/cloud/callback';
+}
+
+const DEFAULT_CLOUD_REDIRECT_URL = standardRedirectUrl();
 
 const statusLabel = (status?: string) => {
     switch (status) {
