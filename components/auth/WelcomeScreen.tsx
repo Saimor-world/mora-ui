@@ -138,7 +138,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         : websiteEntryContext
             ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
             : surfaceProfile.isHqSurface
-            ? 'HQ-Zugang einrichten'
+            ? 'Neuen Raum. Môra legt ihn an.'
             : surfaceProfile.isLocalTruthSurface
             ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
             : 'Neue Organisation einrichten';
