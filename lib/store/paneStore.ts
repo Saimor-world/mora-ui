@@ -134,6 +134,39 @@ const resolveDefaultPosition = (
     return getCenteredPosition(size, offset);
 };
 
+export type LayoutPreset = 'focus_single' | 'split_50_50' | 'split_33_66' | 'triple_columns' | 'tile_quad' | 'close_all';
+
+const DESKTOP_SESSION_KEY = 'saimor_desktop_panes_v1';
+
+const loadPersistedPanes = (): PaneConfig[] => {
+    if (typeof window === 'undefined') return [];
+    try {
+        const raw = localStorage.getItem(DESKTOP_SESSION_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+            // Validate basic pane shape
+            return parsed.filter((p: any) => p && typeof p.id === 'string' && typeof p.type === 'string');
+        }
+        return [];
+    } catch {
+        return [];
+    }
+};
+
+const savePersistedPanes = (panes: PaneConfig[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+        // Only persist relevant user panes, skip fleeting overlays
+        const persistable = panes
+            .filter(p => !['settings', 'apps'].includes(p.type))
+            .slice(0, 8); // max 8 saved panes
+        localStorage.setItem(DESKTOP_SESSION_KEY, JSON.stringify(persistable));
+    } catch {
+        // storage quota exceeded or disabled
+    }
+};
+
 interface PaneState {
     panes: PaneConfig[];
     nextZIndex: number;
@@ -151,15 +184,137 @@ interface PaneState {
     getVisiblePanes: () => PaneConfig[];
     updatePanePosition: (id: string, x: number, y: number) => void;
     updatePaneSize: (id: string, width: number, height: number) => void;
+    applyLayoutPreset: (preset: LayoutPreset) => void;
+    closeAllPanes: () => void;
     reset: () => void;
 }
 
 export const usePaneStore = create<PaneState>((set, get) => ({
-    panes: [],
+    panes: loadPersistedPanes(),
     nextZIndex: 500, // Start above all UI chrome (Dock=100, Navbar=100, etc.)
     activePaneId: null,
 
-    reset: () => set({ panes: [], activePaneId: null }),
+    reset: () => {
+        if (typeof window !== 'undefined') {
+            try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+        }
+        set({ panes: [], activePaneId: null });
+    },
+
+    closeAllPanes: () => {
+        if (typeof window !== 'undefined') {
+            try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+        }
+        set({ panes: [], activePaneId: null });
+    },
+
+    applyLayoutPreset: (preset: LayoutPreset) => set((state) => {
+        const { windowWidth, windowHeight } = getViewport();
+        const { leftInset, rightInset, topInset, bottomInset, workspaceWidth, workspaceHeight } = getWorkspaceInsets(windowWidth, windowHeight);
+        const visiblePanes = state.panes.filter(p => !p.minimized);
+
+        if (visiblePanes.length === 0) return state;
+
+        let updatedPanes = [...state.panes];
+
+        if (preset === 'close_all') {
+            if (typeof window !== 'undefined') {
+                try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+            }
+            return { panes: [], activePaneId: null };
+        }
+
+        if (preset === 'focus_single') {
+            const targetId = state.activePaneId || visiblePanes[0]?.id;
+            if (!targetId) return state;
+
+            updatedPanes = state.panes.map(p => {
+                if (p.id === targetId) {
+                    return {
+                        ...p,
+                        position: { x: leftInset, y: topInset },
+                        size: { width: workspaceWidth, height: workspaceHeight },
+                        minimized: false,
+                        zIndex: state.nextZIndex + 1,
+                    };
+                }
+                return p;
+            });
+        } else if (preset === 'split_50_50') {
+            const p1 = visiblePanes[0];
+            const p2 = visiblePanes[1] || visiblePanes[0];
+            const halfWidth = Math.floor((workspaceWidth - 16) / 2);
+
+            updatedPanes = state.panes.map(p => {
+                if (p.id === p1.id) {
+                    return {
+                        ...p,
+                        position: { x: leftInset, y: topInset },
+                        size: { width: halfWidth, height: workspaceHeight },
+                        minimized: false,
+                    };
+                }
+                if (p2 && p.id === p2.id && p2.id !== p1.id) {
+                    return {
+                        ...p,
+                        position: { x: leftInset + halfWidth + 16, y: topInset },
+                        size: { width: halfWidth, height: workspaceHeight },
+                        minimized: false,
+                    };
+                }
+                return p;
+            });
+        } else if (preset === 'split_33_66') {
+            const p1 = visiblePanes[0];
+            const p2 = visiblePanes[1];
+            const leftWidth = Math.floor(workspaceWidth * 0.36);
+            const rightWidth = workspaceWidth - leftWidth - 16;
+
+            updatedPanes = state.panes.map(p => {
+                if (p.id === p1.id) {
+                    return {
+                        ...p,
+                        position: { x: leftInset, y: topInset },
+                        size: { width: leftWidth, height: workspaceHeight },
+                        minimized: false,
+                    };
+                }
+                if (p2 && p.id === p2.id && p2.id !== p1.id) {
+                    return {
+                        ...p,
+                        position: { x: leftInset + leftWidth + 16, y: topInset },
+                        size: { width: rightWidth, height: workspaceHeight },
+                        minimized: false,
+                    };
+                }
+                return p;
+            });
+        } else if (preset === 'triple_columns') {
+            const p1 = visiblePanes[0];
+            const p2 = visiblePanes[1];
+            const p3 = visiblePanes[2];
+            const colWidth = Math.floor((workspaceWidth - 32) / 3);
+
+            updatedPanes = state.panes.map(p => {
+                if (p1 && p.id === p1.id) {
+                    return { ...p, position: { x: leftInset, y: topInset }, size: { width: colWidth, height: workspaceHeight }, minimized: false };
+                }
+                if (p2 && p.id === p2.id) {
+                    return { ...p, position: { x: leftInset + colWidth + 16, y: topInset }, size: { width: colWidth, height: workspaceHeight }, minimized: false };
+                }
+                if (p3 && p.id === p3.id) {
+                    return { ...p, position: { x: leftInset + (colWidth * 2) + 32, y: topInset }, size: { width: colWidth, height: workspaceHeight }, minimized: false };
+                }
+                return p;
+            });
+        }
+
+        savePersistedPanes(updatedPanes);
+        return {
+            panes: updatedPanes,
+            nextZIndex: state.nextZIndex + 2,
+        };
+    }),
 
     openPane: (request) => {
         const existing = get().getPane(request.id);
@@ -230,6 +385,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
         };
         const panes = [...nextPanes, newPane];
         const normalized = normalizeFrontmost(panes, newPane.id);
+        savePersistedPanes(panes);
         return {
             panes,
             nextZIndex: state.nextZIndex + 1,
@@ -240,6 +396,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
     removePane: (id) => set((state) => {
         const panes = state.panes.filter(p => p.id !== id);
         const normalized = normalizeFrontmost(panes, state.activePaneId === id ? null : state.activePaneId);
+        savePersistedPanes(panes);
         return {
             panes,
             activePaneId: normalized.activePaneId
@@ -251,6 +408,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             p.id === id ? { ...p, ...updates } : p
         );
         const normalized = normalizeFrontmost(panes, state.activePaneId);
+        savePersistedPanes(panes);
         return {
             panes,
             activePaneId: normalized.activePaneId
@@ -282,6 +440,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             p.id === id ? { ...p, minimized: true } : p
         );
         const normalized = normalizeFrontmost(panes, state.activePaneId === id ? null : state.activePaneId);
+        savePersistedPanes(panes);
         return {
             panes,
             activePaneId: normalized.activePaneId
@@ -299,6 +458,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             p.id === id ? { ...p, minimized: false, zIndex: state.nextZIndex } : p
         );
         const normalized = normalizeFrontmost(panes, id);
+        savePersistedPanes(panes);
         return {
             panes,
             nextZIndex: state.nextZIndex + 1,
@@ -310,15 +470,19 @@ export const usePaneStore = create<PaneState>((set, get) => ({
 
     getVisiblePanes: () => get().panes.filter(p => !p.minimized),
 
-    updatePanePosition: (id, x, y) => set((state) => ({
-        panes: state.panes.map(p =>
+    updatePanePosition: (id, x, y) => set((state) => {
+        const panes = state.panes.map(p =>
             p.id === id ? { ...p, position: { x, y } } : p
-        )
-    })),
+        );
+        savePersistedPanes(panes);
+        return { panes };
+    }),
 
-    updatePaneSize: (id, width, height) => set((state) => ({
-        panes: state.panes.map(p =>
+    updatePaneSize: (id, width, height) => set((state) => {
+        const panes = state.panes.map(p =>
             p.id === id ? { ...p, size: { width, height } } : p
-        )
-    }))
+        );
+        savePersistedPanes(panes);
+        return { panes };
+    })
 }));

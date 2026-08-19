@@ -3,7 +3,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, PanInfo, useDragControls } from 'framer-motion';
-import { X, ChevronLeft, Minus, Maximize2, Minimize2 } from 'lucide-react';
+import { X, ChevronLeft, Minus, Maximize2, Minimize2, Columns2 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { getAppManifest } from '@/lib/apps/appRegistry';
@@ -586,6 +586,17 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                             <Minus className="w-4 h-4" />
                                         </button>
                                     )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            usePaneStore.getState().applyLayoutPreset('split_50_50');
+                                        }}
+                                        className="pane-control pane-control--split hidden sm:inline-flex"
+                                        title="Zwei Fenster 50/50 anordnen (Alt+2)"
+                                        aria-label="Split panel"
+                                    >
+                                        <Columns2 className="w-3.5 h-3.5" />
+                                    </button>
                                     {allowMaximize && (
                                         <button
                                             onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}

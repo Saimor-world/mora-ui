@@ -13,11 +13,16 @@ import {
     getSpotlightShortcutKeys,
     isSpotlightShortcut,
 } from '@/lib/hooks/usePlatformModifier';
+import { usePaneStore } from '@/lib/store/paneStore';
 
 export function getKeyboardShortcuts(mod?: string) {
     const m = mod || getPlatformModifier();
     return [
         { keys: getSpotlightShortcutKeys(m), label: 'Spotlight', description: 'Command Palette öffnen' },
+        { keys: ['Alt', '1'], label: 'Fokus', description: 'Aktives Fenster maximieren' },
+        { keys: ['Alt', '2'], label: 'Split 50/50', description: 'Zwei Fenster nebeneinander anordnen' },
+        { keys: ['Alt', '3'], label: '3 Spalten', description: 'Drei Fenster nebeneinander anordnen' },
+        { keys: ['Alt', '0'], label: 'Aufräumen', description: 'Alle Fenster schließen' },
         { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
@@ -79,6 +84,29 @@ export function useKeyboardShortcuts({
             }
 
             if (isInputField) return;
+
+            if (e.altKey && !meta) {
+                if (key === '1') {
+                    e.preventDefault();
+                    usePaneStore.getState().applyLayoutPreset('focus_single');
+                    return;
+                }
+                if (key === '2') {
+                    e.preventDefault();
+                    usePaneStore.getState().applyLayoutPreset('split_50_50');
+                    return;
+                }
+                if (key === '3') {
+                    e.preventDefault();
+                    usePaneStore.getState().applyLayoutPreset('triple_columns');
+                    return;
+                }
+                if (key === '0') {
+                    e.preventDefault();
+                    usePaneStore.getState().applyLayoutPreset('close_all');
+                    return;
+                }
+            }
 
             if (meta && key === 'j') {
                 e.preventDefault();

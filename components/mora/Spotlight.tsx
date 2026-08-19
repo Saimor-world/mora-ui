@@ -24,6 +24,11 @@ import {
     ShieldCheck,
     Network,
     Mic,
+    Columns2,
+    Maximize2,
+    HardDrive,
+    CheckSquare,
+    Trash2,
 } from "lucide-react";
 import { useNavStore } from "@/lib/store/navStore";
 import { openVoiceOverlay } from "@/lib/os/openVoiceOverlay";
@@ -260,6 +265,66 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             category: "action",
             keywords: ["apps", "bibliothek", "library", "alle", "launcher", "programme"],
             onSelect: () => openFromSpotlight("apps", "apps-main", "Apps", { width: 900, height: 680 })
+        });
+
+        // === SPATIAL WINDOW CONTROLS ===
+        result.push({
+            id: "action-layout-split-50",
+            label: "Split 50/50",
+            description: "Zwei Fenster nebeneinander anordnen (Alt+2)",
+            icon: <Columns2 size={16} className="text-sky-400" />,
+            category: "action",
+            keywords: ["split", "50", "layout", "kacheln", "nebeneinander", "fenster"],
+            onSelect: () => {
+                usePaneStore.getState().applyLayoutPreset('split_50_50');
+                onClose();
+            }
+        });
+
+        result.push({
+            id: "action-layout-focus",
+            label: "Fokus-Modus",
+            description: "Aktives Fenster maximieren (Alt+1)",
+            icon: <Maximize2 size={16} className="text-emerald-400" />,
+            category: "action",
+            keywords: ["fokus", "focus", "vollbild", "maximieren", "layout"],
+            onSelect: () => {
+                usePaneStore.getState().applyLayoutPreset('focus_single');
+                onClose();
+            }
+        });
+
+        result.push({
+            id: "action-layout-clean",
+            label: "Desktop aufräumen",
+            description: "Alle offenen Fenster schließen (Alt+0)",
+            icon: <Trash2 size={16} className="text-amber-400" />,
+            category: "action",
+            keywords: ["aufräumen", "schließen", "close all", "clear", "desktop"],
+            onSelect: () => {
+                usePaneStore.getState().applyLayoutPreset('close_all');
+                onClose();
+            }
+        });
+
+        result.push({
+            id: "action-meine-dateien",
+            label: "Meine Dateien",
+            description: "Core, lokale & verbundene Cloud-Speicher",
+            icon: <HardDrive size={16} className="text-emerald-300" />,
+            category: "action",
+            keywords: ["dateien", "files", "cloud", "dokumente", "drive", "dropbox", "speicher"],
+            onSelect: () => openFromSpotlight("meine-dateien", "meine-dateien-main", "Meine Dateien", { width: 960, height: 680 })
+        });
+
+        result.push({
+            id: "action-action-center",
+            label: "Action Center",
+            description: "Aufgaben, Freigaben und Systemläufe",
+            icon: <CheckSquare size={16} className="text-purple-400" />,
+            category: "action",
+            keywords: ["action", "center", "aufgaben", "tasks", "läufe", "freigaben"],
+            onSelect: () => openFromSpotlight("action-center", "action-center-main", "Action Center", { width: 880, height: 640 })
         });
 
         result.push({
