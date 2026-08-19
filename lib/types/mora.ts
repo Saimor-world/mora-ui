@@ -13,8 +13,9 @@ export type ViewMode = 'owner' | 'demo' | 'workspace';
  * CoreMode — which surface is active when viewLevel === 'core'.
  * 'home' — Day-start working surface: recent docs, activity, quick access.
  * 'explore' — Universe planet map: spatial overview of all departments.
+ * 'mindfield' — Infinite spatial synaptic canvas: zoomable living node network.
  */
-export type CoreMode = 'home' | 'explore';
+export type CoreMode = 'home' | 'explore' | 'mindfield';
 
 export interface UiScopeHints {
   view_level?: string;
