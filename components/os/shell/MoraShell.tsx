@@ -709,7 +709,12 @@ export const MoraShell: React.FC = () => {
                 />
             );
         }
-        return <LoadingScreen />;
+        return (
+            <LoadingScreen
+                name={displayCompany?.name || user?.active_company_name || user?.name || (typeof window !== 'undefined' ? localStorage.getItem('last_user_name') : null) || 'Saimôr'}
+                role={user?.role}
+            />
+        );
     }
 
     // Lock Screen

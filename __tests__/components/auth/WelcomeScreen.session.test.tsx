@@ -150,7 +150,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
-            expect(screen.getByText('Zugang prüfen')).toBeInTheDocument();
+            expect(screen.getByText('Eintreten')).toBeInTheDocument();
         });
     });
 
@@ -322,10 +322,10 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Zugang prüfen')).toBeInTheDocument();
+            expect(screen.getByText('Eintreten')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Zugang prüfen'));
+        fireEvent.click(screen.getByText('Eintreten'));
 
         await waitFor(() => {
             expect(screen.getByPlaceholderText('name@firma.de')).toBeInTheDocument();

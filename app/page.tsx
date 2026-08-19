@@ -23,15 +23,16 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                     <div className="absolute inset-4 rounded-full bg-emerald-300/70 shadow-[0_0_24px_rgba(110,231,183,0.5)]" />
                 </div>
                 <div>
-                    <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-300/60">Local Truth</div>
+                    <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-300/60">Saimôr OS</div>
                     <div className="mt-2 text-sm font-medium text-emerald-50">
-                        Einstieg wird vorbereitet
+                        Môra öffnet den Raum
                     </div>
                     <p className="mt-2 text-xs leading-relaxed text-emerald-100/55">
-                        Sitzung, Instanzregeln und lokaler Core werden geprüft. Danach erscheint der Einstieg mit klarer Auswahl.
+                        Sitzung wird geprüft — kein lokaler Core, kein verborgenes Demo. Der Einstieg erscheint gleich.
                     </p>
                 </div>
                 {delayed && (
+                    <>
                     <button
                         type="button"
                         onClick={() => window.location.reload()}
@@ -39,6 +40,10 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                     >
                         Neu laden
                     </button>
+                    <p className="text-[11px] leading-relaxed text-emerald-100/40">
+                        Das dauert ungewöhnlich lange. Kein lokaler Core hinter dieser Seite.
+                    </p>
+                    </>
                 )}
             </div>
         </div>
@@ -71,7 +76,7 @@ function RootPageContent() {
 
         const timeout = window.setTimeout(() => {
             setAllowWelcomeFallback(true);
-        }, 1800);
+        }, 800);
 
         return () => window.clearTimeout(timeout);
     }, [status]);

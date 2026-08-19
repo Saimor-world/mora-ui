@@ -103,6 +103,32 @@ interface Message {
 
 // Extracted MemoriesView component to components/MemoriesView.tsx
 
+
+function buildWelcomeContent(departments: Array<{ name?: string | null }>) {
+    const named = departments
+        .map((department) => department.name?.trim())
+        .filter((name): name is string => Boolean(name));
+    const first = named[0];
+    const second = named[1];
+    const showHint = first
+        ? `- **"Zeig mir ${first}"** → ich navigiere dorthin`
+        : `- **"Was siehst du?"** → ich beschreibe den offenen Raum`;
+    const deptHint = second
+        ? `- **"Was läuft in ${second}?"** → ich suche in Inhalten und Aktivität`
+        : first
+            ? `- **"Was läuft in ${first}?"** → ich suche in Inhalten und Aktivität`
+            : `- **"Woran arbeiten wir?"** → ich lese den offenen Kontext`;
+    return `Hallo, ich bin Môra.
+
+Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
+${showHint}
+- **"Was ist neu?"** → ich fasse reale Signale zusammen
+${deptHint}
+- **"Merke dir ..."** → ich speichere belastbare Fakten für später
+
+Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`;
+}
+
 export default function ChatApp({ paneId, initialData }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
@@ -165,25 +191,22 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     const { mailPreview, calendarPreview, feedPreview, cloudPreview } = useCommunicationLiveData();
     const { overview: communicationOverview, summary: communicationSummary } = useCommunicationSurface();
 
-    const [messages, setMessages] = useState<Message[]>(() => {
-        const safe: Array<{ name: string }> = [];
-        const d1 = safe[0]?.name ?? 'R&D';
-        const d2 = safe[1]?.name ?? 'Product';
-        return [{
-            id: 'welcome',
-            role: 'assistant',
-            content: `Hallo, ich bin Mora.
+    const [messages, setMessages] = useState<Message[]>(() => [{
+        id: 'welcome',
+        role: 'assistant',
+        content: buildWelcomeContent([]),
+        timestamp: new Date()
+    }]);
 
-Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
-- **"Zeig mir ${d1}"** → ich navigiere dorthin
-- **"Was ist neu?"** → ich fasse reale Signale zusammen
-- **"Was läuft in ${d2}?"** → ich suche in Inhalten und Aktivität
-- **"Merke dir ..."** → ich speichere belastbare Fakten für später
-
-Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`,
-            timestamp: new Date()
-        }];
-    });
+    useEffect(() => {
+        if (safeDepartments.length === 0) return;
+        setMessages((prev) => {
+            if (prev.length !== 1 || prev[0]?.id !== 'welcome') return prev;
+            const next = buildWelcomeContent(safeDepartments);
+            if (prev[0].content === next) return prev;
+            return [{ ...prev[0], content: next }];
+        });
+    }, [safeDepartments]);
     const [input, setInput] = useState('');
     // isLoading is true for navigation/search intents (non-streaming)
     const [isLoading, setIsLoading] = useState(false);
