@@ -8,7 +8,12 @@ describe('LoadingScreen', () => {
   it('shows the OS booting state', () => {
     render(<LoadingScreen />);
     expect(screen.getByText('SAIMÔR OS')).toBeInTheDocument();
-    expect(screen.getByText('Mora erwacht...')).toBeInTheDocument();
+    expect(screen.getByText('Môra hört zu...')).toBeInTheDocument();
+  });
+
+  it('uses the real session name instead of Demo', () => {
+    const { container } = render(<LoadingScreen name="Acme GmbH" role="owner" />);
+    expect(container.textContent).not.toMatch(/\bDemo\b/);
   });
 });
 

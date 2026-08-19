@@ -5,14 +5,14 @@ import { IdentityMedallion } from '@/components/os/shell/IdentityMedallion';
  * Full-screen boot/loading state for the OS shell.
  * Extracted verbatim from MoraShell.tsx — behavior-neutral.
  */
-export const LoadingScreen: React.FC = () => (
+export const LoadingScreen: React.FC<{ name?: string | null; role?: string | null }> = ({ name, role }) => (
     <div className="relative w-full h-screen bg-gradient-to-b from-[#1a1135] to-[#0d0921] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(124,58,237,0.14),rgba(13,9,33,0)_40%)]" />
         <div className="flex flex-col items-center gap-6">
             <div className="relative">
                 <IdentityMedallion
-                    name="Demo"
-                    role="system_owner"
+                    name={name?.trim() || "Saimôr"}
+                    role={role || "admin"}
                     size={64}
                     className="drop-shadow-[0_0_24px_rgba(16,185,129,0.18)]"
                 />
@@ -22,7 +22,7 @@ export const LoadingScreen: React.FC = () => (
                     SAIMÔR OS
                 </span>
                 <span className="text-white/20 text-[10px] tracking-[0.2em]">
-                    Mora erwacht...
+                    Môra hört zu...
                 </span>
             </div>
             {/* Loading bar */}

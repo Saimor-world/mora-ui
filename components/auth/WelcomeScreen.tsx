@@ -127,7 +127,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const loginSubtitle = surfaceProfile.isPublicDemoSurface
         ? 'Beispielinstanz erkunden oder mit Zugangsdaten weiter'
         : surfaceProfile.isHqSurface
-            ? 'HQ-Zugang mit deinen Anmeldedaten öffnen'
+            ? 'Dein HQ. Môra ist schon da.'
             : surfaceProfile.isLocalTruthSurface
                 ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
                 : 'Zugriff auf deine Organisation';
@@ -146,12 +146,12 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         ? `${websiteEntryContext.companyName} als HQ-Workspace öffnen`
         : surfaceProfile.isLocalTruthSurface
             ? 'Mit Zugangsdaten öffnen'
-            : 'Zugang prüfen';
+            : 'Eintreten';
     const demoEntrySubtitle = websiteEntryContext
         ? 'Isolierten Preview-Tenant aus dem Website-Check erzeugen'
         : surfaceProfile.isLocalTruthSurface
             ? 'Kein öffentlicher Demo-Account: bitte bewusst anmelden.'
-            : 'Kein geteilter Demo-Account: Zugriff nur mit Kontext oder Login.';
+            : 'Dein eigener Raum — mit Kontext oder Login. Kein geteiltes Schaufenster.';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
@@ -945,7 +945,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                 >
                                     <div className="h-px w-8 bg-gradient-to-r from-transparent to-emerald-500/30" />
                                     <p className="text-xs text-emerald-500/60 tracking-[0.25em] uppercase font-light">
-                                        Intelligentes Wissenssystem
+                                        Der Raum ist bereit
                                     </p>
                                     <div className="h-px w-8 bg-gradient-to-l from-transparent to-emerald-500/30" />
                                 </motion.div>
@@ -956,7 +956,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     className="flex items-center justify-center gap-2"
                                 >
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
-                                    <span className="text-[10px] text-mora-gold/70 tracking-widest font-medium">BETA 1.5</span>
+                                    <span className="text-[10px] text-mora-gold/70 tracking-widest font-medium">Môra hört zu</span>
                                     <div className="w-1 h-1 rounded-full bg-mora-gold/50 animate-pulse" />
                                 </motion.div>
                             </div>
