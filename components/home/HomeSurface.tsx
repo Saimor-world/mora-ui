@@ -32,9 +32,6 @@ import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
-import { AmbientVoicePill } from '@/components/mora/AmbientVoicePill';
-import { EstateMorphDeck } from '@/components/mora/EstateMorphDeck';
-import { SpatialMindfield } from '@/components/canvas/SpatialMindfield';
 
 import { buildOpenFlowLagebild, isDeskEntryPlaceholder } from '@/lib/openflow/presentation';
 import { ESTATE, ESTATE_LABELS } from '@/lib/estate';
@@ -901,17 +898,6 @@ export const HomeSurface: React.FC = () => {
             data-testid="home-universe-mission-control"
             className={`pointer-events-none absolute inset-0 overflow-hidden ${hasOpenPanes ? 'z-[20]' : 'z-[44]'}`}
         >
-            {/* Spatial Mindfield Living Canvas Ground */}
-            <div className="absolute inset-0 z-0 pointer-events-auto">
-                <SpatialMindfield className="opacity-35 hover:opacity-90 transition-opacity duration-500" />
-            </div>
-
-            {/* Ambient MÔRA Co-Pilot Voice Pill */}
-            <AmbientVoicePill />
-
-            {/* Cross-Estate Morph Deck */}
-            <EstateMorphDeck />
-
             {/* Atmosphere layer — transparent over UniverseView */}
             <div className="home-atmosphere pointer-events-none absolute inset-0 z-[1]">
                 <div className="absolute inset-x-0 top-24 h-px bg-gradient-to-r from-transparent via-white/08 to-transparent" />
