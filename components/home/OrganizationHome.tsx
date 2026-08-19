@@ -13,9 +13,11 @@ import {
     Network,
     Sparkles,
     Users,
+    Volume2,
 } from 'lucide-react';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useDailyBriefing } from '@/lib/queries/useDailyBriefing';
 import type { WidgetContext } from '@/lib/widgets/types';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
@@ -74,6 +76,25 @@ export function OrganizationHome(props: HomeCockpitProps) {
         showOrgOverview = true,
     } = props;
     const openPane = usePaneStore((state) => state.openPane);
+    const { data: dailyBriefing } = useDailyBriefing();
+    const [isSpeaking, setIsSpeaking] = React.useState(false);
+
+    const speakBriefing = () => {
+        if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+        if (isSpeaking) {
+            window.speechSynthesis.cancel();
+            setIsSpeaking(false);
+            return;
+        }
+        const textToSpeak = dailyBriefing?.text || 'Alle Systeme laufen im Normalbetrieb. Deine Arbeitsumgebung steht bereit.';
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        utterance.lang = 'de-DE';
+        utterance.rate = 1.0;
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        setIsSpeaking(true);
+        window.speechSynthesis.speak(utterance);
+    };
 
     const titledChanges = useMemo(
         () => (homeView?.changes ?? []).filter((change) => change.title?.trim()),
@@ -246,9 +267,24 @@ export function OrganizationHome(props: HomeCockpitProps) {
                         <h1 className="mt-3 max-w-[850px] text-[clamp(26px,3.4vw,48px)] font-semibold leading-[1.02] tracking-[-0.035em] text-white/95">
                             {greeting}{firstName ? <span className="font-light text-white/55">, {firstName}.</span> : '.'}
                         </h1>
-                        <p className="mt-3 max-w-[720px] text-[13px] leading-5 text-white/58 sm:text-[14px] sm:leading-6">
-                            Was die Organisation jetzt wissen muss — verdichtet aus Betrieb, Gewebe, Post und Team.
-                        </p>
+                        <div className="mt-3 flex items-start gap-3">
+                            <p className="max-w-[720px] text-[13px] leading-5 text-white/75 sm:text-[14px] sm:leading-6 font-normal">
+                                {dailyBriefing?.text || 'Was die Organisation jetzt wissen muss — verdichtet aus Betrieb, Gewebe, Post und Team.'}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={speakBriefing}
+                                className={`shrink-0 p-1.5 rounded-full border transition-all ${
+                                    isSpeaking
+                                        ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300 animate-pulse'
+                                        : 'bg-white/5 border-white/10 text-white/50 hover:text-white hover:bg-white/10'
+                                }`}
+                                title="MÔRA Tagesbriefing vorlesen lassen"
+                                aria-label="Tagesbriefing vorlesen"
+                            >
+                                <Volume2 size={14} />
+                            </button>
+                        </div>
                         <div className="mt-5 flex flex-wrap gap-2">
                             <button type="button" onClick={onOpenMora} className="inline-flex items-center gap-2 rounded-full border border-white/[0.1] bg-white/[0.055] px-3 py-2 text-[11px] text-white/68 transition-colors hover:border-white/[0.18] hover:text-white">
                                 <Sparkles size={13} className="text-emerald-200/76" />
