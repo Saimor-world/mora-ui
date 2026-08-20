@@ -69,7 +69,7 @@ export const useNavStore = create<NavState>((set, get) => ({
   viewLevel: 'core',
   coreMode: 'home',
   viewMode: 'workspace',
-  activeCompanyId: null,
+  activeCompanyId: typeof window !== 'undefined' ? (localStorage.getItem('last_company_id') || localStorage.getItem('saimor_active_company')) : null,
   activeDepartmentId: null,
   activeSpaceId: null,
   activeFolderId: null,
@@ -110,18 +110,22 @@ export const useNavStore = create<NavState>((set, get) => ({
 
   setActiveCompany: (id) => {
     if (typeof window !== 'undefined') {
-      if (id) localStorage.setItem('last_company_id', id);
-      else localStorage.removeItem('last_company_id');
+      if (id) {
+        localStorage.setItem('last_company_id', id);
+        localStorage.setItem('saimor_active_company', id);
+      } else {
+        localStorage.removeItem('last_company_id');
+        localStorage.removeItem('saimor_active_company');
+      }
     }
-    set({
+    set((state) => ({
       activeCompanyId: id,
       activeDepartmentId: null,
       activeSpaceId: null,
       activeFolderId: null,
       viewLevel: 'core',
-      coreMode: 'home',
       isStandardMode: readStandardMode(id),
-    });
+    }));
   },
 
   setActiveDepartment: (id) => set({ activeDepartmentId: id }),
