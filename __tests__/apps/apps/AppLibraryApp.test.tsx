@@ -49,14 +49,26 @@ describe('AppLibraryApp', () => {
     render(<AppLibraryApp paneId="apps-main" />);
 
     expect(screen.getByTestId('app-library')).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'Arbeitsweisen' })).toBeInTheDocument();
-    expect(screen.getByText('Studio · Beta')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Unternehmerische Aufgaben' })).toBeInTheDocument();
+    expect(screen.getByText('Freigaben & Entscheidungen')).toBeInTheDocument();
     expect(screen.getByTestId('app-library-card-finder')).toBeInTheDocument();
     expect(screen.queryByTestId('app-library-card-codex')).not.toBeInTheDocument();
     expect(screen.getByTestId('app-library-group-work')).toBeInTheDocument();
     expect(screen.getByTestId('app-library-group-agents_flows')).toBeInTheDocument();
   });
 
+  it('opens the real decision workflow from the business cockpit', () => {
+    render(<AppLibraryApp paneId="apps-main" />);
+
+    fireEvent.click(screen.getByText('Freigaben & Entscheidungen'));
+
+    expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'action-center-main',
+      type: 'action-center',
+      title: 'Entscheidungen',
+    }));
+    expect(mockRemovePane).toHaveBeenCalledWith('apps-main');
+  });
   it('filters apps by search query', () => {
     render(<AppLibraryApp paneId="apps-main" />);
 

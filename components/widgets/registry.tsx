@@ -1084,7 +1084,7 @@ const QuickActionsWidget: React.FC<{ context: WidgetContext }> = React.memo(({ c
         { icon: <FolderOpen size={compact ? 14 : 20} />, label: 'Finder', onClick: context.openFinder },
         { icon: <Sparkles size={compact ? 14 : 20} />, label: 'MÔRA', onClick: context.openMora },
         { icon: <Compass size={compact ? 14 : 20} />, label: 'Erkunden', onClick: context.goExplore },
-        { icon: <LayoutGrid size={compact ? 14 : 20} />, label: 'Apps', onClick: context.openApps ?? context.openIntegrations },
+        { icon: <LayoutGrid size={compact ? 14 : 20} />, label: 'Arbeit', onClick: context.openApps ?? context.openIntegrations },
     ] as const;
 
     if (compact) {

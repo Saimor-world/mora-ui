@@ -153,10 +153,10 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                 <header className="app-library__hero flex flex-col gap-4 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="min-w-0">
                         <p className="app-library__eyebrow mb-2 text-[9px] uppercase tracking-[0.22em] text-emerald-100/45">
-                            Arbeitsräume
+                            Unternehmer-Cockpit
                         </p>
                         <h3 className="m-0 text-2xl font-medium tracking-tight text-white/[0.92]">
-                            Was möchtest du öffnen?
+                            Was musst du erledigen?
                         </h3>
                         <p className="mt-2 max-w-xl text-[11px] leading-relaxed text-white/40">
                             {visibleCount} Werkzeuge sichtbar
@@ -176,24 +176,42 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     </label>
                 </header>
                 {!normalizedQuery && activeGroupId === 'all' && (
-                    <section className="grid gap-2 md:grid-cols-3" aria-label="Arbeitsweisen">
-                        <button type="button" onClick={() => handleAppClick('lagefeld', 'Lagefeld', { width: 1040, height: 720 })} className="group rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.055] p-4 text-left transition hover:border-cyan-200/26 hover:bg-cyan-500/[0.09]">
+                    <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-3" aria-label="Unternehmerische Aufgaben">
+                        <button type="button" onClick={() => handleAppClick('lagefeld', 'Lagefeld', { width: 1040, height: 720 })} className="group rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.055] p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-200/28 hover:bg-cyan-500/[0.09]">
                             <Network size={17} className="text-cyan-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-cyan-100/38">Lage</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Signale verstehen</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Mail, Kalender und Systemlage in einem belegten Lagebild.</span>
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-cyan-100/38">Verstehen</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Den Tag einordnen</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Mail, Termine, Aufgaben und Systemsignale als eine belegte Lage.</span>
                         </button>
-                        <button type="button" onClick={() => handleAppClick('grid', 'Alle Inhalte', { width: 1040, height: 720 })} className="group rounded-[20px] border border-emerald-300/12 bg-emerald-500/[0.05] p-4 text-left transition hover:border-emerald-200/26 hover:bg-emerald-500/[0.085]">
-                            <Grid size={17} className="text-emerald-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-emerald-100/38">Wissen</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Alles überblicken</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Echte Inhalte der aktiven Organisation suchen und öffnen.</span>
+                        <button type="button" onClick={() => handleAppClick('action-center', 'Entscheidungen', { width: 940, height: 720 })} className="group rounded-[20px] border border-amber-300/12 bg-amber-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-200/28 hover:bg-amber-500/[0.085]">
+                            <Activity size={17} className="text-amber-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-amber-100/38">Entscheiden</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Freigaben & Entscheidungen</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Vorschläge prüfen, Agentenaktionen bestätigen und Ergebnisse nachvollziehen.</span>
                         </button>
-                        <button type="button" onClick={() => handleAppClick('canvas', 'Studio · Beta', { width: 1080, height: 760 })} className="group rounded-[20px] border border-violet-300/12 bg-violet-500/[0.055] p-4 text-left transition hover:border-violet-200/26 hover:bg-violet-500/[0.09]">
-                            <PenTool size={17} className="text-violet-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-violet-100/38">Studio · Beta</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Gedanken skizzieren</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Freies Canvas. Speichern und Präsentieren folgen als echte Funktionen.</span>
+                        <button type="button" onClick={() => handleAppClick('mail', 'Mail', { width: 960, height: 680 })} className="group rounded-[20px] border border-blue-300/12 bg-blue-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-200/28 hover:bg-blue-500/[0.085]">
+                            <Mail size={17} className="text-blue-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-blue-100/38">Kommunizieren</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Kunden beantworten</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Echte Nachrichten lesen und im Geschäftskontext weiterbearbeiten.</span>
+                        </button>
+                        <button type="button" onClick={() => handleAppClick('tasks', 'Aufgaben', { width: 900, height: 580 })} className="group rounded-[20px] border border-emerald-300/12 bg-emerald-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-200/28 hover:bg-emerald-500/[0.085]">
+                            <SquareCheckBig size={17} className="text-emerald-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-emerald-100/38">Umsetzen</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Arbeit liefern</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Aufgaben priorisieren, bewegen und bis zum Ergebnis führen.</span>
+                        </button>
+                        <button type="button" onClick={() => handleAppClick('search', 'Suche', { width: 720, height: 560 })} className="group rounded-[20px] border border-violet-300/12 bg-violet-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-200/28 hover:bg-violet-500/[0.085]">
+                            <Search size={17} className="text-violet-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-violet-100/38">Wissen</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Antworten & Unterlagen finden</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Über alle Inhalte der aktiven Organisation suchen.</span>
+                        </button>
+                        <button type="button" onClick={() => handleAppClick('nightwatch', 'Nightwatch', { width: 760, height: 680 })} className="group rounded-[20px] border border-rose-300/12 bg-rose-500/[0.045] p-4 text-left transition hover:-translate-y-0.5 hover:border-rose-200/28 hover:bg-rose-500/[0.08]">
+                            <ShieldCheck size={17} className="text-rose-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-rose-100/38">Absichern</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Risiken erkennen</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Infrastrukturzustand und konkrete Warnungen prüfen.</span>
                         </button>
                     </section>
                 )}

@@ -714,6 +714,7 @@ export const Dock = () => {
         switch (action) {
             // ── Core Work surfaces ──────────────────────────────────────
             case 'home':     navigateToCore(); break;
+            case 'cockpit':  openPane({ id: 'apps-main', type: 'apps', title: 'Arbeit', size: { width: 980, height: 760 } }); break;
             case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  toggleVoiceOverlay(); break;
             case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
@@ -754,6 +755,7 @@ export const Dock = () => {
     // Icon map: action → lucide icon. Defined here (UI concern) separate from registry (routing concern).
     const DOCK_ICON_MAP: Record<string, React.ComponentType<any>> = useMemo(() => ({
         home:     Home,
+        cockpit:  LayoutGrid,
         chat:     MessageCircle,
         finder:   FolderOpen,
         dateien:  HardDrive,
@@ -798,7 +800,7 @@ export const Dock = () => {
     const mobileDockItems = useMemo(
         () => activeMode === 'public_playground'
             ? dockItems.slice(0, 4)
-            : dockItems.filter((item) => ['home', 'chat', 'finder', 'team'].includes(item.action)),
+            : dockItems.filter((item) => ['home', 'cockpit', 'chat', 'finder'].includes(item.action)),
         [activeMode, dockItems],
     );
     const canManageGuidedDemo = Boolean(

@@ -104,6 +104,7 @@ export interface CoreDockItem {
 export function getCoreDockItems(): CoreDockItem[] {
     return [
         { action: 'home',     label: 'Home',     description: 'Lagebild',              shortcutSuffix: 'H' },
+        { action: 'cockpit',  label: 'Arbeit',   description: 'Verstehen, entscheiden und umsetzen', shortcutSuffix: 'A' },
         { action: 'chat',     label: 'MORA',     description: 'Mit MORA sprechen',     shortcutSuffix: 'J' },
         { action: 'finder',   label: 'Finder',   description: 'Objekte und Dateien',   shortcutSuffix: 'F' },
         // Getrennt vom Finder, solange beide Ebenen getrennt sind: Der Finder

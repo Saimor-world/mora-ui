@@ -151,12 +151,12 @@ describe('surfaceRegistry', () => {
     describe('getCoreDockItems', () => {
         it('returns the OS 1.0 Dock entries in the correct order', () => {
             const items = getCoreDockItems();
-            expect(items).toHaveLength(8);
+            expect(items).toHaveLength(9);
             expect(items.map(i => i.action)).toEqual([
-                'home', 'chat', 'finder', 'dateien', 'team', 'map', 'settings', 'desk',
+                'home', 'cockpit', 'chat', 'finder', 'dateien', 'team', 'map', 'settings', 'desk',
             ]);
             expect(items.map(i => i.label)).toEqual([
-                'Home', 'MORA', 'Finder', 'Dateien', 'Team', 'Karte', 'Setup', 'Saimôr Desk',
+                'Home', 'Arbeit', 'MORA', 'Finder', 'Dateien', 'Team', 'Karte', 'Setup', 'Saimôr Desk',
             ]);
         });
 

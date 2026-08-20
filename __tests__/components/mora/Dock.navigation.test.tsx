@@ -8,10 +8,11 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
 
+const mockOpenPane = jest.fn();
 const STABLE_PANE = { id: 'pane-test', type: 'search', title: 'Test', size: { width: 960, height: 720 }, position: { x: 0, y: 0 }, zIndex: 1, data: {} };
 jest.mock('@/lib/store/paneStore', () => ({
     usePaneStore: (sel?: (s: any) => unknown) => {
-        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: jest.fn(), removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE, restorePane: jest.fn() };
+        const s = { panes: [STABLE_PANE], activePaneId: 'pane-test', openPane: mockOpenPane, removePane: jest.fn(), updatePanePosition: jest.fn(), updatePaneSize: jest.fn(), minimizePane: jest.fn(), focusPane: jest.fn(), getPane: () => STABLE_PANE, restorePane: jest.fn() };
         return sel ? sel(s) : s;
     }
 }));
@@ -19,6 +20,7 @@ jest.mock('@/lib/store/paneStore', () => ({
 jest.mock('@/lib/surface/surfaceRegistry', () => ({
     getCoreDockItems: () => [
         { action: 'home', label: 'Home', description: 'Go home', shortcutSuffix: 'H' },
+        { action: 'cockpit', label: 'Arbeit', description: 'Business cockpit', shortcutSuffix: 'A' },
         { action: 'chat', label: 'Chat', description: 'Open chat', shortcutSuffix: 'M' },
         { action: 'map', label: 'Karte', description: 'Open map', shortcutSuffix: null },
     ],
@@ -133,6 +135,26 @@ describe('Dock core navigation contract', () => {
         expect(navigateToCore).toHaveBeenCalledTimes(1);
     });
 
+    it('Arbeit opens the business cockpit', () => {
+        useNavStore.setState({
+            activeCompanyId: 'co-1', setActiveCompany: jest.fn(), viewMode: 'workspace',
+            isStandardMode: false, setIsSearchOpen: jest.fn(),
+        } as any);
+        useSessionStore.setState({
+            user: { role: 'member', name: 'User' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false, resetStore: jest.fn(), setIsLoggingOut: jest.fn(), updateUserSettings: jest.fn(),
+        } as any);
+        useOrbStore.setState({ orbState: 'idle', setOrbState: jest.fn() } as any);
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+
+        renderWithProviders(<Dock />, { queryClient: qc });
+        fireEvent.click(screen.getByRole('button', { name: 'Arbeit' }));
+
+        expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ id: 'apps-main', type: 'apps', title: 'Arbeit' }));
+    });
     it('Karte icon uses navigateToExplore instead of opening a competing pane', () => {
         const navigateToExplore = jest.fn();
 
