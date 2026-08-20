@@ -811,7 +811,9 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const hasUniverseInteraction = Boolean(focusedPlanetId || semanticPreviewPathId || (matchedDepartmentIds && matchedDepartmentIds.size > 0));
     const backgroundCalmFactor = (hasUniverseInteraction ? 0.82 : 1) * nebulaPulseFactor;
-    const widgetGlanceOpacity = universeWidgetOpacity(universeFocusMode, hasUniverseInteraction);
+    const widgetGlanceOpacity = coreMode === 'mindfield'
+        ? 0
+        : universeWidgetOpacity(universeFocusMode, hasUniverseInteraction);
     const activeCoreBeamPlanetIds = useMemo(() => {
         const ids = new Set<string>();
         if (focusedPlanetId) ids.add(focusedPlanetId);
@@ -1023,6 +1025,14 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
+            <div className="absolute left-1/2 top-[74px] z-[46] -translate-x-1/2 rounded-full border border-sky-100/10 bg-slate-950/28 p-1 shadow-[0_16px_50px_rgba(0,8,20,0.22)] backdrop-blur-xl">
+                <button type="button" onClick={() => setCoreMode('explore')} className={`rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ${coreMode === 'explore' ? 'bg-sky-100/12 text-sky-50' : 'text-sky-100/42 hover:text-sky-50/80'}`}>
+                    Organisation
+                </button>
+                <button type="button" onClick={() => setCoreMode('mindfield')} className={`rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ${coreMode === 'mindfield' ? 'bg-violet-300/14 text-violet-50' : 'text-sky-100/42 hover:text-sky-50/80'}`}>
+                    Zusammenhänge
+                </button>
+            </div>
             <AnimatePresence>
                 {coreMode === 'mindfield' && (
                     <motion.section
@@ -1034,9 +1044,10 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                         exit={{ opacity: 0, scale: 0.985 }}
                         transition={{ duration: 0.5, ease: [0.22, 0.9, 0.18, 1] }}
                     >
+                        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(18,52,78,0.64) 0%, rgba(8,28,48,0.82) 46%, rgba(4,15,29,0.92) 100%)', backdropFilter: 'blur(2px)' }} />
                         <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 text-center">
-                            <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-cyan-100/55">Universe · Gewebe</p>
-                            <p className="mt-1 text-[12px] text-sky-50/52">Dokumente, Räume und Zusammenhänge deiner Organisation</p>
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-cyan-100/55">Zusammenhänge</p>
+                            <p className="mt-1 text-[12px] text-sky-50/52">Das lebende Wissen deiner Organisation</p>
                         </div>
                         <SpatialMindfield embedded />
                     </motion.section>

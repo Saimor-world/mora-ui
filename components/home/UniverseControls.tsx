@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Activity, Globe, Home, LayoutGrid, Network, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic } from 'lucide-react';
+import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -200,8 +200,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             {showCoreSurfaceSwitch && (
                 <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
                     <CoreSurfaceButton isActive={coreMode === 'home'} onClick={() => setCoreMode('home')} icon={Home} label="Home" />
-                    <CoreSurfaceButton isActive={coreMode === 'explore'} onClick={() => setCoreMode('explore')} icon={Orbit} label="Universe" />
-                    <CoreSurfaceButton isActive={coreMode === 'mindfield'} onClick={() => setCoreMode('mindfield')} icon={Network} label="Gewebe" />
+                    <CoreSurfaceButton isActive={coreMode !== 'home'} onClick={() => setCoreMode('explore')} icon={Orbit} label="Universe" />
                 </div>
             )}
 

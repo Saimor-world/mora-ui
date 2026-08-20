@@ -274,11 +274,13 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                             }}
                         >
                             <div
-                                className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${
+                                className={`${embedded ? 'flex flex-col items-center gap-2 rounded-full border-0 bg-transparent p-2 shadow-none' : 'flex items-center gap-3.5 rounded-2xl border px-4 py-3 backdrop-blur-xl shadow-2xl'} transition-all ${
                                     isSelected || isHovered
-                                        ? 'border-white/35 bg-white/12 shadow-[0_0_30px_rgba(56,189,248,0.35)]'
+                                        ? embedded
+                                            ? 'border-transparent bg-transparent drop-shadow-[0_0_22px_rgba(125,211,252,0.72)]'
+                                            : 'border-white/35 bg-white/12 shadow-[0_0_30px_rgba(56,189,248,0.35)]'
                                         : embedded
-                                            ? 'border-sky-100/10 bg-slate-950/28 shadow-[0_14px_40px_rgba(0,8,20,0.28)]'
+                                            ? 'border-transparent bg-transparent shadow-none'
                                             : 'border-white/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.6)]'
                                 }`}
                                 style={{
@@ -286,7 +288,7 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                                 }}
                             >
                                 <div
-                                    className="w-9 h-9 rounded-xl flex items-center justify-center border shrink-0"
+                                    className={`${embedded ? 'h-14 w-14 rounded-full shadow-[0_0_28px_rgba(56,189,248,0.18)]' : 'h-9 w-9 rounded-xl'} flex shrink-0 items-center justify-center border backdrop-blur-md`}
                                     style={{
                                         background: `${node.color || '#38bdf8'}18`,
                                         borderColor: `${node.color || '#38bdf8'}35`,
@@ -299,12 +301,12 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                                     {node.type === 'file' && <HardDrive size={18} />}
                                     {node.type === 'node' && <FileText size={18} />}
                                 </div>
-                                <div className="min-w-0 pr-2">
-                                    <div className="text-sm font-semibold text-white/90 truncate max-w-[180px]">
+                                <div className={`min-w-0 ${embedded ? 'rounded-full bg-slate-950/36 px-3 py-1 text-center backdrop-blur-md' : 'pr-2'}`}>
+                                    <div className={`${embedded ? 'text-[11px] tracking-[0.04em]' : 'text-sm'} max-w-[180px] truncate font-semibold text-white/90`}>
                                         {node.title}
                                     </div>
                                     {node.subtitle && (
-                                        <div className="text-[11px] text-white/45 truncate font-mono">
+                                        <div className={`${embedded ? 'text-[9px]' : 'text-[11px]'} truncate font-mono text-white/45`}>
                                             {node.subtitle}
                                         </div>
                                     )}
