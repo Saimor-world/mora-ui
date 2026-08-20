@@ -17,6 +17,7 @@ import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import type { AppProps } from '@/lib/apps/types';
 import { BusinessWorkflows } from '@/components/os/BusinessWorkflows';
+import { ESTATE } from '@/lib/estate';
 
 const ICON_MAP: Record<string, LucideIcon> = {
     Activity,
@@ -177,7 +178,10 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     </label>
                 </header>
                 {!normalizedQuery && activeGroupId === 'all' && (
-                    <BusinessWorkflows onOpen={handleAppClick} />
+                    <BusinessWorkflows
+                        onOpen={handleAppClick}
+                        onOpenDesk={() => window.open(ESTATE.desk, '_blank', 'noopener,noreferrer')}
+                    />
                 )}
 
                 {universeGroups.length > 1 && (

@@ -60,6 +60,7 @@ export const STALE_TIMES = {
   workspaceAccess: 60 * 1000,
   workspaceCatalog: 30 * 60 * 1000,
   tasks: 30 * 1000,
+  financialPulse: 60 * 1000,
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -108,6 +109,9 @@ export const queryKeys = {
 
   tasks: (companyId?: string | null) =>
     ['tasks', companyId ?? 'account'] as const,
+
+  financialPulse: (scopeId?: string | null) =>
+    ['financialPulse', scopeId ?? 'account'] as const,
 
   nightwatchIncidents: (includeResolved = true) =>
     ['nightwatchIncidents', includeResolved] as const,
