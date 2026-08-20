@@ -97,9 +97,18 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const { activeCompanyId, activeDepartmentId, coreMode, setCoreMode, viewMode, navigateToCore, navigateToDepartment, universeScope, universeScopeDeptId, setUniverseScope } = useNavStore();
     const user = useSessionStore(s => s.user);
 
-    const { data: departmentsData } = useDepartments(activeCompanyId);
     const { data: companiesData }   = useCompanies();
-    const { data: treeDataRaw }     = useTree(activeCompanyId);
+    const safeCompanies = useMemo(() => (Array.isArray(companiesData) ? companiesData : EMPTY_UNIVERSE_ITEMS), [companiesData]);
+    const effectiveCompanyId = activeCompanyId || (safeCompanies.length > 0 ? safeCompanies[0].id : null);
+
+    useEffect(() => {
+        if (!activeCompanyId && effectiveCompanyId) {
+            useNavStore.getState().setActiveCompany(effectiveCompanyId);
+        }
+    }, [activeCompanyId, effectiveCompanyId]);
+
+    const { data: departmentsData } = useDepartments(effectiveCompanyId);
+    const { data: treeDataRaw }     = useTree(effectiveCompanyId);
 
     const setPersonalSpaceId = useContextStore((s) => s.setPersonalSpaceId);
     const openPane = usePaneStore((s) => s.openPane);
@@ -167,7 +176,6 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
     const parallaxPendingRef = useRef({ x: 0, y: 0 });
     const focusModeRef = useRef<UniverseFocusMode>('explore');
 
-    const safeCompanies = useMemo(() => (Array.isArray(companiesData) ? companiesData : EMPTY_UNIVERSE_ITEMS), [companiesData]);
     const safeDepartments = useMemo(() => (Array.isArray(departmentsData) ? departmentsData : EMPTY_UNIVERSE_ITEMS), [departmentsData]);
     const safeTreeData = useMemo(() => (Array.isArray(treeDataRaw) ? treeDataRaw : EMPTY_UNIVERSE_ITEMS), [treeDataRaw]);
 
