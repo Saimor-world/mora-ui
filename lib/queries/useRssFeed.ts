@@ -9,11 +9,12 @@ import { sortFeedItemsByDateDesc } from '@/lib/rss/feedDates';
 
 export type { RssFeedItem };
 
-export function useRssFeed(limit = 30, enabled = true) {
+export function useRssFeed(limit = 30, enabled = true, companyId?: string | null) {
     return useQuery({
-        queryKey: queryKeys.rssFeed(limit),
+        queryKey: queryKeys.rssFeed(limit, companyId),
         queryFn: async (): Promise<RssFeedItem[]> => {
-            const data = await coreGet(`/v3/integrations/rss/items?limit=${limit}`, { isOptional: true });
+            const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+            const data = await coreGet(`/v3/integrations/rss/items?limit=${limit}${companyQuery}`, { isOptional: true });
             const items = normalizeList<Record<string, unknown>>(data, ['items', 'feeds', 'data']);
             return sortFeedItemsByDateDesc(items.map(parseRssItem));
         },
@@ -22,6 +23,5 @@ export function useRssFeed(limit = 30, enabled = true) {
         refetchInterval: STALE_TIMES.rssFeed,
         refetchIntervalInBackground: false,
         refetchOnMount: (query) => query.isStale(),
-        placeholderData: (previous) => previous,
     });
 }

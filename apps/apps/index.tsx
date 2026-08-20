@@ -175,6 +175,28 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                         />
                     </label>
                 </header>
+                {!normalizedQuery && activeGroupId === 'all' && (
+                    <section className="grid gap-2 md:grid-cols-3" aria-label="Arbeitsweisen">
+                        <button type="button" onClick={() => handleAppClick('lagefeld', 'Lagefeld', { width: 1040, height: 720 })} className="group rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.055] p-4 text-left transition hover:border-cyan-200/26 hover:bg-cyan-500/[0.09]">
+                            <Network size={17} className="text-cyan-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-cyan-100/38">Lage</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Signale verstehen</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Mail, Kalender und Systemlage in einem belegten Lagebild.</span>
+                        </button>
+                        <button type="button" onClick={() => handleAppClick('grid', 'Alle Inhalte', { width: 1040, height: 720 })} className="group rounded-[20px] border border-emerald-300/12 bg-emerald-500/[0.05] p-4 text-left transition hover:border-emerald-200/26 hover:bg-emerald-500/[0.085]">
+                            <Grid size={17} className="text-emerald-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-emerald-100/38">Wissen</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Alles überblicken</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Echte Inhalte der aktiven Organisation suchen und öffnen.</span>
+                        </button>
+                        <button type="button" onClick={() => handleAppClick('canvas', 'Studio · Beta', { width: 1080, height: 760 })} className="group rounded-[20px] border border-violet-300/12 bg-violet-500/[0.055] p-4 text-left transition hover:border-violet-200/26 hover:bg-violet-500/[0.09]">
+                            <PenTool size={17} className="text-violet-200/65" />
+                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-violet-100/38">Studio · Beta</span>
+                            <strong className="mt-1 block text-sm font-medium text-white/82">Gedanken skizzieren</strong>
+                            <span className="mt-1 block text-[10px] leading-relaxed text-white/34">Freies Canvas. Speichern und Präsentieren folgen als echte Funktionen.</span>
+                        </button>
+                    </section>
+                )}
 
                 {universeGroups.length > 1 && (
                     <div

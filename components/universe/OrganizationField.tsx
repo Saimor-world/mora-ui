@@ -39,7 +39,7 @@ const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
 
 function territorySize(territory: OrganizationTerritory) {
     const substance = territory.spaces * 5 + territory.folders * 2 + territory.documents;
-    return Math.max(118, Math.min(168, 118 + Math.log2(substance + 1) * 8));
+    return Math.max(132, Math.min(184, 132 + Math.log2(substance + 1) * 8));
 }
 
 export function OrganizationField({
@@ -66,7 +66,7 @@ export function OrganizationField({
             className="absolute inset-0 z-[18] overflow-hidden"
             aria-label={lens === 'organization' ? 'Organisation' : 'Zusammenhänge'}
         >
-            <header className="pointer-events-none absolute left-6 top-24 z-30 max-w-[420px] md:left-10 md:top-28">
+            <header className="pointer-events-none absolute left-1/2 top-[118px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center">
                 <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-cyan-100/48">
                     {lens === 'organization' ? 'Organisationsfeld' : 'Beziehungsfeld'}
                 </p>
@@ -82,7 +82,7 @@ export function OrganizationField({
                 </p>
             </header>
 
-            <div className="absolute inset-x-0 bottom-24 top-48 hidden xl:block">
+            <div className="absolute bottom-24 left-[285px] right-[285px] top-[210px] hidden xl:block">
                 {territories.map((territory) => (
                     <Territory
                         key={territory.id}
@@ -211,18 +211,20 @@ function Territory({
             data-testid={territory.access === 'locked' ? 'locked-territory-' + territory.id : 'territory-' + territory.id}
         >
             <span
-                className="relative mx-auto flex items-center justify-center rounded-full border border-white/10 transition-all duration-700"
+                className="relative mx-auto flex items-center justify-center overflow-hidden border border-white/12 transition-all duration-700"
                 style={{
                     width: 'var(--territory-size)',
                     height: 'var(--territory-size)',
                     color: accent,
                     background:
                         'radial-gradient(circle at 38% 32%, ' + accent + '2e, transparent 36%), radial-gradient(circle at 65% 72%, ' + accent + '18, transparent 45%), rgba(3,13,24,0.72)',
+                    borderRadius: '42% 58% 48% 52% / 52% 43% 57% 48%',
                     boxShadow:
-                        '0 0 0 1px ' + accent + '14, 0 0 55px ' + accent + (selected ? '48' : '24') + ', inset 0 0 38px rgba(255,255,255,0.035)',
+                        '0 24px 60px rgba(0,0,0,0.32), 0 0 0 1px ' + accent + '18, 0 0 72px ' + accent + (selected ? '48' : '28') + ', inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -28px 48px rgba(0,0,0,0.24)',
                 }}
             >
-                <span className="absolute inset-[9%] rounded-full border border-white/[0.055]" />
+                <span className="absolute inset-[9%] rounded-[inherit] border border-white/[0.055]" />
+                <span className="absolute left-[16%] right-[16%] top-[28%] h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
                 <span className="absolute inset-[20%] rounded-full bg-black/10 blur-sm" />
                 {territory.access === 'locked' ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.15} className="relative opacity-72" /> : <Building2 size={Math.round(size * 0.22)} strokeWidth={1.15} className="relative opacity-90" />}
                 {lens === 'relations' && signals.slice(0, 3).map((signal, index) => (

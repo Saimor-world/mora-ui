@@ -112,7 +112,8 @@ export const queryKeys = {
 
   bridgePulse: () => ['bridgePulse'] as const,
 
-  rssFeed: (limit = 30) => ['integrations', 'rss', 'items', limit] as const,
+  rssFeed: (limit = 30, companyId?: string | null) =>
+    ['integrations', 'rss', 'items', companyId ?? 'account', limit] as const,
   workspaceAccess: () => ['workspace', 'access'] as const,
   workspaceCatalog: () => ['workspace', 'catalog'] as const,
 };

@@ -12,6 +12,7 @@ import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
+import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
@@ -24,6 +25,7 @@ import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
+import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -37,6 +39,8 @@ interface TerritoryMetrics {
 export default function UniverseView() {
     const {
         activeCompanyId,
+        activeMode,
+        viewMode,
         coreMode,
         setCoreMode,
         navigateToDepartment,
@@ -51,14 +55,13 @@ export default function UniverseView() {
         () => Array.isArray(companiesData) ? companiesData : EMPTY_ITEMS,
         [companiesData],
     );
-    const effectiveCompanyId = activeCompanyId || companies[0]?.id || null;
     const currentCompany = useMemo(
-        () => companies.find((company) => company.id === effectiveCompanyId) ?? null,
-        [companies, effectiveCompanyId],
+        () => resolveVisibleCompany(companies, activeCompanyId, viewMode, activeMode),
+        [companies, activeCompanyId, viewMode, activeMode],
     );
-
+    const effectiveCompanyId = currentCompany?.id ?? activeCompanyId ?? null;
     useEffect(() => {
-        if (!activeCompanyId && effectiveCompanyId) {
+        if (effectiveCompanyId && effectiveCompanyId !== activeCompanyId) {
             useNavStore.getState().setActiveCompany(effectiveCompanyId);
         }
     }, [activeCompanyId, effectiveCompanyId]);
@@ -320,6 +323,19 @@ export default function UniverseView() {
                 selected={Boolean(selectedTerritoryId)}
             />
 
+            <UniverseObservatory
+                mail={mailPreview}
+                calendar={calendarPreview}
+                feed={feedPreview}
+                incidents={nightwatchIncidents}
+                territoryCount={territories.length}
+                documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
+                selected={Boolean(selectedTerritoryId)}
+                onOpenMail={() => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 980, height: 700 } })}
+                onOpenCalendar={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 980, height: 700 } })}
+                onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
+                onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
+            />
             <div className="absolute left-1/2 top-[74px] z-[46] -translate-x-1/2 rounded-full border border-sky-100/10 bg-slate-950/38 p-1 shadow-[0_16px_50px_rgba(0,8,20,0.24)] backdrop-blur-xl">
                 <button
                     type="button"

@@ -10,6 +10,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { feedCadenceHint, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import type { AppProps } from '@/lib/apps/types';
+import { useNavStore } from '@/lib/store/navStore';
 import { GLASS_SHEET_PRESENTATION_FEED } from '@/lib/os/glassSheet';
 
 export default function FeedsApp({ paneId }: AppProps) {
@@ -17,7 +18,8 @@ export default function FeedsApp({ paneId }: AppProps) {
     const pane = getPane(paneId);
     const isActive = usePaneStore((state) => state.activePaneId === paneId);
     const { overview } = useCommunicationSurface();
-    const { data: items = [], isLoading, isFetching, refetch, error, dataUpdatedAt } = useRssFeed(30, Boolean(pane));
+    const activeCompanyId = useNavStore((state) => state.activeCompanyId);
+    const { data: items = [], isLoading, isFetching, refetch, error, dataUpdatedAt } = useRssFeed(30, Boolean(pane), activeCompanyId);
 
     const rssConfigured = Boolean(
         overview?.rss?.configured

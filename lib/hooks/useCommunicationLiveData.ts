@@ -23,7 +23,7 @@ import { useNavStore } from "@/lib/store/navStore";
 const CLOUD_VORSCHAU = 20;
 
 
-type MailPreviewItem = {
+export type MailPreviewItem = {
     id: string;
     subject: string;
     from: string;
@@ -31,7 +31,7 @@ type MailPreviewItem = {
     date?: string;
 };
 
-type CalendarPreviewItem = {
+export type CalendarPreviewItem = {
     id: string;
     title: string;
     date?: string;
@@ -39,7 +39,7 @@ type CalendarPreviewItem = {
     location?: string;
 };
 
-type FeedPreviewItem = {
+export type FeedPreviewItem = {
     id: string;
     sourceTitle: string;
     title: string;
@@ -150,10 +150,23 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
     const inFlightRef = useRef<Promise<void> | null>(null);
     const lastBackgroundRefreshRef = useRef<number>(0);
     const lastVisibilitySyncRef = useRef<number>(0);
+    const scopeVersionRef = useRef(0);
+
+    useEffect(() => {
+        scopeVersionRef.current += 1;
+        inFlightRef.current = null;
+        hasLoadedRef.current = false;
+        setMailPreview([]);
+        setCalendarPreview([]);
+        setFeedPreview([]);
+        setCloudPreview([]);
+        if (autoLoad) setIsLoading(true);
+    }, [activeCompanyId, autoLoad]);
 
     const refreshData = useCallback(async (options?: { background?: boolean }) => {
         const background = Boolean(options?.background);
         const now = Date.now();
+        const scopeVersion = scopeVersionRef.current;
 
         if (background && hasLoadedRef.current && now - lastBackgroundRefreshRef.current < 1200) {
             return;
@@ -192,6 +205,8 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const mailItems = normalizeList<any>(mailData, ["messages", "emails", "mail", "data"]);
                 const calendarItems = normalizeList<any>(calendarData, ["events", "appointments", "calendar", "data"]);
                 const feedItems = normalizeList<any>(feedData, ["items", "feeds", "data"]);
+
+                if (scopeVersion !== scopeVersionRef.current) return;
 
                 setMailPreview(
                     mailItems.slice(0, 3).map((item: any) => ({
@@ -262,6 +277,7 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                             })) as CloudPreviewItem[];
                         })
                     );
+                    if (scopeVersion !== scopeVersionRef.current) return;
                     setCloudPreview(connectorResults.flat().slice(0, 6));
                 }
                 hasLoadedRef.current = true;
@@ -269,9 +285,9 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                     lastBackgroundRefreshRef.current = now;
                 }
             } finally {
-                inFlightRef.current = null;
-                if (shouldShowLoading) {
-                    setIsLoading(false);
+                if (scopeVersion === scopeVersionRef.current) {
+                    inFlightRef.current = null;
+                    if (shouldShowLoading) setIsLoading(false);
                 }
             }
         })();
@@ -299,6 +315,7 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
         const onVisibilityChange = () => {
             if (typeof document === "undefined" || document.visibilityState !== "visible") return;
             const now = Date.now();
+        const scopeVersion = scopeVersionRef.current;
             if (now - lastVisibilitySyncRef.current < 15000) return;
             lastVisibilitySyncRef.current = now;
             void refreshData({ background: true });

@@ -32,6 +32,7 @@ import { HomeDataSourceError } from '@/components/home/HomeDataSourceError';
 import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { CosmicBackdrop } from '@/components/universe/CosmicBackdrop';
 import { openVoiceOverlay } from '@/lib/os/openVoiceOverlay';
+import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 
 import { buildOpenFlowLagebild, isDeskEntryPlaceholder } from '@/lib/openflow/presentation';
 import { ESTATE, ESTATE_LABELS } from '@/lib/estate';
@@ -143,12 +144,16 @@ export const HomeSurface: React.FC = () => {
     const user        = useSessionStore((s) => s.user);
     const resetStore  = useSessionStore((s) => s.resetStore);
     const setUser     = useSessionStore((s) => s.setUser);
-    const { activeCompanyId, setCoreMode, activeMode } = useNavStore();
+    const { activeCompanyId, setCoreMode, activeMode, viewMode } = useNavStore();
     const { data: companies = [] }   = useCompanies({ includeDemo: true });
     const { data: homeView, isError: homeViewError, isLoading: homeViewLoading } = useHomeView();
     const { data: homeStatus, isError: homeStatusError } = useHomeStatus();
     const homeDataUnavailable = homeViewError || homeStatusError;
-    const resolvedCompanyId = activeCompanyId || companies[0]?.id || null;
+    const currentCompany = useMemo(
+        () => resolveVisibleCompany(companies, activeCompanyId, viewMode, activeMode),
+        [companies, activeCompanyId, viewMode, activeMode],
+    );
+    const resolvedCompanyId = currentCompany?.id ?? activeCompanyId ?? null;
     const { data: departments = [] } = useDepartments(resolvedCompanyId);
     const { data: treeData = [] }    = useTree(resolvedCompanyId);
 
@@ -429,10 +434,11 @@ export const HomeSurface: React.FC = () => {
         () => buildBriefing(departments, treeData),
         [departments, treeData],
     );
-    const currentCompany = useMemo(
-        () => companies.find((company) => company.id === resolvedCompanyId) || null,
-        [companies, resolvedCompanyId]
-    );
+    useEffect(() => {
+        if (resolvedCompanyId && resolvedCompanyId !== activeCompanyId) {
+            useNavStore.getState().setActiveCompany(resolvedCompanyId);
+        }
+    }, [activeCompanyId, resolvedCompanyId]);
 
     useEffect(() => {
         let cancelled = false;

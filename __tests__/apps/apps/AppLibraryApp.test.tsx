@@ -49,6 +49,8 @@ describe('AppLibraryApp', () => {
     render(<AppLibraryApp paneId="apps-main" />);
 
     expect(screen.getByTestId('app-library')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Arbeitsweisen' })).toBeInTheDocument();
+    expect(screen.getByText('Studio · Beta')).toBeInTheDocument();
     expect(screen.getByTestId('app-library-card-finder')).toBeInTheDocument();
     expect(screen.queryByTestId('app-library-card-codex')).not.toBeInTheDocument();
     expect(screen.getByTestId('app-library-group-work')).toBeInTheDocument();
