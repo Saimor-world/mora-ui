@@ -62,10 +62,10 @@ const EMPTY_UNIVERSE_ITEMS: any[] = [];
 
 // Per-scene nebula colors — Universe background reacts dramatically to scene switches
 const UNIVERSE_BASE: Record<RitualSceneId, string> = {
-    flow:   'linear-gradient(135deg, rgba(0,12,10,0.98) 0%, rgba(0,8,6,0.96) 48%, rgba(0,10,8,0.98) 100%)',
-    build:  'linear-gradient(135deg, rgba(0,5,15,0.98) 0%, rgba(3,9,21,0.96) 48%, rgba(0,5,12,0.98) 100%)',
-    lounge: 'linear-gradient(150deg, rgba(14,9,10,0.98) 0%, rgba(9,7,12,0.97) 52%, rgba(6,6,14,0.98) 100%)',
-    night:  'linear-gradient(135deg, rgba(5,3,18,0.98) 0%, rgba(8,4,22,0.96) 48%, rgba(4,2,16,0.98) 100%)',
+    flow:   'linear-gradient(145deg, #12394b 0%, #0a2538 42%, #071827 72%, #06111d 100%)',
+    build:  'linear-gradient(145deg, #173e59 0%, #0b2944 42%, #0a1930 74%, #070f1d 100%)',
+    lounge: 'linear-gradient(145deg, #3a2936 0%, #24253d 42%, #121d31 74%, #091421 100%)',
+    night:  'linear-gradient(145deg, #20284b 0%, #151d3d 42%, #0b1730 74%, #070f20 100%)',
 };
 const UNIVERSE_NEBULA: Record<RitualSceneId, string> = {
     flow: `
@@ -883,7 +883,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     key={`nebula-${ritualScene.id}`}
                     className="absolute inset-0 z-[-9] pointer-events-none"
                     initial={{ opacity: 0 }}
-                    animate={{ x: parallaxOffset.x * 0.24, y: parallaxOffset.y * 0.18, opacity: 0.88 * backgroundCalmFactor }}
+                    animate={{ x: parallaxOffset.x * 0.24, y: parallaxOffset.y * 0.18, opacity: 1 * backgroundCalmFactor }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 1.4, ease: 'easeInOut', x: { type: 'spring', stiffness: 28, damping: 18 }, y: { type: 'spring', stiffness: 28, damping: 18 } }}
                     style={{ background: UNIVERSE_NEBULA[ritualScene.id], mixBlendMode: 'screen' }}
@@ -955,7 +955,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
             <div
                 className="absolute inset-0 z-[-7] pointer-events-none"
                 style={{
-                    background: 'radial-gradient(circle at 50% 48%, rgba(255,255,255,0.024) 0%, rgba(255,255,255,0.010) 24%, rgba(0,0,0,0.22) 64%, rgba(0,0,0,0.62) 100%)',
+                    background: 'radial-gradient(ellipse at 50% 44%, rgba(186,230,253,0.13) 0%, rgba(103,232,249,0.055) 28%, rgba(5,18,32,0.10) 62%, rgba(2,8,18,0.36) 100%)',
                 }}
             />
             <motion.div

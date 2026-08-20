@@ -145,7 +145,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     );
 
     return (
-        <div className="fixed left-3 right-3 top-3 z-50 flex min-w-0 items-center justify-between gap-1 rounded-2xl border border-white/[0.10] bg-black/55 px-1.5 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(96vw,920px)] sm:-translate-x-1/2 sm:justify-center sm:gap-2 sm:px-2">
+        <div className="fixed left-3 right-3 top-3 z-50 flex min-w-0 items-center justify-between gap-1 rounded-2xl border border-white/[0.10] bg-slate-950/38 px-1.5 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(96vw,920px)] sm:-translate-x-1/2 sm:justify-center sm:gap-2 sm:px-2">
             {showDeptBack && (
                 <button
                     type="button"

@@ -8,7 +8,7 @@ import { useUserSettings } from '@/lib/queries/useUserSettings';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
-import { TENANT_DEMO, TENANT_HQ } from '@/lib/constants/tenants';
+import { TENANT_DEMO } from '@/lib/constants/tenants';
 import { readCookie, writeCookie, deleteCookie } from '@/lib/auth/cookies';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts, getSessionTier } from '@/lib/auth/sessionLifecycle';
@@ -19,6 +19,7 @@ import {
 } from '@/lib/websiteEntryStorage';
 import type { UserProfile } from '@/lib/api/authClient';
 import type { User, UserRole } from '@/lib/types/mora';
+import { resolveCompanySelection } from '@/lib/auth/companySelection';
 
 // ---------------------------------------------------------------------------
 // Type mapping: UserProfile (authClient) → User (sessionStore)
@@ -233,9 +234,6 @@ export function useAuthBootstrapper() {
     useEffect(() => {
         if (!profile || !companies || companies.length === 0) return;
 
-        // Only run company selection on first load — once a company is active, we don't re-select.
-        if (activeCompanyId) return;
-
         const tenantId = profile.tenant_id || sessionTenantId;
         const isLocalhost =
             typeof window !== 'undefined' &&
@@ -247,7 +245,7 @@ export function useAuthBootstrapper() {
         let storedWorkspaceName =
             typeof window !== 'undefined' ? localStorage.getItem('last_workspace') : null;
 
-        // Purge legacy brand names from cached workspace
+        // Purge legacy brand names from cached workspace.
         if (storedWorkspaceName) {
             const normalized = storedWorkspaceName.toLowerCase();
             if (normalized.includes('foerderlogiken') || normalized.includes('förderlogiken')) {
@@ -256,65 +254,21 @@ export function useAuthBootstrapper() {
             }
         }
 
-        const isDemoTenantFlag = tenantId === TENANT_DEMO;
-        const demoCompanies = companies.filter((c) => c.is_demo);
-        const hqCompanies = companies.filter((c) => c.tenant_id === TENANT_HQ);
-        const tenantCompanies = tenantId
-            ? companies.filter((c) => c.tenant_id === tenantId)
-            : companies;
+        const selectedCompanyId = resolveCompanySelection({
+            companies,
+            activeCompanyId,
+            storedCompanyId,
+            storedWorkspaceName,
+            profileCompanyId: profile.active_company_id,
+            sessionCompanyId: sessionUser?.active_company_id,
+            viewMode,
+            tenantId,
+            isLocalhost,
+            isDemoTenant: tenantId === TENANT_DEMO,
+            role,
+        });
 
-        let allowedCompanies = companies;
-        if (isLocalhost) {
-            allowedCompanies = companies.filter((c) => !c.is_demo);
-            if (!allowedCompanies.length) allowedCompanies = companies;
-        } else if (isDemoTenantFlag) {
-            allowedCompanies = companies;
-        } else if (viewMode === 'demo') {
-            allowedCompanies = demoCompanies;
-        } else if (viewMode === 'workspace') {
-            allowedCompanies = tenantCompanies;
-        } else if (viewMode === 'owner' && role !== 'system_owner') {
-            allowedCompanies = tenantCompanies;
-        }
-
-        const pickAllowedCompanyId = (...candidates: Array<string | null | undefined>) => {
-            for (const candidate of candidates) {
-                if (candidate && allowedCompanies.some((c) => c.id === candidate)) {
-                    return candidate;
-                }
-            }
-            return null;
-        };
-
-        let selectedCompanyId: string | null = null;
-        if (activeCompanyId && allowedCompanies.some((c) => c.id === activeCompanyId)) {
-            selectedCompanyId = activeCompanyId;
-        } else if (storedCompanyId && allowedCompanies.some((c) => c.id === storedCompanyId)) {
-            selectedCompanyId = storedCompanyId;
-        } else if (storedWorkspaceName) {
-            const found = allowedCompanies.find((c) => c.name === storedWorkspaceName);
-            if (found) selectedCompanyId = found.id;
-        } else if (allowedCompanies.length > 0) {
-            if (isDemoTenantFlag) {
-                selectedCompanyId =
-                    viewMode === 'workspace'
-                        ? (hqCompanies[0]?.id || demoCompanies[0]?.id || allowedCompanies[0].id)
-                        : (demoCompanies[0]?.id || hqCompanies[0]?.id || allowedCompanies[0].id);
-            } else if (isLocalhost) {
-                selectedCompanyId =
-                    pickAllowedCompanyId(
-                        sessionUser?.active_company_id,
-                        profile.active_company_id,
-                        hqCompanies[0]?.id,
-                    ) ||
-                    allowedCompanies.find((c) => !c.is_demo)?.id ||
-                    allowedCompanies[0].id;
-            } else {
-                selectedCompanyId = allowedCompanies[0].id;
-            }
-        }
-
-        if (selectedCompanyId) {
+        if (selectedCompanyId && selectedCompanyId !== activeCompanyId) {
             setActiveCompany(selectedCompanyId);
         }
         // viewMode is intentionally included: switching to demo/owner mode should re-select the

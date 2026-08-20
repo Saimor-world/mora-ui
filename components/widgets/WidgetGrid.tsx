@@ -82,8 +82,8 @@ export function WidgetGrid({
         [items, isGlanceSurface, surface],
     );
 
-    const panelBackground = isGlanceSurface ? 'rgba(6, 9, 22, 0.52)' : 'rgba(8, 11, 24, 0.82)';
-    const panelBorder = isGlanceSurface ? 'border-white/[0.10]' : 'border-white/[0.12]';
+    const panelBackground = isGlanceSurface ? 'rgba(8, 24, 38, 0.32)' : 'rgba(8, 11, 24, 0.82)';
+    const panelBorder = isGlanceSurface ? 'border-sky-100/[0.08]' : 'border-white/[0.12]';
 
     if (!mounted || !hydrated || surface === 'home') return null;
 
@@ -220,7 +220,7 @@ export function WidgetGrid({
                                 isClockOrb
                                     ? 'rounded-full border-0 bg-transparent shadow-none'
                                     : chromeless
-                                        ? `rounded-2xl border ${panelBorder} backdrop-blur-xl shadow-[0_12px_40px_rgba(0,0,0,0.38),inset_0_1px_0_rgba(255,255,255,0.07)]`
+                                        ? `rounded-2xl border ${panelBorder} backdrop-blur-xl shadow-[0_16px_44px_rgba(0,8,20,0.24),inset_0_1px_0_rgba(255,255,255,0.10)]`
                                         : `rounded-2xl border ${panelBorder} backdrop-blur-2xl shadow-[0_16px_50px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]`
                             }`}
                             style={isClockOrb ? undefined : { backgroundColor: panelBackground }}
