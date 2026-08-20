@@ -16,6 +16,7 @@ import type { AppColor } from '@/lib/apps/types';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import type { AppProps } from '@/lib/apps/types';
+import { BusinessWorkflows } from '@/components/os/BusinessWorkflows';
 
 const ICON_MAP: Record<string, LucideIcon> = {
     Activity,
@@ -176,44 +177,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     </label>
                 </header>
                 {!normalizedQuery && activeGroupId === 'all' && (
-                    <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-3" aria-label="Unternehmerische Aufgaben">
-                        <button type="button" onClick={() => handleAppClick('lagefeld', 'Lagefeld', { width: 1040, height: 720 })} className="group rounded-[20px] border border-cyan-300/12 bg-cyan-500/[0.055] p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-200/28 hover:bg-cyan-500/[0.09]">
-                            <Network size={17} className="text-cyan-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-cyan-100/38">Verstehen</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Den Tag einordnen</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Mail, Termine, Aufgaben und Systemsignale als eine belegte Lage.</span>
-                        </button>
-                        <button type="button" onClick={() => handleAppClick('action-center', 'Entscheidungen', { width: 940, height: 720 })} className="group rounded-[20px] border border-amber-300/12 bg-amber-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-amber-200/28 hover:bg-amber-500/[0.085]">
-                            <Activity size={17} className="text-amber-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-amber-100/38">Entscheiden</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Freigaben & Entscheidungen</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Vorschläge prüfen, Agentenaktionen bestätigen und Ergebnisse nachvollziehen.</span>
-                        </button>
-                        <button type="button" onClick={() => handleAppClick('mail', 'Mail', { width: 960, height: 680 })} className="group rounded-[20px] border border-blue-300/12 bg-blue-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-blue-200/28 hover:bg-blue-500/[0.085]">
-                            <Mail size={17} className="text-blue-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-blue-100/38">Kommunizieren</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Kunden beantworten</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Echte Nachrichten lesen und im Geschäftskontext weiterbearbeiten.</span>
-                        </button>
-                        <button type="button" onClick={() => handleAppClick('tasks', 'Aufgaben', { width: 900, height: 580 })} className="group rounded-[20px] border border-emerald-300/12 bg-emerald-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-emerald-200/28 hover:bg-emerald-500/[0.085]">
-                            <SquareCheckBig size={17} className="text-emerald-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-emerald-100/38">Umsetzen</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Arbeit liefern</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Aufgaben priorisieren, bewegen und bis zum Ergebnis führen.</span>
-                        </button>
-                        <button type="button" onClick={() => handleAppClick('search', 'Suche', { width: 720, height: 560 })} className="group rounded-[20px] border border-violet-300/12 bg-violet-500/[0.05] p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-200/28 hover:bg-violet-500/[0.085]">
-                            <Search size={17} className="text-violet-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-violet-100/38">Wissen</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Antworten & Unterlagen finden</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Über alle Inhalte der aktiven Organisation suchen.</span>
-                        </button>
-                        <button type="button" onClick={() => handleAppClick('nightwatch', 'Nightwatch', { width: 760, height: 680 })} className="group rounded-[20px] border border-rose-300/12 bg-rose-500/[0.045] p-4 text-left transition hover:-translate-y-0.5 hover:border-rose-200/28 hover:bg-rose-500/[0.08]">
-                            <ShieldCheck size={17} className="text-rose-200/65" />
-                            <span className="mt-4 block text-[9px] uppercase tracking-[0.2em] text-rose-100/38">Absichern</span>
-                            <strong className="mt-1 block text-sm font-medium text-white/82">Risiken erkennen</strong>
-                            <span className="mt-1 block text-[10px] leading-relaxed text-white/38">Infrastrukturzustand und konkrete Warnungen prüfen.</span>
-                        </button>
-                    </section>
+                    <BusinessWorkflows onOpen={handleAppClick} />
                 )}
 
                 {universeGroups.length > 1 && (

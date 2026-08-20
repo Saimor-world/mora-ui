@@ -98,8 +98,13 @@ export default function TasksApp({ paneId }: AppProps) {
     // Load tasks from API if endpoint exists, otherwise start empty
     useEffect(() => {
         let cancelled = false;
+        if (!activeCompanyId) {
+            setTasks([]);
+            setIsLoading(false);
+            return () => { cancelled = true; };
+        }
         setIsLoading(true);
-        coreGet('/v3/tasks', { isOptional: true })
+        coreGet(`/v3/tasks?company_id=${encodeURIComponent(activeCompanyId)}`, { isOptional: true })
             .then((data) => {
                 if (!cancelled && Array.isArray(data)) {
                     setTasks(data as Task[]);
@@ -124,7 +129,7 @@ export default function TasksApp({ paneId }: AppProps) {
         try {
             // A due date is the only thing Môra treats as urgent — she will speak
             // up on her own when an open task falls due within 24 hours.
-            const saved = await corePost('/v3/tasks', { title: newTitle.trim(), status, due_date: due }, { isOptional: true });
+            const saved = await corePost('/v3/tasks', { title: newTitle.trim(), status, due_date: due, company_id: activeCompanyId }, { isOptional: true });
             if (saved && typeof saved === 'object' && (saved as any).id) {
                 setTasks(prev => prev.map(t => t.id === tempId ? (saved as Task) : t));
             }
@@ -133,25 +138,25 @@ export default function TasksApp({ paneId }: AppProps) {
         } finally {
             setIsSubmitting(false);
         }
-    }, [newTitle, newDue]);
+    }, [activeCompanyId, newTitle, newDue]);
 
     const handleMoveTask = useCallback(async (taskId: string, newStatus: TaskStatus) => {
         setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
         try {
-            await corePost(`/v3/tasks/${taskId}`, { status: newStatus }, { isOptional: true });
+            await corePost(`/v3/tasks/${taskId}`, { status: newStatus, company_id: activeCompanyId }, { isOptional: true });
         } catch {
             // keep optimistic — API not yet live
         }
-    }, []);
+    }, [activeCompanyId]);
 
     const handleDeleteTask = useCallback(async (taskId: string) => {
         setTasks(prev => prev.filter(t => t.id !== taskId));
         try {
-            await coreGet(`/v3/tasks/${taskId}/delete`, { isOptional: true });
+            await coreGet(`/v3/tasks/${taskId}/delete?company_id=${encodeURIComponent(activeCompanyId || '')}`, { isOptional: true });
         } catch {
             // optimistic delete — API not yet live
         }
-    }, []);
+    }, [activeCompanyId]);
 
     if (!pane) return null;
 

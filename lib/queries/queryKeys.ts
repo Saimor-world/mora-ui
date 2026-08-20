@@ -59,6 +59,7 @@ export const STALE_TIMES = {
   rssFeed: 60 * 1000, // 1 minute
   workspaceAccess: 60 * 1000,
   workspaceCatalog: 30 * 60 * 1000,
+  tasks: 30 * 1000,
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -104,6 +105,9 @@ export const queryKeys = {
       : (['larryArtifacts', companyId] as const),
 
   teamMembers: () => ['teamMembers'] as const,
+
+  tasks: (companyId?: string | null) =>
+    ['tasks', companyId ?? 'account'] as const,
 
   nightwatchIncidents: (includeResolved = true) =>
     ['nightwatchIncidents', includeResolved] as const,

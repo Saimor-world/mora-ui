@@ -1,8 +1,10 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { screen, fireEvent } from '@testing-library/react';
 import AppLibraryApp from '@/apps/apps';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { renderWithProviders, resetAllStores, createTestQueryClient } from '../../test-utils';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 jest.mock('@/components/layers/GlassPanel', () => ({
   GlassPanel: ({ children, title }: { children: React.ReactNode; title?: React.ReactNode }) => (
@@ -13,11 +15,27 @@ jest.mock('@/components/layers/GlassPanel', () => ({
   ),
 }));
 
+jest.mock('@/components/os/BusinessWorkflows', () => ({
+  BusinessWorkflows: ({ onOpen }: { onOpen: (id: string, title: string, size: { width: number; height: number }) => void }) => (
+    <section aria-label="Unternehmerische Aufgaben">
+      <button type="button" onClick={() => onOpen('action-center', 'Entscheidungen', { width: 940, height: 720 })}>
+        Freigaben & Entscheidungen
+      </button>
+    </section>
+  ),
+}));
 const mockOpenPane = jest.fn();
 const mockRemovePane = jest.fn();
 
+
+function renderLibrary() {
+  const queryClient = createTestQueryClient();
+  queryClient.setQueryData(queryKeys.nightwatchIncidents(false), []);
+  return renderWithProviders(<AppLibraryApp paneId="apps-main" />, { queryClient });
+}
 describe('AppLibraryApp', () => {
   beforeEach(() => {
+    resetAllStores();
     jest.clearAllMocks();
 
     usePaneStore.setState({
@@ -46,7 +64,7 @@ describe('AppLibraryApp', () => {
   });
 
   it('renders grouped app cards with stable layout hooks', () => {
-    render(<AppLibraryApp paneId="apps-main" />);
+    renderLibrary();
 
     expect(screen.getByTestId('app-library')).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Unternehmerische Aufgaben' })).toBeInTheDocument();
@@ -58,7 +76,7 @@ describe('AppLibraryApp', () => {
   });
 
   it('opens the real decision workflow from the business cockpit', () => {
-    render(<AppLibraryApp paneId="apps-main" />);
+    renderLibrary();
 
     fireEvent.click(screen.getByText('Freigaben & Entscheidungen'));
 
@@ -70,7 +88,7 @@ describe('AppLibraryApp', () => {
     expect(mockRemovePane).toHaveBeenCalledWith('apps-main');
   });
   it('filters apps by search query', () => {
-    render(<AppLibraryApp paneId="apps-main" />);
+    renderLibrary();
 
     fireEvent.change(screen.getByLabelText('Apps durchsuchen'), { target: { value: 'nightwatch' } });
 
@@ -79,7 +97,7 @@ describe('AppLibraryApp', () => {
   });
 
   it('filters apps by category chip', () => {
-    render(<AppLibraryApp paneId="apps-main" />);
+    renderLibrary();
 
     fireEvent.click(screen.getByRole('tab', { name: /Studio/i }));
 
@@ -88,7 +106,7 @@ describe('AppLibraryApp', () => {
   });
 
   it('opens a selected app and closes the library pane', () => {
-    render(<AppLibraryApp paneId="apps-main" />);
+    renderLibrary();
 
     fireEvent.click(screen.getByTestId('app-library-card-chat'));
 
