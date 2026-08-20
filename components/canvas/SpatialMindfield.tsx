@@ -11,6 +11,8 @@ import {
     ShieldCheck,
     HardDrive,
     Radio,
+    ArrowUpRight,
+    X,
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -84,6 +86,33 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
             ...realNodes,
         ];
     }, [embedded, signals, treeData]);
+
+    const selectedNode = useMemo(
+        () => spatialNodes.find((node) => node.id === selectedNodeId) ?? null,
+        [selectedNodeId, spatialNodes]
+    );
+
+    const focusedNodeIds = useMemo(() => {
+        if (!selectedNodeId) return new Set<string>();
+        const focused = new Set<string>([selectedNodeId]);
+        let current = spatialNodes.find((node) => node.id === selectedNodeId);
+        while (current?.parentId) {
+            focused.add(current.parentId);
+            current = spatialNodes.find((node) => node.id === current?.parentId);
+        }
+        let changed = true;
+        while (changed) {
+            changed = false;
+            spatialNodes.forEach((node) => {
+                if (node.parentId && focused.has(node.parentId) && !focused.has(node.id)) {
+                    focused.add(node.id);
+                    changed = true;
+                }
+            });
+        }
+        return focused;
+    }, [selectedNodeId, spatialNodes]);
+
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('[data-spatial-node]')) return;
         setIsDragging(true);
@@ -120,7 +149,35 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
         setZoom(1);
     }, []);
 
+    const clearFocus = useCallback(() => {
+        setSelectedNodeId(null);
+        setPan({ x: 0, y: 0 });
+        setZoom(1);
+    }, []);
+
+    const openSelectedWithMora = useCallback(() => {
+        if (!selectedNode) return;
+        const source = selectedNode.type === 'signal'
+            ? 'Signal: ' + selectedNode.title + '. Kontext: ' + (selectedNode.subtitle || 'kein weiterer Kontext') + '.'
+            : 'Arbeitsbereich: ' + selectedNode.title + '. Typ: ' + selectedNode.type + '.';
+        openPane({
+            id: 'chat-fabric-' + selectedNode.id,
+            type: 'chat',
+            title: 'Môra',
+            size: { width: 520, height: 640 },
+            data: {
+                initialPrompt: source + ' Ordne das in den Organisationskontext ein. Zeige mir, ob daraus eine Entscheidung, Aufgabe oder nur Beobachtung werden sollte, und schlage den nächsten konkreten Schritt vor.',
+            },
+        });
+    }, [openPane, selectedNode]);
+
     const handleNodeClick = useCallback((node: SpatialNode) => {
+        if (embedded && selectedNodeId !== node.id) {
+            setSelectedNodeId(node.id);
+            setPan({ x: -node.x * 0.42, y: -node.y * 0.42 });
+            setZoom((currentZoom) => Math.max(currentZoom, 1.15));
+            return;
+        }
         setSelectedNodeId(node.id);
 
         if (node.type === 'signal') {
@@ -169,7 +226,7 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
             title: node.title,
             size: { width: 860, height: 620 }
         });
-    }, [openPane]);
+    }, [embedded, openPane, selectedNodeId]);
 
     return (
         <div
@@ -226,6 +283,7 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
                         const startY = centerY + (parent?.y || 0);
                         const targetX = centerX + node.x;
                         const targetY = centerY + node.y;
+                        const edgeIsFocused = !selectedNodeId || focusedNodeIds.has(node.id);
 
                         return (
                             <path
@@ -235,7 +293,7 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
                                 stroke="url(#synapse-gradient)"
                                 strokeWidth={hoveredNodeId === node.id ? 2.5 : 1.2}
                                 strokeDasharray={hoveredNodeId === node.id ? '4 2' : 'none'}
-                                opacity={hoveredNodeId === node.id ? 0.9 : 0.35}
+                                opacity={hoveredNodeId === node.id ? 0.9 : edgeIsFocused ? 0.48 : 0.07}
                                 className="transition-all duration-300"
                             />
                         );
@@ -310,6 +368,21 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
                 })}
             </div>
 
+            {embedded && selectedNode && (
+                <aside className="absolute bottom-24 left-8 z-30 w-[min(360px,calc(100%-4rem))] rounded-[24px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
+                    <button type="button" onClick={clearFocus} className="absolute right-4 top-4 rounded-full p-2 text-white/45 transition hover:bg-white/10 hover:text-white" aria-label="Fokus schließen"><X size={15} /></button>
+                    <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.22em] text-cyan-200/60">{selectedNode.type === 'signal' ? 'Verifiziertes Signal' : 'Im Gewebe'}</div>
+                    <h3 className="max-w-[280px] text-lg font-semibold leading-tight text-white/95">{selectedNode.title}</h3>
+                    {selectedNode.subtitle && <p className="mt-2 text-sm leading-relaxed text-white/55">{selectedNode.subtitle}</p>}
+                    <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <button type="button" onClick={() => handleNodeClick(selectedNode)} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-950 transition hover:bg-cyan-100">
+                            {selectedNode.type === 'signal' ? 'Quelle öffnen' : 'Arbeitsraum öffnen'} <ArrowUpRight size={14} />
+                        </button>
+                        <button type="button" onClick={openSelectedWithMora} className="text-xs font-semibold text-cyan-100/70 transition hover:text-cyan-100">Mit Môra klären</button>
+                        <button type="button" onClick={clearFocus} className="text-xs font-medium text-white/45 transition hover:text-white/80">Alle</button>
+                    </div>
+                </aside>
+            )}
             <div className="absolute bottom-24 right-8 z-30 flex items-center gap-2 px-3 py-2 rounded-full border border-white/12 bg-black/60 backdrop-blur-2xl shadow-2xl">
                 <button
                     onClick={() => setZoom((z) => Math.min(2.2, z + 0.2))}
