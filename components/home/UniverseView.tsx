@@ -1408,86 +1408,40 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
                     return (
                         <React.Fragment key={p.id}>
-                            {locked ? (
-                                <div
-                                    data-testid={`locked-planet-${p.id}`}
-                                    onClick={() => {
-                                        if (isHomeUniversePreview) {
-                                            setCoreMode('explore');
-                                            return;
-                                        }
+                            <Planet
+                                department={p as any}
+                                spaces={spacesList}
+                                position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                stackOrder={planetIndex}
+                                isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
+                                size={planetSize}
+                                showLabel={!isHomeUniversePreview}
+                                ambientLabel={true}
+                                labelSide={p.x >= 50 ? 'left' : 'right'}
+                                onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
+                                onClick={() => {
+                                    if (isHomeUniversePreview) {
+                                        clearUniverseInteractionState();
+                                        clearHoverRelease();
+                                        setCoreMode('explore');
+                                        return;
+                                    }
+                                    if (locked) {
                                         clearUniverseInteractionState();
                                         clearHoverRelease();
                                         setLockedTooltipDeptId(p.id);
-                                    }}
-                                    style={{
-                                        opacity: isDimmed ? 0.38 : 0.4,
-                                        cursor: 'pointer',
-                                        filter: 'grayscale(0.6)',
-                                        transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)',
-                                    }}
-                                >
-                                    <Planet
-                                        department={p as any}
-                                        spaces={spacesList}
-                                        position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        stackOrder={planetIndex}
-                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
-                                        size={planetSize}
-                                        showLabel={!isHomeUniversePreview}
-                                        ambientLabel={!isHomeUniversePreview}
-                                        labelSide={p.x >= 50 ? 'left' : 'right'}
-                                        onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
-                                        onClick={() => {
-                                            if (isHomeUniversePreview) {
-                                                setCoreMode('explore');
-                                            }
-                                        }}
-                                        health={health}
-                                        activity={activity}
-                                        capacity={capacity}
-                                        alertLevel={deptAlertLevels[p.id] ?? 'ok'}
-                                    />
-                                </div>
-                            ) : (
-                                <div style={{ opacity: isDimmed ? 0.6 : 1, transition: 'opacity 0.55s cubic-bezier(0.22, 0.9, 0.18, 1)' }} className="pointer-events-auto">
-                                    <Planet
-                                        department={p as any}
-                                        spaces={spacesList}
-                                        position={{ x: p.x + '%', y: p.y + '%' } as any}
-                                        stackOrder={planetIndex}
-                                        isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
-                                        size={planetSize}
-                                        showLabel={!isHomeUniversePreview}
-                                        ambientLabel={!isHomeUniversePreview}
-                                        labelSide={p.x >= 50 ? 'left' : 'right'}
-                                        onHover={isHomeUniversePreview ? undefined : (hovered) => handlePlanetHover(p.id, hovered)}
-                                        onClick={() => {
-                                            if (isHomeUniversePreview) {
-                                                clearUniverseInteractionState();
-                                                clearHoverRelease();
-                                                setCoreMode('explore');
-                                                return;
-                                            }
-                                            // Fly into the Department layer ONLY. Previously this also
-                                            // opened a 'finder-main' pane on top — which obscured the clean
-                                            // Department layer (the "two layers" bug). The DepartmentLayer
-                                            // renders its own spaces/files view; the finder is reachable by
-                                            // clicking a space inside it, so no redundant auto-pane is needed.
-                                            // flyIntoDepartment runs the cosmos zoom toward this planet,
-                                            // then navigates with the planet's viewport-% as zoom origin.
-                                            flyIntoDepartment(p.id, p.x, p.y);
-                                        }}
-                                        health={health}
-                                        activity={activity}
-                                        capacity={capacity}
-                                        alertLevel={deptAlertLevels[p.id] ?? 'ok'}
-                                    />
-                                </div>
-                            )}
+                                        return;
+                                    }
+                                    flyIntoDepartment(p.id, p.x, p.y);
+                                }}
+                                health={health}
+                                activity={activity}
+                                capacity={capacity}
+                                alertLevel={deptAlertLevels[p.id] ?? 'ok'}
+                            />
                             {lockedTooltipDeptId === p.id && (
                                 <div
-                                    className="absolute z-50"
+                                    className="absolute z-50 pointer-events-auto"
                                     style={{
                                         left: `${p.x}%`,
                                         top: `${p.y}%`,
