@@ -1418,7 +1418,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <Planet
                                 department={p as any}
                                 spaces={spacesList}
-                                position={{ x: p.x + '%', y: p.y + '%' } as any}
+                                position={{ x: p.x, y: p.y }}
                                 stackOrder={planetIndex}
                                 isActive={focusedPlanetId === p.id || isSemanticPreviewPlanet || isMatched}
                                 size={planetSize}

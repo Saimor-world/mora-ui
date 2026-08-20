@@ -175,7 +175,10 @@ export const Planet: React.FC<PlanetProps> = ({
     const orbitalStats = buildOrbitalStats(health, activity, spaceCount, effectiveGlow);
     const hoverScale = isHoverEngaged ? 1.08 : isPointerOver ? 1.03 : 1;
 
-    return (
+        const leftPos = typeof position.x === 'number' ? `${position.x}%` : position.x;
+        const topPos = typeof position.y === 'number' ? `${position.y}%` : position.y;
+
+        return (
         <motion.button
             ref={planetRef}
             type="button"
@@ -184,9 +187,8 @@ export const Planet: React.FC<PlanetProps> = ({
             data-planet-name={department.name}
             className="absolute group pointer-events-auto border-0 bg-transparent p-2 -m-2 text-left cursor-pointer touch-manipulation"
             style={{
-                left: position.x,
-                top: position.y,
-                transform: 'translate(-50%, -50%)',
+                left: leftPos,
+                top: topPos,
                 zIndex: 12 + stackOrder,
             }}
             onPointerEnter={handleMouseEnter}
@@ -194,8 +196,10 @@ export const Planet: React.FC<PlanetProps> = ({
             onFocus={handleMouseEnter}
             onBlur={handleMouseLeave}
             onClick={onClick}
+            initial={{ x: '-50%', y: '-50%' }}
             animate={{
-                y: isHoverEngaged ? [0, -4, 0] : isPointerOver ? [0, -3, 0] : [0, -2, 0],
+                x: '-50%',
+                y: isHoverEngaged ? ['-50%', '-54%', '-50%'] : isPointerOver ? ['-50%', '-53%', '-50%'] : ['-50%', '-52%', '-50%'],
             }}
             transition={{
                 y: {
