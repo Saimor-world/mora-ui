@@ -275,7 +275,7 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
                             <stop offset="100%" stopColor="#34d399" stopOpacity="0.4" />
                         </linearGradient>
                     </defs>
-                    {(embedded ? spatialNodes : spatialNodes.slice(1)).map((node) => {
+                    {(embedded ? spatialNodes : spatialNodes.slice(1)).filter((node) => Boolean(node.parentId)).map((node) => {
                         const centerX = containerRef.current?.clientWidth ? containerRef.current.clientWidth / 2 : 960;
                         const centerY = containerRef.current?.clientHeight ? containerRef.current.clientHeight / 2 : 540;
                         const parent = node.parentId ? spatialNodes.find((candidate) => candidate.id === node.parentId) : null;
@@ -290,10 +290,10 @@ export function SpatialMindfield({ className = '', embedded = false, signals = [
                                 key={`edge-${node.id}`}
                                 d={`M ${startX} ${startY} Q ${(startX + targetX) / 2 + 30} ${(startY + targetY) / 2 - 20} ${targetX} ${targetY}`}
                                 fill="none"
-                                stroke="url(#synapse-gradient)"
-                                strokeWidth={hoveredNodeId === node.id ? 2.5 : 1.2}
+                                stroke={node.color || '#7dd3fc'}
+                                strokeWidth={hoveredNodeId === node.id ? 1.8 : 0.8}
                                 strokeDasharray={hoveredNodeId === node.id ? '4 2' : 'none'}
-                                opacity={hoveredNodeId === node.id ? 0.9 : edgeIsFocused ? 0.48 : 0.07}
+                                opacity={hoveredNodeId === node.id ? 0.78 : edgeIsFocused ? 0.22 : 0.035}
                                 className="transition-all duration-300"
                             />
                         );

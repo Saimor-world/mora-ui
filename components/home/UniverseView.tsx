@@ -1270,7 +1270,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 </defs>
 
                 {/* Always visible living energy beams connecting Saimôr Core to every planet */}
-                {coreConnections.map((connection) => {
+                {coreConnections.filter((connection) => activeCoreBeamPlanetIds.has(connection.id)).map((connection) => {
                     const isBeamActive = activeCoreBeamPlanetIds.has(connection.id);
                     const planetColors: Record<string, { stroke: string; glow: string }> = {
                         intelligence: { stroke: 'rgba(6, 182, 212, 0.85)', glow: 'rgba(6, 182, 212, 0.25)' },
@@ -1291,7 +1291,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 strokeLinecap="round"
                                 filter="url(#beamGlow)"
                                 animate={{
-                                    opacity: isBeamActive ? 0.65 : 0.35,
+                                    opacity: isBeamActive ? 0.38 : 0,
                                 }}
                                 transition={{ duration: 0.5 }}
                             />
@@ -1304,7 +1304,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 strokeWidth={isBeamActive ? 0.16 : 0.10}
                                 strokeLinecap="round"
                                 animate={{
-                                    opacity: isBeamActive ? 0.95 : 0.65,
+                                    opacity: isBeamActive ? 0.58 : 0,
                                 }}
                                 transition={{ duration: 0.4 }}
                             />
@@ -1319,7 +1319,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                                 strokeLinecap="round"
                                 animate={{
                                     strokeDashoffset: [0, -24],
-                                    opacity: isBeamActive ? 0.9 : 0.6,
+                                    opacity: isBeamActive ? 0.52 : 0,
                                 }}
                                 transition={{
                                     strokeDashoffset: { duration: 2.8, repeat: Infinity, ease: "linear" },

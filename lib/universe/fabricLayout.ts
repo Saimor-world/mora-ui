@@ -26,18 +26,25 @@ const TYPE_LABEL: Record<CoreTreeNode['type'], string> = {
     node: 'Dokument',
 };
 
-/** Build stable parent-child clusters instead of a random radial cloud. */
+const ISLAND_ANCHORS = [
+    { x: -300, y: -170 },
+    { x: 300, y: -155 },
+    { x: -280, y: 185 },
+    { x: 285, y: 180 },
+    { x: 0, y: -245 },
+    { x: 0, y: 245 },
+];
+
+/**
+ * Turns the real company tree into calm, independent context islands.
+ * Root departments are not connected to an invented global hub. Only actual
+ * parent-child relationships receive a path in the spatial surface.
+ */
 export function buildFabricLayout(tree: CoreTreeNode[], maxNodes = 48): FabricLayoutNode[] {
     const result: FabricLayoutNode[] = [];
     const departments = tree.filter((item) => item.type === 'department');
-    const departmentCount = Math.max(1, departments.length);
 
-    const append = (
-        item: CoreTreeNode,
-        parentId: string | null,
-        x: number,
-        y: number,
-    ) => {
+    const append = (item: CoreTreeNode, parentId: string | null, x: number, y: number) => {
         if (result.length >= maxNodes) return false;
         result.push({
             id: item.id,
@@ -54,34 +61,36 @@ export function buildFabricLayout(tree: CoreTreeNode[], maxNodes = 48): FabricLa
     };
 
     departments.forEach((department, departmentIndex) => {
-        const angle = -Math.PI / 2 + (departmentIndex / departmentCount) * Math.PI * 2;
-        const departmentX = Math.cos(angle) * 340;
-        const departmentY = Math.sin(angle) * 255;
-        if (!append(department, null, departmentX, departmentY)) return;
+        const anchor = ISLAND_ANCHORS[departmentIndex]
+            ?? {
+                x: Math.cos((departmentIndex / departments.length) * Math.PI * 2) * 320,
+                y: Math.sin((departmentIndex / departments.length) * Math.PI * 2) * 210,
+            };
+        if (!append(department, null, anchor.x, anchor.y)) return;
 
-        const spaces = (department.children || []).filter((child) => child.type === 'space');
-        spaces.slice(0, 5).forEach((space, spaceIndex) => {
-            const spread = (spaceIndex - (spaces.length - 1) / 2) * 0.5;
-            const spaceAngle = angle + spread;
-            const spaceX = departmentX + Math.cos(spaceAngle) * 118;
-            const spaceY = departmentY + Math.sin(spaceAngle) * 88;
+        const spaces = (department.children || []).filter((child) => child.type === 'space').slice(0, 5);
+        spaces.forEach((space, spaceIndex) => {
+            const angle = -Math.PI / 2 + (spaceIndex / Math.max(1, spaces.length)) * Math.PI * 2;
+            const spaceX = anchor.x + Math.cos(angle) * 104;
+            const spaceY = anchor.y + Math.sin(angle) * 76;
             if (!append(space, department.id, spaceX, spaceY)) return;
 
-            const folders = (space.children || []).filter((child) => child.type === 'folder');
-            folders.slice(0, 4).forEach((folder, folderIndex) => {
-                const folderAngle = spaceAngle + (folderIndex - (folders.length - 1) / 2) * 0.52;
-                const folderX = spaceX + Math.cos(folderAngle) * 76;
-                const folderY = spaceY + Math.sin(folderAngle) * 58;
+            const folders = (space.children || []).filter((child) => child.type === 'folder').slice(0, 3);
+            folders.forEach((folder, folderIndex) => {
+                const fan = (folderIndex - (folders.length - 1) / 2) * 0.58;
+                const folderAngle = angle + fan;
+                const folderX = spaceX + Math.cos(folderAngle) * 68;
+                const folderY = spaceY + Math.sin(folderAngle) * 50;
                 if (!append(folder, space.id, folderX, folderY)) return;
 
-                const documents = (folder.children || []).filter((child) => child.type === 'node');
-                documents.slice(0, 3).forEach((document, documentIndex) => {
-                    const documentAngle = folderAngle + (documentIndex - 1) * 0.42;
+                const documents = (folder.children || []).filter((child) => child.type === 'node').slice(0, 2);
+                documents.forEach((document, documentIndex) => {
+                    const documentAngle = folderAngle + (documentIndex === 0 ? -0.28 : 0.28);
                     append(
                         document,
                         folder.id,
-                        folderX + Math.cos(documentAngle) * 48,
-                        folderY + Math.sin(documentAngle) * 38,
+                        folderX + Math.cos(documentAngle) * 44,
+                        folderY + Math.sin(documentAngle) * 34,
                     );
                 });
             });
