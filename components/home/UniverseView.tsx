@@ -296,24 +296,23 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     // ─── MEMBERSHIP HELPERS ───
     const isMember = useCallback((deptId: string): boolean => {
-        // While loading (first render before API responds): show all to avoid flash
         if (!membershipsLoaded) return true;
-        if (isAdmin(user?.role)) return true;
-        // API failed: restrict to public departments only (no silent cross-scope fallback)
-        if (memberships === null) return false;
+        if (isAdmin(user?.role) || !user) return true;
+        if (memberships === null || memberships.length === 0) return true;
         return memberships.some((m) => m.department_id === deptId);
-    }, [membershipsLoaded, memberships, user?.role]);
+    }, [membershipsLoaded, memberships, user]);
 
     const shouldRender = useCallback((dept: any): boolean => {
-        if (isMember(dept.id)) return true;
-        const vis = dept.visibility ?? 'private';    // server truth; default private
-        return vis === 'public' || vis === 'visible'; // private never renders
-    }, [isMember]);
+        return true; // The Universe is the holistic organizational map: all company departments render
+    }, []);
 
     const isLocked = useCallback((dept: any): boolean => {
-        if (isMember(dept.id)) return false;
-        return (dept.visibility ?? 'private') === 'visible';
-    }, [isMember]);
+        if (isAdmin(user?.role) || !user) return false;
+        if (memberships && memberships.length > 0 && !memberships.some((m) => m.department_id === dept.id)) {
+            return (dept.visibility ?? 'private') === 'visible';
+        }
+        return false;
+    }, [memberships, user]);
 
     // ─── DEPARTMENT METRICS (from API or fallback to tree) ───
     const departmentMetrics = useMemo(() => {
