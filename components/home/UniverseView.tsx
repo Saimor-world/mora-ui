@@ -16,7 +16,8 @@ import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder, LayoutGrid, Map as MapIcon } from 'lucide-react';
 import { WidgetGrid } from '@/components/widgets/WidgetGrid';
-import { SpatialMindfield, type FabricSignal } from '@/components/canvas/SpatialMindfield';
+import { type FabricSignal } from '@/components/canvas/SpatialMindfield';
+import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
@@ -482,6 +483,24 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
         () => planetPositions.filter((planet) => shouldRender(planet)),
         [planetPositions, shouldRender]
     );
+    const organizationTerritories = useMemo<OrganizationTerritory[]>(() => (
+        visiblePlanets.map((planet) => {
+            const metrics = departmentMetrics[planet.id];
+            const hasLiveMetrics = Object.prototype.hasOwnProperty.call(statsMap, planet.id);
+            return {
+                id: planet.id,
+                name: planet.name,
+                description: planet.description,
+                color: planet.color,
+                x: planet.x,
+                y: planet.y,
+                spaces: metrics?.spaces || 0,
+                folders: metrics?.folders || 0,
+                documents: metrics?.nodes || 0,
+                metricSource: hasLiveMetrics ? 'live' : metrics ? 'derived' : 'missing',
+            };
+        })
+    ), [departmentMetrics, statsMap, visiblePlanets]);
     const totalSpaceCount = useMemo(
         () => Object.values(departmentMetrics).reduce((sum, metric) => sum + (metric.spaces || 0), 0),
         [departmentMetrics]
@@ -1072,25 +1091,42 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     <motion.section
                         key="universe-relations"
                         data-testid="universe-relations-layer"
-                        className="absolute inset-0 z-[28] pointer-events-auto"
+                        className="absolute inset-0 z-[15] pointer-events-none"
                         initial={{ opacity: 0, scale: 1.025 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.985 }}
                         transition={{ duration: 0.5, ease: [0.22, 0.9, 0.18, 1] }}
                     >
                         <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(18,52,78,0.64) 0%, rgba(8,28,48,0.82) 46%, rgba(4,15,29,0.92) 100%)', backdropFilter: 'blur(2px)' }} />
-                        <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 text-center">
+                        <div className="hidden pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 text-center">
                             <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-cyan-100/55">Zusammenhänge</p>
                             <p className="mt-1 text-[12px] text-sky-50/52">Das lebende Wissen deiner Organisation</p>
                         </div>
-                        <SpatialMindfield embedded signals={fabricSignals} />
+
                     </motion.section>
                 )}
             </AnimatePresence>
+            <OrganizationField
+                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
+                territories={organizationTerritories}
+                signals={fabricSignals}
+                selectedId={activePlanetId}
+                onSelect={setActivePlanetId}
+                onOpen={(departmentId) => navigateToDepartment(departmentId)}
+                onAskMora={(territory) => openPane({
+                    id: 'chat-universe-' + territory.id,
+                    type: 'chat',
+                    title: 'Môra',
+                    size: { width: 520, height: 640 },
+                    data: {
+                        initialPrompt: 'Ordne die Abteilung ' + territory.name + ' in Saimôr HQ ein. Nutze nur den sichtbaren Organisationskontext, benenne fehlende Daten ausdrücklich und schlage den nächsten sinnvollen Schritt vor.',
+                    },
+                })}
+            />
             {/* UNIVERSE DESKTOP — peripheral glance panels that visualize company state.
                 Planets stay above (z-12) and remain clickable; widgets recede when exploring. */}
             <motion.div
-                className="absolute inset-0 z-[10] pointer-events-none overflow-y-auto px-3 pt-3 pb-28"
+                className="hidden absolute inset-0 z-[10] pointer-events-none overflow-y-auto px-3 pt-3 pb-28"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.2) transparent' }}
                 animate={{
                     opacity: widgetGlanceOpacity,
@@ -1448,7 +1484,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
              * Fragment creates no DOM box — absolute planets resolve against the
              * absolute inset-0 container which correctly fills the full viewport.
             */}
-            <div className="absolute inset-0 z-[12] pointer-events-none">
+            <div className="hidden absolute inset-0 z-[12] pointer-events-none">
                 {visiblePlanets
                     .map((p, planetIndex) => {
                     // REAL METRICS from API or tree data
