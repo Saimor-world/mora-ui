@@ -14,15 +14,17 @@ import {
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useTree } from '@/lib/queries/useTree';
+import { buildFabricLayout } from '@/lib/universe/fabricLayout';
 
 interface SpatialNode {
     id: string;
-    type: 'space' | 'folder' | 'node' | 'file' | 'sentinel';
+    type: 'department' | 'space' | 'folder' | 'node' | 'file' | 'sentinel';
     title: string;
     subtitle?: string;
     x: number;
     y: number;
     color?: string;
+    parentId?: string | null;
     data?: any;
 }
 
@@ -46,64 +48,15 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
     const spatialNodes = useMemo<SpatialNode[]>(() => {
-        const nodes: SpatialNode[] = [];
-        let index = 0;
+        const realNodes = buildFabricLayout(Array.isArray(treeData) ? treeData : []);
+        if (embedded) return realNodes;
 
-        if (!embedded) nodes.push({
-            id: 'node-sentinel',
-            type: 'sentinel',
-            title: 'Nightwatch Sentinel',
-            subtitle: '100% Systeme aktiv · 24/7 Autonom',
-            x: 0,
-            y: 0,
-            color: '#10b981',
-            data: { status: 'optimal', healthScore: 100 }
-        });
-
-        if (!embedded) nodes.push({
-            id: 'node-files-hub',
-            type: 'file',
-            title: 'Meine Dateien & Cloud',
-            subtitle: 'Core, Lokaler Speicher & Drive',
-            x: -260,
-            y: -140,
-            color: '#38bdf8',
-        });
-
-        if (Array.isArray(treeData)) {
-            const extract = (items: any[], level = 1, parentAngle = 0) => {
-                items.forEach((item, i) => {
-                    index++;
-                    const angle = parentAngle + (i * 0.8) + (level * 0.4);
-                    const distance = 180 + (level * 160) + (i * 40);
-                    const x = Math.cos(angle) * distance;
-                    const y = Math.sin(angle) * distance;
-
-                    const itemType = item.type === 'space' ? 'space' : item.type === 'folder' ? 'folder' : 'node';
-                    const color = itemType === 'space' ? '#a78bfa' : itemType === 'folder' ? '#fbbf24' : '#34d399';
-
-                    nodes.push({
-                        id: item.id || `tree-node-${index}`,
-                        type: itemType,
-                        title: item.name || item.title || 'Objekt',
-                        subtitle: itemType === 'space' ? 'Bereich' : itemType === 'folder' ? 'Ordner' : 'Dokument / Notiz',
-                        x,
-                        y,
-                        color,
-                        data: item
-                    });
-
-                    if (Array.isArray(item.children) && item.children.length > 0 && level < 2) {
-                        extract(item.children, level + 1, angle);
-                    }
-                });
-            };
-            extract(treeData);
-        }
-
-        return nodes;
+        return [
+            { id: 'node-sentinel', type: 'sentinel' as const, title: 'Nightwatch Sentinel', subtitle: 'Systemschutz', x: 0, y: 0, color: '#10b981', parentId: null, data: { status: 'optimal', healthScore: 100 } },
+            { id: 'node-files-hub', type: 'file' as const, title: 'Meine Dateien & Cloud', subtitle: 'Speicher', x: -260, y: -140, color: '#38bdf8', parentId: null },
+            ...realNodes,
+        ];
     }, [embedded, treeData]);
-
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('[data-spatial-node]')) return;
         setIsDragging(true);
@@ -163,7 +116,7 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
             return;
         }
 
-        if (node.type === 'folder' || node.type === 'space') {
+        if (node.type === 'department' || node.type === 'folder' || node.type === 'space') {
             openPane({
                 id: 'finder-main',
                 type: 'finder' as any,
@@ -231,8 +184,9 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                     {(embedded ? spatialNodes : spatialNodes.slice(1)).map((node) => {
                         const centerX = containerRef.current?.clientWidth ? containerRef.current.clientWidth / 2 : 960;
                         const centerY = containerRef.current?.clientHeight ? containerRef.current.clientHeight / 2 : 540;
-                        const startX = centerX;
-                        const startY = centerY;
+                        const parent = node.parentId ? spatialNodes.find((candidate) => candidate.id === node.parentId) : null;
+                        const startX = centerX + (parent?.x || 0);
+                        const startY = centerY + (parent?.y || 0);
                         const targetX = centerX + node.x;
                         const targetY = centerY + node.y;
 
@@ -296,6 +250,7 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                                     }}
                                 >
                                     {node.type === 'sentinel' && <ShieldCheck size={18} />}
+                                    {node.type === 'department' && <Compass size={20} />}
                                     {node.type === 'space' && <Layers size={18} />}
                                     {node.type === 'folder' && <Folder size={18} />}
                                     {node.type === 'file' && <HardDrive size={18} />}
