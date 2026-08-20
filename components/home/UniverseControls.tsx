@@ -196,12 +196,12 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 )}
             </button>
 
-            {/* HOME / UNIVERSE / MINDFIELD surface toggle */}
+            {/* HOME / UNIVERSE surface and semantic lens toggle */}
             {showCoreSurfaceSwitch && (
                 <div className="flex shrink-0 items-center gap-0.5 rounded-xl border border-white/[0.08] bg-white/[0.03] p-1">
                     <CoreSurfaceButton isActive={coreMode === 'home'} onClick={() => setCoreMode('home')} icon={Home} label="Home" />
                     <CoreSurfaceButton isActive={coreMode === 'explore'} onClick={() => setCoreMode('explore')} icon={Orbit} label="Universe" />
-                    <CoreSurfaceButton isActive={coreMode === 'mindfield'} onClick={() => setCoreMode('mindfield')} icon={Network} label="Mindfield" />
+                    <CoreSurfaceButton isActive={coreMode === 'mindfield'} onClick={() => setCoreMode('mindfield')} icon={Network} label="Gewebe" />
                 </div>
             )}
 

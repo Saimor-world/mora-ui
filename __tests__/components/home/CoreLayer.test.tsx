@@ -52,7 +52,7 @@ jest.mock('framer-motion', () => ({
 }));
 
 // ── Store helpers ────────────────────────────────────────────────────────────
-const setCoreMode = (mode: 'home' | 'explore') => {
+const setCoreMode = (mode: 'home' | 'explore' | 'mindfield') => {
     useNavStore.setState({ coreMode: mode });
 };
 
@@ -84,6 +84,13 @@ describe('CoreLayer', () => {
         expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
     });
 
+    it('keeps the Universe surface mounted when the Gewebe lens is active', () => {
+        setCoreMode('mindfield');
+        render(<CoreLayer />);
+
+        expect(screen.getByTestId('universe-view')).toBeInTheDocument();
+        expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
+    });
     it('removes HomeSurface overlay when coreMode changes to explore', () => {
         setCoreMode('home');
         render(<CoreLayer />);

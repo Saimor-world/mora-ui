@@ -28,9 +28,10 @@ interface SpatialNode {
 
 interface SpatialMindfieldProps {
     className?: string;
+    embedded?: boolean;
 }
 
-export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
+export function SpatialMindfield({ className = '', embedded = false }: SpatialMindfieldProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { data: treeData = [] } = useTree(activeCompanyId);
@@ -48,7 +49,7 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
         const nodes: SpatialNode[] = [];
         let index = 0;
 
-        nodes.push({
+        if (!embedded) nodes.push({
             id: 'node-sentinel',
             type: 'sentinel',
             title: 'Nightwatch Sentinel',
@@ -59,7 +60,7 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
             data: { status: 'optimal', healthScore: 100 }
         });
 
-        nodes.push({
+        if (!embedded) nodes.push({
             id: 'node-files-hub',
             type: 'file',
             title: 'Meine Dateien & Cloud',
@@ -101,7 +102,7 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
         }
 
         return nodes;
-    }, [treeData]);
+    }, [embedded, treeData]);
 
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('[data-spatial-node]')) return;
@@ -188,10 +189,10 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
             onWheel={handleWheel}
-            className={`relative w-full h-full overflow-hidden select-none bg-[#090616] ${className}`}
+            className={`relative w-full h-full overflow-hidden select-none ${embedded ? 'bg-transparent' : 'bg-[#090616]'} ${className}`}
             style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-            <div className="absolute inset-0 pointer-events-none opacity-25">
+            <div className={`absolute inset-0 pointer-events-none ${embedded ? 'opacity-10' : 'opacity-25'}`}>
                 <div
                     className="w-full h-full"
                     style={{
@@ -203,7 +204,7 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
             </div>
 
             <div
-                className="absolute w-[600px] h-[600px] rounded-full pointer-events-none opacity-20 blur-3xl transition-transform"
+                className={`absolute w-[600px] h-[600px] rounded-full pointer-events-none blur-3xl transition-transform ${embedded ? 'opacity-10' : 'opacity-20'}`}
                 style={{
                     background: 'radial-gradient(circle, #38bdf8 0%, #a855f7 40%, transparent 70%)',
                     left: `calc(50% + ${pan.x}px - 300px)`,
@@ -227,9 +228,9 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
                             <stop offset="100%" stopColor="#34d399" stopOpacity="0.4" />
                         </linearGradient>
                     </defs>
-                    {spatialNodes.slice(1).map((node) => {
-                        const centerX = (typeof window !== 'undefined' ? window.innerWidth / 2 : 960);
-                        const centerY = (typeof window !== 'undefined' ? window.innerHeight / 2 : 540);
+                    {(embedded ? spatialNodes : spatialNodes.slice(1)).map((node) => {
+                        const centerX = containerRef.current?.clientWidth ? containerRef.current.clientWidth / 2 : 960;
+                        const centerY = containerRef.current?.clientHeight ? containerRef.current.clientHeight / 2 : 540;
                         const startX = centerX;
                         const startY = centerY;
                         const targetX = centerX + node.x;
@@ -251,8 +252,8 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
                 </svg>
 
                 {spatialNodes.map((node) => {
-                    const centerX = (typeof window !== 'undefined' ? window.innerWidth / 2 : 960);
-                    const centerY = (typeof window !== 'undefined' ? window.innerHeight / 2 : 540);
+                    const centerX = containerRef.current?.clientWidth ? containerRef.current.clientWidth / 2 : 960;
+                    const centerY = containerRef.current?.clientHeight ? containerRef.current.clientHeight / 2 : 540;
                     const isSelected = selectedNodeId === node.id;
                     const isHovered = hoveredNodeId === node.id;
 
@@ -276,7 +277,9 @@ export function SpatialMindfield({ className = '' }: SpatialMindfieldProps) {
                                 className={`flex items-center gap-3.5 px-4 py-3 rounded-2xl border backdrop-blur-xl shadow-2xl transition-all ${
                                     isSelected || isHovered
                                         ? 'border-white/35 bg-white/12 shadow-[0_0_30px_rgba(56,189,248,0.35)]'
-                                        : 'border-white/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.6)]'
+                                        : embedded
+                                            ? 'border-sky-100/10 bg-slate-950/28 shadow-[0_14px_40px_rgba(0,8,20,0.28)]'
+                                            : 'border-white/10 bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.6)]'
                                 }`}
                                 style={{
                                     borderColor: isHovered ? (node.color || '#38bdf8') : undefined

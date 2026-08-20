@@ -32,16 +32,6 @@ const UniverseView = dynamic(() => import('@/components/home/UniverseView'), {
     ),
 });
 
-const SpatialMindfield = dynamic(() => import('@/components/canvas/SpatialMindfield').then(m => ({ default: m.SpatialMindfield })), {
-    ssr: false,
-    loading: () => (
-        <div
-            className="absolute inset-0 bg-[#05080e]"
-            aria-hidden
-            data-testid="mindfield-view-loading"
-        />
-    ),
-});
 
 export const CoreLayer: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
@@ -99,9 +89,9 @@ export const CoreLayer: React.FC = () => {
                             ? <VisitorHomeSurface />
                             : <HomeSurface />}
                     </motion.div>
-                ) : coreMode === 'explore' ? (
+                ) : (
                     <motion.div
-                        key="explore"
+                        key="universe"
                         className="absolute inset-0 z-10"
                         variants={exploreVariants}
                         initial="initial"
@@ -109,17 +99,6 @@ export const CoreLayer: React.FC = () => {
                         exit="exit"
                     >
                         <UniverseView />
-                    </motion.div>
-                ) : (
-                    <motion.div
-                        key="mindfield"
-                        className="absolute inset-0 z-10 pointer-events-auto"
-                        variants={exploreVariants}
-                        initial="initial"
-                        animate="animate"
-                        exit="exit"
-                    >
-                        <SpatialMindfield />
                     </motion.div>
                 )}
             </AnimatePresence>

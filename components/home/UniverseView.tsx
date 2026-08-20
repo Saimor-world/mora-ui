@@ -16,6 +16,7 @@ import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder, LayoutGrid, Map as MapIcon } from 'lucide-react';
 import { WidgetGrid } from '@/components/widgets/WidgetGrid';
+import { SpatialMindfield } from '@/components/canvas/SpatialMindfield';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
@@ -1022,6 +1023,25 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                 ))}
             </motion.div>
 
+            <AnimatePresence>
+                {coreMode === 'mindfield' && (
+                    <motion.section
+                        key="universe-relations"
+                        data-testid="universe-relations-layer"
+                        className="absolute inset-0 z-[28] pointer-events-auto"
+                        initial={{ opacity: 0, scale: 1.025 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.985 }}
+                        transition={{ duration: 0.5, ease: [0.22, 0.9, 0.18, 1] }}
+                    >
+                        <div className="pointer-events-none absolute left-1/2 top-24 z-40 -translate-x-1/2 text-center">
+                            <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-cyan-100/55">Universe · Gewebe</p>
+                            <p className="mt-1 text-[12px] text-sky-50/52">Dokumente, Räume und Zusammenhänge deiner Organisation</p>
+                        </div>
+                        <SpatialMindfield embedded />
+                    </motion.section>
+                )}
+            </AnimatePresence>
             {/* UNIVERSE DESKTOP — peripheral glance panels that visualize company state.
                 Planets stay above (z-12) and remain clickable; widgets recede when exploring. */}
             <motion.div
