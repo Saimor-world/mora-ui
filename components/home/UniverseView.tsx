@@ -18,6 +18,7 @@ import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder,
 import { WidgetGrid } from '@/components/widgets/WidgetGrid';
 import { type FabricSignal } from '@/components/canvas/SpatialMindfield';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
+import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
@@ -1106,6 +1107,11 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                     </motion.section>
                 )}
             </AnimatePresence>
+            <UniverseAmbientField
+                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
+                signalCount={fabricSignals.length}
+                selected={Boolean(activePlanetId)}
+            />
             <OrganizationField
                 lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
                 territories={organizationTerritories}
