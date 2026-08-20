@@ -18,6 +18,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useTree } from '@/lib/queries/useTree';
 import { buildFabricLayout } from '@/lib/universe/fabricLayout';
+import type { UniverseSignal } from '@/lib/universe/types';
 
 interface SpatialNode {
     id: string;

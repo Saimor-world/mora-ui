@@ -12,10 +12,10 @@
 
 /** Percentage bounds for planet placement — safe central corridor clearing the left (0..30%) and right (70..100%) widget columns. */
 export const UNIVERSE_SAFE_BOUNDS = {
-    minX: 31,
-    maxX: 69,
-    minY: 18,
-    maxY: 82,
+    minX: 12,
+    maxX: 88,
+    minY: 20,
+    maxY: 80,
 };
 
 
@@ -392,7 +392,7 @@ const expandUniverseCluster = (points: UniverseLayoutPoint[], targetMinDistance:
 
 export const buildOrganicUniverseLayout = (
     departments: Array<any>,
-    metricsMap: Record<string, { nodes: number; spaces: number; folders: number; health: number }>,
+    metricsMap: Record<string, { nodes: number; spaces: number; folders: number }>,
 ) => {
     const count = departments.length;
     if (count === 0) return [];
@@ -428,9 +428,9 @@ export const buildOrganicUniverseLayout = (
 
         // Generous orbit radius scaling so department planet nodes breathe clear of the central core
         // Scale orbit radii so planets stay within the central corridor (31% .. 69%) without hit-clamping
-        const countRadiusFactor = count <= 4 ? 1.35 : count <= 6 ? 1.18 : count <= 10 ? 1.0 : 0.85;
-        const rx = (8.5 + radiusBias * 5.5) * countRadiusFactor; // Max ~16% -> x in 34% .. 66%
-        const ry = (13.5 + radiusBias * 9) * countRadiusFactor;  // Max ~26% -> y in 24% .. 76%
+        const countRadiusFactor = count <= 4 ? 1.08 : count <= 6 ? 1.0 : count <= 10 ? 0.9 : 0.78;
+        const rx = (22 + radiusBias * 8) * countRadiusFactor;
+        const ry = (20 + radiusBias * 8) * countRadiusFactor;
 
         return {
 
