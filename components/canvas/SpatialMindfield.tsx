@@ -10,6 +10,7 @@ import {
     FileText,
     ShieldCheck,
     HardDrive,
+    Radio,
 } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -18,7 +19,7 @@ import { buildFabricLayout } from '@/lib/universe/fabricLayout';
 
 interface SpatialNode {
     id: string;
-    type: 'department' | 'space' | 'folder' | 'node' | 'file' | 'sentinel';
+    type: 'department' | 'space' | 'folder' | 'node' | 'file' | 'sentinel' | 'signal';
     title: string;
     subtitle?: string;
     x: number;
@@ -28,12 +29,22 @@ interface SpatialNode {
     data?: any;
 }
 
+export interface FabricSignal {
+    id: string;
+    title: string;
+    subtitle: string;
+    targetId: string;
+    kind: 'rss' | 'mail' | 'calendar' | 'nightwatch';
+    href?: string;
+    severity?: string;
+}
 interface SpatialMindfieldProps {
     className?: string;
     embedded?: boolean;
+    signals?: FabricSignal[];
 }
 
-export function SpatialMindfield({ className = '', embedded = false }: SpatialMindfieldProps) {
+export function SpatialMindfield({ className = '', embedded = false, signals = [] }: SpatialMindfieldProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
     const { data: treeData = [] } = useTree(activeCompanyId);
@@ -48,15 +59,31 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
     const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
 
     const spatialNodes = useMemo<SpatialNode[]>(() => {
-        const realNodes = buildFabricLayout(Array.isArray(treeData) ? treeData : []);
-        if (embedded) return realNodes;
+        const realNodes: SpatialNode[] = buildFabricLayout(Array.isArray(treeData) ? treeData : []);
+        const signalNodes: SpatialNode[] = signals.slice(0, 8).flatMap((signal, signalIndex) => {
+            const target = realNodes.find((node) => node.id === signal.targetId);
+            if (!target) return [];
+            const angle = (signalIndex * 2.399963) + Math.PI / 5;
+            return [{
+                id: `signal-${signal.kind}-${signal.id}`,
+                type: 'signal' as const,
+                title: signal.title,
+                subtitle: signal.subtitle,
+                x: target.x + Math.cos(angle) * 72,
+                y: target.y + Math.sin(angle) * 56,
+                color: signal.kind === 'nightwatch' ? '#fbbf24' : signal.kind === 'rss' ? '#22d3ee' : '#a78bfa',
+                parentId: target.id,
+                data: signal,
+            }];
+        });
+        if (embedded) return [...realNodes, ...signalNodes];
 
         return [
             { id: 'node-sentinel', type: 'sentinel' as const, title: 'Nightwatch Sentinel', subtitle: 'Systemschutz', x: 0, y: 0, color: '#10b981', parentId: null, data: { status: 'optimal', healthScore: 100 } },
             { id: 'node-files-hub', type: 'file' as const, title: 'Meine Dateien & Cloud', subtitle: 'Speicher', x: -260, y: -140, color: '#38bdf8', parentId: null },
             ...realNodes,
         ];
-    }, [embedded, treeData]);
+    }, [embedded, signals, treeData]);
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
         if ((e.target as HTMLElement).closest('[data-spatial-node]')) return;
         setIsDragging(true);
@@ -96,6 +123,16 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
     const handleNodeClick = useCallback((node: SpatialNode) => {
         setSelectedNodeId(node.id);
 
+        if (node.type === 'signal') {
+            const kind = node.data?.kind;
+            if (kind === 'rss' && node.data?.href) {
+                window.open(node.data.href, '_blank', 'noopener,noreferrer');
+                return;
+            }
+            const paneType = kind === 'mail' ? 'mail' : kind === 'calendar' ? 'calendar' : kind === 'nightwatch' ? 'nightwatch' : 'feeds';
+            openPane({ id: `${paneType}-fabric`, type: paneType as any, title: node.title, size: { width: 900, height: 680 } });
+            return;
+        }
         if (node.type === 'sentinel') {
             openPane({
                 id: 'nightwatch-main',
@@ -255,6 +292,7 @@ export function SpatialMindfield({ className = '', embedded = false }: SpatialMi
                                     {node.type === 'folder' && <Folder size={18} />}
                                     {node.type === 'file' && <HardDrive size={18} />}
                                     {node.type === 'node' && <FileText size={18} />}
+                                    {node.type === 'signal' && <Radio size={17} />}
                                 </div>
                                 <div className={`min-w-0 ${embedded ? 'rounded-full bg-slate-950/36 px-3 py-1 text-center backdrop-blur-md' : 'pr-2'}`}>
                                     <div className={`${embedded ? 'text-[11px] tracking-[0.04em]' : 'text-sm'} max-w-[180px] truncate font-semibold text-white/90`}>

@@ -16,7 +16,7 @@ import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import { CompanyLogo } from '@/components/ui/CompanyLogo';
 import { Activity, ShieldCheck, Database, Cpu, X, Zap, Sparkles, Search, Folder, LayoutGrid, Map as MapIcon } from 'lucide-react';
 import { WidgetGrid } from '@/components/widgets/WidgetGrid';
-import { SpatialMindfield } from '@/components/canvas/SpatialMindfield';
+import { SpatialMindfield, type FabricSignal } from '@/components/canvas/SpatialMindfield';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { fetchDepartmentStats, type DepartmentStats, fetchUserMemberships, type UserMembership, type UserMembershipsResponse, searchGlobal } from '@/lib/api/coreClient';
 import { openSearchResult } from '@/lib/utils/searchOpen';
@@ -179,6 +179,40 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
 
     const safeDepartments = useMemo(() => (Array.isArray(departmentsData) ? departmentsData : EMPTY_UNIVERSE_ITEMS), [departmentsData]);
     const safeTreeData = useMemo(() => (Array.isArray(treeDataRaw) ? treeDataRaw : EMPTY_UNIVERSE_ITEMS), [treeDataRaw]);
+    const fabricSignals = useMemo<FabricSignal[]>(() => {
+        const normalizedDepartments = safeDepartments.map((department) => ({
+            id: department.id,
+            name: String(department.name || '').trim(),
+            needle: String(department.name || '').trim().toLocaleLowerCase('de-DE'),
+        })).filter((department) => department.needle.length >= 3);
+        const matchDepartment = (text: string) => {
+            const haystack = text.toLocaleLowerCase('de-DE');
+            return normalizedDepartments.find((department) => haystack.includes(department.needle))?.id || null;
+        };
+        const signals: FabricSignal[] = [];
+
+        nightwatchIncidents.slice(0, 4).forEach((incident) => {
+            const targetId = incident.department_id || incident.affected_department_id || matchDepartment(`${incident.title || ''} ${incident.summary || ''}`);
+            if (!targetId || !normalizedDepartments.some((department) => department.id === targetId)) return;
+            signals.push({ id: incident.id, title: incident.title || incident.host || 'Nightwatch', subtitle: `Nightwatch · ${incident.severity || 'Hinweis'}`, targetId, kind: 'nightwatch', severity: incident.severity });
+        });
+        feedPreview.slice(0, 4).forEach((item) => {
+            const targetId = matchDepartment(`${item.title} ${item.summary || ''}`);
+            if (!targetId) return;
+            signals.push({ id: item.id, title: item.title, subtitle: `Feed · ${item.sourceTitle}`, targetId, kind: 'rss', href: item.link });
+        });
+        mailPreview.slice(0, 3).forEach((item) => {
+            const targetId = matchDepartment(`${item.subject} ${item.snippet || ''}`);
+            if (!targetId) return;
+            signals.push({ id: item.id, title: item.subject, subtitle: `Mail · ${item.from}`, targetId, kind: 'mail' });
+        });
+        calendarPreview.slice(0, 3).forEach((item) => {
+            const targetId = matchDepartment(`${item.title} ${item.location || ''}`);
+            if (!targetId) return;
+            signals.push({ id: item.id, title: item.title, subtitle: 'Kalender', targetId, kind: 'calendar' });
+        });
+        return signals;
+    }, [calendarPreview, feedPreview, mailPreview, nightwatchIncidents, safeDepartments]);
 
     const departmentsRef = useRef(safeDepartments);
     departmentsRef.current = safeDepartments;
@@ -1049,7 +1083,7 @@ export default function UniverseView({ viewMode: viewModeProp = 'live' }: { view
                             <p className="text-[9px] font-semibold uppercase tracking-[0.32em] text-cyan-100/55">Zusammenhänge</p>
                             <p className="mt-1 text-[12px] text-sky-50/52">Das lebende Wissen deiner Organisation</p>
                         </div>
-                        <SpatialMindfield embedded />
+                        <SpatialMindfield embedded signals={fabricSignals} />
                     </motion.section>
                 )}
             </AnimatePresence>
