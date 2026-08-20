@@ -194,7 +194,10 @@ class RealtimeClient {
         setWsLock(true); // claim the lock before any async work
 
         const token = this.getToken();
-        if (!token) {
+        const canUseSessionCookie =
+            typeof window !== 'undefined' &&
+            (window.location.hostname === 'saimor.world' || window.location.hostname.endsWith('.saimor.world'));
+        if (!token && !canUseSessionCookie) {
             logger.warn('[Realtime] No token found, skipping connection');
             setWsLock(false);
             return;
@@ -203,7 +206,9 @@ class RealtimeClient {
         this.isConnecting = true;
         this.subscribedEventTypesKey = this.getDesiredEventTypesKey();
 
-        const wsUrl = buildWsUrl(token, { eventTypes: this.getDesiredEventTypes() });
+        // Production sessions authenticate through the HttpOnly cookie carried
+        // by the WebSocket handshake.
+        const wsUrl = buildWsUrl(token ?? '', { eventTypes: this.getDesiredEventTypes() });
 
         try {
             this.ws = new WebSocket(wsUrl);
