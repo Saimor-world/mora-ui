@@ -185,10 +185,12 @@ export const Planet: React.FC<PlanetProps> = ({
             aria-label={`${department.name} öffnen`}
             data-testid={`planet-${department.id}`}
             data-planet-name={department.name}
-            className="absolute group pointer-events-auto border-0 bg-transparent p-2 -m-2 text-left cursor-pointer touch-manipulation"
+            className="absolute group pointer-events-auto border-0 bg-transparent flex items-center justify-center cursor-pointer touch-manipulation"
             style={{
                 left: leftPos,
                 top: topPos,
+                width: planetSize.diameter,
+                height: planetSize.diameter,
                 zIndex: 12 + stackOrder,
             }}
             onPointerEnter={handleMouseEnter}
