@@ -97,17 +97,27 @@ const TERRITORY_FULL_SUBSTANCE = 90;
  * nicht. Die Wurzel waechst am unteren Ende schnell, wo die echten Zahlen
  * liegen, und flacht erst spaeter ab.
  */
-export function territoryDiameter({
-    spaces,
-    folders,
-    documents,
-}: {
+export interface TerritorySubstanceInput {
     spaces: number;
     folders: number;
     documents: number;
-}): number {
-    const substance = spaces * 6 + folders * 3 + documents;
-    const ratio = Math.min(1, Math.sqrt(Math.max(0, substance) / TERRITORY_FULL_SUBSTANCE));
+}
+
+/**
+ * Wie viel ein Bereich wirklich enthaelt - eine Zahl, kein Bild davon.
+ *
+ * Sowohl die Groesse auf dem Bildschirm (territoryDiameter) als auch die
+ * Anziehung beim Fallenlassen (computeFallTarget in fall.ts) muessen dieselbe
+ * Substanz meinen. Zwei separate Formeln waeren dieselbe Kopie-Falle, die
+ * das Mycelium-Netz jahrelang neben die Planeten haengen liess: nichts
+ * erzwingt, dass zwei Abschriften einer Zahl gleich bleiben.
+ */
+export function territorySubstance({ spaces, folders, documents }: TerritorySubstanceInput): number {
+    return Math.max(0, spaces * 6 + folders * 3 + documents);
+}
+
+export function territoryDiameter(input: TerritorySubstanceInput): number {
+    const ratio = Math.min(1, Math.sqrt(territorySubstance(input) / TERRITORY_FULL_SUBSTANCE));
     return Math.round(
         TERRITORY_MIN_DIAMETER + ratio * (TERRITORY_MAX_DIAMETER - TERRITORY_MIN_DIAMETER),
     );

@@ -4,6 +4,7 @@ import React from 'react';
 import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles } from 'lucide-react';
 import type { CalendarPreviewItem, FeedPreviewItem, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
+import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 
 interface Props {
     mail: MailPreviewItem[];
@@ -35,14 +36,32 @@ function Instrument({ eyebrow, title, children, accent = 'cyan' }: {
     );
 }
 
-function SignalRow({ icon, label, value, onClick }: {
+/**
+ * Nur eine echte Zeile ist eine ziehbare Quelle - der Platzhaltertext
+ * ("Posteingang ruhig") darf nicht fallen, es gibt nichts, das faellt.
+ */
+function SignalRow({ icon, label, value, onClick, drag }: {
     icon: React.ReactNode;
     label: string;
     value: string;
     onClick: () => void;
+    drag?: { kind: FallSource['kind']; text: string } | null;
 }) {
     return (
-        <button type="button" onClick={onClick} className="group flex w-full items-start gap-3 border-t border-white/[0.055] py-2.5 text-left first:border-0 first:pt-0">
+        <button
+            type="button"
+            onClick={onClick}
+            draggable={Boolean(drag)}
+            onDragStart={drag ? (event) => {
+                event.dataTransfer.setData(
+                    FALL_PAYLOAD_MIME,
+                    encodeFallPayload({ kind: drag.kind, label: value, text: drag.text }),
+                );
+                event.dataTransfer.effectAllowed = 'move';
+            } : undefined}
+            className={'group flex w-full items-start gap-3 border-t border-white/[0.055] py-2.5 text-left first:border-0 first:pt-0 ' +
+                (drag ? 'cursor-grab active:cursor-grabbing' : '')}
+        >
             <span className="mt-0.5 text-cyan-100/42 transition group-hover:text-cyan-100/80">{icon}</span>
             <span className="min-w-0">
                 <span className="block text-[8px] uppercase tracking-[0.17em] text-white/27">{label}</span>
@@ -58,9 +77,21 @@ export function UniverseObservatory(props: Props) {
         <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 xl:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
             <div className="pointer-events-auto absolute bottom-28 left-7 w-[255px] space-y-3">
                 <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
-                    <SignalRow icon={<CalendarDays size={13} />} label="Kalender" value={props.calendar[0]?.title || 'Keine Termine im Horizont'} onClick={props.onOpenCalendar} />
-                    <SignalRow icon={<Mail size={13} />} label="Mail" value={props.mail[0]?.subject || 'Posteingang ruhig'} onClick={props.onOpenMail} />
-                    <SignalRow icon={<Rss size={13} />} label="Feed" value={props.feed[0]?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed} />
+                    <SignalRow
+                        icon={<CalendarDays size={13} />} label="Kalender"
+                        value={props.calendar[0]?.title || 'Keine Termine im Horizont'} onClick={props.onOpenCalendar}
+                        drag={props.calendar[0] ? { kind: 'calendar', text: props.calendar[0].location || '' } : null}
+                    />
+                    <SignalRow
+                        icon={<Mail size={13} />} label="Mail"
+                        value={props.mail[0]?.subject || 'Posteingang ruhig'} onClick={props.onOpenMail}
+                        drag={props.mail[0] ? { kind: 'mail', text: props.mail[0].snippet || '' } : null}
+                    />
+                    <SignalRow
+                        icon={<Rss size={13} />} label="Feed"
+                        value={props.feed[0]?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed}
+                        drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
+                    />
                 </Instrument>
                 <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
                     <Sparkles size={11} className="text-cyan-200/44" />

@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useMemo, type CSSProperties } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, Building2, CalendarDays, FileText, Lock, Mail, Radio, Rss, Sparkles, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
 import { stableUniverseHash } from '@/lib/universe/layout';
+import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
+import type { FieldAnchor } from '@/lib/universe/anchors';
+import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME } from '@/lib/universe/fall';
+import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -69,6 +73,101 @@ export function OrganizationField({
         [lens, signals, territories],
     );
 
+    // Das Feld misst sich selbst und veroeffentlicht, wo seine Bereiche
+    // stehen. Vorher trug jede Schicht darueber ihre eigene Kopie der
+    // Positionen - MyceliumOverlay zeichnete dadurch jahrelang neben die
+    // Planeten, ohne dass es auffiel. Eine Kopie faellt nicht auf, wenn sie
+    // falsch wird; eine Messung schon.
+    const fieldRef = useRef<HTMLDivElement | null>(null);
+    const setField = useUniverseFieldStore((state) => state.setField);
+    const clearField = useUniverseFieldStore((state) => state.clearField);
+
+    const anchors = useMemo<FieldAnchor[]>(
+        () => territories.map((territory) => ({
+            id: territory.id,
+            name: territory.name,
+            color: territory.color || '#67e8f9',
+            x: territory.x,
+            y: territory.y,
+        })),
+        [territories],
+    );
+
+    useLayoutEffect(() => {
+        const publish = () => {
+            const node = fieldRef.current;
+            if (!node) {
+                clearField();
+                return;
+            }
+            const box = node.getBoundingClientRect();
+            // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
+            // nichts, und jede Schicht darueber zeichnet folgerichtig nichts -
+            // statt auf einen Punkt zu kollabieren.
+            setField(anchors, { left: box.left, top: box.top, width: box.width, height: box.height });
+        };
+
+        publish();
+        window.addEventListener('resize', publish);
+        return () => window.removeEventListener('resize', publish);
+    }, [anchors, clearField, setField]);
+
+    useEffect(() => () => clearField(), [clearField]);
+
+    // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
+    // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte
+    // Gruende (Namenstreffer, Substanz) - diese Komponente zeigt nur die
+    // Entscheidung und behauptet nichts, was noch nicht wahr ist: der
+    // Gegenstand wird nicht abgelegt, nur probeweise zugeordnet. Eine echte
+    // Ablage braucht eine eigene, bestaetigte Handlung.
+    const [fall, setFall] = useState<(FallState & { targetId: string; targetName: string; label: string }) | null>(null);
+    const [landed, setLanded] = useState<{ targetName: string; label: string } | null>(null);
+    const landedTimer = useRef<number | null>(null);
+
+    const handleFieldDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+        if (!event.dataTransfer.types.includes(FALL_PAYLOAD_MIME)) return;
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+    };
+
+    const handleFieldDrop = (event: React.DragEvent<HTMLDivElement>) => {
+        const raw = event.dataTransfer.getData(FALL_PAYLOAD_MIME);
+        if (!raw) return;
+        event.preventDefault();
+
+        const source = decodeFallPayload(raw);
+        const node = fieldRef.current;
+        if (!source || !node) return;
+
+        const result = computeFallTarget(source, territories);
+        const target = result && territories.find((item) => item.id === result.targetId);
+        if (!target) return;
+
+        const box = node.getBoundingClientRect();
+        setFall({
+            from: { x: event.clientX, y: event.clientY },
+            to: { x: box.left + (target.x / 100) * box.width, y: box.top + (target.y / 100) * box.height },
+            color: target.color || '#67e8f9',
+            targetId: target.id,
+            targetName: target.name,
+            label: source.label,
+        });
+    };
+
+    const handleFallLanded = () => {
+        if (fall) {
+            onSelect(fall.targetId);
+            setLanded({ targetName: fall.targetName, label: fall.label });
+            if (landedTimer.current) window.clearTimeout(landedTimer.current);
+            landedTimer.current = window.setTimeout(() => setLanded(null), 5000);
+        }
+        setFall(null);
+    };
+
+    useEffect(() => () => {
+        if (landedTimer.current) window.clearTimeout(landedTimer.current);
+    }, []);
+
     return (
         <section
             className="absolute inset-0 z-[18] overflow-hidden"
@@ -91,6 +190,11 @@ export function OrganizationField({
                         ? 'Echte Bereiche, ihr Umfang und ihre Quellen. Größe zeigt Substanz – niemals erfundene Gesundheit.'
                         : 'Eingehende Signale landen bei dem Bereich, dem sie wirklich zugeordnet werden können.'}
                 </p>
+                {landed && (
+                    <p className="pointer-events-none mx-auto mt-3 inline-flex max-w-[46ch] items-center gap-1.5 rounded-full border border-white/10 bg-[#08121e]/80 px-4 py-1.5 text-[11px] text-white/58 backdrop-blur-md">
+                        „{landed.label}“ würde zu <strong className="font-medium text-white/82">{landed.targetName}</strong> fallen — probeweise, noch nicht abgelegt.
+                    </p>
+                )}
             </header>
 
             {/* Die Grenze stand auf xl (1280px). Ein Fenster mit 1245 nutzbaren
@@ -102,7 +206,12 @@ export function OrganizationField({
 
                 Jetzt ab lg (1024px), mit Raendern, die mitwachsen statt fest
                 570px zu belegen - bei 1024 blieben davon nur 454px Feld. */}
-            <div className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]">
+            <div
+                ref={fieldRef}
+                onDragOver={handleFieldDragOver}
+                onDrop={handleFieldDrop}
+                className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
+            >
                 <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (
                     <Territory
@@ -197,6 +306,8 @@ export function OrganizationField({
                     </div>
                 </aside>
             )}
+
+            <FallCapture fall={fall} onLanded={handleFallLanded} />
         </section>
     );
 }
