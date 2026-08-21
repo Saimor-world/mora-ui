@@ -33,6 +33,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { intakeIntoDepartment, fetchFoldersByCompany } from '@/lib/api/orgClient';
 import { groupFoldersByDepartment } from '@/lib/universe/moonsFromFolders';
+import { chooseMoraAttention } from '@/lib/mora/attention';
+import { CursorAgent } from '@/components/mora/CursorAgent';
+import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
+import { anchorsToViewport } from '@/lib/universe/anchors';
 import { buildTickerItems } from '@/lib/universe/ticker';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 
@@ -428,6 +432,35 @@ export default function UniverseView() {
         feedPreview,
     }), [territories, signals, business, nightwatchIncidents, mailPreview, calendarPreview, feedPreview]);
 
+    // Môra lebt im Feld statt in einem Fenster: der CursorAgent war seit
+    // Monaten fertig gebaut, stand in MoraShell aber auskommentiert als
+    // "1.0 gated (future-tier)". Sie zeigt nur auf etwas, das wirklich da
+    // ist - und schweigt sonst. Aufmerksamkeit, die immer an ist, ist keine.
+    const fieldAnchors = useUniverseFieldStore((state) => state.anchors);
+    const fieldRect = useUniverseFieldStore((state) => state.rect);
+
+    const attention = useMemo(() => chooseMoraAttention({
+        territories: territories.map((t) => ({
+            id: t.id, name: t.name, documents: t.documents, spaces: t.spaces, metricSource: t.metricSource,
+        })),
+        openIncidents: nightwatchIncidents
+            .filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()))
+            .map((item) => ({
+                id: String(item.id),
+                title: String(item.title || item.host || 'Vorfall'),
+                targetId: item.department_id || item.affected_department_id || null,
+            })),
+        mailPreview,
+        calendarPreview,
+    }), [territories, nightwatchIncidents, mailPreview, calendarPreview]);
+
+    const attentionPoint = useMemo(() => {
+        if (!attention) return null;
+        const anchor = anchorsToViewport(fieldAnchors, fieldRect)
+            .find((point) => point.id === attention.targetId);
+        return anchor ? { x: anchor.x, y: anchor.y } : null;
+    }, [attention, fieldAnchors, fieldRect]);
+
     const organizationName = currentCompany?.name || user?.active_company_name || 'Organisation';
     const loading = departmentsLoading || treeLoading || !membershipsLoaded;
     const hasRestrictedDepartments = membershipsLoaded && departments.length > 0 && territories.length === 0;
@@ -444,6 +477,18 @@ export default function UniverseView() {
            statt selbst der Hintergrund zu sein. */
         <div className="relative h-full w-full overflow-hidden text-white">
             <UniverseAmbientField lens="organization" selected={Boolean(selectedTerritoryId)} />
+
+            {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
+                gibt - kein Zeiger ins Leere. */}
+            {attention && attentionPoint && (
+                <CursorAgent
+                    active
+                    action="point"
+                    target={attentionPoint}
+                    message={attention.message}
+                    awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
+                />
+            )}
 
             <UniverseObservatory
                 mail={mailPreview}
