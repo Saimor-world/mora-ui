@@ -8,7 +8,7 @@ import { stableUniverseHash } from '@/lib/universe/layout';
 import { buildOrbitals, type Orbitals } from '@/lib/universe/orbitals';
 import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import type { FieldAnchor } from '@/lib/universe/anchors';
-import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME } from '@/lib/universe/fall';
+import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 
 export type UniverseLens = 'organization' | 'relations';
@@ -39,6 +39,10 @@ interface Props {
     onSelect: (id: string | null) => void;
     onOpen: (id: string) => void;
     onAskMora: (territory: OrganizationTerritory) => void;
+    /** Legt einen gefallenen Gegenstand wirklich in der Abteilung ab.
+     *  Gibt zurueck, ob es geklappt hat - die Oberflaeche darf keinen
+     *  Erfolg zeigen, den es nicht gab. */
+    onFile: (departmentId: string, label: string, kind: FallSource['kind']) => Promise<boolean>;
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
@@ -63,6 +67,7 @@ export function OrganizationField({
     onSelect,
     onOpen,
     onAskMora,
+    onFile,
 }: Props) {
     const selected = useMemo(
         () => territories.find((item) => item.id === selectedId) ?? null,
@@ -120,12 +125,19 @@ export function OrganizationField({
 
     // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
     // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte
-    // Gruende (Namenstreffer, Substanz) - diese Komponente zeigt nur die
-    // Entscheidung und behauptet nichts, was noch nicht wahr ist: der
-    // Gegenstand wird nicht abgelegt, nur probeweise zugeordnet. Eine echte
-    // Ablage braucht eine eigene, bestaetigte Handlung.
-    const [fall, setFall] = useState<(FallState & { targetId: string; targetName: string; label: string }) | null>(null);
-    const [landed, setLanded] = useState<{ targetName: string; label: string } | null>(null);
+    // Gruende (Namenstreffer, Substanz).
+    //
+    // Seit es POST /v3/departments/{id}/intake gibt, wird auch wirklich
+    // abgelegt - im Eingang GENAU der Abteilung, auf die es sichtbar
+    // gefallen ist. Vorher stand hier "nur probeweise zugeordnet", weil der
+    // einzige vorhandene Weg (der Firmen-Eingang) es woanders abgelegt
+    // haette, als das Bild zeigt.
+    //
+    // Der Zustand ist dreiteilig, nicht zweiteilig: 'filing' waehrend CORE
+    // arbeitet, dann 'filed' ODER 'failed'. Eine Animation, die immer
+    // "abgelegt" sagt, waere wieder eine Behauptung.
+    const [fall, setFall] = useState<(FallState & { targetId: string; targetName: string; label: string; kind: FallSource['kind'] }) | null>(null);
+    const [landed, setLanded] = useState<{ targetName: string; label: string; state: 'filing' | 'filed' | 'failed' } | null>(null);
     const landedTimer = useRef<number | null>(null);
 
     const handleFieldDragOver = (event: React.DragEvent<HTMLDivElement>) => {
@@ -155,15 +167,24 @@ export function OrganizationField({
             targetId: target.id,
             targetName: target.name,
             label: source.label,
+            kind: source.kind,
         });
     };
 
     const handleFallLanded = () => {
         if (fall) {
             onSelect(fall.targetId);
-            setLanded({ targetName: fall.targetName, label: fall.label });
-            if (landedTimer.current) window.clearTimeout(landedTimer.current);
-            landedTimer.current = window.setTimeout(() => setLanded(null), 5000);
+            // Jetzt wirklich ablegen, nicht nur zeigen. Der Zustand beginnt
+            // als 'filing' und wird erst zu 'filed', wenn CORE bestaetigt
+            // hat - eine Animation darf keine Ablage vortaeuschen, die noch
+            // laeuft oder scheitert.
+            setLanded({ targetName: fall.targetName, label: fall.label, state: 'filing' });
+            void onFile(fall.targetId, fall.label, fall.kind)
+                .then((ok) => {
+                    setLanded({ targetName: fall.targetName, label: fall.label, state: ok ? 'filed' : 'failed' });
+                    if (landedTimer.current) window.clearTimeout(landedTimer.current);
+                    landedTimer.current = window.setTimeout(() => setLanded(null), ok ? 5000 : 9000);
+                });
         }
         setFall(null);
     };
@@ -199,8 +220,13 @@ export function OrganizationField({
                     hinschauen soll" war der Befund; ein Erklaertext ist keine
                     Information, ein laufendes Band echter Werte schon. */}
                 {landed && (
-                    <p className="pointer-events-none mx-auto mt-3 inline-flex max-w-[46ch] items-center gap-1.5 rounded-full border border-white/10 bg-[#08121e]/80 px-4 py-1.5 text-[11px] text-white/58 backdrop-blur-md">
-                        „{landed.label}“ würde zu <strong className="font-medium text-white/82">{landed.targetName}</strong> fallen — probeweise, noch nicht abgelegt.
+                    <p className={'pointer-events-none mx-auto mt-3 inline-flex max-w-[52ch] items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] backdrop-blur-md ' +
+                        (landed.state === 'failed'
+                            ? 'border-amber-300/25 bg-[#1b1206]/85 text-amber-100/80'
+                            : 'border-white/10 bg-[#08121e]/80 text-white/58')}>
+                        {landed.state === 'filing' && <>„{landed.label}“ wird in <strong className="font-medium text-white/82">{landed.targetName}</strong> abgelegt…</>}
+                        {landed.state === 'filed' && <>„{landed.label}“ liegt jetzt im Eingang von <strong className="font-medium text-white/82">{landed.targetName}</strong>.</>}
+                        {landed.state === 'failed' && <>„{landed.label}“ konnte nicht abgelegt werden. Nichts wurde gespeichert.</>}
                     </p>
                 )}
             </header>
@@ -626,18 +652,26 @@ function OrbitalSystem({ orbitals, accent, selected }: { orbitals: Orbitals; acc
                         '--moon-duration': moon.duration + 's',
                     } as CSSProperties}
                 >
-                    <span
-                        className="absolute rounded-full border border-white/20"
-                        style={{
-                            width: moon.size,
-                            height: moon.size,
-                            marginLeft: -moon.size / 2,
-                            marginTop: -moon.size / 2,
-                            background: 'radial-gradient(circle at 34% 28%, #e8f2fb, #93a9c0 52%, #2c3a4d 100%)',
-                            boxShadow: '0 0 10px ' + accent + (selected ? '88' : '55'),
-                        }}
-                        title={moon.name}
-                    />
+                    {/* Marius: "die Monde sind grau, es sind keine echten
+                        Inhalte. Ich muss drueberfahren koennen, damit ich sehe,
+                        was es ist." Der Mond traegt jetzt sichtbar den Namen
+                        seines Bereichs - ein title-Attribut allein ist ein
+                        Systemtipp, der erst nach Sekunden erscheint und nicht
+                        zum Bild gehoert. */}
+                    <span className="group/moon absolute" style={{ marginLeft: -moon.size / 2, marginTop: -moon.size / 2 }}>
+                        <span
+                            className="pointer-events-auto block rounded-full border border-white/25 transition-transform duration-300 group-hover/moon:scale-150"
+                            style={{
+                                width: moon.size,
+                                height: moon.size,
+                                background: 'radial-gradient(circle at 34% 28%, #f2f7fc, ' + accent + 'aa 58%, #223247 100%)',
+                                boxShadow: '0 0 12px ' + accent + (selected ? 'aa' : '77'),
+                            }}
+                        />
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/12 bg-[#08121e]/95 px-2 py-0.5 text-[9px] font-medium text-white/85 opacity-0 shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-opacity duration-200 group-hover/moon:opacity-100">
+                            {moon.name}
+                        </span>
+                    </span>
                 </span>
             ))}
         </span>

@@ -297,6 +297,22 @@ export async function fetchWorkspaceSubscriptions(): Promise<import('@/lib/busin
     return normalizeList<any>(result, ['subscriptions']);
 }
 
+/**
+ * Etwas wirklich in einer Abteilung ablegen - der Endpunkt hinter dem Fall.
+ *
+ * Ohne ihn konnte das Universe die Zuordnung nur behaupten; die Oberflaeche
+ * sagte darum ausdruecklich "probeweise, noch nicht abgelegt". Der vorhandene
+ * Firmen-Eingang haette es woanders abgelegt, als das Bild zeigt.
+ */
+export async function intakeIntoDepartment(
+    departmentId: string,
+    payload: { name: string; type?: string; content?: string; source?: string },
+): Promise<{ id: string; folder_id: string } | null> {
+    return corePost(`/v3/departments/${encodeURIComponent(departmentId)}/intake`, payload) as Promise<
+        { id: string; folder_id: string } | null
+    >;
+}
+
 export async function fetchTree(tenantId?: string, companyId?: string): Promise<CoreTreeNode[]> {
     let query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
     if (companyId) {

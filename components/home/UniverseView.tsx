@@ -29,6 +29,10 @@ import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { intakeIntoDepartment, fetchFoldersByCompany } from '@/lib/api/orgClient';
+import { groupFoldersByDepartment } from '@/lib/universe/moonsFromFolders';
 import { buildTickerItems } from '@/lib/universe/ticker';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 
@@ -54,6 +58,7 @@ export default function UniverseView() {
     } = useNavStore();
     const user = useSessionStore((state) => state.user);
     const openPane = usePaneStore((state) => state.openPane);
+    const queryClient = useQueryClient();
 
     const { data: companiesData = [] } = useCompanies();
     const companies = useMemo(
@@ -86,6 +91,7 @@ export default function UniverseView() {
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
+    const [folderMoons, setFolderMoons] = useState<Record<string, { id: string; name: string }[]>>({});
     const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
     const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
@@ -275,6 +281,24 @@ export default function UniverseView() {
         return result;
     }, [tree]);
 
+    // Monde sind Ordner, nicht Bereiche. Der Baum liefert Bereiche eager,
+    // Ordner erst beim Aufklappen - deshalb hier ein eigener Abruf ueber die
+    // ganze Firma (ein Aufruf, nicht einer je Bereich).
+    useEffect(() => {
+        if (!effectiveCompanyId) { setFolderMoons({}); return; }
+        let cancelled = false;
+        const spaceToDepartment: Record<string, string> = {};
+        Object.entries(spaceListByDepartment).forEach(([departmentId, spaces]) => {
+            spaces.forEach((space) => { spaceToDepartment[space.id] = departmentId; });
+        });
+        void fetchFoldersByCompany(effectiveCompanyId)
+            .then((folders) => {
+                if (!cancelled) setFolderMoons(groupFoldersByDepartment(folders as any, spaceToDepartment));
+            })
+            .catch(() => { if (!cancelled) setFolderMoons({}); });
+        return () => { cancelled = true; };
+    }, [effectiveCompanyId, spaceListByDepartment]);
+
     const positionedDepartments = useMemo(() => {
         const sorted = [...accessibleDepartments].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
@@ -300,12 +324,15 @@ export default function UniverseView() {
                 // Die echten Bereiche dieser Abteilung aus dem Baum - jeder
                 // wird ein Mond mit eigenem Namen. Die blosse Anzahl (spaces)
                 // reicht dafuer nicht.
-                spaceList: spaceListByDepartment[department.id] || [],
+                // Monde tragen jetzt echte Ordnernamen; solange die noch
+                // laden, dienen die Bereiche als Zwischenstand statt
+                // eines leeren Orbits.
+                spaceList: folderMoons[department.id] || spaceListByDepartment[department.id] || [],
                 metricSource: value?.source || 'missing',
                 access: department.universeAccess,
             };
         }),
-        [metrics, positionedDepartments, spaceListByDepartment],
+        [metrics, positionedDepartments, spaceListByDepartment, folderMoons],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
@@ -433,7 +460,6 @@ export default function UniverseView() {
                 onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
             />
 
-            <UniverseTicker items={tickerItems} />
 
             {/* Der Umschalter "Organisation | Zusammenhaenge" ist entfernt.
                 Beide Linsen zeigten denselben Ort mit derselben Kamera - der
@@ -455,6 +481,30 @@ export default function UniverseView() {
                 selectedId={selectedTerritoryId}
                 onSelect={setSelectedTerritoryId}
                 onOpen={navigateToDepartment}
+                onFile={async (departmentId, label, kind) => {
+                    try {
+                        const created = await intakeIntoDepartment(departmentId, {
+                            name: label,
+                            type: 'note',
+                            source: kind,
+                        });
+                        if (!created?.id) return false;
+                        // Der Planet muss danach wachsen: ein Dokument mehr ist
+                        // ein Stern mehr. Ohne das zeigte das Feld noch den
+                        // Stand von vor der Ablage.
+                        queryClient.invalidateQueries({ queryKey: queryKeys.tree(effectiveCompanyId) });
+                        const stats = await fetchDepartmentStats(effectiveCompanyId ?? undefined);
+                        const next: Record<string, DepartmentStats> = {};
+                        stats.forEach((item) => { next[item.department_id] = item; });
+                        setStatsMap(next);
+                        return true;
+                    } catch {
+                        // Fehlschlag bleibt Fehlschlag - die Oberflaeche sagt das
+                        // ausdruecklich, statt einen Erfolg zu zeigen, den es
+                        // nicht gab.
+                        return false;
+                    }
+                }}
                 onAskMora={(territory) => openPane({
                     id: 'chat-universe-' + territory.id,
                     type: 'chat',

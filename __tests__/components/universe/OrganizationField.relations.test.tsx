@@ -41,6 +41,7 @@ const renderField = (lens: 'organization' | 'relations', signals: UniverseSignal
             onSelect={() => undefined}
             onOpen={() => undefined}
             onAskMora={() => undefined}
+            onFile={async () => true}
         />,
     );
 
