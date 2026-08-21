@@ -151,7 +151,7 @@ export function UniverseObservatory(props: Props) {
             <div className={'absolute bottom-28 right-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 <BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
-                    <button type="button" onClick={props.onOpenNightwatch} className="group w-full text-left">
+                    <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">
                             <span className="flex items-center gap-2 text-xs text-white/70">
                                 {openIncidents.length ? <Activity size={14} className="text-amber-300/75" /> : <ShieldCheck size={14} className="text-emerald-300/70" />}

@@ -371,6 +371,10 @@ function Territory({
             style={style}
             aria-pressed={selected}
             aria-label={territory.name + ' auswählen'}
+            // Fuer Screenreader ist "Growth auswaehlen" richtig - eine
+            // Aufforderung. Als Zielname im Môra-Chip ist es falsch: dort
+            // heisst dieser Planet "Growth".
+            data-mora-label={territory.name}
             data-testid={territory.access === 'locked' ? 'locked-territory-' + territory.id : 'territory-' + territory.id}
         >
             {/* Vorher: Akzentfarbe bei '2e' - 18% Deckkraft - ueber einem Koerper

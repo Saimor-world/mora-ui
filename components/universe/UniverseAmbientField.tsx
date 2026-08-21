@@ -31,6 +31,18 @@ export function UniverseAmbientField({ lens, selected }: Props) {
 
     return (
         <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
+            {/* Ein dosierter Schleier, kein Deckel.
+                Als der blickdichte Hintergrund fiel (damit Universe wieder am
+                geteilten Ambient-System haengt), kam die Szenenfarbe in voller
+                Staerke durch - bei "Lounge" ein warmes Braunorange. Die kuehlen
+                Planeten hatten nichts mehr, worauf sie sitzen: Growth (oliv)
+                verschwamm links im Orange, der Kontrast brach ein.
+                Vorher loeste die Deckfarbe das, indem sie die Ambience ganz
+                abschnitt - das war der Grund, warum sich Universe "tot"
+                anfuehlte. Deshalb hier weder das eine noch das andere: dunkel
+                genug, dass Farbe wieder traegt, durchlaessig genug, dass
+                Sterne, Aurora und Tageszeit sichtbar bleiben. */}
+            <div className="absolute inset-0 bg-[#050a12]/55" />
             <motion.div
                 className="absolute inset-0"
                 animate={{
