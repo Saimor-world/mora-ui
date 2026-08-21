@@ -26,6 +26,7 @@ import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
+import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -139,7 +140,7 @@ export default function UniverseView() {
         setSelectedTerritoryId(null);
     }, [effectiveCompanyId]);
 
-    const accessibleDepartments = useMemo(() => {
+    const baseAccessibleDepartments = useMemo(() => {
         if (!membershipsLoaded) return [];
         if (!user || isAdmin(user.role)) {
             return departments.map((department) => ({ ...department, universeAccess: 'open' as const }));
@@ -156,6 +157,29 @@ export default function UniverseView() {
             return [];
         });
     }, [departments, memberships, membershipsLoaded, user]);
+
+    // Bereiche ohne Abteilung wurden bisher stillschweigend verworfen (siehe
+    // core/services/tree_service.py) - bei der echten Saimoer-HQ-Firma waren
+    // das 2 von 8 Spaces mit 2 Ordnern und 7 echten Dokumenten aus dem
+    // Onboarding, unsichtbar im Finder und in Universe. CORE liefert sie
+    // jetzt additiv als eigenen Baumeintrag; hier wird daraus EIN weiterer
+    // Planet, ohne Mitgliedschaft zu pruefen - er hatte nie eine Abteilung,
+    // die ihn haette regeln koennen.
+    const accessibleDepartments = useMemo(() => {
+        const unassigned = tree.find((item) => item.id === UNASSIGNED_DEPARTMENT_ID);
+        if (!unassigned) return baseAccessibleDepartments;
+        return [
+            ...baseAccessibleDepartments,
+            {
+                id: UNASSIGNED_DEPARTMENT_ID,
+                name: UNASSIGNED_DEPARTMENT_NAME,
+                description: 'Bereiche ohne Abteilung – noch nicht eingeordnet, aber vorhanden.',
+                color: '#94a3b8',
+                visibility: 'public',
+                universeAccess: 'open' as const,
+            },
+        ];
+    }, [baseAccessibleDepartments, tree]);
 
     const metrics = useMemo<Record<string, TerritoryMetrics>>(() => {
         const result: Record<string, TerritoryMetrics> = {};
