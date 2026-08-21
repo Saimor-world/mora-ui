@@ -6,7 +6,6 @@ import type { UniverseLens } from './OrganizationField';
 
 interface Props {
     lens: UniverseLens;
-    signalCount: number;
     selected: boolean;
 }
 
@@ -26,7 +25,7 @@ function seeded(index: number, salt: number) {
     return value - Math.floor(value);
 }
 
-export function UniverseAmbientField({ lens, signalCount, selected }: Props) {
+export function UniverseAmbientField({ lens, selected }: Props) {
     const reducedMotion = useReducedMotion();
     const stars = useMemo<Star[]>(() => Array.from({ length: 82 }, (_, index) => ({
         id: index,
@@ -38,8 +37,6 @@ export function UniverseAmbientField({ lens, signalCount, selected }: Props) {
         delay: seeded(index, 6) * 8,
         tint: index % 11 === 0 ? '#fde68a' : index % 7 === 0 ? '#c4b5fd' : '#dbeafe',
     })), []);
-
-    const visibleArrivals = Math.min(4, signalCount);
 
     return (
         <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
@@ -99,10 +96,6 @@ export function UniverseAmbientField({ lens, signalCount, selected }: Props) {
                 />
             ))}
 
-            {Array.from({ length: visibleArrivals }, (_, index) => (
-                <SignalArrival key={'arrival-' + String(index)} index={index} active={lens === 'relations'} reducedMotion={Boolean(reducedMotion)} />
-            ))}
-
             <motion.div
                 className="absolute inset-0"
                 animate={{ opacity: selected ? 0.48 : 0 }}
@@ -135,19 +128,15 @@ function Moon({ left, top, size, tint, duration, reducedMotion }: { left: string
     );
 }
 
-function SignalArrival({ index, active, reducedMotion }: { index: number; active: boolean; reducedMotion: boolean }) {
-    const top = 26 + index * 14;
-    return (
-        <motion.div
-            className="absolute right-[-4%] flex items-center"
-            style={{ top: String(top) + '%' }}
-            initial={{ x: 160, opacity: 0 }}
-            animate={active ? { x: reducedMotion ? 0 : [160, -18, 0], opacity: [0, 0.82, 0.46] } : { x: 160, opacity: 0 }}
-            transition={{ duration: reducedMotion ? 0.3 : 2.4, delay: index * 0.42, ease: 'easeOut' }}
-        >
-            <span className="h-px w-36 bg-gradient-to-r from-transparent via-amber-100/34 to-amber-100/70" />
-            <span className="h-2 w-2 rounded-full bg-amber-100/80 shadow-[0_0_18px_rgba(253,230,138,0.7)]" />
-            <span className="ml-1 h-5 w-5 rounded-full border border-amber-100/16" />
-        </motion.div>
-    );
-}
+/*
+ * SignalArrival ist hier entfernt.
+ *
+ * Die Komponente liess eine Haarlinie von rechts hereinfliegen und irgendwo in
+ * der Luft stehen bleiben - auf einer festen Hoehe (26% + index * 14%), die mit
+ * der Position des gemeinten Bereichs nichts zu tun hatte. Sie versprach eine
+ * Verbindung und zeigte dann auf nichts.
+ *
+ * Die echten Verbindungen zeichnet jetzt RelationLayer in OrganizationField:
+ * von der Kante, an der die Quelle wirklich steht, bis zu dem Bereich, den das
+ * Signal wirklich betrifft.
+ */

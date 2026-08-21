@@ -2128,3 +2128,119 @@
     opacity: 0.35;
   }
 }
+
+/* Das Organisationsfeld soll leben, nicht stillstehen.
+   Jeder Bereich treibt langsam auf eigener Phase - abgeleitet aus seiner id,
+   damit die Bewegung ueber Neuladen hinweg dieselbe bleibt und die Planeten
+   nicht im Gleichschritt wippen. Die Positionierung sitzt auf dem Button,
+   die Bewegung auf dem Koerper darin: so kollidieren die beiden transforms
+   nicht. */
+@keyframes saimorTerritoryDrift {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -9px, 0);
+  }
+}
+
+.saimor-territory-body {
+  animation: saimorTerritoryDrift var(--territory-drift, 19s) ease-in-out infinite;
+  animation-delay: var(--territory-phase, 0s);
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saimor-territory-body {
+    animation: none;
+  }
+}
+
+/* ── Der gemeinsame Atem ────────────────────────────────────────────────
+   Alles im Feld liest denselben Rhythmus, nur mit eigener Phase. Das ist
+   der Unterschied zwischen "jedes Element animiert vor sich hin" und "hier
+   ist eine Praesenz": ein Bildschirmschoner hat viele Takte, ein Lebewesen
+   hat einen.
+
+   Reine CSS-Animationen, kein JS pro Element - die 82 framer-motion-Sterne
+   davor waren 82 laufende JS-Animationen, das hier laeuft im Compositor. */
+
+@keyframes saimorBreath {
+
+  0%,
+  100% {
+    opacity: var(--breath-low, 0.45);
+  }
+
+  50% {
+    opacity: var(--breath-high, 1);
+  }
+}
+
+.saimor-breath {
+  animation: saimorBreath var(--breath-cycle, 7.5s) ease-in-out infinite;
+  animation-delay: var(--breath-phase, 0s);
+}
+
+/* Sterne stehen nicht still: jede Tiefenschicht zieht anders schnell
+   vorbei. Das gibt dem Feld Tiefe, ohne dass ein einzelner Stern auffaellt. */
+@keyframes saimorParallax {
+
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  100% {
+    transform: translate3d(var(--parallax-x, 2%), var(--parallax-y, -1.5%), 0);
+  }
+}
+
+.saimor-star-layer {
+  animation: saimorParallax var(--parallax-cycle, 140s) ease-in-out infinite alternate;
+}
+
+/* Monde drehen sich - so langsam, dass man es nicht sieht, aber merkt. */
+@keyframes saimorMoonTurn {
+
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.saimor-moon-surface {
+  animation: saimorMoonTurn var(--moon-turn, 220s) linear infinite;
+}
+
+@keyframes saimorMoonBob {
+
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(var(--moon-drift-x, 6px), var(--moon-drift-y, -12px), 0);
+  }
+}
+
+.saimor-moon {
+  animation: saimorMoonBob var(--moon-bob, 44s) ease-in-out infinite;
+  animation-delay: var(--moon-phase, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .saimor-breath,
+  .saimor-star-layer,
+  .saimor-moon-surface,
+  .saimor-moon {
+    animation: none;
+  }
+}

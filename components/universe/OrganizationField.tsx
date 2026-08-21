@@ -1,8 +1,10 @@
 "use client";
 
 import React, { useMemo, type CSSProperties } from 'react';
-import { ArrowUpRight, Building2, FileText, Lock, Radio, Sparkles, X } from 'lucide-react';
+import { ArrowUpRight, Building2, CalendarDays, FileText, Lock, Mail, Radio, Rss, Sparkles, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
+import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
+import { stableUniverseHash } from '@/lib/universe/layout';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -37,10 +39,12 @@ const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
     missing: 'noch ohne Quelle',
 };
 
-function territorySize(territory: OrganizationTerritory) {
-    const substance = territory.spaces * 5 + territory.folders * 2 + territory.documents;
-    return Math.max(132, Math.min(184, 132 + Math.log2(substance + 1) * 8));
-}
+const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = {
+    mail: { stroke: '#7dd3fc', icon: <Mail size={11} />, label: 'Mail' },
+    calendar: { stroke: '#6ee7b7', icon: <CalendarDays size={11} />, label: 'Kalender' },
+    rss: { stroke: '#c4b5fd', icon: <Rss size={11} />, label: 'Feed' },
+    nightwatch: { stroke: '#fcd34d', icon: <Radio size={11} />, label: 'Nightwatch' },
+};
 
 export function OrganizationField({
     lens,
@@ -60,29 +64,46 @@ export function OrganizationField({
         () => selected ? signals.filter((signal) => signal.targetId === selected.id) : [],
         [selected, signals],
     );
+    const strands = useMemo(
+        () => lens === 'relations' ? buildRelationStrands(signals, territories) : [],
+        [lens, signals, territories],
+    );
 
     return (
         <section
             className="absolute inset-0 z-[18] overflow-hidden"
             aria-label={lens === 'organization' ? 'Organisation' : 'Zusammenhänge'}
         >
-            <header className="pointer-events-none absolute left-1/2 top-[118px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-cyan-100/48">
-                    {lens === 'organization' ? 'Organisationsfeld' : 'Beziehungsfeld'}
-                </p>
-                <h1 className="mt-3 text-[clamp(1.45rem,2.2vw,2.25rem)] font-light tracking-[-0.035em] text-white/92">
+            {/* Die Zeile "Organisationsfeld" stand direkt unter dem Umschalter,
+                der schon "Organisation" sagt - vier gestapelte Textzeilen, bevor
+                irgendein Inhalt kam. Und max-w-[38ch] ohne mx-auto liess den
+                Untertitel-Block links im 620px-Kopf kleben, waehrend sein Text
+                zentriert war: er sass sichtbar neben der Mitte der Ueberschrift
+                und brach in drei ausgefranste Zeilen. */}
+            <header className="pointer-events-none absolute left-1/2 top-[120px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center">
+                <h1 className="text-[clamp(1.45rem,2.2vw,2.25rem)] font-light tracking-[-0.035em] text-white/92">
                     {lens === 'organization'
                         ? 'Woraus ' + organizationName + ' besteht'
                         : 'Was nachweislich zusammenhängt'}
                 </h1>
-                <p className="mt-2 max-w-[38ch] text-xs leading-relaxed text-sky-50/46 md:text-sm">
+                <p className="mx-auto mt-2.5 max-w-[54ch] text-xs leading-relaxed text-sky-50/46 md:text-sm">
                     {lens === 'organization'
                         ? 'Echte Bereiche, ihr Umfang und ihre Quellen. Größe zeigt Substanz – niemals erfundene Gesundheit.'
                         : 'Eingehende Signale landen bei dem Bereich, dem sie wirklich zugeordnet werden können.'}
                 </p>
             </header>
 
-            <div className="absolute bottom-24 left-[285px] right-[285px] top-[210px] hidden xl:block">
+            {/* Die Grenze stand auf xl (1280px). Ein Fenster mit 1245 nutzbaren
+                Pixeln - also ein ganz normaler Laptop - fiel damit auf die
+                Handy-Ansicht zurueck: ein 2x2-Raster runder Symbole und der
+                Detailbereich als Balken ueber die halbe Hoehe. Auf einem
+                grossen Bildschirm sieht das billig aus, und genau das war der
+                Eindruck.
+
+                Jetzt ab lg (1024px), mit Raendern, die mitwachsen statt fest
+                570px zu belegen - bei 1024 blieben davon nur 454px Feld. */}
+            <div className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]">
+                <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (
                     <Territory
                         key={territory.id}
@@ -96,7 +117,13 @@ export function OrganizationField({
                 ))}
             </div>
 
-            <div className="absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 xl:hidden">
+            {lens === 'relations' && (
+                <div className="pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block">
+                    <RelationLegend strands={strands} />
+                </div>
+            )}
+
+            <div className="absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden">
                 <div className="grid grid-cols-2 gap-x-4 gap-y-9">
                     {territories.map((territory) => (
                         <MobileTerritory
@@ -111,7 +138,7 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/94 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-2xl xl:inset-x-auto xl:bottom-24 xl:right-8 xl:w-[370px] xl:p-6">
+                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/94 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-2xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
@@ -190,12 +217,18 @@ function Territory({
     onSelect: (id: string | null) => void;
 }) {
     const accent = territory.color || '#67e8f9';
-    const size = territorySize(territory);
+    const size = territoryDiameter(territory);
+    // Eigene Phase je Bereich, abgeleitet aus der id: die Planeten treiben
+    // dann nicht im Gleichschritt, und die Bewegung bleibt ueber Neuladen
+    // hinweg dieselbe.
+    const drift = stableUniverseHash(territory.id);
     const style = {
         left: territory.x + '%',
         top: territory.y + '%',
         '--territory-accent': accent,
         '--territory-size': size + 'px',
+        '--territory-drift': (16 + (drift % 9)) + 's',
+        '--territory-phase': '-' + ((drift >>> 4) % 13) + 's',
     } as CSSProperties;
 
     return (
@@ -210,37 +243,52 @@ function Territory({
             aria-label={territory.name + ' auswählen'}
             data-testid={territory.access === 'locked' ? 'locked-territory-' + territory.id : 'territory-' + territory.id}
         >
+            {/* Vorher: Akzentfarbe bei '2e' - 18% Deckkraft - ueber einem Koerper
+                aus rgba(3,13,24,0.72). Die Farbe kam nie durch, alle vier
+                Bereiche sahen aus wie derselbe graue Klumpen. Dazu ein
+                unrunder border-radius (42% 58% 48% 52% / ...), der nicht
+                organisch wirkte, sondern wie ein misslungener Kreis, und drei
+                uebereinanderliegende Schleier, die nur Unschaerfe zufuegten.
+
+                Jetzt: eine echte Lichtquelle oben links, ein sichtbarer Rand in
+                der Bereichsfarbe, ein sauberer Kreis. */}
             <span
-                className="relative mx-auto flex items-center justify-center overflow-hidden border border-white/12 transition-all duration-700"
+                className="saimor-territory-body relative mx-auto flex items-center justify-center overflow-hidden rounded-full"
                 style={{
                     width: 'var(--territory-size)',
                     height: 'var(--territory-size)',
                     color: accent,
                     background:
-                        'radial-gradient(circle at 38% 32%, ' + accent + '2e, transparent 36%), radial-gradient(circle at 65% 72%, ' + accent + '18, transparent 45%), rgba(3,13,24,0.72)',
-                    borderRadius: '42% 58% 48% 52% / 52% 43% 57% 48%',
+                        'radial-gradient(circle at 33% 27%, ' + accent + '66, ' + accent + '1f 38%, transparent 64%),' +
+                        'radial-gradient(circle at 64% 80%, rgba(0,0,0,0.5), transparent 56%),' +
+                        'linear-gradient(158deg, rgba(15,34,55,0.96), rgba(4,11,20,0.98))',
                     boxShadow:
-                        '0 24px 60px rgba(0,0,0,0.32), 0 0 0 1px ' + accent + '18, 0 0 72px ' + accent + (selected ? '48' : '28') + ', inset 0 1px 0 rgba(255,255,255,0.09), inset 0 -28px 48px rgba(0,0,0,0.24)',
+                        'inset 0 1px 1px rgba(255,255,255,0.18),' +
+                        'inset 0 -24px 44px rgba(0,0,0,0.5),' +
+                        'inset 0 0 0 1px ' + accent + (selected ? '7a' : '4d') + ',' +
+                        '0 18px 46px rgba(0,0,0,0.5),' +
+                        '0 0 ' + (selected ? '64px' : '38px') + ' ' + accent + (selected ? '5c' : '2e'),
                 }}
             >
-                <span className="absolute inset-[9%] rounded-[inherit] border border-white/[0.055]" />
-                <span className="absolute left-[16%] right-[16%] top-[28%] h-px bg-gradient-to-r from-transparent via-white/14 to-transparent" />
-                <span className="absolute inset-[20%] rounded-full bg-black/10 blur-sm" />
-                {territory.access === 'locked' ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.15} className="relative opacity-72" /> : <Building2 size={Math.round(size * 0.22)} strokeWidth={1.15} className="relative opacity-90" />}
-                {lens === 'relations' && signals.slice(0, 3).map((signal, index) => (
-                    <span
-                        key={signal.kind + '-' + signal.id}
-                        className="absolute flex h-6 w-6 items-center justify-center rounded-full border border-amber-100/24 bg-[#10131a]/90 text-amber-200 shadow-[0_0_22px_rgba(251,191,36,0.28)]"
-                        style={{
-                            left: 50 + Math.cos(index * 2.4 - 0.8) * 48 + '%',
-                            top: 50 + Math.sin(index * 2.4 - 0.8) * 48 + '%',
-                        }}
-                        title={signal.title}
-                    >
-                        <Radio size={10} />
-                    </span>
-                ))}
+                {territory.access === 'locked'
+                    ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
+                    : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
             </span>
+
+            {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
+                overflow-hidden, und ihre Mittelpunkte lagen bei bis zu 98%.
+                Die Kreise wurden am Rand abgeschnitten. Jetzt haengen sie am
+                Button, der nicht clippt, und zaehlen statt zu streuen. */}
+            {lens === 'relations' && signals.length > 0 && (
+                <span className="pointer-events-none absolute -top-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[#08121e]/92 px-2 py-1 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                    {Array.from(new Set(signals.map((signal) => signal.kind))).slice(0, 4).map((kind) => (
+                        <span key={kind} style={{ color: signalTone[kind].stroke }} title={signalTone[kind].label}>
+                            {signalTone[kind].icon}
+                        </span>
+                    ))}
+                    <span className="text-[9px] font-semibold tabular-nums text-white/62">{signals.length}</span>
+                </span>
+            )}
             <span className="mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
             <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
                 <span>{territory.spaces} Bereiche</span>
@@ -295,6 +343,94 @@ function MobileTerritory({
                 {territory.spaces} Bereiche · {territory.documents} Docs
             </span>
         </button>
+    );
+}
+
+/**
+ * Zeichnet die Beziehungen, die die Linse "Zusammenhaenge" verspricht.
+ *
+ * Bis hierher zeichnete sie gar keine: buildSoftUniverseRoute lag seit dem
+ * Umbau abd3233 verwaist in lib/universe/layout.ts, exportiert und getestet,
+ * aber von keiner Komponente aufgerufen. Beide Linsen zeigten dasselbe Bild,
+ * nur mit anderer Ueberschrift.
+ *
+ * Die Kurve laeuft in denselben Prozentkoordinaten wie die Bereiche selbst,
+ * darum preserveAspectRatio="none" - die Linie soll den Planeten treffen,
+ * nicht ihre Form behalten. vectorEffect haelt die Strichstaerke konstant.
+ */
+function RelationLayer({ strands, selectedId }: { strands: RelationStrand[]; selectedId: string | null }) {
+    if (strands.length === 0) return null;
+
+    return (
+        <svg
+            className="pointer-events-none absolute inset-0 z-[6] h-full w-full overflow-visible"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+        >
+            {strands.map((strand) => {
+                const tone = signalTone[strand.kind].stroke;
+                const muted = Boolean(selectedId && strand.targetId !== selectedId);
+                return (
+                    <g key={strand.id} opacity={muted ? 0.12 : 1}>
+                        <path
+                            d={strand.d}
+                            fill="none"
+                            stroke={tone}
+                            strokeWidth={strand.dashed ? 1 : 1.6}
+                            strokeOpacity={strand.dashed ? 0.34 : 0.62}
+                            strokeLinecap="round"
+                            strokeDasharray={strand.dashed ? '3 5' : undefined}
+                            vectorEffect="non-scaling-stroke"
+                        />
+                        <circle
+                            cx={strand.endX}
+                            cy={strand.endY}
+                            r={1.1}
+                            fill={tone}
+                            fillOpacity={strand.dashed ? 0.4 : 0.85}
+                            vectorEffect="non-scaling-stroke"
+                        />
+                    </g>
+                );
+            })}
+        </svg>
+    );
+}
+
+/**
+ * Die Ueberschrift sagt "nachweislich". Ohne diese Legende sieht ein
+ * Namenstreffer im Mailbetreff genauso aus wie eine echte department_id am
+ * Vorfall - und die Zusage waere nicht gedeckt.
+ *
+ * Und wenn nichts zusammenhaengt, muss das Feld das sagen. Genau das war der
+ * Grund, warum die zweite Linse wie die erste aussah: bei null Signalen blieb
+ * ein leeres Feld mit anderer Ueberschrift stehen.
+ */
+function RelationLegend({ strands }: { strands: RelationStrand[] }) {
+    const assigned = strands.filter((strand) => !strand.dashed).length;
+    const inferred = strands.length - assigned;
+
+    if (strands.length === 0) {
+        return (
+            <div className="rounded-full border border-dashed border-white/14 bg-[#08121e]/72 px-5 py-2.5 text-xs text-white/44 backdrop-blur-md">
+                Aktuell hängt nichts nachweisbar zusammen. Saimôr zeichnet hier bewusst keine Linie.
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/76 px-5 py-2.5 text-[10px] text-white/52 backdrop-blur-md">
+            <span className="flex items-center gap-2">
+                <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#fcd34d" strokeWidth="1.6" strokeLinecap="round" /></svg>
+                {assigned} belegt
+            </span>
+            <span className="h-3 w-px bg-white/12" />
+            <span className="flex items-center gap-2">
+                <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3 4" strokeLinecap="round" /></svg>
+                {inferred} nur vermutet
+            </span>
+        </div>
     );
 }
 

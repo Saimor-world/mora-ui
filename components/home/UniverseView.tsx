@@ -248,8 +248,8 @@ export default function UniverseView() {
         const result: UniverseSignal[] = [];
 
         nightwatchIncidents.slice(0, 4).forEach((incident) => {
-            const targetId = incident.department_id
-                || incident.affected_department_id
+            const assignedId = incident.department_id || incident.affected_department_id;
+            const targetId = assignedId
                 || match(String(incident.title || '') + ' ' + String(incident.summary || ''));
             if (!targetId || !normalized.some((department) => department.id === targetId)) return;
             result.push({
@@ -258,6 +258,7 @@ export default function UniverseView() {
                 subtitle: 'Nightwatch · ' + String(incident.severity || 'Hinweis'),
                 targetId,
                 kind: 'nightwatch',
+                evidence: assignedId ? 'assigned' : 'inferred',
                 severity: incident.severity,
             });
         });
@@ -270,6 +271,9 @@ export default function UniverseView() {
                     subtitle: 'Feed · ' + item.sourceTitle,
                     targetId,
                     kind: 'rss',
+                    // match() findet den Bereichsnamen im Text. Das ist ein
+                    // Treffer, kein Beleg - der Strang wird gestrichelt.
+                    evidence: 'inferred',
                     href: item.link,
                 });
             }
@@ -283,6 +287,7 @@ export default function UniverseView() {
                     subtitle: 'Mail · ' + item.from,
                     targetId,
                     kind: 'mail',
+                    evidence: 'inferred',
                 });
             }
         });
@@ -295,6 +300,7 @@ export default function UniverseView() {
                     subtitle: 'Kalender',
                     targetId,
                     kind: 'calendar',
+                    evidence: 'inferred',
                 });
             }
         });
@@ -319,7 +325,6 @@ export default function UniverseView() {
         <div className="relative h-full w-full overflow-hidden bg-[#06101d] text-white">
             <UniverseAmbientField
                 lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
-                signalCount={signals.length}
                 selected={Boolean(selectedTerritoryId)}
             />
 
