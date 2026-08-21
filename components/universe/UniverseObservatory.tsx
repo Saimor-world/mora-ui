@@ -110,9 +110,20 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
 
 export function UniverseObservatory(props: Props) {
     const openIncidents = props.incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
+    // Zwei Fehler steckten in der Wurzelzeile darunter:
+    //  1. `xl:block` liess die Kacheln zwischen 1024 und 1279px ersatzlos
+    //     verschwinden - genau in der Breite, in der das Feld selbst seit dem
+    //     lg-Umbruch schon laeuft. Auf einem normalen Laptop fehlten
+    //     Horizont, Wirtschaft und Wache komplett.
+    //  2. Bei ausgewaehltem Planeten sank die Deckkraft auf 20%, aber die
+    //     Kacheln fingen weiterhin Klicks ab. Das Schliesskreuz des
+    //     Detailfensters liegt an derselben Stelle wie die
+    //     Wirtschafts-Kachel - es war mit der Maus nicht erreichbar, nur
+    //     ueber Escape, und das sprang gleich ganz aus dem Universe heraus.
+    //     Eine zurueckgetretene Kachel darf keine Klicks mehr fangen.
     return (
-        <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 xl:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
-            <div className="pointer-events-auto absolute bottom-28 left-7 w-[255px] space-y-3">
+        <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 lg:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
+            <div className={'absolute bottom-28 left-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
@@ -137,7 +148,7 @@ export function UniverseObservatory(props: Props) {
                     <span>{props.documentCount} Dokumente</span>
                 </div>
             </div>
-            <div className="pointer-events-auto absolute bottom-28 right-7 w-[255px] space-y-3">
+            <div className={'absolute bottom-28 right-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 <BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} className="group w-full text-left">
