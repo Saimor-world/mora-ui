@@ -1,16 +1,18 @@
 "use client";
 
 import React from 'react';
-import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles } from 'lucide-react';
+import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import type { CalendarPreviewItem, FeedPreviewItem, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
+import type { BusinessSummary } from '@/lib/business/mrr';
 
 interface Props {
     mail: MailPreviewItem[];
     calendar: CalendarPreviewItem[];
     feed: FeedPreviewItem[];
     incidents: NightwatchIncidentItem[];
+    business: BusinessSummary;
     territoryCount: number;
     documentCount: number;
     selected: boolean;
@@ -71,6 +73,41 @@ function SignalRow({ icon, label, value, onClick, drag }: {
     );
 }
 
+/**
+ * tenant_subscriptions hatte am 21.08.2026 null Zeilen - kein zahlender
+ * Kunde. "Wir bereiten uns auf ersten Umsatz 2027 vor" waren Marius' eigene
+ * Worte dazu; diese Kachel sagt das ehrlich, statt eine Zahl zu erfinden
+ * oder das Feld einfach wegzulassen. Sobald tenant_subscriptions eine Zeile
+ * traegt, zeigt genau dieselbe Kachel den echten Betrag - kein Umbau noetig.
+ */
+function BusinessInstrument({ business }: { business: BusinessSummary }) {
+    if (business.activeCount === 0) {
+        return (
+            <Instrument eyebrow="Wirtschaft" title="Noch kein Umsatz">
+                <p className="text-[11px] leading-relaxed text-white/48">
+                    Vorbereitet auf den ersten zahlenden Kunden. Paddle ist angebunden – sobald ein Abo aktiv wird, erscheint es hier.
+                </p>
+            </Instrument>
+        );
+    }
+
+    const amount = business.currency
+        ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: business.currency }).format(business.monthlyRevenueMinor / 100)
+        : `${business.monthlyRevenueMinor / 100} (gemischte Währungen)`;
+
+    return (
+        <Instrument eyebrow="Wirtschaft" title="Monatlicher Umsatz" accent="amber">
+            <div className="flex items-baseline gap-2">
+                <TrendingUp size={14} className="text-emerald-300/75" />
+                <span className="text-lg font-medium text-white/90">{amount}</span>
+            </div>
+            <p className="mt-1.5 text-[10px] uppercase tracking-[0.14em] text-white/32">
+                {business.activeCount} aktive{business.activeCount === 1 ? 's Abo' : ' Abos'} · {business.providers.join(', ')}
+            </p>
+        </Instrument>
+    );
+}
+
 export function UniverseObservatory(props: Props) {
     const openIncidents = props.incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
     return (
@@ -100,7 +137,8 @@ export function UniverseObservatory(props: Props) {
                     <span>{props.documentCount} Dokumente</span>
                 </div>
             </div>
-            <div className="pointer-events-auto absolute bottom-28 right-7 w-[255px]">
+            <div className="pointer-events-auto absolute bottom-28 right-7 w-[255px] space-y-3">
+                <BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} className="group w-full text-left">
                         <div className="flex items-center justify-between">

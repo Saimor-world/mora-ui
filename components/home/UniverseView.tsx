@@ -17,9 +17,11 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
     fetchUserMemberships,
+    fetchWorkspaceSubscriptions,
     type DepartmentStats,
     type UserMembership,
 } from '@/lib/api/coreClient';
+import { summarizeSubscriptions, type BusinessSummary } from '@/lib/business/mrr';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
@@ -82,6 +84,7 @@ export default function UniverseView() {
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
+    const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
     const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
 
@@ -135,6 +138,18 @@ export default function UniverseView() {
             .catch(() => { if (!cancelled) setNightwatchIncidents([]); });
         return () => { cancelled = true; };
     }, []);
+
+    // "wir bereiten uns auf ersten Umsatz 2027 vor" - die Leitung liegt schon,
+    // bevor Wasser durchfliesst. tenant_subscriptions hatte am 21.08.2026 null
+    // Zeilen; summarizeSubscriptions sagt das ehrlich, statt eine Zahl zu
+    // erfinden, und rechnet richtig, sobald die erste Zahlung eintrifft.
+    useEffect(() => {
+        let cancelled = false;
+        fetchWorkspaceSubscriptions()
+            .then((subs) => { if (!cancelled) setBusiness(summarizeSubscriptions(subs)); })
+            .catch(() => { if (!cancelled) setBusiness({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] }); });
+        return () => { cancelled = true; };
+    }, [effectiveCompanyId]);
 
     useEffect(() => {
         setSelectedTerritoryId(null);
@@ -357,6 +372,7 @@ export default function UniverseView() {
                 calendar={calendarPreview}
                 feed={feedPreview}
                 incidents={nightwatchIncidents}
+                business={business}
                 territoryCount={territories.length}
                 documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
                 selected={Boolean(selectedTerritoryId)}

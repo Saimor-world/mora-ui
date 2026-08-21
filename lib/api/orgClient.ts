@@ -284,6 +284,19 @@ export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[
     return departments;
 }
 
+// ========== WIRTSCHAFT ==========
+
+/**
+ * Echte Abonnements, provider-uebergreifend. GET /v3/workspace/billing
+ * existiert bereits (core/api/v3/workspace.py) und liest tenant_subscriptions
+ * direkt - kein neuer CORE-Endpunkt noetig, nur eine Konsumentin dafuer.
+ * `isOptional: true`, weil eine leere Wirtschaft kein Fehlerzustand ist.
+ */
+export async function fetchWorkspaceSubscriptions(): Promise<import('@/lib/business/mrr').BillingSubscription[]> {
+    const result = await coreGet('/v3/workspace/billing', { isOptional: true });
+    return normalizeList<any>(result, ['subscriptions']);
+}
+
 export async function fetchTree(tenantId?: string, companyId?: string): Promise<CoreTreeNode[]> {
     let query = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : '';
     if (companyId) {
