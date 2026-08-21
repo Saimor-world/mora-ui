@@ -2244,3 +2244,22 @@
     animation: none;
   }
 }
+
+/* Das Datenband: eine durchlaufende Zeile echter Werte, Bloomberg-Terminal-
+   artig. Reines CSS, kein JS-Tick pro Frame - die Distanz ist auf die
+   tatsaechliche Inhaltsbreite abgestimmt (--ticker-distance, per JS gesetzt),
+   damit die Wiederholung nahtlos ist statt zu ruckeln. */
+@keyframes saimorTickerScroll {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(calc(-1 * var(--ticker-distance, 50%)), 0, 0); }
+}
+
+.saimor-ticker-track {
+  animation: saimorTickerScroll var(--ticker-duration, 38s) linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saimor-ticker-track {
+    animation: none;
+  }
+}

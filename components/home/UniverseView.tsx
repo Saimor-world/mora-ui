@@ -29,6 +29,8 @@ import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
+import { buildTickerItems } from '@/lib/universe/ticker';
+import { UniverseTicker } from '@/components/universe/UniverseTicker';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -356,12 +358,31 @@ export default function UniverseView() {
         }
     }
 
+    const tickerItems = useMemo(() => buildTickerItems({
+        territories: territories.map((t) => ({ id: t.id, name: t.name, documents: t.documents, spaces: t.spaces, folders: t.folders })),
+        signals,
+        business,
+        openIncidentCount: nightwatchIncidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase())).length,
+        mailPreview,
+        calendarPreview,
+        feedPreview,
+    }), [territories, signals, business, nightwatchIncidents, mailPreview, calendarPreview, feedPreview]);
+
     const organizationName = currentCompany?.name || user?.active_company_name || 'Organisation';
     const loading = departmentsLoading || treeLoading || !membershipsLoaded;
     const hasRestrictedDepartments = membershipsLoaded && departments.length > 0 && territories.length === 0;
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-[#06101d] text-white">
+        /* Kein eigenes bg-Farbe mehr: MoraShell traegt bereits ein geteiltes,
+           lebendiges Hintergrundsystem (MoraLivingBackground - 500 Sterne,
+           Aurora, szenenreaktiver Nebel - plus TemporalAtmosphere,
+           RitualSceneStyler). Universe malte bislang blickdicht darueber und
+           zeigte stattdessen sein eigenes, kleineres Sternfeld - abgeschnitten
+           vom "living ambient desktop", den docs/superpowers/specs/
+           2026-06-18-universe-as-company-desktop.md als Vision festgehalten
+           hat. UniverseAmbientField setzt jetzt nur noch eine Stimmung obenauf,
+           statt selbst der Hintergrund zu sein. */
+        <div className="relative h-full w-full overflow-hidden text-white">
             <UniverseAmbientField
                 lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
                 selected={Boolean(selectedTerritoryId)}
@@ -381,6 +402,8 @@ export default function UniverseView() {
                 onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
                 onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
             />
+
+            <UniverseTicker items={tickerItems} />
             <div className="absolute left-1/2 top-[74px] z-[46] -translate-x-1/2 rounded-full border border-sky-100/10 bg-slate-950/38 p-1 shadow-[0_16px_50px_rgba(0,8,20,0.24)] backdrop-blur-xl">
                 <button
                     type="button"

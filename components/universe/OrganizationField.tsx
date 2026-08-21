@@ -185,11 +185,12 @@ export function OrganizationField({
                         ? 'Woraus ' + organizationName + ' besteht'
                         : 'Was nachweislich zusammenhängt'}
                 </h1>
-                <p className="mx-auto mt-2.5 max-w-[54ch] text-xs leading-relaxed text-sky-50/46 md:text-sm">
-                    {lens === 'organization'
-                        ? 'Echte Bereiche, ihr Umfang und ihre Quellen. Größe zeigt Substanz – niemals erfundene Gesundheit.'
-                        : 'Eingehende Signale landen bei dem Bereich, dem sie wirklich zugeordnet werden können.'}
-                </p>
+                {/* Die erklaerende Zeile darunter ("Echte Bereiche, ihr Umfang...")
+                    ist raus. Sie erklaerte die Metapher - nuetzlich beim ersten
+                    Mal, aber sie besetzte genau den Streifen, den das Datenband
+                    jetzt fuellt. "Viel zu wenig info, ich weiss gar nicht wo ich
+                    hinschauen soll" war der Befund; ein Erklaertext ist keine
+                    Information, ein laufendes Band echter Werte schon. */}
                 {landed && (
                     <p className="pointer-events-none mx-auto mt-3 inline-flex max-w-[46ch] items-center gap-1.5 rounded-full border border-white/10 bg-[#08121e]/80 px-4 py-1.5 text-[11px] text-white/58 backdrop-blur-md">
                         „{landed.label}“ würde zu <strong className="font-medium text-white/82">{landed.targetName}</strong> fallen — probeweise, noch nicht abgelegt.
