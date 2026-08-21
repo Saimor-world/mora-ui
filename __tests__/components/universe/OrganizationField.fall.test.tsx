@@ -25,6 +25,7 @@ function renderField(onFile: jest.Mock) {
             onOpen={() => undefined}
             onAskMora={() => undefined}
             onFile={onFile}
+            onOpenMoon={() => undefined}
         />,
     );
 }

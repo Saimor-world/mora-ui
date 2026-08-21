@@ -57,6 +57,7 @@ export default function UniverseView() {
         coreMode,
         setCoreMode,
         navigateToDepartment,
+        navigateToFolder,
         universeScope,
         universeScopeDeptId,
     } = useNavStore();
@@ -526,6 +527,24 @@ export default function UniverseView() {
                 selectedId={selectedTerritoryId}
                 onSelect={setSelectedTerritoryId}
                 onOpen={navigateToDepartment}
+                onOpenMoon={(folderId, folderName) => {
+                    // In den Ordner selbst, nicht in ein generisches Fenster:
+                    // navigateToFolder setzt den Kontext, der Finder oeffnet
+                    // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.
+                    navigateToFolder(folderId);
+                    openPane({
+                        // Eigene Fenster-id je Ordner. Mit der festen
+                        // 'finder-main' traf openPane ein bereits offenes
+                        // Fenster und uebernahm dessen alte Daten nicht - der
+                        // Finder blieb auf "Start" stehen, statt den
+                        // angeklickten Ordner zu zeigen.
+                        id: 'finder-' + folderId,
+                        type: 'finder',
+                        title: folderName,
+                        size: { width: 1040, height: 720 },
+                        data: { folderId },
+                    });
+                }}
                 onFile={async (departmentId, label, kind) => {
                     try {
                         const created = await intakeIntoDepartment(departmentId, {

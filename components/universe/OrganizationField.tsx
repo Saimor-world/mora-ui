@@ -43,6 +43,9 @@ interface Props {
      *  Gibt zurueck, ob es geklappt hat - die Oberflaeche darf keinen
      *  Erfolg zeigen, den es nicht gab. */
     onFile: (departmentId: string, label: string, kind: FallSource['kind']) => Promise<boolean>;
+    /** Oeffnet einen Ordner dort, wo er wirklich liegt - nicht als
+     *  generisches Vorschaufenster. */
+    onOpenMoon: (folderId: string, folderName: string) => void;
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
@@ -68,6 +71,7 @@ export function OrganizationField({
     onOpen,
     onAskMora,
     onFile,
+    onOpenMoon,
 }: Props) {
     const selected = useMemo(
         () => territories.find((item) => item.id === selectedId) ?? null,
@@ -256,6 +260,7 @@ export function OrganizationField({
                         selected={territory.id === selectedId}
                         dimmed={Boolean(selectedId && territory.id !== selectedId)}
                         onSelect={onSelect}
+                        onOpenMoon={onOpenMoon}
                     />
                 ))}
             </div>
@@ -353,6 +358,7 @@ function Territory({
     selected,
     dimmed,
     onSelect,
+    onOpenMoon,
 }: {
     territory: OrganizationTerritory;
     signals: UniverseSignal[];
@@ -360,6 +366,7 @@ function Territory({
     selected: boolean;
     dimmed: boolean;
     onSelect: (id: string | null) => void;
+    onOpenMoon: (folderId: string, folderName: string) => void;
 }) {
     const accent = territory.color || '#67e8f9';
     const size = territoryDiameter(territory);
@@ -443,7 +450,7 @@ function Territory({
                         : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
                 </span>
 
-                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} />
+                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} />
             </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
@@ -618,7 +625,7 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
  * Klick gehoert dem Planeten darunter, sonst waeren die Monde
  * Klickfallen vor dem eigentlichen Bedienelement.
  */
-function OrbitalSystem({ orbitals, accent, selected }: { orbitals: Orbitals; accent: string; selected: boolean }) {
+function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void }) {
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
@@ -659,8 +666,23 @@ function OrbitalSystem({ orbitals, accent, selected }: { orbitals: Orbitals; acc
                         Systemtipp, der erst nach Sekunden erscheint und nicht
                         zum Bild gehoert. */}
                     <span className="group/moon absolute" style={{ marginLeft: -moon.size / 2, marginTop: -moon.size / 2 }}>
+                        {/* Der Mond ist ein eigenes Ziel: ein Klick fuehrt in
+                            SEINEN Ordner, nicht in ein generisches
+                            Vorschaufenster. stopPropagation, damit der Klick
+                            nicht am Planeten darunter haengen bleibt. */}
                         <span
-                            className="pointer-events-auto block rounded-full border border-white/25 transition-transform duration-300 group-hover/moon:scale-150"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={moon.name + ' öffnen'}
+                            data-mora-label={moon.name}
+                            onClick={(event) => { event.stopPropagation(); onOpenMoon(moon.id, moon.name); }}
+                            onKeyDown={(event) => {
+                                if (event.key !== 'Enter' && event.key !== ' ') return;
+                                event.preventDefault();
+                                event.stopPropagation();
+                                onOpenMoon(moon.id, moon.name);
+                            }}
+                            className="pointer-events-auto block cursor-pointer rounded-full border border-white/25 transition-transform duration-300 group-hover/moon:scale-150"
                             style={{
                                 width: moon.size,
                                 height: moon.size,
