@@ -29,7 +29,9 @@ describe('describeMoraPlaygroundTarget', () => {
     // Der eigentliche Befund aus der Kritik.
     it('streicht die Handlungsaufforderung aus einem aria-label', () => {
         expect(describeMoraPlaygroundTarget(el('<button aria-label="Growth auswählen"></button>')).label).toBe('Growth');
-        expect(describeMoraPlaygroundTarget(el('<button aria-label="Auswahl schließen"></button>')).label).toBe('Auswahl');
+        // "Auswahl schliessen" faellt jetzt unter GENERIC_CONTROL und wird gar
+        // nicht mehr zum Ziel - siehe der Test weiter unten. Das ist richtiger
+        // als "Auswahl": ein Schliessknopf ist kein Gegenstand.
         expect(describeMoraPlaygroundTarget(el('<button aria-label="Nightwatch öffnen"></button>')).label).toBe('Nightwatch');
     });
 
@@ -53,5 +55,21 @@ describe('describeMoraPlaygroundTarget', () => {
         const long = 'Systeme ruhig Öffnen '.repeat(12);
         const target = describeMoraPlaygroundTarget(el(`<button>${long}</button>`));
         expect(target.label).toBe('button');
+    });
+
+    // Marius im Screenshot: oben rechts stand "CLOSE PANEL". Generische
+    // Bedienelemente - schliessen, zurueck, neu laden - sind keine Ziele,
+    // ueber die Môra etwas sagen koennte. Sie duerfen den Chip nicht
+    // besetzen und den letzten echten Gegenstand verdraengen.
+    it('ignoriert generische Bedienelemente statt sie als Ziel zu zeigen', () => {
+        expect(describeMoraPlaygroundTarget(el('<button aria-label="Close Panel"></button>')).ignored).toBe(true);
+        expect(describeMoraPlaygroundTarget(el('<button aria-label="Panel schließen"></button>')).ignored).toBe(true);
+        expect(describeMoraPlaygroundTarget(el('<button aria-label="Zurück"></button>')).ignored).toBe(true);
+        expect(describeMoraPlaygroundTarget(el('<button aria-label="Aktualisieren"></button>')).ignored).toBe(true);
+    });
+
+    it('laesst einen echten Gegenstand weiterhin durch', () => {
+        expect(describeMoraPlaygroundTarget(el('<button data-mora-label="Growth"></button>')).ignored).toBeFalsy();
+        expect(describeMoraPlaygroundTarget(el('<button aria-label="Posteingang"></button>')).ignored).toBeFalsy();
     });
 });
