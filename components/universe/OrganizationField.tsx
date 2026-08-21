@@ -5,6 +5,7 @@ import { ArrowUpRight, Building2, CalendarDays, FileText, Lock, Mail, Radio, Rss
 import type { UniverseSignal } from '@/lib/universe/types';
 import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
 import { stableUniverseHash } from '@/lib/universe/layout';
+import { buildOrbitals, type Orbitals } from '@/lib/universe/orbitals';
 import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME } from '@/lib/universe/fall';
@@ -22,6 +23,9 @@ export interface OrganizationTerritory {
     spaces: number;
     folders: number;
     documents: number;
+    /** Die echten Bereiche dieser Abteilung - jeder wird ein Mond. Zahl
+     *  allein (spaces) reicht dafuer nicht: ein Mond traegt einen Namen. */
+    spaceList?: { id: string; name: string }[];
     metricSource: 'live' | 'derived' | 'missing';
     access: 'open' | 'locked';
 }
@@ -180,10 +184,13 @@ export function OrganizationField({
                 zentriert war: er sass sichtbar neben der Mitte der Ueberschrift
                 und brach in drei ausgefranste Zeilen. */}
             <header className="pointer-events-none absolute left-1/2 top-[120px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center">
+                {/* Ein Feld, ein Titel. Frueher wechselte die Ueberschrift mit
+                    der Linse ("Woraus X besteht" / "Was nachweislich
+                    zusammenhaengt") - seit die beiden Linsen zu einem Feld
+                    verschmolzen sind, gibt es nur noch eine Frage, die dieser
+                    Ort beantwortet. */}
                 <h1 className="text-[clamp(1.45rem,2.2vw,2.25rem)] font-light tracking-[-0.035em] text-white/92">
-                    {lens === 'organization'
-                        ? 'Woraus ' + organizationName + ' besteht'
-                        : 'Was nachweislich zusammenhängt'}
+                    Woraus {organizationName} besteht
                 </h1>
                 {/* Die erklaerende Zeile darunter ("Echte Bereiche, ihr Umfang...")
                     ist raus. Sie erklaerte die Metapher - nuetzlich beim ersten
@@ -330,6 +337,17 @@ function Territory({
 }) {
     const accent = territory.color || '#67e8f9';
     const size = territoryDiameter(territory);
+    // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
+    // dem, was CORE wirklich liefert - nichts davon ist Zierde.
+    const orbitals = useMemo(
+        () => buildOrbitals({
+            id: territory.id,
+            diameter: size,
+            spaces: territory.spaceList ?? [],
+            documentCount: territory.documents,
+        }),
+        [territory.id, territory.spaceList, territory.documents, size],
+    );
     // Eigene Phase je Bereich, abgeleitet aus der id: die Planeten treiben
     // dann nicht im Gleichschritt, und die Bewegung bleibt ueber Neuladen
     // hinweg dieselbe.
@@ -364,27 +382,38 @@ function Territory({
 
                 Jetzt: eine echte Lichtquelle oben links, ein sichtbarer Rand in
                 der Bereichsfarbe, ein sauberer Kreis. */}
+            {/* Der Planet ist nicht mehr allein: Monde sind echte Bereiche,
+                Sterne echte Dokumente. Die Huelle traegt die Drift, damit das
+                ganze System zusammen treibt statt der Koerper allein - und sie
+                clippt NICHT, damit Monde ihre Bahn ausserhalb ziehen koennen.
+                Der Koerper selbst behaelt overflow-hidden fuer seine
+                Innenverlaeufe. */}
             <span
-                className="saimor-territory-body relative mx-auto flex items-center justify-center overflow-hidden rounded-full"
-                style={{
-                    width: 'var(--territory-size)',
-                    height: 'var(--territory-size)',
-                    color: accent,
-                    background:
-                        'radial-gradient(circle at 33% 27%, ' + accent + '66, ' + accent + '1f 38%, transparent 64%),' +
-                        'radial-gradient(circle at 64% 80%, rgba(0,0,0,0.5), transparent 56%),' +
-                        'linear-gradient(158deg, rgba(15,34,55,0.96), rgba(4,11,20,0.98))',
-                    boxShadow:
-                        'inset 0 1px 1px rgba(255,255,255,0.18),' +
-                        'inset 0 -24px 44px rgba(0,0,0,0.5),' +
-                        'inset 0 0 0 1px ' + accent + (selected ? '7a' : '4d') + ',' +
-                        '0 18px 46px rgba(0,0,0,0.5),' +
-                        '0 0 ' + (selected ? '64px' : '38px') + ' ' + accent + (selected ? '5c' : '2e'),
-                }}
+                className="saimor-territory-body relative mx-auto block"
+                style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
-                {territory.access === 'locked'
-                    ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
-                    : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
+                <span
+                    className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
+                    style={{
+                        color: accent,
+                        background:
+                            'radial-gradient(circle at 33% 27%, ' + accent + '66, ' + accent + '1f 38%, transparent 64%),' +
+                            'radial-gradient(circle at 64% 80%, rgba(0,0,0,0.5), transparent 56%),' +
+                            'linear-gradient(158deg, rgba(15,34,55,0.96), rgba(4,11,20,0.98))',
+                        boxShadow:
+                            'inset 0 1px 1px rgba(255,255,255,0.18),' +
+                            'inset 0 -24px 44px rgba(0,0,0,0.5),' +
+                            'inset 0 0 0 1px ' + accent + (selected ? '7a' : '4d') + ',' +
+                            '0 18px 46px rgba(0,0,0,0.5),' +
+                            '0 0 ' + (selected ? '64px' : '38px') + ' ' + accent + (selected ? '5c' : '2e'),
+                    }}
+                >
+                    {territory.access === 'locked'
+                        ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
+                        : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
+                </span>
+
+                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} />
             </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
@@ -523,13 +552,12 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
     const assigned = strands.filter((strand) => !strand.dashed).length;
     const inferred = strands.length - assigned;
 
-    if (strands.length === 0) {
-        return (
-            <div className="rounded-full border border-dashed border-white/14 bg-[#08121e]/72 px-5 py-2.5 text-xs text-white/44 backdrop-blur-md">
-                Aktuell hängt nichts nachweisbar zusammen. Saimôr zeichnet hier bewusst keine Linie.
-            </div>
-        );
-    }
+    // Solange "Zusammenhaenge" eine eigene Linse war, musste ein leerer
+    // Zustand erklaeren, warum diese Ansicht nichts zeigt. Seit beide Linsen
+    // ein Feld sind, gibt es nichts zu erklaeren: es sind einfach keine
+    // Verbindungen da, und eine dauerhafte Zeile "hier ist nichts" ist dann
+    // nur noch Laerm unter den Planeten.
+    if (strands.length === 0) return null;
 
     return (
         <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/76 px-5 py-2.5 text-[10px] text-white/52 backdrop-blur-md">
@@ -543,6 +571,72 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
                 {inferred} nur vermutet
             </span>
         </div>
+    );
+}
+
+/**
+ * Das Sonnensystem einer Abteilung: Monde sind ihre Bereiche, Sterne ihre
+ * Dokumente.
+ *
+ * Bis hierher war der Sternenhimmel Kulisse - huebsch, aber ohne Bezug zu
+ * irgendetwas. Jetzt gehoert jeder Punkt im Bild zu etwas, das existiert:
+ * ein Mond ist ein Bereich mit Namen und id, ein Stern ein Dokument. Ein
+ * leerer Bereich hat kein System - das Bild ist dann leer, weil die Sache
+ * leer ist.
+ *
+ * pointer-events-none durchgehend: das System ist Anzeige, nicht Ziel. Der
+ * Klick gehoert dem Planeten darunter, sonst waeren die Monde
+ * Klickfallen vor dem eigentlichen Bedienelement.
+ */
+function OrbitalSystem({ orbitals, accent, selected }: { orbitals: Orbitals; accent: string; selected: boolean }) {
+    if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
+
+    return (
+        <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+            {orbitals.stars.map((star, index) => (
+                <span
+                    key={'star-' + index}
+                    className="saimor-doc-star absolute rounded-full"
+                    style={{
+                        left: '50%',
+                        top: '50%',
+                        width: star.size,
+                        height: star.size,
+                        marginLeft: star.x,
+                        marginTop: star.y,
+                        background: accent,
+                        boxShadow: '0 0 ' + (star.size * 3).toFixed(1) + 'px ' + accent,
+                        '--star-delay': star.delay.toFixed(2) + 's',
+                        '--star-duration': (4 + (index % 4)) + 's',
+                    } as CSSProperties}
+                />
+            ))}
+
+            {orbitals.moons.map((moon) => (
+                <span
+                    key={moon.id}
+                    className="saimor-moon-orbit absolute left-1/2 top-1/2"
+                    style={{
+                        '--moon-start': ((moon.angle * 180) / Math.PI).toFixed(1) + 'deg',
+                        '--moon-distance': moon.distance.toFixed(1) + 'px',
+                        '--moon-duration': moon.duration + 's',
+                    } as CSSProperties}
+                >
+                    <span
+                        className="absolute rounded-full border border-white/20"
+                        style={{
+                            width: moon.size,
+                            height: moon.size,
+                            marginLeft: -moon.size / 2,
+                            marginTop: -moon.size / 2,
+                            background: 'radial-gradient(circle at 34% 28%, #e8f2fb, #93a9c0 52%, #2c3a4d 100%)',
+                            boxShadow: '0 0 10px ' + accent + (selected ? '88' : '55'),
+                        }}
+                        title={moon.name}
+                    />
+                </span>
+            ))}
+        </span>
     );
 }
 

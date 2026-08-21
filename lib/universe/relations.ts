@@ -84,8 +84,14 @@ export function buildRelationStrands(
     });
 }
 
-export const TERRITORY_MIN_DIAMETER = 112;
-export const TERRITORY_MAX_DIAMETER = 228;
+// Neu bemessen, als die Bereiche echte Daten bekamen: vorher war jede
+// Abteilung leer, also stand jeder Planet auf dem Minimum und die
+// Obergrenze wurde nie erreicht. Mit echtem Inhalt (Product: 2 Bereiche,
+// 9 Dokumente) sprangen sie auf 175px+ - und weil Monde ausserhalb kreisen,
+// war der tatsaechliche Platzbedarf fast doppelt so gross. Die Planeten
+// ueberlappten ihre eigenen Beschriftungen.
+export const TERRITORY_MIN_DIAMETER = 82;
+export const TERRITORY_MAX_DIAMETER = 152;
 
 /** Ab wieviel Substanz ein Bereich die volle Groesse erreicht. */
 const TERRITORY_FULL_SUBSTANCE = 90;

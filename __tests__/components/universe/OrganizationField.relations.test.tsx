@@ -85,12 +85,19 @@ describe('OrganizationField: die beiden Linsen', () => {
         expect(screen.getByText(/1 nur vermutet/)).toBeInTheDocument();
     });
 
-    // Der eigentliche Grund, warum beide Linsen gleich aussahen: das HQ hat
-    // heute null zuordenbare Signale. Ein leeres Feld mit anderer Ueberschrift
-    // ist keine Antwort - das Feld muss sagen, dass es nichts zu zeigen gibt.
-    it('sagt es ausdruecklich, wenn nichts nachweisbar zusammenhaengt', () => {
-        renderField('relations', []);
+    // Frueher stand hier: "sagt es ausdruecklich, wenn nichts nachweisbar
+    // zusammenhaengt". Das war richtig, solange "Zusammenhaenge" eine eigene
+    // Linse war - eine Ansicht, die man absichtlich oeffnet, muss erklaeren,
+    // warum sie leer ist.
+    //
+    // Seit beide Linsen zu einem Feld verschmolzen sind (Marius: "wieso sind
+    // das 2 sachen?"), gibt es nichts mehr zu erklaeren: es sind einfach
+    // keine Verbindungen da. Eine dauerhafte Zeile "hier ist nichts" unter
+    // den Planeten waere nur noch Laerm. Geprueft wird jetzt das Gegenteil.
+    it('schweigt, wenn es keine Verbindungen zu zeigen gibt', () => {
+        const { container } = renderField('relations', []);
 
-        expect(screen.getByText(/Aktuell hängt nichts nachweisbar zusammen/)).toBeInTheDocument();
+        expect(screen.queryByText(/nachweisbar zusammen/)).not.toBeInTheDocument();
+        expect(container.querySelectorAll('path[vector-effect]')).toHaveLength(0);
     });
 });

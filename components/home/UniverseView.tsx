@@ -157,6 +157,20 @@ export default function UniverseView() {
         setSelectedTerritoryId(null);
     }, [effectiveCompanyId]);
 
+    // 'mindfield' war der zweite Zustand des entfernten Umschalters
+    // "Organisation | Zusammenhaenge". Seit beide Linsen ein Feld sind, ist
+    // er ein toter Zustand - aber andere Teile der Shell fragen coreMode ab,
+    // um zu erkennen, ob man ueberhaupt im Universe ist:
+    //   - QuickTips blendet sich nur bei 'home' | 'explore' aus. Blieb
+    //     coreMode auf 'mindfield' stehen, schob sich die Tour-Blase
+    //     ("Tipp 1/4: Spotlight Suche") ueber das Feld und stahl die
+    //     Kontrolle.
+    //   - Die Statusanzeige oben rechts zeigte weiterhin "ZUSAMMENHAENGE".
+    // Deshalb hier einmalig auf den lebenden Zustand zurueckziehen.
+    useEffect(() => {
+        if (coreMode === 'mindfield') setCoreMode('explore');
+    }, [coreMode, setCoreMode]);
+
     const baseAccessibleDepartments = useMemo(() => {
         if (!membershipsLoaded) return [];
         if (!user || isAdmin(user.role)) {
@@ -246,6 +260,21 @@ export default function UniverseView() {
         return result;
     }, [departments, statsMap, tree]);
 
+    // Die echten Bereiche je Abteilung, aus dem Baum. get_company_tree
+    // liefert Abteilungen -> Bereiche eager (Ordner/Dokumente erst beim
+    // Aufklappen), also steht genau das hier zur Verfuegung, was ein Mond
+    // braucht: id und Name.
+    const spaceListByDepartment = useMemo(() => {
+        const result: Record<string, { id: string; name: string }[]> = {};
+        tree.filter((item) => item.type === 'department').forEach((department) => {
+            const children = Array.isArray(department.children) ? department.children : [];
+            result[department.id] = children
+                .filter((child: any) => child.type === 'space')
+                .map((child: any) => ({ id: String(child.id), name: String(child.name || 'Bereich') }));
+        });
+        return result;
+    }, [tree]);
+
     const positionedDepartments = useMemo(() => {
         const sorted = [...accessibleDepartments].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
@@ -268,11 +297,15 @@ export default function UniverseView() {
                 spaces: value?.spaces || 0,
                 folders: value?.folders || 0,
                 documents: value?.nodes || 0,
+                // Die echten Bereiche dieser Abteilung aus dem Baum - jeder
+                // wird ein Mond mit eigenem Namen. Die blosse Anzahl (spaces)
+                // reicht dafuer nicht.
+                spaceList: spaceListByDepartment[department.id] || [],
                 metricSource: value?.source || 'missing',
                 access: department.universeAccess,
             };
         }),
-        [metrics, positionedDepartments],
+        [metrics, positionedDepartments, spaceListByDepartment],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
@@ -383,10 +416,7 @@ export default function UniverseView() {
            hat. UniverseAmbientField setzt jetzt nur noch eine Stimmung obenauf,
            statt selbst der Hintergrund zu sein. */
         <div className="relative h-full w-full overflow-hidden text-white">
-            <UniverseAmbientField
-                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
-                selected={Boolean(selectedTerritoryId)}
-            />
+            <UniverseAmbientField lens="organization" selected={Boolean(selectedTerritoryId)} />
 
             <UniverseObservatory
                 mail={mailPreview}
@@ -404,27 +434,21 @@ export default function UniverseView() {
             />
 
             <UniverseTicker items={tickerItems} />
-            <div className="absolute left-1/2 top-[74px] z-[46] -translate-x-1/2 rounded-full border border-sky-100/10 bg-slate-950/38 p-1 shadow-[0_16px_50px_rgba(0,8,20,0.24)] backdrop-blur-xl">
-                <button
-                    type="button"
-                    onClick={() => setCoreMode('explore')}
-                    className={'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ' +
-                        (coreMode === 'explore' ? 'bg-sky-100/12 text-sky-50' : 'text-sky-100/42 hover:text-sky-50/80')}
-                >
-                    Organisation
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setCoreMode('mindfield')}
-                    className={'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ' +
-                        (coreMode === 'mindfield' ? 'bg-violet-300/14 text-violet-50' : 'text-sky-100/42 hover:text-sky-50/80')}
-                >
-                    Zusammenhänge
-                </button>
-            </div>
 
+            {/* Der Umschalter "Organisation | Zusammenhaenge" ist entfernt.
+                Beide Linsen zeigten denselben Ort mit derselben Kamera - der
+                einzige Unterschied waren Verbindungslinien, die ohnehin nur
+                erscheinen, wenn es Belege gibt. Bei null Signalen (dem
+                Normalfall) waren die Ansichten nicht unterscheidbar; Marius
+                hat sie mehrfach als identisch erlebt und zuletzt gefragt:
+                "wieso sind das 2 sachen?".
+
+                Ein Schalter zwischen zwei gleich aussehenden Zustaenden ist
+                schlimmer als kein Schalter. Jetzt: ein Feld. Verbindungen
+                zeichnen sich selbst, wenn Belege da sind, und kosten nichts,
+                wenn keine da sind. */}
             <OrganizationField
-                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
+                lens="relations"
                 organizationName={organizationName}
                 territories={territories}
                 signals={signals}

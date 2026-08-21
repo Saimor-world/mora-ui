@@ -2263,3 +2263,47 @@
     animation: none;
   }
 }
+
+/* Monde umkreisen ihren Planeten. Die Gegendrehung im zweiten rotate() haelt
+   den Mond selbst aufrecht, statt ihn mitzudrehen - sonst wuerde ein Mond mit
+   Beschriftung auf dem Kopf stehen. */
+@keyframes saimorMoonOrbit {
+  from {
+    transform: rotate(var(--moon-start, 0deg)) translateX(var(--moon-distance, 80px)) rotate(calc(-1 * var(--moon-start, 0deg)));
+  }
+
+  to {
+    transform: rotate(calc(var(--moon-start, 0deg) + 360deg)) translateX(var(--moon-distance, 80px)) rotate(calc(-1 * var(--moon-start, 0deg) - 360deg));
+  }
+}
+
+.saimor-moon-orbit {
+  animation: saimorMoonOrbit var(--moon-duration, 60s) linear infinite;
+}
+
+/* Sterne sind Dokumente. Sie funkeln, aber leise - sie sollen Tiefe geben,
+   nicht um Aufmerksamkeit kaempfen. */
+@keyframes saimorStarTwinkle {
+
+  0%,
+  100% {
+    opacity: 0.22;
+  }
+
+  50% {
+    opacity: 0.85;
+  }
+}
+
+.saimor-doc-star {
+  animation: saimorStarTwinkle var(--star-duration, 5s) ease-in-out infinite;
+  animation-delay: var(--star-delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+  .saimor-moon-orbit,
+  .saimor-doc-star {
+    animation: none;
+  }
+}

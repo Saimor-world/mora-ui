@@ -11,11 +11,16 @@
 
 
 /** Percentage bounds for planet placement — safe central corridor clearing the left (0..30%) and right (70..100%) widget columns. */
+// Die Y-Grenzen waren enger als noetig: der Feldkasten selbst laesst oben
+// bereits Platz fuer Kopfzeile und Datenband und unten fuers Dock, das
+// Layout muss denselben Rand also nicht ein zweites Mal reservieren. Mit
+// echten Daten - und damit groesseren Planeten - drueckte die doppelte
+// Reserve alle vier in ein zu flaches Band, in dem sie sich ueberlappten.
 export const UNIVERSE_SAFE_BOUNDS = {
     minX: 12,
     maxX: 88,
-    minY: 20,
-    maxY: 80,
+    minY: 12,
+    maxY: 88,
 };
 
 
