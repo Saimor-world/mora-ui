@@ -16,11 +16,14 @@ export interface RawFolder {
     id: string;
     name?: string;
     space_id?: string;
+    node_count?: number;
 }
 
 export interface MoonFolder {
     id: string;
     name: string;
+    /** Echte Dokumentzahl aus CORE (node_count) - nicht geschaetzt. */
+    documents: number;
 }
 
 export function groupFoldersByDepartment(
@@ -39,6 +42,7 @@ export function groupFoldersByDepartment(
         grouped[departmentId].push({
             id: String(folder.id),
             name: String(folder.name || '').trim() || 'Ordner',
+            documents: Math.max(0, Number(folder.node_count) || 0),
         });
     });
 

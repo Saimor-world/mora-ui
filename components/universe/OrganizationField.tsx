@@ -668,8 +668,25 @@ function OrbitalSystem({ orbitals, accent, selected }: { orbitals: Orbitals; acc
                                 boxShadow: '0 0 12px ' + accent + (selected ? 'aa' : '77'),
                             }}
                         />
-                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/12 bg-[#08121e]/95 px-2 py-0.5 text-[9px] font-medium text-white/85 opacity-0 shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-sm transition-opacity duration-200 group-hover/moon:opacity-100">
-                            {moon.name}
+                        {/* Zahl-Abzeichen: was wirklich drin liegt, direkt am
+                            Mond - ohne Hover, ohne Klick. node_count kommt aus
+                            CORE. Ein leerer Ordner bekommt keines, sonst waere
+                            eine 0 genauso auffaellig wie eine 12. */}
+                        {moon.documents > 0 && (
+                            <span
+                                className="pointer-events-none absolute -right-1.5 -top-1.5 flex min-w-[14px] items-center justify-center rounded-full border border-white/25 bg-[#08121e] px-1 text-[8px] font-semibold tabular-nums text-white/90"
+                                style={{ boxShadow: '0 0 8px ' + accent + '66' }}
+                            >
+                                {moon.documents}
+                            </span>
+                        )}
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/12 bg-[#08121e]/95 px-2.5 py-1.5 text-left opacity-0 shadow-[0_6px_22px_rgba(0,0,0,0.55)] backdrop-blur-sm transition-opacity duration-200 group-hover/moon:opacity-100">
+                            <span className="block text-[10px] font-medium text-white/90">{moon.name}</span>
+                            <span className="mt-0.5 block text-[8px] uppercase tracking-[0.14em] text-white/45">
+                                {moon.documents === 0
+                                    ? 'noch leer'
+                                    : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}
+                            </span>
                         </span>
                     </span>
                 </span>

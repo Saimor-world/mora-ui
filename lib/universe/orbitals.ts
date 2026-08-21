@@ -20,6 +20,8 @@ import { stableUniverseHash } from './layout';
 export interface OrbitalSpace {
     id: string;
     name: string;
+    /** Echte Dokumentzahl des Ordners, falls bekannt. */
+    documents?: number;
 }
 
 export interface OrbitalInput {
@@ -35,6 +37,8 @@ export interface OrbitalInput {
 export interface Moon {
     id: string;
     name: string;
+    /** Wieviel wirklich drin liegt - 0 heisst leer, nicht unbekannt. */
+    documents: number;
     /** Bogenmass, 0 = rechts vom Planeten. */
     angle: number;
     /** Abstand vom Planetenmittelpunkt in px. */
@@ -92,9 +96,13 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
         return {
             id: space.id,
             name: space.name,
+            documents: Math.max(0, space.documents ?? 0),
             angle: angleOffset + index * step,
             distance: radius + radius * MOON_ORBIT_FACTOR,
-            size: 9 + Math.round(noise(space.id, index, 3) * 4),
+            // Groesse nach echtem Inhalt, nicht nach Zufall. Ein leerer
+            // Ordner ist klein, ein voller gross - dieselbe Regel wie beim
+            // Planeten, nur eine Ebene tiefer.
+            size: 8 + Math.min(9, Math.round(Math.sqrt(Math.max(0, space.documents ?? 0)) * 3.2)),
             // Weiter aussen heisst langsamer - dieselbe Anschauung wie bei
             // echten Umlaufbahnen, und es verhindert Gleichschritt.
             duration: 48 + Math.round(noise(space.id, index, 7) * 40),

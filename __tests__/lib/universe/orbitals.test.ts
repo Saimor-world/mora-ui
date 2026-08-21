@@ -84,3 +84,40 @@ describe('buildOrbitals', () => {
         expect(a.stars).not.toEqual(b.stars);
     });
 });
+
+/**
+ * Marius: "die Monde sind grau, es sind keine echten Inhalte."
+ * CORE liefert node_count je Ordner - der Mond darf das zeigen, statt eine
+ * Zufallsgroesse zu tragen.
+ */
+describe('Monde tragen echten Inhalt', () => {
+    it('macht einen vollen Ordner groesser als einen leeren', () => {
+        const [leer] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Leer', documents: 0 }],
+        }).moons;
+        const [voll] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Voll', documents: 12 }],
+        }).moons;
+
+        expect(voll.size).toBeGreaterThan(leer.size);
+    });
+
+    it('fuehrt die echte Dokumentzahl mit', () => {
+        const [moon] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Preise', documents: 2 }],
+        }).moons;
+        expect(moon.documents).toBe(2);
+    });
+
+    // Ein Ordner ohne bekannte Zahl darf nicht so aussehen, als waere er voll.
+    it('behandelt eine fehlende Zahl als leer, nicht als unbekannt-gross', () => {
+        const [moon] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Ohne Angabe' }],
+        }).moons;
+        expect(moon.documents).toBe(0);
+    });
+});
