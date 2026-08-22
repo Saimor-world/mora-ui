@@ -682,29 +682,36 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                                 event.stopPropagation();
                                 onOpenMoon(moon.id, moon.name);
                             }}
-                            className="pointer-events-auto block cursor-pointer rounded-full border border-white/25 transition-transform duration-300 group-hover/moon:scale-150"
+                            className="pointer-events-auto block cursor-pointer rounded-full transition-transform duration-300 group-hover/moon:scale-[1.6]"
                             style={{
                                 width: moon.size,
                                 height: moon.size,
-                                background: 'radial-gradient(circle at 34% 28%, #f2f7fc, ' + accent + 'aa 58%, #223247 100%)',
-                                boxShadow: '0 0 12px ' + accent + (selected ? 'aa' : '77'),
+                                // Kein harter Rand: ein Lichtkoerper, kein
+                                // Abzeichen. Die Deckkraft kommt aus der
+                                // Frische - ein heute angefasster Ordner
+                                // leuchtet, ein lange ruhender glimmt nur.
+                                background:
+                                    'radial-gradient(circle at 36% 30%, rgba(255,255,255,' + (0.55 * moon.freshness + 0.2).toFixed(2) + '), ' +
+                                    accent + ' 62%, ' + accent + '44 100%)',
+                                opacity: 0.45 + moon.freshness * 0.55,
+                                boxShadow: '0 0 ' + (6 + moon.freshness * 14).toFixed(0) + 'px ' + accent +
+                                    Math.round(60 + moon.freshness * 120).toString(16).padStart(2, '0'),
                             }}
                         />
-                        {/* Zahl-Abzeichen: was wirklich drin liegt, direkt am
-                            Mond - ohne Hover, ohne Klick. node_count kommt aus
-                            CORE. Ein leerer Ordner bekommt keines, sonst waere
-                            eine 0 genauso auffaellig wie eine 12. */}
-                        {moon.documents > 0 && (
-                            <span
-                                className="pointer-events-none absolute -right-1.5 -top-1.5 flex min-w-[14px] items-center justify-center rounded-full border border-white/25 bg-[#08121e] px-1 text-[8px] font-semibold tabular-nums text-white/90"
-                                style={{ boxShadow: '0 0 8px ' + accent + '66' }}
-                            >
-                                {moon.documents}
-                            </span>
-                        )}
-                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/12 bg-[#08121e]/95 px-2.5 py-1.5 text-left opacity-0 shadow-[0_6px_22px_rgba(0,0,0,0.55)] backdrop-blur-sm transition-opacity duration-200 group-hover/moon:opacity-100">
-                            <span className="block text-[10px] font-medium text-white/90">{moon.name}</span>
-                            <span className="mt-0.5 block text-[8px] uppercase tracking-[0.14em] text-white/45">
+                        {/* Kein Zahl-Abzeichen mehr. Marius: "die Monde sind
+                            nicht schoen, die Zahlen sind auch Quatsch." Er hat
+                            recht - ein Zaehler am Objekt ist
+                            Benachrichtigungs-Sprache ("3 Ungelesene"), und auf
+                            einem kreisenden Koerper kann man ihn ohnehin nicht
+                            lesen.
+
+                            Stattdessen traegt die Form die Information:
+                            Groesse sagt wieviel drin liegt, Helligkeit sagt wie
+                            lange es her ist. Die genauen Zahlen stehen in der
+                            Karte beim Darueberfahren, wo Zeit zum Lesen ist. */}
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/95 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-200 group-hover/moon:opacity-100">
+                            <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
+                            <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
                                 {moon.documents === 0
                                     ? 'noch leer'
                                     : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}

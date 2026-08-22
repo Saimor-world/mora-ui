@@ -96,7 +96,7 @@ export default function UniverseView() {
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
-    const [folderMoons, setFolderMoons] = useState<Record<string, { id: string; name: string }[]>>({});
+    const [folderMoons, setFolderMoons] = useState<Record<string, { id: string; name: string; documents?: number; updatedAt?: string | null }[]>>({});
     const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
     const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
@@ -542,7 +542,14 @@ export default function UniverseView() {
                         type: 'finder',
                         title: folderName,
                         size: { width: 1040, height: 720 },
-                        data: { folderId },
+                        // companyId MUSS mit: apps/finder/index.tsx setzt beim
+                        // Aufloesen der Firma auf den Wurzelordner zurueck,
+                        // solange der Aufrufer keine mitgibt (`if
+                        // (!paneCompanyId) resetNavigationRoot(null)`, Zeile
+                        // 575). Ohne sie sprang der Finder sofort wieder auf
+                        // "Start" - der angeklickte Mond war nach einem
+                        // Wimpernschlag wieder weg.
+                        data: { folderId, companyId: effectiveCompanyId },
                     });
                 }}
                 onFile={async (departmentId, label, kind) => {

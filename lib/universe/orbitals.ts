@@ -1,4 +1,5 @@
 import { stableUniverseHash } from './layout';
+import { freshnessOf } from './freshness';
 
 /**
  * Die Metapher, woertlich genommen: Planeten sind Abteilungen, Monde sind
@@ -22,6 +23,8 @@ export interface OrbitalSpace {
     name: string;
     /** Echte Dokumentzahl des Ordners, falls bekannt. */
     documents?: number;
+    /** Wann zuletzt angefasst - wird zur Helligkeit. */
+    updatedAt?: string | null;
 }
 
 export interface OrbitalInput {
@@ -39,6 +42,9 @@ export interface Moon {
     name: string;
     /** Wieviel wirklich drin liegt - 0 heisst leer, nicht unbekannt. */
     documents: number;
+    /** 0..1 - wie frisch, als Helligkeit statt als Zahl am Objekt. */
+    freshness: number;
+    updatedAt?: string | null;
     /** Bogenmass, 0 = rechts vom Planeten. */
     angle: number;
     /** Abstand vom Planetenmittelpunkt in px. */
@@ -97,6 +103,8 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
             id: space.id,
             name: space.name,
             documents: Math.max(0, space.documents ?? 0),
+            freshness: freshnessOf(space.updatedAt),
+            updatedAt: space.updatedAt ?? null,
             angle: angleOffset + index * step,
             distance: radius + radius * MOON_ORBIT_FACTOR,
             // Groesse nach echtem Inhalt, nicht nach Zufall. Ein leerer

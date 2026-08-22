@@ -121,3 +121,41 @@ describe('Monde tragen echten Inhalt', () => {
         expect(moon.documents).toBe(0);
     });
 });
+
+/**
+ * Die Zahl am Mond ist weg - Helligkeit traegt jetzt, wie frisch etwas ist.
+ * Marius: "die Zahlen sind auch Quatsch."
+ */
+describe('Monde leuchten nach Frische', () => {
+    const heute = new Date().toISOString();
+    const alt = new Date(Date.now() - 200 * 86400000).toISOString();
+
+    it('laesst einen heute angefassten Ordner heller leuchten als einen alten', () => {
+        const [frisch] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Frisch', documents: 3, updatedAt: heute }],
+        }).moons;
+        const [kalt] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Kalt', documents: 3, updatedAt: alt }],
+        }).moons;
+
+        expect(frisch.freshness).toBeGreaterThan(kalt.freshness);
+    });
+
+    // Groesse und Helligkeit sind zwei unabhaengige Aussagen: viel Inhalt,
+    // lange nicht angefasst muss sichtbar anders sein als wenig und frisch.
+    it('haelt Groesse und Helligkeit auseinander', () => {
+        const [grossAltMoon] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Gross alt', documents: 20, updatedAt: alt }],
+        }).moons;
+        const [kleinFrischMoon] = buildOrbitals({
+            id: 'x', diameter: 120, documentCount: 0,
+            spaces: [{ id: 'a', name: 'Klein frisch', documents: 1, updatedAt: heute }],
+        }).moons;
+
+        expect(grossAltMoon.size).toBeGreaterThan(kleinFrischMoon.size);
+        expect(grossAltMoon.freshness).toBeLessThan(kleinFrischMoon.freshness);
+    });
+});
