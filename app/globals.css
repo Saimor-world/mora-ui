@@ -2307,3 +2307,36 @@
     animation: none;
   }
 }
+
+/* Was sich gerade bewegt, muss man sehen, ohne darueberzufahren.
+   Marius: "Ich will doch nicht ueber jeden Mond fahren muessen, um zu sehen,
+   wo die wichtige Kampagne ist." Genau ein Mond je Planet traegt diesen Ring
+   - "alles ist wichtig" hiesse, dass nichts es ist. */
+@keyframes saimorMotionRing {
+
+  0% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+
+  70% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.saimor-motion-ring {
+  animation: saimorMotionRing 2.8s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saimor-motion-ring {
+    animation: none;
+    opacity: 0.5;
+  }
+}

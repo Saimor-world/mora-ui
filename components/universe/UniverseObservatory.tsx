@@ -6,6 +6,8 @@ import type { CalendarPreviewItem, FeedPreviewItem, MailPreviewItem } from '@/li
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import type { BusinessSummary } from '@/lib/business/mrr';
+import type { SubstanceBar } from '@/lib/universe/substanceChart';
+import { SubstanceWidget } from '@/components/universe/SubstanceWidget';
 
 interface Props {
     mail: MailPreviewItem[];
@@ -13,6 +15,8 @@ interface Props {
     feed: FeedPreviewItem[];
     incidents: NightwatchIncidentItem[];
     business: BusinessSummary;
+    substanceBars: SubstanceBar[];
+    onSelectTerritory: (id: string) => void;
     territoryCount: number;
     documentCount: number;
     selected: boolean;
@@ -124,6 +128,7 @@ export function UniverseObservatory(props: Props) {
     return (
         <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 lg:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
             <div className={'absolute bottom-28 left-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
                 <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"

@@ -10,6 +10,8 @@ const baseProps = {
     calendar: [],
     feed: [],
     incidents: [],
+    substanceBars: [],
+    onSelectTerritory: () => undefined,
     territoryCount: 4,
     documentCount: 10,
     selected: false,

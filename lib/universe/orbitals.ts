@@ -1,5 +1,6 @@
 import { stableUniverseHash } from './layout';
 import { freshnessOf } from './freshness';
+import { markMoonsInMotion } from './inMotion';
 
 /**
  * Die Metapher, woertlich genommen: Planeten sind Abteilungen, Monde sind
@@ -44,6 +45,9 @@ export interface Moon {
     documents: number;
     /** 0..1 - wie frisch, als Helligkeit statt als Zahl am Objekt. */
     freshness: number;
+    /** Der zuletzt angefasste Mond dieses Planeten - traegt Ring und Namen
+     *  ohne Hover, damit man auf einen Blick sieht, was laeuft. */
+    inMotion: boolean;
     updatedAt?: string | null;
     /** Bogenmass, 0 = rechts vom Planeten. */
     angle: number;
@@ -97,7 +101,7 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
     // Neuladen hinweg.
     const angleOffset = (stableUniverseHash(id) % 628) / 100;
 
-    const moons: Moon[] = spaces.map((space, index) => {
+    const rohMonde = spaces.map((space, index) => {
         const step = (Math.PI * 2) / Math.max(1, spaces.length);
         return {
             id: space.id,
@@ -116,6 +120,9 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
             duration: 48 + Math.round(noise(space.id, index, 7) * 40),
         };
     });
+
+    // Genau einer je Planet: die Antwort auf "was bewegt sich gerade hier?"
+    const moons: Moon[] = markMoonsInMotion(rohMonde);
 
     const starCount = Math.min(MAX_VISIBLE_STARS, Math.max(0, documentCount));
     const stars: Star[] = Array.from({ length: starCount }, (_, index) => {

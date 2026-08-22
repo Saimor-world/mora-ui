@@ -38,6 +38,7 @@ import { CursorAgent } from '@/components/mora/CursorAgent';
 import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import { anchorsToViewport } from '@/lib/universe/anchors';
 import { buildTickerItems } from '@/lib/universe/ticker';
+import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 
 const EMPTY_ITEMS: any[] = [];
@@ -462,6 +463,8 @@ export default function UniverseView() {
         return anchor ? { x: anchor.x, y: anchor.y } : null;
     }, [attention, fieldAnchors, fieldRect]);
 
+    const substanceBars = useMemo(() => buildSubstanceBars(territories), [territories]);
+
     const organizationName = currentCompany?.name || user?.active_company_name || 'Organisation';
     const loading = departmentsLoading || treeLoading || !membershipsLoaded;
     const hasRestrictedDepartments = membershipsLoaded && departments.length > 0 && territories.length === 0;
@@ -497,6 +500,8 @@ export default function UniverseView() {
                 feed={feedPreview}
                 incidents={nightwatchIncidents}
                 business={business}
+                substanceBars={substanceBars}
+                onSelectTerritory={setSelectedTerritoryId}
                 territoryCount={territories.length}
                 documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
                 selected={Boolean(selectedTerritoryId)}
