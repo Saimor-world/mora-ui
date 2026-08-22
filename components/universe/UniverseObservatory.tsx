@@ -33,7 +33,7 @@ function Instrument({ eyebrow, title, children, accent = 'cyan' }: {
     accent?: 'cyan' | 'amber';
 }) {
     return (
-        <section className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/68 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] backdrop-blur-2xl">
+        <section className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
             <div className={'absolute inset-y-5 left-0 w-px ' + (accent === 'amber' ? 'bg-amber-300/55' : 'bg-cyan-300/50')} />
             <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">{eyebrow}</p>
             <h2 className="mt-1 text-sm font-medium tracking-[-0.01em] text-white/82">{title}</h2>

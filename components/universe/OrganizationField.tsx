@@ -6,6 +6,7 @@ import type { UniverseSignal } from '@/lib/universe/types';
 import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
 import { stableUniverseHash } from '@/lib/universe/layout';
 import { buildOrbitals, type Orbitals } from '@/lib/universe/orbitals';
+import { emphasisFor } from '@/lib/universe/emphasis';
 import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
@@ -46,6 +47,8 @@ interface Props {
     /** Oeffnet einen Ordner dort, wo er wirklich liegt - nicht als
      *  generisches Vorschaufenster. */
     onOpenMoon: (folderId: string, folderName: string) => void;
+    /** Worauf Môra gerade schaut - erzeugt die Blickhierarchie im Feld. */
+    attentionId?: string | null;
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
@@ -72,6 +75,7 @@ export function OrganizationField({
     onAskMora,
     onFile,
     onOpenMoon,
+    attentionId = null,
 }: Props) {
     const selected = useMemo(
         () => territories.find((item) => item.id === selectedId) ?? null,
@@ -224,7 +228,7 @@ export function OrganizationField({
                     hinschauen soll" war der Befund; ein Erklaertext ist keine
                     Information, ein laufendes Band echter Werte schon. */}
                 {landed && (
-                    <p className={'pointer-events-none mx-auto mt-3 inline-flex max-w-[52ch] items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] backdrop-blur-md ' +
+                    <p className={'pointer-events-none mx-auto mt-3 inline-flex max-w-[52ch] items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] ' +
                         (landed.state === 'failed'
                             ? 'border-amber-300/25 bg-[#1b1206]/85 text-amber-100/80'
                             : 'border-white/10 bg-[#08121e]/80 text-white/58')}>
@@ -258,7 +262,7 @@ export function OrganizationField({
                         signals={signals.filter((signal) => signal.targetId === territory.id)}
                         lens={lens}
                         selected={territory.id === selectedId}
-                        dimmed={Boolean(selectedId && territory.id !== selectedId)}
+                        emphasis={emphasisFor({ id: territory.id, attentionId, selectedId })}
                         onSelect={onSelect}
                         onOpenMoon={onOpenMoon}
                     />
@@ -286,7 +290,7 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/94 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-2xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
+                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/97 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
@@ -356,7 +360,7 @@ function Territory({
     signals,
     lens,
     selected,
-    dimmed,
+    emphasis,
     onSelect,
     onOpenMoon,
 }: {
@@ -364,7 +368,7 @@ function Territory({
     signals: UniverseSignal[];
     lens: UniverseLens;
     selected: boolean;
-    dimmed: boolean;
+    emphasis: { opacity: number; scale: number };
     onSelect: (id: string | null) => void;
     onOpenMoon: (folderId: string, folderName: string) => void;
 }) {
@@ -398,10 +402,17 @@ function Territory({
         <button
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
-            className={'group absolute z-10 -translate-x-1/2 -translate-y-1/2 text-center transition-all duration-700 focus:outline-none ' +
-                (selected ? 'z-30 scale-110' : 'hover:z-20 hover:scale-105') +
-                (dimmed ? ' opacity-20 saturate-50' : ' opacity-100')}
-            style={style}
+            className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
+                (selected ? 'z-30' : 'hover:z-20')}
+            style={{
+                ...style,
+                // Blickhierarchie statt gleichmaessiger Flaeche: was
+                // Aufmerksamkeit braucht, tritt hervor - der Rest tritt
+                // zurueck, bleibt aber lesbar. Liegt nichts an, ist alles
+                // gleich (siehe lib/universe/emphasis.ts).
+                opacity: emphasis.opacity,
+                transform: 'translate(-50%, -50%) scale(' + emphasis.scale + ')',
+            }}
             aria-pressed={selected}
             aria-label={territory.name + ' auswählen'}
             // Fuer Screenreader ist "Growth auswaehlen" richtig - eine
@@ -458,7 +469,7 @@ function Territory({
                 Die Kreise wurden am Rand abgeschnitten. Jetzt haengen sie am
                 Button, der nicht clippt, und zaehlen statt zu streuen. */}
             {lens === 'relations' && signals.length > 0 && (
-                <span className="pointer-events-none absolute -top-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[#08121e]/92 px-2 py-1 shadow-[0_6px_20px_rgba(0,0,0,0.45)] backdrop-blur-sm">
+                <span className="pointer-events-none absolute -top-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[#08121e]/96 px-2 py-1 shadow-[0_6px_20px_rgba(0,0,0,0.45)]">
                     {Array.from(new Set(signals.map((signal) => signal.kind))).slice(0, 4).map((kind) => (
                         <span key={kind} style={{ color: signalTone[kind].stroke }} title={signalTone[kind].label}>
                             {signalTone[kind].icon}
@@ -611,7 +622,7 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
     if (strands.length === 0) return null;
 
     return (
-        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/76 px-5 py-2.5 text-[10px] text-white/52 backdrop-blur-md">
+        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/94 px-5 py-2.5 text-[10px] text-white/52">
             <span className="flex items-center gap-2">
                 <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#fcd34d" strokeWidth="1.6" strokeLinecap="round" /></svg>
                 {assigned} belegt
@@ -741,7 +752,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                                 }}
                             />
                         )}
-                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/95 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-200 group-hover/moon:opacity-100">
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
                             <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
                             <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
                                 {moon.documents === 0

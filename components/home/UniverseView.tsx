@@ -532,6 +532,7 @@ export default function UniverseView() {
                 selectedId={selectedTerritoryId}
                 onSelect={setSelectedTerritoryId}
                 onOpen={navigateToDepartment}
+                attentionId={attention?.targetId ?? null}
                 onOpenMoon={(folderId, folderName) => {
                     // In den Ordner selbst, nicht in ein generisches Fenster:
                     // navigateToFolder setzt den Kontext, der Finder oeffnet

@@ -52,7 +52,7 @@ export function UniverseTicker({ items }: { items: TickerItem[] }) {
 
     return (
         <div
-            className="pointer-events-none absolute inset-x-0 top-[176px] z-[25] overflow-hidden border-y border-white/[0.06] bg-[#050c16]/58 py-1.5 backdrop-blur-sm"
+            className="pointer-events-none absolute inset-x-0 top-[176px] z-[25] overflow-hidden border-y border-white/[0.06] bg-[#050c16]/92 py-1.5"
             aria-hidden="true"
         >
             <div
