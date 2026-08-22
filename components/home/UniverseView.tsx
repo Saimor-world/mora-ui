@@ -415,15 +415,6 @@ export default function UniverseView() {
         return result;
     }, [accessibleDepartments, calendarPreview, feedPreview, mailPreview, nightwatchIncidents]);
 
-    if (universeScope === 'dept' && universeScopeDeptId) {
-        const scoped = accessibleDepartments.find((department) => (
-            department.id === universeScopeDeptId && department.universeAccess === 'open'
-        ));
-        if (scoped) {
-            return <DeptSpaceMap departmentId={universeScopeDeptId} departmentName={scoped.name} />;
-        }
-    }
-
     const tickerItems = useMemo(() => buildTickerItems({
         territories: territories.map((t) => ({ id: t.id, name: t.name, documents: t.documents, spaces: t.spaces, folders: t.folders })),
         signals,
@@ -464,6 +455,22 @@ export default function UniverseView() {
     }, [attention, fieldAnchors, fieldRect]);
 
     const substanceBars = useMemo(() => buildSubstanceBars(territories), [territories]);
+
+    // Der vorzeitige Ausstieg in die Abteilungs-Ansicht stand frueher WEITER
+    // OBEN - mitten zwischen den Hooks. React verlangt aber, dass Hooks in
+    // jedem Durchlauf in derselben Reihenfolge laufen: beim Wechsel in eine
+    // Abteilung wurden die danach stehenden uebersprungen, und die Zustaende
+    // htten sich gegeneinander verschoben. Die CI hat das gefunden
+    // (react-hooks/rules-of-hooks), bevor es jemand im Betrieb als "es
+    // passieren komische Sachen" gemeldet haette.
+    if (universeScope === 'dept' && universeScopeDeptId) {
+        const scoped = accessibleDepartments.find((department) => (
+            department.id === universeScopeDeptId && department.universeAccess === 'open'
+        ));
+        if (scoped) {
+            return <DeptSpaceMap departmentId={universeScopeDeptId} departmentName={scoped.name} />;
+        }
+    }
 
     const organizationName = currentCompany?.name || user?.active_company_name || 'Organisation';
     const loading = departmentsLoading || treeLoading || !membershipsLoaded;
