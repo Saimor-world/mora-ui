@@ -70,6 +70,12 @@ export interface Star {
 export interface Orbitals {
     moons: Moon[];
     stars: Star[];
+    /**
+     * Dieselben Sterne als drei gemalte Ebenen statt als Einzelelemente.
+     * Jede Ebene funkelt in eigener Phase - so bleibt das Flimmern
+     * erhalten, kostet aber drei Elemente statt vierundsechzig.
+     */
+    starLayers: string[];
 }
 
 /**
@@ -78,13 +84,16 @@ export interface Orbitals {
  * steht ohnehin als Text unter dem Planeten. Hier wird also die Darstellung
  * gedeckelt, nicht die Wahrheit.
  *
- * Von 48 auf 26 gesenkt, nachdem Marius Ruckeln meldete: bei vier Planeten
- * waren das 192 dauerhaft animierte Elemente allein fuer die Sterne - und
- * das zusaetzlich zu 180 Hintergrundsternen, mehreren Vollbild-Canvas und
- * den Mondbahnen. Ab etwa zwei Dutzend Punkten liest man ohnehin "viele",
- * nicht mehr die Anzahl.
+ * Zwischenzeitlich auf 26 gesenkt, weil es ruckelte - das war die faule
+ * Antwort. Die Kosten kamen nicht von der ANZAHL, sondern davon, dass jeder
+ * Stern ein eigenes animiertes DOM-Element mit box-shadow war.
+ *
+ * Jetzt werden alle Sterne in drei gemalte Ebenen gerastert (siehe
+ * starLayers): 64 statt 26 Sterne, aber drei Elemente statt 64. Mehr zu
+ * sehen und weniger zu tun - dieselbe Technik, mit der auch die 180
+ * Hintergrundsterne auf ein Element geschrumpft sind.
  */
-export const MAX_VISIBLE_STARS = 26;
+export const MAX_VISIBLE_STARS = 64;
 
 // Enger als anfangs: ein Mond bei 0.82 Radien ausserhalb machte das
 // Sonnensystem fast doppelt so breit wie den Planeten - vier davon
@@ -145,5 +154,19 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
         };
     });
 
-    return { moons, stars };
+    // Drei Ebenen, damit das Funkeln erhalten bleibt: jede bekommt eine
+    // eigene Phase. Ein einzelner gemalter Hintergrund koennte nur als
+    // Ganzes pulsieren, und das saehe aus wie ein Blinklicht.
+    const starLayers: string[] = [0, 1, 2].map((band) =>
+        stars
+            .filter((_, index) => index % 3 === band)
+            .map((star) => {
+                const r = (star.size * 1.9).toFixed(1);
+                return `radial-gradient(${r}px ${r}px at calc(50% + ${star.x.toFixed(1)}px) ` +
+                    `calc(50% + ${star.y.toFixed(1)}px), currentColor, transparent 68%)`;
+            })
+            .join(', ') || 'none',
+    );
+
+    return { moons, stars, starLayers };
 }

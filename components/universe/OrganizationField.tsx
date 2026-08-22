@@ -290,7 +290,7 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/97 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
+                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
@@ -655,27 +655,26 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
 
     return (
         <span className="pointer-events-none absolute inset-0" aria-hidden="true">
-            {orbitals.stars.map((star, index) => (
-                <span
-                    key={'star-' + index}
-                    className="saimor-doc-star absolute rounded-full"
-                    style={{
-                        left: '50%',
-                        top: '50%',
-                        width: star.size,
-                        height: star.size,
-                        marginLeft: star.x,
-                        marginTop: star.y,
-                        // Kein box-shadow je Stern: bei vier Planeten waren das
-                        // ueber hundert Elemente, die der Browser jeweils
-                        // einzeln weichzeichnen muss - eine der teuersten
-                        // Zeichenarbeiten ueberhaupt. Die Leuchtwirkung kommt
-                        // jetzt aus der Farbe selbst.
-                        background: accent,
-                        '--star-delay': star.delay.toFixed(2) + 's',
-                        '--star-duration': (4 + (index % 4)) + 's',
-                    } as CSSProperties}
-                />
+            {/* 64 Sterne in DREI gemalten Ebenen statt 64 Elementen.
+                Frueher war jeder Stern ein eigenes animiertes div mit
+                box-shadow - die Kosten kamen von der Bauweise, nicht von der
+                Anzahl. Darum jetzt mehr Sterne UND weniger Arbeit: gerastert
+                als radial-gradient, drei Ebenen mit eigener Phase, damit das
+                Funkeln bleibt und nicht wie ein Blinklicht aussieht. */}
+            {orbitals.starLayers.map((layer, band) => (
+                layer === 'none' ? null : (
+                    <span
+                        key={'starband-' + band}
+                        className="saimor-doc-star absolute inset-0"
+                        style={{
+                            color: accent,
+                            backgroundImage: layer,
+                            backgroundRepeat: 'no-repeat',
+                            '--star-delay': (band * 1.7).toFixed(1) + 's',
+                            '--star-duration': (4.5 + band) + 's',
+                        } as CSSProperties}
+                    />
+                )
             ))}
 
             {orbitals.moons.map((moon) => (

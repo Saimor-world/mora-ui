@@ -159,3 +159,36 @@ describe('Monde leuchten nach Frische', () => {
         expect(grossAltMoon.freshness).toBeLessThan(kleinFrischMoon.freshness);
     });
 });
+
+/**
+ * Marius: "keine Arbeit wegnehmen, was soll das - ich hatte im Universe
+ * frueher viel mehr und aufwendigeres."
+ *
+ * Zu Recht. Weniger zeichnen ist die faule Antwort. Die Kosten kamen nicht
+ * von der Anzahl der Sterne, sondern davon, dass jeder ein eigenes
+ * animiertes DOM-Element mit box-shadow war. Also: mehr Sterne, weniger
+ * Elemente.
+ */
+describe('Sterne als gemalte Ebenen', () => {
+    it('malt alle Sterne, aber in genau drei Ebenen', () => {
+        const out = buildOrbitals({ id: 'x', diameter: 140, spaces: [], documentCount: 40 });
+
+        expect(out.stars).toHaveLength(40);
+        expect(out.starLayers).toHaveLength(3);
+        // Jeder Stern taucht in genau einer Ebene auf.
+        const gemalt = out.starLayers.join(' ').split('radial-gradient').length - 1;
+        expect(gemalt).toBe(40);
+    });
+
+    it('zeigt jetzt mehr Sterne als vorher, nicht weniger', () => {
+        const out = buildOrbitals({ id: 'x', diameter: 140, spaces: [], documentCount: 500 });
+        expect(out.stars.length).toBeGreaterThan(48);
+    });
+
+    // Ein Bereich ohne Dokumente hat nichts zu malen - drei leere Ebenen
+    // waeren drei Elemente fuer nichts.
+    it('malt nichts, wo nichts liegt', () => {
+        const out = buildOrbitals({ id: 'x', diameter: 140, spaces: [], documentCount: 0 });
+        expect(out.starLayers.every((layer) => layer === 'none')).toBe(true);
+    });
+});
