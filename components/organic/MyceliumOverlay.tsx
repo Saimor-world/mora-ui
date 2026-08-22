@@ -1,101 +1,95 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavStore } from '@/lib/store/navStore';
-import { useDepartments } from '@/lib/queries/useDepartments';
-import { useOrbStore } from '@/lib/store/orbStore';
+import React, { useEffect, useRef } from 'react';
 import { usePageVisibility } from '@/lib/hooks/usePageVisibility';
-import { getMyceliumOverview, type MyceliumOverview } from '@/lib/api/relationsClient';
+import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
+import { anchorsToViewport } from '@/lib/universe/anchors';
 
 /**
- * MYCELIUM OS NEURAL BACKBONE
- * 
- * The living, bio-neural relational backbone of SAIMÔR OS.
- * It physically anchors to the central Saimôr Core, Department Planets, and UI Widgets.
- * Silken hyphae threads transmit glowing action potential pulses and react dynamically to mouse gravitation.
+ * Das lebende Netz unter dem Organisationsfeld.
+ *
+ * Was hier gezeichnet wird, ist Struktur, nicht Ereignis: dass ein Bereich zur
+ * Organisation gehoert, ist wahr und braucht keinen Beleg. Belegte Signale
+ * zeichnet RelationLayer im Feld selbst - gestrichelt, wenn sie nur vermutet
+ * sind. Diese Trennung ist Absicht: das Myzel darf atmen, ohne etwas zu
+ * behaupten.
+ *
+ * Die alte Fassung trug eine eigene, fest einprogrammierte Karte der
+ * Planetenpositionen:
+ *
+ *     const deptPosMap = { product: {xPct:0.50,yPct:0.18}, ... }
+ *     // "Department Planet positions matching exact UniverseView topology"
+ *
+ * Der Kommentar stimmte, als er geschrieben wurde. Dann rechnete
+ * buildOrganicUniverseLayout die Positionen aus - und der Zugriff lief ohnehin
+ * ueber deptPosMap[dept.id], wobei dept.id eine UUID ist und niemals
+ * "product". Jede Abteilung fiel in die Ersatzformel, das Netz haing neben den
+ * Planeten in der Luft. Eine Kopie faellt nicht auf, wenn sie falsch wird.
+ *
+ * Jetzt liest sie dieselbe Messung, die das Feld selbst veroeffentlicht.
+ * Steht dort nichts - andere Ansicht, Handy-Raster, noch nicht gerendert -,
+ * wird nichts gezeichnet.
  */
 
-interface HyphaePulse {
-    progress: number;
-    speed: number;
-    color: string;
+interface Thread {
     fromX: number;
     fromY: number;
     toX: number;
     toY: number;
     controlX: number;
     controlY: number;
-}
-
-interface HyphaeBranch {
-    startX: number;
-    startY: number;
-    endX: number;
-    endY: number;
-    controlX: number;
-    controlY: number;
     color: string;
-    weight: number;
-    targetName: string;
 }
 
-interface Particle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
+interface Pulse {
+    thread: number;
+    progress: number;
+    speed: number;
+}
+
+interface Spore {
+    angle: number;
+    radius: number;
+    speed: number;
     size: number;
-    alpha: number;
-    pulse: number;
+    phase: number;
+    anchorX: number;
+    anchorY: number;
     color: string;
-    anchorX?: number;
-    anchorY?: number;
+}
+
+const MOUSE_REACH = 260;
+const MOUSE_PULL = 38;
+
+function hexToRgb(hex: string): [number, number, number] {
+    const clean = hex.replace('#', '');
+    const full = clean.length === 3
+        ? clean.split('').map((c) => c + c).join('')
+        : clean.padEnd(6, '0').slice(0, 6);
+    return [
+        parseInt(full.slice(0, 2), 16),
+        parseInt(full.slice(2, 4), 16),
+        parseInt(full.slice(4, 6), 16),
+    ];
 }
 
 export const MyceliumOverlay: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const pageVisible = usePageVisibility();
-    const activeCompanyId = useNavStore((s) => s.activeCompanyId);
-    const hoverDepartmentId = useNavStore((s) => s.hoverDepartmentId);
-    const viewLevel = useNavStore((s) => s.viewLevel);
-    const coreMode = useNavStore((s) => s.coreMode);
-    const { data: departments = [] } = useDepartments(activeCompanyId);
-    const orbState = useOrbStore((s) => s.orbState);
-
-    const [overview, setOverview] = useState<MyceliumOverview | null>(null);
-    const mouseRef = useRef<{ x: number; y: number; active: boolean }>({ x: -1000, y: -1000, active: false });
-
-    // Fetch Mycelium Overview stats from API
-    useEffect(() => {
-        let cancelled = false;
-        const load = async () => {
-            try {
-                const next = await getMyceliumOverview(activeCompanyId);
-                if (!cancelled) setOverview(next);
-            } catch {
-                if (!cancelled) setOverview(null);
-            }
-        };
-        load();
-        const interval = window.setInterval(load, 20_000);
-        return () => {
-            cancelled = true;
-            window.clearInterval(interval);
-        };
-    }, [activeCompanyId]);
+    const anchors = useUniverseFieldStore((state) => state.anchors);
+    const rect = useUniverseFieldStore((state) => state.rect);
+    const mouseRef = useRef({ x: -9999, y: -9999, active: false });
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
-            mouseRef.current = { x: e.clientX, y: e.clientY, active: true };
+        const move = (event: MouseEvent) => {
+            mouseRef.current = { x: event.clientX, y: event.clientY, active: true };
         };
-        const handleMouseLeave = () => {
-            mouseRef.current.active = false;
-        };
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseleave', handleMouseLeave);
+        const leave = () => { mouseRef.current.active = false; };
+        window.addEventListener('mousemove', move, { passive: true });
+        window.addEventListener('mouseleave', leave);
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseleave', handleMouseLeave);
+            window.removeEventListener('mousemove', move);
+            window.removeEventListener('mouseleave', leave);
         };
     }, []);
 
@@ -103,302 +97,204 @@ export const MyceliumOverlay: React.FC = () => {
         const canvas = canvasRef.current;
         if (!canvas || !pageVisible) return;
 
+        const points = anchorsToViewport(anchors, rect);
+        if (points.length === 0 || !rect) return;
+
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        let animationFrameId = 0;
-        let running = false;
+        const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+
+        // Der Kern sitzt in der Mitte des gemessenen Feldes, nicht in der Mitte
+        // des Bildschirms: die Widget-Spalten links und rechts gehoeren nicht
+        // zum Feld, und ein Kern in der Fenstermitte saesse daneben.
+        const core = {
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+        };
+
+        const threads: Thread[] = points.map((point, index) => {
+            const midX = (core.x + point.x) / 2 + Math.sin(index * 1.7) * 42;
+            const midY = (core.y + point.y) / 2 + Math.cos(index * 1.7) * 42;
+            return {
+                fromX: core.x,
+                fromY: core.y,
+                toX: point.x,
+                toY: point.y,
+                controlX: midX,
+                controlY: midY,
+                color: point.color,
+            };
+        });
+
+        const pulses: Pulse[] = threads.flatMap((_, index) => [
+            { thread: index, progress: (index * 0.37) % 1, speed: 0.0022 },
+            { thread: index, progress: (index * 0.37 + 0.5) % 1, speed: 0.0018 },
+        ]);
+
+        // 10 Sporen je Bereich statt 120 im Feld - und auf Kreisbahnen statt
+        // mit freier Geschwindigkeit. Die alte Fassung liess sie driften und
+        // zog sie mit einer Federkraft zurueck; das sah gleich aus, kostete
+        // aber jede Bildfolge zwei Multiplikationen mehr pro Teilchen und
+        // konnte bei langer Laufzeit ausbrechen.
+        const spores: Spore[] = points.flatMap((point) =>
+            Array.from({ length: 10 }, (_, i) => ({
+                angle: (i / 10) * Math.PI * 2,
+                radius: 74 + (i % 4) * 13,
+                speed: 0.00042 + (i % 3) * 0.00016,
+                size: 0.9 + (i % 3) * 0.5,
+                phase: i * 0.9,
+                anchorX: point.x,
+                anchorY: point.y,
+                color: point.color,
+            })),
+        );
+
+        // Steuerpunkte nach der Maus-Anziehung, paarweise x/y je Faden. Ein
+        // typisiertes Feld statt Eigenschaften am Objekt: es wird jede
+        // Bildfolge beschrieben, und ein Float64Array bleibt dabei in einer
+        // festen Form.
+        const liveControl = new Float64Array(threads.length * 2);
+        threads.forEach((thread, index) => {
+            liveControl[index * 2] = thread.controlX;
+            liveControl[index * 2 + 1] = thread.controlY;
+        });
+
+        let frame = 0;
+        let running = true;
         let width = window.innerWidth;
         let height = window.innerHeight;
 
-        // Dynamic anchors based on actual screen geometry
-        const getAnchors = () => {
-            const centerX = width * 0.5;
-            const centerY = height * 0.5;
-
-            // Department Planet positions matching exact UniverseView topology
-            const deptPosMap: Record<string, { xPct: number; yPct: number; color: string }> = {
-                product:      { xPct: 0.50, yPct: 0.18, color: 'rgba(168, 85, 247, 0.88)' },
-                intelligence: { xPct: 0.31, yPct: 0.55, color: 'rgba(6, 182, 212, 0.88)' },
-                rd:           { xPct: 0.69, yPct: 0.55, color: 'rgba(59, 130, 246, 0.88)' },
-                growth:       { xPct: 0.50, yPct: 0.82, color: 'rgba(234, 179, 8, 0.88)' },
-            };
-
-            const deptList = Array.isArray(departments) && departments.length > 0 ? departments : [
-                { id: 'intelligence', name: 'INTELLIGENCE' },
-                { id: 'product',      name: 'PRODUCT' },
-                { id: 'rd',           name: 'R&D' },
-                { id: 'growth',       name: 'GROWTH' },
-            ];
-
-            const deptAnchors = deptList.map((dept, index) => {
-                const pos = deptPosMap[dept.id.toLowerCase()] || {
-                    xPct: 0.50 + Math.cos((index / deptList.length) * Math.PI * 2 - Math.PI / 2) * 0.22,
-                    yPct: 0.50 + Math.sin((index / deptList.length) * Math.PI * 2 - Math.PI / 2) * 0.28,
-                    color: 'rgba(16, 185, 129, 0.85)',
-                };
-                return {
-                    id: dept.id,
-                    x: width * pos.xPct,
-                    y: height * pos.yPct,
-                    name: dept.name,
-                    color: pos.color,
-                };
-            });
-
-            return {
-                core: { x: centerX, y: centerY, color: 'rgba(52, 211, 153, 0.95)' },
-                departments: deptAnchors,
-                widgets: [
-                    { x: width * 0.12, y: height * 0.25, color: 'rgba(6, 182, 212, 0.6)' },
-                    { x: width * 0.12, y: height * 0.75, color: 'rgba(16, 185, 129, 0.6)' },
-                    { x: width * 0.88, y: height * 0.25, color: 'rgba(59, 130, 246, 0.6)' },
-                    { x: width * 0.88, y: height * 0.75, color: 'rgba(234, 179, 8, 0.6)' },
-                ]
-            };
-        };
-
-        let anchors = getAnchors();
-
-        // Generate organic curved hyphae branches connecting core to planets and widgets
-        let hyphaeBranches: (HyphaeBranch & { deptId?: string })[] = [];
-        let pulses: HyphaePulse[] = [];
-        let particles: Particle[] = [];
-        const mouseTrailParticles: { x: number; y: number; vx: number; vy: number; alpha: number; size: number; color: string }[] = [];
-
-        const initHyphaeMesh = () => {
-            hyphaeBranches = [];
-            pulses = [];
-
-            // 1. Connect Saimôr Core to every Department Planet with organic curved Bezier hyphae
-            anchors.departments.forEach((dept, i) => {
-                const midX = (anchors.core.x + dept.x) * 0.5 + (Math.sin(i * 1.5) * 40);
-                const midY = (anchors.core.y + dept.y) * 0.5 + (Math.cos(i * 1.5) * 40);
-
-                hyphaeBranches.push({
-                    startX: anchors.core.x,
-                    startY: anchors.core.y,
-                    endX: dept.x,
-                    endY: dept.y,
-                    controlX: midX,
-                    controlY: midY,
-                    color: dept.color,
-                    weight: 2.2,
-                    targetName: dept.name,
-                    deptId: dept.id,
-                });
-
-                // Add 2 active action potential pulses per main hypha
-                for (let pIdx = 0; pIdx < 2; pIdx++) {
-                    pulses.push({
-                        progress: Math.random(),
-                        speed: 0.004 + Math.random() * 0.008,
-                        color: dept.color,
-                        fromX: anchors.core.x,
-                        fromY: anchors.core.y,
-                        toX: dept.x,
-                        toY: dept.y,
-                        controlX: midX,
-                        controlY: midY,
-                    });
-                }
-            });
-
-            // Floating Neural Spores (Spores that orbit the department anchors in tight halos)
-            particles = [];
-            const sporeCount = 120;
-            for (let i = 0; i < sporeCount; i++) {
-                const targetDept = anchors.departments[i % anchors.departments.length];
-                particles.push({
-                    x: targetDept.x + (Math.random() - 0.5) * 110,
-                    y: targetDept.y + (Math.random() - 0.5) * 110,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    size: Math.random() * 2.2 + 0.8,
-                    alpha: Math.random() * 0.65 + 0.25,
-                    pulse: Math.random() * Math.PI * 2,
-                    color: targetDept.color,
-                    anchorX: targetDept.x,
-                    anchorY: targetDept.y,
-                });
-            }
-        };
-
         const resize = () => {
-            const dpr = window.devicePixelRatio || 1;
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             width = window.innerWidth;
             height = window.innerHeight;
-            canvas.width = width * dpr;
-            canvas.height = height * dpr;
-            ctx.scale(dpr, dpr);
-            anchors = getAnchors();
-            initHyphaeMesh();
+            canvas.width = Math.round(width * dpr);
+            canvas.height = Math.round(height * dpr);
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         };
-
-        window.addEventListener('resize', resize);
         resize();
+        window.addEventListener('resize', resize);
 
-        // Quadratic Bezier point calculation
-        const getBezierPoint = (t: number, p0: number, p1: number, p2: number) => {
-            const oneMinusT = 1 - t;
-            return oneMinusT * oneMinusT * p0 + 2 * oneMinusT * t * p1 + t * t * p2;
+        const bezier = (t: number, p0: number, p1: number, p2: number) => {
+            const inv = 1 - t;
+            return inv * inv * p0 + 2 * inv * t * p1 + t * t * p2;
         };
 
-        const draw = () => {
+        const draw = (time: number) => {
             if (!running) return;
-            const dpr = window.devicePixelRatio || 1;
-            ctx.clearRect(0, 0, width * dpr, height * dpr);
+            ctx.clearRect(0, 0, width, height);
+
+            // Additives Zeichnen statt shadowBlur je Element. shadowBlur ist
+            // eine der teuersten Operationen im 2D-Kontext und lief vorher
+            // ueber 120 Sporen, 8 Pulse und bis zu 50 Mauspartikel - pro Bild.
+            ctx.globalCompositeOperation = 'lighter';
 
             const mouse = mouseRef.current;
+            // Ein gemeinsamer Atem, derselbe Rhythmus wie im CSS des Feldes.
+            const breath = 0.5 + Math.sin(time / 3400) * 0.5;
 
-            // 1. Draw Hyphae Root Mesh
-            hyphaeBranches.forEach((branch) => {
-                let ctrlX = branch.controlX;
-                let ctrlY = branch.controlY;
-                const isHoverSurge = hoverDepartmentId && (branch.deptId === hoverDepartmentId || branch.targetName.includes(hoverDepartmentId));
+            threads.forEach((thread, index) => {
+                let cx = thread.controlX;
+                let cy = thread.controlY;
 
-                // Mouse gravitational attraction bending hyphae threads toward cursor
                 if (mouse.active) {
-                    const dx = mouse.x - ctrlX;
-                    const dy = mouse.y - ctrlY;
-                    const distSq = dx * dx + dy * dy;
-                    if (distSq < 280 * 280) {
-                        const dist = Math.sqrt(distSq);
-                        const pull = (1 - dist / 280) * 45;
-                        ctrlX += (dx / dist) * pull;
-                        ctrlY += (dy / dist) * pull;
+                    const dx = mouse.x - cx;
+                    const dy = mouse.y - cy;
+                    const distance = Math.hypot(dx, dy);
+                    if (distance < MOUSE_REACH && distance > 0.5) {
+                        const pull = (1 - distance / MOUSE_REACH) * MOUSE_PULL;
+                        cx += (dx / distance) * pull;
+                        cy += (dy / distance) * pull;
                     }
                 }
 
+                // Frueher entstand hier PRO BILD ein neuer Farbverlauf - bei
+                // vier Faeden und 60 Bildern je Sekunde sind das 240
+                // Gradient-Objekte pro Sekunde, die der Browser jedes Mal neu
+                // aufbaut. Jetzt: eine einfache Farbe, deren Deckkraft mit
+                // dem Atem schwankt. Optisch fast dasselbe, ohne die
+                // Dauerlast.
+                const [r, g, b] = hexToRgb(thread.color);
                 ctx.beginPath();
-                ctx.moveTo(branch.startX, branch.startY);
-                ctx.quadraticCurveTo(ctrlX, ctrlY, branch.endX, branch.endY);
-                ctx.strokeStyle = isHoverSurge ? '#34d399' : branch.color;
-                ctx.lineWidth = isHoverSurge ? branch.weight * 2.6 : branch.weight;
-                ctx.shadowColor = isHoverSurge ? '#34d399' : branch.color;
-                ctx.shadowBlur = isHoverSurge ? 24 : 12;
+                ctx.moveTo(thread.fromX, thread.fromY);
+                ctx.quadraticCurveTo(cx, cy, thread.toX, thread.toY);
+                ctx.strokeStyle = `rgba(${r},${g},${b},${(0.09 + breath * 0.07).toFixed(3)})`;
+                ctx.lineWidth = 1.1;
                 ctx.stroke();
-                ctx.shadowBlur = 0;
+
+                // Der von der Maus gebogene Steuerpunkt, damit die Pulse
+                // derselben Kurve folgen wie der gezeichnete Faden. Ohne das
+                // liefen sie neben ihrem eigenen Faden her, sobald der Zeiger
+                // in der Naehe war.
+                liveControl[index * 2] = cx;
+                liveControl[index * 2 + 1] = cy;
             });
 
-            // 2. Draw Action Potential Light Pulses along Hyphae
-            pulses.forEach((pulse) => {
-                pulse.progress += pulse.speed;
-                if (pulse.progress > 1) pulse.progress = 0;
+            if (!reducedMotion) {
+                pulses.forEach((pulse) => {
+                    pulse.progress += pulse.speed;
+                    if (pulse.progress > 1) pulse.progress = 0;
 
-                const px = getBezierPoint(pulse.progress, pulse.fromX, pulse.controlX, pulse.toX);
-                const py = getBezierPoint(pulse.progress, pulse.fromY, pulse.controlY, pulse.toY);
+                    const thread = threads[pulse.thread];
+                    const cx = liveControl[pulse.thread * 2];
+                    const cy = liveControl[pulse.thread * 2 + 1];
+                    const px = bezier(pulse.progress, thread.fromX, cx, thread.toX);
+                    const py = bezier(pulse.progress, thread.fromY, cy, thread.toY);
+                    const [r, g, b] = hexToRgb(thread.color);
+                    // Am Anfang und Ende der Bahn ausblenden, damit der Punkt
+                    // nicht aus dem Kern springt und im Planeten verschwindet.
+                    const fade = Math.sin(pulse.progress * Math.PI);
 
-                ctx.beginPath();
-                ctx.arc(px, py, 3.5, 0, Math.PI * 2);
-                ctx.fillStyle = '#ffffff';
-                ctx.shadowColor = pulse.color;
-                ctx.shadowBlur = 16;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-
-            // 3. Draw Neural Spores
-            particles.forEach((p) => {
-                p.x += p.vx;
-                p.y += p.vy;
-
-                // Restraining force pulling spores back toward their department anchor
-                if (p.anchorX && p.anchorY) {
-                    const dx = p.anchorX - p.x;
-                    const dy = p.anchorY - p.y;
-                    p.vx += dx * 0.00008;
-                    p.vy += dy * 0.00008;
-                }
-
-                p.pulse += 0.02;
-                const alpha = Math.min(1, p.alpha + Math.sin(p.pulse) * 0.2);
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fillStyle = p.color.replace(/[\d\.]+\)$/, `${alpha})`);
-                ctx.shadowColor = p.color;
-                ctx.shadowBlur = 8;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            });
-
-            // 4. Mouse Trail Particles — bio-luminescent cursor trail
-            if (mouse.active && mouseTrailParticles.length < 50) {
-                mouseTrailParticles.push({
-                    x: mouse.x + (Math.random() - 0.5) * 12,
-                    y: mouse.y + (Math.random() - 0.5) * 12,
-                    vx: (Math.random() - 0.5) * 0.8,
-                    vy: (Math.random() - 0.5) * 0.8 - 0.4,
-                    alpha: 0.9,
-                    size: Math.random() * 2.8 + 1.2,
-                    color: ['rgba(6,182,212,0.95)', 'rgba(52,211,153,0.95)', 'rgba(168,85,247,0.95)', 'rgba(251,191,36,0.95)'][Math.floor(Math.random() * 4)],
+                    // Auch hier kein Verlauf je Bild mehr: zwei gefuellte
+                    // Kreise mit unterschiedlicher Deckkraft ergeben denselben
+                    // weichen Punkt, kosten aber nichts.
+                    ctx.fillStyle = `rgba(${r},${g},${b},${(0.16 * fade).toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = `rgba(${r},${g},${b},${(0.55 * fade).toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2.4, 0, Math.PI * 2);
+                    ctx.fill();
                 });
             }
 
-            for (let i = mouseTrailParticles.length - 1; i >= 0; i--) {
-                const tp = mouseTrailParticles[i];
-                tp.x += tp.vx;
-                tp.y += tp.vy;
-                tp.alpha -= 0.025;
-                if (tp.alpha <= 0) {
-                    mouseTrailParticles.splice(i, 1);
-                    continue;
-                }
+            spores.forEach((spore) => {
+                if (!reducedMotion) spore.angle += spore.speed;
+                const x = spore.anchorX + Math.cos(spore.angle) * spore.radius;
+                const y = spore.anchorY + Math.sin(spore.angle) * spore.radius * 0.72;
+                const alpha = 0.16 + Math.sin(time / 1800 + spore.phase) * 0.12;
+                const [r, g, b] = hexToRgb(spore.color);
+                ctx.fillStyle = `rgba(${r},${g},${b},${Math.max(0.04, alpha).toFixed(3)})`;
                 ctx.beginPath();
-                ctx.arc(tp.x, tp.y, tp.size, 0, Math.PI * 2);
-                ctx.fillStyle = tp.color.replace(/[\d\.]+\)$/, `${tp.alpha})`);
-                ctx.shadowColor = tp.color;
-                ctx.shadowBlur = 10;
+                ctx.arc(x, y, spore.size, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0;
-            }
+            });
 
-            animationFrameId = requestAnimationFrame(draw);
+            ctx.globalCompositeOperation = 'source-over';
+            frame = requestAnimationFrame(draw);
         };
 
-        const start = () => {
-            if (running) return;
-            running = true;
-            animationFrameId = requestAnimationFrame(draw);
-        };
-
-        const stop = () => {
-            running = false;
-            if (animationFrameId) {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = 0;
-            }
-        };
-
-        const handleVisibility = () => {
-            if (document.hidden) stop();
-            else start();
-        };
-
-        handleVisibility();
-        document.addEventListener('visibilitychange', handleVisibility);
-        start();
+        frame = requestAnimationFrame(draw);
 
         return () => {
-            document.removeEventListener('visibilitychange', handleVisibility);
+            running = false;
+            if (frame) cancelAnimationFrame(frame);
             window.removeEventListener('resize', resize);
-            stop();
         };
-    }, [pageVisible, departments, hoverDepartmentId]);
+    }, [anchors, pageVisible, rect]);
 
-    // Hide Mycelium constellation overlay on HOME operational dashboard
-    if (viewLevel === 'core' && coreMode === 'home') {
-        return null;
-    }
+    // Kein gemessenes Feld, keine Zeichnung. Vorher hing das an einer
+    // Abfrage auf viewLevel/coreMode - die musste jedes Mal nachgezogen
+    // werden, wenn eine Ansicht dazukam.
+    if (anchors.length === 0 || !rect) return null;
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-[12]">
-            <canvas
-                ref={canvasRef}
-                className="w-full h-full opacity-100 transition-opacity duration-700"
-                style={{ mixBlendMode: 'screen' }}
-            />
+        <div className="pointer-events-none fixed inset-0 z-[6]">
+            <canvas ref={canvasRef} className="h-full w-full" style={{ mixBlendMode: 'screen' }} />
         </div>
     );
 };

@@ -152,6 +152,21 @@ export const MoraLivingBackground: React.FC = () => {
         });
     }, [mounted, isLayerFocusView]);
 
+    // Dieselben Sterne, aber als EIN gemalter Hintergrund statt 180 Elemente.
+    // Jeder Punkt wird ein winziger radial-gradient - der Browser rastert das
+    // einmal und schiebt danach nur noch eine fertige Flaeche.
+    const starPaint = useMemo(() => {
+        if (!mounted) return 'none';
+        return stars
+            .map((star) => {
+                const alpha = (star.opacity * (isLayerFocusView ? 0.62 : 1)).toFixed(2);
+                const r = (star.size * 1.6).toFixed(1);
+                return `radial-gradient(${r}px ${r}px at ${star.x.toFixed(2)}% ${star.y.toFixed(2)}%, ` +
+                    `${star.color.replace(/[\d.]+\)$/, alpha + ')')}, transparent 70%)`;
+            })
+            .join(', ');
+    }, [stars, mounted, isLayerFocusView]);
+
     const threads = useMemo(() => {
         if (!mounted) return [];
         const threadCount = isLayerFocusView ? 0 : 6;
@@ -267,24 +282,25 @@ export const MoraLivingBackground: React.FC = () => {
                 />
             ))}
 
-            {/* ── STATIC STARS (reduced count for perf) ── */}
-            <div className="absolute inset-0">
-                {stars.map((star) => (
-                    <div
-                        key={star.id}
-                        className="absolute rounded-full"
-                        style={{
-                            left:            `${star.x}%`,
-                            top:             `${star.y}%`,
-                            width:           star.size,
-                            height:          star.size,
-                            backgroundColor: star.color,
-                            boxShadow:       `0 0 ${star.size * 2}px ${star.size * 0.8}px ${star.glow}`,
-                            opacity:         star.opacity * (isLayerFocusView ? 0.62 : 1.08),
-                        }}
-                    />
-                ))}
-            </div>
+            {/* ── STERNE: EIN Element statt 180 ──────────────────────────
+                Vorher war jeder Stern ein eigenes div MIT box-shadow. 180
+                Weichzeichnungen, die der Browser bei jeder Neuzeichnung des
+                Hintergrunds abarbeitet - und der Hintergrund zeichnet staendig
+                neu, weil Aurora, Nebel und Atem darueber laufen.
+
+                Jetzt: ein einziges Element, dessen Sterne als
+                radial-gradient-Punkte in den Hintergrund GEMALT sind. Der
+                Browser rastert das einmal und schiebt danach nur noch eine
+                fertige Flaeche. Optisch dasselbe Sternenfeld, ein Element
+                statt 180. */}
+            <div
+                className="absolute inset-0"
+                style={{
+                    opacity: isLayerFocusView ? 0.62 : 1,
+                    backgroundImage: starPaint,
+                    backgroundRepeat: 'no-repeat',
+                }}
+            />
 
             {/* ── FLOATING SACRED GEOMETRY ── */}
             {mounted && !isLayerFocusView && GEO_SHAPES.slice(0, 3).map((shape, i) => (

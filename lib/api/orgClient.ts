@@ -4,6 +4,7 @@
 
 import type { CoreCompany, CoreDepartment, CoreSpace, CoreFolder, CoreNode, CoreTreeNode } from '@/lib/types/core';
 import { coreGet, corePost, corePatch, corePut, coreDelete, normalizeList, CoreError, getCoreBaseUrl, readCookie, isLocalhost, AUTH_COOKIE, isForwardableCoreToken } from './http';
+import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
 
 // ========== COMPANY FUNCTIONS ==========
 
@@ -212,6 +213,9 @@ export async function fetchNodeGraphContext(nodeId: string): Promise<NodeGraphCo
 
 export type TreeApiResponse = {
     departments?: any[];
+    // Spaces ohne department_id - CORE liefert sie additiv, statt sie
+    // stillschweigend zu verwerfen. Siehe core/api_schemas/tree.py.
+    unassigned_spaces?: any[];
 };
 
 // Map backend tree response (departments + spaces + folders + nodes) into the UI-friendly CoreTreeNode shape
@@ -258,7 +262,55 @@ export function mapTreeResponseToNodes(response: TreeApiResponse): CoreTreeNode[
         children: (dept.spaces || []).map(mapSpace),
     });
 
-    return normalizeList<any>(response.departments, ['departments']).map(mapDepartment);
+    const departments = normalizeList<any>(response.departments, ['departments']).map(mapDepartment);
+
+    // Nicht als eigenes Feld daneben halten, sondern als department-foermigen
+    // Eintrag anhaengen: alles, was den Baum liest - vor allem Universe -
+    // filtert schon auf `type === 'department'` und muss diesen Fall dadurch
+    // nicht gesondert kennen. Nur anhaengen, wenn es wirklich etwas gibt -
+    // ein leerer Sammel-Eintrag waere ein Bereich, der nichts enthaelt.
+    const unassignedSpaces = normalizeList<any>(response.unassigned_spaces, ['unassigned_spaces']);
+    if (unassignedSpaces.length > 0) {
+        departments.push({
+            id: UNASSIGNED_DEPARTMENT_ID,
+            type: 'department',
+            name: UNASSIGNED_DEPARTMENT_NAME,
+            slug: 'unassigned',
+            color: null,
+            children: unassignedSpaces.map(mapSpace),
+        });
+    }
+
+    return departments;
+}
+
+// ========== WIRTSCHAFT ==========
+
+/**
+ * Echte Abonnements, provider-uebergreifend. GET /v3/workspace/billing
+ * existiert bereits (core/api/v3/workspace.py) und liest tenant_subscriptions
+ * direkt - kein neuer CORE-Endpunkt noetig, nur eine Konsumentin dafuer.
+ * `isOptional: true`, weil eine leere Wirtschaft kein Fehlerzustand ist.
+ */
+export async function fetchWorkspaceSubscriptions(): Promise<import('@/lib/business/mrr').BillingSubscription[]> {
+    const result = await coreGet('/v3/workspace/billing', { isOptional: true });
+    return normalizeList<any>(result, ['subscriptions']);
+}
+
+/**
+ * Etwas wirklich in einer Abteilung ablegen - der Endpunkt hinter dem Fall.
+ *
+ * Ohne ihn konnte das Universe die Zuordnung nur behaupten; die Oberflaeche
+ * sagte darum ausdruecklich "probeweise, noch nicht abgelegt". Der vorhandene
+ * Firmen-Eingang haette es woanders abgelegt, als das Bild zeigt.
+ */
+export async function intakeIntoDepartment(
+    departmentId: string,
+    payload: { name: string; type?: string; content?: string; source?: string },
+): Promise<{ id: string; folder_id: string } | null> {
+    return corePost(`/v3/departments/${encodeURIComponent(departmentId)}/intake`, payload) as Promise<
+        { id: string; folder_id: string } | null
+    >;
 }
 
 export async function fetchTree(tenantId?: string, companyId?: string): Promise<CoreTreeNode[]> {

@@ -17,15 +17,29 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
     fetchUserMemberships,
+    fetchWorkspaceSubscriptions,
     type DepartmentStats,
     type UserMembership,
 } from '@/lib/api/coreClient';
+import { summarizeSubscriptions, type BusinessSummary } from '@/lib/business/mrr';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
+import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queries/queryKeys';
+import { intakeIntoDepartment, fetchFoldersByCompany } from '@/lib/api/orgClient';
+import { groupFoldersByDepartment } from '@/lib/universe/moonsFromFolders';
+import { chooseMoraAttention } from '@/lib/mora/attention';
+import { CursorAgent } from '@/components/mora/CursorAgent';
+import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
+import { anchorsToViewport } from '@/lib/universe/anchors';
+import { buildTickerItems } from '@/lib/universe/ticker';
+import { buildSubstanceBars } from '@/lib/universe/substanceChart';
+import { UniverseTicker } from '@/components/universe/UniverseTicker';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -44,11 +58,13 @@ export default function UniverseView() {
         coreMode,
         setCoreMode,
         navigateToDepartment,
+        navigateToFolder,
         universeScope,
         universeScopeDeptId,
     } = useNavStore();
     const user = useSessionStore((state) => state.user);
     const openPane = usePaneStore((state) => state.openPane);
+    const queryClient = useQueryClient();
 
     const { data: companiesData = [] } = useCompanies();
     const companies = useMemo(
@@ -81,6 +97,8 @@ export default function UniverseView() {
     const [memberships, setMemberships] = useState<UserMembership[] | null>(null);
     const [membershipsLoaded, setMembershipsLoaded] = useState(false);
     const [nightwatchIncidents, setNightwatchIncidents] = useState<NightwatchIncidentItem[]>([]);
+    const [folderMoons, setFolderMoons] = useState<Record<string, { id: string; name: string; documents?: number; updatedAt?: string | null }[]>>({});
+    const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
     const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
 
@@ -135,11 +153,37 @@ export default function UniverseView() {
         return () => { cancelled = true; };
     }, []);
 
+    // "wir bereiten uns auf ersten Umsatz 2027 vor" - die Leitung liegt schon,
+    // bevor Wasser durchfliesst. tenant_subscriptions hatte am 21.08.2026 null
+    // Zeilen; summarizeSubscriptions sagt das ehrlich, statt eine Zahl zu
+    // erfinden, und rechnet richtig, sobald die erste Zahlung eintrifft.
+    useEffect(() => {
+        let cancelled = false;
+        fetchWorkspaceSubscriptions()
+            .then((subs) => { if (!cancelled) setBusiness(summarizeSubscriptions(subs)); })
+            .catch(() => { if (!cancelled) setBusiness({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] }); });
+        return () => { cancelled = true; };
+    }, [effectiveCompanyId]);
+
     useEffect(() => {
         setSelectedTerritoryId(null);
     }, [effectiveCompanyId]);
 
-    const accessibleDepartments = useMemo(() => {
+    // 'mindfield' war der zweite Zustand des entfernten Umschalters
+    // "Organisation | Zusammenhaenge". Seit beide Linsen ein Feld sind, ist
+    // er ein toter Zustand - aber andere Teile der Shell fragen coreMode ab,
+    // um zu erkennen, ob man ueberhaupt im Universe ist:
+    //   - QuickTips blendet sich nur bei 'home' | 'explore' aus. Blieb
+    //     coreMode auf 'mindfield' stehen, schob sich die Tour-Blase
+    //     ("Tipp 1/4: Spotlight Suche") ueber das Feld und stahl die
+    //     Kontrolle.
+    //   - Die Statusanzeige oben rechts zeigte weiterhin "ZUSAMMENHAENGE".
+    // Deshalb hier einmalig auf den lebenden Zustand zurueckziehen.
+    useEffect(() => {
+        if (coreMode === 'mindfield') setCoreMode('explore');
+    }, [coreMode, setCoreMode]);
+
+    const baseAccessibleDepartments = useMemo(() => {
         if (!membershipsLoaded) return [];
         if (!user || isAdmin(user.role)) {
             return departments.map((department) => ({ ...department, universeAccess: 'open' as const }));
@@ -156,6 +200,29 @@ export default function UniverseView() {
             return [];
         });
     }, [departments, memberships, membershipsLoaded, user]);
+
+    // Bereiche ohne Abteilung wurden bisher stillschweigend verworfen (siehe
+    // core/services/tree_service.py) - bei der echten Saimoer-HQ-Firma waren
+    // das 2 von 8 Spaces mit 2 Ordnern und 7 echten Dokumenten aus dem
+    // Onboarding, unsichtbar im Finder und in Universe. CORE liefert sie
+    // jetzt additiv als eigenen Baumeintrag; hier wird daraus EIN weiterer
+    // Planet, ohne Mitgliedschaft zu pruefen - er hatte nie eine Abteilung,
+    // die ihn haette regeln koennen.
+    const accessibleDepartments = useMemo(() => {
+        const unassigned = tree.find((item) => item.id === UNASSIGNED_DEPARTMENT_ID);
+        if (!unassigned) return baseAccessibleDepartments;
+        return [
+            ...baseAccessibleDepartments,
+            {
+                id: UNASSIGNED_DEPARTMENT_ID,
+                name: UNASSIGNED_DEPARTMENT_NAME,
+                description: 'Bereiche ohne Abteilung – noch nicht eingeordnet, aber vorhanden.',
+                color: '#94a3b8',
+                visibility: 'public',
+                universeAccess: 'open' as const,
+            },
+        ];
+    }, [baseAccessibleDepartments, tree]);
 
     const metrics = useMemo<Record<string, TerritoryMetrics>>(() => {
         const result: Record<string, TerritoryMetrics> = {};
@@ -205,6 +272,39 @@ export default function UniverseView() {
         return result;
     }, [departments, statsMap, tree]);
 
+    // Die echten Bereiche je Abteilung, aus dem Baum. get_company_tree
+    // liefert Abteilungen -> Bereiche eager (Ordner/Dokumente erst beim
+    // Aufklappen), also steht genau das hier zur Verfuegung, was ein Mond
+    // braucht: id und Name.
+    const spaceListByDepartment = useMemo(() => {
+        const result: Record<string, { id: string; name: string }[]> = {};
+        tree.filter((item) => item.type === 'department').forEach((department) => {
+            const children = Array.isArray(department.children) ? department.children : [];
+            result[department.id] = children
+                .filter((child: any) => child.type === 'space')
+                .map((child: any) => ({ id: String(child.id), name: String(child.name || 'Bereich') }));
+        });
+        return result;
+    }, [tree]);
+
+    // Monde sind Ordner, nicht Bereiche. Der Baum liefert Bereiche eager,
+    // Ordner erst beim Aufklappen - deshalb hier ein eigener Abruf ueber die
+    // ganze Firma (ein Aufruf, nicht einer je Bereich).
+    useEffect(() => {
+        if (!effectiveCompanyId) { setFolderMoons({}); return; }
+        let cancelled = false;
+        const spaceToDepartment: Record<string, string> = {};
+        Object.entries(spaceListByDepartment).forEach(([departmentId, spaces]) => {
+            spaces.forEach((space) => { spaceToDepartment[space.id] = departmentId; });
+        });
+        void fetchFoldersByCompany(effectiveCompanyId)
+            .then((folders) => {
+                if (!cancelled) setFolderMoons(groupFoldersByDepartment(folders as any, spaceToDepartment));
+            })
+            .catch(() => { if (!cancelled) setFolderMoons({}); });
+        return () => { cancelled = true; };
+    }, [effectiveCompanyId, spaceListByDepartment]);
+
     const positionedDepartments = useMemo(() => {
         const sorted = [...accessibleDepartments].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
@@ -227,11 +327,18 @@ export default function UniverseView() {
                 spaces: value?.spaces || 0,
                 folders: value?.folders || 0,
                 documents: value?.nodes || 0,
+                // Die echten Bereiche dieser Abteilung aus dem Baum - jeder
+                // wird ein Mond mit eigenem Namen. Die blosse Anzahl (spaces)
+                // reicht dafuer nicht.
+                // Monde tragen jetzt echte Ordnernamen; solange die noch
+                // laden, dienen die Bereiche als Zwischenstand statt
+                // eines leeren Orbits.
+                spaceList: folderMoons[department.id] || spaceListByDepartment[department.id] || [],
                 metricSource: value?.source || 'missing',
                 access: department.universeAccess,
             };
         }),
-        [metrics, positionedDepartments],
+        [metrics, positionedDepartments, spaceListByDepartment, folderMoons],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
@@ -248,8 +355,8 @@ export default function UniverseView() {
         const result: UniverseSignal[] = [];
 
         nightwatchIncidents.slice(0, 4).forEach((incident) => {
-            const targetId = incident.department_id
-                || incident.affected_department_id
+            const assignedId = incident.department_id || incident.affected_department_id;
+            const targetId = assignedId
                 || match(String(incident.title || '') + ' ' + String(incident.summary || ''));
             if (!targetId || !normalized.some((department) => department.id === targetId)) return;
             result.push({
@@ -258,6 +365,7 @@ export default function UniverseView() {
                 subtitle: 'Nightwatch · ' + String(incident.severity || 'Hinweis'),
                 targetId,
                 kind: 'nightwatch',
+                evidence: assignedId ? 'assigned' : 'inferred',
                 severity: incident.severity,
             });
         });
@@ -270,6 +378,9 @@ export default function UniverseView() {
                     subtitle: 'Feed · ' + item.sourceTitle,
                     targetId,
                     kind: 'rss',
+                    // match() findet den Bereichsnamen im Text. Das ist ein
+                    // Treffer, kein Beleg - der Strang wird gestrichelt.
+                    evidence: 'inferred',
                     href: item.link,
                 });
             }
@@ -283,6 +394,7 @@ export default function UniverseView() {
                     subtitle: 'Mail · ' + item.from,
                     targetId,
                     kind: 'mail',
+                    evidence: 'inferred',
                 });
             }
         });
@@ -295,6 +407,7 @@ export default function UniverseView() {
                     subtitle: 'Kalender',
                     targetId,
                     kind: 'calendar',
+                    evidence: 'inferred',
                 });
             }
         });
@@ -311,23 +424,84 @@ export default function UniverseView() {
         }
     }
 
+    const tickerItems = useMemo(() => buildTickerItems({
+        territories: territories.map((t) => ({ id: t.id, name: t.name, documents: t.documents, spaces: t.spaces, folders: t.folders })),
+        signals,
+        business,
+        openIncidentCount: nightwatchIncidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase())).length,
+        mailPreview,
+        calendarPreview,
+        feedPreview,
+    }), [territories, signals, business, nightwatchIncidents, mailPreview, calendarPreview, feedPreview]);
+
+    // Môra lebt im Feld statt in einem Fenster: der CursorAgent war seit
+    // Monaten fertig gebaut, stand in MoraShell aber auskommentiert als
+    // "1.0 gated (future-tier)". Sie zeigt nur auf etwas, das wirklich da
+    // ist - und schweigt sonst. Aufmerksamkeit, die immer an ist, ist keine.
+    const fieldAnchors = useUniverseFieldStore((state) => state.anchors);
+    const fieldRect = useUniverseFieldStore((state) => state.rect);
+
+    const attention = useMemo(() => chooseMoraAttention({
+        territories: territories.map((t) => ({
+            id: t.id, name: t.name, documents: t.documents, spaces: t.spaces, metricSource: t.metricSource,
+        })),
+        openIncidents: nightwatchIncidents
+            .filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()))
+            .map((item) => ({
+                id: String(item.id),
+                title: String(item.title || item.host || 'Vorfall'),
+                targetId: item.department_id || item.affected_department_id || null,
+            })),
+        mailPreview,
+        calendarPreview,
+    }), [territories, nightwatchIncidents, mailPreview, calendarPreview]);
+
+    const attentionPoint = useMemo(() => {
+        if (!attention) return null;
+        const anchor = anchorsToViewport(fieldAnchors, fieldRect)
+            .find((point) => point.id === attention.targetId);
+        return anchor ? { x: anchor.x, y: anchor.y } : null;
+    }, [attention, fieldAnchors, fieldRect]);
+
+    const substanceBars = useMemo(() => buildSubstanceBars(territories), [territories]);
+
     const organizationName = currentCompany?.name || user?.active_company_name || 'Organisation';
     const loading = departmentsLoading || treeLoading || !membershipsLoaded;
     const hasRestrictedDepartments = membershipsLoaded && departments.length > 0 && territories.length === 0;
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-[#06101d] text-white">
-            <UniverseAmbientField
-                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
-                signalCount={signals.length}
-                selected={Boolean(selectedTerritoryId)}
-            />
+        /* Kein eigenes bg-Farbe mehr: MoraShell traegt bereits ein geteiltes,
+           lebendiges Hintergrundsystem (MoraLivingBackground - 500 Sterne,
+           Aurora, szenenreaktiver Nebel - plus TemporalAtmosphere,
+           RitualSceneStyler). Universe malte bislang blickdicht darueber und
+           zeigte stattdessen sein eigenes, kleineres Sternfeld - abgeschnitten
+           vom "living ambient desktop", den docs/superpowers/specs/
+           2026-06-18-universe-as-company-desktop.md als Vision festgehalten
+           hat. UniverseAmbientField setzt jetzt nur noch eine Stimmung obenauf,
+           statt selbst der Hintergrund zu sein. */
+        <div className="relative h-full w-full overflow-hidden text-white">
+            <UniverseAmbientField lens="organization" selected={Boolean(selectedTerritoryId)} />
+
+            {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
+                gibt - kein Zeiger ins Leere. */}
+            {attention && attentionPoint && (
+                <CursorAgent
+                    active
+                    action="point"
+                    target={attentionPoint}
+                    message={attention.message}
+                    awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
+                />
+            )}
 
             <UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}
                 incidents={nightwatchIncidents}
+                business={business}
+                substanceBars={substanceBars}
+                onSelectTerritory={setSelectedTerritoryId}
                 territoryCount={territories.length}
                 documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
                 selected={Boolean(selectedTerritoryId)}
@@ -336,33 +510,78 @@ export default function UniverseView() {
                 onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
                 onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
             />
-            <div className="absolute left-1/2 top-[74px] z-[46] -translate-x-1/2 rounded-full border border-sky-100/10 bg-slate-950/38 p-1 shadow-[0_16px_50px_rgba(0,8,20,0.24)] backdrop-blur-xl">
-                <button
-                    type="button"
-                    onClick={() => setCoreMode('explore')}
-                    className={'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ' +
-                        (coreMode === 'explore' ? 'bg-sky-100/12 text-sky-50' : 'text-sky-100/42 hover:text-sky-50/80')}
-                >
-                    Organisation
-                </button>
-                <button
-                    type="button"
-                    onClick={() => setCoreMode('mindfield')}
-                    className={'rounded-full px-3 py-1.5 text-[9px] font-semibold uppercase tracking-[0.18em] transition-all ' +
-                        (coreMode === 'mindfield' ? 'bg-violet-300/14 text-violet-50' : 'text-sky-100/42 hover:text-sky-50/80')}
-                >
-                    Zusammenhänge
-                </button>
-            </div>
 
+
+            {/* Der Umschalter "Organisation | Zusammenhaenge" ist entfernt.
+                Beide Linsen zeigten denselben Ort mit derselben Kamera - der
+                einzige Unterschied waren Verbindungslinien, die ohnehin nur
+                erscheinen, wenn es Belege gibt. Bei null Signalen (dem
+                Normalfall) waren die Ansichten nicht unterscheidbar; Marius
+                hat sie mehrfach als identisch erlebt und zuletzt gefragt:
+                "wieso sind das 2 sachen?".
+
+                Ein Schalter zwischen zwei gleich aussehenden Zustaenden ist
+                schlimmer als kein Schalter. Jetzt: ein Feld. Verbindungen
+                zeichnen sich selbst, wenn Belege da sind, und kosten nichts,
+                wenn keine da sind. */}
             <OrganizationField
-                lens={coreMode === 'mindfield' ? 'relations' : 'organization'}
+                lens="relations"
                 organizationName={organizationName}
                 territories={territories}
                 signals={signals}
                 selectedId={selectedTerritoryId}
                 onSelect={setSelectedTerritoryId}
                 onOpen={navigateToDepartment}
+                attentionId={attention?.targetId ?? null}
+                onOpenMoon={(folderId, folderName) => {
+                    // In den Ordner selbst, nicht in ein generisches Fenster:
+                    // navigateToFolder setzt den Kontext, der Finder oeffnet
+                    // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.
+                    navigateToFolder(folderId);
+                    openPane({
+                        // Eigene Fenster-id je Ordner. Mit der festen
+                        // 'finder-main' traf openPane ein bereits offenes
+                        // Fenster und uebernahm dessen alte Daten nicht - der
+                        // Finder blieb auf "Start" stehen, statt den
+                        // angeklickten Ordner zu zeigen.
+                        id: 'finder-' + folderId,
+                        type: 'finder',
+                        title: folderName,
+                        size: { width: 1040, height: 720 },
+                        // companyId MUSS mit: apps/finder/index.tsx setzt beim
+                        // Aufloesen der Firma auf den Wurzelordner zurueck,
+                        // solange der Aufrufer keine mitgibt (`if
+                        // (!paneCompanyId) resetNavigationRoot(null)`, Zeile
+                        // 575). Ohne sie sprang der Finder sofort wieder auf
+                        // "Start" - der angeklickte Mond war nach einem
+                        // Wimpernschlag wieder weg.
+                        data: { folderId, companyId: effectiveCompanyId },
+                    });
+                }}
+                onFile={async (departmentId, label, kind) => {
+                    try {
+                        const created = await intakeIntoDepartment(departmentId, {
+                            name: label,
+                            type: 'note',
+                            source: kind,
+                        });
+                        if (!created?.id) return false;
+                        // Der Planet muss danach wachsen: ein Dokument mehr ist
+                        // ein Stern mehr. Ohne das zeigte das Feld noch den
+                        // Stand von vor der Ablage.
+                        queryClient.invalidateQueries({ queryKey: queryKeys.tree(effectiveCompanyId) });
+                        const stats = await fetchDepartmentStats(effectiveCompanyId ?? undefined);
+                        const next: Record<string, DepartmentStats> = {};
+                        stats.forEach((item) => { next[item.department_id] = item; });
+                        setStatsMap(next);
+                        return true;
+                    } catch {
+                        // Fehlschlag bleibt Fehlschlag - die Oberflaeche sagt das
+                        // ausdruecklich, statt einen Erfolg zu zeigen, den es
+                        // nicht gab.
+                        return false;
+                    }
+                }}
                 onAskMora={(territory) => openPane({
                     id: 'chat-universe-' + territory.id,
                     type: 'chat',

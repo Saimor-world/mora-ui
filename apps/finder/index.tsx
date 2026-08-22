@@ -9,6 +9,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { FileText, Folder as FolderIcon, Upload, UploadCloud, Loader2, RefreshCw, AlertCircle, ChevronLeft, ChevronRight, ChevronDown, Home, Sparkles, Globe, Circle, LayoutGrid, List, Search, Plus, Trash2, Box, Image as ImageIcon, Link as LinkIcon, CheckSquare, Network, Edit, Copy, Scissors, ExternalLink, Clipboard, CornerUpLeft, Share2, Paperclip } from 'lucide-react';
 import { setThinking, setIdle } from '@/lib/mora/awarenessController';
 import { getSemanticallySimilarNodes, fetchFolderContext, getEntityContext, FolderContext } from '@/lib/api/coreClient';
+import { shouldLoadFolderContext } from '@/lib/finder/folderContextDecision';
 import type { CoreTreeNode, NodeVisibility } from '@/lib/types/core';
 import { toast } from '@/lib/toast';
 import { FinderInitiativeLane } from '@/components/panes/FinderInitiativeLane';
@@ -1033,11 +1034,19 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
         const knownFolderFromSpaces = Object.values(foldersBySpace)
             .flat()
             .some((f) => f?.id === currentFolderId);
-        const isDirectFolderStart =
-            !currentNode &&
-            startFolderId === currentFolderId &&
-            knownFolderFromSpaces;
-        const isFolderContext = currentNode?.type === 'folder' || isDirectFolderStart;
+        // Herausgezogen und geprueft in lib/finder/folderContextDecision.ts.
+        // Die alte Bedingung verlangte zusaetzlich knownFolderFromSpaces -
+        // eine Karte, die erst beim Aufklappen eines Bereichs gefuellt wird.
+        // Ein Mondklick im Universe springt direkt in einen Ordner und hat
+        // sie leer: der Kontext wurde nie geholt, der Finder zeigte "Start"
+        // statt des Ordnernamens, obwohl er dessen Dokumente korrekt
+        // auflistete.
+        const isFolderContext = shouldLoadFolderContext({
+            currentFolderId,
+            startFolderId: startFolderId ?? null,
+            nodeType: currentNode?.type ?? null,
+            knownFromSpaces: knownFolderFromSpaces,
+        });
 
         let cancelled = false;
         const storeCache = (ctx: FolderContext | null, hint: string | null) => {

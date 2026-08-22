@@ -149,7 +149,13 @@ export const MoraPulsePanel: React.FC = () => {
             // Clicks on the bare canvas select nothing — html/body as target would
             // otherwise capture the whole page text as "focus".
             if (element === document.documentElement || element === document.body) return;
-            setMoraPlaygroundTarget(describeMoraPlaygroundTarget(element));
+            const target = describeMoraPlaygroundTarget(element);
+            // Ein Schliessknopf, ein Zurueck, ein Neu-Laden ist kein Gegenstand,
+            // ueber den Môra etwas wissen kann. Frueher verdraengte er den
+            // letzten echten Gegenstand aus der Anzeige - Marius sah oben
+            // rechts "CLOSE PANEL" stehen.
+            if (target.ignored) return;
+            setMoraPlaygroundTarget(target);
         };
         document.addEventListener('pointerdown', captureTarget, true);
         return () => document.removeEventListener('pointerdown', captureTarget, true);

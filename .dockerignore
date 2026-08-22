@@ -1,0 +1,51 @@
+# Was NICHT in den Build-Kontext gehoert.
+#
+# Ohne diese Datei packt `COPY . .` (Dockerfile Zeile 44) den ganzen Ordner in
+# eine einzige Ebene - samt .git mit voller Historie, dem lokalen node_modules
+# und den Screenshot-Serien unter tmp/. Jede Codeaenderung entwertet diese
+# Ebene, sie entsteht also bei JEDEM Build komplett neu.
+#
+# Am 21.08.2026 lief die Datenplatte des Servers dadurch auf 0 Byte: 50,9 GB
+# Build-Cache, ~630 MB je saimor-ui-Build im Stundentakt, und Postgres stieg
+# mit "PANIC: no space left on device" aus.
+#
+# node_modules steht hier trotz Zeile 43 (COPY --from=deps) drin: die
+# Reihenfolge im Dockerfile ueberschreibt es zwar, aber die von `COPY . .`
+# erzeugte Ebene enthaelt es davor bereits vollstaendig - und die liegt im
+# Cache.
+
+# Abhaengigkeiten und Build-Ausgaben — kommen aus eigenen Ebenen
+node_modules
+.next
+out
+build
+
+# Versionsgeschichte — der Build liest sie nicht
+.git
+.gitignore
+.gitattributes
+
+# Arbeitsstaende und Werkzeugausgaben
+tmp
+coverage
+playwright-report
+test-results
+*.log
+.turbo
+.swc
+
+# Geheimnisse gehoeren niemals in ein Image
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode
+.idea
+.DS_Store
+
+# Sich selbst und Docker-Dateien
+Dockerfile
+Dockerfile.*
+.dockerignore
+docker-compose*.yml

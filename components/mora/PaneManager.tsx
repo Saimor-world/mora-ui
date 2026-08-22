@@ -108,7 +108,21 @@ export const PaneManager: React.FC = () => {
             <AnimatePresence>
                 {panes.map((pane) => (
                     !pane.minimized && (
-                        <div key={pane.id} className="pointer-events-auto absolute inset-0">
+                        // Frueher fing dieser Wrapper Zeigerereignisse auf ganzer
+                        // Flaeche ab. Er haelt aber gar nichts: GlassPanel rendert per
+                        // createPortal nach document.body (GlassPanel.tsx:433),
+                        // FullBleed-Apps ebenso. Uebrig blieb eine unsichtbare,
+                        // bildschirmfuellende Klickfalle auf z-100 - eine pro
+                        // offenem Fenster.
+                        //
+                        // Folge im Universe: nach einem Klick auf "Mit Môra klären"
+                        // war nichts mehr klickbar, auch das Schliesskreuz des
+                        // Detailfensters nicht. Beide wurden als tote Knoepfe
+                        // gemeldet; sie waren nur verdeckt.
+                        //
+                        // Portalierter Inhalt bringt seine eigenen Zeigerereignisse
+                        // mit und ist davon unberuehrt.
+                        <div key={pane.id} className="pointer-events-none absolute inset-0">
                             <PaneRenderer pane={pane} />
                         </div>
                     )
