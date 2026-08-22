@@ -77,8 +77,14 @@ export interface Orbitals {
  * Punkte pro Planet waeren weder lesbar noch fluessig - und die echte Zahl
  * steht ohnehin als Text unter dem Planeten. Hier wird also die Darstellung
  * gedeckelt, nicht die Wahrheit.
+ *
+ * Von 48 auf 26 gesenkt, nachdem Marius Ruckeln meldete: bei vier Planeten
+ * waren das 192 dauerhaft animierte Elemente allein fuer die Sterne - und
+ * das zusaetzlich zu 180 Hintergrundsternen, mehreren Vollbild-Canvas und
+ * den Mondbahnen. Ab etwa zwei Dutzend Punkten liest man ohnehin "viele",
+ * nicht mehr die Anzahl.
  */
-export const MAX_VISIBLE_STARS = 48;
+export const MAX_VISIBLE_STARS = 26;
 
 // Enger als anfangs: ein Mond bei 0.82 Radien ausserhalb machte das
 // Sonnensystem fast doppelt so breit wie den Planeten - vier davon

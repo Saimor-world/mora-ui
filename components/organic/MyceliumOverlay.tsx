@@ -211,15 +211,17 @@ export const MyceliumOverlay: React.FC = () => {
                     }
                 }
 
+                // Frueher entstand hier PRO BILD ein neuer Farbverlauf - bei
+                // vier Faeden und 60 Bildern je Sekunde sind das 240
+                // Gradient-Objekte pro Sekunde, die der Browser jedes Mal neu
+                // aufbaut. Jetzt: eine einfache Farbe, deren Deckkraft mit
+                // dem Atem schwankt. Optisch fast dasselbe, ohne die
+                // Dauerlast.
                 const [r, g, b] = hexToRgb(thread.color);
-                const gradient = ctx.createLinearGradient(thread.fromX, thread.fromY, thread.toX, thread.toY);
-                gradient.addColorStop(0, `rgba(${r},${g},${b},0.02)`);
-                gradient.addColorStop(1, `rgba(${r},${g},${b},${(0.14 + breath * 0.1).toFixed(3)})`);
-
                 ctx.beginPath();
                 ctx.moveTo(thread.fromX, thread.fromY);
                 ctx.quadraticCurveTo(cx, cy, thread.toX, thread.toY);
-                ctx.strokeStyle = gradient;
+                ctx.strokeStyle = `rgba(${r},${g},${b},${(0.09 + breath * 0.07).toFixed(3)})`;
                 ctx.lineWidth = 1.1;
                 ctx.stroke();
 
@@ -246,12 +248,16 @@ export const MyceliumOverlay: React.FC = () => {
                     // nicht aus dem Kern springt und im Planeten verschwindet.
                     const fade = Math.sin(pulse.progress * Math.PI);
 
-                    const halo = ctx.createRadialGradient(px, py, 0, px, py, 9);
-                    halo.addColorStop(0, `rgba(${r},${g},${b},${(0.5 * fade).toFixed(3)})`);
-                    halo.addColorStop(1, `rgba(${r},${g},${b},0)`);
-                    ctx.fillStyle = halo;
+                    // Auch hier kein Verlauf je Bild mehr: zwei gefuellte
+                    // Kreise mit unterschiedlicher Deckkraft ergeben denselben
+                    // weichen Punkt, kosten aber nichts.
+                    ctx.fillStyle = `rgba(${r},${g},${b},${(0.16 * fade).toFixed(3)})`;
                     ctx.beginPath();
-                    ctx.arc(px, py, 9, 0, Math.PI * 2);
+                    ctx.arc(px, py, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.fillStyle = `rgba(${r},${g},${b},${(0.55 * fade).toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.arc(px, py, 2.4, 0, Math.PI * 2);
                     ctx.fill();
                 });
             }

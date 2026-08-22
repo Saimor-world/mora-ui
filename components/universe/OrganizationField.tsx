@@ -473,6 +473,20 @@ function Territory({
                 <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
                 <span>{territory.documents} Docs</span>
             </span>
+            {/* Was sich hier bewegt - an einer FESTEN Stelle unter dem
+                Planeten, nicht als schwebendes Etikett am kreisenden Mond.
+                Dort landete es je nach Bahnstellung mitten auf der
+                Beschriftung des Planeten. Eine Zeile, die nicht wandert,
+                kann auch nichts verdecken. */}
+            {orbitals.moons.find((moon) => moon.inMotion) && (
+                <span
+                    className="mt-1.5 flex items-center justify-center gap-1.5 text-[9px] font-medium tracking-[0.02em]"
+                    style={{ color: accent }}
+                >
+                    <span className="inline-block h-1 w-1 rounded-full" style={{ background: accent }} />
+                    {orbitals.moons.find((moon) => moon.inMotion)!.name}
+                </span>
+            )}
             {territory.access === 'locked' ? (
                 <span className="mt-1.5 block text-[9px] text-amber-200/62">Mitgliedschaft erforderlich</span>
             ) : territory.metricSource === 'missing' && (
@@ -641,8 +655,12 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                         height: star.size,
                         marginLeft: star.x,
                         marginTop: star.y,
+                        // Kein box-shadow je Stern: bei vier Planeten waren das
+                        // ueber hundert Elemente, die der Browser jeweils
+                        // einzeln weichzeichnen muss - eine der teuersten
+                        // Zeichenarbeiten ueberhaupt. Die Leuchtwirkung kommt
+                        // jetzt aus der Farbe selbst.
                         background: accent,
-                        boxShadow: '0 0 ' + (star.size * 3).toFixed(1) + 'px ' + accent,
                         '--star-delay': star.delay.toFixed(2) + 's',
                         '--star-duration': (4 + (index % 4)) + 's',
                     } as CSSProperties}
@@ -714,28 +732,16 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                             nicht ueber jeden Mond fahren muessen, um zu sehen,
                             wo die wichtige Kampagne ist." */}
                         {moon.inMotion && (
-                            <>
-                                <span
-                                    className="saimor-motion-ring pointer-events-none absolute rounded-full border"
+                            <span
+                                className="saimor-motion-ring pointer-events-none absolute rounded-full border"
                                     style={{
                                         width: moon.size,
                                         height: moon.size,
-                                        borderColor: accent,
-                                    }}
-                                />
-                                <span
-                                    className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[9px] font-medium tracking-[0.02em]"
-                                    style={{
-                                        color: accent,
-                                        background: 'rgba(8,18,30,0.82)',
-                                        boxShadow: '0 0 10px ' + accent + '33',
-                                    }}
-                                >
-                                    {moon.name}
-                                </span>
-                            </>
+                                    borderColor: accent,
+                                }}
+                            />
                         )}
-                        <span className={'pointer-events-none absolute left-1/2 top-full z-20 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/95 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-200 group-hover/moon:opacity-100 ' + (moon.inMotion ? 'mt-8' : 'mt-2.5')}>
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/95 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] backdrop-blur-md transition-opacity duration-200 group-hover/moon:opacity-100">
                             <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
                             <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
                                 {moon.documents === 0
