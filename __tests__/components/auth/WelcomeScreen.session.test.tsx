@@ -150,8 +150,10 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
             expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
-            expect(screen.getByText('Eintreten')).toBeInTheDocument();
         });
+        // "Eintreten" gibt es nur MIT Website-Kontext. Ohne ihn tat es exakt
+        // dasselbe wie "Anmelden" und versprach dabei einen Weg ohne Login.
+        expect(screen.queryByText('Eintreten')).not.toBeInTheDocument();
     });
 
     it('shows "erwachen" card for 6-hour-old session with token', async () => {
@@ -316,19 +318,23 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
     });
 
     it('does not open a shared demo account from the default entry button', async () => {
+        // Die Absicht dieses Tests gilt weiter und jetzt staerker: ohne
+        // Website-Kontext gibt es den Eintreten-Knopf gar nicht mehr, also
+        // kann er auch nichts oeffnen. Vorher landete er auf demselben
+        // Anmeldeformular wie "Anmelden" - eine Tuer, die dorthin fuehrt, wo
+        // eine andere schon hinfuehrt.
         const mockFetch = global.fetch as jest.Mock;
         mockCoreGet.mockResolvedValue(null);
 
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Eintreten')).toBeInTheDocument();
+            expect(screen.getByText('Anmelden')).toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Eintreten'));
+        expect(screen.queryByText('Eintreten')).not.toBeInTheDocument();
 
         await waitFor(() => {
-            expect(screen.getByPlaceholderText('name@firma.de')).toBeInTheDocument();
             expect(mockFetch).not.toHaveBeenCalled();
             expect(mockSignIn).not.toHaveBeenCalled();
         });

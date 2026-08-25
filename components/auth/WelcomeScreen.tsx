@@ -1284,15 +1284,26 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
                                 </motion.button>}
 
-                                {/* Website entry or explicit login. Never falls back to a shared demo account. */}
-                                <motion.button
-                                    onClick={() => {
-                                        if (websiteEntryContext) {
-                                            void handleWebsiteEntryLogin();
-                                        } else {
-                                            setMode('login');
-                                        }
-                                    }}
+                                {/*
+                                    Die dritte Tuer gibt es nur MIT Kontext.
+
+                                    Sie fuehrt jemanden weiter, der auf saimor.world einen
+                                    Security-Check gemacht hat und dafuer einen Zugang auf Zeit
+                                    bekommen hat - fuer den ist es wirklich ein Eintreten ohne
+                                    Anmeldung.
+
+                                    Ohne diesen Kontext tat sie exakt dasselbe wie "Anmelden"
+                                    darueber (setMode('login')), versprach aber "Dein eigener
+                                    Raum - mit Kontext ODER Login". Auf hq.saimor.world am
+                                    25.08.2026 nachgestellt: zwei von drei Tueren fuehrten an
+                                    denselben Ort, und eine davon verlangte den Schluessel, den
+                                    sie gerade fuer verzichtbar erklaert hatte.
+
+                                    Eine Tuer, die dorthin fuehrt, wo eine andere schon
+                                    hinfuehrt, ist kein Angebot. Sie ist Rauschen.
+                                */}
+                                {websiteEntryContext && <motion.button
+                                    onClick={() => { void handleWebsiteEntryLogin(); }}
                                     whileHover={{ scale: 1.02, x: 4 }}
                                     whileTap={{ scale: 0.98 }}
                                     className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-blue-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
@@ -1310,7 +1321,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                         </div>
                                     </div>
                                     <ChevronRight className="w-5 h-5 text-blue-500/30 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
-                                </motion.button>
+                                </motion.button>}
 
                                 {devLoginEnabled && (
                                     <div className="mt-8 pt-6 border-t border-white/5">
