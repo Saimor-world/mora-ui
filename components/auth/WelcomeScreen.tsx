@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { LogIn, UserPlus, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
+import { LogIn, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { writeCookie, readCookie } from '@/lib/auth/cookies';
@@ -107,8 +107,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
     const [registeredEmail, setRegisteredEmail] = useState('');
     const [websiteEntryContext, setWebsiteEntryContext] = useState<WebsiteEntryContext | null>(null);
     const [demoTrialContext, setDemoTrialContext] = useState<DemoTrialContext | null>(null);
-    // Default true so the button is visible while the policy loads (no CLS/flash)
-    const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
     // Dev login available when NODE_ENV=development OR when DEV_LOGIN_EMAIL is explicitly set
     const devLoginEnabled = isDevLoginEnabled();
     const prefersReducedMotion = useReducedMotion();
@@ -131,17 +129,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             : surfaceProfile.isLocalTruthSurface
                 ? 'Interne Instanz mit echten Regeln und lokalem Arbeitskontext'
                 : 'Zugriff auf deine Organisation';
-    const registerSubtitle = surfaceProfile.isPublicDemoSurface
-        ? 'Private Instanz ausserhalb der Demo vorbereiten'
-        : demoTrialContext
-            ? 'Provisionierten Trial-Workspace mit deinem Account uebernehmen'
-        : websiteEntryContext
-            ? 'Kundenaccount erstellen und dieses Dossier übernehmen'
-            : surfaceProfile.isHqSurface
-            ? 'Neuen Raum. Môra legt ihn an.'
-            : surfaceProfile.isLocalTruthSurface
-            ? 'Lokale oder interne Instanz für echte Produktionsregeln vorbereiten'
-            : 'Neue Organisation einrichten';
     const demoEntryTitle = websiteEntryContext
         ? `${websiteEntryContext.companyName} als HQ-Workspace öffnen`
         : surfaceProfile.isLocalTruthSurface
@@ -368,20 +355,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         setInviteCode('');
         setCompanyName('');
     }, [mode]);
-
-    // Fetch instance policy once on mount — public endpoint, no auth required.
-    // Controls whether the "Account Erstellen" button is shown.
-    useEffect(() => {
-        void coreGet('/v3/auth/instance-policy', { skipAuth: true, isOptional: true })
-            .then((data: any) => {
-                if (data && typeof data.allow_public_registration === 'boolean') {
-                    setAllowPublicRegistration(data.allow_public_registration);
-                }
-            })
-            .catch(() => {
-                // On error: keep default (true) so registration is not silently hidden.
-            });
-    }, []);
 
     useEffect(() => {
         if (typeof document === 'undefined') {
@@ -1257,33 +1230,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     <ChevronRight className="w-5 h-5 text-emerald-500/30 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
                                 </motion.button>
 
-                                {/* Account Erstellen Button — hidden when instance policy disables public registration */}
-                                {allowPublicRegistration && <motion.button
-                                    onClick={() => {
-                                        if (websiteEntryContext) {
-                                            setSelectedRole('owner');
-                                            setCompanyName(websiteEntryContext.companyName);
-                                            if (websiteEntryContext.email) setEmail(websiteEntryContext.email);
-                                        }
-                                        setMode('register');
-                                    }}
-                                    whileHover={{ scale: 1.02, x: 4 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="w-full p-6 bg-[#050d0a]/60 backdrop-blur-xl border border-white/10 hover:border-emerald-500/40 rounded-2xl transition-all duration-300 flex items-center gap-4 group relative overflow-hidden shadow-[0_4px_24px_0_rgba(0,0,0,0.3)]"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-mora-gold/0 via-mora-gold/10 to-mora-gold/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                    <div className="relative p-3 rounded-xl bg-mora-gold/10 border border-mora-gold/20 group-hover:bg-mora-gold/20 group-hover:border-mora-gold/40 transition-all duration-300">
-                                        <UserPlus className="w-5 h-5 text-mora-gold group-hover:text-mora-gold/90 transition-colors" />
-                                    </div>
-                                    <div className="flex-1 text-left relative z-10">
-                                        <div className="text-sm font-medium text-emerald-50 tracking-wide group-hover:text-white transition-colors">
-                                            {websiteEntryContext ? 'Dossier mit Account verbinden' : surfaceProfile.isPublicDemoSurface ? 'Eigene Instanz vorbereiten' : surfaceProfile.isHqSurface ? 'HQ-Zugang einrichten' : surfaceProfile.isLocalTruthSurface ? 'Instanz vorbereiten' : 'Account Erstellen'}
-                                        </div>
-                                        <div className="text-xs text-emerald-500/60 font-light tracking-wider group-hover:text-mora-gold/70 transition-colors">{registerSubtitle}</div>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-mora-gold/30 group-hover:text-mora-gold group-hover:translate-x-1 transition-all" />
-                                </motion.button>}
-
                                 {/* Website entry or explicit login. Never falls back to a shared demo account. */}
                                 <motion.button
                                     onClick={() => {
@@ -1668,4 +1614,3 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
         </motion.div>
     );
 };
-

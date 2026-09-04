@@ -148,7 +148,7 @@ export function SecurityCheckEntry({ context }: Props) {
                             {waiting ? 'Wird vorbereitet…' : 'Workspace öffnen'}&nbsp;→
                         </button>
                         <span className="text-[11px] text-white/20">
-                            {authError ? 'Preview-Link ungültig — bitte neu starten.' : '20 Tage Preview-Account · Private Demo'}
+                            {authError ? 'Preview-Link ungültig — bitte neu starten.' : 'Temporärer Demo-Raum · kein Kundenkonto'}
                         </span>
                     </div>
                 </div>

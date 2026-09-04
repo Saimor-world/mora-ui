@@ -1,43 +1,13 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 
-import {
-  coreUnreachableUserMessage,
-  fetchCoreUpstream,
-  probePublicCoreHealth,
-} from '@/lib/api/coreReachability';
-
-export async function POST(request: NextRequest) {
-  const body = await request.text();
-  let upstream: Response;
-  try {
-    upstream = await fetchCoreUpstream('/v3/auth/register', {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body,
-      redirect: "manual",
-    });
-  } catch (error) {
-    const publicHealthy = await probePublicCoreHealth();
-    console.error("[core-register] Core register proxy failed:", error, { publicHealthy });
-    return NextResponse.json(
-      { success: false, detail: coreUnreachableUserMessage() },
-      { status: 503, headers: { "cache-control": "no-store" } }
-    );
-  }
-
-  const responseText = await upstream.text();
-  const response = new NextResponse(responseText, {
-    status: upstream.status,
-    headers: {
-      "content-type": upstream.headers.get("content-type") || "application/json",
-      "cache-control": "no-store",
+export async function POST() {
+  // Public self-service registration is intentionally closed until billing
+  // and customer provisioning are connected end to end.
+  return NextResponse.json(
+    {
+      success: false,
+      detail: "Öffentliche Kontoerstellung ist derzeit deaktiviert. Der Zugang erfolgt ausschließlich per Freigabe.",
     },
-  });
-
-  const setCookie = upstream.headers.get("set-cookie");
-  if (setCookie) {
-    response.headers.set("set-cookie", setCookie);
-  }
-
-  return response;
+    { status: 403, headers: { "cache-control": "no-store" } },
+  );
 }
