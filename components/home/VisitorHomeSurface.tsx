@@ -381,7 +381,7 @@ export function VisitorHomeSurface() {
                         <span className="uppercase tracking-[0.22em]">Datentrennung</span>
                     </div>
                     <p className="mt-2.5">
-                        Demo-Daten zeigen nur das Muster der Simple Coffee Group. Kundendaten aus deinem Security Check bleiben als eigener Preview-Kontext gespeichert und laufen ab, solange kein Account verbunden wird.
+                        Demo-Daten zeigen nur das Muster der Simple Coffee Group. Daten aus deinem Security Check bleiben in einem getrennten Preview-Kontext und laufen automatisch wieder ab.
                     </p>
                 </motion.section>
             </div>
