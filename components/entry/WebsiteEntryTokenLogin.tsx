@@ -185,7 +185,7 @@ export function WebsiteEntryTokenLogin({
                         <h3 className="text-xl font-light text-white">eingeloggt.</h3>
                     </div>
                     <p className="text-sm text-white/45 leading-relaxed">
-                        Der Security Check öffnet einen isolierten 20-Tage-Preview-Account und loggt dich aus deinem echten HQ aus.
+                        Der Security Check öffnet einen isolierten, temporären Demo-Raum und loggt dich aus deinem echten HQ aus.
                     </p>
                     <div className="grid gap-3">
                         <button
