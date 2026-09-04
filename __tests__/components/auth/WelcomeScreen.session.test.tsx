@@ -142,15 +142,15 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         });
     });
 
-    it('shows normal welcome buttons when no session exists', async () => {
+    it('shows login entry points without public account creation when no session exists', async () => {
         mockCoreGet.mockResolvedValue(null);
 
         renderWithStore();
 
         await waitFor(() => {
             expect(screen.getByText('Anmelden')).toBeInTheDocument();
-            expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
             expect(screen.getByText('Eintreten')).toBeInTheDocument();
+            expect(screen.queryByText('Account Erstellen')).not.toBeInTheDocument();
         });
     });
 
@@ -462,8 +462,7 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
         });
     });
 
-    it('binds a website-entry dossier to a customer account', async () => {
-        const mockFetch = global.fetch as jest.Mock;
+    it('does not offer account creation from a website-entry dossier', async () => {
         mockCoreGet.mockResolvedValue(null);
         Object.defineProperty(window, 'location', {
             configurable: true,
@@ -474,51 +473,17 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
                 assign: mockLocationAssign,
             },
         });
-        mockFetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                success: true,
-                role: 'owner',
-                email: 'lead@acme.de',
-                tenant_id: 'tenant-preview-abc',
-                active_company_name: 'Acme GmbH',
-                auth_type: 'website_entry_claim',
-            }),
-        } as any);
 
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Dossier mit Account verbinden')).toBeInTheDocument();
-        });
-
-        fireEvent.click(screen.getByText('Dossier mit Account verbinden'));
-        await waitFor(() => expect(screen.getByText('Kundenaccount verbinden')).toBeInTheDocument());
-        fireEvent.change(screen.getByPlaceholderText('ihre@email.de'), { target: { value: 'lead@acme.de' } });
-        fireEvent.change(screen.getByPlaceholderText('Name Ihrer Organisation'), { target: { value: 'Acme GmbH' } });
-        fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'claim12345' } });
-        fireEvent.click(screen.getByText('Kundenaccount verbinden'));
-
-        await waitFor(() => {
-            expect(mockFetch).toHaveBeenCalledWith(
-                '/api/auth/website-entry-claim',
-                expect.objectContaining({
-                    method: 'POST',
-                    body: JSON.stringify({
-                        entryToken: 'signed-entry-token',
-                        email: 'lead@acme.de',
-                        password: 'claim12345',
-                        fullName: 'Acme GmbH',
-                    }),
-                })
-            );
-            expect(localStorage.getItem('saimor_tenant')).toBe('tenant-preview-abc');
-            expect(localStorage.getItem('last_workspace')).toBe('Acme GmbH');
-            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+            expect(screen.getByText('Acme GmbH als HQ-Workspace öffnen')).toBeInTheDocument();
+            expect(screen.queryByText('Dossier mit Account verbinden')).not.toBeInTheDocument();
+            expect(screen.queryByText('Account Erstellen')).not.toBeInTheDocument();
         });
     });
 
-    it('claims a demo-trial workspace via lead key route', async () => {
+    it('does not offer account creation from a demo-trial link', async () => {
         const mockFetch = global.fetch as jest.Mock;
         mockCoreGet.mockResolvedValue(null);
         Object.defineProperty(window, 'location', {
@@ -530,46 +495,19 @@ describe('WelcomeScreen — Mora Erwachen tiers', () => {
                 assign: mockLocationAssign,
             },
         });
-        mockFetch.mockResolvedValue({
-            ok: true,
-            json: async () => ({
-                success: true,
-                role: 'owner',
-                email: 'lead@acme.de',
-                tenant_id: 'trial-tenant-abc',
-                active_company_name: 'Acme Trial',
-                auth_type: 'demo_trial_claim',
-            }),
-        } as any);
 
         renderWithStore();
 
         await waitFor(() => {
-            expect(screen.getByText('Account Erstellen')).toBeInTheDocument();
+            expect(screen.getByText('Eintreten')).toBeInTheDocument();
+            expect(screen.queryByText('Account Erstellen')).not.toBeInTheDocument();
         });
 
-        fireEvent.click(screen.getByText('Account Erstellen'));
-        fireEvent.change(screen.getByPlaceholderText('ihre@email.de'), { target: { value: 'lead@acme.de' } });
-        fireEvent.change(screen.getByPlaceholderText('Name Ihrer Organisation'), { target: { value: 'Acme Trial' } });
-        fireEvent.change(screen.getByPlaceholderText('********'), { target: { value: 'claim12345' } });
-        fireEvent.click(screen.getAllByText('Account Erstellen').at(-1)!);
+        fireEvent.click(screen.getByText('Eintreten'));
 
         await waitFor(() => {
-            expect(mockFetch).toHaveBeenCalledWith(
-                '/api/auth/demo-trial-claim',
-                expect.objectContaining({
-                    method: 'POST',
-                    body: JSON.stringify({
-                        leadKey: 'lead-demo-123',
-                        email: 'lead@acme.de',
-                        password: 'claim12345',
-                        fullName: 'Acme Trial',
-                    }),
-                })
-            );
-            expect(localStorage.getItem('saimor_tenant')).toBe('trial-tenant-abc');
-            expect(localStorage.getItem('last_workspace')).toBe('Acme Trial');
-            expect(mockLocationAssign).toHaveBeenCalledWith('/home');
+            expect(screen.getByPlaceholderText('name@firma.de')).toBeInTheDocument();
+            expect(mockFetch).not.toHaveBeenCalled();
         });
     });
 });
