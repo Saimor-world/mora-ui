@@ -69,20 +69,20 @@ export function SecurityCheckEntry({ context }: Props) {
             ) : null}
 
             {/* Top bar */}
-            <div className="relative z-10 flex items-center justify-between px-14 pt-7">
+            <div className="relative z-10 flex items-center justify-between px-5 pt-5 sm:px-8 sm:pt-7 lg:px-14">
                 <div className="text-[15px] font-semibold tracking-[0.08em] text-white/85">
                     SAIM<span className="text-violet-400/85">Ô</span>R
                 </div>
-                <div className="font-mono text-[11px] text-white/20">
+                <div className="hidden font-mono text-[11px] text-white/20 sm:block">
                     hq.saimor.world · Security Check Entry
                 </div>
             </div>
 
             {/* Two-column layout */}
-            <div className="relative z-10 grid min-h-[calc(100vh-72px)] grid-cols-2">
+            <div className="relative z-10 grid min-h-[calc(100vh-72px)] lg:grid-cols-2">
 
                 {/* ── Left: Personal + Score ── */}
-                <div className="flex flex-col justify-center px-14 py-12">
+                <div className="flex flex-col justify-center px-5 py-10 sm:px-8 sm:py-12 lg:px-14">
                     {/* Eyebrow */}
                     <div className="mb-7 inline-flex w-fit items-center gap-2 rounded-full border border-violet-500/[0.18] bg-violet-500/[0.08] px-4 py-1.5">
                         <span className="h-[5px] w-[5px] animate-pulse rounded-full bg-violet-400/80" />
@@ -90,7 +90,7 @@ export function SecurityCheckEntry({ context }: Props) {
                     </div>
 
                     {/* Greeting */}
-                    <h1 className="mb-1.5 text-[50px] font-light leading-[1.08] tracking-[-0.03em] text-white/92">
+                    <h1 className="mb-1.5 text-[clamp(38px,12vw,50px)] font-light leading-[1.08] tracking-[-0.03em] text-white/92">
                         Hallo,<br />{context.companyName}.
                     </h1>
                     <p className="mb-10 font-mono text-[13px] text-white/25">{domain}</p>
@@ -99,7 +99,7 @@ export function SecurityCheckEntry({ context }: Props) {
                     <div className="mb-4 flex items-end gap-3">
                         <span
                             data-testid="entry-score"
-                            className="bg-gradient-to-br from-amber-400 to-red-400 bg-clip-text text-[72px] font-black leading-none text-transparent"
+                            className="bg-gradient-to-br from-amber-400 to-red-400 bg-clip-text text-[clamp(58px,18vw,72px)] font-black leading-none text-transparent"
                         >
                             {context.score ?? '—'}
                         </span>
@@ -138,7 +138,7 @@ export function SecurityCheckEntry({ context }: Props) {
                     </div>
 
                     {/* CTA */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-4">
                         <button
                             type="button"
                             onClick={handleCta}
@@ -154,7 +154,7 @@ export function SecurityCheckEntry({ context }: Props) {
                 </div>
 
                 {/* ── Right: What is SAIMÔR ── */}
-                <div className="flex flex-col justify-center border-l border-white/[0.05] px-14 py-12">
+                <div className="flex flex-col justify-center border-t border-white/[0.05] px-5 py-10 sm:px-8 sm:py-12 lg:border-l lg:border-t-0 lg:px-14">
                     <p className="mb-4 text-[10px] uppercase tracking-[0.22em] text-white/20">Was dich erwartet</p>
                     <h2 className="mb-3 text-[28px] font-light leading-[1.3] tracking-[-0.02em] text-white/88">
                         Dein Scan-Ergebnis<br />
@@ -200,10 +200,10 @@ export function SecurityCheckEntry({ context }: Props) {
             </div>
 
             {/* Bottom bar */}
-            <div className="relative z-10 flex items-center justify-between border-t border-white/[0.04] px-14 py-5 text-[10px] text-white/15">
-                <span>© 2026 SAIMÔR · Demo-Space · Keine echten Daten gespeichert</span>
+            <div className="relative z-10 flex flex-col gap-3 border-t border-white/[0.04] px-5 py-5 text-[10px] text-white/20 sm:flex-row sm:items-center sm:justify-between sm:px-8 lg:px-14">
+                <span>© 2026 SAIMÔR · isolierter Demo-Raum</span>
                 <div className="flex gap-5">
-                    <a href="https://saimor.world/de/datenschutz" className="hover:text-white/40">Datenschutz</a>
+                    <a href="https://saimor.world/de/rechtliches/datenschutz" className="hover:text-white/40">Datenschutz</a>
                     <a href="https://saimor.world" className="hover:text-white/40">saimor.world</a>
                 </div>
             </div>
