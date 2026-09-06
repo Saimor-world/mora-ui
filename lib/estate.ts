@@ -4,14 +4,14 @@ import { getSurfaceProductLabel, SAIMOR_OS_PRODUCT } from '@/lib/os/surfaceContr
  * Saimôr estate URLs.
  *
  * Product model:
- * - Saimôr OS is the product.
- * - Desk is the personal home surface inside the OS.
- * - dash.saimor.world is a legacy compatibility host during migration.
+ * - Saimôr OS is the single user-facing product.
+ * - Home/Heute is the personal starting surface inside the OS.
+ * - dash.saimor.world is only a temporary compatibility host while its capabilities move into the canonical OS runtime.
  */
 export const ESTATE = {
   os: 'https://hq.saimor.world',
   api: 'https://api.saimor.world',
-  /** Legacy compatibility host for the Desk surface during OS unification. */
+  /** Temporary compatibility hostname. Do not expose it as a separate product or surface name. */
   desk: 'https://dash.saimor.world',
   /** OpenClaw/runtime console — not a product name in UI. */
   runtime: 'https://larry.saimor.world',
@@ -21,7 +21,7 @@ export const ESTATE = {
 
 export const ESTATE_LABELS = {
   os: SAIMOR_OS_PRODUCT.name,
-  desk: getSurfaceProductLabel('desk'),
+  desk: getSurfaceProductLabel('home'),
   yori: 'YORI',
   world: 'Saimôr World',
   runtime: 'Runtime',
