@@ -84,7 +84,7 @@ jobs:
             await page.screenshot({ path: 'preview-screenshots/home.png', fullPage: true });
 
             await page.getByText('Money that can work', { exact: true }).click();
-            await page.getByText('Read-only XRPL', { exact: false }).first().waitFor({ timeout: 10000 });
+            await page.getByText('Read only · XRPL Mainnet', { exact: false }).first().waitFor({ timeout: 10000 });
             await page.waitForTimeout(900);
             await page.screenshot({ path: 'preview-screenshots/capital.png', fullPage: true });
 
@@ -96,9 +96,10 @@ jobs:
           NODE
 
       - name: Upload screenshots
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: mora-ui-pr43-screenshots
           path: preview-screenshots/*.png
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7
