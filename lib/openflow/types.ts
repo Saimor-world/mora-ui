@@ -104,6 +104,7 @@ export interface OpenFlowLagebild {
 
 export type AppUniverseGroupId =
   | 'work'
+  | 'capital'
   | 'sources'
   | 'agents_flows'
   | 'people'
