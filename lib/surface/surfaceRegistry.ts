@@ -15,18 +15,17 @@ export type PaneType =
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
     | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
     | 'timeline' | 'tasks' | 'canvas' | 'nightwatch' | 'lagefeld' | 'codex'
-    | 'wall' | 'feeds' | 'finance';
+    | 'wall' | 'feeds' | 'finance' | 'work';
 
 export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
-    // Core work
+    // Core operating surfaces
+    work:            'core_work',
     finder:          'core_work',
     document:        'core_work',
     chat:            'core_work',
     team:            'core_work',
     settings:        'core_work',
-
-    // Capital is a first-class OS surface, but does not need permanent Dock space.
-    finance:          'core_work',
+    finance:         'core_work',
 
     // Mounted apps
     notes:            'app',
