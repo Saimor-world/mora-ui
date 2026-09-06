@@ -11,8 +11,8 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
-jest.mock('@/components/home/HomeSurface', () => ({
-    HomeSurface: () => <div data-testid="home-surface">normal home</div>,
+jest.mock('@/components/home/HomeSurfaceNext', () => ({
+    HomeSurfaceNext: () => <div data-testid="home-surface">normal home</div>,
 }));
 
 jest.mock('@/components/home/UniverseView', () => ({
