@@ -48,6 +48,17 @@ export const APP_REGISTRY: AppManifest[] = [
     category: 'core',
     defaultSize: { width: 900, height: 640 },
   },
+  {
+    id: 'finance',
+    name: 'Capital',
+    description: 'Wallets, Vermögen und On-chain-Kapital — zuerst read-only',
+    icon: 'Activity',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 980, height: 720 },
+    singleton: true,
+    isNew: true,
+  },
 
   // ── Intelligence ──────────────────────────────────────────────────────────
   {
@@ -121,6 +132,17 @@ export const APP_REGISTRY: AppManifest[] = [
   },
 
   // ── Workspace ─────────────────────────────────────────────────────────────
+  {
+    id: 'work',
+    name: 'Arbeit',
+    description: 'Fokussierter Einstieg in Aufgaben, Dateien, Zeit und Kommunikation',
+    icon: 'Grid',
+    color: 'teal',
+    category: 'workspace',
+    defaultSize: { width: 1080, height: 760 },
+    singleton: true,
+    launcherHidden: true,
+  },
   {
     id: 'calendar',
     name: 'Kalender',
@@ -241,7 +263,7 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'settings',
-    name: 'Saim?r Setup',
+    name: 'Saimôr Setup',
     description: 'Workspace starten, verbinden und verwalten',
     icon: 'Settings',
     color: 'slate',
@@ -263,7 +285,6 @@ export const APP_REGISTRY: AppManifest[] = [
   },
 ];
 
-/** Look up a manifest by app id. Returns undefined if not found. */
 export function getAppManifest(id: string): AppManifest | undefined {
   return APP_REGISTRY.find(a => a.id === id);
 }

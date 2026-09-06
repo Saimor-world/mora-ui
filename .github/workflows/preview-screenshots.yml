@@ -1,0 +1,105 @@
+name: OS Preview Screenshots
+
+on:
+  push:
+    branches:
+      - feat/os-practical-reset
+  workflow_dispatch:
+
+concurrency:
+  group: mora-ui-preview-screenshots-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screenshot:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Start preview
+        run: |
+          npm start > /tmp/mora-ui-preview.log 2>&1 &
+          echo $! > /tmp/mora-ui-preview.pid
+          for i in {1..60}; do
+            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/mora-ui-preview.log
+          exit 1
+
+      - name: Capture real OS surfaces
+        run: |
+          mkdir -p preview-screenshots
+          node <<'NODE'
+          const { chromium } = require('@playwright/test');
+
+          (async () => {
+            const browser = await chromium.launch({ headless: true });
+            const page = await browser.newPage({
+              viewport: { width: 1440, height: 1000 },
+              deviceScaleFactor: 1,
+            });
+
+            await page.addInitScript(() => {
+              localStorage.setItem('saimor_active_mode', 'real_hq');
+              localStorage.setItem('saimor_view_mode', 'workspace');
+              localStorage.setItem('last_activity', new Date().toISOString());
+              localStorage.setItem('saimor_website_entry_context', JSON.stringify({
+                id: 'visual-qa-preview',
+                companyName: 'Saimôr',
+                title: 'OS Visual QA',
+                rooms: [],
+                documents: [],
+                tasks: [],
+                storedAt: new Date().toISOString(),
+              }));
+            });
+
+            await page.goto('http://127.0.0.1:3000/home', { waitUntil: 'domcontentloaded' });
+            await page.getByText('Vier Wege. Ein System.', { exact: true }).waitFor({ timeout: 25000 });
+            await page.waitForTimeout(1800);
+            await page.screenshot({ path: 'preview-screenshots/home.png', fullPage: true });
+
+            await page.getByText('Money that can work', { exact: true }).click();
+            await page.getByText('Treasury Wallet', { exact: true }).waitFor({ timeout: 10000 });
+            await page.waitForTimeout(900);
+            await page.screenshot({ path: 'preview-screenshots/capital.png', fullPage: true });
+
+            await browser.close();
+          })().catch((error) => {
+            console.error(error);
+            process.exit(1);
+          });
+          NODE
+
+      - name: Upload screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mora-ui-pr43-screenshots
+          path: preview-screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 7

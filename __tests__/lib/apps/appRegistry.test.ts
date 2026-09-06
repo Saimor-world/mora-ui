@@ -3,8 +3,8 @@ import type { AppManifest } from '@/lib/apps/types';
 import { getAppUniverseGroups } from '@/lib/openflow/appUniverse';
 
 describe('appRegistry', () => {
-  it('contains exactly 26 app entries', () => {
-    expect(APP_REGISTRY).toHaveLength(26);
+  it('contains exactly 28 app entries', () => {
+    expect(APP_REGISTRY).toHaveLength(28);
   });
 
   it('every app has required fields', () => {
@@ -35,13 +35,14 @@ describe('appRegistry', () => {
     expect(getAppManifest('nonexistent')).toBeUndefined();
   });
 
-  it('contains the 3 new apps with isNew flag', () => {
+  it('contains the new apps with isNew flag', () => {
     const newApps = APP_REGISTRY.filter(a => a.isNew);
     const newIds = newApps.map(a => a.id);
     expect(newIds).toContain('tasks');
     expect(newIds).toContain('timeline');
     expect(newIds).toContain('canvas');
     expect(newIds).toContain('lagefeld');
+    expect(newIds).toContain('finance');
     // codex is now launcherHidden (engineering mode lives in MÔRA chat) — no NEW badge.
     expect(newIds).not.toContain('codex');
   });

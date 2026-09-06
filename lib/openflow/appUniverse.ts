@@ -6,8 +6,14 @@ const GROUPS: AppUniverseGroup[] = [
   {
     id: 'work',
     label: 'Arbeit',
-    description: 'Finder, Aufgaben, Kalender, Notizen und konkrete Arbeitsfenster.',
+    description: 'Projekte, Aufgaben, Kalender, Dateien und konkrete Arbeitsfenster.',
     appIds: ['finder', 'document', 'notes', 'tasks', 'calendar', 'grid', 'timeline'],
+  },
+  {
+    id: 'capital',
+    label: 'Capital',
+    description: 'Wallets, Vermögen und programmierbares Kapital — observation first.',
+    appIds: ['finance'],
   },
   {
     id: 'sources',

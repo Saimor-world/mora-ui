@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import "./globals.css";
+import "./saimor-next.css";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { useNavStore } from "@/lib/store/navStore";

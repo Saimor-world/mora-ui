@@ -6,6 +6,7 @@ describe('appUniverse', () => {
 
     expect(groups.map((group) => group.id)).toEqual([
       'work',
+      'capital',
       'sources',
       'agents_flows',
       'people',
@@ -15,6 +16,7 @@ describe('appUniverse', () => {
     expect(groups.find((group) => group.id === 'work')?.appIds).toEqual(
       expect.arrayContaining(['finder', 'notes', 'tasks', 'calendar'])
     );
+    expect(groups.find((group) => group.id === 'capital')?.appIds).toEqual(['finance']);
     expect(groups.find((group) => group.id === 'sources')?.appIds).toEqual(
       expect.arrayContaining(['mail', 'integrations', 'meine-dateien'])
     );

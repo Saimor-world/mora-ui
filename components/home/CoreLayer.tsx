@@ -4,22 +4,15 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useNavStore } from '@/lib/store/navStore';
-import { HomeSurface } from '@/components/home/HomeSurface';
+import { HomeSurfaceNext } from '@/components/home/HomeSurfaceNext';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
 
 /**
- * CoreLayer — Surface router for viewLevel='core'
+ * CoreLayer — Surface router for viewLevel='core'.
  *
- * Reads coreMode from navStore and renders the appropriate surface:
- *   'home'    → HomeSurface (day-start working surface, default after login)
- *   'explore' → UniverseView (Universe planet map, explicit user action)
- *
- * UniverseView is code-split so the default home path does not pay for
- * planets/widgets/canvas on first paint.
- *
- * @see docs/plans/2026-03-27-corelayer-home-implementation-order.md
- * @see lib/store/navStore.ts — setCoreMode action
- * @see lib/types/mora.ts — CoreMode type
+ * Authenticated OS users land on the new command field. Public/preview visitors
+ * keep the purpose-built visitor surface. Universe remains an explicit explore
+ * mode so the Saimôr spatial identity stays intact without owning the daily path.
  */
 const UniverseView = dynamic(() => import('@/components/home/UniverseView'), {
     ssr: false,
@@ -32,7 +25,6 @@ const UniverseView = dynamic(() => import('@/components/home/UniverseView'), {
     ),
 });
 
-
 export const CoreLayer: React.FC = () => {
     const coreMode = useNavStore((s) => s.coreMode);
     const activeMode = useNavStore((s) => s.activeMode);
@@ -41,35 +33,35 @@ export const CoreLayer: React.FC = () => {
     const homeVariants = {
         initial: {
             opacity: 0,
-            scale: prefersReducedMotion ? 1 : 1.01,
+            scale: prefersReducedMotion ? 1 : 1.008,
         },
         animate: {
             opacity: 1,
             scale: 1,
-            transition: { duration: prefersReducedMotion ? 0.16 : 0.5, ease: [0.22, 0.9, 0.18, 1] as const },
+            transition: { duration: prefersReducedMotion ? 0.16 : 0.48, ease: [0.22, 0.9, 0.18, 1] as const },
         },
         exit: {
             opacity: 0,
-            scale: prefersReducedMotion ? 1 : 0.975,
-            transition: { duration: prefersReducedMotion ? 0.14 : 0.7, ease: [0.32, 0.02, 0.16, 1] as const },
+            scale: prefersReducedMotion ? 1 : 0.985,
+            transition: { duration: prefersReducedMotion ? 0.14 : 0.42, ease: [0.32, 0.02, 0.16, 1] as const },
         },
     };
 
     const exploreVariants = {
         initial: {
             opacity: 0,
-            scale: prefersReducedMotion ? 1 : 1.07,
-            filter: prefersReducedMotion ? 'blur(0px)' : 'blur(10px)',
+            scale: prefersReducedMotion ? 1 : 1.045,
+            filter: prefersReducedMotion ? 'blur(0px)' : 'blur(8px)',
         },
         animate: {
             opacity: 1,
             scale: 1,
             filter: 'blur(0px)',
-            transition: { duration: prefersReducedMotion ? 0.16 : 0.82, ease: [0.16, 0.84, 0.2, 1] as const },
+            transition: { duration: prefersReducedMotion ? 0.16 : 0.72, ease: [0.16, 0.84, 0.2, 1] as const },
         },
         exit: {
             opacity: 0,
-            transition: { duration: prefersReducedMotion ? 0.12 : 0.24 },
+            transition: { duration: prefersReducedMotion ? 0.12 : 0.22 },
         },
     };
 
@@ -87,7 +79,7 @@ export const CoreLayer: React.FC = () => {
                     >
                         {activeMode === 'visitor' || activeMode === 'private_preview'
                             ? <VisitorHomeSurface />
-                            : <HomeSurface />}
+                            : <HomeSurfaceNext />}
                     </motion.div>
                 ) : (
                     <motion.div
