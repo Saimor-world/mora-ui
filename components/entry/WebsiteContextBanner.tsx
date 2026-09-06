@@ -3,10 +3,13 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ShieldCheck, X } from 'lucide-react';
-import { clearWebsiteEntryContext, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import { clearWebsiteEntryActiveContext, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { toast } from 'sonner';
 import { usePaneStore } from '@/lib/store/paneStore';
+
+const DOSSIER_AUTO_OPEN_FLAG_PREFIX = 'saimor_dossier_auto_opened_';
+const LEGACY_BANNER_AUTO_OPEN_FLAG_PREFIX = 'saimor_website_entry_auto_opened_';
 
 export function WebsiteContextBanner() {
     const [context, setContext] = useState<WebsiteEntryContext | null>(null);
@@ -22,10 +25,15 @@ export function WebsiteContextBanner() {
         if (now - storedAt >= 1000 * 60 * 60 * 2) return;
 
         setContext(stored);
+
         const timer = setTimeout(() => {
             try {
-                const autoOpenKey = `saimor_website_entry_auto_opened_${stored.id || stored.companyName}`;
-                if (window.localStorage.getItem(autoOpenKey)) return;
+                const identity = stored.id || stored.companyName;
+                const autoOpenKeys = [
+                    `${DOSSIER_AUTO_OPEN_FLAG_PREFIX}${identity}`,
+                    `${LEGACY_BANNER_AUTO_OPEN_FLAG_PREFIX}${identity}`,
+                ];
+                if (autoOpenKeys.some((key) => window.localStorage.getItem(key))) return;
             } catch {
                 // Best effort only.
             }
@@ -37,7 +45,7 @@ export function WebsiteContextBanner() {
     if (!context || !isVisible) return null;
 
     const handleClear = () => {
-        clearWebsiteEntryContext();
+        clearWebsiteEntryActiveContext();
         setIsVisible(false);
         toast.info('Website-Kontext wurde entfernt');
     };

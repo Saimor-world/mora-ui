@@ -6,6 +6,11 @@ export const WEBSITE_ENTRY_CONTEXT_UPDATED_EVENT = 'saimor:website-entry-context
 export const WEBSITE_ENTRY_SESSION_KIND_KEY = 'saimor_session_kind';
 export const WEBSITE_ENTRY_PREVIEW_SESSION_KIND = 'website_entry_preview';
 
+const WEBSITE_ENTRY_AUTO_OPEN_PREFIXES = [
+    'saimor_website_entry_auto_opened_',
+    'saimor_dossier_auto_opened_',
+] as const;
+
 export type StoredWebsiteEntryContext = WebsiteEntryContext & {
     storedAt?: string;
     openOnHome?: boolean;
@@ -72,7 +77,7 @@ export function clearWebsiteEntryActiveContext() {
         window.localStorage.removeItem(WEBSITE_ENTRY_CONTEXT_STORAGE_KEY);
         for (let i = window.localStorage.length - 1; i >= 0; i -= 1) {
             const key = window.localStorage.key(i);
-            if (key?.startsWith('saimor_website_entry_auto_opened_')) {
+            if (key && WEBSITE_ENTRY_AUTO_OPEN_PREFIXES.some((prefix) => key.startsWith(prefix))) {
                 window.localStorage.removeItem(key);
             }
         }
