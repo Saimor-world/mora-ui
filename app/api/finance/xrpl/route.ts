@@ -31,6 +31,24 @@ async function rpc<T>(method: string, params: Record<string, unknown>): Promise<
   }
 }
 
+function normalizeTransaction(entry: any, address: string) {
+  const tx = entry?.tx_json || entry?.tx || {};
+  const rawAmount = tx?.DeliverMax ?? tx?.Amount ?? null;
+
+  return {
+    hash: String(entry?.hash || tx?.hash || ''),
+    ledgerIndex: Number(entry?.ledger_index || 0) || null,
+    closeTimeIso: entry?.close_time_iso || null,
+    type: String(tx?.TransactionType || 'Unknown'),
+    direction: tx?.Account === address ? 'out' : 'in',
+    account: String(tx?.Account || ''),
+    destination: tx?.Destination ? String(tx.Destination) : null,
+    amount: rawAmount,
+    result: String(entry?.meta?.TransactionResult || entry?.meta?.transaction_result || ''),
+    validated: entry?.validated !== false,
+  };
+}
+
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address')?.trim() || '';
 
@@ -39,13 +57,30 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [info, lines] = await Promise.all([
+    const [accountInfo, lines, server, history] = await Promise.all([
       rpc<any>('account_info', { account: address, ledger_index: 'validated', signer_lists: true }),
       rpc<any>('account_lines', { account: address, ledger_index: 'validated', limit: 400 }),
+      rpc<any>('server_info', {}),
+      rpc<any>('account_tx', {
+        account: address,
+        ledger_index_min: -1,
+        ledger_index_max: -1,
+        binary: false,
+        limit: 12,
+        forward: false,
+      }),
     ]);
 
-    const drops = BigInt(info?.account_data?.Balance || '0');
+    const drops = BigInt(accountInfo?.account_data?.Balance || '0');
     const xrp = Number(drops) / 1_000_000;
+    const ownerCount = Number(accountInfo?.account_data?.OwnerCount || 0);
+
+    const validatedLedger = server?.info?.validated_ledger || server?.info?.closed_ledger || {};
+    const reserveBaseXrp = Number(validatedLedger?.reserve_base_xrp || 0);
+    const reserveIncrementXrp = Number(validatedLedger?.reserve_inc_xrp || 0);
+    const reserveRequiredXrp = reserveBaseXrp + ownerCount * reserveIncrementXrp;
+    const availableXrp = Math.max(0, xrp - reserveRequiredXrp);
+
     const trustLines = Array.isArray(lines?.lines)
       ? lines.lines.map((line: any) => ({
           currency: String(line.currency || ''),
@@ -56,17 +91,28 @@ export async function GET(request: NextRequest) {
         }))
       : [];
 
+    const transactions = Array.isArray(history?.transactions)
+      ? history.transactions.map((entry: any) => normalizeTransaction(entry, address))
+      : [];
+
     return NextResponse.json({
       network: 'mainnet',
       mode: 'read-only',
       address,
-      ledgerIndex: info?.ledger_index ?? lines?.ledger_index ?? null,
+      ledgerIndex: accountInfo?.ledger_index ?? lines?.ledger_index ?? null,
       xrp,
       drops: drops.toString(),
-      ownerCount: Number(info?.account_data?.OwnerCount || 0),
-      sequence: Number(info?.account_data?.Sequence || 0),
-      signerListCount: Array.isArray(info?.signer_lists) ? info.signer_lists.length : 0,
+      availableXrp,
+      reserve: {
+        baseXrp: reserveBaseXrp,
+        incrementXrp: reserveIncrementXrp,
+        requiredXrp: reserveRequiredXrp,
+      },
+      ownerCount,
+      sequence: Number(accountInfo?.account_data?.Sequence || 0),
+      signerListCount: Array.isArray(accountInfo?.signer_lists) ? accountInfo.signer_lists.length : 0,
       trustLines,
+      transactions,
       fetchedAt: new Date().toISOString(),
     });
   } catch (error) {
