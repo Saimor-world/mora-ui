@@ -8,7 +8,6 @@ import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { toast } from 'sonner';
 import { usePaneStore } from '@/lib/store/paneStore';
 
-const PRODUCT_TOUR_SESSION_SEEN_KEY = 'saimor_product_tour_session';
 const DOSSIER_AUTO_OPEN_FLAG_PREFIX = 'saimor_dossier_auto_opened_';
 const LEGACY_BANNER_AUTO_OPEN_FLAG_PREFIX = 'saimor_website_entry_auto_opened_';
 
@@ -26,15 +25,6 @@ export function WebsiteContextBanner() {
         if (now - storedAt >= 1000 * 60 * 60 * 2) return;
 
         setContext(stored);
-
-        // A Security-Check handoff already has its own guided first moment:
-        // dossier auto-open + contextual Môra. Mark the generic product tour as
-        // seen for this browser session so both onboarding systems never compete.
-        try {
-            window.sessionStorage.setItem(PRODUCT_TOUR_SESSION_SEEN_KEY, '1');
-        } catch {
-            // Best effort only.
-        }
 
         const timer = setTimeout(() => {
             try {
