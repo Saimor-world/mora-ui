@@ -34,13 +34,6 @@ function AppSkeleton() {
   );
 }
 
-// ─── App Map ─────────────────────────────────────────────────────────────────
-//
-// UPGRADE PATH (Option C — iframe isolation):
-// Replace each `dynamic(() => import(...))` entry with IframeAppLoader(appId).
-// The AppProps interface remains stable — apps need zero changes.
-// The only file to update is this APP_MAP.
-//
 const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   finder:          dynamic(() => import('@/apps/finder'),        { ssr: false, loading: () => <AppSkeleton /> }),
   scanner:         dynamic(() => import('@/apps/scanner'),       { ssr: false, loading: () => <AppSkeleton /> }),
@@ -68,12 +61,10 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   'mail':             dynamic(() => import('@/apps/mail'),             { ssr: false, loading: () => <AppSkeleton /> }),
   'feeds':            dynamic(() => import('@/apps/feeds'),            { ssr: false, loading: () => <AppSkeleton /> }),
   'website-dossier':  dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
+  finance:            dynamic(() => import('@/apps/finance'),          { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
-/** Sorted list of all app ids registered in APP_MAP. Used by tests to guard registry consistency. */
 export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
-
-// ─── AppLoader ───────────────────────────────────────────────────────────────
 
 interface AppLoaderProps extends AppProps {
   appId: string;
