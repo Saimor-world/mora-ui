@@ -134,23 +134,23 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
   const updatePanePosition = usePaneStore((s) => s.updatePanePosition);
   const updatePaneSize = usePaneStore((s) => s.updatePaneSize);
 
+  const managedTreasuryAddress = process.env.NEXT_PUBLIC_SAIMOR_CANARY_XRPL_ADDRESS || '';
   const configuredAddress = typeof initialData?.address === 'string' ? initialData.address : '';
-  const [address, setAddress] = useState(configuredAddress);
-  const [draftAddress, setDraftAddress] = useState(configuredAddress);
+  const initialAddress = configuredAddress || managedTreasuryAddress;
+  const [address, setAddress] = useState(initialAddress);
+  const [draftAddress, setDraftAddress] = useState(initialAddress);
   const [snapshot, setSnapshot] = useState<XrplSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (configuredAddress) return;
-    const envAddress = process.env.NEXT_PUBLIC_SAIMOR_CANARY_XRPL_ADDRESS || '';
+    if (configuredAddress || managedTreasuryAddress) return;
     const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) || '' : '';
-    const resolved = envAddress || stored;
-    if (resolved) {
-      setAddress(resolved);
-      setDraftAddress(resolved);
+    if (stored) {
+      setAddress(stored);
+      setDraftAddress(stored);
     }
-  }, [configuredAddress]);
+  }, [configuredAddress, managedTreasuryAddress]);
 
   const load = useCallback(async (target: string) => {
     if (!target) return;
@@ -239,22 +239,22 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
-                <Eye size={11} /> Mainnet observation
+                <Eye size={11} /> XRPL Mainnet observation
               </div>
-              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Operations Wallet</h2>
+              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Treasury Wallet</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Ein echtes Asset im OS, aber kein Hot Wallet. MÔRA darf sehen und verstehen. Signieren bleibt außerhalb in Xaman.
+                Die Ledger-kontrollierte XRPL-Adresse ist im OS nur sichtbar. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben vollständig außerhalb von Saimôr.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatePill tone="safe">Read only</StatePill>
                 <StatePill>Self custody</StatePill>
-                <StatePill>Xaman external</StatePill>
+                <StatePill>Ledger external</StatePill>
                 <StatePill tone="warn">Signing disabled</StatePill>
               </div>
             </div>
 
             <div className="flex gap-2">
-              {address && (
+              {address && !managedTreasuryAddress && (
                 <button
                   type="button"
                   onClick={disconnect}
@@ -277,9 +277,9 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
 
         {!address && (
           <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-5">
-            <div className="text-sm font-medium text-white/82">Canary Wallet verbinden</div>
+            <div className="text-sm font-medium text-white/82">XRPL-Adresse beobachten</div>
             <p className="mt-1 text-[11px] text-white/34">
-              Nur die öffentliche XRPL-Adresse. Sie wird lokal im Browser gespeichert, nicht in den Quellcode geschrieben.
+              Fallback für eine zusätzliche öffentliche Watch-Adresse. Keine Seed Phrase, kein Private Key und kein Signing-Pfad werden gespeichert.
             </p>
             <div className="mt-4 flex gap-2">
               <input
@@ -293,7 +293,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 onClick={saveAddress}
                 className="rounded-xl border border-emerald-300/16 bg-emerald-400/[0.07] px-4 py-2 text-xs font-medium text-emerald-100/76 hover:bg-emerald-400/[0.11]"
               >
-                Verbinden
+                Beobachten
               </button>
             </div>
           </section>
@@ -476,7 +476,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <StatePill tone={statusTone}>{opportunityStatusLabel(opportunity.status)}</StatePill>
                     <StatePill tone={riskTone}>{opportunityRiskLabel(opportunity.risk)}</StatePill>
-                    {opportunity.requiresSigning && <StatePill tone="warn">Xaman signing</StatePill>}
+                    {opportunity.requiresSigning && <StatePill tone="warn">External signing</StatePill>}
                   </div>
 
                   <p className="mt-3 text-[10px] leading-relaxed text-white/34">{opportunity.summary}</p>
