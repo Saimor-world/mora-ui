@@ -84,7 +84,7 @@ jobs:
             await page.screenshot({ path: 'preview-screenshots/home.png', fullPage: true });
 
             await page.getByText('Money that can work', { exact: true }).click();
-            await page.getByText('Read only · XRPL Mainnet', { exact: false }).first().waitFor({ timeout: 10000 });
+            await page.getByText('Treasury Wallet', { exact: true }).waitFor({ timeout: 10000 });
             await page.waitForTimeout(900);
             await page.screenshot({ path: 'preview-screenshots/capital.png', fullPage: true });
 
