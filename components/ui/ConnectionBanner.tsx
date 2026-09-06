@@ -12,6 +12,14 @@ export const ConnectionBanner: React.FC = () => {
     const surfaceProfile = useSurfaceProfile();
     const websiteEntryContext = useWebsiteEntryContext();
 
+    // Security-Check handoffs are intentionally a constrained preview surface.
+    // Showing a global amber connectivity warning here competes with the dossier
+    // handoff and makes the preview look broken even though live integrations are
+    // deliberately outside this first-run context.
+    if (websiteEntryContext) {
+        return null;
+    }
+
     if (status === 'connected' || status === 'connecting') {
         return null;
     }
@@ -31,17 +39,13 @@ export const ConnectionBanner: React.FC = () => {
             ? 'Keine Verbindung'
             : 'Verbindungsfehler';
 
-    const surfaceLabel = websiteEntryContext
-        ? 'Website-Preview-Workspace'
-        : surfaceProfile.isPublicDemoSurface
+    const surfaceLabel = surfaceProfile.isPublicDemoSurface
         ? 'Oeffentliche Demo-Instanz'
         : surfaceProfile.isLocalTruthSurface
             ? 'Interne Instanz'
             : 'Verbindung eingeschränkt';
 
-    const helperText = websiteEntryContext
-        ? 'Dieser Workspace stammt aus einem Website-Check. Echte Integrationen werden erst nach bewusster Verbindung genutzt.'
-        : surfaceProfile.isLocalTruthSurface
+    const helperText = surfaceProfile.isLocalTruthSurface
         ? 'Prüfe Core, lokale Integrationen und Modelle. Diese Oberfläche ist für die echte Arbeitslogik gedacht.'
         : surfaceProfile.isPublicDemoSurface
             ? 'Die Demo spiegelt nur den stabilen Stand. Lokale Regeln und Integrationen liegen ausserhalb dieser Instanz.'
