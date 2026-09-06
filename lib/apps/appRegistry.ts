@@ -133,6 +133,17 @@ export const APP_REGISTRY: AppManifest[] = [
 
   // ── Workspace ─────────────────────────────────────────────────────────────
   {
+    id: 'work',
+    name: 'Arbeit',
+    description: 'Fokussierter Einstieg in Aufgaben, Dateien, Zeit und Kommunikation',
+    icon: 'Grid',
+    color: 'teal',
+    category: 'workspace',
+    defaultSize: { width: 1080, height: 760 },
+    singleton: true,
+    launcherHidden: true,
+  },
+  {
     id: 'calendar',
     name: 'Kalender',
     description: 'Termine und Ereignisse',
