@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const XRPL_RPC = process.env.XRPL_RPC_URL || 'https://xrplcluster.com';
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
+const LSF_DISABLE_MASTER = 0x00100000;
 
 async function rpc<T>(method: string, params: Record<string, unknown>): Promise<T> {
   const controller = new AbortController();
@@ -31,9 +32,14 @@ async function rpc<T>(method: string, params: Record<string, unknown>): Promise<
   }
 }
 
+function deliveredAmount(entry: any, tx: any) {
+  const metaDelivered = entry?.meta?.delivered_amount ?? entry?.meta?.DeliveredAmount;
+  if (metaDelivered && metaDelivered !== 'unavailable') return metaDelivered;
+  return tx?.DeliverMax ?? tx?.Amount ?? null;
+}
+
 function normalizeTransaction(entry: any, address: string) {
   const tx = entry?.tx_json || entry?.tx || {};
-  const rawAmount = tx?.DeliverMax ?? tx?.Amount ?? null;
 
   return {
     hash: String(entry?.hash || tx?.hash || ''),
@@ -43,7 +49,7 @@ function normalizeTransaction(entry: any, address: string) {
     direction: tx?.Account === address ? 'out' : 'in',
     account: String(tx?.Account || ''),
     destination: tx?.Destination ? String(tx.Destination) : null,
-    amount: rawAmount,
+    amount: deliveredAmount(entry, tx),
     result: String(entry?.meta?.TransactionResult || entry?.meta?.transaction_result || ''),
     validated: entry?.validated !== false,
   };
@@ -71,9 +77,11 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    const drops = BigInt(accountInfo?.account_data?.Balance || '0');
+    const accountData = accountInfo?.account_data || {};
+    const drops = BigInt(accountData?.Balance || '0');
     const xrp = Number(drops) / 1_000_000;
-    const ownerCount = Number(accountInfo?.account_data?.OwnerCount || 0);
+    const ownerCount = Number(accountData?.OwnerCount || 0);
+    const accountFlags = Number(accountData?.Flags || 0);
 
     const validatedLedger = server?.info?.validated_ledger || server?.info?.closed_ledger || {};
     const reserveBaseXrp = Number(validatedLedger?.reserve_base_xrp || 0);
@@ -88,12 +96,16 @@ export async function GET(request: NextRequest) {
           issuer: String(line.account || ''),
           limit: String(line.limit || '0'),
           noRipple: Boolean(line.no_ripple),
+          freeze: Boolean(line.freeze),
+          authorized: line.authorized === undefined ? null : Boolean(line.authorized),
         }))
       : [];
 
     const transactions = Array.isArray(history?.transactions)
       ? history.transactions.map((entry: any) => normalizeTransaction(entry, address))
       : [];
+
+    const signerListCount = Array.isArray(accountInfo?.signer_lists) ? accountInfo.signer_lists.length : 0;
 
     return NextResponse.json({
       network: 'mainnet',
@@ -109,8 +121,13 @@ export async function GET(request: NextRequest) {
         requiredXrp: reserveRequiredXrp,
       },
       ownerCount,
-      sequence: Number(accountInfo?.account_data?.Sequence || 0),
-      signerListCount: Array.isArray(accountInfo?.signer_lists) ? accountInfo.signer_lists.length : 0,
+      sequence: Number(accountData?.Sequence || 0),
+      security: {
+        accountFlags,
+        masterKeyDisabled: (accountFlags & LSF_DISABLE_MASTER) !== 0,
+        regularKey: accountData?.RegularKey ? String(accountData.RegularKey) : null,
+        signerListCount,
+      },
       trustLines,
       transactions,
       fetchedAt: new Date().toISOString(),
