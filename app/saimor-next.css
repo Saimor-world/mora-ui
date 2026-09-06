@@ -1,0 +1,234 @@
+/*
+ * SAIMÔR NEXT — visual migration layer
+ * ------------------------------------
+ * This deliberately sits above the accumulated legacy visual system.
+ * We do not delete the cosmic/organic identity. We remove competing chrome,
+ * reduce glow-as-decoration and make depth, state and motion carry meaning.
+ */
+
+:root {
+  --saimor-next-ink: rgba(246, 249, 247, 0.94);
+  --saimor-next-muted: rgba(232, 239, 235, 0.42);
+  --saimor-next-hairline: rgba(238, 247, 242, 0.075);
+  --saimor-next-hairline-active: rgba(167, 243, 208, 0.14);
+  --saimor-next-surface: rgba(5, 10, 15, 0.76);
+  --saimor-next-surface-deep: rgba(3, 7, 12, 0.91);
+  --saimor-next-emerald: 110, 231, 183;
+  --saimor-next-violet: 196, 181, 253;
+}
+
+/* The void stays cosmic, but loses the old purple wallpaper feeling. */
+body:not(.standard-mode) {
+  background:
+    radial-gradient(ellipse 70% 55% at 18% 8%, rgba(16, 185, 129, 0.055), transparent 62%),
+    radial-gradient(ellipse 62% 58% at 86% 4%, rgba(124, 58, 237, 0.045), transparent 64%),
+    radial-gradient(ellipse 45% 42% at 58% 92%, rgba(206, 182, 118, 0.028), transparent 66%),
+    #05070d;
+}
+
+/* ── Window material ─────────────────────────────────────────────────────── */
+body:not(.standard-mode) .glass-panel-runtime {
+  border: 1px solid var(--saimor-next-hairline) !important;
+  border-radius: 28px !important;
+  background-color: var(--saimor-next-surface) !important;
+  background-image:
+    radial-gradient(90% 65% at 12% -8%, rgba(var(--pane-accent-rgb, 110,231,183), 0.075), transparent 55%),
+    linear-gradient(155deg, rgba(255,255,255,0.025), rgba(255,255,255,0.004) 46%, rgba(0,0,0,0.16)) !important;
+  backdrop-filter: blur(34px) saturate(112%) !important;
+  -webkit-backdrop-filter: blur(34px) saturate(112%) !important;
+  box-shadow:
+    0 40px 110px rgba(0, 0, 0, 0.54),
+    0 10px 36px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+
+body:not(.standard-mode) .glass-panel-runtime[data-active='true'] {
+  border-color: var(--saimor-next-hairline-active) !important;
+  box-shadow:
+    0 44px 120px rgba(0, 0, 0, 0.58),
+    0 12px 40px rgba(0, 0, 0, 0.26),
+    0 0 0 1px rgba(var(--pane-accent-rgb, 110,231,183), 0.018),
+    inset 0 1px 0 rgba(255, 255, 255, 0.065) !important;
+}
+
+body:not(.standard-mode) .glass-panel-runtime[data-active='false'] {
+  opacity: 0.94;
+  filter: saturate(0.84);
+}
+
+body:not(.standard-mode) .glass-panel-runtime::after {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.045) !important;
+  opacity: .72 !important;
+}
+
+/* App chrome should identify a surface, not decorate it. */
+body:not(.standard-mode) .pane-chrome {
+  border-bottom-color: rgba(255,255,255,.05) !important;
+  background:
+    linear-gradient(90deg, rgba(var(--pane-accent-rgb, 110,231,183),.035), transparent 31%),
+    rgba(2, 6, 10, .2) !important;
+}
+
+body:not(.standard-mode) .pane-chrome::before {
+  width: 42% !important;
+  opacity: .42;
+  background: linear-gradient(90deg, rgba(var(--pane-accent-rgb, 110,231,183),.65), rgba(var(--pane-accent-rgb, 110,231,183),.06) 44%, transparent) !important;
+}
+
+body:not(.standard-mode) .pane-titlebar {
+  min-height: 58px;
+  padding: 10px 12px 9px 16px;
+}
+
+body:not(.standard-mode) .pane-app-mark {
+  width: 25px;
+  height: 25px;
+  border-radius: 999px;
+  border-color: rgba(var(--pane-accent-rgb, 110,231,183), .13);
+  background: rgba(var(--pane-accent-rgb, 110,231,183), .045);
+  box-shadow: none;
+}
+
+body:not(.standard-mode) .pane-app-mark span {
+  width: 5px;
+  height: 5px;
+  box-shadow: 0 0 11px rgba(var(--pane-accent-rgb, 110,231,183), .46);
+}
+
+body:not(.standard-mode) .pane-title-copy h2,
+body:not(.standard-mode) .pane-title-custom {
+  color: var(--saimor-next-ink);
+  font-size: 12px;
+  font-weight: 520;
+  letter-spacing: .01em;
+}
+
+body:not(.standard-mode) .pane-context-line {
+  color: rgba(235, 242, 239, .27);
+  letter-spacing: .075em;
+}
+
+body:not(.standard-mode) .pane-control {
+  width: 29px;
+  height: 29px;
+  border-radius: 999px;
+  color: rgba(242,247,245,.34);
+  background: transparent;
+}
+
+body:not(.standard-mode) .pane-control:hover {
+  transform: none;
+  color: rgba(247,250,248,.82);
+  border-color: rgba(255,255,255,.07);
+  background: rgba(255,255,255,.055);
+}
+
+/* ── App library: less icon wall, more navigable system ──────────────────── */
+body:not(.standard-mode) .app-library__hero {
+  margin-bottom: 30px;
+  padding-bottom: 24px;
+  border-bottom-color: rgba(255,255,255,.045);
+}
+
+body:not(.standard-mode) .app-library__hero h3 {
+  font-size: 30px;
+  font-weight: 430;
+  letter-spacing: -.04em;
+}
+
+body:not(.standard-mode) .app-library__groups {
+  gap: 34px;
+}
+
+body:not(.standard-mode) .app-library__grid {
+  gap: 10px;
+}
+
+body:not(.standard-mode) .app-library__card {
+  min-height: 92px;
+  border-color: rgba(255,255,255,.052);
+  border-radius: 20px;
+  background: rgba(255,255,255,.018);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+body:not(.standard-mode) .app-library__card::before {
+  width: 1px;
+  opacity: .18;
+}
+
+body:not(.standard-mode) .app-library__card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,.095);
+  background: rgba(255,255,255,.033);
+}
+
+/* ── Dock: orientation bar, not a glowing second dashboard ──────────────── */
+body:not(.standard-mode) [data-testid='mora-dock'] {
+  bottom: 18px !important;
+}
+
+body:not(.standard-mode) [data-testid='dock'] {
+  padding: 7px 10px !important;
+  gap: 4px !important;
+  border: 1px solid rgba(255,255,255,.075) !important;
+  border-radius: 24px !important;
+  background: rgba(5, 10, 15, .7) !important;
+  backdrop-filter: blur(32px) saturate(112%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(112%) !important;
+  box-shadow:
+    0 24px 70px rgba(0,0,0,.48),
+    inset 0 1px 0 rgba(255,255,255,.045) !important;
+}
+
+body:not(.standard-mode) [data-testid='dock'] > .pointer-events-none {
+  opacity: .16 !important;
+}
+
+body:not(.standard-mode) [data-testid='dock'] button {
+  transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease !important;
+}
+
+body:not(.standard-mode) [data-testid='dock'] button:hover {
+  transform: translateY(-2px) scale(1.035) !important;
+}
+
+/* Status chips read as instrumentation, not badges. */
+body:not(.standard-mode) [data-testid='dock'] [class*='rounded-full'][class*='border'] {
+  box-shadow: none !important;
+}
+
+/* ── Shared content material ─────────────────────────────────────────────── */
+body:not(.standard-mode) .glass-card:not(.glass-panel-runtime) {
+  border-color: rgba(255,255,255,.065);
+  background:
+    radial-gradient(90% 80% at 10% 0%, rgba(16,185,129,.035), transparent 54%),
+    rgba(5,10,15,.52);
+  box-shadow: 0 18px 54px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.035);
+}
+
+/* Movement stays organic, but interaction no longer feels delayed. */
+body:not(.standard-mode) button,
+body:not(.standard-mode) [role='button'],
+body:not(.standard-mode) input,
+body:not(.standard-mode) textarea,
+body:not(.standard-mode) select {
+  transition-duration: .22s;
+}
+
+@media (max-width: 720px) {
+  body:not(.standard-mode) .glass-panel-runtime {
+    border-radius: 20px !important;
+  }
+
+  body:not(.standard-mode) [data-testid='dock'] {
+    border-radius: 20px !important;
+    padding: 5px 7px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body:not(.standard-mode) [data-testid='dock'] button:hover {
+    transform: none !important;
+  }
+}
