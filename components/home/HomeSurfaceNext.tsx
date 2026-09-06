@@ -8,6 +8,7 @@ import {
   Boxes,
   Command,
   Compass,
+  Grid2X2,
   Layers3,
   MessageCircle,
   Radar,
@@ -110,15 +111,22 @@ export const HomeSurfaceNext: React.FC = () => {
   });
 
   const openWork = () => openPane({
+    id: 'work-main',
+    type: 'work',
+    title: 'Arbeit',
+    size: { width: 1080, height: 760 },
+  });
+
+  const openTools = () => openPane({
     id: 'apps-main',
     type: 'apps',
-    title: 'Arbeit',
+    title: 'Alle Werkzeuge',
     size: { width: 1040, height: 760 },
   });
 
   const openCapital = () => openPane({
     id: 'finance-main',
-    type: 'finance' as any,
+    type: 'finance',
     title: 'Capital',
     size: { width: 1040, height: 760 },
   });
@@ -163,7 +171,7 @@ export const HomeSurfaceNext: React.FC = () => {
               </div>
             </div>
             <p className="mt-8 max-w-[680px] text-[clamp(1rem,1.8vw,1.35rem)] font-light leading-relaxed tracking-[-0.02em] text-white/42">
-              Nicht noch ein Dashboard. Ein Arbeitsfeld, das versteht, was existiert — und was als Nächstes wirklich zählt.
+              Ein Arbeitsfeld, das versteht, was existiert — und was als Nächstes wirklich zählt.
             </p>
           </div>
 
@@ -194,7 +202,7 @@ export const HomeSurfaceNext: React.FC = () => {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <div className="text-[9px] uppercase tracking-[0.24em] text-white/24">Live surfaces</div>
-              <h2 className="mt-1 text-lg font-medium tracking-[-0.02em] text-white/72">Vier Wege. Kein App-Chaos.</h2>
+              <h2 className="mt-1 text-lg font-medium tracking-[-0.02em] text-white/72">Vier Wege. Ein System.</h2>
             </div>
             <button
               type="button"
@@ -209,7 +217,7 @@ export const HomeSurfaceNext: React.FC = () => {
             <Portal
               eyebrow="Work"
               title="Build & Operate"
-              description="Projekte, Aufgaben, Dateien und deine Produkte — aus einem Arbeitskontext heraus."
+              description="Aufgaben, Dateien, Zeit und Produkte — aus einem Arbeitskontext heraus."
               icon={Layers3}
               onClick={openWork}
               status="active"
@@ -225,14 +233,14 @@ export const HomeSurfaceNext: React.FC = () => {
             <Portal
               eyebrow="Intelligence"
               title="MÔRA"
-              description="Kontext, Memory und Entscheidungen — nicht als Chatbot, sondern als Schicht im OS."
+              description="Kontext, Memory und Entscheidungen — als Schicht im gesamten OS."
               icon={MessageCircle}
               onClick={openMora}
             />
             <Portal
               eyebrow="Systems"
               title="Nightwatch"
-              description="Infrastruktur, Runtime und Signale. Nur das, was gerade Aufmerksamkeit braucht."
+              description="Infrastruktur, Runtime und Signale. Nur was Aufmerksamkeit braucht."
               icon={Radar}
               onClick={openSystems}
               status="live"
@@ -250,10 +258,10 @@ export const HomeSurfaceNext: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={openWork}
+            onClick={openTools}
             className="flex items-center justify-between rounded-[26px] border border-white/[0.06] bg-white/[0.025] px-5 py-4 text-left text-xs text-white/44 transition-colors hover:bg-white/[0.045] hover:text-white/72"
           >
-            <span>Alle Werkzeuge</span>
+            <span className="flex items-center gap-2"><Grid2X2 size={13} /> Alle Werkzeuge</span>
             <ArrowUpRight size={14} />
           </button>
         </section>
