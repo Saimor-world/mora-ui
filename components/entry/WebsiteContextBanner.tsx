@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ShieldCheck, X } from 'lucide-react';
-import { clearWebsiteEntryContext, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
+import { clearWebsiteEntryActiveContext, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { toast } from 'sonner';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -55,7 +55,7 @@ export function WebsiteContextBanner() {
     if (!context || !isVisible) return null;
 
     const handleClear = () => {
-        clearWebsiteEntryContext();
+        clearWebsiteEntryActiveContext();
         setIsVisible(false);
         toast.info('Website-Kontext wurde entfernt');
     };
