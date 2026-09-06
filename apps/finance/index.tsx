@@ -6,10 +6,13 @@ import {
   ArrowUpRight,
   Coins,
   Database,
+  Eye,
+  KeyRound,
   Link2,
   LockKeyhole,
   RefreshCcw,
   ShieldCheck,
+  Unplug,
   WalletCards,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -24,6 +27,8 @@ type TrustLine = {
   issuer: string;
   limit: string;
   noRipple: boolean;
+  freeze: boolean;
+  authorized: boolean | null;
 };
 
 type XrplTransaction = {
@@ -54,7 +59,12 @@ type XrplSnapshot = {
   };
   ownerCount: number;
   sequence: number;
-  signerListCount: number;
+  security: {
+    accountFlags: number;
+    masterKeyDisabled: boolean;
+    regularKey: string | null;
+    signerListCount: number;
+  };
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
   fetchedAt: string;
@@ -90,6 +100,16 @@ function describeAmount(amount: unknown) {
   return '—';
 }
 
+function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'safe' | 'warn' | 'neutral' }) {
+  const classes = tone === 'safe'
+    ? 'border-emerald-300/14 bg-emerald-400/[0.055] text-emerald-100/68'
+    : tone === 'warn'
+      ? 'border-amber-300/12 bg-amber-400/[0.045] text-amber-100/58'
+      : 'border-white/[0.07] bg-white/[0.025] text-white/42';
+
+  return <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${classes}`}>{children}</span>;
+}
+
 export default function FinanceApp({ paneId, initialData }: AppProps) {
   const pane = usePaneStore((s) => s.getPane(paneId));
   const activePaneId = usePaneStore((s) => s.activePaneId);
@@ -121,6 +141,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     if (!target) return;
     setLoading(true);
     setError(null);
+
     try {
       const response = await fetch(`/api/finance/xrpl?address=${encodeURIComponent(target)}`, { cache: 'no-store' });
       const body = await response.json();
@@ -145,8 +166,25 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     setAddress(next);
   }, [draftAddress]);
 
+  const disconnect = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    setAddress('');
+    setDraftAddress('');
+    setSnapshot(null);
+    setError(null);
+  }, []);
+
   const positiveTokens = useMemo(
     () => (snapshot?.trustLines || []).filter((line) => Number(line.balance) > 0),
+    [snapshot],
+  );
+
+  const reserveShare = snapshot && snapshot.xrp > 0
+    ? Math.min(100, (snapshot.reserve.requiredXrp / snapshot.xrp) * 100)
+    : 0;
+
+  const successfulRecent = useMemo(
+    () => (snapshot?.transactions || []).filter((tx) => tx.validated && (!tx.result || tx.result === 'tesSUCCESS')).length,
     [snapshot],
   );
 
@@ -182,44 +220,63 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
       opacity={0.4}
     >
       <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1 text-white">
-        <section className="rounded-2xl border border-emerald-300/12 bg-emerald-400/[0.04] p-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
+        <section className="rounded-[24px] border border-emerald-300/12 bg-[radial-gradient(circle_at_8%_0%,rgba(16,185,129,0.09),transparent_34%),rgba(0,0,0,0.14)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-emerald-200/55">
-                <ShieldCheck size={12} /> Read only · XRPL Mainnet
+              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
+                <Eye size={11} /> Mainnet observation
               </div>
-              <h2 className="mt-2 text-xl font-medium text-white/92">Operations / Canary</h2>
-              <p className="mt-1 max-w-xl text-xs leading-relaxed text-white/42">
-                Beobachten, verstehen, bewerten. Kein Seed, kein Private Key, kein Signaturpfad im OS.
+              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Operations Wallet</h2>
+              <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
+                Ein echtes Asset im OS, aber kein Hot Wallet. MÔRA darf sehen und verstehen. Signieren bleibt außerhalb in Xaman.
               </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <StatePill tone="safe">Read only</StatePill>
+                <StatePill>Self custody</StatePill>
+                <StatePill>Xaman external</StatePill>
+                <StatePill tone="warn">Signing disabled</StatePill>
+              </div>
             </div>
-            <button
-              type="button"
-              onClick={() => address && load(address)}
-              disabled={!address || loading}
-              className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/62 transition-colors hover:bg-white/[0.08] disabled:opacity-40"
-            >
-              <RefreshCcw size={13} className={loading ? 'animate-spin' : ''} />
-              Aktualisieren
-            </button>
+
+            <div className="flex gap-2">
+              {address && (
+                <button
+                  type="button"
+                  onClick={disconnect}
+                  className="inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-[10px] text-white/36 hover:text-white/62"
+                >
+                  <Unplug size={12} /> Trennen
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => address && load(address)}
+                disabled={!address || loading}
+                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[10px] text-white/52 transition-colors hover:bg-white/[0.06] disabled:opacity-35"
+              >
+                <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} /> Aktualisieren
+              </button>
+            </div>
           </div>
         </section>
 
         {!address && (
-          <section className="rounded-2xl border border-white/10 bg-black/20 p-4">
-            <div className="text-sm font-medium text-white/85">Öffentliche XRPL-Adresse verbinden</div>
-            <p className="mt-1 text-xs text-white/40">Nur eine r…-Adresse. Niemals Seed, Secret oder Private Key.</p>
-            <div className="mt-3 flex gap-2">
+          <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-5">
+            <div className="text-sm font-medium text-white/82">Canary Wallet verbinden</div>
+            <p className="mt-1 text-[11px] text-white/34">
+              Nur die öffentliche XRPL-Adresse. Sie wird lokal im Browser gespeichert, nicht in den Quellcode geschrieben.
+            </p>
+            <div className="mt-4 flex gap-2">
               <input
                 value={draftAddress}
                 onChange={(event) => setDraftAddress(event.target.value)}
                 placeholder="r…"
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-black/25 px-3 py-2.5 font-mono text-xs text-white/82 outline-none focus:border-emerald-300/30"
+                className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 font-mono text-xs text-white/78 outline-none focus:border-emerald-300/24"
               />
               <button
                 type="button"
                 onClick={saveAddress}
-                className="rounded-xl border border-emerald-300/20 bg-emerald-400/10 px-4 py-2 text-xs font-medium text-emerald-100/85 hover:bg-emerald-400/15"
+                className="rounded-xl border border-emerald-300/16 bg-emerald-400/[0.07] px-4 py-2 text-xs font-medium text-emerald-100/76 hover:bg-emerald-400/[0.11]"
               >
                 Verbinden
               </button>
@@ -227,113 +284,150 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           </section>
         )}
 
+        {error && (
+          <div className="rounded-xl border border-red-300/16 bg-red-500/[0.06] px-4 py-3 text-xs text-red-200/75">{error}</div>
+        )}
+
         {address && (
           <>
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/35"><Coins size={12} /> Bestand</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-white/92">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
-                <div className="mt-1 font-mono text-[10px] text-white/30">{shortAddress(address)}</div>
+              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
+                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Coins size={11} /> XRP balance</div>
+                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
+                <div className="mt-1 font-mono text-[9px] text-white/24">{shortAddress(address)}</div>
               </div>
-              <div className="rounded-2xl border border-emerald-300/10 bg-emerald-400/[0.025] p-4">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-emerald-100/38"><WalletCards size={12} /> Verfügbar</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-white/92">{snapshot ? formatNumber(snapshot.availableXrp) : '—'}</div>
-                <div className="mt-1 text-[10px] text-white/30">nach Ledger-Reserve</div>
+              <div className="rounded-[20px] border border-emerald-300/[0.09] bg-emerald-400/[0.02] p-4">
+                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-emerald-100/34"><WalletCards size={11} /> Spendable</div>
+                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.availableXrp) : '—'}</div>
+                <div className="mt-1 text-[9px] text-white/24">nach aktueller Ledger-Reserve</div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/35"><LockKeyhole size={12} /> Reserve</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-white/92">{snapshot ? formatNumber(snapshot.reserve.requiredXrp) : '—'}</div>
-                <div className="mt-1 text-[10px] text-white/30">{snapshot ? `${snapshot.ownerCount} Ledger-Objekte` : 'Ledger requirement'}</div>
+              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
+                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><LockKeyhole size={11} /> Reserve</div>
+                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.reserve.requiredXrp) : '—'}</div>
+                <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.04]">
+                  <div className="h-full rounded-full bg-white/20" style={{ width: `${reserveShare}%` }} />
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] text-white/35"><Link2 size={12} /> Tokens</div>
-                <div className="mt-2 text-3xl font-semibold tracking-tight text-white/92">{snapshot ? positiveTokens.length : '—'}</div>
-                <div className="mt-1 text-[10px] text-white/30">positive issued balances</div>
+              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
+                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Link2 size={11} /> Issued assets</div>
+                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? positiveTokens.length : '—'}</div>
+                <div className="mt-1 text-[9px] text-white/24">{snapshot ? `${snapshot.trustLines.length} Trustlines gesamt` : 'Trustlines'}</div>
               </div>
             </section>
 
-            {error && (
-              <div className="rounded-xl border border-red-300/16 bg-red-500/[0.06] px-4 py-3 text-xs text-red-200/75">{error}</div>
-            )}
-
-            <section className="rounded-2xl border border-white/10 bg-black/20 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-sm font-medium text-white/82">On-chain assets</div>
-                  <div className="mt-1 text-[10px] text-white/32">
-                    {snapshot?.ledgerIndex ? `Validated ledger ${snapshot.ledgerIndex}` : 'Warte auf Ledger-Daten'}
-                  </div>
-                </div>
-                {snapshot?.fetchedAt && <div className="text-[10px] text-white/25">{new Date(snapshot.fetchedAt).toLocaleTimeString('de-DE')}</div>}
-              </div>
-
-              <div className="mt-3 divide-y divide-white/[0.06]">
-                <div className="flex items-center justify-between py-3">
+            <section className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
+              <div className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+                <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="text-sm font-medium text-white/80">XRP</div>
-                    <div className="text-[10px] text-white/30">Native asset</div>
-                  </div>
-                  <div className="font-mono text-sm text-white/80">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
-                </div>
-                {positiveTokens.map((line) => (
-                  <div key={`${line.currency}-${line.issuer}`} className="flex items-center justify-between gap-4 py-3">
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-white/80">{line.currency}</div>
-                      <div className="truncate font-mono text-[10px] text-white/28">Issuer {shortAddress(line.issuer)}</div>
+                    <div className="text-[13px] font-medium text-white/76">Assets on ledger</div>
+                    <div className="mt-1 text-[9px] text-white/28">
+                      {snapshot?.ledgerIndex ? `Validated ledger ${snapshot.ledgerIndex}` : 'Warte auf Ledger-Daten'}
                     </div>
-                    <div className="shrink-0 font-mono text-sm text-white/80">{formatBalance(line.balance)}</div>
                   </div>
-                ))}
-                {snapshot && positiveTokens.length === 0 && (
-                  <div className="py-5 text-xs text-white/32">Keine positiven issued-token balances gefunden.</div>
-                )}
+                  {snapshot?.fetchedAt && <div className="text-[9px] text-white/20">{new Date(snapshot.fetchedAt).toLocaleTimeString('de-DE')}</div>}
+                </div>
+
+                <div className="mt-3 divide-y divide-white/[0.05]">
+                  <div className="flex items-center justify-between py-3">
+                    <div>
+                      <div className="text-[12px] font-medium text-white/72">XRP</div>
+                      <div className="text-[9px] text-white/26">Native asset</div>
+                    </div>
+                    <div className="font-mono text-[12px] text-white/68">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
+                  </div>
+                  {positiveTokens.map((line) => (
+                    <div key={`${line.currency}-${line.issuer}`} className="flex items-center justify-between gap-4 py-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <div className="text-[12px] font-medium text-white/72">{line.currency}</div>
+                          {line.freeze && <StatePill tone="warn">Frozen</StatePill>}
+                        </div>
+                        <div className="truncate font-mono text-[9px] text-white/24">Issuer {shortAddress(line.issuer)}</div>
+                      </div>
+                      <div className="shrink-0 font-mono text-[12px] text-white/68">{formatBalance(line.balance)}</div>
+                    </div>
+                  ))}
+                  {snapshot && positiveTokens.length === 0 && (
+                    <div className="py-5 text-[10px] text-white/28">Keine positiven issued-token balances gefunden.</div>
+                  )}
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
+                  <KeyRound size={13} className="text-emerald-200/48" /> Account security
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
+                    <span className="text-[10px] text-white/32">OS signing path</span>
+                    <StatePill tone="safe">Disabled</StatePill>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
+                    <span className="text-[10px] text-white/32">Master key</span>
+                    <span className="text-[10px] text-white/58">{snapshot ? (snapshot.security.masterKeyDisabled ? 'Disabled on ledger' : 'Enabled on ledger') : '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
+                    <span className="text-[10px] text-white/32">Regular key</span>
+                    <span className="font-mono text-[9px] text-white/50">{snapshot ? (snapshot.security.regularKey ? shortAddress(snapshot.security.regularKey) : 'None') : '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
+                    <span className="text-[10px] text-white/32">Signer lists</span>
+                    <span className="text-[10px] text-white/58">{snapshot?.security.signerListCount ?? '—'}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-[10px] text-white/32">Sequence</span>
+                    <span className="font-mono text-[10px] text-white/58">{snapshot?.sequence ?? '—'}</span>
+                  </div>
+                </div>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-black/20 p-4">
+            <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-sm font-medium text-white/82">Recent ledger activity</div>
-                  <div className="mt-1 text-[10px] text-white/32">Validierte Transaktionen dieses Accounts · nur Beobachtung</div>
+                  <div className="text-[13px] font-medium text-white/76">Recent ledger activity</div>
+                  <div className="mt-1 text-[9px] text-white/28">{snapshot ? `${successfulRecent} validierte erfolgreiche Einträge im geladenen Fenster` : 'Nur Beobachtung'}</div>
                 </div>
-                <Database size={13} className="text-white/22" />
+                <Database size={13} className="text-white/20" />
               </div>
 
-              <div className="mt-3 divide-y divide-white/[0.06]">
+              <div className="mt-3 divide-y divide-white/[0.05]">
                 {(snapshot?.transactions || []).slice(0, 6).map((tx) => {
                   const DirectionIcon = tx.direction === 'in' ? ArrowDownLeft : ArrowUpRight;
                   return (
                     <div key={`${tx.hash}-${tx.ledgerIndex}`} className="flex items-center gap-3 py-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.06] ${tx.direction === 'in' ? 'text-emerald-200/65' : 'text-amber-200/60'}`}>
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.05] ${tx.direction === 'in' ? 'text-emerald-200/60' : 'text-amber-200/55'}`}>
                         <DirectionIcon size={13} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-white/72">{tx.type}</span>
-                          <span className="text-[9px] uppercase tracking-[0.12em] text-white/24">{tx.direction === 'in' ? 'in' : 'out'}</span>
+                          <span className="text-[11px] font-medium text-white/66">{tx.type}</span>
+                          <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">{tx.direction}</span>
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[9px] text-white/24">
+                        <div className="mt-0.5 truncate font-mono text-[8px] text-white/20">
                           {tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-8)}` : `Ledger ${tx.ledgerIndex ?? '—'}`}
                         </div>
                       </div>
                       <div className="shrink-0 text-right">
-                        <div className="font-mono text-[11px] text-white/58">{describeAmount(tx.amount)}</div>
-                        <div className="mt-0.5 text-[9px] text-white/22">{tx.closeTimeIso ? new Date(tx.closeTimeIso).toLocaleDateString('de-DE') : tx.result || 'validated'}</div>
+                        <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
+                        <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? new Date(tx.closeTimeIso).toLocaleDateString('de-DE') : tx.result || 'validated'}</div>
                       </div>
                     </div>
                   );
                 })}
                 {snapshot && snapshot.transactions.length === 0 && (
-                  <div className="py-5 text-xs text-white/32">Keine letzten Transaktionen zurückgegeben.</div>
+                  <div className="py-5 text-[10px] text-white/28">Keine letzten Transaktionen zurückgegeben.</div>
                 )}
               </div>
             </section>
 
-            <section className="rounded-2xl border border-cyan-300/10 bg-cyan-400/[0.025] p-4">
-              <div className="text-[10px] uppercase tracking-[0.2em] text-cyan-200/45">Opportunity Engine</div>
-              <div className="mt-1 text-sm text-white/76">Als Nächstes: Chancen finden, nicht blind ausführen.</div>
-              <p className="mt-1 text-xs leading-relaxed text-white/36">
-                AMMs, Lending, Vaults, tokenisierte Assets, Rewards und seriöse Promotions werden als beobachtbare Möglichkeiten gegen Policies, Liquidität und Risiko bewertet. Ein späterer Signaturpfad bleibt separat über Xaman.
+            <section className="rounded-[22px] border border-cyan-300/[0.08] bg-cyan-400/[0.018] p-4">
+              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] text-cyan-200/38">
+                <ShieldCheck size={11} /> MÔRA capital policy
+              </div>
+              <div className="mt-2 text-[13px] text-white/68">Observe → understand → propose. Never sign.</div>
+              <p className="mt-1 text-[10px] leading-relaxed text-white/30">
+                Chancen wie AMMs, Lending, Vaults, tokenisierte Assets, Rewards und Promotions können später als Intents bewertet werden. Ausführung bleibt getrennt und braucht einen externen Signer.
               </p>
             </section>
           </>
