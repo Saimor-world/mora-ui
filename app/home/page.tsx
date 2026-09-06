@@ -6,9 +6,9 @@ import nextDynamic from 'next/dynamic';
 export const dynamic = 'force-dynamic';
 
 /**
- * /home - Main OS Entry Point
+ * /home - canonical Saimôr OS Desk surface.
  *
- * After authentication, users land here.
+ * Desk is the personal home surface inside Saimôr OS, not a separate product.
  * MoraShell is code-split so `/` and `/login` never pay for the full OS ambient stack.
  */
 const MoraShell = nextDynamic(
@@ -29,5 +29,15 @@ const MoraShell = nextDynamic(
 );
 
 export default function HomePage() {
-    return <MoraShell />;
+    return (
+        <div
+            className="h-screen w-full"
+            data-saimor-product="saimor-os"
+            data-saimor-surface="desk"
+            data-saimor-runtime="canonical-os"
+            data-saimor-migration="strangler"
+        >
+            <MoraShell />
+        </div>
+    );
 }
