@@ -6,6 +6,7 @@ import {
   Activity,
   ArrowUpRight,
   Boxes,
+  CircleDollarSign,
   Command,
   Compass,
   Grid2X2,
@@ -20,6 +21,13 @@ import {
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+
+const CANARY_STORAGE_KEY = 'saimor.finance.xrpl.canary';
+
+type RevenueState = {
+  recognizedPayments: number;
+  recognizedRevenueXrp: number;
+};
 
 function timeGreeting(hour: number) {
   if (hour < 11) return 'Guten Morgen';
@@ -89,12 +97,55 @@ export const HomeSurfaceNext: React.FC = () => {
   const setCoreMode = useNavStore((s) => s.setCoreMode);
   const user = useSessionStore((s) => s.user);
   const [now, setNow] = useState<Date | null>(null);
+  const [revenue, setRevenue] = useState<RevenueState | null>(null);
+  const [revenueConnected, setRevenueConnected] = useState(false);
 
   useEffect(() => {
     const update = () => setNow(new Date());
     update();
     const timer = window.setInterval(update, 30_000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    let timer: number | undefined;
+
+    const refreshRevenue = async () => {
+      const envAddress = process.env.NEXT_PUBLIC_SAIMOR_CANARY_XRPL_ADDRESS || '';
+      const storedAddress = window.localStorage.getItem(CANARY_STORAGE_KEY) || '';
+      const address = envAddress || storedAddress;
+
+      if (!address) {
+        if (!cancelled) {
+          setRevenueConnected(false);
+          setRevenue(null);
+        }
+        return;
+      }
+
+      if (!cancelled) setRevenueConnected(true);
+
+      try {
+        const response = await fetch(`/api/finance/xrpl?address=${encodeURIComponent(address)}`, { cache: 'no-store' });
+        const body = await response.json();
+        if (!response.ok || cancelled) return;
+        setRevenue({
+          recognizedPayments: Number(body?.commerce?.recognizedPayments || 0),
+          recognizedRevenueXrp: Number(body?.commerce?.recognizedRevenueXrp || 0),
+        });
+      } catch {
+        // Home remains calm if the ledger rail is temporarily unavailable.
+      }
+    };
+
+    void refreshRevenue();
+    timer = window.setInterval(() => void refreshRevenue(), 30_000);
+
+    return () => {
+      cancelled = true;
+      if (timer) window.clearInterval(timer);
+    };
   }, []);
 
   const firstName = useMemo(() => {
@@ -138,6 +189,10 @@ export const HomeSurfaceNext: React.FC = () => {
     title: 'Nightwatch',
     size: { width: 1100, height: 760 },
   });
+
+  const revenueValue = revenue
+    ? new Intl.NumberFormat('de-DE', { maximumFractionDigits: 6 }).format(revenue.recognizedRevenueXrp)
+    : '—';
 
   return (
     <div className="pointer-events-auto absolute inset-0 overflow-y-auto px-5 pb-36 pt-20 text-white sm:px-8 lg:px-12 xl:px-16">
@@ -249,7 +304,32 @@ export const HomeSurfaceNext: React.FC = () => {
           </div>
         </section>
 
-        <section className="mt-10 grid gap-3 lg:grid-cols-[1.5fr_.5fr]">
+        <button
+          type="button"
+          onClick={openCapital}
+          className="group mt-3 flex w-full flex-wrap items-center justify-between gap-4 overflow-hidden rounded-[22px] border border-emerald-300/[0.08] bg-[linear-gradient(90deg,rgba(16,185,129,.045),rgba(0,0,0,.08),rgba(124,58,237,.025))] px-5 py-4 text-left backdrop-blur-xl transition-colors hover:border-emerald-200/14 hover:bg-emerald-300/[0.035]"
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-emerald-300/[0.09] bg-emerald-400/[0.04] text-emerald-100/58">
+              <CircleDollarSign size={15} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/34">Revenue rail · WORLD → XRPL → CAPITAL</div>
+              <div className="mt-1 text-[12px] text-white/54">
+                {!revenueConnected
+                  ? 'Ready for first sale · connect Canary in Capital'
+                  : revenue
+                    ? `${revenueValue} XRP recognized revenue · ${revenue.recognizedPayments} ${revenue.recognizedPayments === 1 ? 'sale' : 'sales'}`
+                    : 'Ledger connected · reading commerce events'}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/20 transition-colors group-hover:text-white/46">
+            On-ledger only <ArrowUpRight size={12} />
+          </div>
+        </button>
+
+        <section className="mt-3 grid gap-3 lg:grid-cols-[1.5fr_.5fr]">
           <div className="relative overflow-hidden rounded-[26px] border border-white/[0.06] bg-black/[0.1] px-5 py-4 backdrop-blur-xl">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-[10px] text-white/30">
               <span className="flex items-center gap-2"><ShieldCheck size={12} className="text-emerald-200/45" /> Core reserve stays separate</span>
