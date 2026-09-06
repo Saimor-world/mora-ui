@@ -35,6 +35,7 @@ function AppSkeleton() {
 }
 
 const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
+  work:            dynamic(() => import('@/apps/work'),          { ssr: false, loading: () => <AppSkeleton /> }),
   finder:          dynamic(() => import('@/apps/finder'),        { ssr: false, loading: () => <AppSkeleton /> }),
   scanner:         dynamic(() => import('@/apps/scanner'),       { ssr: false, loading: () => <AppSkeleton /> }),
   chat:            dynamic(() => import('@/apps/chat'),          { ssr: false, loading: () => <AppSkeleton /> }),
@@ -56,12 +57,12 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   grid:            dynamic(() => import('@/apps/grid'),          { ssr: false, loading: () => <AppSkeleton /> }),
   apps:            dynamic(() => import('@/apps/apps'),          { ssr: false, loading: () => <AppSkeleton /> }),
   'meine-dateien': dynamic(() => import('@/apps/meine-dateien'), { ssr: false, loading: () => <AppSkeleton /> }),
-  'action-center':    dynamic(() => import('@/apps/action-center'),    { ssr: false, loading: () => <AppSkeleton /> }),
-  'integrations':     dynamic(() => import('@/apps/integrations'),     { ssr: false, loading: () => <AppSkeleton /> }),
-  'mail':             dynamic(() => import('@/apps/mail'),             { ssr: false, loading: () => <AppSkeleton /> }),
-  'feeds':            dynamic(() => import('@/apps/feeds'),            { ssr: false, loading: () => <AppSkeleton /> }),
-  'website-dossier':  dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
-  finance:            dynamic(() => import('@/apps/finance'),          { ssr: false, loading: () => <AppSkeleton /> }),
+  'action-center': dynamic(() => import('@/apps/action-center'), { ssr: false, loading: () => <AppSkeleton /> }),
+  integrations:    dynamic(() => import('@/apps/integrations'),  { ssr: false, loading: () => <AppSkeleton /> }),
+  mail:            dynamic(() => import('@/apps/mail'),          { ssr: false, loading: () => <AppSkeleton /> }),
+  feeds:           dynamic(() => import('@/apps/feeds'),         { ssr: false, loading: () => <AppSkeleton /> }),
+  'website-dossier': dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
+  finance:         dynamic(() => import('@/apps/finance'),       { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
