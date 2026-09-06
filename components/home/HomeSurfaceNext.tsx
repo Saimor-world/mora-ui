@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
   WalletCards,
+  type LucideIcon,
 } from 'lucide-react';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
@@ -48,7 +49,7 @@ type PortalProps = {
   eyebrow: string;
   title: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   onClick: () => void;
   status?: string;
 };
