@@ -26,7 +26,14 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -euo pipefail
-            sudo bash -lc 'cd /root/saimor/ops && bash deploy-ui.sh'
+            sudo bash -lc '
+              set -euo pipefail
+              git -C /root/saimor/ops fetch origin main
+              git -C /root/saimor/ops checkout main
+              git -C /root/saimor/ops pull --ff-only origin main
+              cd /root/saimor/ops
+              bash deploy-ui.sh
+            '
 
       - name: Confirm
         run: echo "UI deployed at $(date -u)"
