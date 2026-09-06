@@ -4,46 +4,65 @@ export const SAIMOR_OS_PRODUCT = {
 } as const;
 
 export const SAIMOR_SURFACES = {
-  desk: {
-    id: 'desk',
-    name: 'Desk',
+  home: {
+    id: 'home',
+    name: 'Home',
     role: 'home',
     canonicalPath: '/',
-    legacyOrigin: 'https://dash.saimor.world',
+  },
+  today: {
+    id: 'today',
+    name: 'Heute',
+    role: 'home',
+  },
+  inbox: {
+    id: 'inbox',
+    name: 'Inbox',
+    role: 'work',
   },
   files: {
     id: 'files',
-    name: 'Files',
-    role: 'workspace',
+    name: 'Dateien',
+    role: 'work',
   },
   workspaces: {
     id: 'workspaces',
-    name: 'Workspaces',
-    role: 'workspace',
+    name: 'Bereiche',
+    role: 'work',
   },
   board: {
     id: 'board',
     name: 'Board',
-    role: 'workspace',
+    role: 'work',
   },
   calendar: {
     id: 'calendar',
-    name: 'Calendar',
-    role: 'workspace',
+    name: 'Kalender',
+    role: 'work',
+  },
+  memory: {
+    id: 'memory',
+    name: 'Wissen',
+    role: 'knowledge',
   },
   operations: {
     id: 'operations',
-    name: 'Operations',
-    role: 'workspace',
+    name: 'Betrieb',
+    role: 'system',
+  },
+  runtime: {
+    id: 'runtime',
+    name: 'Runtime',
+    role: 'system',
   },
   agents: {
     id: 'agents',
     name: 'Agents',
-    role: 'workspace',
+    role: 'intelligence',
   },
   settings: {
     id: 'settings',
-    name: 'Settings',
+    name: 'Einstellungen',
     role: 'system',
   },
 } as const;
@@ -56,7 +75,11 @@ export const SAIMOR_ENGINE_CAPABILITIES = [
   'engine.events',
   'engine.notifications',
   'engine.ambient',
+  'mora.identity',
+  'mora.personality',
   'mora.context',
+  'mora.presence',
+  'mora.proactivity',
   'mora.conversation',
   'mora.execution',
 ] as const;
@@ -64,9 +87,8 @@ export const SAIMOR_ENGINE_CAPABILITIES = [
 export const OS_RUNTIME = {
   canonicalRepo: 'mora-ui',
   canonicalOrigin: 'https://hq.saimor.world',
-  legacyDeskRepo: 'mora-work',
-  legacyDeskOrigin: 'https://dash.saimor.world',
-  migrationMode: 'strangler',
+  migrationSources: ['mora-work'],
+  target: 'single-runtime',
 } as const;
 
 export type SaimorSurfaceId = keyof typeof SAIMOR_SURFACES;
