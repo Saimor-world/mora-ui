@@ -12,6 +12,7 @@ import {
   MessageCircle,
   Timer,
   Wrench,
+  type LucideIcon,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
@@ -23,7 +24,7 @@ const ACTIONS: Array<{
   type: PaneType;
   title: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   size: { width: number; height: number };
   tone: string;
 }> = [
@@ -92,7 +93,7 @@ function ActionCard({
 }: {
   title: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   tone: string;
   onClick: () => void;
 }) {
