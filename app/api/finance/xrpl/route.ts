@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 const XRPL_RPC = process.env.XRPL_RPC_URL || 'https://xrplcluster.com';
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
 const LSF_DISABLE_MASTER = 0x00100000;
+const SAIMOR_COMMERCE_TAG_MIN = 0x53000000;
+const SAIMOR_COMMERCE_TAG_MAX = 0x53ffffff;
 
 async function rpc<T>(method: string, params: Record<string, unknown>): Promise<T> {
   const controller = new AbortController();
@@ -40,6 +42,10 @@ function deliveredAmount(entry: any, tx: any) {
 
 function normalizeTransaction(entry: any, address: string) {
   const tx = entry?.tx_json || entry?.tx || {};
+  const destinationTag = Number.isInteger(tx?.DestinationTag) ? Number(tx.DestinationTag) : null;
+  const commerce = destinationTag !== null
+    && destinationTag >= SAIMOR_COMMERCE_TAG_MIN
+    && destinationTag <= SAIMOR_COMMERCE_TAG_MAX;
 
   return {
     hash: String(entry?.hash || tx?.hash || ''),
@@ -49,6 +55,12 @@ function normalizeTransaction(entry: any, address: string) {
     direction: tx?.Account === address ? 'out' : 'in',
     account: String(tx?.Account || ''),
     destination: tx?.Destination ? String(tx.Destination) : null,
+    destinationTag,
+    invoiceId: tx?.InvoiceID ? String(tx.InvoiceID) : null,
+    commerce,
+    commerceProductCode: commerce && destinationTag !== null
+      ? Math.floor((destinationTag - SAIMOR_COMMERCE_TAG_MIN) / 0x10000)
+      : null,
     amount: deliveredAmount(entry, tx),
     result: String(entry?.meta?.TransactionResult || entry?.meta?.transaction_result || ''),
     validated: entry?.validated !== false,
@@ -72,7 +84,7 @@ export async function GET(request: NextRequest) {
         ledger_index_min: -1,
         ledger_index_max: -1,
         binary: false,
-        limit: 12,
+        limit: 40,
         forward: false,
       }),
     ]);
@@ -105,6 +117,23 @@ export async function GET(request: NextRequest) {
       ? history.transactions.map((entry: any) => normalizeTransaction(entry, address))
       : [];
 
+    const commerceTransactions = transactions.filter((tx: any) => (
+      tx.commerce
+      && tx.direction === 'in'
+      && tx.type === 'Payment'
+      && tx.validated
+      && (!tx.result || tx.result === 'tesSUCCESS')
+      && typeof tx.amount === 'string'
+    ));
+
+    const commerceRevenueDrops = commerceTransactions.reduce((sum: bigint, tx: any) => {
+      try {
+        return sum + BigInt(tx.amount);
+      } catch {
+        return sum;
+      }
+    }, BigInt(0));
+
     const signerListCount = Array.isArray(accountInfo?.signer_lists) ? accountInfo.signer_lists.length : 0;
 
     return NextResponse.json({
@@ -127,6 +156,11 @@ export async function GET(request: NextRequest) {
         masterKeyDisabled: (accountFlags & LSF_DISABLE_MASTER) !== 0,
         regularKey: accountData?.RegularKey ? String(accountData.RegularKey) : null,
         signerListCount,
+      },
+      commerce: {
+        namespace: '0x53',
+        recognizedPayments: commerceTransactions.length,
+        recognizedRevenueXrp: Number(commerceRevenueDrops) / 1_000_000,
       },
       trustLines,
       transactions,
