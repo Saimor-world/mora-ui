@@ -239,17 +239,17 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
-                <Eye size={11} /> XRPL Mainnet observation
+                <Eye size={11} /> XRPL Mainnet · Saimôr operational capital
               </div>
-              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Treasury Wallet</h2>
+              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Treasury</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Die Ledger-kontrollierte XRPL-Adresse ist im OS nur sichtbar. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben vollständig außerhalb von Saimôr.
+                Diese Ledger-kontrollierte XRPL-Adresse gehört zum operativen Kapital von Saimôr. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben auf dem Ledger und vollständig außerhalb des OS.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <StatePill tone="safe">Read only</StatePill>
-                <StatePill>Self custody</StatePill>
-                <StatePill>Ledger external</StatePill>
-                <StatePill tone="warn">Signing disabled</StatePill>
+                <StatePill tone="safe">Read only in MÔRA</StatePill>
+                <StatePill>Saimôr operational</StatePill>
+                <StatePill>Ledger self custody</StatePill>
+                <StatePill tone="warn">External signing</StatePill>
               </div>
             </div>
 
