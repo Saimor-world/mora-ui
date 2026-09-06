@@ -4,8 +4,10 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownLeft,
   ArrowUpRight,
+  BadgeCheck,
   Coins,
   Database,
+  ExternalLink,
   Eye,
   KeyRound,
   Link2,
@@ -16,6 +18,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { CAPITAL_OPPORTUNITIES } from '@/lib/capital/opportunities';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 
@@ -108,6 +111,18 @@ function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; 
       : 'border-white/[0.07] bg-white/[0.025] text-white/42';
 
   return <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${classes}`}>{children}</span>;
+}
+
+function opportunityStatusLabel(status: 'open' | 'available' | 'verify') {
+  if (status === 'open') return 'Open now';
+  if (status === 'available') return 'Available';
+  return 'Re-verify';
+}
+
+function opportunityRiskLabel(risk: 'low' | 'medium' | 'high') {
+  if (risk === 'low') return 'Low capital risk';
+  if (risk === 'medium') return 'Medium risk';
+  return 'Capital at risk';
 }
 
 export default function FinanceApp({ paneId, initialData }: AppProps) {
@@ -420,18 +435,72 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 )}
               </div>
             </section>
-
-            <section className="rounded-[22px] border border-cyan-300/[0.08] bg-cyan-400/[0.018] p-4">
-              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] text-cyan-200/38">
-                <ShieldCheck size={11} /> MÔRA capital policy
-              </div>
-              <div className="mt-2 text-[13px] text-white/68">Observe → understand → propose. Never sign.</div>
-              <p className="mt-1 text-[10px] leading-relaxed text-white/30">
-                Chancen wie AMMs, Lending, Vaults, tokenisierte Assets, Rewards und Promotions können später als Intents bewertet werden. Ausführung bleibt getrennt und braucht einen externen Signer.
-              </p>
-            </section>
           </>
         )}
+
+        <section className="rounded-[24px] border border-violet-300/[0.09] bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,0.08),transparent_30%),rgba(0,0,0,0.14)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.22em] text-violet-200/42">
+                <BadgeCheck size={11} /> Verified opportunity radar
+              </div>
+              <h3 className="mt-2 text-[18px] font-medium tracking-[-0.03em] text-white/82">Möglichkeiten, die einen echten Grund haben.</h3>
+              <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/30">
+                Keine Airdrop-Lotterie. Nur offizielle Quellen, ein Verifizierungsdatum und eine klare Trennung zwischen Förderung, Builder-Umsatz und Kapitalrisiko.
+              </p>
+            </div>
+            <StatePill tone="safe">No auto-execution</StatePill>
+          </div>
+
+          <div className="mt-4 grid gap-3 lg:grid-cols-2">
+            {CAPITAL_OPPORTUNITIES.map((opportunity) => {
+              const statusTone = opportunity.status === 'open' ? 'safe' : opportunity.status === 'verify' ? 'warn' : 'neutral';
+              const riskTone = opportunity.risk === 'high' ? 'warn' : opportunity.risk === 'low' ? 'safe' : 'neutral';
+
+              return (
+                <a
+                  key={opportunity.id}
+                  href={opportunity.sourceUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-[20px] border border-white/[0.065] bg-white/[0.018] p-4 transition-colors hover:border-white/[0.11] hover:bg-white/[0.03]"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[9px] uppercase tracking-[0.16em] text-white/25">{opportunity.provider} · {opportunity.kind}</div>
+                      <div className="mt-1 text-[13px] font-medium text-white/72">{opportunity.title}</div>
+                    </div>
+                    <ExternalLink size={12} className="shrink-0 text-white/18 transition-colors group-hover:text-white/50" />
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <StatePill tone={statusTone}>{opportunityStatusLabel(opportunity.status)}</StatePill>
+                    <StatePill tone={riskTone}>{opportunityRiskLabel(opportunity.risk)}</StatePill>
+                    {opportunity.requiresSigning && <StatePill tone="warn">Xaman signing</StatePill>}
+                  </div>
+
+                  <p className="mt-3 text-[10px] leading-relaxed text-white/34">{opportunity.summary}</p>
+                  <p className="mt-2 text-[10px] leading-relaxed text-white/48">{opportunity.whyItFits}</p>
+
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.045] pt-3">
+                    <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">verified {opportunity.verifiedAt}</span>
+                    <span className="text-[9px] text-violet-100/48">{opportunity.actionLabel} →</span>
+                  </div>
+                </a>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="rounded-[22px] border border-cyan-300/[0.08] bg-cyan-400/[0.018] p-4">
+          <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] text-cyan-200/38">
+            <ShieldCheck size={11} /> MÔRA capital policy
+          </div>
+          <div className="mt-2 text-[13px] text-white/68">Observe → understand → propose. Never sign.</div>
+          <p className="mt-1 text-[10px] leading-relaxed text-white/30">
+            Chancen werden als Intents bewertet. Förderung kann vorbereitet werden; kapitalwirksame Aktionen bleiben getrennt und brauchen einen externen Signer.
+          </p>
+        </section>
       </div>
     </GlassPanel>
   );
