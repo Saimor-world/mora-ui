@@ -2,9 +2,8 @@
  * CoreLayer.test.tsx
  *
  * CoreLayer surface router:
- * coreMode='home'    → renders HomeSurface only (UniverseView duplicate removed,
- *                       MoraLivingBackground provides cosmic depth behind Home)
- * coreMode='explore' → renders UniverseView only (no HomeSurface)
+ * coreMode='home'    → renders HomeSurfaceNext only
+ * coreMode='explore' → renders UniverseView only
  * coreMode changes   → surface switches accordingly
  */
 
@@ -14,11 +13,9 @@ import '@testing-library/jest-dom';
 import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
 
-// ── Mock child surfaces ──────────────────────────────────────────────────────
 // Lightweight stubs so the test doesn't pull in heavy canvas/WebGL deps.
-
-jest.mock('@/components/home/HomeSurface', () => ({
-    HomeSurface: () => <div data-testid="home-surface">HomeSurface</div>,
+jest.mock('@/components/home/HomeSurfaceNext', () => ({
+    HomeSurfaceNext: () => <div data-testid="home-surface">HomeSurfaceNext</div>,
 }));
 
 jest.mock('@/components/home/UniverseView', () => ({
@@ -26,7 +23,6 @@ jest.mock('@/components/home/UniverseView', () => ({
     default: () => <div data-testid="universe-view">UniverseView</div>,
 }));
 
-// next/dynamic → resolve loader sync via require path used in CoreLayer
 jest.mock('next/dynamic', () => ({
     __esModule: true,
     default: () => {
@@ -36,7 +32,6 @@ jest.mock('next/dynamic', () => ({
     },
 }));
 
-// ── framer-motion: disable animations in tests ───────────────────────────────
 jest.mock('framer-motion', () => ({
     AnimatePresence: ({ children }: any) => <>{children}</>,
     motion: {
@@ -51,16 +46,12 @@ jest.mock('framer-motion', () => ({
     useReducedMotion: () => false,
 }));
 
-// ── Store helpers ────────────────────────────────────────────────────────────
 const setCoreMode = (mode: 'home' | 'explore' | 'mindfield') => {
     useNavStore.setState({ coreMode: mode });
 };
 
-// ── Tests ────────────────────────────────────────────────────────────────────
-
 describe('CoreLayer', () => {
     beforeEach(() => {
-        // Reset to default state before each test
         useNavStore.setState({
             coreMode: 'home',
             viewLevel: 'core',
@@ -68,7 +59,7 @@ describe('CoreLayer', () => {
         } as any);
     });
 
-    it('renders HomeSurface when coreMode is home (no UniverseView duplicate)', () => {
+    it('renders the next Home surface when coreMode is home', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
@@ -91,7 +82,8 @@ describe('CoreLayer', () => {
         expect(screen.getByTestId('universe-view')).toBeInTheDocument();
         expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
     });
-    it('removes HomeSurface overlay when coreMode changes to explore', () => {
+
+    it('removes the Home surface when coreMode changes to explore', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
@@ -105,7 +97,7 @@ describe('CoreLayer', () => {
         expect(screen.queryByTestId('home-surface')).not.toBeInTheDocument();
     });
 
-    it('adds HomeSurface overlay when coreMode changes to home', () => {
+    it('adds the Home surface when coreMode changes to home', () => {
         setCoreMode('explore');
         render(<CoreLayer />);
 
