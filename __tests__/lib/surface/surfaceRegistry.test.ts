@@ -120,15 +120,17 @@ describe('surfaceRegistry', () => {
     });
 
     describe('getCoreDockItems', () => {
-        it('keeps the permanent Dock intentionally small and ordered', () => {
+        it('keeps one unified Saimôr OS dock with no historical Desk destination', () => {
             const items = getCoreDockItems();
-            expect(items).toHaveLength(6);
+            expect(items).toHaveLength(5);
             expect(items.map(i => i.action)).toEqual([
-                'home', 'cockpit', 'chat', 'map', 'settings', 'desk',
+                'home', 'cockpit', 'chat', 'map', 'settings',
             ]);
             expect(items.map(i => i.label)).toEqual([
-                'Home', 'Arbeit', 'MÔRA', 'Universe', 'Setup', 'Saimôr Desk',
+                'Home', 'Arbeit', 'MÔRA', 'Universe', 'Setup',
             ]);
+            expect(items.some(item => item.action === 'desk')).toBe(false);
+            expect(items.some(item => /desk/i.test(item.label))).toBe(false);
         });
 
         it('each item has label, action, and description', () => {
