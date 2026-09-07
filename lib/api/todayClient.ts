@@ -230,7 +230,10 @@ export async function fetchTodaySnapshot(
   userId?: string | null,
 ): Promise<TodaySnapshot | null> {
   const query = companyId ? `?company_id=${encodeURIComponent(companyId)}` : '';
-  const raw = await coreGet(`/v3/today${query}`, { isOptional: true });
+  const raw = await coreGet(`/v3/today${query}`, {
+    isOptional: true,
+    throwAuthErrors: true,
+  });
   const snapshot = parseTodaySnapshot(raw);
   if (!snapshot || !snapshotMatchesTodayContext(snapshot, companyId, userId)) return null;
   return snapshot;
