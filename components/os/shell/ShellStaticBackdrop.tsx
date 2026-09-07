@@ -1,24 +1,14 @@
 'use client';
 
 import React from 'react';
+import { WorldSurface } from '@/components/engine/WorldSurface';
 
 /**
- * Instant CSS deep-space plate for first paint.
- * Heavy canvas ambient (StarField / Mycelium / …) layers on top after idle.
+ * Backward-compatible OS adapter for the shared Saimôr Engine world surface.
+ *
+ * MoraShell keeps its richer scene-reactive ambient layers on top; this base
+ * plate is now the same engine-level underlay Desk can consume as well.
  */
-export const ShellStaticBackdrop: React.FC = () => (
-  <div
-    aria-hidden
-    className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
-    style={{
-      background: `
-        radial-gradient(ellipse 90% 70% at 18% 28%, rgba(110, 38, 160, 0.28) 0%, transparent 58%),
-        radial-gradient(ellipse 70% 55% at 82% 72%, rgba(20, 33, 140, 0.32) 0%, transparent 55%),
-        radial-gradient(ellipse 55% 50% at 50% 50%, rgba(10, 110, 160, 0.14) 0%, transparent 48%),
-        linear-gradient(160deg, #0d0921 0%, #05080e 45%, #03050a 100%)
-      `,
-    }}
-  />
-);
+export const ShellStaticBackdrop: React.FC = () => <WorldSurface surface="os" />;
 
 export default ShellStaticBackdrop;
