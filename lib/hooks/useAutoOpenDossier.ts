@@ -5,14 +5,14 @@ import type { StoredWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 const FLAG_PREFIX = 'saimor_dossier_auto_opened_';
 
 /**
- * Opens the dossier pane and Môra chat once per websiteEntryContext.id
- * when the visitor lands in the OS after a Security Check.
+ * Opens the dossier pane once per websiteEntryContext.id.
  *
- * Sequence:
- *   800ms  → Dossier pane opens (type: 'document', nodeId)
- *   1400ms → Môra chat opens with pre-filled contextual question
+ * Fresh Security-Check handoffs are owned by HomeSurface via `openOnHome`.
+ * In that case this hook marks its legacy auto-open sequence as handled and
+ * deliberately stays quiet so multiple panes cannot stack during first arrival.
  *
- * Uses localStorage flag to ensure it fires only on the first visit.
+ * For older/non-explicit contexts we keep the one-time dossier fallback, but
+ * never auto-open Môra on top of it. The user can open Môra intentionally.
  */
 export function useAutoOpenDossier(
     context: StoredWebsiteEntryContext | null,
@@ -28,14 +28,19 @@ export function useAutoOpenDossier(
         if (typeof window !== 'undefined' && localStorage.getItem(flagKey)) return;
 
         fired.current = true;
+
+        // A fresh website/security-check handoff already has an explicit owner:
+        // HomeSurface opens the website dossier. Mark this legacy sequence as
+        // consumed so it cannot add a document pane and Môra on top of it now
+        // or on the next visit.
+        if (context.openOnHome) {
+            if (typeof window !== 'undefined') localStorage.setItem(flagKey, '1');
+            return;
+        }
+
         if (typeof window !== 'undefined') localStorage.setItem(flagKey, '1');
 
-        const domain    = context.domain ?? context.companyName;
-        const firstTask = context.tasks?.find(t => t.priority === 'hoch') ?? context.tasks?.[0];
-        const taskHint  = firstTask ? ` Mein dringendster Punkt ist: ${firstTask.title}.` : '';
-        const moraMessage = `Was sind meine drei dringendsten Maßnahmen für ${domain}?${taskHint}`;
-
-        const t1 = setTimeout(() => {
+        const timer = setTimeout(() => {
             openPane({
                 id: 'dossier-main',
                 type: 'document',
@@ -45,20 +50,7 @@ export function useAutoOpenDossier(
             });
         }, 800);
 
-        const t2 = setTimeout(() => {
-            openPane({
-                id: 'chat-main',
-                type: 'chat',
-                title: 'Môra',
-                size: { width: 860, height: 680 },
-                data: { initialMessage: moraMessage },
-            });
-        }, 1400);
-
-        return () => {
-            clearTimeout(t1);
-            clearTimeout(t2);
-        };
+        return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [context?.id, dossierNodeId]);
+    }, [context?.id, context?.openOnHome, dossierNodeId]);
 }
