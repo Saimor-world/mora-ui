@@ -136,12 +136,14 @@ const resolveDefaultPosition = (
 
 export type LayoutPreset = 'focus_single' | 'split_50_50' | 'split_33_66' | 'triple_columns' | 'tile_quad' | 'close_all';
 
-const DESKTOP_SESSION_KEY = 'saimor_desktop_panes_v1';
+// Stand 0 intentionally starts a fresh OS pane session instead of carrying the
+// historical desktop/Desk naming into the unified Saimôr OS.
+const OS_PANE_SESSION_KEY = 'saimor_os_panes_v1';
 
 const loadPersistedPanes = (): PaneConfig[] => {
     if (typeof window === 'undefined') return [];
     try {
-        const raw = localStorage.getItem(DESKTOP_SESSION_KEY);
+        const raw = localStorage.getItem(OS_PANE_SESSION_KEY);
         if (!raw) return [];
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
@@ -161,7 +163,7 @@ const savePersistedPanes = (panes: PaneConfig[]) => {
         const persistable = panes
             .filter(p => !['settings', 'apps'].includes(p.type))
             .slice(0, 8); // max 8 saved panes
-        localStorage.setItem(DESKTOP_SESSION_KEY, JSON.stringify(persistable));
+        localStorage.setItem(OS_PANE_SESSION_KEY, JSON.stringify(persistable));
     } catch {
         // storage quota exceeded or disabled
     }
@@ -196,14 +198,14 @@ export const usePaneStore = create<PaneState>((set, get) => ({
 
     reset: () => {
         if (typeof window !== 'undefined') {
-            try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+            try { localStorage.removeItem(OS_PANE_SESSION_KEY); } catch {}
         }
         set({ panes: [], activePaneId: null });
     },
 
     closeAllPanes: () => {
         if (typeof window !== 'undefined') {
-            try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+            try { localStorage.removeItem(OS_PANE_SESSION_KEY); } catch {}
         }
         set({ panes: [], activePaneId: null });
     },
@@ -219,7 +221,7 @@ export const usePaneStore = create<PaneState>((set, get) => ({
 
         if (preset === 'close_all') {
             if (typeof window !== 'undefined') {
-                try { localStorage.removeItem(DESKTOP_SESSION_KEY); } catch {}
+                try { localStorage.removeItem(OS_PANE_SESSION_KEY); } catch {}
             }
             return { panes: [], activePaneId: null };
         }
