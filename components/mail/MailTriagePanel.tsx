@@ -23,20 +23,20 @@ export function MailTriagePanel({
 
     return (
         <div className="border-b border-white/6 px-4 pb-3">
-            <div className="overflow-hidden rounded-2xl border border-emerald-300/10 bg-emerald-500/[0.045]">
+            <div className="overflow-hidden rounded-2xl border border-emerald-300/10 bg-emerald-500/[0.04]">
                 <button
                     type="button"
                     onClick={() => setOpen((value) => !value)}
                     className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition-colors hover:bg-white/[0.035]"
                     aria-expanded={open}
                 >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-emerald-300/12 bg-emerald-400/[0.08]">
-                        <Sparkles size={15} className="text-emerald-200/80" />
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-emerald-300/12 bg-emerald-400/[0.07]">
+                        <Sparkles size={14} className="text-emerald-200/78" />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <div className="text-[10px] font-semibold uppercase tracking-[0.19em] text-emerald-100/48">Môra · Postfach ordnen</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-100/46">Aufräumen</div>
                         <div className="mt-0.5 truncate text-xs text-white/72">
-                            {analysis.glance ?? 'Keine offensichtlichen Aufräum-Cluster'}
+                            {analysis.glance ?? 'Gerade nichts Auffälliges'}
                         </div>
                     </div>
                     <ChevronDown
@@ -48,12 +48,12 @@ export function MailTriagePanel({
                 {open && (
                     <div className="border-t border-white/6 px-3.5 pb-3 pt-2.5">
                         <p className="mb-2.5 text-[11px] leading-relaxed text-white/38">
-                            Vorschläge entstehen lokal aus Absender, Betreff und sichtbarem Inhalt. Nichts wird automatisch gelöscht oder abbestellt.
+                            Saimôr gruppiert sichtbare Mails nach Newsletter, Werbung und älteren gelesenen Nachrichten. Nichts wird automatisch gelöscht oder abbestellt.
                         </p>
 
                         {analysis.suggestions.length === 0 ? (
                             <div className="rounded-xl border border-white/7 bg-black/15 px-3 py-2.5 text-xs text-white/48">
-                                Im Moment gibt es nichts Offensichtliches zu sortieren.
+                                Im Moment gibt es nichts zu sortieren.
                             </div>
                         ) : (
                             <div className="space-y-2">
@@ -79,7 +79,7 @@ export function MailTriagePanel({
                                                     onClick={() => onSelect(suggestion.messageIds)}
                                                     className="rounded-lg border border-white/10 bg-white/[0.045] px-2.5 py-1.5 text-[10px] font-semibold text-white/65 transition-colors hover:bg-white/[0.08] hover:text-white/85"
                                                 >
-                                                    Prüfen
+                                                    Auswählen
                                                 </button>
                                             )}
 
@@ -90,7 +90,7 @@ export function MailTriagePanel({
                                                     disabled={labelingSuggestionId === suggestion.id}
                                                     className="rounded-lg border border-emerald-300/12 bg-emerald-400/[0.07] px-2.5 py-1.5 text-[10px] font-semibold text-emerald-100/72 transition-colors hover:bg-emerald-400/[0.12] disabled:opacity-45"
                                                 >
-                                                    {labelingSuggestionId === suggestion.id ? 'Markiere…' : `Als ${suggestion.kind === 'newsletter' ? 'Newsletter' : 'Werbung'} markieren`}
+                                                    {labelingSuggestionId === suggestion.id ? 'Wird markiert…' : `Als ${suggestion.kind === 'newsletter' ? 'Newsletter' : 'Werbung'} markieren`}
                                                 </button>
                                             )}
 
