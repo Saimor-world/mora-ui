@@ -54,8 +54,8 @@ type CoreRequestOptions = {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: any;
     skipAuth?: boolean;
-    isOptional?: boolean; // If true, 401 errors won't clear tokens/logout
-    throwAuthErrors?: boolean; // Opt-in for explicit mutations that must distinguish scope/auth failures.
+    isOptional?: boolean; // If true, non-auth failures may return null for optional/background reads.
+    throwAuthErrors?: boolean; // Opt-in: preserve 401/403 as CoreError instead of collapsing them to null.
     headers?: Record<string, string>;
 };
 
@@ -146,15 +146,18 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
         return null;
     }
 
-    // Default remains intentionally tolerant for read/background flows. Explicit
-    // mutations can opt into a real CoreError so UI can explain missing scopes.
-    if ((response.status === 401 || response.status === 403) && !options.throwAuthErrors) {
+    const isAuthError = response.status === 401 || response.status === 403;
+
+    // Legacy/background callers remain tolerant. Callers that explicitly need
+    // to distinguish authentication/authorization failures opt in below.
+    if (isAuthError && !options.throwAuthErrors) {
         return null;
     }
 
     if (!response.ok) {
-        // For optional requests, silently return null on any error (including 500)
-        if (options.isOptional) {
+        // Optional reads remain tolerant for ordinary availability/server errors,
+        // but an explicit strict-auth read must never turn 401/403 into null.
+        if (options.isOptional && !isAuthError) {
             return null;
         }
 
@@ -214,7 +217,9 @@ export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'm
     // Nur GET: Ein zweites POST ist eine zweite Absicht, kein Duplikat.
     // Und nur waehrend die Anfrage laeuft — kein Zwischenspeicher, sonst
     // wuerde aus der Beschleunigung eine stille Veraltung.
-    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${JSON.stringify(options.headers ?? null)}`;
+    // Auth-strict and tolerant callers intentionally use different keys so a
+    // shared in-flight promise cannot change another caller's error semantics.
+    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${JSON.stringify(options.headers ?? null)}`;
     return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 
