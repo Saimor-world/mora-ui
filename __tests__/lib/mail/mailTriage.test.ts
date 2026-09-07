@@ -62,6 +62,19 @@ describe('mailTriage', () => {
         expect(analysis.counts.newsletter).toBe(1);
     });
 
+    it('still protects concrete order confirmations after narrowing order wording', () => {
+        const confirmation = mail({
+            subject: 'Bestellbestätigung #4711',
+            snippet: 'Deine Bestellung wurde bestätigt und wird versandt.',
+            read: true,
+            date: '2026-08-20T08:00:00Z',
+        });
+
+        expect(isProtectedTransactionalMail(confirmation)).toBe(true);
+        expect(isPromotionMail(confirmation)).toBe(false);
+        expect(isCleanupCandidate(confirmation, NOW)).toBe(false);
+    });
+
     it('only marks old read mail or read promotions as cleanup candidates', () => {
         const oldRead = mail({ date: '2026-08-20T08:00:00Z', read: true });
         const oldUnread = mail({ id: 'm-2', message_id: 'gmail-2', date: '2026-08-20T08:00:00Z', read: false });
