@@ -4,17 +4,12 @@ import React, { useEffect, useState } from 'react';
 import {
   DEFAULT_ENGINE_WORLD_CONTRACT,
   loadEngineWorldContract,
-  type EngineWorldContext,
   type EngineWorldContract,
 } from '@/lib/engine/worldContract';
 
-type Props = {
-  context: EngineWorldContext;
-};
-
 type WorldStyle = React.CSSProperties & Record<`--saimor-world-${string}`, string | number>;
 
-export function WorldSurface({ context }: Props) {
+export function WorldSurface() {
   const [contract, setContract] = useState<EngineWorldContract>(DEFAULT_ENGINE_WORLD_CONTRACT);
 
   useEffect(() => {
@@ -28,8 +23,7 @@ export function WorldSurface({ context }: Props) {
   }, []);
 
   const palette = contract.world.palette;
-  const profile = context === 'desk' ? contract.os.workspaces.desk : contract.os.shell;
-  const intensity = Math.max(0, Math.min(1, profile.ambient_intensity));
+  const intensity = Math.max(0, Math.min(1, contract.os.presentation.ambient_intensity));
   const violetAlpha = (0.28 * intensity).toFixed(3);
   const indigoAlpha = (0.32 * intensity).toFixed(3);
   const cyanAlpha = (0.14 * intensity).toFixed(3);
@@ -55,8 +49,6 @@ export function WorldSurface({ context }: Props) {
       data-saimor-world-profile={contract.world.profile}
       data-saimor-os={contract.os.id}
       data-saimor-os-role={contract.os.role}
-      data-saimor-world-context={context}
-      data-saimor-workspace={context === 'desk' ? 'desk' : undefined}
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       style={style}
     />
