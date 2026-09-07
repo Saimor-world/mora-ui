@@ -29,19 +29,20 @@ export function WorldSurface({ surface }: Props) {
 
   const palette = contract.world.palette;
   const profile = contract.surfaces[surface];
+  const intensity = Math.max(0, Math.min(1, profile.ambient_intensity));
+  const violetAlpha = (0.28 * intensity).toFixed(3);
+  const indigoAlpha = (0.32 * intensity).toFixed(3);
+  const cyanAlpha = (0.14 * intensity).toFixed(3);
   const style: WorldStyle = {
     '--saimor-world-base': palette.base,
     '--saimor-world-deep': palette.deep,
     '--saimor-world-void': palette.void,
-    '--saimor-world-violet-rgb': palette.violet_rgb,
-    '--saimor-world-indigo-rgb': palette.indigo_rgb,
-    '--saimor-world-cyan-rgb': palette.cyan_rgb,
-    '--saimor-world-intensity': profile.ambient_intensity,
+    '--saimor-world-intensity': intensity,
     background: `
-      radial-gradient(ellipse 90% 70% at 18% 28%, rgba(var(--saimor-world-violet-rgb), calc(.28 * var(--saimor-world-intensity))) 0%, transparent 58%),
-      radial-gradient(ellipse 70% 55% at 82% 72%, rgba(var(--saimor-world-indigo-rgb), calc(.32 * var(--saimor-world-intensity))) 0%, transparent 55%),
-      radial-gradient(ellipse 55% 50% at 50% 50%, rgba(var(--saimor-world-cyan-rgb), calc(.14 * var(--saimor-world-intensity))) 0%, transparent 48%),
-      linear-gradient(160deg, var(--saimor-world-base) 0%, var(--saimor-world-deep) 45%, var(--saimor-world-void) 100%)
+      radial-gradient(ellipse 90% 70% at 18% 28%, rgba(${palette.violet_rgb}, ${violetAlpha}) 0%, transparent 58%),
+      radial-gradient(ellipse 70% 55% at 82% 72%, rgba(${palette.indigo_rgb}, ${indigoAlpha}) 0%, transparent 55%),
+      radial-gradient(ellipse 55% 50% at 50% 50%, rgba(${palette.cyan_rgb}, ${cyanAlpha}) 0%, transparent 48%),
+      linear-gradient(160deg, ${palette.base} 0%, ${palette.deep} 45%, ${palette.void} 100%)
     `,
   };
 
