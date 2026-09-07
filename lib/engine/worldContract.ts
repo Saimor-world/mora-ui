@@ -1,7 +1,5 @@
 import { coreGet } from '@/lib/api/http';
 
-export type EngineWorldContext = 'shell' | 'desk';
-
 export type EngineWorldContract = {
   contract: 'saimor.engine.world';
   version: string;
@@ -29,17 +27,8 @@ export type EngineWorldContract = {
   os: {
     id: 'saimor-os';
     role: 'operating_system';
-    default_workspace: 'desk';
-    shell: {
-      density: string;
+    presentation: {
       ambient_intensity: number;
-    };
-    workspaces: {
-      desk: {
-        role: 'default_workspace';
-        density: string;
-        ambient_intensity: number;
-      };
     };
   };
   service_boundaries: Record<string, string>;
@@ -72,10 +61,8 @@ export const DEFAULT_ENGINE_WORLD_CONTRACT: EngineWorldContract = {
   os: {
     id: 'saimor-os',
     role: 'operating_system',
-    default_workspace: 'desk',
-    shell: { density: 'immersive', ambient_intensity: 1 },
-    workspaces: {
-      desk: { role: 'default_workspace', density: 'calm', ambient_intensity: 0.58 },
+    presentation: {
+      ambient_intensity: 1,
     },
   },
   service_boundaries: {
@@ -95,11 +82,9 @@ export function isEngineWorldContract(value: unknown): value is EngineWorldContr
     && candidate.engine?.truth_source === 'core'
     && typeof candidate.world?.profile === 'string'
     && typeof candidate.world?.palette?.base === 'string'
+    && candidate.os?.id === 'saimor-os'
     && candidate.os?.role === 'operating_system'
-    && candidate.os?.default_workspace === 'desk'
-    && typeof candidate.os?.shell?.ambient_intensity === 'number'
-    && candidate.os?.workspaces?.desk?.role === 'default_workspace'
-    && typeof candidate.os?.workspaces?.desk?.ambient_intensity === 'number';
+    && typeof candidate.os?.presentation?.ambient_intensity === 'number';
 }
 
 export async function loadEngineWorldContract(): Promise<EngineWorldContract> {
