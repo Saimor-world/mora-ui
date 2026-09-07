@@ -2,6 +2,7 @@ import React from 'react';
 import { act, render, screen, waitFor } from '@testing-library/react';
 
 import { TodayOverview } from '@/components/home/TodayOverview';
+import { CoreError } from '@/lib/api/http';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
 
 let mockActiveCompanyId: string | null = 'company-a';
@@ -113,7 +114,7 @@ beforeEach(() => {
   mockUserId = 'user-a';
 });
 
-describe('TodayOverview scope switching', () => {
+describe('TodayOverview scope and auth boundaries', () => {
   it('never renders a late response from the previous company', async () => {
     const first = deferred<TodaySnapshot | null>();
     const second = deferred<TodaySnapshot | null>();
@@ -144,5 +145,28 @@ describe('TodayOverview scope switching', () => {
     });
     expect(await screen.findByText('Neue Firmenmail')).toBeInTheDocument();
     expect(screen.queryByText('Alte Firmenmail')).not.toBeInTheDocument();
+  });
+
+  it('shows an expired session instead of pretending Today is merely disconnected', async () => {
+    (fetchTodaySnapshot as jest.Mock).mockRejectedValueOnce(
+      new CoreError('Session expired', 401, 'Session expired'),
+    );
+
+    render(<TodayOverview />);
+
+    expect(await screen.findAllByText('Sitzung abgelaufen')).toHaveLength(5);
+    expect(screen.queryByText('nicht verbunden')).not.toBeInTheDocument();
+  });
+
+  it('shows a company access denial separately from source availability', async () => {
+    (fetchTodaySnapshot as jest.Mock).mockRejectedValueOnce(
+      new CoreError('company not accessible', 403, 'company not accessible'),
+    );
+
+    render(<TodayOverview />);
+
+    expect(await screen.findAllByText('Kein Zugriff')).toHaveLength(4);
+    expect(await screen.findByText('kein Zugriff')).toBeInTheDocument();
+    expect(screen.queryByText('Nicht verbunden')).not.toBeInTheDocument();
   });
 });
