@@ -15,11 +15,12 @@ describe('Saimôr Engine world contract', () => {
     mockedCoreGet.mockReset();
   });
 
-  it('pins Desk as the default workspace inside one Saimôr OS', () => {
+  it('pins one Saimôr OS and no Desk hierarchy', () => {
+    expect(DEFAULT_ENGINE_WORLD_CONTRACT.os.id).toBe('saimor-os');
     expect(DEFAULT_ENGINE_WORLD_CONTRACT.os.role).toBe('operating_system');
-    expect(DEFAULT_ENGINE_WORLD_CONTRACT.os.default_workspace).toBe('desk');
-    expect(DEFAULT_ENGINE_WORLD_CONTRACT.os.workspaces.desk.role).toBe('default_workspace');
     expect('surfaces' in DEFAULT_ENGINE_WORLD_CONTRACT).toBe(false);
+    expect('workspaces' in DEFAULT_ENGINE_WORLD_CONTRACT.os).toBe(false);
+    expect('desk' in DEFAULT_ENGINE_WORLD_CONTRACT.os).toBe(false);
   });
 
   it('boots from the local Stand 0 contract when CORE is unavailable', async () => {
