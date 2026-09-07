@@ -6,6 +6,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { coreGet, corePost } from '@/lib/api/coreClient';
 import {
     AlertTriangle,
+    ArrowLeft,
     CheckSquare,
     Circle,
     Clock,
@@ -29,9 +30,9 @@ type Task = {
 };
 
 const STATUS_COLUMNS: { key: TaskStatus; label: string; accent: string; iconColor: string }[] = [
-    { key: 'backlog',     label: 'Warteschlange', accent: 'border-white/10',       iconColor: 'text-white/40' },
-    { key: 'in_progress', label: 'In Arbeit',     accent: 'border-blue-500/30',    iconColor: 'text-blue-400' },
-    { key: 'done',        label: 'Erledigt',      accent: 'border-emerald-500/30', iconColor: 'text-emerald-400' },
+    { key: 'backlog', label: 'Offen', accent: 'border-white/10', iconColor: 'text-white/40' },
+    { key: 'in_progress', label: 'In Arbeit', accent: 'border-blue-500/30', iconColor: 'text-blue-400' },
+    { key: 'done', label: 'Erledigt', accent: 'border-emerald-500/30', iconColor: 'text-emerald-400' },
 ];
 
 const PRIORITY_DOT: Record<string, string> = {
@@ -103,7 +104,7 @@ function TaskCard({
 }
 
 export default function TasksApp({ paneId }: AppProps) {
-    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
+    const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const pane = getPane(paneId);
     const isActive = usePaneStore((state) => state.activePaneId === paneId);
 
@@ -133,7 +134,7 @@ export default function TasksApp({ paneId }: AppProps) {
         } catch (requestError) {
             console.warn('[TasksApp] task list failed', requestError);
             setAvailable(false);
-            setError('Aufgaben konnten nicht aus CORE gelesen werden. Der letzte sichtbare Stand bleibt erhalten.');
+            setError('Aufgaben konnten gerade nicht aktualisiert werden. Der letzte bestätigte Stand bleibt sichtbar.');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -156,7 +157,7 @@ export default function TasksApp({ paneId }: AppProps) {
                 due_date: newDue.trim() || undefined,
             }, { throwAuthErrors: true });
             if (!saved || typeof saved !== 'object' || !(saved as Task).id) {
-                throw new Error('CORE returned no persisted task');
+                throw new Error('Task persistence was not confirmed');
             }
             setTasks((previous) => [...previous, saved as Task]);
             setAddingColumn(null);
@@ -165,7 +166,7 @@ export default function TasksApp({ paneId }: AppProps) {
             setAvailable(true);
         } catch (requestError) {
             console.warn('[TasksApp] task creation failed', requestError);
-            setError('Die Aufgabe wurde nicht gespeichert. Es wird kein lokaler Schein-Eintrag erzeugt.');
+            setError('Die Aufgabe konnte nicht gespeichert werden.');
         } finally {
             setIsSubmitting(false);
         }
@@ -178,12 +179,12 @@ export default function TasksApp({ paneId }: AppProps) {
         try {
             const saved = await corePost(`/v3/tasks/${encodeURIComponent(taskId)}`, { status: newStatus }, { throwAuthErrors: true });
             if (!saved || typeof saved !== 'object' || !(saved as Task).id) {
-                throw new Error('CORE returned no persisted task');
+                throw new Error('Task update was not confirmed');
             }
             setTasks((previous) => previous.map((task) => task.id === taskId ? saved as Task : task));
         } catch (requestError) {
             console.warn('[TasksApp] task update failed', requestError);
-            setError('Status wurde nicht geändert. Der bestätigte CORE-Stand bleibt sichtbar.');
+            setError('Der Status konnte nicht geändert werden.');
         } finally {
             setBusyTaskId(null);
         }
@@ -196,12 +197,12 @@ export default function TasksApp({ paneId }: AppProps) {
         try {
             const result = await coreGet(`/v3/tasks/${encodeURIComponent(taskId)}/delete`, { throwAuthErrors: true });
             if (!result || typeof result !== 'object' || (result as { ok?: boolean }).ok !== true) {
-                throw new Error('CORE did not confirm deletion');
+                throw new Error('Task deletion was not confirmed');
             }
             setTasks((previous) => previous.filter((task) => task.id !== taskId));
         } catch (requestError) {
             console.warn('[TasksApp] task delete failed', requestError);
-            setError('Aufgabe wurde nicht gelöscht. Ohne CORE-Bestätigung bleibt sie sichtbar.');
+            setError('Die Aufgabe konnte nicht gelöscht werden.');
         } finally {
             setBusyTaskId(null);
         }
@@ -229,22 +230,35 @@ export default function TasksApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex h-full min-h-0 flex-col">
-                <div className="flex items-center justify-between border-b border-white/[0.05] px-4 py-2.5">
-                    <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/28">
-                        <span className={`h-1.5 w-1.5 rounded-full ${available === true ? 'bg-emerald-300/65' : 'bg-white/20'}`} />
-                        {available === true ? 'CORE · tenant scope' : available === false ? 'CORE nicht verfügbar' : 'CORE wird geprüft'}
+            <div className="flex h-full min-h-0 flex-col text-white">
+                <header className="border-b border-white/[0.05] px-4 pb-3 pt-2">
+                    <div className="flex items-center justify-between gap-3">
+                        <button
+                            type="button"
+                            onClick={() => openPane({ id: 'work-main', type: 'work', title: 'Arbeit', size: { width: 1080, height: 760 } })}
+                            className="inline-flex items-center gap-1.5 text-[9px] uppercase tracking-[0.18em] text-white/24 transition hover:text-white/52"
+                        >
+                            <ArrowLeft size={10} /> Arbeit
+                        </button>
+                        <div className="flex items-center gap-2">
+                            <span className={`h-1.5 w-1.5 rounded-full ${available === true ? 'bg-emerald-300/65' : 'bg-white/20'}`} />
+                            <span className="text-[9px] uppercase tracking-[0.16em] text-white/24">
+                                {available === true ? 'Aktuell' : available === false ? 'Nicht erreichbar' : 'Wird geladen'}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => void load(true)}
+                                disabled={isRefreshing}
+                                className="rounded p-1.5 text-white/25 transition hover:bg-white/[0.06] hover:text-white/55 disabled:opacity-40"
+                                title="Aktualisieren"
+                            >
+                                <RefreshCw size={11} className={isRefreshing ? 'animate-spin' : ''} />
+                            </button>
+                        </div>
                     </div>
-                    <button
-                        type="button"
-                        onClick={() => void load(true)}
-                        disabled={isRefreshing}
-                        className="rounded p-1.5 text-white/25 transition hover:bg-white/[0.06] hover:text-white/55 disabled:opacity-40"
-                        title="Aktualisieren"
-                    >
-                        <RefreshCw size={11} className={isRefreshing ? 'animate-spin' : ''} />
-                    </button>
-                </div>
+                    <h2 className="mt-3 text-[20px] font-medium tracking-[-0.03em] text-white/78">Alle Aufgaben</h2>
+                    <p className="mt-1 text-[10px] leading-relaxed text-white/28">Der vollständige Aufgabenstand hinter deinem Work-Bereich.</p>
+                </header>
 
                 {error && (
                     <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/[0.04] px-3 py-2.5 text-[10px] leading-relaxed text-amber-100/55">
@@ -260,9 +274,9 @@ export default function TasksApp({ paneId }: AppProps) {
                 ) : available === false && tasks.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
                         <AlertTriangle size={24} className="text-amber-100/30" />
-                        <p className="text-[12px] text-white/38">Aufgaben sind gerade nicht lesbar.</p>
+                        <p className="text-[12px] text-white/38">Aufgaben sind gerade nicht verfügbar.</p>
                         <p className="max-w-[300px] text-[10px] leading-relaxed text-white/22">
-                            Das OS zeigt bewusst nicht „leer“ an, solange CORE den Zustand nicht bestätigt hat.
+                            Saimôr zeigt keinen leeren Aufgabenstand an, solange die aktuelle Liste nicht sicher gelesen werden kann.
                         </p>
                     </div>
                 ) : (
@@ -298,7 +312,7 @@ export default function TasksApp({ paneId }: AppProps) {
                                                 autoFocus
                                                 value={newTitle}
                                                 onChange={(event) => setNewTitle(event.target.value)}
-                                                placeholder="Aufgabe..."
+                                                placeholder="Neue Aufgabe …"
                                                 className="w-full bg-transparent text-xs text-white outline-none placeholder:text-white/30"
                                                 onKeyDown={(event) => {
                                                     if (event.key === 'Enter') void handleAddTask(column.key);
