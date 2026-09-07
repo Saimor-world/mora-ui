@@ -21,6 +21,7 @@ import {
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { TodayOverview } from '@/components/home/TodayOverview';
 
 const CANARY_STORAGE_KEY = 'saimor.finance.xrpl.canary';
 
@@ -253,6 +254,8 @@ export const HomeSurfaceNext: React.FC = () => {
             </div>
           </button>
         </section>
+
+        <TodayOverview />
 
         <section className="mt-14">
           <div className="mb-4 flex items-end justify-between gap-4">
