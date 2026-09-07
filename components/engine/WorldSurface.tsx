@@ -4,17 +4,17 @@ import React, { useEffect, useState } from 'react';
 import {
   DEFAULT_ENGINE_WORLD_CONTRACT,
   loadEngineWorldContract,
-  type EngineSurfaceId,
+  type EngineWorldContext,
   type EngineWorldContract,
 } from '@/lib/engine/worldContract';
 
 type Props = {
-  surface: EngineSurfaceId;
+  context: EngineWorldContext;
 };
 
 type WorldStyle = React.CSSProperties & Record<`--saimor-world-${string}`, string | number>;
 
-export function WorldSurface({ surface }: Props) {
+export function WorldSurface({ context }: Props) {
   const [contract, setContract] = useState<EngineWorldContract>(DEFAULT_ENGINE_WORLD_CONTRACT);
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export function WorldSurface({ surface }: Props) {
   }, []);
 
   const palette = contract.world.palette;
-  const profile = contract.surfaces[surface];
+  const profile = context === 'desk' ? contract.os.workspaces.desk : contract.os.shell;
   const intensity = Math.max(0, Math.min(1, profile.ambient_intensity));
   const violetAlpha = (0.28 * intensity).toFixed(3);
   const indigoAlpha = (0.32 * intensity).toFixed(3);
@@ -53,8 +53,10 @@ export function WorldSurface({ surface }: Props) {
       data-saimor-engine-version={contract.version}
       data-saimor-world={contract.engine.world_id}
       data-saimor-world-profile={contract.world.profile}
-      data-saimor-surface={surface}
-      data-saimor-surface-role={profile.role}
+      data-saimor-os={contract.os.id}
+      data-saimor-os-role={contract.os.role}
+      data-saimor-world-context={context}
+      data-saimor-workspace={context === 'desk' ? 'desk' : undefined}
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden"
       style={style}
     />
