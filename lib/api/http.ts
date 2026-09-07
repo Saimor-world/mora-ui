@@ -55,6 +55,7 @@ type CoreRequestOptions = {
     body?: any;
     skipAuth?: boolean;
     isOptional?: boolean; // If true, 401 errors won't clear tokens/logout
+    throwAuthErrors?: boolean; // Opt-in for explicit mutations that must distinguish scope/auth failures.
     headers?: Record<string, string>;
 };
 
@@ -145,8 +146,9 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
         return null;
     }
 
-    // SILENT HANDLING: 401/403 = auth issue -> return null, caller uses fallback
-    if (response.status === 401 || response.status === 403) {
+    // Default remains intentionally tolerant for read/background flows. Explicit
+    // mutations can opt into a real CoreError so UI can explain missing scopes.
+    if ((response.status === 401 || response.status === 403) && !options.throwAuthErrors) {
         return null;
     }
 
