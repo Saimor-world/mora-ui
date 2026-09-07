@@ -3,26 +3,33 @@
 /**
  * MailApp - Guided Agency
  *
- * Gmail inbox display (transient, no persistence).
- * "Send to MORA" triggers action proposal.
+ * Native Saimôr OS mail surface. Mail remains transient until explicitly committed
+ * into Mycelium; triage actions mutate the connected mailbox only after a user action.
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { MailSelectionBar } from '@/components/mail/MailSelectionBar';
+import { MailTriagePanel } from '@/components/mail/MailTriagePanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost } from '@/lib/api/coreClient';
-import { normalizeList } from '@/lib/api/http';
+import { CoreError, normalizeList } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { Mail, Send, Inbox, Archive, RefreshCw, Loader2, ArrowLeft, Paperclip, X, Sparkles, PenSquare, Globe, Wrench } from 'lucide-react';
+import { Mail, Send, Inbox, Archive, RefreshCw, Loader2, ArrowLeft, Paperclip, X, Sparkles, PenSquare, Globe, Wrench, CheckSquare, Square, ExternalLink } from 'lucide-react';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import type { AppProps } from '@/lib/apps/types';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
+import {
+    analyzeMailTriage,
+    extractMailUnsubscribeUrl,
+    type MailTriageSuggestion,
+} from '@/lib/mail/mailTriage';
 
 interface MailAttachment {
     filename: string;
@@ -41,6 +48,27 @@ interface MailObject {
     has_html: boolean;
     attachments: MailAttachment[];
     attachment_count: number;
+    read?: boolean;
+}
+
+function mailKey(mail: MailObject): string {
+    return mail.message_id || mail.id;
+}
+
+function mutationErrorMessage(error: unknown): string {
+    if (error instanceof CoreError) {
+        const errorCode = error.details && typeof error.details === 'object'
+            ? error.details.error_code
+            : undefined;
+        if (error.status === 403 && errorCode === 'gmail_scope_missing') {
+            return 'Google muss unter Integrationen einmal neu verbunden werden, damit Saimôr Mails sortieren oder in den Papierkorb verschieben darf.';
+        }
+        if (error.status === 401) {
+            return 'Die Mail-Verbindung ist nicht mehr gültig. Bitte Google unter Integrationen erneut verbinden.';
+        }
+        return error.message;
+    }
+    return 'Die Mail-Aktion konnte nicht abgeschlossen werden.';
 }
 
 export default function MailApp({ paneId }: AppProps) {
@@ -49,24 +77,36 @@ export default function MailApp({ paneId }: AppProps) {
     const { activeCompanyId } = useNavStore();
     const queryClient = useQueryClient();
     const pane = getPane(paneId);
-    const { overview, browserBridge, summary } = useCommunicationSurface();
+    const { overview, summary } = useCommunicationSurface();
     const { mailPreview } = useCommunicationLiveData();
 
     const [mails, setMails] = useState<MailObject[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [viewingMail, setViewingMail] = useState<MailObject | null>(null); // For viewer overlay
+    const [viewingMail, setViewingMail] = useState<MailObject | null>(null);
     const [composing, setComposing] = useState(false);
-    const [composeTo, setComposeTo] = useState("");
-    const [composeSubject, setComposeSubject] = useState("");
-    const [composeBody, setComposeBody] = useState("");
+    const [composeTo, setComposeTo] = useState('');
+    const [composeSubject, setComposeSubject] = useState('');
+    const [composeBody, setComposeBody] = useState('');
     const [sending, setSending] = useState(false);
 
     const [proposing, setProposing] = useState(false);
     const [saving, setSaving] = useState<string | null>(null);
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+    const [trashing, setTrashing] = useState(false);
+    const [confirmingTrash, setConfirmingTrash] = useState(false);
+    const [labelingSuggestionId, setLabelingSuggestionId] = useState<string | null>(null);
+
     // For notification logic
     const prevCountRef = useRef<number>(0);
     const initializedRef = useRef(false);
+
+    const triageAnalysis = useMemo(() => analyzeMailTriage(mails), [mails]);
+    const viewingUnsubscribeUrl = useMemo(
+        () => viewingMail ? extractMailUnsubscribeUrl(viewingMail) : undefined,
+        [viewingMail],
+    );
 
     const fetchMails = useCallback(async () => {
         setLoading(true);
@@ -75,21 +115,21 @@ export default function MailApp({ paneId }: AppProps) {
             const response = await coreGet('/v3/mail/messages');
             const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
             setMails(fetchedMails);
+            setSelectedIds(new Set());
+            setConfirmingTrash(false);
 
-            // Notification Logic
             if (initializedRef.current && fetchedMails.length > prevCountRef.current) {
                 const newCount = fetchedMails.length - prevCountRef.current;
                 toast.success(`${newCount} neue Nachricht${newCount > 1 ? 'en' : ''}`, {
-                    description: fetchedMails[0].subject
+                    description: fetchedMails[0].subject,
                 });
             }
             prevCountRef.current = fetchedMails.length;
             initializedRef.current = true;
             broadcastCommunicationSync('mail-fetch');
-
         } catch (err: any) {
-            console.error("Failed to load mail:", err);
-            setError(err.message || "Verbindung zum Mailserver fehlgeschlagen");
+            console.error('Failed to load mail:', err);
+            setError(err.message || 'Verbindung zum Mailserver fehlgeschlagen');
         } finally {
             setLoading(false);
         }
@@ -108,14 +148,14 @@ export default function MailApp({ paneId }: AppProps) {
                 subject: mail.subject,
                 from_addr: mail.from_addr,
                 received_at: mail.date,
-                snippet: mail.snippet
+                snippet: mail.snippet,
             });
 
             broadcastCommunicationSync('mail-commit');
-            toast.success("In Mycelium gespeichert");
+            toast.success('In Mycelium gespeichert');
         } catch (err) {
-            console.error("Save failed", err);
-            toast.error("Speichern fehlgeschlagen");
+            console.error('Save failed', err);
+            toast.error('Speichern fehlgeschlagen');
         } finally {
             setSaving(null);
         }
@@ -131,13 +171,13 @@ export default function MailApp({ paneId }: AppProps) {
                 subject: mail.subject,
                 from_addr: mail.from_addr,
                 received_at: mail.date,
-                snippet: mail.snippet
+                snippet: mail.snippet,
             });
 
-            toast.success("An Mora gesendet", {
-                description: result.space_name
+            toast.success('An Mora gesendet', {
+                description: result?.space_name
                     ? `Eingeordnet in ${result.space_name}`
-                    : "Von Mora eingeordnet"
+                    : 'Von Mora eingeordnet',
             });
 
             if (activeCompanyId) {
@@ -145,11 +185,10 @@ export default function MailApp({ paneId }: AppProps) {
             }
 
             broadcastCommunicationSync('mail-to-mora');
-
         } catch (err) {
             console.error('[MailApp] Commit error:', err);
             setError(String(err));
-            toast.error("Senden fehlgeschlagen");
+            toast.error('Senden fehlgeschlagen');
         } finally {
             setProposing(false);
         }
@@ -162,11 +201,137 @@ export default function MailApp({ paneId }: AppProps) {
                 day: '2-digit',
                 month: 'short',
                 hour: '2-digit',
-                minute: '2-digit'
+                minute: '2-digit',
             });
         } catch {
             return dateStr;
         }
+    };
+
+    const openMail = async (mail: MailObject) => {
+        setViewingMail(mail);
+        const id = mailKey(mail);
+        try {
+            const detail = await coreGet(`/v3/mail/messages/${encodeURIComponent(id)}`);
+            if (!detail || typeof detail !== 'object') return;
+            const hydrated = { ...mail, ...detail } as MailObject;
+            setViewingMail((current) => current && mailKey(current) === id ? hydrated : current);
+            setMails((current) => current.map((item) => mailKey(item) === id ? hydrated : item));
+        } catch (err) {
+            console.warn('[MailApp] Full message hydration failed', err);
+        }
+    };
+
+    const toggleSelection = (mail: MailObject) => {
+        const id = mailKey(mail);
+        setSelectedIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+        setConfirmingTrash(false);
+    };
+
+    const selectMessageIds = (ids: string[]) => {
+        const available = new Set(mails.map(mailKey));
+        const next = new Set(ids.filter((id) => available.has(id)));
+        setSelectedIds(next);
+        setSelectionMode(true);
+        setConfirmingTrash(false);
+    };
+
+    const exitSelection = () => {
+        if (trashing) return;
+        setSelectionMode(false);
+        setSelectedIds(new Set());
+        setConfirmingTrash(false);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.size === mails.length && mails.length > 0) {
+            setSelectedIds(new Set());
+        } else {
+            setSelectedIds(new Set(mails.map(mailKey)));
+        }
+        setConfirmingTrash(false);
+    };
+
+    const applyTriageLabel = async (suggestion: MailTriageSuggestion) => {
+        if (!suggestion.gmailLabel || labelingSuggestionId) return;
+        setLabelingSuggestionId(suggestion.id);
+        try {
+            for (const id of suggestion.messageIds) {
+                const result = await corePost(
+                    `/v3/mail/messages/${encodeURIComponent(id)}/labels`,
+                    { add: [suggestion.gmailLabel], remove: [] },
+                    { throwAuthErrors: true },
+                );
+                if (!result) throw new Error('Mail label mutation returned no result');
+            }
+            broadcastCommunicationSync('mail-label');
+            toast.success(`${suggestion.messageIds.length} Mail${suggestion.messageIds.length === 1 ? '' : 's'} markiert`, {
+                description: suggestion.gmailLabel,
+            });
+        } catch (err) {
+            console.error('[MailApp] Label mutation failed', err);
+            toast.error('Sortieren nicht möglich', { description: mutationErrorMessage(err) });
+        } finally {
+            setLabelingSuggestionId(null);
+        }
+    };
+
+    const trashSelected = async () => {
+        if (selectedIds.size === 0 || trashing) return;
+        if (!confirmingTrash) {
+            setConfirmingTrash(true);
+            return;
+        }
+
+        setTrashing(true);
+        const ids = Array.from(selectedIds);
+        const trashed = new Set<string>();
+        let failure: unknown = null;
+
+        try {
+            for (const id of ids) {
+                const result = await corePost(
+                    `/v3/mail/messages/${encodeURIComponent(id)}/trash`,
+                    {},
+                    { throwAuthErrors: true },
+                );
+                if (!result) throw new Error('Mail trash mutation returned no result');
+                trashed.add(id);
+            }
+        } catch (err) {
+            failure = err;
+            console.error('[MailApp] Trash mutation failed', err);
+        } finally {
+            if (trashed.size > 0) {
+                setMails((current) => current.filter((mail) => !trashed.has(mailKey(mail))));
+                setSelectedIds((current) => new Set(Array.from(current).filter((id) => !trashed.has(id))));
+                if (viewingMail && trashed.has(mailKey(viewingMail))) setViewingMail(null);
+                broadcastCommunicationSync('mail-trash');
+            }
+            setTrashing(false);
+            setConfirmingTrash(false);
+        }
+
+        if (failure) {
+            toast.error(
+                trashed.size > 0 ? `${trashed.size} verschoben, Rest offen` : 'Papierkorb-Aktion nicht möglich',
+                { description: mutationErrorMessage(failure) },
+            );
+            return;
+        }
+
+        toast.success(`${trashed.size} Mail${trashed.size === 1 ? '' : 's'} in den Papierkorb verschoben`);
+        setSelectionMode(false);
+        setSelectedIds(new Set());
+    };
+
+    const openUnsubscribe = (url: string) => {
+        window.open(url, '_blank', 'noopener,noreferrer');
     };
 
     if (!pane) return null;
@@ -193,6 +358,7 @@ export default function MailApp({ paneId }: AppProps) {
     const latestMail = mailPreview[0] ?? null;
     const mailRequiredFields = Array.isArray(overview?.setup?.mail?.required_fields) ? overview.setup.mail.required_fields : [];
     const showMailSetupHint = !summary.mailConfigured;
+    const allSelected = mails.length > 0 && selectedIds.size === mails.length;
 
     return (
         <GlassPanel
@@ -230,6 +396,17 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
 
                         <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (selectionMode) exitSelection();
+                                    else setSelectionMode(true);
+                                }}
+                                className={`p-2 rounded-lg transition-colors ${selectionMode ? 'bg-emerald-400/12 text-emerald-200' : 'hover:bg-white/10 text-white/60 hover:text-white'}`}
+                                title={selectionMode ? 'Auswahl beenden' : 'Mails auswählen'}
+                            >
+                                <CheckSquare className="w-4 h-4" />
+                            </button>
                             <button
                                 onClick={() => setComposing(true)}
                                 className="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white transition-colors"
@@ -317,6 +494,29 @@ export default function MailApp({ paneId }: AppProps) {
                     </div>
                 )}
 
+                {!viewingMail && !composing && !loading && mails.length > 0 && (
+                    <MailTriagePanel
+                        analysis={triageAnalysis}
+                        labelingSuggestionId={labelingSuggestionId}
+                        onSelect={selectMessageIds}
+                        onApplyLabel={applyTriageLabel}
+                        onOpenUnsubscribe={openUnsubscribe}
+                    />
+                )}
+
+                {!viewingMail && !composing && selectionMode && (
+                    <MailSelectionBar
+                        selectedCount={selectedIds.size}
+                        totalCount={mails.length}
+                        allSelected={allSelected}
+                        trashing={trashing}
+                        confirmingTrash={confirmingTrash}
+                        onToggleAll={toggleSelectAll}
+                        onTrash={trashSelected}
+                        onExit={exitSelection}
+                    />
+                )}
+
                 {/* Mail List */}
                 <div className="flex-1 overflow-y-auto">
                     {loading && !viewingMail && (
@@ -351,29 +551,46 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
                     )}
 
-                    {!loading && !viewingMail && mails.map((mail) => (
-                        <div
-                            key={mail.id}
-                            onClick={() => setViewingMail(mail)}
-                            className="p-4 border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer group flex items-start gap-4"
-                        >
-                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-xs font-bold shrink-0">
-                                {mail.from_addr.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-white/90 font-medium truncate">
-                                        {mail.from_addr.split('<')[0].trim()}
-                                    </span>
-                                    <span className="text-white/30 text-[10px] whitespace-nowrap pt-1">
-                                        {formatDate(mail.date)}
-                                    </span>
+                    {!loading && !viewingMail && mails.map((mail) => {
+                        const id = mailKey(mail);
+                        const selected = selectedIds.has(id);
+                        return (
+                            <div
+                                key={mail.id}
+                                onClick={() => selectionMode ? toggleSelection(mail) : openMail(mail)}
+                                className={`p-4 border-b border-white/5 transition-colors cursor-pointer group flex items-start gap-4 ${selected ? 'bg-emerald-400/[0.055]' : 'hover:bg-white/5'}`}
+                            >
+                                {selectionMode && (
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            toggleSelection(mail);
+                                        }}
+                                        className="mt-2 shrink-0 text-white/42 transition-colors hover:text-emerald-200"
+                                        aria-label={selected ? 'Mail abwählen' : 'Mail auswählen'}
+                                    >
+                                        {selected ? <CheckSquare size={17} className="text-emerald-300/80" /> : <Square size={17} />}
+                                    </button>
+                                )}
+                                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-xs font-bold shrink-0">
+                                    {mail.from_addr.charAt(0).toUpperCase()}
                                 </div>
-                                        <p className="text-white/70 text-sm truncate mb-1">{mail.subject || '(Kein Betreff)'}</p>
-                                <p className="text-white/40 text-xs line-clamp-1">{mail.snippet}</p>
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-white/90 font-medium truncate">
+                                            {mail.from_addr.split('<')[0].trim()}
+                                        </span>
+                                        <span className="text-white/30 text-[10px] whitespace-nowrap pt-1">
+                                            {formatDate(mail.date)}
+                                        </span>
+                                    </div>
+                                    <p className="text-white/70 text-sm truncate mb-1">{mail.subject || '(Kein Betreff)'}</p>
+                                    <p className="text-white/40 text-xs line-clamp-1">{mail.snippet}</p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Viewer Overlay */}
@@ -414,6 +631,17 @@ export default function MailApp({ paneId }: AppProps) {
                                 <div className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-light">
                                     {viewingMail.body_text || viewingMail.snippet}
                                 </div>
+
+                                {viewingUnsubscribeUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => openUnsubscribe(viewingUnsubscribeUrl)}
+                                        className="mt-6 inline-flex items-center gap-2 rounded-xl border border-cyan-300/12 bg-cyan-400/[0.07] px-3 py-2 text-xs text-cyan-100/72 transition-colors hover:bg-cyan-400/[0.12]"
+                                    >
+                                        <ExternalLink size={14} />
+                                        Abmelde-Seite öffnen
+                                    </button>
+                                )}
 
                                 {viewingMail.attachment_count > 0 && (
                                     <div className="mt-8 pt-8 border-t border-white/5">
@@ -511,16 +739,16 @@ export default function MailApp({ paneId }: AppProps) {
                                                 to_email: composeTo,
                                                 subject: composeSubject,
                                                 content: composeBody,
-                                                text_content: composeBody
+                                                text_content: composeBody,
                                             });
                                             broadcastCommunicationSync('mail-send');
-                                            toast.success("Gesendet");
+                                            toast.success('Gesendet');
                                             setComposing(false);
-                                            setComposeTo("");
-                                            setComposeSubject("");
-                                            setComposeBody("");
+                                            setComposeTo('');
+                                            setComposeSubject('');
+                                            setComposeBody('');
                                         } catch (e) {
-                                            toast.error("Senden fehlgeschlagen");
+                                            toast.error('Senden fehlgeschlagen');
                                         } finally {
                                             setSending(false);
                                         }
@@ -535,7 +763,6 @@ export default function MailApp({ paneId }: AppProps) {
                         </motion.div>
                     )}
                 </AnimatePresence>
-
             </div>
         </GlassPanel>
     );
