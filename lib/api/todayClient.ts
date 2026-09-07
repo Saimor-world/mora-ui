@@ -125,7 +125,7 @@ function isNullableString(value: unknown): value is string | null | undefined {
   return value === undefined || value === null || typeof value === 'string';
 }
 
-function isSourceMeta(value: unknown): value is TodaySourceMeta {
+function isSourceMeta(value: unknown): value is TodaySourceMeta & Record<string, unknown> {
   if (!isRecord(value)) return false;
   const scope = value.scope;
   if (!isRecord(scope)) return false;
