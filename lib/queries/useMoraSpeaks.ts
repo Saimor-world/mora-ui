@@ -1,18 +1,20 @@
 'use client';
 
 /**
- * useMoraSpeaks — listen for `mora.speaks` realtime events from urgent-tier
- * KAIROS signals. When fired:
- *   1. Open (or focus) the Mora chat pane
- *   2. Dispatch a window CustomEvent `mora-speaks-message` that the chat pane
- *      listens to, injecting the message as if Mora spoke it
- *   3. Ack the speak via REST so it doesn't re-appear on poll/reconnect
+ * useMoraSpeaks — listen for proactive `mora.speaks` realtime events.
  *
- * This hook should be mounted exactly once at the shell level (MoraShell).
+ * Important product rule:
+ * Conversation is a capability, not the product surface.
+ *
+ * A proactive Môra event therefore does NOT auto-open chat. Instead this hook:
+ *   1. emits a shell-level `mora-speaks-message` event
+ *   2. lets the mounted Môra presence surface decide how to present it
+ *   3. acknowledges the speak so it does not re-appear on reconnect
+ *
+ * If a Môra conversation is already open, it may also listen to the same event.
  */
 import { useEffect, useRef } from 'react';
 import { realtime } from '@/lib/api/realtimeClient';
-import { usePaneStore } from '@/lib/store/paneStore';
 import { corePost, coreGet } from '@/lib/api/coreClient';
 import { useSessionStore } from '@/lib/store/sessionStore';
 
@@ -39,30 +41,13 @@ function ackSpeak(id: string) {
 
 export function useMoraSpeaks() {
     const user = useSessionStore((s) => s.user);
-    const openPane = usePaneStore((s) => s.openPane);
-    const focusPane = usePaneStore((s) => s.focusPane);
-    const getPane = usePaneStore((s) => s.getPane);
     const initialPolledRef = useRef(false);
 
     useEffect(() => {
         if (!user) return;
 
-        // Helper: ensure chat pane is open + foreground, then deliver
         const deliver = (payload: MoraSpeakPayload) => {
-            const existing = getPane('mora-chat');
-            if (existing) {
-                focusPane('mora-chat');
-            } else {
-                openPane({
-                    id: 'mora-chat',
-                    type: 'chat',
-                    title: 'Mora',
-                    size: { width: 460, height: 620 },
-                    data: { autoOpened: true, initialMoraMessage: payload.message },
-                });
-            }
-            // Give the pane a tick to mount its event listener before dispatching
-            setTimeout(() => dispatchSpeakEvent(payload), 80);
+            dispatchSpeakEvent(payload);
             ackSpeak(payload.id);
         };
 
@@ -81,7 +66,7 @@ export function useMoraSpeaks() {
                 .then((result: any) => {
                     const speaks: MoraSpeakPayload[] = result?.data ?? result ?? [];
                     if (Array.isArray(speaks) && speaks.length > 0) {
-                        // Deliver only the most recent one to avoid spam
+                        // Deliver only the most recent one to avoid interruption spam.
                         deliver(speaks[speaks.length - 1]);
                     }
                 })
@@ -91,5 +76,5 @@ export function useMoraSpeaks() {
         return () => {
             realtime.off('mora.speaks', wsHandler);
         };
-    }, [user, openPane, focusPane, getPane]);
+    }, [user]);
 }
