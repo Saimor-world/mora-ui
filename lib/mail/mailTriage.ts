@@ -39,9 +39,11 @@ const PROMOTION_RE = /rabatt|angebot|\bsale\b|%\s*off|aktion|promo|marketing|gut
 
 // Security, account and transaction mail is deliberately protected from automatic
 // cleanup suggestions. A no-reply sender alone is never enough to call something
-// a newsletter or advertisement.
+// a newsletter or advertisement. Order wording must be specific: plain mentions
+// like "Rabatt auf deine nächste Bestellung" are marketing, not proof of a
+// completed transaction.
 const TRANSACTIONAL_SENDER_RE = /@(?:github\.com|gitlab\.com|notifications\.|security\.|accounts\.google|apple\.com|microsoft\.com|stripe\.com|paypal\.com)/i;
-const TRANSACTIONAL_SUBJECT_RE = /public key|ssh key|api key|security alert|sicherheit|passwort|password|verification|verify|sign.?in|login|2fa|two.?factor|authenticate|suspicious|unauthorized|token|receipt|invoice|rechnung|order confirm|bestell|payment|zahlung|transaction|was added|neuer anmeld|zugriff|access granted/i;
+const TRANSACTIONAL_SUBJECT_RE = /public key|ssh key|api key|security alert|sicherheit|passwort|password|verification|verify|sign.?in|login|2fa|two.?factor|authenticate|suspicious|unauthorized|token|receipt|invoice|rechnung|order confirm|order (?:number|received|shipped|#\s*\w+)|bestell(?:bestätigung|nummer)|bestellung(?:\s*#\s*\w+|\s+(?:eingegangen|bestätigt|versandt|wurde))|payment|zahlung|transaction|was added|neuer anmeld|zugriff|access granted/i;
 const UNSUBSCRIBE_URL_RE = /https?:\/\/[^\s"'<>)\]]+(?:unsubscribe|optout|opt-out|abmelden)[^\s"'<>)\]]*/i;
 
 function messageKey(message: MailTriageMessage): string {
