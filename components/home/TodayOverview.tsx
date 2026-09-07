@@ -62,7 +62,7 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
   if (loading && !status) {
     return {
       value: 'Wird geladen',
-      detail: `${label} wird für den aktuellen Kontext gelesen.`,
+      detail: `${label} wird für den aktuellen Kontext geladen.`,
       unavailable: true,
     };
   }
@@ -77,20 +77,20 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
     case 'partial':
       return {
         value: 'Teilweise verfügbar',
-        detail: `${label} konnte nur teilweise gelesen werden.`,
+        detail: `${label} konnte nur teilweise geladen werden.`,
         attention: true,
       };
     case 'stale':
       return {
         value: 'Stand veraltet',
-        detail: `${label} braucht eine Aktualisierung, bevor der Stand als aktuell gilt.`,
+        detail: `${label} sollte aktualisiert werden.`,
         attention: true,
       };
     case 'unavailable':
     default:
       return {
         value: 'Nicht verfügbar',
-        detail: `${label} konnte gerade nicht sicher gelesen werden.`,
+        detail: `${label} konnte gerade nicht sicher geladen werden.`,
         unavailable: true,
       };
   }
@@ -101,7 +101,7 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
   if (error === 'unauthorized') {
     return {
       value: 'Sitzung abgelaufen',
-      detail: `${label} kann erst nach einer gültigen Anmeldung wieder gelesen werden.`,
+      detail: `${label} kann nach erneuter Anmeldung wieder geladen werden.`,
       unavailable: true,
     };
   }
@@ -216,20 +216,20 @@ export function TodayOverview() {
   }, [loadError, loading, snapshot]);
 
   const mailCopy = useMemo(() => {
-    if (!snapshot) return topLevelStateCopy('Post', loadError, loading);
+    if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);
     if (snapshot.mail.status === 'empty') {
-      return { value: 'Posteingang ruhig', detail: 'Keine Nachricht im aktuellen Today-Ausschnitt.' };
+      return { value: 'Posteingang ruhig', detail: 'Keine Mail im zuletzt geladenen Ausschnitt.' };
     }
-    if (snapshot.mail.status !== 'ok') return sourceStateCopy('Post', snapshot.mail.status);
-    if (typeof snapshot.mail.inbox_loaded !== 'number') return sourceStateCopy('Post', 'unavailable');
+    if (snapshot.mail.status !== 'ok') return sourceStateCopy('Mail', snapshot.mail.status);
+    if (typeof snapshot.mail.inbox_loaded !== 'number') return sourceStateCopy('Mail', 'unavailable');
 
     const latest = snapshot.mail.items[0];
-    if (!latest) return sourceStateCopy('Post', 'partial');
+    if (!latest) return sourceStateCopy('Mail', 'partial');
     return {
-      value: latest.subject || 'Neue Post',
+      value: latest.subject || 'Neue Mail',
       detail: snapshot.mail.inbox_loaded === 1
-        ? '1 Nachricht im begrenzten Today-Ausschnitt.'
-        : `${snapshot.mail.inbox_loaded} Nachrichten im begrenzten Today-Ausschnitt.`,
+        ? '1 zuletzt geladene Nachricht.'
+        : `${snapshot.mail.inbox_loaded} zuletzt geladene Nachrichten.`,
     };
   }, [loadError, loading, snapshot]);
 
@@ -258,7 +258,7 @@ export function TodayOverview() {
   const nightwatchCopy = useMemo(() => {
     if (!snapshot) return topLevelStateCopy('Nightwatch', loadError, loading);
     if (snapshot.nightwatch.status === 'empty') {
-      return { value: 'Keine offenen Vorfälle', detail: 'Nightwatch meldet aktuell keinen offenen Incident.' };
+      return { value: 'Alles ruhig', detail: 'Keine offenen Vorfälle.' };
     }
     if (snapshot.nightwatch.status !== 'ok') return sourceStateCopy('Nightwatch', snapshot.nightwatch.status);
     if (typeof snapshot.nightwatch.open_incidents !== 'number') return sourceStateCopy('Nightwatch', 'unavailable');
@@ -282,7 +282,7 @@ export function TodayOverview() {
           : refreshing
             ? 'aktualisiert'
             : snapshot.status === 'ok'
-              ? 'live'
+              ? 'aktuell'
               : snapshot.status === 'degraded'
                 ? 'teilweise'
                 : 'nicht verfügbar';
@@ -296,14 +296,14 @@ export function TodayOverview() {
             <span className="h-1 w-1 rounded-full bg-white/20" />
             <span className={snapshot?.status === 'degraded' || loadError === 'forbidden' ? 'text-amber-100/45' : 'text-emerald-100/42'}>{overallLabel}</span>
           </div>
-          <h2 className="mt-1 text-lg font-medium tracking-[-0.02em] text-white/72">Was jetzt tatsächlich anliegt.</h2>
+          <h2 className="mt-1 text-lg font-medium tracking-[-0.02em] text-white/72">Das ist heute relevant.</h2>
         </div>
         <button
           type="button"
           onClick={() => void refresh(false)}
           className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.065] bg-white/[0.025] text-white/28 transition-colors hover:text-white/62"
-          title="Tageslage aktualisieren"
-          aria-label="Tageslage aktualisieren"
+          title="Heute aktualisieren"
+          aria-label="Heute aktualisieren"
         >
           <RefreshCw size={12} className={refreshing ? 'animate-spin' : ''} />
         </button>
@@ -317,9 +317,9 @@ export function TodayOverview() {
           {...calendarCopy}
         />
         <TodayCard
-          eyebrow="Post"
+          eyebrow="Mail"
           icon={Mail}
-          onClick={() => openPane({ id: 'mail-main', type: 'mail', title: 'Post', size: { width: 1080, height: 760 } })}
+          onClick={() => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } })}
           {...mailCopy}
         />
         <TodayCard
