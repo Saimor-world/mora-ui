@@ -18,8 +18,8 @@ type TodayCardProps = {
   detail: string;
   icon: LucideIcon;
   onClick: () => void;
-  unavailable?: boolean;
-  attention?: boolean;
+  unavailable?: boolean | undefined;
+  attention?: boolean | undefined;
 };
 
 type SnapshotState = {
