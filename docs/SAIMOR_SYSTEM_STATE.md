@@ -1,198 +1,312 @@
 # SAIMÔR SYSTEM STATE
 
-Last verified: 2026-09-07 (UTC), convergence audit.
-Verified against: GitHub source, PR diffs and workflow logs; Vercel Website deployment metadata.
-Current mission: Stand 0 — one canonical OS convergence line.
-Status: Review proposal. No production deployment, merge, PR closure or application-code fix was performed in this audit round.
-Coordination home: Saimor-world/mora-ui, docs/SAIMOR_SYSTEM_STATE.md. Until merged, read coordination/stand-zero. Update this document through reviewed commits; do not treat a chat handoff as runtime evidence.
+Last verified: 2026-09-07 UTC, post-audit stabilization round.
+Verified against: GitHub source, PR heads, workflow jobs/logs and connected deployment metadata where available.
+Current mission: **Stand 0 — one canonical OS convergence line.**
+Coordination home: `Saimor-world/mora-ui/docs/SAIMOR_SYSTEM_STATE.md` on `coordination/stand-zero` until PR #56 is merged.
 
-## 1. Product Definition
+> Runtime rule: repository state is not production state. Production remains unchanged in this round. No PR below has been merged or promoted to production merely because CI is green.
 
-Saimôr is one system. Saimôr OS is its primary interface. CORE owns deterministic operational truth and controlled actions. MÔRA interprets context and uses those capabilities; it must not become an alternative source of truth.
+## 1. Product decision
 
-Desk is no longer a separate product target. Preserve useful mora-work capabilities through CORE contracts and native OS surfaces. A quieter workspace may return only on the same Engine, identity and truth.
+Saimôr is one system. **Saimôr OS is the primary interface. CORE owns deterministic operational truth and controlled actions. MÔRA interprets authorized context and acts through those capabilities; it must not become an alternative truth store.**
 
-This is the user-approved product direction, not a claim that convergence is already complete.
+The historical Desk (`mora-work`) is migration inventory, not a second forward product. Useful Desk capabilities are rescued into native OS surfaces and canonical CORE contracts. A quieter Desk/workspace persona may return later only on the same Engine, identity, authorization and truth layer.
 
-## 2. Canonical Architecture
+## 2. Canonical architecture boundary
 
-| Layer | Responsibility | Boundary |
+| Layer | Responsibility | Must not do |
 |---|---|---|
-| OS / native apps | Home, Mail, Calendar, Work, Tasks, Files, Nightwatch | Compose capabilities; no duplicate backend truth |
-| Frontend Engine | World Surface, panes, navigation, commands, notifications, session projection, motion | UI state and adapters; never the authority for permissions |
-| CORE | Tenant/user/company authorization, operational records, source adapters, controlled actions | Authorize every read/action; preserve source provenance |
-| MÔRA | Context, interpretation, orchestration | Read authorized projections; act through controlled capabilities |
-| Runtime / OpenClaw | Tool execution | Not another memory, identity or policy authority |
+| OS / native apps | Home, Mail, Calendar, Work, Tasks, Files, Nightwatch, Activity | invent duplicate backend truth |
+| Frontend Engine | World Surface, panes, navigation, commands, notifications, session projection | become permission authority |
+| CORE | tenant/user/company authorization, operational records, source adapters, controlled actions | silently turn unknown into healthy/zero |
+| MÔRA | context, interpretation, orchestration | bypass source contracts or action authorization |
+| Runtime / OpenClaw | tool execution | become another identity/memory/policy system |
 
-Engine is a logical boundary, not yet a proven shared package. PR #51 extracts OS composition but its layers still depend on OS stores. Do not package tightly coupled components prematurely.
+“Engine” remains a logical boundary. PR #51 extracts useful World/OS composition, but that extraction is not by itself the full Saimôr Engine.
 
-Five principal architecture problems:
-1. Scope is not preserved consistently from authenticated user/company to aggregated source queries.
-2. Empty, partial, disconnected and healthy are not reliably distinguished throughout source adapters.
-3. Shell composition, arrival overlays and shared HTTP behavior are changing in overlapping PRs.
-4. Today repeats sequential external reads while the UI polls; context switches can retain stale data.
-5. Architecture documentation and deployment evidence lag code; branch intent is easily mistaken for live behavior.
+## 3. Canonical repositories
 
-## 3. Canonical Repositories
+All repositories below are under `Saimor-world`.
 
-All names below are under Saimor-world.
-
-| Repository | Role | Verified state |
+| Repository | Role | Current Stand-0 use |
 |---|---|---|
-| mora-ui | Canonical OS and current frontend Engine host | main 13c6456e0ac48db2a588ff45efb9d250322182b8 |
-| saimor-core | CORE truth/actions/context platform | main 4b0c73a0e65613f6159ff88d14c2c25dcfb404ab |
-| mora-work | Historical Desk source; capability migration inventory | main 9765a181ca49bcc491dfce0917b0dca30e0d8e60; not a second forward product |
-| saimor-workspace | Cross-repo guidance | PR #1 proposes One OS; reconcile before treating all guidance as canonical |
-| saimor-ops | Deployment/runbook ownership | Existing DEPLOYED_STATE.md is historical, not current production proof |
-| Website | Public explanation and entry | Independently deployed; not the OS or CORE |
-| saimor-earth / other projects | Outside current mission | No Stand-0 expansion or archive decision made |
+| `mora-ui` | canonical OS / HQ frontend | active |
+| `saimor-core` | canonical truth/actions/context backend | active |
+| `mora-work` | historical Desk | migration inventory only |
+| `saimor-workspace` | cross-repo guidance | reconcile with One-OS direction |
+| `saimor-ops` / deployment material | runtime/deploy ownership | deployment evidence still required |
+| Website | public explanation/entry | outside Today integration block |
+| Earth / other projects | separate products/capabilities | no Stand-0 expansion |
 
-## 4. Production Reality
+## 4. Stand-0 candidate heads
 
-Website Vercel lookup of www.saimor.world returned READY production:
-- Deployment: dpl_Da7dhnNfD5vFEW9JYthDTS1qXcZ3
-- Commit: 2daba2fbbf0836aeca390bdfb233ba525ab06b3f
-- Project: prj_VyQHHgQLYVm7NI55MMVRahL28lug
-- The earlier 8cc40049 baseline is historical, not the observed live revision.
+| Work | Verified head | Status |
+|---|---:|---|
+| CORE PR #29 `codex/unified-os-today` | `23e9bc031c9eff93e9451fc7b2e250516a8a0747` | both CORE workflows green |
+| OS PR #55 `codex/unified-os-today` | `585413101f8f9468beee8c8133fc9838047e6bf5` | full UI verify workflow green |
+| Blackboard PR #56 `coordination/stand-zero` | this document | coordination only |
 
-OS hq.saimor.world and Desk dash.saimor.world: exact deployed revisions NOT VERIFIED. Earlier public entry/login observations do not prove authenticated behavior, isolation or current build identity. CORE/runtime deployed revisions NOT VERIFIED. No private records, signup, billing or destructive operation was exercised.
+Other overlapping OS PRs (#51, #50, #54, #48, #45) remain separate convergence work. Do not stack them onto Today merely to make one large merge.
 
-Release requires fresh runtime revision evidence, deployment health and authenticated test-tenant QA. Repository main is not proof of deployment.
+## 5. CORE PR #29 — verified current contract
 
-## 5. Preview / Work in Progress
+`GET /v3/today` is the deterministic daily truth surface for Home, MÔRA context and any later Desk persona.
 
-| Work | Audited head |
+Each source exposes an explicit state:
+
+- `ok`
+- `empty`
+- `disconnected`
+- `partial`
+- `unavailable`
+- `stale`
+
+Each source also reports:
+
+- `source`
+- `scope { level: tenant|user|company, tenant_id, user_id?, company_id? }`
+- `connection`
+- `complete`
+- `as_of`
+- `stale_after_seconds`
+
+The snapshot reports `requested_scope { tenant_id, user_id, company_id }`.
+
+**Truth invariant:** missing/failed/incomplete data is never rewritten as `0`, `100% healthy`, “empty” or “Normalbetrieb”.
+
+### Mail
+
+- Today sample is bounded to **5** messages instead of up to 20 Gmail detail reads per refresh.
+- Gmail, IMAP, demo and local/fallback provenance are distinguishable.
+- Missing expected external connectivity becomes disconnected/partial rather than fake empty.
+- `inbox_loaded` is a bounded loaded sample, not total inbox truth.
+
+### Calendar
+
+- Today uses Europe/Berlin local day semantics.
+- Google query bounds are converted correctly to UTC.
+- Google event mapping preserves timezone-aware meaning.
+- Pagination is supported rather than silently treating one page as complete.
+- Effective user/company/tenant scope is exposed.
+
+### Tasks
+
+- Tasks API and Today share `core/services/task_service.py`.
+- Current task persistence remains tenant-scoped; Today reports that honestly instead of pretending company scoping exists.
+- Earlier `sqlite row_factory` suspicion was refuted; no speculative repair was added.
+
+### Nightwatch
+
+- Authorized reads pass `caller_user_id`.
+- Requested company is applied where present.
+- Health/open count is calculated from the full authorized incident set, not a `limit=100` display page.
+- Only the returned preview list is sliced.
+
+### Briefing
+
+- Failure fallback remains degraded with unknown/null metrics.
+- A failed briefing must not claim `100%`, zero incidents or normal operation.
+
+### Company access
+
+The original audit blocker is now implemented against the **existing membership authority**, not a new parallel policy:
+
+- company must belong to the authenticated tenant;
+- owner/admin/system-owner remain unrestricted according to existing membership semantics;
+- users without explicit department assignments retain the existing legacy tenant-wide behavior;
+- a department-scoped member may request a company only when at least one active assigned department belongs to that company;
+- an explicitly scoped member assigned only to company A receives `403` for company B.
+
+Regression coverage creates two companies and proves the cross-company denial.
+
+## 6. CORE CI evidence
+
+Verified head: `23e9bc031c9eff93e9451fc7b2e250516a8a0747`.
+
+### Primary CI — run 273
+
+**SUCCESS**
+
+- Lint & Format ✅
+- Tests ✅ — **1160 passed**, 31 warnings
+- Runtime Smoke ✅
+- Compose Config Validation ✅
+- Security Checks ✅
+
+Today-specific tests in the successful full suite include:
+
+- public authenticated `/v3/today` HTTP contract
+- source-state distinctions
+- department-derived cross-company isolation
+- unavailable != zero/healthy
+- Nightwatch user/company scope
+- briefing failure != false healthy
+- calendar Berlin-day boundaries and Google pagination
+
+### Core truth tests — run 128
+
+**SUCCESS**
+
+The earlier brittle assertion inspected FastAPI internal router representation. It has been replaced by an authenticated HTTP contract test. The truth workflow was also aligned to the project-supported Python 3.13 runtime (`pyproject.toml` requires Python >=3.13).
+
+## 7. OS PR #55 — verified consumer behavior
+
+The Today/Home consumer now treats scope changes as a hard data boundary.
+
+### Scope safety
+
+- current session user and active company form the Today context key;
+- old snapshot is discarded immediately when that context changes;
+- request-generation guard prevents a late response from the prior company/user from committing;
+- manual refresh is guarded by the same generation logic;
+- returned snapshot must match requested company and, when known, current user.
+
+### Runtime contract validation
+
+The client no longer blindly casts Today JSON.
+
+- source states and scope metadata are validated;
+- `ok`/`empty` sources cannot contain unknown/null counts and still render as zero;
+- `empty` must actually be mathematically empty;
+- malformed/contradictory snapshot returns `null` rather than a reassuring UI.
+
+### Refresh cost / freshness
+
+- background interval reduced from 60 seconds to **5 minutes**;
+- focus/visibility refresh is gated by visible-tab state and minimum age;
+- manual refresh remains available;
+- UI describes Mail as a bounded Today sample.
+
+### Rendering
+
+Home distinguishes:
+
+- empty
+- disconnected
+- partial
+- unavailable
+- stale
+- ok
+
+The cards still open the **existing native** Calendar, Mail, Tasks and Nightwatch panes. No Desk proxy or duplicate app was added.
+
+### UI regression evidence
+
+- contract parser tests cover valid and contradictory source states;
+- old-company and old-principal snapshots are rejected;
+- React race test proves a late response from company A is never rendered after switching to company B.
+
+### UI CI
+
+Verified head: `585413101f8f9468beee8c8133fc9838047e6bf5`.
+
+Full verify workflow is green:
+
+- Lint ✅
+- Typecheck ✅
+- Critical flow gate ✅
+- OS smoke ✅
+- Unit tests ✅
+- Production build ✅
+
+## 8. What the first audit found, and disposition
+
+| Audit finding | Current disposition |
 |---|---|
-| CORE #29, codex/unified-os-today | 1346c7292083afb92f71401b531f4c0a57a26c37 |
-| OS Today, codex/unified-os-today; now draft #55 | 8b8e0d4fefe93c3b05e74c889e2ba04e9684635c |
-| OS #50 | 4bba0b4ac4168fb73635b2974f1ea1e11647dbaa |
-| OS #51 | 6d06dc6987e42c31b6d4e81ea7ec395fd4377d8f |
-| OS #54 | 7e2228aa22c4fd2281c2cae395738f676d835602 |
-| OS #48 | c8a3e77775e18cb0a8d0771fff4b29ef3029fb27 |
-| OS #45 | f25e9ecf9c00dfb3d5597fe569739d87799a0660 |
-| Workspace #1 | f8595cdb906c605bb03aa3efedcba256255b9fa0 |
-| Website #23, stacked on #22 | 1bc94bb93eb154b82e57472e27eadf0a5b46a3b1 |
+| CORE lint/test failures | fixed; both workflows green |
+| unknown vs empty/healthy ambiguity | explicit source-state contract implemented |
+| Today company lookup only proved tenant ownership | fixed using existing department-membership authority |
+| Nightwatch `limit=100` could corrupt health | fixed |
+| Nightwatch lacked caller/company scope | fixed for Today |
+| Mail polling could create many Gmail detail calls | sample bounded to 5; UI refresh reduced/gated |
+| Calendar UTC day window conflicted with Berlin day | fixed + tested |
+| UI could show old company after switch | fixed + race-tested |
+| UI blind-cast response / null-to-zero risk | runtime validation added |
+| `row_factory` suspected bug | refuted; no unnecessary refactor |
+| shared HTTP swallows 401/403 | still open; converge with PR #54 rather than duplicate |
+| deployed OS/CORE revision unknown | still open |
+| authenticated Safari/device QA | still open |
 
-Website #23 preview READY: dpl_G5M46mCyxAoXoNgVaps3gZNDcgYa. Visual work is parked, not a dependency of Today. No Today browser/device QA completed in this round.
+## 9. Remaining Stand-0 blockers
 
-## 6. Active Pull Requests
+CI-green is **not** release approval. The following remain:
 
-Decisions are proposals, not executed merges or closures. Recheck heads and CI before implementation.
+1. **Shared HTTP/Auth convergence**
+   - Today reads still use the tolerant shared GET behavior where top-level `401/403` can collapse to `null`.
+   - This is fail-safe for leakage but semantically imprecise (“not connected” can hide auth/session failure).
+   - PR #54 already introduces an opt-in auth-error path for explicit operations. Reconcile with that shared client instead of creating a second auth model.
 
-| PR | Purpose / overlap | Proposal and gate |
-|---|---|---|
-| [CORE #29](https://github.com/Saimor-world/saimor-core/pull/29) | Today truth; task service, briefing, Engine ADR | KEEP, blocked by CI and source/scope correctness below |
-| [OS #55](https://github.com/Saimor-world/mora-ui/pull/55) | Existing Today consumer, HomeSurfaceNext | KEEP as draft; depends on #29 contract; coordinate #54 HTTP changes |
-| [OS #51](https://github.com/Saimor-world/mora-ui/pull/51) | World Surface extraction from MoraShell | KEEP behavior-preserving code; supersede obsolete dual-surface assumptions in its architecture document |
-| [OS #50](https://github.com/Saimor-world/mora-ui/pull/50) | Home and MÔRA presence | INTEGRATE selected changes with #55 and one arrival policy; stale test below |
-| [OS #54](https://github.com/Saimor-world/mora-ui/pull/54) | Mail triage plus shared HTTP auth behavior | INTEGRATE after classifier fix and contract review; not merely isolated Mail UI |
-| [OS #48](https://github.com/Saimor-world/mora-ui/pull/48) | Handoff overlay ownership | INTEGRATE selective context cleanup/tour ownership; reject blanket hiding of real connectivity errors |
-| [OS #45](https://github.com/Saimor-world/mora-ui/pull/45) | First-arrival auto-open behavior | SUPERSEDE only after useful no-duplicate/no-forced-chat behavior is incorporated and tested with #48/#50 |
-| [OS #18](https://github.com/Saimor-world/mora-ui/pull/18) | Broad immersive/panes/search work | DEFER; salvage independently reproduced fixes instead of broad merge |
-| [CORE #25](https://github.com/Saimor-world/saimor-core/pull/25) | World model products/servers/agents | DEFER; no established Today dependency |
-| [CORE #11](https://github.com/Saimor-world/saimor-core/pull/11) | Larry ingestion | DEFER pending scoped ingestion/action review |
-| [CORE #9](https://github.com/Saimor-world/saimor-core/pull/9) | OAuth redirect adjustment | DEFER pending proof it is still required by actual deployed route |
-| [mora-work #10](https://github.com/Saimor-world/mora-work/pull/10) | Capability inventory | KEEP as migration inventory, not new Desk runtime |
-| [Workspace #1](https://github.com/Saimor-world/saimor-workspace/pull/1) | One OS guidance | INTEGRATE; clarify that dedicated installation does not remove existing tenant/user boundaries |
-| Website #22 / #23 | Visual direction and polish | DEFER from Stand 0; retain previews, no production promotion |
+2. **Deployment/preview identity**
+   - Exact deployed revisions for `hq.saimor.world`, CORE/runtime and a Today-capable preview have not been verified.
+   - Connected Vercel project listing did not expose `mora-ui` as an obvious standalone project.
+   - `mora-ui` repository documentation describes it as part of the wider CORE/BRIDGE/OPERATIONS workspace, so no new Vercel deployment should be invented merely for this test.
 
-### Exact observed CI blockers
+3. **Authenticated runtime QA**
+   - Need a safe authenticated candidate environment.
+   - Verify Home → Today → Mail/Calendar/Tasks/Nightwatch with real session context.
+   - Verify company switch and stale-response behavior in browser.
+   - Explicit Safari/mobile/iPhone/iPad pass remains required.
 
-CORE #29:
-- [Lint/format job](https://github.com/Saimor-world/saimor-core/actions/runs/34124864016/job/101751068477): 45 Ruff violations across today.py, task_service.py, today_service.py, test_today_surface.py. Format stage not reached.
-- [CI tests](https://github.com/Saimor-world/saimor-core/actions/runs/34124864016/job/101751068548): 1 failed / 1153 passed. Test tenant tenant-today-test is outside configured allowlist; expected 200 receives 401 before intended fallback path. Fix fixture, not production authorization.
-- [Core truth tests](https://github.com/Saimor-world/saimor-core/actions/runs/34124863877/job/101751068446): 2 failed / 965 passed. Same 401 plus route enumeration assumes every route has .path; newer FastAPI exposes _IncludedRouter. Prefer actual HTTP contract assertion. CI environments resolve different framework versions.
-- Runtime Smoke, Security Checks and Compose Validation passed in inspected runs.
+4. **Production authorization**
+   - Production stays unchanged until candidate SHAs, runtime evidence, rollback and Marius approval are recorded.
 
-OS #50:
-- [Verify](https://github.com/Saimor-world/mora-ui/actions/runs/34058765131/job/101555390789): 1 failed / 1331 passed; surfaceRegistry.test.ts:129 expects historical Saimôr Desk label instead of Saimôr OS · Home. Confirm navigation contract then update assertion.
+## 10. Integration order from here
 
-OS #54:
-- [Verify](https://github.com/Saimor-world/mora-ui/actions/runs/34118982183/job/101732375603): 1 failed / 1342 passed; promotional “20% Rabatt auf deine nächste Bestellung” matches broad transactional bestell expression. Narrow transaction classification without weakening invoice/security protection.
-- #50/#54 lint, types, critical flow and OS smoke passed; production build was SKIPPED, not verified.
+Do not expand the mission until Stand 0 is proven end to end.
 
-OS #51 and #48 inspected verify runs passed. Green CI does not resolve the design issues above. #45/#18 verify failed; their exact failing tests were not investigated in this bounded audit.
+1. ✅ Stabilize CORE #29 contract, scope and CI.
+2. ✅ Stabilize OS #55 consumer, stale-scope handling and CI.
+3. **Next:** converge shared HTTP/Auth behavior with #54 without pulling unrelated Mail UI changes into Today accidentally.
+4. Determine the authoritative preview/deployment path for `mora-ui` + matching CORE candidate.
+5. Run authenticated desktop/mobile/Safari QA and record candidate SHAs/runtime identities.
+6. Then reconcile #51 World Surface and #50/#48/#45 into one arrival/composition policy.
+7. Then integrate Mail triage from #54 if its classifier/auth tests are green.
+8. Only after Stand 0: migrate old Desk Work/Missions capabilities into native Work/Tasks, then Files and Activity/Weave.
 
-## 7. System Contracts
+No Finance/Earth/Messages expansion in this mission.
 
-Evidence for CORE findings: #29 head above, core/api/v3/today.py, core/services/today_service.py, core/services/task_service.py, core/database.py, core/services/node_service.py, core/api/v1/endpoints/mail.py and calendar.py.
-Evidence for UI: #55 head, components/home/TodayOverview.tsx, lib/api/todayClient.ts; main lib/api/http.ts and #54 diff.
+## 11. Pull-request disposition
 
-| Contract | Current finding / required gate |
+| PR | Current recommendation |
 |---|---|
-| Today | /v3/today aggregates sources sequentially. Preserve unknown != zero and unknown != healthy all the way through source adapters, not just outer exception handlers |
-| Identity/company | Company lookup establishes tenant ownership, not user membership. Tasks and Nightwatch do not consistently apply requested company. Define and enforce tenant + user visibility + company semantics |
-| Nightwatch | Today calls NodeService.list without caller_user_id or company, limit 100. Visibility filtering is conditional on caller. Count/health from a truncated subset is not an exact scoped aggregate |
-| Mail | Up to one Gmail list plus 20 sequential detail requests per snapshot. Missing credentials can return []; failed details are skipped. Empty/local fallback/partial external result need explicit provenance and availability |
-| Calendar | External query uses UTC day bounds while Today uses Europe/Berlin; mapping strips offsets. Preserve timezone-aware instants and align day window; pagination/completeness must be explicit |
-| Tasks | Shared deterministic service is useful. Reported SQLite row_factory bug NOT CONFIRMED: get_connection sets sqlite3.Row; db_session uses it. Do not add speculative patch |
-| Today UI | Old snapshot survives company change; manual refresh has no generation guard. Clear/key data by authenticated scope and prevent stale responses committing |
-| Polling | Current 60-second interval plus focus/manual refresh, no visibility gate/backoff. At 21 Gmail calls per snapshot, code-based upper estimate is 1260/hour/client before extra triggers; not measured usage |
-| HTTP | GET in-flight dedupe key is not explicitly principal-keyed; main swallows 401/403 to null. Coordinate #54 behavior and session invalidation; avoid auth failure looking like empty Today |
-| Types/status | TypeScript cast is not response validation. status ok plus nullish-to-zero counters can present misleading health. Validate contract and distinguish not connected, partial, stale, unavailable, empty |
-| Files / Work / Activity | Existing native surfaces are not proof of unified backend contracts. Inventory after Today; do not introduce parallel truth |
-| MÔRA context/actions | Must consume same authorized source contracts; provenance and action authorization remain server-owned |
+| CORE #29 | KEEP Draft; code/CI gate passed, runtime QA/deployment evidence still open |
+| OS #55 | KEEP Draft; code/CI gate passed, depends on #29 runtime candidate |
+| OS #54 | REVIEW NEXT for shared HTTP/Auth convergence; do not merge wholesale solely for Today |
+| OS #51 | KEEP behavior-preserving World Surface extraction; integrate after Stand-0 runtime proof |
+| OS #50/#48/#45 | reconcile into one arrival policy later; no parallel Shell direction |
+| mora-work #10 | keep as capability migration inventory only |
 
-Scope and stale-data findings are release blockers from code review, not a claim of a demonstrated production exploit. Tests with two users/companies are required.
+## 12. Agent sync log
 
-## 8. Historical Decisions / Superseded Architecture
+### 2026-09-07 — Astra, audit round 1
 
-SUPERSEDED as forward product direction: “Two Môra Personas, One Platform” where it implies two independently evolving OS/Desk products. Persona variation remains possible inside one OS.
+- Established this Blackboard and Draft PR #56.
+- Verified repository/PR state and initial CI blockers.
+- Correctly refuted the speculative SQLite `row_factory` repair.
+- Identified Today scope/provenance, Gmail cost, stale-company UI, contract validation and deployment evidence as blockers.
+- Production unchanged.
 
-CORE #29 contains docs/architecture/2026-09-07-one-os-engine-world-adr.md with accepted wording, but the PR is unmerged. Do not equate that wording with deployed convergence.
+### 2026-09-07 — ChatGPT, stabilization round
 
-Workspace #1 and OS #51 documentation must align with this direction. Dedicated customer installation does not authorize removal of existing tenant checks. Main OS already contains a “remove historical Desk boundary” commit; remaining branches must be compared against it, not replayed blindly.
+Implemented and verified after Astra Work quota paused:
 
-## 9. Current Mission
+- hardened CORE Today source-state/provenance/scope contract;
+- bounded Mail sample to 5;
+- corrected Calendar Berlin boundaries + Google pagination;
+- removed Nightwatch `limit=100` health distortion and applied caller/company scope;
+- enforced company access through existing department-membership semantics;
+- converted route verification to authenticated HTTP contract;
+- aligned truth workflow to supported Python 3.13;
+- achieved **Core truth SUCCESS** and **primary CI SUCCESS, 1160 tests passed**;
+- hardened OS Today consumer against company/user races;
+- added runtime contract validation and reduced/gated polling;
+- added parser/scope/race regression tests;
+- achieved full green OS verify including production build;
+- production not changed and no PR merged.
 
-One mission: make Today/Home the first scope-safe, source-honest vertical slice of the single OS.
+### Next agent instruction
 
-Minimal integration order:
-1. Agree source availability/provenance and effective scope contracts; retain current production.
-2. Stabilize CORE #29: bounded CI fixes, then scope/count/time/error/performance corrections with regression tests.
-3. Stabilize #55 against that contract; context-safe loading/refresh, source-aware rendering, shared HTTP coordination with #54.
-4. Integrate #51 extraction independently where still behavior-preserving. Reconcile #50/#48/#45 into one arrival policy; no assumed hard dependency requiring a larger Shell rewrite.
-5. Integrate Mail triage from #54 after classifier/auth regression checks.
-6. Pin CORE/UI candidate SHAs, run complete CI/build, preview and browser QA, record runtime SHAs and rollback. Marius reviews before production.
+Do **not** restart the original audit or rebuild Today. Read this document and current PR heads first.
 
-Definition of Done:
-- Single canonical Home/OS route and no second Desk product line.
-- Required CI and production builds pass at pinned candidate SHAs.
-- Cross-user/company tests; no stale prior-scope data or unauthorized aggregates.
-- Source unavailable/partial/empty semantics, bounded external work and calendar boundary tests.
-- Authenticated preview end-to-end checks; desktop/mobile, iPhone/iPad Safari validation explicitly recorded.
-- Deployment identities and rollback recorded; release approved separately.
-- Blackboard updated with evidence and remaining limitations.
-
-## 10. Next Missions
-
-After Stand 0 only: Work/Missions/Tasks capabilities; Files/documents; Activity/Weave; deeper MÔRA orchestration. No Finance/Earth/Messages feature work in this mission.
-
-## 11. Open Questions
-
-- Is Today company-specific for every section, or intentionally mixed with a clearly identified personal scope? Default proposal: explicit effective scope per section, no silent tenant-wide fallback.
-- Which existing authority defines company membership and node visibility for every adapter?
-- Which source states and freshness budget must CORE expose to avoid masking disconnected integrations?
-- Who can provide authoritative OS/CORE/runtime deployment SHA evidence and a safe test tenant for release QA?
-- Reviewer: does the proposed Frontend Engine boundary conflict with an existing accepted CORE contract?
-
-## 12. Agent Sync Log
-
-### 2026-09-07 — Astra
-
-Checked:
-- Pinned main/PR source and diffs, CORE #29 CI, OS #50/#54 CI with delegated read-only investigation, Website Vercel metadata.
-- Task row mapping suspicion refuted against connection implementation.
-Changed:
-- Opened draft OS #55 for existing codex/unified-os-today branch; no application code changed.
-- Created this Blackboard on coordination/stand-zero for review.
-Decision:
-- One OS direction retained; Today scope/provenance/stale-context correctness precedes release.
-- PR classifications above are proposals. No merge, closure, deployment, database mutation or permission weakening.
-Needs review from ChatGPT:
-- Scope semantics, source-state contract and minimal integration order.
-- Reconcile Workspace #1 and old ADRs; do not start another Shell or Desk implementation.
-Next:
-- Bounded CORE #29 stabilization, then #55 contract consumer. Record actual test runs, not assumed success.
-
-Future agents: append dated factual entries; retain disagreements until resolved. Important decisions are handed over only when recorded here with code/PR evidence.
+Next bounded review target: **shared HTTP/Auth convergence around OS PR #54**, followed by authoritative preview/runtime identity and authenticated QA. If a new finding contradicts this document, update the Blackboard with source/CI evidence rather than creating a parallel architecture branch.
