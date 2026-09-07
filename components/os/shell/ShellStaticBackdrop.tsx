@@ -4,11 +4,11 @@ import React from 'react';
 import { WorldSurface } from '@/components/engine/WorldSurface';
 
 /**
- * Backward-compatible OS adapter for the shared Saimôr Engine world surface.
+ * Backward-compatible Saimôr OS adapter for the shared Engine world surface.
  *
- * MoraShell keeps its richer scene-reactive ambient layers on top; this base
- * plate is now the same engine-level underlay Desk can consume as well.
+ * MoraShell keeps its richer scene-reactive ambient layers on top. The base
+ * plate belongs to the OS shell; Desk is the default workspace inside that OS.
  */
-export const ShellStaticBackdrop: React.FC = () => <WorldSurface surface="os" />;
+export const ShellStaticBackdrop: React.FC = () => <WorldSurface context="shell" />;
 
 export default ShellStaticBackdrop;
