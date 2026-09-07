@@ -1,6 +1,6 @@
-import { CoreError, corePost } from '@/lib/api/http';
+import { CoreError, coreGet, corePost } from '@/lib/api/http';
 
-describe('corePost auth error handling', () => {
+describe('CORE auth error handling', () => {
     const originalFetch = global.fetch;
 
     afterEach(() => {
@@ -42,5 +42,30 @@ describe('corePost auth error handling', () => {
                 message: 'Reconnect Google',
             });
         }
+    });
+
+    it('preserves auth failures for optional reads that explicitly opt in', async () => {
+        global.fetch = jest.fn().mockResolvedValue({
+            status: 403,
+            ok: false,
+            statusText: 'Forbidden',
+            json: jest.fn().mockResolvedValue({
+                detail: { error_code: 'company_not_accessible', message: 'Company not accessible' },
+            }),
+        }) as any;
+
+        await expect(
+            coreGet('/v3/today?company_id=company-b', {
+                isOptional: true,
+                throwAuthErrors: true,
+            }),
+        ).rejects.toMatchObject({
+            name: 'CoreError',
+            status: 403,
+            details: {
+                error_code: 'company_not_accessible',
+                message: 'Company not accessible',
+            },
+        });
     });
 });
