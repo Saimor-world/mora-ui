@@ -6,22 +6,20 @@ import {
   Activity,
   ArrowRight,
   CalendarDays,
-  Command,
-  FileText,
+  Compass,
   FolderOpen,
-  Grid2X2,
   Mail,
   MessageCircleMore,
   Radar,
   Search,
   Settings2,
   Sparkles,
-  SquareCheckBig,
   Timer,
   type LucideIcon,
 } from 'lucide-react';
 
 import { TodayOverview } from '@/components/home/TodayOverview';
+import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
 import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/surfaceContract';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -34,19 +32,19 @@ type OpenTarget = {
   size: { width: number; height: number };
 };
 
-type Room = OpenTarget & {
-  eyebrow: string;
+type Area = OpenTarget & {
+  kicker: string;
   description: string;
   icon: LucideIcon;
 };
 
-const WORK_ROOMS: Room[] = [
+const PRIMARY_AREAS: Area[] = [
   {
     id: 'work-main',
     type: 'work',
     title: 'Arbeit',
-    eyebrow: 'Fokus',
-    description: 'Aufgaben, Dateien, Termine und Arbeitssitzungen in einem Kontext.',
+    kicker: 'Fokus & Fortschritt',
+    description: 'Offene Arbeit, nächste Schritte und laufende Arbeitspläne.',
     icon: Timer,
     size: { width: 1080, height: 760 },
   },
@@ -54,8 +52,8 @@ const WORK_ROOMS: Room[] = [
     id: 'mail-main',
     type: 'mail',
     title: 'Mail',
-    eyebrow: 'Kommunikation',
-    description: 'Postfach, Threads und Anhänge ohne Wechsel in ein zweites Produkt.',
+    kicker: 'Kommunikation',
+    description: 'Lesen, antworten, sortieren und Wichtiges direkt weiterverarbeiten.',
     icon: Mail,
     size: { width: 1040, height: 720 },
   },
@@ -63,8 +61,8 @@ const WORK_ROOMS: Room[] = [
     id: 'calendar-main',
     type: 'calendar',
     title: 'Kalender',
-    eyebrow: 'Zeit',
-    description: 'Termine und Tagesgrenzen aus demselben persönlichen Arbeitskontext.',
+    kicker: 'Zeit',
+    description: 'Termine, Tagesstruktur und die nächsten festen Punkte.',
     icon: CalendarDays,
     size: { width: 920, height: 680 },
   },
@@ -72,49 +70,31 @@ const WORK_ROOMS: Room[] = [
     id: 'files-main',
     type: 'meine-dateien',
     title: 'Dateien',
-    eyebrow: 'Wissen',
-    description: 'Dokumente und Arbeitsmaterial dort, wo MÔRA und Work sie verstehen.',
+    kicker: 'Material & Wissen',
+    description: 'Dokumente und Arbeitsmaterial im selben Kontext wie deine Arbeit.',
     icon: FolderOpen,
     size: { width: 960, height: 700 },
   },
 ];
 
-const SYSTEM_ROOMS: Room[] = [
-  {
-    id: 'tasks-main',
-    type: 'tasks',
-    title: 'Aufgaben',
-    eyebrow: 'Ausführung',
-    description: 'Konkrete nächste Schritte.',
-    icon: SquareCheckBig,
-    size: { width: 980, height: 680 },
-  },
+const SECONDARY_AREAS: Area[] = [
   {
     id: 'timeline-main',
     type: 'timeline',
     title: 'Aktivität',
-    eyebrow: 'Verlauf',
-    description: 'Was sich im System bewegt hat.',
+    kicker: 'Verlauf',
+    description: 'Nachvollziehen, was sich im System verändert hat.',
     icon: Activity,
-    size: { width: 840, height: 680 },
+    size: { width: 860, height: 700 },
   },
   {
     id: 'nightwatch-main',
     type: 'nightwatch',
     title: 'Nightwatch',
-    eyebrow: 'Betrieb',
-    description: 'Nur Signale, die Aufmerksamkeit verdienen.',
+    kicker: 'System',
+    description: 'Störungen, Hinweise und Dinge, die Aufmerksamkeit brauchen.',
     icon: Radar,
     size: { width: 1100, height: 760 },
-  },
-  {
-    id: 'search-main',
-    type: 'search',
-    title: 'Suche',
-    eyebrow: 'Finden',
-    description: 'Semantisch durch Saimôr suchen.',
-    icon: Search,
-    size: { width: 760, height: 620 },
   },
 ];
 
@@ -142,24 +122,24 @@ function PresenceOrb() {
   );
 }
 
-function RoomButton({ room, onOpen }: { room: Room; onOpen: (room: Room) => void }) {
-  const Icon = room.icon;
+function AreaButton({ area, onOpen, compact = false }: { area: Area; onOpen: (area: Area) => void; compact?: boolean }) {
+  const Icon = area.icon;
   return (
     <button
       type="button"
-      onClick={() => onOpen(room)}
-      className="group flex min-h-[118px] items-start gap-4 rounded-[22px] border border-white/[0.06] bg-black/[0.12] p-4 text-left backdrop-blur-[16px] transition hover:border-emerald-100/14 hover:bg-white/[0.025]"
+      onClick={() => onOpen(area)}
+      className={`group flex items-start gap-4 rounded-[22px] border border-white/[0.06] bg-black/[0.12] text-left backdrop-blur-[16px] transition hover:border-emerald-100/14 hover:bg-white/[0.025] ${compact ? 'min-h-[102px] p-4' : 'min-h-[124px] p-5'}`}
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/[0.065] bg-white/[0.025] text-emerald-100/60">
         <Icon size={16} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[9px] uppercase tracking-[0.22em] text-white/24">{room.eyebrow}</div>
+        <div className="text-[9px] uppercase tracking-[0.2em] text-white/23">{area.kicker}</div>
         <div className="mt-1 flex items-center justify-between gap-3">
-          <h3 className="text-[14px] font-medium tracking-[-0.02em] text-white/78">{room.title}</h3>
-          <ArrowRight size={13} className="text-white/16 transition group-hover:translate-x-0.5 group-hover:text-white/44" />
+          <h3 className="text-[14px] font-medium tracking-[-0.02em] text-white/80">{area.title}</h3>
+          <ArrowRight size={13} className="text-white/14 transition group-hover:translate-x-0.5 group-hover:text-white/44" />
         </div>
-        <p className="mt-1.5 text-[10px] leading-relaxed text-white/32">{room.description}</p>
+        <p className="mt-1.5 text-[10px] leading-relaxed text-white/32">{area.description}</p>
       </div>
     </button>
   );
@@ -198,27 +178,19 @@ export const HomeSurfaceUnified: React.FC = () => {
     });
   };
 
-  const openMora = () =>
+  const openSearch = () =>
     open({
-      id: 'chat-main',
-      type: 'chat',
-      title: 'MÔRA',
-      size: { width: 900, height: 720 },
-    });
-
-  const openApps = () =>
-    open({
-      id: 'apps-main',
-      type: 'apps',
-      title: 'Alle Werkzeuge',
-      size: { width: 1040, height: 760 },
+      id: 'search-main',
+      type: 'search',
+      title: 'Suche',
+      size: { width: 760, height: 620 },
     });
 
   const openSettings = () =>
     open({
       id: 'settings-main',
       type: 'settings',
-      title: 'Saimôr Setup',
+      title: 'Einstellungen',
       size: { width: 920, height: 700 },
     });
 
@@ -238,22 +210,32 @@ export const HomeSurfaceUnified: React.FC = () => {
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-300/70 shadow-[0_0_14px_rgba(110,231,183,.62)]" />
             {SAIMOR_PRODUCT_LABEL}
           </div>
-          <div className="hidden items-center gap-3 text-[10px] uppercase tracking-[0.18em] text-white/24 sm:flex">
-            <span>
-              {now
-                ? now.toLocaleDateString('de-DE', {
-                    weekday: 'short',
-                    day: '2-digit',
-                    month: 'short',
-                  })
-                : '—'}
-            </span>
-            <span className="h-3 w-px bg-white/10" />
-            <span>
-              {now
-                ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
-                : '—'}
-            </span>
+          <div className="flex items-center gap-2">
+            <div className="mr-1 hidden items-center gap-3 text-[10px] uppercase tracking-[0.16em] text-white/22 md:flex">
+              <span>
+                {now
+                  ? now.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: 'short' })
+                  : '—'}
+              </span>
+              <span className="h-3 w-px bg-white/10" />
+              <span>{now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '—'}</span>
+            </div>
+            <button
+              type="button"
+              onClick={openSearch}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.055] bg-white/[0.018] text-white/28 transition hover:text-white/62"
+              aria-label="Suche öffnen"
+            >
+              <Search size={12} />
+            </button>
+            <button
+              type="button"
+              onClick={openSettings}
+              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.055] bg-white/[0.018] text-white/28 transition hover:text-white/62"
+              aria-label="Einstellungen öffnen"
+            >
+              <Settings2 size={12} />
+            </button>
           </div>
         </header>
 
@@ -262,16 +244,14 @@ export const HomeSurfaceUnified: React.FC = () => {
             <div className="flex items-center gap-4">
               <PresenceOrb />
               <div>
-                <div className="text-[9px] uppercase tracking-[0.23em] text-emerald-100/40">
-                  MÔRA · im System
-                </div>
+                <div className="text-[9px] uppercase tracking-[0.23em] text-emerald-100/40">MÔRA ist da</div>
                 <h1 className="mt-2 max-w-[820px] text-[clamp(2.9rem,6vw,5.7rem)] font-medium leading-[0.92] tracking-[-0.065em] text-white/94">
                   {greeting}{firstName ? `, ${firstName}.` : '.'}
                 </h1>
               </div>
             </div>
             <p className="mt-7 max-w-[720px] text-[clamp(1rem,1.7vw,1.25rem)] font-light leading-relaxed tracking-[-0.02em] text-white/40">
-              Ein System für deinen Tag, deine Arbeit und deinen Kontext. Kein Desk daneben, keine zweite Wahrheit.
+              Dein Tag, deine Arbeit und alles, was sich verändert — an einem Ort.
             </p>
           </div>
 
@@ -283,21 +263,19 @@ export const HomeSurfaceUnified: React.FC = () => {
               <div className="min-w-0 flex-1">
                 <div className="text-[9px] uppercase tracking-[0.22em] text-white/25">MÔRA</div>
                 <p className="mt-1 text-[11px] leading-relaxed text-white/40">
-                  Sie bleibt im Hintergrund. Gespräch ist eine Fähigkeit des OS — nicht die Startseite.
+                  Sie kennt den aktuellen Kontext und kann zusammenfassen, priorisieren, planen oder mit dir weiterarbeiten.
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={openMora}
+              onClick={() => openMoraWorkspace({ source: 'home', label: 'Heute' })}
               className="mt-4 flex w-full items-center justify-between rounded-2xl border border-white/[0.055] bg-white/[0.02] px-3.5 py-3 text-left text-[11px] text-white/48 transition hover:border-white/[0.10] hover:bg-white/[0.035] hover:text-white/74"
             >
               <span className="flex items-center gap-2">
-                <MessageCircleMore size={13} /> Mit MÔRA sprechen
+                <MessageCircleMore size={13} /> Mit MÔRA arbeiten
               </span>
-              <span className="flex items-center gap-1 text-[9px] text-white/24">
-                <Command size={10} /> J
-              </span>
+              <ArrowRight size={12} className="text-white/22" />
             </button>
           </div>
         </section>
@@ -307,67 +285,40 @@ export const HomeSurfaceUnified: React.FC = () => {
         <section className="mt-12">
           <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="text-[9px] uppercase tracking-[0.24em] text-white/22">Weiterarbeiten</div>
+              <div className="text-[9px] uppercase tracking-[0.24em] text-white/22">Weiter</div>
               <h2 className="mt-1 text-lg font-medium tracking-[-0.025em] text-white/72">
-                Deine Räume. Ein gemeinsamer Kontext.
+                Dort weitermachen, wo gerade etwas anliegt.
               </h2>
             </div>
             <button
               type="button"
               onClick={() => setCoreMode('explore')}
-              className="rounded-full border border-white/[0.065] bg-white/[0.02] px-3 py-2 text-[10px] text-white/34 transition hover:text-white/68"
+              className="inline-flex items-center gap-2 rounded-full border border-white/[0.065] bg-white/[0.02] px-3 py-2 text-[10px] text-white/34 transition hover:text-white/68"
             >
-              Universe öffnen
+              <Compass size={11} /> Universe
             </button>
           </div>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {WORK_ROOMS.map((room) => (
-              <RoomButton key={room.id} room={room} onOpen={open} />
+            {PRIMARY_AREAS.map((area) => (
+              <AreaButton key={area.id} area={area} onOpen={open} />
             ))}
           </div>
         </section>
 
         <section className="mt-10 border-t border-white/[0.045] pt-8">
-          <div className="mb-4 flex items-center justify-between gap-4">
-            <div>
-              <div className="text-[9px] uppercase tracking-[0.24em] text-white/20">Systemebene</div>
-              <h2 className="mt-1 text-[15px] font-medium tracking-[-0.02em] text-white/58">
-                Ausführen, beobachten, wiederfinden.
-              </h2>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={openApps}
-                className="inline-flex items-center gap-2 rounded-full border border-white/[0.055] bg-white/[0.018] px-3 py-2 text-[10px] text-white/32 transition hover:text-white/64"
-              >
-                <Grid2X2 size={11} /> Alle Apps
-              </button>
-              <button
-                type="button"
-                onClick={openSettings}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/[0.055] bg-white/[0.018] text-white/28 transition hover:text-white/62"
-                aria-label="Saimôr Setup öffnen"
-              >
-                <Settings2 size={12} />
-              </button>
-            </div>
+          <div className="mb-4">
+            <div className="text-[9px] uppercase tracking-[0.24em] text-white/20">Im Blick</div>
+            <h2 className="mt-1 text-[15px] font-medium tracking-[-0.02em] text-white/58">
+              Was sich verändert — und was Aufmerksamkeit braucht.
+            </h2>
           </div>
-
-          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {SYSTEM_ROOMS.map((room) => (
-              <RoomButton key={room.id} room={room} onOpen={open} />
+          <div className="grid gap-3 md:grid-cols-2">
+            {SECONDARY_AREAS.map((area) => (
+              <AreaButton key={area.id} area={area} onOpen={open} compact />
             ))}
           </div>
         </section>
-
-        <footer className="mt-12 flex flex-wrap items-center justify-between gap-4 border-t border-white/[0.035] py-7 text-[9px] uppercase tracking-[0.18em] text-white/18">
-          <span>CORE · Wahrheit · MÔRA · Kontext · Engine · Laufzeit</span>
-          <span className="flex items-center gap-2">
-            <FileText size={10} /> Ein Produkt · ein Zustand
-          </span>
-        </footer>
       </main>
     </div>
   );
