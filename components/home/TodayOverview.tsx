@@ -7,6 +7,7 @@ import {
   type TodaySnapshot,
   type TodaySourceStatus,
 } from '@/lib/api/todayClient';
+import { CoreError } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -25,6 +26,8 @@ type SnapshotState = {
   key: string;
   data: TodaySnapshot;
 };
+
+type TodayLoadError = 'unauthorized' | 'forbidden' | 'unavailable' | null;
 
 const BACKGROUND_REFRESH_MS = 5 * 60_000;
 const FOCUS_REFRESH_MIN_AGE_MS = 2 * 60_000;
@@ -93,6 +96,25 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
   }
 }
 
+function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolean) {
+  if (loading) return sourceStateCopy(label, undefined, true);
+  if (error === 'unauthorized') {
+    return {
+      value: 'Sitzung abgelaufen',
+      detail: `${label} kann erst nach einer gültigen Anmeldung wieder gelesen werden.`,
+      unavailable: true,
+    };
+  }
+  if (error === 'forbidden') {
+    return {
+      value: 'Kein Zugriff',
+      detail: `${label} ist für den gewählten Firmenkontext nicht freigegeben.`,
+      unavailable: true,
+    };
+  }
+  return sourceStateCopy(label, 'unavailable');
+}
+
 export function TodayOverview() {
   const activeCompanyId = useNavStore((state) => state.activeCompanyId);
   const userId = useSessionStore((state) => state.user?.id ?? null);
@@ -102,6 +124,7 @@ export function TodayOverview() {
   const [snapshotState, setSnapshotState] = useState<SnapshotState | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<TodayLoadError>(null);
   const requestGenerationRef = useRef(0);
   const lastSuccessfulRefreshRef = useRef(0);
 
@@ -112,22 +135,40 @@ export function TodayOverview() {
     if (showLoading) setLoading(true);
     setRefreshing(true);
 
-    const data = await fetchTodaySnapshot(activeCompanyId, userId);
-    if (requestGeneration !== requestGenerationRef.current) return;
+    try {
+      const data = await fetchTodaySnapshot(activeCompanyId, userId);
+      if (requestGeneration !== requestGenerationRef.current) return;
 
-    if (data) {
-      setSnapshotState({ key: contextKey, data });
-      lastSuccessfulRefreshRef.current = Date.now();
-    } else {
+      if (data) {
+        setSnapshotState({ key: contextKey, data });
+        setLoadError(null);
+        lastSuccessfulRefreshRef.current = Date.now();
+      } else {
+        setSnapshotState(null);
+        setLoadError('unavailable');
+      }
+    } catch (error) {
+      if (requestGeneration !== requestGenerationRef.current) return;
       setSnapshotState(null);
+      if (error instanceof CoreError && error.status === 401) {
+        setLoadError('unauthorized');
+      } else if (error instanceof CoreError && error.status === 403) {
+        setLoadError('forbidden');
+      } else {
+        setLoadError('unavailable');
+      }
+    } finally {
+      if (requestGeneration === requestGenerationRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
-    setLoading(false);
-    setRefreshing(false);
   }, [activeCompanyId, contextKey, userId]);
 
   useEffect(() => {
     requestGenerationRef.current += 1;
     setSnapshotState(null);
+    setLoadError(null);
     setLoading(true);
     setRefreshing(false);
     lastSuccessfulRefreshRef.current = 0;
@@ -152,7 +193,7 @@ export function TodayOverview() {
   }, [refresh]);
 
   const calendarCopy = useMemo(() => {
-    if (!snapshot) return sourceStateCopy('Kalender', undefined, loading);
+    if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
       return { value: 'Heute frei', detail: 'Keine weiteren Termine für heute.' };
     }
@@ -172,10 +213,10 @@ export function TodayOverview() {
         ? next.location
         : `${snapshot.calendar.count} Termin${snapshot.calendar.count === 1 ? '' : 'e'} heute`,
     };
-  }, [loading, snapshot]);
+  }, [loadError, loading, snapshot]);
 
   const mailCopy = useMemo(() => {
-    if (!snapshot) return sourceStateCopy('Post', undefined, loading);
+    if (!snapshot) return topLevelStateCopy('Post', loadError, loading);
     if (snapshot.mail.status === 'empty') {
       return { value: 'Posteingang ruhig', detail: 'Keine Nachricht im aktuellen Today-Ausschnitt.' };
     }
@@ -190,10 +231,10 @@ export function TodayOverview() {
         ? '1 Nachricht im begrenzten Today-Ausschnitt.'
         : `${snapshot.mail.inbox_loaded} Nachrichten im begrenzten Today-Ausschnitt.`,
     };
-  }, [loading, snapshot]);
+  }, [loadError, loading, snapshot]);
 
   const taskCopy = useMemo(() => {
-    if (!snapshot) return sourceStateCopy('Aufgaben', undefined, loading);
+    if (!snapshot) return topLevelStateCopy('Aufgaben', loadError, loading);
     if (snapshot.tasks.status === 'empty') {
       return { value: 'Nichts offen', detail: 'Keine offenen Aufgaben.' };
     }
@@ -212,10 +253,10 @@ export function TodayOverview() {
     }
     if (due > 0) return { value: `${due} heute fällig`, detail: `${open} Aufgaben insgesamt offen.`, attention: true };
     return { value: `${open} offen`, detail: 'Keine Aufgabe ist heute fällig.' };
-  }, [loading, snapshot]);
+  }, [loadError, loading, snapshot]);
 
   const nightwatchCopy = useMemo(() => {
-    if (!snapshot) return sourceStateCopy('Nightwatch', undefined, loading);
+    if (!snapshot) return topLevelStateCopy('Nightwatch', loadError, loading);
     if (snapshot.nightwatch.status === 'empty') {
       return { value: 'Keine offenen Vorfälle', detail: 'Nightwatch meldet aktuell keinen offenen Incident.' };
     }
@@ -228,19 +269,23 @@ export function TodayOverview() {
       detail: snapshot.nightwatch.incidents[0]?.title || 'Nightwatch braucht Aufmerksamkeit.',
       attention: open > 0,
     };
-  }, [loading, snapshot]);
+  }, [loadError, loading, snapshot]);
 
   const overallLabel = loading && !snapshot
     ? 'wird geladen'
-    : !snapshot
-      ? 'nicht verbunden'
-      : refreshing
-        ? 'aktualisiert'
-        : snapshot.status === 'ok'
-          ? 'live'
-          : snapshot.status === 'degraded'
-            ? 'teilweise'
-            : 'nicht verfügbar';
+    : !snapshot && loadError === 'unauthorized'
+      ? 'Sitzung abgelaufen'
+      : !snapshot && loadError === 'forbidden'
+        ? 'kein Zugriff'
+        : !snapshot
+          ? 'nicht verfügbar'
+          : refreshing
+            ? 'aktualisiert'
+            : snapshot.status === 'ok'
+              ? 'live'
+              : snapshot.status === 'degraded'
+                ? 'teilweise'
+                : 'nicht verfügbar';
 
   return (
     <section className="mt-10">
@@ -249,7 +294,7 @@ export function TodayOverview() {
           <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-white/24">
             Heute
             <span className="h-1 w-1 rounded-full bg-white/20" />
-            <span className={snapshot?.status === 'degraded' ? 'text-amber-100/45' : 'text-emerald-100/42'}>{overallLabel}</span>
+            <span className={snapshot?.status === 'degraded' || loadError === 'forbidden' ? 'text-amber-100/45' : 'text-emerald-100/42'}>{overallLabel}</span>
           </div>
           <h2 className="mt-1 text-lg font-medium tracking-[-0.02em] text-white/72">Was jetzt tatsächlich anliegt.</h2>
         </div>
