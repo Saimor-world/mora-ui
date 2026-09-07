@@ -19,7 +19,6 @@ export type PaneType =
     | 'wall' | 'feeds' | 'finance' | 'work';
 
 export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
-    // Core operating surfaces
     work:            'core_work',
     finder:          'core_work',
     document:        'core_work',
@@ -28,7 +27,6 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     settings:        'core_work',
     finance:         'core_work',
 
-    // Mounted apps
     notes:            'app',
     'meine-dateien':  'app',
     scanner:          'app',
@@ -80,26 +78,24 @@ export interface CoreDockItem {
 }
 
 /**
- * The Dock is orientation, not inventory.
- * Finder, files, team, systems and long-tail tools remain available through
- * Work/Apps, Home, Spotlight and contextual actions instead of competing for
- * permanent space.
+ * The dock is orientation, not inventory. It exposes the five places a person
+ * actually needs to orient themselves in Saimôr; detailed tools stay contextual.
  */
 export function getCoreDockItems(): CoreDockItem[] {
     return [
-        { action: 'home',     label: 'Home',     description: 'Dein aktuelles Feld',                shortcutSuffix: 'H' },
-        { action: 'cockpit',  label: 'Arbeit',   description: 'Projekte, Aufgaben und Werkzeuge',   shortcutSuffix: 'A' },
-        { action: 'chat',     label: 'MÔRA',     description: 'Kontext, Memory und Entscheidungen', shortcutSuffix: 'J' },
-        { action: 'map',      label: 'Universe', description: 'Strukturen räumlich erkunden',       shortcutSuffix: null },
-        { action: 'settings', label: 'Setup',    description: 'OS, Verbindungen und Arbeitsraum',   shortcutSuffix: ',' },
+        { action: 'home',     label: 'Heute',         description: 'Was jetzt relevant ist',                     shortcutSuffix: 'H' },
+        { action: 'cockpit',  label: 'Arbeit',        description: 'Fokus, Aufgaben und laufende Arbeit',         shortcutSuffix: 'A' },
+        { action: 'chat',     label: 'MÔRA',          description: 'Verstehen, planen und gemeinsam weiterarbeiten', shortcutSuffix: 'J' },
+        { action: 'map',      label: 'Universe',      description: 'Zusammenhänge räumlich erkunden',             shortcutSuffix: null },
+        { action: 'settings', label: 'Einstellungen', description: 'Konto, Verbindungen und System',              shortcutSuffix: ',' },
     ];
 }
 
 export function getPlaygroundDockItems(): CoreDockItem[] {
     return [
-        { action: 'dossier',   label: 'Dossier',   description: 'Dein Sicherheits-Report',          shortcutSuffix: null },
-        { action: 'chat',      label: 'Môra',      description: 'Frag Môra zu deinem Ergebnis',     shortcutSuffix: null },
-        { action: 'wall',      label: 'Wall',      description: 'Community Security Signals',        shortcutSuffix: null },
-        { action: 'workspace', label: 'Workspace', description: 'So arbeitet ein Team auf SAIMÔR',  shortcutSuffix: null },
+        { action: 'dossier',   label: 'Dossier',        description: 'Dein Sicherheitsbericht',                  shortcutSuffix: null },
+        { action: 'chat',      label: 'MÔRA',           description: 'Ergebnis verstehen und Fragen klären',      shortcutSuffix: null },
+        { action: 'wall',      label: 'Wall',           description: 'Signale aus der Community',                 shortcutSuffix: null },
+        { action: 'workspace', label: 'Arbeitsbereich', description: 'So kann Zusammenarbeit in Saimôr aussehen', shortcutSuffix: null },
     ];
 }
