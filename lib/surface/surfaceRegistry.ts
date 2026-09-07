@@ -1,11 +1,12 @@
 /**
  * Surface Hierarchy Registry
  *
- * Canonical source of truth for the active SAIMOR OS surface hierarchy.
+ * Canonical source of truth for the active Saimôr OS surface hierarchy.
  * Daily navigation stays intentionally small; the app library holds the long tail.
+ *
+ * Stand 0 invariant: there is one Saimôr OS. Historical Desk is not a product,
+ * surface, workspace or navigation destination in this registry.
  */
-
-import { ESTATE_LABELS } from '@/lib/estate';
 
 export type SurfaceTier = 'core_work' | 'app' | 'future';
 
@@ -80,8 +81,9 @@ export interface CoreDockItem {
 
 /**
  * The Dock is orientation, not inventory.
- * Finder, files, team and long-tail tools remain available through Work/Apps,
- * Spotlight and contextual actions instead of competing for permanent space.
+ * Finder, files, team, systems and long-tail tools remain available through
+ * Work/Apps, Home, Spotlight and contextual actions instead of competing for
+ * permanent space.
  */
 export function getCoreDockItems(): CoreDockItem[] {
     return [
@@ -89,8 +91,7 @@ export function getCoreDockItems(): CoreDockItem[] {
         { action: 'cockpit',  label: 'Arbeit',   description: 'Projekte, Aufgaben und Werkzeuge',   shortcutSuffix: 'A' },
         { action: 'chat',     label: 'MÔRA',     description: 'Kontext, Memory und Entscheidungen', shortcutSuffix: 'J' },
         { action: 'map',      label: 'Universe', description: 'Strukturen räumlich erkunden',       shortcutSuffix: null },
-        { action: 'settings', label: 'Setup',    description: 'OS, Verbindungen und Workspace',     shortcutSuffix: ',' },
-        { action: 'desk',     label: ESTATE_LABELS.desk, description: 'Operator-Lage und Systemstatus', shortcutSuffix: 'L' },
+        { action: 'settings', label: 'Setup',    description: 'OS, Verbindungen und Arbeitsraum',   shortcutSuffix: ',' },
     ];
 }
 
