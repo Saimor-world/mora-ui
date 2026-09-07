@@ -18,6 +18,7 @@ import {
   Sparkles,
   Timer,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { corePost } from '@/lib/api/coreClient';
 import {
@@ -38,7 +39,7 @@ const ROOM_LINKS: Array<{
   type: PaneType;
   title: string;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: LucideIcon;
   size: { width: number; height: number };
 }> = [
   { id: 'tasks', type: 'tasks', title: 'Aufgaben', label: 'Alle Aufgaben', icon: ListTodo, size: { width: 980, height: 680 } },
