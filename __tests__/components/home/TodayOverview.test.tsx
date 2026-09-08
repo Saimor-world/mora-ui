@@ -7,6 +7,8 @@ import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
 
 let mockActiveCompanyId: string | null = 'company-a';
 let mockUserId = 'user-a';
+let mockTenantId = 'tenant-a';
+let mockSessionGeneration = 1;
 const mockOpenPane = jest.fn();
 
 jest.mock('@/lib/store/navStore', () => ({
@@ -15,8 +17,14 @@ jest.mock('@/lib/store/navStore', () => ({
 }));
 
 jest.mock('@/lib/store/sessionStore', () => ({
-  useSessionStore: (selector: (state: { user: { id: string } }) => unknown) =>
-    selector({ user: { id: mockUserId } }),
+  useSessionStore: (selector: (state: {
+    user: { id: string; tenant_id: string };
+    sessionGeneration: number;
+  }) => unknown) =>
+    selector({
+      user: { id: mockUserId, tenant_id: mockTenantId },
+      sessionGeneration: mockSessionGeneration,
+    }),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({
@@ -112,6 +120,8 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockActiveCompanyId = 'company-a';
   mockUserId = 'user-a';
+  mockTenantId = 'tenant-a';
+  mockSessionGeneration = 1;
 });
 
 describe('TodayOverview scope and auth boundaries', () => {
