@@ -1,16 +1,10 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo } from 'react';
 import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type LucideIcon } from 'lucide-react';
-import {
-  fetchTodaySnapshot,
-  type TodaySnapshot,
-  type TodaySourceStatus,
-} from '@/lib/api/todayClient';
-import { CoreError } from '@/lib/api/http';
-import { useNavStore } from '@/lib/store/navStore';
+import type { TodaySourceStatus } from '@/lib/api/todayClient';
+import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
 
 type TodayCardProps = {
   eyebrow: string;
@@ -21,16 +15,6 @@ type TodayCardProps = {
   unavailable?: boolean | undefined;
   attention?: boolean | undefined;
 };
-
-type SnapshotState = {
-  key: string;
-  data: TodaySnapshot;
-};
-
-type TodayLoadError = 'unauthorized' | 'forbidden' | 'unavailable' | null;
-
-const BACKGROUND_REFRESH_MS = 5 * 60_000;
-const FOCUS_REFRESH_MIN_AGE_MS = 2 * 60_000;
 
 function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, attention }: TodayCardProps) {
   return (
@@ -116,81 +100,8 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
 }
 
 export function TodayOverview() {
-  const activeCompanyId = useNavStore((state) => state.activeCompanyId);
-  const userId = useSessionStore((state) => state.user?.id ?? null);
   const openPane = usePaneStore((state) => state.openPane);
-  const contextKey = `${userId ?? 'anonymous'}:${activeCompanyId ?? 'tenant'}`;
-
-  const [snapshotState, setSnapshotState] = useState<SnapshotState | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [loadError, setLoadError] = useState<TodayLoadError>(null);
-  const requestGenerationRef = useRef(0);
-  const lastSuccessfulRefreshRef = useRef(0);
-
-  const snapshot = snapshotState?.key === contextKey ? snapshotState.data : null;
-
-  const refresh = useCallback(async (showLoading = false) => {
-    const requestGeneration = ++requestGenerationRef.current;
-    if (showLoading) setLoading(true);
-    setRefreshing(true);
-
-    try {
-      const data = await fetchTodaySnapshot(activeCompanyId, userId);
-      if (requestGeneration !== requestGenerationRef.current) return;
-
-      if (data) {
-        setSnapshotState({ key: contextKey, data });
-        setLoadError(null);
-        lastSuccessfulRefreshRef.current = Date.now();
-      } else {
-        setSnapshotState(null);
-        setLoadError('unavailable');
-      }
-    } catch (error) {
-      if (requestGeneration !== requestGenerationRef.current) return;
-      setSnapshotState(null);
-      if (error instanceof CoreError && error.status === 401) {
-        setLoadError('unauthorized');
-      } else if (error instanceof CoreError && error.status === 403) {
-        setLoadError('forbidden');
-      } else {
-        setLoadError('unavailable');
-      }
-    } finally {
-      if (requestGeneration === requestGenerationRef.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
-    }
-  }, [activeCompanyId, contextKey, userId]);
-
-  useEffect(() => {
-    requestGenerationRef.current += 1;
-    setSnapshotState(null);
-    setLoadError(null);
-    setLoading(true);
-    setRefreshing(false);
-    lastSuccessfulRefreshRef.current = 0;
-    void refresh(true);
-
-    const refreshIfUseful = () => {
-      if (document.visibilityState !== 'visible') return;
-      if (Date.now() - lastSuccessfulRefreshRef.current < FOCUS_REFRESH_MIN_AGE_MS) return;
-      void refresh(false);
-    };
-
-    const timer = window.setInterval(refreshIfUseful, BACKGROUND_REFRESH_MS);
-    window.addEventListener('focus', refreshIfUseful);
-    document.addEventListener('visibilitychange', refreshIfUseful);
-
-    return () => {
-      requestGenerationRef.current += 1;
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refreshIfUseful);
-      document.removeEventListener('visibilitychange', refreshIfUseful);
-    };
-  }, [refresh]);
+  const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
 
   const calendarCopy = useMemo(() => {
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
@@ -234,25 +145,27 @@ export function TodayOverview() {
   }, [loadError, loading, snapshot]);
 
   const taskCopy = useMemo(() => {
-    if (!snapshot) return topLevelStateCopy('Aufgaben', loadError, loading);
+    if (!snapshot) return topLevelStateCopy('Gemeinsame Aufgaben', loadError, loading);
     if (snapshot.tasks.status === 'empty') {
-      return { value: 'Nichts offen', detail: 'Keine offenen Aufgaben.' };
+      return { value: 'Nichts offen', detail: 'Keine offenen gemeinsamen Aufgaben dieser Organisation.' };
     }
-    if (snapshot.tasks.status !== 'ok') return sourceStateCopy('Aufgaben', snapshot.tasks.status);
+    if (snapshot.tasks.status !== 'ok') return sourceStateCopy('Gemeinsame Aufgaben', snapshot.tasks.status);
 
     const { due_today: due, overdue, open } = snapshot.tasks.counts;
     if (typeof due !== 'number' || typeof overdue !== 'number' || typeof open !== 'number') {
-      return sourceStateCopy('Aufgaben', 'unavailable');
+      return sourceStateCopy('Gemeinsame Aufgaben', 'unavailable');
     }
     if (overdue > 0) {
       return {
         value: `${overdue} überfällig`,
-        detail: due > 0 ? `Zusätzlich ${due} heute fällig · ${open} offen.` : `${open} Aufgaben insgesamt offen.`,
+        detail: due > 0
+          ? `Zusätzlich ${due} heute fällig · ${open} organisationsweit offen.`
+          : `${open} gemeinsame Aufgaben organisationsweit offen.`,
         attention: true,
       };
     }
-    if (due > 0) return { value: `${due} heute fällig`, detail: `${open} Aufgaben insgesamt offen.`, attention: true };
-    return { value: `${open} offen`, detail: 'Keine Aufgabe ist heute fällig.' };
+    if (due > 0) return { value: `${due} heute fällig`, detail: `${open} organisationsweit offen.`, attention: true };
+    return { value: `${open} offen`, detail: 'Gemeinsame Aufgaben dieser Organisation · heute nichts fällig.' };
   }, [loadError, loading, snapshot]);
 
   const nightwatchCopy = useMemo(() => {
@@ -323,7 +236,7 @@ export function TodayOverview() {
           {...mailCopy}
         />
         <TodayCard
-          eyebrow="Aufgaben"
+          eyebrow="Aufgaben · Organisation"
           icon={ListTodo}
           onClick={() => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } })}
           {...taskCopy}
