@@ -24,8 +24,13 @@ describe('useCalendarEvents', () => {
     mockGet.mockResolvedValue(fakeEvents);
     const { result } = renderHook(() => useCalendarEvents());
     await act(async () => {});
+    expect(mockGet).toHaveBeenCalledWith('/v3/calendar/events', {
+      isOptional: true,
+      throwAuthErrors: true,
+    });
     expect(result.current.events).toEqual(fakeEvents);
     expect(result.current.isLoading).toBe(false);
+    expect(result.current.available).toBe(true);
   });
 
   it('addEvent posts and optimistically updates events list', async () => {
@@ -38,7 +43,11 @@ describe('useCalendarEvents', () => {
       await result.current.addEvent('New Event', '2026-04-10');
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/v3/calendar/events', expect.objectContaining({ title: 'New Event' }));
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v3/calendar/events',
+      expect.objectContaining({ title: 'New Event' }),
+      { throwAuthErrors: true },
+    );
     expect(result.current.events.some(e => e.title === 'New Event')).toBe(true);
   });
 });
