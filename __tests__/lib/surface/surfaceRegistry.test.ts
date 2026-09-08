@@ -127,7 +127,7 @@ describe('surfaceRegistry', () => {
                 'home', 'cockpit', 'chat', 'map', 'settings',
             ]);
             expect(items.map(i => i.label)).toEqual([
-                'Home', 'Arbeit', 'MÔRA', 'Universe', 'Setup',
+                'Heute', 'Arbeit', 'MÔRA', 'Universe', 'Einstellungen',
             ]);
             expect(items.some(item => item.action === 'desk')).toBe(false);
             expect(items.some(item => /desk/i.test(item.label))).toBe(false);
