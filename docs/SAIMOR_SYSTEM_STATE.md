@@ -1,6 +1,6 @@
 # SAIMÔR SYSTEM STATE
 
-Last verified: 2026-09-07 UTC, post-audit stabilization round.
+Last verified: 2026-09-08 UTC, bounded architecture/source correction round; see binding decisions below.
 Verified against: GitHub source, PR heads, workflow jobs/logs and connected deployment metadata where available.
 Current mission: **Stand 0 — one canonical OS convergence line.**
 Coordination home: `Saimor-world/mora-ui/docs/SAIMOR_SYSTEM_STATE.md` on `coordination/stand-zero` until PR #56 is merged.
@@ -310,3 +310,147 @@ Implemented and verified after Astra Work quota paused:
 Do **not** restart the original audit or rebuild Today. Read this document and current PR heads first.
 
 Next bounded review target: **shared HTTP/Auth convergence around OS PR #54**, followed by authoritative preview/runtime identity and authenticated QA. If a new finding contradicts this document, update the Blackboard with source/CI evidence rather than creating a parallel architecture branch.
+
+
+## Binding convergence decisions — 2026-09-08
+
+This section supersedes conflicting earlier proposals in this document.
+OS implementation stays in #58 (audited 5d6475b7769b07498575c82d252b685ef2f5ee03);
+CORE implementation stays in #29. No new integration branch.
+#55/#57 are ancestors of #58. #54 is substantially integrated; review residual panel/test differences before closing.
+#50/#45/#48 require selective behavior reconciliation, not blanket merge. #51 is deferred structural cleanup.
+PR #56 remains the documentation-only coordination PR. No PRs were closed or production changed in this round.
+
+### Decision 1 — Task scope for Stand 0
+
+Retain the existing tenant-wide task contract for Stand 0, explicitly presented as
+"Gemeinsame Aufgaben dieser Organisation". Do not claim personal/private/company ownership.
+Changing the company picker does not filter or assign these records.
+Do not infer ownership from folder_id, title or current navigation.
+This is a limited product decision, not a new authorization grant: existing server authorization remains authoritative.
+If company-private work is required, these tasks cannot be offered as that feature.
+
+Files for mechanical implementation in #58:
+- apps/work/index.tsx, apps/tasks/index.tsx, components/home/TodayOverview.tsx:
+  render effective section scope; task creation clearly enters the shared organization pool.
+- Reuse a single Today loader with identity/company generation guards, not copied fetch effects.
+- Reset snapshot, pending actions and work-session selection on principal/tenant change;
+  revalidate after company change. Ignore responses from an obsolete generation.
+- Tasks mutation refresh must invalidate both Work and Home. Never fabricate a frontend company filter.
+
+Future company-task migration must cover schema/backfill, create/read/update/delete authorization,
+legacy unassigned records and Today together. It is deliberately not smuggled into this release.
+
+### Decision 2 — One MÔRA opening and context contract
+
+One command: lib/os/openMoraWorkspace.ts -> existing chat-main pane.
+Home, Work, Dossier, Shell and other callers use it; no separate direct chat-main opening.
+Opening is navigation, never automatic execution or automatic message submission.
+
+Define a versioned transient intent:
+- version: 1; requestId; source (home/work/mail/calendar/files/tasks/nightwatch/dossier/system);
+- sourcePaneId where applicable;
+- captured identity key (tenant + user + session generation), requested company;
+- references: typed task/node/mail/event/plan IDs with each reference's effective scope;
+- optional display label and draft question.
+Labels/draft text are untrusted UI input, not system instructions or source truth.
+No access tokens, copied documents/mail bodies, or permission claims.
+
+The pane carries this transient intent as osContext. It is the only launch-intent location,
+not a second durable context store. lib/store/paneStore.ts must omit osContext and draft input
+from persisted geometry. Replace intent on each explicit launch, preserve valid user geometry;
+repair undersized/offscreen panes using viewport bounds. Clear intent on identity/scope change.
+
+Consumer:
+- apps/chat/index.tsx validates the intent against the active identity/scope, shows the selected
+  references, and consumes it for the user's next message. A later context change invalidates it.
+- lib/api/moraAgentClient.ts maps validated references into the EXISTING ChatContext.workspace
+  contract (optional operational references), shared by stream and non-stream requests.
+- CORE must explicitly accept and resolve reference types under authenticated identity.
+  Client company/reference IDs are selectors only. Reject inaccessible references; never switch
+  tenant or infer authorization from osContext. Unsupported reference types remain visibly
+  unavailable, not silently advertised as understood.
+- Draft question may prefill input once per requestId; user sends it. Launch/re-render never executes.
+- Reuse existing work-session plan_id/session_id; do not invent another conversation or mission store.
+
+Acceptance tests: Home -> Work changes context on the same pane; referenced task reaches the actual
+request payload; server denies cross-scope reference; logout/company switch removes old intent;
+persisted tiny pane recovers; reopening does not replay a prompt; mobile bounds stay usable.
+Files: openMoraWorkspace.ts, paneStore.ts, apps/chat/index.tsx, moraAgentClient.ts,
+MoraShell.tsx, useAutoOpenDossier.ts and existing Home/Work callers.
+CORE request schema/resolver must be located and extended within #29 if necessary;
+do not merely add an ignored JSON field and call the integration complete.
+
+### Decision 3 — Source truth correction implemented in CORE #29
+
+Code commit: 80e5e5095835c5a37fac9c9826c8ea63e6564b95.
+Final lint correction head: 73667207344814fb703685f39ad688e5173d3e87.
+Files:
+- core/services/today_service.py: mail/calendar discovery now runs INSIDE its source boundary;
+  discovery failure returns unavailable, complete=false and null count, while other sources can continue.
+- core/api/v1/endpoints/mail.py: absent credentials/token raise 401, invalid references or failed
+  detail responses raise 502 instead of returning an apparently complete shortened list.
+- tests/test_today_surface.py: eight new parameterized cases cover both discovery failures,
+  missing credentials and detail HTTP 403/404/429/500 through the Today adapter.
+
+Deliberate conservative behavior: current list-only Mail API cannot communicate partial payload metadata,
+so a failed sample is unavailable as a whole. No second Mail adapter/API was introduced.
+This also changes normal Gmail list calls: a detail failure now fails that read instead of silently dropping mail.
+Future partial-result support must change the shared typed adapter contract, not use hidden side channels.
+
+complete means successful retrieval of the requested sample, not the entire mailbox.
+inbox_loaded is the sample size; sample_limit=5 remains explicit. No total inbox count is promised.
+stale_after_seconds is a freshness budget, not proof of an implemented stale cache.
+A real stale result must carry original as_of and scope; failure cannot relabel old data as fresh.
+Local compile and focused lint checks passed. Full CI status is recorded in the sync log below.
+
+### Decision 4 — Work/Missions capability boundary
+
+Evidence: mora-work main app/board/page.tsx; mora-ui #58 apps/work/index.tsx,
+lib/api/workSessionClient.ts, lib/store/workSessionStore.ts.
+
+Historical Desk provides title + instruction, role filters (assistant/strategy/implementation/research),
+draft/queued/running/done, dispatch and output with timestamps.
+But dispatch catches request errors and still moves to queued; manual status change is not execution proof.
+
+#58 Work supplies task focus, shared CORE task creation, a Today sample and continuation of one activePlanId.
+It does not yet provide a durable mission inventory or complete agent execution lifecycle.
+The existing work-session client ALREADY has plan/step state, execution focus, confirmation,
+continuation, ownership, stats and segmented results. Use these contracts first.
+
+Capability mapping:
+| Wanted behavior | Canonical owner / release treatment |
+|---|---|
+| Human task backlog and progress | Existing CORE tasks; shared organization scope for Stand 0 |
+| Instruction -> executable plan | Existing /v3/work-session/plan and MÔRA planning; not Larry JSON |
+| Current step, waiting/failed/completed, continuation | Existing WorkSessionPlan.execution / steps / pending_confirmations |
+| Results and provenance | Existing step result/artifact references; link from Work, do not copy into task truth |
+| Role/capability choice | MÔRA/CORE routing intent; old agent names are not new identities or separate brains |
+| Persistent multi-mission list, assignment, task-plan relation | Still missing from Work; deferred follow-up on existing CORE plan storage |
+| Cancel/retry guarantees and durable dispatch acknowledgement | Must be proven on runtime contract before offering corresponding controls |
+
+Stand 0 completion does NOT claim full Desk mission migration. Retain migration inventory.
+Never mark queued/running/done based on a clicked button or successful chat submission.
+Task completion and execution completion are different facts.
+Scope-key workSessionStore references and re-authorize a resumed plan before rendering it.
+No /api/larry/*, /api/chat proxy, second mission database or new integration branch.
+
+### Mechanical implementation order for ChatGPT/Codex
+
+1. Finish #29 source CI; preserve the explicit shared-task decision above.
+2. In #58 share Today loading/invalidation; apply scope labels and race guards to Work/Home.
+3. Centralize all MÔRA callers and implement actual intent consumption + server reference resolution.
+4. Reconcile first-arrival behavior from #45/#48; replace historical tests with canonical behavior tests.
+5. Verify one pinned UI/CORE candidate, then close superseded PRs after overlap evidence.
+6. Authenticated desktop/mobile/Safari QA and runtime revision proof precede production.
+7. Only after Stand 0: persistently surfaced mission inventory on existing work-session capabilities.
+
+### 2026-09-08 — Astra, bounded architecture/source round
+
+Decided: shared organization tasks for Stand 0; one transient MÔRA intent consumed through existing
+ChatContext; shared Mail adapter fails honestly; Missions extend existing WorkSessionPlan.
+Changed: CORE #29 source boundary fix and regression tests; this Blackboard.
+Not changed: OS #58 code, task schema, production, PR closure state.
+Validation: Python compilation + focused lint locally. At head 73667207344814fb703685f39ad688e5173d3e87, GitHub Lint/Format, Security, Compose and Runtime Smoke passed; primary Tests and both truth test jobs were still running at this entry.
+A no-op intermediate commit 2628423 preceded the actual literal-kwargs lint correction 7366720.
+Next reviewer: implement the bounded #58 contracts above; do not re-open product architecture.
