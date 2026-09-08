@@ -402,7 +402,7 @@ complete means successful retrieval of the requested sample, not the entire mail
 inbox_loaded is the sample size; sample_limit=5 remains explicit. No total inbox count is promised.
 stale_after_seconds is a freshness budget, not proof of an implemented stale cache.
 A real stale result must carry original as_of and scope; failure cannot relabel old data as fresh.
-Local compile and focused lint checks passed. Full CI status is recorded in the sync log below.
+Local compile and focused lint checks passed. Full CI passed on final head 73667207344814fb703685f39ad688e5173d3e87; see sync log below.
 
 ### Decision 4 — Work/Missions capability boundary
 
@@ -451,6 +451,6 @@ Decided: shared organization tasks for Stand 0; one transient MÔRA intent consu
 ChatContext; shared Mail adapter fails honestly; Missions extend existing WorkSessionPlan.
 Changed: CORE #29 source boundary fix and regression tests; this Blackboard.
 Not changed: OS #58 code, task schema, production, PR closure state.
-Validation: Python compilation + focused lint locally. At head 73667207344814fb703685f39ad688e5173d3e87, GitHub Lint/Format, Security, Compose and Runtime Smoke passed; primary Tests and both truth test jobs were still running at this entry.
+Validation: Python compilation + focused lint locally. At head 73667207344814fb703685f39ad688e5173d3e87, GitHub Lint/Format, Security, Compose, Runtime Smoke, primary Tests and both truth jobs all passed. Truth suite: 981 passed. Evidence: https://github.com/Saimor-world/saimor-core/actions/runs/34194376666 and https://github.com/Saimor-world/saimor-core/actions/runs/34194376610 . No authenticated production/Safari QA claimed.
 A no-op intermediate commit 2628423 preceded the actual literal-kwargs lint correction 7366720.
 Next reviewer: implement the bounded #58 contracts above; do not re-open product architecture.
