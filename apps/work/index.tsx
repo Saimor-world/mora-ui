@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   CalendarDays,
@@ -18,13 +18,13 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { corePost } from '@/lib/api/coreClient';
-import { fetchTodaySnapshot, type TodaySnapshot, type TodayTask } from '@/lib/api/todayClient';
+import type { TodaySnapshot, TodayTask } from '@/lib/api/todayClient';
 import type { AppProps } from '@/lib/apps/types';
 import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
+import { invalidateToday, useScopedToday } from '@/lib/os/useScopedToday';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
 
 type RelatedArea = {
@@ -110,41 +110,23 @@ export default function WorkApp({ paneId }: AppProps) {
   const updatePanePosition = usePaneStore((state) => state.updatePanePosition);
   const updatePaneSize = usePaneStore((state) => state.updatePaneSize);
   const activeCompanyId = useNavStore((state) => state.activeCompanyId);
-  const user = useSessionStore((state) => state.user);
   const activePlanId = useWorkSessionStore((state) => state.activePlanId);
+  const setActiveSession = useWorkSessionStore((state) => state.setActiveSession);
+  const { snapshot, loading, refreshing, loadError, refresh, contextKey } = useScopedToday();
 
-  const [snapshot, setSnapshot] = useState<TodaySnapshot | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [newTask, setNewTask] = useState('');
   const [creating, setCreating] = useState(false);
-
-  const userId = (user as any)?.id ?? null;
-
-  const refresh = useCallback(async (quiet = false) => {
-    if (quiet) setRefreshing(true);
-    else setLoading(true);
-    setError(null);
-    try {
-      const next = await fetchTodaySnapshot(activeCompanyId ?? null, userId);
-      setSnapshot(next);
-      if (!next) setError('Der aktuelle Arbeitsstand konnte gerade nicht eindeutig gelesen werden.');
-    } catch (requestError) {
-      console.warn('[WorkApp] Today refresh failed', requestError);
-      setSnapshot(null);
-      setError('Der aktuelle Arbeitsstand ist gerade nicht erreichbar.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [activeCompanyId, userId]);
+  const previousScopeKeyRef = useRef(contextKey);
 
   useEffect(() => {
-    void refresh();
-    const timer = window.setInterval(() => void refresh(true), 120_000);
-    return () => window.clearInterval(timer);
-  }, [refresh]);
+    if (previousScopeKeyRef.current === contextKey) return;
+    previousScopeKeyRef.current = contextKey;
+    setNewTask('');
+    setCreating(false);
+    setActionError(null);
+    setActiveSession({ planId: null, sessionId: null });
+  }, [contextKey, setActiveSession]);
 
   const tasks = snapshot?.tasks.items ?? [];
   const inProgress = useMemo(() => tasks.filter((task) => task.status === 'in_progress'), [tasks]);
@@ -195,15 +177,15 @@ export default function WorkApp({ paneId }: AppProps) {
     const title = newTask.trim();
     if (!title || creating) return;
     setCreating(true);
-    setError(null);
+    setActionError(null);
     try {
       const saved = await corePost('/v3/tasks', { title, status: 'backlog' }, { throwAuthErrors: true });
       if (!saved || typeof saved !== 'object') throw new Error('Task persistence was not confirmed');
       setNewTask('');
-      await refresh(true);
+      invalidateToday();
     } catch (requestError) {
       console.warn('[WorkApp] Task creation failed', requestError);
-      setError('Die neue Aufgabe konnte nicht gespeichert werden.');
+      setActionError('Die neue Aufgabe konnte nicht gespeichert werden.');
     } finally {
       setCreating(false);
     }
@@ -212,6 +194,14 @@ export default function WorkApp({ paneId }: AppProps) {
   const readable = snapshot?.tasks.status === 'ok' || snapshot?.tasks.status === 'empty';
   const openCount = snapshot?.tasks.counts.open;
   const overdueCount = snapshot?.tasks.counts.overdue;
+  const readError = loadError === 'unauthorized'
+    ? 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.'
+    : loadError === 'forbidden'
+      ? 'Der gewählte Firmenkontext darf den heutigen Stand nicht lesen.'
+      : loadError === 'unavailable'
+        ? 'Der aktuelle Arbeitsstand ist gerade nicht erreichbar.'
+        : null;
+  const error = actionError ?? readError;
 
   return (
     <GlassPanel
@@ -239,10 +229,12 @@ export default function WorkApp({ paneId }: AppProps) {
             <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] text-white/26">
               <span className={`h-1.5 w-1.5 rounded-full ${readable ? 'bg-emerald-300/70' : 'bg-white/22'}`} />
               {availabilityLabel(snapshot)}
+              <span className="text-white/14">·</span>
+              <span>Aufgaben · Organisation</span>
             </div>
             <button
               type="button"
-              onClick={() => void refresh(true)}
+              onClick={() => void refresh(false)}
               disabled={refreshing}
               className="inline-flex items-center gap-1.5 rounded-full border border-white/[0.055] bg-white/[0.018] px-2.5 py-1.5 text-[9px] text-white/28 transition hover:text-white/58 disabled:opacity-50"
             >
@@ -254,12 +246,12 @@ export default function WorkApp({ paneId }: AppProps) {
               <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/36">Arbeit</div>
               <h2 className="mt-1 text-[30px] font-medium tracking-[-0.045em] text-white/90">Was jetzt zählt.</h2>
               <p className="mt-2 max-w-[620px] text-[11px] leading-relaxed text-white/35">
-                Fokus, offene Aufgaben und laufende Arbeitspläne in einem gemeinsamen Arbeitsstand.
+                Der heutige Firmenkontext und die gemeinsamen Aufgaben dieser Organisation laufen hier zusammen. Der Firmenwechsel filtert die Aufgaben nicht.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               {readable && typeof openCount === 'number' && (
-                <span className="rounded-full border border-white/[0.055] bg-white/[0.018] px-3 py-1.5 text-[9px] uppercase tracking-[0.14em] text-white/30">{openCount} offen</span>
+                <span className="rounded-full border border-white/[0.055] bg-white/[0.018] px-3 py-1.5 text-[9px] uppercase tracking-[0.14em] text-white/30">{openCount} organisationsweit offen</span>
               )}
               {readable && typeof overdueCount === 'number' && overdueCount > 0 && (
                 <span className="rounded-full border border-rose-200/[0.10] bg-rose-300/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.14em] text-rose-100/48">{overdueCount} überfällig</span>
@@ -321,7 +313,7 @@ export default function WorkApp({ paneId }: AppProps) {
                   <div className="mt-8 rounded-[18px] border border-dashed border-white/[0.07] px-4 py-6 text-center">
                     <CheckCircle2 size={18} className="mx-auto text-emerald-100/35" />
                     <div className="mt-3 text-[12px] text-white/52">Gerade verlangt keine offene Aufgabe Aufmerksamkeit.</div>
-                    <div className="mt-1 text-[10px] text-white/25">Du kannst direkt eine neue Aufgabe hinzufügen.</div>
+                    <div className="mt-1 text-[10px] text-white/25">Du kannst direkt eine gemeinsame Aufgabe hinzufügen.</div>
                   </div>
                 ) : (
                   <div className="mt-8 rounded-[18px] border border-dashed border-white/[0.07] px-4 py-6 text-center text-[10px] leading-relaxed text-white/30">
@@ -338,7 +330,7 @@ export default function WorkApp({ paneId }: AppProps) {
                   <div>
                     <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/32">MÔRA</div>
                     <p className="mt-2 text-[11px] leading-relaxed text-white/38">
-                      MÔRA kennt den aktuellen Arbeitskontext und kann priorisieren, einen Plan bauen oder direkt mit dir weiterarbeiten.
+                      MÔRA kann den ausgewählten Arbeitsfaden aufnehmen, priorisieren oder daraus einen Arbeitsplan entwickeln.
                     </p>
                   </div>
                 </div>
@@ -403,7 +395,7 @@ export default function WorkApp({ paneId }: AppProps) {
                     onKeyDown={(event) => {
                       if (event.key === 'Enter') void createTask();
                     }}
-                    placeholder="Neue Aufgabe hinzufügen …"
+                    placeholder="Gemeinsame Aufgabe hinzufügen …"
                     className="min-w-0 flex-1 bg-transparent text-[11px] text-white/70 outline-none placeholder:text-white/22"
                   />
                 </div>
@@ -416,6 +408,9 @@ export default function WorkApp({ paneId }: AppProps) {
                   {creating ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />} Hinzufügen
                 </button>
               </div>
+              <p className="mt-2 pl-6 text-[9px] leading-relaxed text-white/22">
+                Neue Aufgaben landen im gemeinsamen Aufgabenpool dieser Organisation – unabhängig vom gewählten Firmenkontext.
+              </p>
             </section>
 
             <section className="mt-5 border-t border-white/[0.045] pt-5">
