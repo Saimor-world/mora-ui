@@ -225,7 +225,10 @@ export const MoraShell: React.FC = () => {
     });
     const companies = companiesData;
     const { logout } = useAccountStore();
-    const { reset: resetPanes, openPane } = usePaneStore();
+    // Subscribe to stable actions, not every pane geometry/data update.
+    // Dragging a window must not rerender the entire world and home surface.
+    const resetPanes = usePaneStore((state) => state.reset);
+    const openPane = usePaneStore((state) => state.openPane);
     const visiblePaneCount = usePaneStore((state) => state.panes.reduce((count, pane) => count + (pane.minimized ? 0 : 1), 0));
     const isAdminMode = useContextStore((s) => s.isAdminMode);
     const setAdminMode = useContextStore((s) => s.setAdminMode);
