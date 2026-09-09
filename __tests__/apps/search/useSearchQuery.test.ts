@@ -5,12 +5,10 @@ jest.mock('@/lib/api/coreClient', () => ({
   searchSemantic: jest.fn().mockResolvedValue([]),
 }));
 
-jest.mock('@/lib/store/navStore', () => ({
-  useNavStore: (selector?: any) => {
-    const state = { activeCompanyId: null };
-    return selector ? selector(state) : state;
-  },
-}));
+jest.mock('@/lib/store/navStore', () => {
+  const { create } = require('zustand');
+  return { useNavStore: create(() => ({ activeCompanyId: null })) };
+});
 
 jest.mock('@/lib/queries/useDepartments', () => {
   const stableDepts: never[] = [];
