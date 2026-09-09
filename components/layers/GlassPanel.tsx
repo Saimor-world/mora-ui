@@ -306,7 +306,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     }, [panelPosition, onPositionChange, paneId]);
 
     // UPGRADE C1: Resize handlers
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    const handleResizeStart = useCallback((e: React.PointerEvent) => {
         e.preventDefault();
         e.stopPropagation();
         setIsResizing(true);
@@ -317,7 +317,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         const startWidth = panelSize.width;
         const startHeight = panelSize.height;
 
-        const handleResizeMouseMove = (moveEvent: MouseEvent) => {
+        const handleResizeMouseMove = (moveEvent: PointerEvent) => {
             const requestedWidth = startWidth + (moveEvent.clientX - startX);
             const requestedHeight = startHeight + (moveEvent.clientY - startY);
             const newWidth = Math.max(minWidth, Math.min(requestedWidth, getEffectiveMaxWidth()));
@@ -325,9 +325,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             setPanelSize({ width: newWidth, height: newHeight });
         };
 
-        const handleResizeMouseUp = (upEvent: MouseEvent) => {
-            document.removeEventListener('mousemove', handleResizeMouseMove);
-            document.removeEventListener('mouseup', handleResizeMouseUp);
+        const handleResizeMouseUp = () => {
+            document.removeEventListener('pointermove', handleResizeMouseMove);
+            document.removeEventListener('pointerup', handleResizeMouseUp);
+            document.removeEventListener('pointercancel', handleResizeMouseUp);
             setIsResizing(false);
 
             // Re-fetch current state to ensure we have the latest width/height
@@ -337,8 +338,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             // but here we have them in scope.
         };
 
-        document.addEventListener('mousemove', handleResizeMouseMove);
-        document.addEventListener('mouseup', handleResizeMouseUp);
+        document.addEventListener('pointermove', handleResizeMouseMove);
+        document.addEventListener('pointerup', handleResizeMouseUp);
+        document.addEventListener('pointercancel', handleResizeMouseUp);
     }, [getEffectiveMaxHeight, getEffectiveMaxWidth, minHeight, minWidth, onFocus, panelSize]);
 
     // Update onResize when resizing ends
@@ -487,7 +489,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     transition: { duration: 0.5, ease: [0.4, 0, 1, 1] }
                 }}
                 transition={{
-                    duration: 0.35,
+                    duration: isDragging || isResizing ? 0 : 0.2,
                     ease: [0.23, 1, 0.32, 1] // Custom organic cubic-bezier for "releasing" feel
                 }}
                 className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
@@ -533,7 +535,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                         {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize) && (
                             <div
                                 className="pane-titlebar pointer-events-auto"
-                                style={{ cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
+                                style={{ touchAction: draggable && !isMaximized ? 'none' : 'auto', cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
                                 onPointerDown={(e) => draggable && !isMaximized && dragControls.start(e)}
                                 onDoubleClick={(e) => {
                                     if (!allowMaximize) return;
@@ -643,9 +645,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 {resizable && !isMaximized && (
                     <div
                         className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-45 hover:opacity-80 transition-opacity"
-                        onMouseDown={handleResizeStart}
-                        onMouseUp={handleResizeEnd}
+                        onPointerDown={handleResizeStart}
                         style={{
+                            touchAction: 'none',
                             background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%, transparent 100%)'
                         }}
                     />
