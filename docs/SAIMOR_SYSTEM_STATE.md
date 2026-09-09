@@ -1,11 +1,27 @@
 # SAIMÔR SYSTEM STATE
 
-Last verified: 2026-09-08 UTC, bounded architecture/source correction round; see binding decisions below.
+Last verified: 2026-09-09 UTC, GitHub integration checkpoint; see current checkpoint and evidence qualifications below.
 Verified against: GitHub source, PR heads, workflow jobs/logs and connected deployment metadata where available.
 Current mission: **Stand 0 — one canonical OS convergence line.**
 Coordination home: `Saimor-world/mora-ui/docs/SAIMOR_SYSTEM_STATE.md` on `coordination/stand-zero` until PR #56 is merged.
 
 > Runtime rule: repository state is not production state. Production remains unchanged in this round. No PR below has been merged or promoted to production merely because CI is green.
+
+## Current verified checkpoint — 2026-09-09
+
+This checkpoint SUPERSEDES conflicting candidate heads and integration order below. Older sections remain historical evidence.
+
+- CORE #29 is integrated into #34 (merge 349f9794c28ca9e57d2f9d9725661710271dace6). #34 is the sole CORE convergence PR.
+- CORE #34 now includes current main 6a1029a45417db5542ceafdfa0f9eba2c2f48431 through merge **1010546772ffd7003eaed321d586098677d3ecc3**. The four main-side file changes do not overlap PR #34's changes; MISE bridge, isolation test, compose cleanup and renamed MISE config are preserved. New-head CI is pending verification.
+- Previous CORE head e87ed3755c1638eb6473119f3be957f5826fda06 fixed four import blocks. Its complete CI success was reported by the reviewing agent/user; fresh checks apply to the new merge.
+- OS #58 remains the single OS implementation line, last verified head d4b2a678cf03a0e4fd90bdaa9f061a0b5d6ae431; not deployed by this work.
+- Ops #15 remains unfinished. Its obsolete #29/#34 divergence claim has been corrected. Current ops main observed: df18e03f3dd3c29453bb2c96148f5df8d17293bc.
+- Ops branch synchronization is held for a concrete side effect: incoming Frame/Compagno workflows have push/path triggers without main-only filters. A branch sync could deploy unrelated apps. Resolve trigger behavior before updating #15; do not blindly replay deployments.
+- User/reviewer reports current live CORE 6a1029a45417db5542ceafdfa0f9eba2c2f48431, UI 13c6456e0ac48db2a588ff45efb9d250322182b8; this round did not independently access the host.
+- User/reviewer reports Website production 61d150dd430b26f38e4a10f247af6af11573843b / dpl_GyLHP9o1L2n5kJ5Rm3MYHjZwWfoj. Preserve newer YORI work; do not promote old design previews.
+- Historical DEPLOYED_STATE.md is not authoritative until reconciled against actual deployment evidence.
+
+Next: new CORE CI → resolve Ops synchronization side effects → verify backups/rollback → CORE deploy and runtime QA → OS deploy/device QA → disabled OpenClaw plugin → controlled personal Telegram cutover. Legacy data/services and MISE stay isolated and intact. Production authorization exists from Marius; technical release gates remain.
 
 ## 1. Product decision
 
