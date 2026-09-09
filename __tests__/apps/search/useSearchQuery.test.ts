@@ -7,8 +7,7 @@ jest.mock('@/lib/api/coreClient', () => ({
 
 jest.mock('@/lib/store/navStore', () => {
   const { create } = require('zustand');
-  const store = create(() => ({ activeCompanyId: null }));
-  return { useNavStore: (sel?: any) => sel ? store(sel) : store.getState(), ...store };
+  return { useNavStore: create(() => ({ activeCompanyId: null })) };
 });
 
 jest.mock('@/lib/queries/useDepartments', () => {

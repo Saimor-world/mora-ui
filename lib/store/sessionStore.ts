@@ -11,6 +11,12 @@ interface SessionState {
   permissions: Permissions;
   hasBooted: boolean;
   isLoggingOut: boolean;
+  /**
+   * Ephemeral identity epoch. It changes whenever the authenticated principal changes
+   * or the session is explicitly reset, so in-flight reads from an older session can
+   * never be committed into the new one.
+   */
+  sessionGeneration: number;
 
   setUser(user: User | null): void;
   patchOperationalSession(patch: OperationalSessionPatch): void;
@@ -20,25 +26,42 @@ interface SessionState {
   resetStore(): void;
 }
 
+function principalKey(user: User | null): string {
+  if (!user) return 'anonymous';
+  return `${user.tenant_id ?? 'tenant-unknown'}:${user.id}`;
+}
+
 export const useSessionStore = create<SessionState>((set, get) => ({
   user: null,
   permissions: ROLE_PERMISSIONS.demo,
   hasBooted: false,
   isLoggingOut: false,
+  sessionGeneration: 0,
 
   setUser: (user) => {
+    const previousUser = get().user;
+    const principalChanged = principalKey(previousUser) !== principalKey(user);
+
     if (user) {
       if (typeof window !== 'undefined') {
         localStorage.setItem('mora_session', 'active');
         localStorage.setItem('last_user_name', user.name);
       }
-      set({ user, permissions: getPermissions(user.role) });
+      set((state) => ({
+        user,
+        permissions: getPermissions(user.role),
+        sessionGeneration: principalChanged ? state.sessionGeneration + 1 : state.sessionGeneration,
+      }));
     } else {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('mora_session');
         localStorage.removeItem('last_user_name');
       }
-      set({ user: null, permissions: ROLE_PERMISSIONS.demo });
+      set((state) => ({
+        user: null,
+        permissions: ROLE_PERMISSIONS.demo,
+        sessionGeneration: principalChanged ? state.sessionGeneration + 1 : state.sessionGeneration,
+      }));
     }
   },
 
@@ -58,5 +81,11 @@ export const useSessionStore = create<SessionState>((set, get) => ({
   setIsLoggingOut: (v) => set({ isLoggingOut: v }),
 
   resetStore: () =>
-    set({ user: null, permissions: ROLE_PERMISSIONS.demo, hasBooted: false, isLoggingOut: false }),
+    set((state) => ({
+      user: null,
+      permissions: ROLE_PERMISSIONS.demo,
+      hasBooted: false,
+      isLoggingOut: false,
+      sessionGeneration: state.sessionGeneration + 1,
+    })),
 }));

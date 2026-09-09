@@ -41,10 +41,16 @@ jest.mock('@/lib/api/nightwatchClient', () => ({
   fetchAllNightwatchIncidents: jest.fn(),
   fetchNightwatchIncidents: jest.fn(),
   fetchNightwatchMonitors: jest.fn(),
+  updateNightwatchIncident: jest.fn(),
 }));
 
 import NightwatchApp from '@/apps/nightwatch/index';
-import { fetchAllNightwatchIncidents, fetchNightwatchIncidents, fetchNightwatchMonitors } from '@/lib/api/nightwatchClient';
+import {
+  fetchAllNightwatchIncidents,
+  fetchNightwatchIncidents,
+  fetchNightwatchMonitors,
+  updateNightwatchIncident,
+} from '@/lib/api/nightwatchClient';
 import { APP_IDS } from '@/lib/apps/AppLoader';
 import { getAppManifest } from '@/lib/apps/appRegistry';
 import { SURFACE_TIERS } from '@/lib/surface/surfaceRegistry';
@@ -52,6 +58,7 @@ import { SURFACE_TIERS } from '@/lib/surface/surfaceRegistry';
 const incidents = fetchNightwatchIncidents as jest.Mock;
 const incidentHistory = fetchAllNightwatchIncidents as jest.Mock;
 const monitors = fetchNightwatchMonitors as jest.Mock;
+const updateIncident = updateNightwatchIncident as jest.Mock;
 
 beforeEach(() => {
   openPane.mockClear();
@@ -59,6 +66,8 @@ beforeEach(() => {
   incidentHistory.mockReset();
   incidentHistory.mockResolvedValue([]);
   monitors.mockReset();
+  updateIncident.mockReset();
+  updateIncident.mockResolvedValue({});
 });
 
 describe('NightwatchApp', () => {
@@ -93,32 +102,29 @@ describe('NightwatchApp', () => {
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
     expect(await screen.findByLabelText('1 Vorfälle im Verlauf')).toBeInTheDocument();
-    expect(screen.getByText('1 erfasste Ereignisse')).toBeInTheDocument();
+    expect(screen.getByText('1 erfasste Vorfälle')).toBeInTheDocument();
   });
 
-  it('shows monitor status down even without a matching incident', async () => {
+  it('shows monitor status offline even without a matching incident', async () => {
     incidents.mockResolvedValue([]);
     monitors.mockResolvedValue([{ id: 'm-1', name: 'Worker', host: 'worker', status: 'down' }]);
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
-    expect(await screen.findAllByText('Down')).toHaveLength(2);
+    expect(await screen.findAllByText('Offline')).toHaveLength(2);
     expect(screen.getByText('nicht erreichbar')).toBeInTheDocument();
   });
 
-  it('links the glance pane to the full Saimôr Desk nightwatch view', async () => {
+  it('stays native to Saimôr OS and exposes no historical Desk dashboard jump', async () => {
     incidents.mockResolvedValue([]);
     monitors.mockResolvedValue([]);
     const open = jest.spyOn(window, 'open').mockImplementation(() => null);
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
-    (await screen.findByLabelText('Nightwatch-Dashboard öffnen')).click();
+    await screen.findByTestId('nightwatch-app');
 
-    expect(open).toHaveBeenCalledWith(
-      'https://dash.saimor.world/nightwatch',
-      '_blank',
-      'noopener,noreferrer',
-    );
+    expect(screen.queryByLabelText('Nightwatch-Dashboard öffnen')).not.toBeInTheDocument();
+    expect(open).not.toHaveBeenCalled();
     open.mockRestore();
   });
 
@@ -128,9 +134,8 @@ describe('NightwatchApp', () => {
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
 
-    // Still renders the panel, but never presents missing data as a healthy empty state.
     expect(await screen.findByTestId('nightwatch-app')).toBeInTheDocument();
-    expect(await screen.findByText(/Keine belastbaren Betriebsdaten/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Aktueller Stand nicht verfügbar/i)).toBeInTheDocument();
     expect(screen.queryByText(/Keine offenen Vorfälle/i)).not.toBeInTheDocument();
   });
 
@@ -153,19 +158,26 @@ describe('NightwatchApp', () => {
     });
   });
 
-  it('exposes NO write/repair actions', async () => {
+  it('routes acknowledge actions through the canonical Nightwatch client', async () => {
     incidents.mockResolvedValue([
-      { id: 'inc-1', title: 'api down', severity: 'critical', status: 'open', host: 'api' },
+      { id: 'inc-1', title: 'api down', severity: 'critical', status: 'open', host: 'api', acked: false },
     ]);
     monitors.mockResolvedValue([{ id: 'm-1', name: 'API', host: 'api' }]);
 
     render(<NightwatchApp paneId="nw-1" initialData={{}} />);
     await screen.findByText('api down');
 
+    screen.getByRole('button', { name: 'Gesehen' }).click();
+
+    await waitFor(() => {
+      expect(updateIncident).toHaveBeenCalledWith(
+        'inc-1',
+        'ack',
+        'Acknowledged from Saimôr OS Nightwatch.',
+      );
+    });
     expect(screen.queryByText(/reparieren/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/beheben/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/neustart/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/bestätigen/i)).not.toBeInTheDocument();
   });
 
   it('is registered across the app platform', () => {

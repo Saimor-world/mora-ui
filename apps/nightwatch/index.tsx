@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle, Box, Clock, ExternalLink, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Box, Clock, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -13,11 +13,6 @@ import {
     type NightwatchMonitorItem,
 } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
-import { ESTATE } from '@/lib/estate';
-
-const NIGHTWATCH_DASHBOARD_URL = `${ESTATE.desk}/nightwatch`;
-
-// ── helpers ──────────────────────────────────────────────────────────────────
 
 function relativeTime(iso?: string): string {
     if (!iso) return '';
@@ -68,8 +63,6 @@ function isMonitorDown(monitor: NightwatchMonitorItem, incidentHosts: Set<string
         || (!!monitor.host && incidentHosts.has(monitor.host));
 }
 
-// ── sub-components ────────────────────────────────────────────────────────────
-
 function PulseDot({ color, animate = true, size = 'sm' }: { color: string; animate?: boolean; size?: 'xs' | 'sm' }) {
     const dim = size === 'xs' ? 'h-1.5 w-1.5' : 'h-2 w-2';
     return (
@@ -98,7 +91,7 @@ function MonitorChip({ monitor, isDown }: { monitor: NightwatchMonitorItem; isDo
             {monitor.target_type === 'container' ? <Box size={10} className="text-white/32" /> : <Server size={10} className="text-white/32" />}
             <span className="truncate text-[11px] font-medium text-white/78">{label}</span>
             <span className={`shrink-0 text-[9px] uppercase tracking-[0.14em] ${isDown ? 'text-red-300/75' : 'text-emerald-300/65'}`}>
-                {isDown ? 'Down' : 'Online'}
+                {isDown ? 'Offline' : 'Online'}
             </span>
         </div>
     );
@@ -124,11 +117,11 @@ function IncidentRow({
                 <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
                 <div className="min-w-0 flex-1">
                     <div className="mb-1 flex flex-wrap items-center gap-2">
-                        <span className={`text-[9px] uppercase tracking-[0.16em] font-semibold ${cfg.text}`}>
+                        <span className={`text-[9px] font-semibold uppercase tracking-[0.16em] ${cfg.text}`}>
                             {cfg.label}
                         </span>
                         {incident.host && (
-                            <span className="truncate text-[10px] font-mono text-white/38">{incident.host}</span>
+                            <span className="truncate font-mono text-[10px] text-white/38">{incident.host}</span>
                         )}
                     </div>
                     <h3 className="text-[13px] font-medium leading-snug text-white/88">
@@ -164,7 +157,7 @@ function IncidentRow({
                             disabled={busy}
                             className="rounded-lg border border-amber-300/18 bg-amber-400/[0.06] px-2.5 py-1 text-[10px] text-amber-200/70 transition-colors hover:bg-amber-400/[0.1] disabled:opacity-40"
                         >
-                            ACK
+                            Gesehen
                         </button>
                     )}
                     <button
@@ -173,15 +166,13 @@ function IncidentRow({
                         disabled={busy}
                         className="rounded-lg border border-emerald-300/18 bg-emerald-400/[0.06] px-2.5 py-1 text-[10px] text-emerald-200/70 transition-colors hover:bg-emerald-400/[0.1] disabled:opacity-40"
                     >
-                        Lösen
+                        Schließen
                     </button>
                 </div>
             </div>
         </article>
     );
 }
-
-// ── main ──────────────────────────────────────────────────────────────────────
 
 export default function NightwatchApp({ paneId }: AppProps) {
     const {
@@ -193,13 +184,13 @@ export default function NightwatchApp({ paneId }: AppProps) {
         updatePanePosition,
         updatePaneSize,
     } = usePaneStore();
-    const isActive = usePaneStore((s) => s.activePaneId === paneId);
+    const isActive = usePaneStore((state) => state.activePaneId === paneId);
     const pane = getPane(paneId);
 
     const [incidents, setIncidents] = useState<NightwatchIncidentItem[]>([]);
     const [monitors, setMonitors] = useState<NightwatchMonitorItem[]>([]);
     const [history, setHistory] = useState<NightwatchIncidentItem[]>([]);
-    const [available, setAvailable] = useState(true);
+    const [available, setAvailable] = useState<boolean | null>(null);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [actionBusyId, setActionBusyId] = useState<string | null>(null);
@@ -227,9 +218,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
             setLastRefresh(new Date());
         } catch {
             if (!mountedRef.current) return;
-            setIncidents([]);
-            setMonitors([]);
-            setHistory([]);
+            // Keep the last confirmed snapshot. Unavailable is not the same as empty.
             setAvailable(false);
         } finally {
             if (mountedRef.current) {
@@ -239,15 +228,15 @@ export default function NightwatchApp({ paneId }: AppProps) {
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
+    useEffect(() => { void load(); }, [load]);
 
     useEffect(() => {
-        const id = setInterval(() => load(true), 60_000);
-        return () => clearInterval(id);
+        const id = window.setInterval(() => void load(true), 60_000);
+        return () => window.clearInterval(id);
     }, [load]);
 
     const downHosts = useMemo(
-        () => new Set(incidents.map((i) => i.host).filter(Boolean) as string[]),
+        () => new Set(incidents.map((incident) => incident.host).filter(Boolean) as string[]),
         [incidents],
     );
 
@@ -257,8 +246,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
         return [...down, ...up];
     }, [monitors, downHosts]);
 
-    const criticalCount = incidents.filter((i) => i.severity === 'critical').length;
-    const warningCount = incidents.filter((i) => i.severity === 'warning').length;
+    const criticalCount = incidents.filter((incident) => incident.severity === 'critical').length;
+    const warningCount = incidents.filter((incident) => incident.severity === 'warning').length;
     const downMonitorCount = sortedMonitors.filter((monitor) => isMonitorDown(monitor, downHosts)).length;
     const onlineMonitorCount = Math.max(0, monitors.length - downMonitorCount);
 
@@ -283,21 +272,21 @@ export default function NightwatchApp({ paneId }: AppProps) {
         criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : 'ok';
 
     const statusLine = loading
-        ? 'Verbinde…'
-        : !available
-            ? 'Datenquelle nicht erreichbar'
-        : systemStatus === 'ok'
-            ? 'Alle Systeme normal'
-            : systemStatus === 'critical'
-                ? `${criticalCount} kritischer${criticalCount !== 1 ? 'e' : ''} Vorfall${criticalCount !== 1 ? 'e' : ''}`
-                : `${warningCount} Warnung${warningCount !== 1 ? 'en' : ''}`;
+        ? 'Wird geprüft'
+        : available === false
+            ? 'Aktueller Stand nicht erreichbar'
+            : systemStatus === 'ok'
+                ? 'Alles ruhig'
+                : systemStatus === 'critical'
+                    ? `${criticalCount} kritischer${criticalCount !== 1 ? 'e' : ''} Vorfall${criticalCount !== 1 ? 'e' : ''}`
+                    : `${warningCount} Warnung${warningCount !== 1 ? 'en' : ''}`;
 
     const statusTone =
         loading ? 'text-white/35'
-            : !available ? 'text-red-300/85'
-            : systemStatus === 'ok' ? 'text-emerald-300/85'
-                : systemStatus === 'critical' ? 'text-red-300/85'
-                    : 'text-amber-300/85';
+            : available === false ? 'text-amber-300/85'
+                : systemStatus === 'ok' ? 'text-emerald-300/85'
+                    : systemStatus === 'critical' ? 'text-red-300/85'
+                        : 'text-amber-300/85';
 
     const openIncident = (id: string, title?: string) =>
         openPane({ id: `document-${id}`, type: 'document', title: title || 'Vorfall', size: { width: 900, height: 700 }, data: { nodeId: id } });
@@ -308,7 +297,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
             await updateNightwatchIncident(
                 incident.id,
                 action,
-                action === 'resolve' ? 'Resolved from Mora OS Nightwatch.' : 'Acknowledged from Mora OS Nightwatch.',
+                action === 'resolve' ? 'Resolved from Saimôr OS Nightwatch.' : 'Acknowledged from Saimôr OS Nightwatch.',
             );
             await load(true);
         } finally {
@@ -336,7 +325,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
             initialX={pane.position.x}
             initialY={pane.position.y}
             onPositionChange={(x, y) => updatePanePosition(paneId, x, y)}
-            onResize={(w, h) => updatePaneSize(paneId, w, h)}
+            onResize={(width, height) => updatePaneSize(paneId, width, height)}
             onClose={() => removePane(paneId)}
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
@@ -357,27 +346,27 @@ export default function NightwatchApp({ paneId }: AppProps) {
                 className="relative flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1"
                 style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(148,163,184,0.15) transparent' }}
             >
-                {/* Ambient status glow — no grid, universe shows through GlassPanel */}
                 <div
                     className="pointer-events-none absolute -left-8 -right-8 -top-6 h-28 opacity-80 transition-all duration-700"
                     style={{
-                        background: systemStatus === 'critical'
-                            ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(239,68,68,0.14) 0%, transparent 72%)'
-                            : systemStatus === 'warning'
-                                ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 72%)'
-                                : 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 72%)',
+                        background: available === false
+                            ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245,158,11,0.09) 0%, transparent 72%)'
+                            : systemStatus === 'critical'
+                                ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(239,68,68,0.14) 0%, transparent 72%)'
+                                : systemStatus === 'warning'
+                                    ? 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(245,158,11,0.12) 0%, transparent 72%)'
+                                    : 'radial-gradient(ellipse 70% 80% at 50% 0%, rgba(16,185,129,0.12) 0%, transparent 72%)',
                     }}
                 />
 
-                {/* Compact status row */}
                 <div className="relative flex flex-wrap items-center justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-2.5">
                         {loading ? (
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white/25" />
                         ) : (
                             <PulseDot
-                                color={systemStatus === 'ok' ? 'bg-emerald-400' : systemStatus === 'critical' ? 'bg-red-400' : 'bg-amber-400'}
-                                animate={systemStatus !== 'ok'}
+                                color={available === false ? 'bg-amber-400' : systemStatus === 'ok' ? 'bg-emerald-400' : systemStatus === 'critical' ? 'bg-red-400' : 'bg-amber-400'}
+                                animate={available === false || systemStatus !== 'ok'}
                             />
                         )}
                         <div className="min-w-0">
@@ -385,29 +374,19 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 {statusLine}
                             </p>
                             <p className="mt-0.5 text-[12px] text-white/52">
-                                MÔRA beobachtet Infrastruktur und offene Vorfälle.
+                                Nightwatch überwacht Infrastruktur und zeigt nur Dinge, die Aufmerksamkeit brauchen.
                             </p>
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                         {lastRefresh && (
                             <span className="text-[10px] tabular-nums text-white/28">
-                                {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
+                                Stand {lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}
                             </span>
                         )}
                         <button
                             type="button"
-                            onClick={() => window.open(NIGHTWATCH_DASHBOARD_URL, '_blank', 'noopener,noreferrer')}
-                            className="inline-flex items-center gap-1.5 rounded-lg border border-white/[0.08] bg-white/[0.04] px-2 py-1.5 text-[10px] text-white/42 transition-colors hover:bg-white/[0.08] hover:text-white/72"
-                            aria-label="Nightwatch-Dashboard öffnen"
-                            title="Vollständige Container- und Kapazitätsansicht in Saimôr Desk öffnen"
-                        >
-                            <ExternalLink size={11} />
-                            <span className="hidden sm:inline">Dashboard</span>
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => load(true)}
+                            onClick={() => void load(true)}
                             disabled={refreshing}
                             className="rounded-lg border border-white/[0.08] bg-white/[0.04] p-1.5 text-white/40 transition-colors hover:bg-white/[0.08] hover:text-white/70 disabled:opacity-40"
                             aria-label="Aktualisieren"
@@ -417,15 +396,15 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     </div>
                 </div>
 
-                {!loading && available && (
+                {!loading && available === true && (
                     <section className="nightwatch-overview" aria-label="Nightwatch Übersicht">
                         <div>
                             <span><ShieldCheck size={13} />Online</span>
                             <strong>{onlineMonitorCount}</strong>
-                            <small>bestätigte Monitore</small>
+                            <small>überwacht</small>
                         </div>
                         <div data-tone={downMonitorCount > 0 ? 'critical' : 'quiet'}>
-                            <span><Server size={13} />Down</span>
+                            <span><Server size={13} />Offline</span>
                             <strong>{downMonitorCount}</strong>
                             <small>nicht erreichbar</small>
                         </div>
@@ -441,25 +420,24 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                     <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(8, (day.count / trendMax) * 100)}%` }} />
                                 ))}
                             </div>
-                            <small>{history.length} erfasste Ereignisse</small>
+                            <small>{history.length} erfasste Vorfälle</small>
                         </div>
                     </section>
                 )}
 
-                {!loading && !available && (
+                {!loading && available === false && (
                     <div className="nightwatch-unavailable" role="alert">
                         <AlertTriangle size={16} />
                         <div>
-                            <strong>Keine belastbaren Betriebsdaten</strong>
-                            <span>Nightwatch kann CORE gerade nicht bestätigen. Leere Listen werden nicht als „alles ruhig“ dargestellt.</span>
+                            <strong>Aktueller Stand nicht verfügbar</strong>
+                            <span>Der letzte bestätigte Stand bleibt sichtbar. Saimôr deutet fehlende Daten nicht als „alles ruhig“.</span>
                         </div>
                     </div>
                 )}
 
-                {/* Monitor chips — compact, no sprawling grid */}
                 <section className="relative space-y-2">
                     <div className="flex items-center gap-2">
-                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Monitore</span>
+                        <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Überwachung</span>
                         {!loading && monitors.length > 0 && (
                             <span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] tabular-nums text-white/42">
                                 {monitors.length}
@@ -468,26 +446,25 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     </div>
                     {loading ? (
                         <div className="flex flex-wrap gap-2">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
+                            {[...Array(3)].map((_, index) => (
+                                <div key={index} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
                             ))}
                         </div>
-                    ) : !available ? null : monitors.length === 0 ? (
-                        <p className="text-[11px] text-white/38">Noch keine Monitore eingerichtet.</p>
+                    ) : monitors.length === 0 && available === true ? (
+                        <p className="text-[11px] text-white/38">Noch keine Überwachung eingerichtet.</p>
                     ) : (
                         <div className="flex flex-wrap gap-2">
-                            {sortedMonitors.map((m) => (
+                            {sortedMonitors.map((monitor) => (
                                 <MonitorChip
-                                    key={m.id}
-                                    monitor={m}
-                                    isDown={isMonitorDown(m, downHosts)}
+                                    key={monitor.id}
+                                    monitor={monitor}
+                                    isDown={isMonitorDown(monitor, downHosts)}
                                 />
                             ))}
                         </div>
                     )}
                 </section>
 
-                {/* Incidents — tight list, calm empty state */}
                 <section className="relative space-y-2 pb-1">
                     <div className="flex items-center gap-2">
                         <span className="text-[10px] uppercase tracking-[0.18em] text-white/38">Offene Vorfälle</span>
@@ -502,28 +479,28 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
                     {loading ? (
                         <div className="space-y-2">
-                            {[...Array(2)].map((_, i) => (
-                                <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
+                            {[...Array(2)].map((_, index) => (
+                                <div key={index} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
                             ))}
                         </div>
-                    ) : !available ? null : incidents.length === 0 ? (
+                    ) : incidents.length === 0 && available === true ? (
                         <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
                             <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />
                             <div>
                                 <p className="text-[12px] font-medium text-emerald-100/78">Keine offenen Vorfälle</p>
-                                <p className="mt-0.5 text-[10px] text-emerald-200/42">Alles ruhig — Überwachung läuft weiter.</p>
+                                <p className="mt-0.5 text-[10px] text-emerald-200/42">Alles ruhig — Nightwatch läuft weiter.</p>
                             </div>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {sortedIncidents.map((i) => (
+                            {sortedIncidents.map((incident) => (
                                 <IncidentRow
-                                    key={i.id}
-                                    incident={i}
-                                    onOpen={() => openIncident(i.id, i.title)}
-                                    onAck={() => applyIncidentAction(i, 'ack')}
-                                    onResolve={() => applyIncidentAction(i, 'resolve')}
-                                    busy={actionBusyId === i.id}
+                                    key={incident.id}
+                                    incident={incident}
+                                    onOpen={() => openIncident(incident.id, incident.title)}
+                                    onAck={() => void applyIncidentAction(incident, 'ack')}
+                                    onResolve={() => void applyIncidentAction(incident, 'resolve')}
+                                    busy={actionBusyId === incident.id}
                                 />
                             ))}
                         </div>

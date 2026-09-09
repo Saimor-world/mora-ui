@@ -55,16 +55,17 @@ it('opens dossier pane after 800ms with nodeId', () => {
     );
 });
 
-it('opens chat pane after 1400ms with initialMessage', () => {
+it('does not auto-open chat or send a message after the dossier', () => {
     renderHook(() => useAutoOpenDossier(mockContext, 'node-abc'));
-    act(() => jest.advanceTimersByTime(1400));
-    expect(mockOpenPane).toHaveBeenCalledWith(
-        expect.objectContaining({
-            id: 'chat-main',
-            type: 'chat',
-            data: expect.objectContaining({ initialMessage: expect.stringContaining('acme.de') }),
-        })
-    );
+    act(() => jest.runAllTimers());
+    expect(mockOpenPane).toHaveBeenCalledTimes(1);
+    expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'document' }));
+});
+
+it('leaves fresh Home handoffs to Home without stacking panes', () => {
+    renderHook(() => useAutoOpenDossier({ ...mockContext, openOnHome: true }, 'node-abc'));
+    act(() => jest.runAllTimers());
+    expect(mockOpenPane).not.toHaveBeenCalled();
 });
 
 it('does not fire again if already opened (localStorage flag)', () => {

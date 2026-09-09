@@ -192,6 +192,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const [panelPosition, setPanelPosition] = useState({ x: getInitialX(), y: getInitialY() });
     const [panelSize, setPanelSize] = useState({ width: typeof width === 'number' ? width : 800, height: typeof height === 'number' ? height : 600 });
     const panelRef = useRef<HTMLDivElement>(null);
+    const resizeCleanupRef = useRef<(() => void) | null>(null);
+    useEffect(() => () => resizeCleanupRef.current?.(), []);
     const getEffectiveMaxWidth = useCallback(() => {
         if (typeof maxWidth === 'number' && Number.isFinite(maxWidth)) return maxWidth;
         if (typeof window !== 'undefined') return window.innerWidth - 20;
@@ -306,7 +308,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     }, [panelPosition, onPositionChange, paneId]);
 
     // UPGRADE C1: Resize handlers
-    const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    const handleResizeStart = useCallback((e: React.PointerEvent) => {
+        if (e.button !== 0) return;
+        resizeCleanupRef.current?.();
         e.preventDefault();
         e.stopPropagation();
         setIsResizing(true);
@@ -316,8 +320,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         const startY = e.clientY;
         const startWidth = panelSize.width;
         const startHeight = panelSize.height;
+        const pointerId = e.pointerId;
 
-        const handleResizeMouseMove = (moveEvent: MouseEvent) => {
+        const handleResizeMouseMove = (moveEvent: PointerEvent) => {
+            if (moveEvent.pointerId !== pointerId) return;
             const requestedWidth = startWidth + (moveEvent.clientX - startX);
             const requestedHeight = startHeight + (moveEvent.clientY - startY);
             const newWidth = Math.max(minWidth, Math.min(requestedWidth, getEffectiveMaxWidth()));
@@ -325,9 +331,15 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             setPanelSize({ width: newWidth, height: newHeight });
         };
 
-        const handleResizeMouseUp = (upEvent: MouseEvent) => {
-            document.removeEventListener('mousemove', handleResizeMouseMove);
-            document.removeEventListener('mouseup', handleResizeMouseUp);
+        const cleanup = () => {
+            document.removeEventListener('pointermove', handleResizeMouseMove);
+            document.removeEventListener('pointerup', handleResizeMouseUp);
+            document.removeEventListener('pointercancel', handleResizeMouseUp);
+        };
+        const handleResizeMouseUp = (event: PointerEvent) => {
+            if (event.pointerId !== pointerId) return;
+            cleanup();
+            resizeCleanupRef.current = null;
             setIsResizing(false);
 
             // Re-fetch current state to ensure we have the latest width/height
@@ -337,8 +349,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             // but here we have them in scope.
         };
 
-        document.addEventListener('mousemove', handleResizeMouseMove);
-        document.addEventListener('mouseup', handleResizeMouseUp);
+        document.addEventListener('pointermove', handleResizeMouseMove);
+        resizeCleanupRef.current = cleanup;
+        document.addEventListener('pointerup', handleResizeMouseUp);
+        document.addEventListener('pointercancel', handleResizeMouseUp);
     }, [getEffectiveMaxHeight, getEffectiveMaxWidth, minHeight, minWidth, onFocus, panelSize]);
 
     // Update onResize when resizing ends
@@ -347,10 +361,6 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
             onResize?.(panelSize.width, panelSize.height);
         }
     }, [isResizing, panelSize, onResize, width, height]);
-
-    const handleResizeEnd = useCallback(() => {
-        setIsResizing(false);
-    }, []);
 
     // Handle keyboard shortcuts
     useEffect(() => {
@@ -487,7 +497,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     transition: { duration: 0.5, ease: [0.4, 0, 1, 1] }
                 }}
                 transition={{
-                    duration: 0.35,
+                    duration: isDragging || isResizing ? 0 : 0.2,
                     ease: [0.23, 1, 0.32, 1] // Custom organic cubic-bezier for "releasing" feel
                 }}
                 className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
@@ -533,7 +543,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                         {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize) && (
                             <div
                                 className="pane-titlebar pointer-events-auto"
-                                style={{ cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
+                                style={{ touchAction: draggable && !isMaximized ? 'none' : 'auto', cursor: draggable && !isMaximized ? 'grab' : (allowMaximize ? 'pointer' : 'default') }}
                                 onPointerDown={(e) => draggable && !isMaximized && dragControls.start(e)}
                                 onDoubleClick={(e) => {
                                     if (!allowMaximize) return;
@@ -643,9 +653,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 {resizable && !isMaximized && (
                     <div
                         className="absolute bottom-0 right-0 w-5 h-5 cursor-se-resize opacity-45 hover:opacity-80 transition-opacity"
-                        onMouseDown={handleResizeStart}
-                        onMouseUp={handleResizeEnd}
+                        onPointerDown={handleResizeStart}
                         style={{
+                            touchAction: 'none',
                             background: 'linear-gradient(-45deg, transparent 0%, transparent 40%, rgba(255,255,255,0.3) 50%, transparent 60%, transparent 100%)'
                         }}
                     />
@@ -669,4 +679,3 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
 // Export type for external use
 export type { GlassPanelProps };
-

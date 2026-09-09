@@ -5,6 +5,10 @@
  *
  * Browser-reserved shortcuts stay out of the public contract where possible.
  * Alt+N is used for notes because Ctrl/Cmd+N is owned by the browser.
+ *
+ * Stand 0 invariant: MÔRA is an OS workspace, not a second product or a
+ * historical Desk destination. Cmd/Ctrl+J therefore uses the canonical
+ * workspace opener directly. Cmd/Ctrl+L is left to the browser.
  */
 
 import { useEffect } from 'react';
@@ -13,6 +17,7 @@ import {
     getSpotlightShortcutKeys,
     isSpotlightShortcut,
 } from '@/lib/hooks/usePlatformModifier';
+import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 export function getKeyboardShortcuts(mod?: string) {
@@ -23,26 +28,27 @@ export function getKeyboardShortcuts(mod?: string) {
         { keys: ['Alt', '2'], label: 'Split 50/50', description: 'Zwei Fenster nebeneinander anordnen' },
         { keys: ['Alt', '3'], label: '3 Spalten', description: 'Drei Fenster nebeneinander anordnen' },
         { keys: ['Alt', '0'], label: 'Aufräumen', description: 'Alle Fenster schließen' },
-        { keys: [m, 'J'], label: 'Chat', description: 'Mora Chat öffnen' },
+        { keys: [m, 'J'], label: 'MÔRA', description: 'MÔRA öffnen' },
         { keys: [m, 'F'], label: 'Finder', description: 'Dateien durchsuchen' },
         { keys: ['Alt', 'N'], label: 'Notes', description: 'Notizen öffnen' },
         { keys: [m, ','], label: 'System', description: 'Einstellungen öffnen' },
-        { keys: [m, 'H'], label: 'Start', description: 'Zur Uebersicht' },
+        { keys: [m, 'H'], label: 'Start', description: 'Zur Übersicht' },
         { keys: [m, 'A'], label: 'Sprache', description: 'Voice-Overlay umschalten (Alt+A bleibt Fallback)' },
-        { keys: [m, 'L'], label: 'Desk', description: 'Saimôr Desk öffnen' },
-        { keys: ['Esc'], label: 'Schliessen', description: 'Oberstes Panel schliessen' },
+        { keys: ['Esc'], label: 'Schließen', description: 'Oberstes Panel schließen' },
         { keys: ['?'], label: 'Hilfe', description: 'Shortcuts anzeigen' },
     ];
 }
 
 interface UseKeyboardShortcutsOptions {
     onToggleSpotlight: () => void;
+    /** @deprecated MÔRA is opened canonically inside this hook. */
     onOpenChat?: () => void;
     onOpenFinder?: () => void;
     onOpenNotes?: () => void;
     onOpenSettings?: () => void;
     onGoHome?: () => void;
     onOpenAmbient?: () => void;
+    /** @deprecated Historical Desk/Larry shortcut; retained only for call-site compatibility. */
     onOpenLarry?: () => void;
     onCloseTopPane?: () => void;
     onShowShortcuts?: () => void;
@@ -50,13 +56,11 @@ interface UseKeyboardShortcutsOptions {
 
 export function useKeyboardShortcuts({
     onToggleSpotlight,
-    onOpenChat,
     onOpenFinder,
     onOpenNotes,
     onOpenSettings,
     onGoHome,
     onOpenAmbient,
-    onOpenLarry,
     onCloseTopPane,
     onShowShortcuts,
 }: UseKeyboardShortcutsOptions) {
@@ -110,7 +114,7 @@ export function useKeyboardShortcuts({
 
             if (meta && key === 'j') {
                 e.preventDefault();
-                onOpenChat?.();
+                openMoraWorkspace({ source: 'system' });
                 return;
             }
 
@@ -145,12 +149,6 @@ export function useKeyboardShortcuts({
                 return;
             }
 
-            if (meta && key === 'l') {
-                e.preventDefault();
-                onOpenLarry?.();
-                return;
-            }
-
             if (e.key === '?' || (e.shiftKey && e.key === '/')) {
                 e.preventDefault();
                 onShowShortcuts?.();
@@ -161,13 +159,11 @@ export function useKeyboardShortcuts({
         return () => window.removeEventListener('keydown', handleKeyDown, true);
     }, [
         onToggleSpotlight,
-        onOpenChat,
         onOpenFinder,
         onOpenNotes,
         onOpenSettings,
         onGoHome,
         onOpenAmbient,
-        onOpenLarry,
         onCloseTopPane,
         onShowShortcuts,
     ]);

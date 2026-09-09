@@ -1,6 +1,7 @@
 import { corePost, coreGet } from './coreClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { clearMoraWorkspaceIntent, readMoraWorkspaceIntent } from '@/lib/os/openMoraWorkspace';
 import type { PerceptionBundle } from '@/lib/types/perception';
 
 // Types matching Backend Schema
@@ -21,7 +22,7 @@ export interface ChatContext {
     layer?: string;
     route_path?: string;
     pane_id?: string;
-    /** Client-only workspace awareness. CORE treats this as non-authoritative UI context. */
+    /** Client-only workspace awareness. CORE treats selectors as non-authoritative. */
     workspace?: WorkspaceContext;
     /** Real Mora P1: structured perception bundle, included when feature flag is on. */
     perception?: PerceptionBundle;
@@ -33,9 +34,26 @@ export interface WorkspacePaneContext {
     title: string;
 }
 
+export interface WorkspaceOperationalReference {
+    type: 'task' | 'node' | 'plan';
+    id: string;
+    scope: 'organization' | 'company' | 'user';
+    company_id?: string | null;
+}
+
+export interface WorkspaceLaunchContext {
+    version: 1;
+    request_id: string;
+    source: string;
+    source_pane_id?: string;
+}
+
 export interface WorkspaceContext {
     focused_pane?: WorkspacePaneContext;
-    visible_panes: WorkspacePaneContext[];
+    visible_panes?: WorkspacePaneContext[];
+    /** Selectors only. CORE resolves them again under authenticated scope. */
+    operational_references?: WorkspaceOperationalReference[];
+    launch?: WorkspaceLaunchContext;
 }
 
 export interface AgentChatRequest {
@@ -78,15 +96,68 @@ function mapLayerFromViewLevel(viewLevel?: string): string | undefined {
     return 'L1';
 }
 
+function mergeWorkspaceContext(
+    current: WorkspaceContext | undefined,
+    incoming: WorkspaceContext,
+): WorkspaceContext {
+    return {
+        ...(current ?? {}),
+        ...incoming,
+        focused_pane: incoming.focused_pane ?? current?.focused_pane,
+        visible_panes: incoming.visible_panes ?? current?.visible_panes,
+        operational_references: incoming.operational_references ?? current?.operational_references,
+        launch: incoming.launch ?? current?.launch,
+    };
+}
+
 function mergeChatContext(...parts: Array<ChatContext | undefined>): ChatContext | undefined {
     const merged: ChatContext = {};
     for (const part of parts) {
         if (!part) continue;
         for (const [key, value] of Object.entries(part)) {
-            if (value) merged[key as keyof ChatContext] = value;
+            if (!value) continue;
+            if (key === 'workspace' && typeof value === 'object') {
+                merged.workspace = mergeWorkspaceContext(merged.workspace, value as WorkspaceContext);
+                continue;
+            }
+            merged[key as keyof ChatContext] = value;
         }
     }
     return Object.keys(merged).length ? merged : undefined;
+}
+
+function consumeLaunchContext(): ChatContext | undefined {
+    const intent = readMoraWorkspaceIntent('chat-main');
+    if (!intent) return undefined;
+
+    const supportedReferences: WorkspaceOperationalReference[] = intent.references
+        .filter((reference) => reference.type === 'task' || reference.type === 'node' || reference.type === 'plan')
+        .map((reference) => ({
+            type: reference.type as WorkspaceOperationalReference['type'],
+            id: reference.id,
+            scope: reference.scope,
+            company_id: reference.companyId ?? undefined,
+        }));
+    const nodeReference = supportedReferences.find((reference) => reference.type === 'node');
+
+    const launchContext: ChatContext = {
+        company_id: intent.requestedCompanyId ?? undefined,
+        node_id: nodeReference?.id,
+        workspace: {
+            operational_references: supportedReferences,
+            launch: {
+                version: 1,
+                request_id: intent.requestId,
+                source: intent.source,
+                source_pane_id: intent.sourcePaneId,
+            },
+        },
+    };
+
+    // One explicit launch intent belongs to exactly one user turn. The request
+    // carries a copy from here onward; clearing the pane prevents accidental replay.
+    clearMoraWorkspaceIntent(intent.requestId, 'chat-main');
+    return launchContext;
 }
 
 export function buildChatContext(overrides?: ChatContext): ChatContext | undefined {
@@ -103,6 +174,7 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
         ? `${window.location.pathname}${window.location.search ?? ''}`
         : undefined;
     const viewLevel = navState.viewLevel || undefined;
+    const launchContext = consumeLaunchContext();
     return mergeChatContext(
         {
             company_id: navState.activeCompanyId || undefined,
@@ -121,6 +193,7 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
                 visible_panes: workspacePanes.slice(0, 12).map((pane) => toWorkspacePane(pane)!),
             },
         },
+        launchContext,
         overrides
     );
 }
