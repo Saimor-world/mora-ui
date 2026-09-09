@@ -1,11 +1,33 @@
 # SAIMÔR SYSTEM STATE
 
-Last verified: 2026-09-09 UTC, GitHub integration checkpoint; see current checkpoint and evidence qualifications below.
-Verified against: GitHub source, PR heads, workflow jobs/logs and connected deployment metadata where available.
-Current mission: **Stand 0 — one canonical OS convergence line.**
+Last verified: 2026-09-09 18:45 UTC.
+Verified against: GitHub PR heads, exact workflow runs and production deployment logs; public browser checks for Website and the unauthenticated HQ entry.
+Current mission: **Stand 0 live validation; Telegram cutover remains gated.**
 Coordination home: `Saimor-world/mora-ui/docs/SAIMOR_SYSTEM_STATE.md` on `coordination/stand-zero` until PR #56 is merged.
 
-> Runtime rule: repository state is not production state. Production remains unchanged in this round. No PR below has been merged or promoted to production merely because CI is green.
+> Runtime rule: repository state is not production state. The table below records the exact revisions released today. Future claims require the same repo → CI → deployment → runtime evidence chain.
+
+## Production release — 2026-09-09
+
+| Surface | Production revision | Evidence | Result |
+|---|---|---|---|
+| CORE | `3d9abc0a526678985595d52763710be72fc7b440` | main CI `34389872634`; deploy `34390168156` | CI success; CORE and Kairos healthy |
+| Saimôr OS | `64510919834bd1367fec77fbcef5021f108d3b55` | main CI `34390381771`; deploy `34390381770` | CI success; UI healthy |
+| Website | existing Vercel production | public `/de` browser check | reachable and rendered; unchanged in this release |
+| Telegram / Larry | no cutover | Ops #15 `6d8d39f592c5c2199a63147da166c8cd7250d8b1` | plugin remains disabled and uninstalled |
+
+Release evidence:
+
+- CORE PR #34 and OS PR #58 were the canonical convergence lines. Both were merged only after exact-head checks passed.
+- CORE deploy completed with CORE, Kairos, Caddy, Postgres, Redis, Qdrant, UI, Voice, Earth services and the separately isolated MISE OpenClaw reported healthy.
+- OS deploy rebuilt and recreated the UI; the same dependency set remained healthy, including isolated MISE OpenClaw.
+- Rollback references retained: CORE `6a1029a45417db5542ceafdfa0f9eba2c2f48431`; UI `13c6456e0ac48db2a588ff45efb9d250322182b8`.
+- Public HQ browser check reached `https://hq.saimor.world/`, rendered “SAIMÔR OS”, and exposed Login/Password Reset without public self-registration.
+- Public Website browser check reached `https://www.saimor.world/de` and rendered the green Saimôr page, Security Check entry and Studio offer.
+- Authenticated in-product and physical Safari/iPad QA are not claimed by this browser session. They remain a release-observation task, not grounds to reopen a parallel branch.
+- UI production deployment currently starts independently of the main CI result. Gate the workflow on successful CI in a focused follow-up so a future red main commit cannot deploy in parallel.
+- Ops #15 contains hardened transport and seven passing unit tests, but still lacks the verified installed manifest/schema, production secret provisioning, load smoke, rollback and real end-to-end evidence. Do not merge, install or enable it until those gates are complete.
+- Historical Desk/Larry/Nightwatch services and data were not deleted. MISE remains isolated.
 
 ## Day closeout — 2026-09-09
 
