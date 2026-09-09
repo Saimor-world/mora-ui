@@ -7,7 +7,18 @@ Coordination home: `Saimor-world/mora-ui/docs/SAIMOR_SYSTEM_STATE.md` on `coordi
 
 > Runtime rule: repository state is not production state. Production remains unchanged in this round. No PR below has been merged or promoted to production merely because CI is green.
 
-## Current verified checkpoint — 2026-09-09
+## Day closeout — 2026-09-09
+
+- Independently verified: CORE #34 head 1010546772ffd7003eaed321d586098677d3ecc3 has seven successful check runs, including both truth runs. OS #58 d4b2a678cf03a0e4fd90bdaa9f061a0b5d6ae431 has both Verify runs successful. Blackboard previous head 75641ff69290221cfb6f40bdc1df1f923d8f5fe8 passed Verify.
+- Another actor synchronized Ops #15 at afef01ccb8246373fea6bf440b0da5d229804a79. The earlier unsynchronized-branch statement is historical, not current.
+- Ops #15 now at 6d8d39f592c5c2199a63147da166c8cd7250d8b1: extracted testable transport, rejected automatic HTTP redirects with channel credentials, removed raw error details from plugin logs, and added seven passing Node regression tests. Tests cover fingerprint allowlist, routing helpers, session isolation, payload identity exclusion, configuration bounds, channel request/redirect behavior and failed/empty responses. Local command: node --test channel.test.js (Node 24.19.0). These are unit tests, not proof that the installed OpenClaw hook works.
+- Plugin remains disabled by default. Manifest/schema, actual OpenClaw loading, secret provisioning, backup/rollback verification and authenticated end-to-end cutover remain open. No Telegram turn was sent by this round.
+- Website /de was retrieved with the current workspace/entry/studio text. HQ and API /health could not be opened by the web tool (non-retryable access error); do not interpret that as service outage or successful runtime QA.
+- No production merge/deployment or legacy deletion performed in this closeout. Current host revisions/backups were not independently reverified. Earlier reviewer-reported runtime evidence remains qualified as such.
+
+Next bounded release task: verify actual deployment/rollback access and candidate runtime; release CORE then OS with authenticated QA; complete disabled plugin loading before any Telegram cutover. Do not equate green CI with live deployment. Existing user deployment authorization remains valid.
+
+## Earlier checkpoint — 2026-09-09 (superseded where closeout differs)
 
 This checkpoint SUPERSEDES conflicting candidate heads and integration order below. Older sections remain historical evidence.
 
