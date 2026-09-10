@@ -1,3 +1,4 @@
+/** @jest-environment node */
 import { mintReviewDraft, sellReviewDraft, xrpPriceToDrops } from '@/lib/capital/nft-drafts';
 const account = 'r3q2jXeSs8JZeaaVHeNSnz52XXs4GtLidj';
 describe('unsigned NFT review drafts', () => {
