@@ -21,6 +21,8 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import CapitalYieldPanel from './CapitalYieldPanel';
+import { currencyLabel } from '@/lib/capital/xrpl-capital';
 import { CAPITAL_OPPORTUNITIES } from '@/lib/capital/opportunities';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -253,7 +255,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
       title={(
         <span className="flex items-center gap-2">
           <WalletCards size={14} className="text-emerald-300/80" />
-          <span>Capital</span>
+          <span>XRP Capital</span>
         </span>
       )}
       width={pane.size.width}
@@ -286,12 +288,12 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </div>
               <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Treasury</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Diese Ledger-kontrollierte XRPL-Adresse gehört zum operativen Kapital von Saimôr. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben auf dem Ledger und vollständig außerhalb des OS.
+                Diese öffentliche Adresse wird als Saimôr Treasury beobachtet. Das OS liest den Bestand und bereitet Entscheidungen vor. Kapitalwirksame Aktionen werden separat im externen Wallet geprüft und signiert.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatePill tone="safe">Read only in MÔRA</StatePill>
                 <StatePill>Saimôr operational</StatePill>
-                <StatePill>Ledger self custody</StatePill>
+                <StatePill>Externes Wallet</StatePill>
                 <StatePill tone="warn">External signing</StatePill>
               </div>
             </div>
@@ -348,6 +350,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
 
         {address && (
           <>
+            <CapitalYieldPanel key={address} address={address} />
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Coins size={11} /> XRP balance</div>
@@ -397,7 +400,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     <div key={`${line.currency}-${line.issuer}`} className="flex items-center justify-between gap-4 py-3">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <div className="text-[12px] font-medium text-white/72">{line.currency}</div>
+                          <div className="text-[12px] font-medium text-white/72">{currencyLabel(line.currency)}</div>
                           {line.freeze && <StatePill tone="warn">Frozen</StatePill>}
                         </div>
                         <div className="truncate font-mono text-[9px] text-white/24">Issuer {shortAddress(line.issuer)}</div>
