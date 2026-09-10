@@ -46,7 +46,6 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 
 // Store
@@ -85,33 +84,9 @@ import { realtime } from '@/lib/api/realtimeClient';
 import { ViewPort } from '@/components/layout/ViewPort';
 import { ModeIndicatorBanner } from '@/components/os/shell/ModeIndicatorBanner';
 import { LoadingScreen, ErrorScreen } from '@/components/os/shell/ShellStatusScreens';
-import { ShellStaticBackdrop } from '@/components/os/shell/ShellStaticBackdrop';
+import { OsWorldSurface } from '@/components/os/shell/OsWorldSurface';
 import { useContextStore } from '@/lib/store/contextStore';
 import { AdminHome } from '@/components/admin/AdminHome';
-
-// Background Layers — CSS plate first; heavy canvas/DOM ambient deferred via dynamic()
-import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
-
-const StarField = dynamic(
-    () => import('@/components/visual/StarField').then((m) => ({ default: m.StarField })),
-    { ssr: false },
-);
-const NeuralGrid = dynamic(
-    () => import('@/components/visual/NeuralGrid').then((m) => ({ default: m.NeuralGrid })),
-    { ssr: false },
-);
-const ForestLightCanopy = dynamic(
-    () => import('@/components/visual/ForestLightCanopy').then((m) => ({ default: m.ForestLightCanopy })),
-    { ssr: false },
-);
-const AmbientDust = dynamic(
-    () => import('@/components/organic/AmbientDust').then((m) => ({ default: m.AmbientDust })),
-    { ssr: false },
-);
-const MyceliumOverlay = dynamic(
-    () => import('@/components/organic/MyceliumOverlay').then((m) => ({ default: m.MyceliumOverlay })),
-    { ssr: false },
-);
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
@@ -156,8 +131,6 @@ import { AmbientAudioController } from '@/components/os/AmbientAudioController';
 import { AmbientRoomOverlay } from '@/components/ambient/AmbientRoomOverlay';
 import { InteractionAudioController } from '@/components/os/InteractionAudioController';
 import { MoraPulsePanel } from '@/components/os/MoraPulsePanel';
-import { TemporalAtmosphere } from '@/components/os/TemporalAtmosphere';
-import { RitualSceneStyler } from '@/components/os/RitualSceneStyler';
 // 1.0 gated (future-tier: memory sidebar)
 // import { MemorySidebar, useMemorySidebarShortcut } from '@/components/os/MemorySidebar';
 import { useWindowSnapping, type SnapZone } from '@/lib/hooks/useWindowSnapping';
@@ -397,11 +370,7 @@ export const MoraShell: React.FC = () => {
     const isAmbientRoomOpen = useNavStore((s) => s.voiceOverlayOpen);
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
-    const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
     const ambient = useAmbientCapability();
-    const mountHeavyAmbient = ambient.enableHeavy && ambient.heavyReady && !pauseHeavyBackground;
-    const starFieldDensity =
-        ambient.density === 'low' || universeLightAmbient ? 'low' : 'medium';
 
     // Window Snapping
     const windowSnapping = useWindowSnapping();
@@ -763,40 +732,14 @@ export const MoraShell: React.FC = () => {
                 z-11  RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
-            <RitualSceneStyler />
-            <ShellStaticBackdrop />
-            <MoraLivingBackground />
-            <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
-
-            {mountHeavyAmbient && (
-                <>
-                    {/* ForestLightCanopy fades to 6% in Universe — shared atmospheric truth */}
-                    <div
-                        className="transition-opacity duration-[1400ms] ease-in-out"
-                        style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
-                    >
-                        <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
-                    </div>
-                    <StarField
-                        density={starFieldDensity}
-                        opacity={universeLightAmbient ? 0.72 : 0.97}
-                        paused={pauseHeavyBackground}
-                    />
-
-                    {/* Mycelium — living gravitational web connecting nodes and departments */}
-                    <MyceliumOverlay />
-
-                    <NeuralGrid active={!pauseHeavyBackground} state={finalOrbState} />
-
-                    <AmbientDust
-                        count={ambient.density === 'low' || universeLightAmbient ? 8 : 32}
-                        color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
-                        sizeRange={[0.8, 2.5]}
-                        durationRange={[18, 36]}
-                        opacity={universeLightAmbient ? 0.14 : 0.28}
-                    />
-                </>
-            )}
+            <OsWorldSurface
+                orbState={finalOrbState}
+                demoMode={viewMode === 'demo'}
+                explore={isUniverseExploreSurface}
+                paused={pauseHeavyBackground}
+                heavyReady={ambient.enableHeavy && ambient.heavyReady}
+                density={ambient.density}
+            />
 
             {/* ================================================================
                 LAYER 2: MAIN CONTENT
