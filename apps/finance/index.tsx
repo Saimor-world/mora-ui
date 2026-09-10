@@ -21,6 +21,7 @@ import {
   WalletCards,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
+import { mintReviewDraft, sellReviewDraft } from '@/lib/capital/nft-drafts';
 import CapitalYieldPanel from './CapitalYieldPanel';
 import { currencyLabel } from '@/lib/capital/xrpl-capital';
 import { CAPITAL_OPPORTUNITIES } from '@/lib/capital/opportunities';
@@ -166,6 +167,10 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
   const [nftName, setNftName] = useState('');
   const [nftDescription, setNftDescription] = useState('');
   const [nftImage, setNftImage] = useState('');
+  const [metadataUri, setMetadataUri] = useState('');
+  const [saleToken, setSaleToken] = useState('');
+  const [salePrice, setSalePrice] = useState('');
+  const [reviewDraft, setReviewDraft] = useState('');
   const [draftMessage, setDraftMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -247,6 +252,24 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     setTimeout(() => URL.revokeObjectURL(url), 1000);
     setDraftMessage('Metadaten exportiert. Noch nichts veröffentlicht oder gemintet.');
   };
+
+  const prepareTransaction = (kind: 'mint' | 'sell') => {
+    setReviewDraft('');
+    try {
+      if (!snapshot || snapshot.address !== address) throw new Error('Zuerst den Bestand dieser Adresse aktualisieren.');
+      if (kind === 'sell' && !nfts.some(nft => nft.id === saleToken)) throw new Error('NFT aus dem geladenen Bestand auswählen.');
+      const transaction = kind === 'mint' ? mintReviewDraft(address, metadataUri) : sellReviewDraft(address, saleToken, salePrice);
+      setReviewDraft(JSON.stringify({ status: 'UNSIGNED_REVIEW_ONLY', network: 'mainnet', observedLedger: snapshot.ledgerIndex,
+        checksStillRequired: ['Fresh ownership and reserve check', 'Metadata availability and content', 'Fee and expiry bounds', 'External wallet account and user approval'],
+        transaction }, null, 2));
+      setDraftMessage('Entwurf erstellt. Noch kein Signaturauftrag und kein Angebot veröffentlicht.');
+    } catch (err) {
+      setDraftMessage(err instanceof Error ? err.message : 'Entwurf konnte nicht erstellt werden.');
+    }
+  };
+
+  useEffect(() => { setReviewDraft(''); setSaleToken(''); setDraftMessage(''); }, [address]);
+  useEffect(() => { setReviewDraft(''); }, [metadataUri, saleToken, salePrice]);
 
   if (!pane) return null;
 
@@ -350,7 +373,8 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
 
         {address && (
           <>
-            <CapitalYieldPanel key={address} address={address} />
+            <div className="flex flex-wrap gap-3 text-sm"><a href="#capital-nft-lab" className="rounded-xl bg-fuchsia-300/10 px-4 py-3">NFTs · Kaufen, Minten, Listen</a><a href="#capital-pools" className="rounded-xl bg-emerald-300/10 px-4 py-3">Liquidität · XRP gegenüber HOLD</a></div>
+            <div id="capital-pools"><CapitalYieldPanel key={address} address={address} /></div>
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Coins size={11} /> XRP balance</div>
@@ -443,7 +467,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </div>
             </section>
 
-            <section className="rounded-[24px] border border-fuchsia-300/[0.1] bg-[radial-gradient(circle_at_8%_0%,rgba(217,70,239,0.08),transparent_34%),rgba(0,0,0,0.14)] p-5">
+            <section id="capital-nft-lab" className="rounded-[24px] border border-fuchsia-300/[0.1] bg-[radial-gradient(circle_at_8%_0%,rgba(217,70,239,0.08),transparent_34%),rgba(0,0,0,0.14)] p-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.22em] text-fuchsia-200/44">
@@ -528,6 +552,26 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 <p className="text-xs text-white/60">Verwende nur eigene oder entsprechend lizenzierte Inhalte. Der Entwurf bleibt bis zum Export in diesem geöffneten Fenster.</p>
                 <button type="button" onClick={exportNftDraft} className="rounded-xl bg-emerald-300/15 px-4 py-3 text-sm">NFT-Metadaten exportieren</button>
                 {draftMessage && <p role="status" className="text-sm text-white/75">{draftMessage}</p>}
+              </div>
+              <div className="mt-5 space-y-3 border-t border-white/10 pt-4">
+                <h4 className="font-medium">Mint und Verkauf vorbereiten</h4>
+                <label className="block text-sm">Adresse der veröffentlichten Metadaten-JSON
+                  <input value={metadataUri} onChange={e => setMetadataUri(e.target.value)} placeholder="ipfs://…/metadata.json" className="mt-1 block w-full rounded-xl bg-black/30 p-3" />
+                </label>
+                <p className="text-xs text-white/60">Mint-Vorgabe: übertragbar, Handel nur in XRP, 0 % Weiterverkaufsgebühr. Die NFT-URI ist unveränderlich; Inhalte unter einer HTTPS-Adresse können sich trotzdem ändern.</p>
+                <button type="button" onClick={() => prepareTransaction('mint')} className="rounded-xl bg-fuchsia-300/15 px-4 py-3 text-sm">Mint-Entwurf prüfen</button>
+                <label className="block text-sm">Eigenes NFT zum Verkauf auswählen
+                  <select value={saleToken} onChange={e => setSaleToken(e.target.value)} className="mt-1 block w-full rounded-xl bg-black/80 p-3">
+                    <option value="">NFT auswählen</option>
+                    {nfts.map(nft => <option key={nft.id} value={nft.id}>#{nft.serial} · {shortTokenId(nft.id)}</option>)}
+                  </select>
+                </label>
+                <label className="block text-sm">Verkaufspreis in XRP
+                  <input inputMode="decimal" value={salePrice} onChange={e => setSalePrice(e.target.value)} placeholder="z. B. 2,5" className="mt-1 block w-full rounded-xl bg-black/30 p-3" />
+                </label>
+                <button type="button" disabled={!saleToken} onClick={() => prepareTransaction('sell')} className="rounded-xl bg-fuchsia-300/15 px-4 py-3 text-sm disabled:opacity-40">Verkaufsentwurf prüfen</button>
+                <p className="text-xs text-white/60">Ein Verkaufspreis ist kein Erlös. Erst ein angenommener, validierter Verkauf erzeugt Einnahmen. Anzeige auf XRP Café und Wallet-Signatur sind noch nicht verbunden.</p>
+                {reviewDraft && <details open className="rounded-xl bg-black/30 p-3"><summary className="text-sm">Unsignierter Prüfentwurf · Gebühren und Gültigkeit noch offen</summary><pre className="mt-3 overflow-x-auto whitespace-pre-wrap break-all text-xs">{reviewDraft}</pre></details>}
               </div>
               <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-white/65">
                 <li>Werk und Metadaten dauerhaft öffentlich bereitstellen.</li>
