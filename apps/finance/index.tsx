@@ -9,11 +9,14 @@ import {
   Database,
   ExternalLink,
   Eye,
+  ImageIcon,
   KeyRound,
   Link2,
   LockKeyhole,
   RefreshCcw,
   ShieldCheck,
+  ShoppingBag,
+  Sparkles,
   Unplug,
   WalletCards,
 } from 'lucide-react';
@@ -23,6 +26,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 const STORAGE_KEY = 'saimor.finance.xrpl.canary';
+const XRP_CAFE_URL = 'https://xrp.cafe/';
 
 type TrustLine = {
   currency: string;
@@ -32,6 +36,16 @@ type TrustLine = {
   noRipple: boolean;
   freeze: boolean;
   authorized: boolean | null;
+};
+
+type XrplNft = {
+  id: string;
+  issuer: string;
+  taxon: number;
+  serial: number;
+  flags: number;
+  uriHex: string | null;
+  uri: string | null;
 };
 
 type XrplTransaction = {
@@ -68,6 +82,7 @@ type XrplSnapshot = {
     regularKey: string | null;
     signerListCount: number;
   };
+  nfts: XrplNft[];
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
   fetchedAt: string;
@@ -76,6 +91,11 @@ type XrplSnapshot = {
 function shortAddress(value: string) {
   if (value.length < 18) return value;
   return `${value.slice(0, 8)}…${value.slice(-7)}`;
+}
+
+function shortTokenId(value: string) {
+  if (value.length < 20) return value;
+  return `${value.slice(0, 10)}…${value.slice(-8)}`;
 }
 
 function formatNumber(value: number, max = 6) {
@@ -394,6 +414,76 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     <span className="font-mono text-[10px] text-white/58">{snapshot?.sequence ?? '—'}</span>
                   </div>
                 </div>
+              </div>
+            </section>
+
+            <section className="rounded-[24px] border border-fuchsia-300/[0.1] bg-[radial-gradient(circle_at_8%_0%,rgba(217,70,239,0.08),transparent_34%),rgba(0,0,0,0.14)] p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.22em] text-fuchsia-200/44">
+                    <Sparkles size={11} /> XRPL NFT Lab
+                  </div>
+                  <h3 className="mt-2 text-[18px] font-medium tracking-[-0.03em] text-white/82">Kaufen. Minten. Danach im OS sehen.</h3>
+                  <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/32">
+                    XRP Café öffnet den echten XRPL-Marktplatz. Die kapitalwirksame Aktion bleibt beim externen Signer; SAIMÔR liest den Besitz anschließend direkt vom Ledger zurück.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <StatePill tone="safe">{snapshot ? `${snapshot.nfts.length} NFTs on-ledger` : 'NFT inventory'}</StatePill>
+                    <StatePill>Same treasury address</StatePill>
+                    <StatePill tone="warn">Sign externally</StatePill>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={XRP_CAFE_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/16 bg-fuchsia-400/[0.07] px-4 py-2.5 text-[10px] font-medium text-fuchsia-100/76 transition-colors hover:bg-fuchsia-400/[0.12]"
+                  >
+                    <ShoppingBag size={13} /> XRP Café öffnen <ExternalLink size={11} />
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => address && load(address)}
+                    disabled={!address || loading}
+                    className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-2.5 text-[10px] text-white/52 transition-colors hover:bg-white/[0.05] disabled:opacity-35"
+                  >
+                    <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} /> Nach Kauf aktualisieren
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-[20px] border border-white/[0.06] bg-black/15 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-[12px] font-medium text-white/72">
+                    <ImageIcon size={13} className="text-fuchsia-200/48" /> Treasury NFT shelf
+                  </div>
+                  <span className="font-mono text-[9px] text-white/24">{shortAddress(address)}</span>
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {(snapshot?.nfts || []).slice(0, 6).map((nft) => (
+                    <div key={nft.id} className="rounded-2xl border border-white/[0.055] bg-white/[0.018] p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-[11px] font-medium text-white/68">NFT #{nft.serial || '—'}</span>
+                        <span className="text-[8px] uppercase tracking-[0.12em] text-white/22">Taxon {nft.taxon}</span>
+                      </div>
+                      <div className="mt-2 truncate font-mono text-[8px] text-white/24">{shortTokenId(nft.id)}</div>
+                      <div className="mt-1 truncate font-mono text-[8px] text-white/18">Issuer {shortAddress(nft.issuer)}</div>
+                      {nft.uri && <div className="mt-2 truncate text-[9px] text-fuchsia-100/38">{nft.uri}</div>}
+                    </div>
+                  ))}
+                </div>
+
+                {snapshot && snapshot.nfts.length === 0 && (
+                  <div className="mt-3 rounded-2xl border border-dashed border-white/[0.07] px-4 py-5 text-[10px] leading-relaxed text-white/30">
+                    Noch kein NFT auf dieser Treasury-Adresse. Öffne XRP Café, kaufe oder minte mit genau diesem Account und aktualisiere danach hier. SAIMÔR übernimmt keinen Private Key.
+                  </div>
+                )}
+                {snapshot && snapshot.nfts.length > 6 && (
+                  <div className="mt-3 text-[9px] text-white/24">+ {snapshot.nfts.length - 6} weitere NFTs auf dem Ledger.</div>
+                )}
               </div>
             </section>
 
