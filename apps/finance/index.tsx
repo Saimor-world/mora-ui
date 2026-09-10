@@ -29,7 +29,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 
 const STORAGE_KEY = 'saimor.finance.xrpl.canary';
-const XRP_CAFE_URL = 'https://xrp.cafe/';
+const XRP_CAFE_URL = 'https://xrp.cafe/art';
 
 type TrustLine = {
   currency: string;
@@ -374,7 +374,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
         {address && (
           <>
             <div className="flex flex-wrap gap-3 text-sm"><a href="#capital-nft-lab" className="rounded-xl bg-fuchsia-300/10 px-4 py-3">NFTs · Kaufen, Minten, Listen</a><a href="#capital-pools" className="rounded-xl bg-emerald-300/10 px-4 py-3">Liquidität · XRP gegenüber HOLD</a></div>
-            <div id="capital-pools"><CapitalYieldPanel key={address} address={address} /></div>
+            <div id="capital-pools"><CapitalYieldPanel key={address} address={address} /><p className="mt-3 text-xs text-amber-100/80">XRP Café meldet am 10.09.2026: NFTs und Limit-Trades unterstützen Xaman; AMM-Swaps und Pools dort derzeit nicht. Der Signierweg für den Pool-Test ist noch offen.</p></div>
             <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
                 <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Coins size={11} /> XRP balance</div>
@@ -491,8 +491,9 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/16 bg-fuchsia-400/[0.07] px-4 py-2.5 text-[10px] font-medium text-fuchsia-100/76 transition-colors hover:bg-fuchsia-400/[0.12]"
                   >
-                    <ShoppingBag size={13} /> XRP Café öffnen <ExternalLink size={11} />
+                    <ShoppingBag size={13} /> NFTs auf XRP Café kaufen <ExternalLink size={11} />
                   </a>
+                  <a href="https://xrp.cafe/create" target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl border border-fuchsia-300/16 bg-fuchsia-400/[0.07] px-4 py-2.5 text-[10px] font-medium text-fuchsia-100/76">Eigenes NFT auf XRP Café minten <ExternalLink size={11} /></a>
                   <button
                     type="button"
                     onClick={() => address && load(address)}
