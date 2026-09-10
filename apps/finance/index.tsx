@@ -82,7 +82,8 @@ type XrplSnapshot = {
     regularKey: string | null;
     signerListCount: number;
   };
-  nfts: XrplNft[];
+  nfts?: XrplNft[];
+  nftInventory?: { status: 'unavailable' | 'partial' | 'complete'; ledgerIndex: number | null };
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
   fetchedAt: string;
@@ -160,6 +161,10 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
   const [address, setAddress] = useState(initialAddress);
   const [draftAddress, setDraftAddress] = useState(initialAddress);
   const [snapshot, setSnapshot] = useState<XrplSnapshot | null>(null);
+  const [nftName, setNftName] = useState('');
+  const [nftDescription, setNftDescription] = useState('');
+  const [nftImage, setNftImage] = useState('');
+  const [draftMessage, setDraftMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -222,6 +227,24 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     () => (snapshot?.transactions || []).filter((tx) => tx.validated && (!tx.result || tx.result === 'tesSUCCESS')).length,
     [snapshot],
   );
+
+  const nfts = snapshot?.nfts || [];
+  const nftStatus = snapshot?.nftInventory?.status || 'unavailable';
+  const exportNftDraft = () => {
+    if (!nftName.trim() || !nftDescription.trim() || !/^(https:\/\/|ipfs:\/\/)/i.test(nftImage.trim())) {
+      setDraftMessage('Bitte Titel, Beschreibung und eine öffentliche HTTPS- oder IPFS-Bildadresse eintragen.');
+      return;
+    }
+    const metadata = { name: nftName.trim(), description: nftDescription.trim(), image: nftImage.trim() };
+    const blob = new Blob([JSON.stringify(metadata, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'saimor-nft-metadata.json';
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setDraftMessage('Metadaten exportiert. Noch nichts veröffentlicht oder gemintet.');
+  };
 
   if (!pane) return null;
 
@@ -428,8 +451,8 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     XRP Café öffnet den echten XRPL-Marktplatz. Die kapitalwirksame Aktion bleibt beim externen Signer; SAIMÔR liest den Besitz anschließend direkt vom Ledger zurück.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <StatePill tone="safe">{snapshot ? `${snapshot.nfts.length} NFTs on-ledger` : 'NFT inventory'}</StatePill>
-                    <StatePill>Same treasury address</StatePill>
+                    <StatePill tone="safe">{snapshot ? (nftStatus === 'unavailable' ? 'NFT-Bestand nicht verfügbar' : `${nfts.length}${nftStatus === 'partial' ? '+' : ''} NFTs geladen`) : 'NFT inventory'}</StatePill>
+                    <StatePill>Adresse im Signer abgleichen</StatePill>
                     <StatePill tone="warn">Sign externally</StatePill>
                   </div>
                 </div>
@@ -454,19 +477,24 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 </div>
               </div>
 
+              {snapshot && nftStatus !== 'complete' && (
+                <p role="status" className="mt-3 text-xs text-amber-100/80">
+                  {nftStatus === 'partial' ? 'Ein Teilbestand wurde geladen; die Gesamtzahl ist noch nicht bekannt.' : 'NFTs konnten nicht vollständig geladen werden. Der XRP-Bestand bleibt separat verfügbar.'}
+                </p>
+              )}
               <div className="mt-4 rounded-[20px] border border-white/[0.06] bg-black/15 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 text-[12px] font-medium text-white/72">
-                    <ImageIcon size={13} className="text-fuchsia-200/48" /> Treasury NFT shelf
+                    <ImageIcon size={13} className="text-fuchsia-200/48" /> NFTs dieser Adresse
                   </div>
                   <span className="font-mono text-[9px] text-white/24">{shortAddress(address)}</span>
                 </div>
 
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {(snapshot?.nfts || []).slice(0, 6).map((nft) => (
+                  {nfts.slice(0, 6).map((nft) => (
                     <div key={nft.id} className="rounded-2xl border border-white/[0.055] bg-white/[0.018] p-3">
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-[11px] font-medium text-white/68">NFT #{nft.serial || '—'}</span>
+                        <span className="text-[11px] font-medium text-white/68">NFT #{nft.serial}</span>
                         <span className="text-[8px] uppercase tracking-[0.12em] text-white/22">Taxon {nft.taxon}</span>
                       </div>
                       <div className="mt-2 truncate font-mono text-[8px] text-white/24">{shortTokenId(nft.id)}</div>
@@ -476,15 +504,34 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                   ))}
                 </div>
 
-                {snapshot && snapshot.nfts.length === 0 && (
+                {snapshot && nftStatus === 'complete' && nfts.length === 0 && (
                   <div className="mt-3 rounded-2xl border border-dashed border-white/[0.07] px-4 py-5 text-[10px] leading-relaxed text-white/30">
                     Noch kein NFT auf dieser Treasury-Adresse. Öffne XRP Café, kaufe oder minte mit genau diesem Account und aktualisiere danach hier. SAIMÔR übernimmt keinen Private Key.
                   </div>
                 )}
-                {snapshot && snapshot.nfts.length > 6 && (
-                  <div className="mt-3 text-[9px] text-white/24">+ {snapshot.nfts.length - 6} weitere NFTs auf dem Ledger.</div>
+                {snapshot && nfts.length > 6 && (
+                  <div className="mt-3 text-[9px] text-white/24">+ {nfts.length - 6} weitere NFTs auf dem Ledger.</div>
                 )}
               </div>
+            </section>
+
+            <section className="rounded-3xl border border-emerald-200/15 bg-emerald-950/20 p-5">
+              <h3 className="text-lg font-medium">Dein eigenes NFT vorbereiten</h3>
+              <p className="mt-2 text-sm text-white/65">Erstelle den Entwurf für ein eigenes Werk. Der Export enthält Metadaten; ein Verkauf und Einnahmen entstehen dadurch noch nicht.</p>
+              <div className="mt-4 grid gap-3">
+                <label className="text-sm">Titel<input maxLength={120} value={nftName} onChange={(e) => setNftName(e.target.value)} className="mt-1 block w-full rounded-xl bg-black/30 p-3" placeholder="Name deines Werks" /></label>
+                <label className="text-sm">Beschreibung<textarea maxLength={2000} value={nftDescription} onChange={(e) => setNftDescription(e.target.value)} className="mt-1 block w-full rounded-xl bg-black/30 p-3" placeholder="Was bekommt der Käufer? Beschreibe Werk und Nutzungsumfang." /></label>
+                <label className="text-sm">Öffentliche Bildadresse<input value={nftImage} onChange={(e) => setNftImage(e.target.value)} className="mt-1 block w-full rounded-xl bg-black/30 p-3" placeholder="https://… oder ipfs://…" /></label>
+                <p className="text-xs text-white/60">Verwende nur eigene oder entsprechend lizenzierte Inhalte. Der Entwurf bleibt bis zum Export in diesem geöffneten Fenster.</p>
+                <button type="button" onClick={exportNftDraft} className="rounded-xl bg-emerald-300/15 px-4 py-3 text-sm">NFT-Metadaten exportieren</button>
+                {draftMessage && <p role="status" className="text-sm text-white/75">{draftMessage}</p>}
+              </div>
+              <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-white/65">
+                <li>Werk und Metadaten dauerhaft öffentlich bereitstellen.</li>
+                <li>Im externen Marktplatz Mint vorbereiten und die vollständige Account-Adresse abgleichen: <span className="break-all font-mono">{address}</span>.</li>
+                <li>Netzwerk, Rechte, Gebühren und Reserve im Signer prüfen; erst dann selbst bestätigen.</li>
+                <li>Bestand hier aktualisieren. Ein Verkaufsangebot braucht zusätzlich einen Preis und einen Käufer.</li>
+              </ol>
             </section>
 
             <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">

@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
     const [accountInfo, lines, nftResponse, server, history] = await Promise.all([
       rpc<any>('account_info', { account: address, ledger_index: 'validated', signer_lists: true }),
       rpc<any>('account_lines', { account: address, ledger_index: 'validated', limit: 400 }),
-      rpc<any>('account_nfts', { account: address, ledger_index: 'validated', limit: 400 }),
+      rpc<any>('account_nfts', { account: address, ledger_index: 'validated', limit: 400 }).catch(() => null),
       rpc<any>('server_info', {}),
       rpc<any>('account_tx', {
         account: address,
@@ -188,6 +188,10 @@ export async function GET(request: NextRequest) {
         recognizedRevenueXrp: Number(commerceRevenueDrops) / 1_000_000,
       },
       nfts,
+      nftInventory: {
+        status: !Array.isArray(nftResponse?.account_nfts) ? 'unavailable' : nftResponse?.marker ? 'partial' : 'complete',
+        ledgerIndex: nftResponse?.ledger_index ?? null,
+      },
       trustLines,
       transactions,
       fetchedAt: new Date().toISOString(),
