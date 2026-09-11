@@ -68,15 +68,7 @@ jobs:
               localStorage.setItem('saimor_active_mode', 'real_hq');
               localStorage.setItem('saimor_view_mode', 'workspace');
               localStorage.setItem('last_activity', new Date().toISOString());
-              localStorage.setItem('saimor_website_entry_context', JSON.stringify({
-                id: 'visual-qa-preview',
-                companyName: 'Saimôr',
-                title: 'OS Visual QA',
-                rooms: [],
-                documents: [],
-                tasks: [],
-                storedAt: new Date().toISOString(),
-              }));
+              localStorage.removeItem('saimor_website_entry_context');
             });
 
             await page.goto('http://127.0.0.1:3000/home', { waitUntil: 'domcontentloaded' });
