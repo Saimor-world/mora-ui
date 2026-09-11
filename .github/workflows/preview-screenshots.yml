@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/os-practical-reset
-      - feat/xrpl-nft-capital-lab
   workflow_dispatch:
 
 concurrency:
@@ -68,18 +67,25 @@ jobs:
               localStorage.setItem('saimor_active_mode', 'real_hq');
               localStorage.setItem('saimor_view_mode', 'workspace');
               localStorage.setItem('last_activity', new Date().toISOString());
-              localStorage.removeItem('saimor_website_entry_context');
+              localStorage.setItem('saimor_website_entry_context', JSON.stringify({
+                id: 'visual-qa-preview',
+                companyName: 'Saimôr',
+                title: 'OS Visual QA',
+                rooms: [],
+                documents: [],
+                tasks: [],
+                storedAt: new Date().toISOString(),
+              }));
             });
 
             await page.goto('http://127.0.0.1:3000/home', { waitUntil: 'domcontentloaded' });
-            await page.locator('[data-testid="mora-dock"]').waitFor({ timeout: 25000 });
+            await page.getByText('Vier Wege. Ein System.', { exact: true }).waitFor({ timeout: 25000 });
             await page.waitForTimeout(1800);
             await page.screenshot({ path: 'preview-screenshots/home.png', fullPage: true });
 
-            await page.locator('[data-testid="dock-cockpit"]').click();
-            await page.getByText('Capital', { exact: true }).first().click();
-            await page.getByText('Saimôr Treasury', { exact: true }).waitFor({ timeout: 15000 });
-            await page.waitForTimeout(1500);
+            await page.getByText('Money that can work', { exact: true }).click();
+            await page.getByText('Treasury Wallet', { exact: true }).waitFor({ timeout: 10000 });
+            await page.waitForTimeout(900);
             await page.screenshot({ path: 'preview-screenshots/capital.png', fullPage: true });
 
             await browser.close();
@@ -93,7 +99,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mora-ui-os-screenshots
+          name: mora-ui-pr43-screenshots
           path: preview-screenshots/*.png
           if-no-files-found: warn
           retention-days: 7
