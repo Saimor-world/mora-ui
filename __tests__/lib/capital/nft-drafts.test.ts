@@ -1,5 +1,12 @@
-/** @jest-environment node */
+import { TextEncoder } from 'util';
 import { mintReviewDraft, sellReviewDraft, xrpPriceToDrops } from '@/lib/capital/nft-drafts';
+// jsdom does not provide TextEncoder; use Node's standards-compatible implementation.
+const encoderDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'TextEncoder');
+beforeAll(() => Object.defineProperty(globalThis, 'TextEncoder', { configurable: true, value: TextEncoder }));
+afterAll(() => {
+  if (encoderDescriptor) Object.defineProperty(globalThis, 'TextEncoder', encoderDescriptor);
+  else Reflect.deleteProperty(globalThis, 'TextEncoder');
+});
 const account = 'r3q2jXeSs8JZeaaVHeNSnz52XXs4GtLidj';
 describe('unsigned NFT review drafts', () => {
   it('preserves exact drops and rejects free gifts, rounding and exponent prices', () => {
