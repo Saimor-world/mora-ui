@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - feat/os-practical-reset
+      - feat/xrpl-nft-capital-lab
   workflow_dispatch:
 
 concurrency:
@@ -99,7 +100,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: mora-ui-pr43-screenshots
+          name: mora-ui-os-screenshots
           path: preview-screenshots/*.png
           if-no-files-found: warn
           retention-days: 7
