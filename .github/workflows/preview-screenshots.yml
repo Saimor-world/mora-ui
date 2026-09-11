@@ -80,13 +80,14 @@ jobs:
             });
 
             await page.goto('http://127.0.0.1:3000/home', { waitUntil: 'domcontentloaded' });
-            await page.getByText('Vier Wege. Ein System.', { exact: true }).waitFor({ timeout: 25000 });
+            await page.locator('[data-testid="mora-dock"]').waitFor({ timeout: 25000 });
             await page.waitForTimeout(1800);
             await page.screenshot({ path: 'preview-screenshots/home.png', fullPage: true });
 
-            await page.getByText('Money that can work', { exact: true }).click();
-            await page.getByText('Treasury Wallet', { exact: true }).waitFor({ timeout: 10000 });
-            await page.waitForTimeout(900);
+            await page.locator('[data-testid="dock-cockpit"]').click();
+            await page.getByText('Capital', { exact: true }).first().click();
+            await page.getByText('Saimôr Treasury', { exact: true }).waitFor({ timeout: 15000 });
+            await page.waitForTimeout(1500);
             await page.screenshot({ path: 'preview-screenshots/capital.png', fullPage: true });
 
             await browser.close();
