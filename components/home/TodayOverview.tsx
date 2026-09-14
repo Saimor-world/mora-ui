@@ -14,13 +14,16 @@ type TodayCardProps = {
   onClick: () => void;
   unavailable?: boolean | undefined;
   attention?: boolean | undefined;
+  /** The source is not connected (or its access expired): tapping opens Integrationen. */
+  reconnect?: boolean | undefined;
+  onReconnect?: (() => void) | undefined;
 };
 
-function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, attention }: TodayCardProps) {
+function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, attention, reconnect, onReconnect }: TodayCardProps) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={reconnect && onReconnect ? onReconnect : onClick}
       className="group min-w-0 rounded-[22px] border border-white/[0.065] bg-black/[0.11] px-4 py-4 text-left backdrop-blur-xl transition-colors hover:border-emerald-100/14 hover:bg-white/[0.035]"
     >
       <div className="flex items-start justify-between gap-3">
@@ -53,10 +56,12 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
 
   switch (status) {
     case 'disconnected':
+      // Also used when a stored connection stopped working (expired Google access).
       return {
         value: 'Nicht verbunden',
-        detail: `${label} ist für diesen Kontext nicht verbunden.`,
+        detail: `${label}-Verbindung fehlt oder ist abgelaufen – antippen, um neu zu verbinden.`,
         unavailable: true,
+        reconnect: true,
       };
     case 'partial':
       return {
@@ -102,6 +107,7 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
 export function TodayOverview() {
   const openPane = usePaneStore((state) => state.openPane);
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
+  const openIntegrations = () => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } });
 
   const calendarCopy = useMemo(() => {
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
@@ -227,12 +233,14 @@ export function TodayOverview() {
           eyebrow="Kalender"
           icon={CalendarDays}
           onClick={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } })}
+          onReconnect={openIntegrations}
           {...calendarCopy}
         />
         <TodayCard
           eyebrow="Mail"
           icon={Mail}
           onClick={() => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } })}
+          onReconnect={openIntegrations}
           {...mailCopy}
         />
         <TodayCard

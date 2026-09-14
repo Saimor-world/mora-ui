@@ -29,7 +29,6 @@ import { NotificationCenter } from '@/components/os/NotificationCenter';
 import { FocusModeWidget, useFocusModeShortcut } from '@/components/os/FocusMode';
 // import { ActionTray } from '@/components/os/ActionTray';
 import { AdminModeSwitcher } from '@/components/os/AdminModeSwitcher';
-import { PlasmaOrb } from './PlasmaOrb';
 import { DockCommandDeck, type DockCommandDeckAction } from './DockCommandDeck';
 import { roleLabel } from '@/lib/auth/roles';
 import {
@@ -1702,10 +1701,16 @@ export const Dock = () => {
                                                         }}
                                                     />
                                                 )}
-                                                <PlasmaOrb
-                                                    color={viewMode === 'demo' ? '#6D28D9' : accentColor}
-                                                    state={orbState as any}
-                                                    size={40}
+                                                {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset in the always-visible dock */}
+                                                <img
+                                                    src="/brand/mora-stone-v1.png"
+                                                    alt=""
+                                                    width={40}
+                                                    height={40}
+                                                    draggable={false}
+                                                    data-orb-state={orbState}
+                                                    className="relative h-full w-full select-none pointer-events-none"
                                                 />
                                             </button>
                                         </div>

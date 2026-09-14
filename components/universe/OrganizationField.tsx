@@ -110,6 +110,12 @@ export function OrganizationField({
         [territories],
     );
 
+    // Planeten haben feste Pixelgroessen (bis 152px plus Name darunter), das
+    // Feld aber nicht: zwischen den Widget-Spalten bleiben auf einem Laptop
+    // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
+    // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
+    const [fieldScale, setFieldScale] = useState(1);
+
     useLayoutEffect(() => {
         const publish = () => {
             const node = fieldRef.current;
@@ -118,6 +124,10 @@ export function OrganizationField({
                 return;
             }
             const box = node.getBoundingClientRect();
+            if (box.width > 0 && box.height > 0) {
+                const next = Math.max(0.6, Math.min(1, box.width / 1350, box.height / 770));
+                setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
+            }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
             // nichts, und jede Schicht darueber zeichnet folgerichtig nichts -
             // statt auf einen Punkt zu kollabieren.
@@ -262,6 +272,7 @@ export function OrganizationField({
                         signals={signals.filter((signal) => signal.targetId === territory.id)}
                         lens={lens}
                         selected={territory.id === selectedId}
+                        fieldScale={fieldScale}
                         emphasis={emphasisFor({ id: territory.id, attentionId, selectedId })}
                         onSelect={onSelect}
                         onOpenMoon={onOpenMoon}
@@ -360,6 +371,7 @@ function Territory({
     signals,
     lens,
     selected,
+    fieldScale = 1,
     emphasis,
     onSelect,
     onOpenMoon,
@@ -368,12 +380,13 @@ function Territory({
     signals: UniverseSignal[];
     lens: UniverseLens;
     selected: boolean;
+    fieldScale?: number;
     emphasis: { opacity: number; scale: number };
     onSelect: (id: string | null) => void;
     onOpenMoon: (folderId: string, folderName: string) => void;
 }) {
     const accent = territory.color || '#67e8f9';
-    const size = territoryDiameter(territory);
+    const size = Math.round(territoryDiameter(territory) * fieldScale);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
     const orbitals = useMemo(

@@ -104,20 +104,23 @@ function timeGreeting(hour: number) {
   return 'Guten Abend';
 }
 
+/** MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb). */
 function PresenceOrb() {
   return (
     <div className="relative h-14 w-14 shrink-0" aria-hidden>
       <motion.div
-        className="absolute inset-0 rounded-full border border-emerald-200/16"
-        animate={{ scale: [0.93, 1.08, 0.93], opacity: [0.26, 0.65, 0.26] }}
+        className="absolute inset-[-6px] rounded-full bg-emerald-300/10 blur-md"
+        animate={{ scale: [0.94, 1.08, 0.94], opacity: [0.45, 0.8, 0.45] }}
         transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute inset-[7px] rounded-full border border-violet-200/15 bg-[radial-gradient(circle_at_38%_32%,rgba(216,180,254,.42),rgba(16,185,129,.14)_38%,rgba(4,8,18,.04)_70%)]"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 32, repeat: Infinity, ease: 'linear' }}
-      />
-      <div className="absolute inset-[20px] rounded-full bg-emerald-100/75 shadow-[0_0_24px_rgba(167,243,208,.42)]" />
+        className="absolute inset-0"
+        animate={{ scale: [1, 1.03, 1] }}
+        transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset on the home hero */}
+        <img src="/brand/mora-stone-v1.png" alt="" width={56} height={56} draggable={false} className="h-full w-full select-none drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]" />
+      </motion.div>
     </div>
   );
 }
@@ -159,12 +162,13 @@ export const HomeSurfaceUnified: React.FC = () => {
   }, []);
 
   const firstName = useMemo(() => {
-    const raw =
-      (user as any)?.name ||
-      (user as any)?.display_name ||
-      user?.email?.split('@')[0] ||
-      '';
-    return String(raw).trim().split(/\s+/)[0] || '';
+    // Only a real name is used. An email address or its local part is not a name:
+    // "Guten Tag, nextchaptergermany@gmail.com." reads like a system message.
+    const raw = String((user as any)?.name || (user as any)?.display_name || (user as any)?.full_name || '').trim();
+    if (!raw || raw.includes('@')) return '';
+    const first = raw.split(/\s+/)[0] || '';
+    const localPart = user?.email?.split('@')[0]?.toLowerCase();
+    return localPart && first.toLowerCase() === localPart ? '' : first;
   }, [user]);
 
   const greeting = now ? timeGreeting(now.getHours()) : 'Willkommen';

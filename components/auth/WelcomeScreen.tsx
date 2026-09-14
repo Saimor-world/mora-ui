@@ -881,23 +881,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     } : { duration: 0.4 }}
                                     className="absolute inset-0 w-40 h-40 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full border border-mora-gold/20"
                                 />
-                                {/* Decorative orb sphere - simpler version without full MoraOrb component */}
-                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full bg-gradient-radial from-emerald-400/30 to-emerald-600/10 blur-sm" />
+                                {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-radial from-emerald-400/30 to-emerald-600/5 blur-md" />
                                 <motion.div
-                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full"
-                                    style={{
-                                        background: 'radial-gradient(circle at 35% 25%, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0) 25%), radial-gradient(circle at 50% 50%, #10B981 0%, rgba(16,185,129,0.6) 50%, rgba(16,185,129,0.2) 80%, transparent 100%)'
-                                    }}
+                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20"
                                     animate={ambientMotionEnabled ? {
-                                        scale: [1, 1.05, 1],
-                                        opacity: [0.8, 1, 0.8]
-                                    } : { scale: 1, opacity: 0.9 }}
+                                        scale: [1, 1.04, 1],
+                                    } : { scale: 1 }}
                                     transition={ambientMotionEnabled ? {
                                         duration: 4,
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     } : { duration: 0.4 }}
-                                />
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset, loaded eagerly on the first screen */}
+                                    <img src="/brand/mora-stone-v1.png" alt="MÔRA" width={80} height={80} className="h-full w-full select-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]" draggable={false} />
+                                </motion.div>
                             </div>
 
                             {/* Title Section with Better Typography */}
