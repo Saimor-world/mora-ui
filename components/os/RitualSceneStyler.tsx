@@ -27,7 +27,7 @@ const SCENE_RGB: Record<RitualSceneId, string> = {
  * 1. Writes CSS vars to documentElement (scene-accent, aura, hex, glow, panel-bg).
  * 2. Renders a VISIBLE full-screen scene overlay for dramatic scene color changes.
  */
-export function RitualSceneStyler() {
+export function RitualSceneStyler({ muted = false }: { muted?: boolean }) {
     const scene = useActiveRitualScene();
 
     // CSS vars — consumed by any component via var(--scene-accent) etc.
@@ -50,7 +50,11 @@ export function RitualSceneStyler() {
                 key={scene.id}
                 className="ritual-scene-overlay pointer-events-none fixed inset-0 z-[11]"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                // Im Universe traegt seit 14.09. ein echtes Weltraumfoto die
+                // Farbe. Die volle Szenen-Toenung (screen-Blend, fixed, z-11)
+                // lag darueber: oben ein oranger Schein, unten links Pink, und
+                // sie wusch auch die Kacheln aus. Dort nur noch ein Hauch.
+                animate={{ opacity: muted ? 0.12 : 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.2, ease: 'easeInOut' }}
                 style={{
