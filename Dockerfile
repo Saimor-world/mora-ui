@@ -85,6 +85,11 @@ COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next ./.next
+# The server checkout can contain root-only directories (deploy.sh ran git with
+# umask 077; 14.09. public/brand crashed next start with EACCES). The app runs as
+# nextjs, so make public readable regardless of host permissions. RUN instead of
+# COPY --chmod: the server builds with the legacy builder (no BuildKit).
+RUN chmod -R a+rX ./public
 
 USER nextjs
 EXPOSE 3000
