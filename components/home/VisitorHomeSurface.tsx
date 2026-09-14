@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
 import { motion, useInView, useMotionValue, useSpring } from 'framer-motion';
 import { ArrowRight, ExternalLink, Globe2, ShieldAlert, ShieldCheck, Sparkles, Timer, UploadCloud } from 'lucide-react';
 import { submitDossierToWall } from '@/lib/api/wallClient';
@@ -73,25 +74,21 @@ function AnimatedScore({ value }: { value: number | null }) {
     return <span ref={ref} className="text-5xl font-light tabular-nums">{display}</span>;
 }
 
+/** MÔRA as the jade stone from the Saimôr sigil (same artwork as MoraOrb). */
 function MoraOrb() {
     return (
         <div className="relative flex h-14 w-14 shrink-0 items-center justify-center">
             <motion.div
-                className="absolute inset-0 rounded-full bg-violet-500/12"
-                animate={{ scale: [1, 1.55, 1], opacity: [0.6, 0, 0.6] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute inset-0 rounded-full bg-emerald-400/14"
+                animate={{ scale: [1, 1.6, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
             />
             <motion.div
-                className="absolute inset-0 rounded-full bg-emerald-400/10"
-                animate={{ scale: [1, 1.9, 1], opacity: [0.4, 0, 0.4] }}
-                transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
-            />
-            <motion.div
-                className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-violet-300/25 bg-gradient-to-br from-violet-600/40 to-emerald-600/30 backdrop-blur-sm"
-                animate={{ scale: [1, 1.05, 1] }}
-                transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative z-10 h-12 w-12"
+                animate={{ scale: [1, 1.04, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-                <Sparkles size={18} className="text-violet-200/90" />
+                <Image src="/brand/mora-stone-v1.png" alt="MÔRA" width={96} height={96} className="h-full w-full select-none" draggable={false} />
             </motion.div>
         </div>
     );
