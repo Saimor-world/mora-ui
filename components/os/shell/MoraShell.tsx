@@ -763,7 +763,7 @@ export const MoraShell: React.FC = () => {
                 z-11  RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
-            <RitualSceneStyler />
+            <RitualSceneStyler muted={isUniverseExploreSurface} />
             <ShellStaticBackdrop />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />

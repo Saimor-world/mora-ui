@@ -178,7 +178,10 @@ export function UniverseObservatory(props: Props) {
                             </span>
                             <span className="text-[8px] uppercase tracking-[0.16em] text-white/24 transition group-hover:text-white/55">Öffnen</span>
                         </div>
-                        <div className="mt-3 h-[34px] overflow-hidden rounded-xl border border-white/[0.05] bg-black/15 px-3 py-2 text-[10px] leading-relaxed text-white/42">
+                        {/* Vorher feste 34px Hoehe: "Keine belegten Vorfaelle im
+                            aktuellen Lagebild." brach um und die zweite Zeile
+                            wurde abgeschnitten. */}
+                        <div className="mt-3 line-clamp-2 rounded-xl border border-white/[0.05] bg-black/25 px-3 py-2 text-[10px] leading-relaxed text-white/50">
                             {openIncidents[0]?.title || 'Keine belegten Vorfälle im aktuellen Lagebild.'}
                         </div>
                     </button>
