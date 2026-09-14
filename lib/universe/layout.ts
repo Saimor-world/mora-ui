@@ -39,8 +39,8 @@ export const UNIVERSE_CORE_POINT = {
 
 export const universeMinPlanetSeparation = (count: number) => {
     if (count <= 4) return 14;
-    if (count <= 8) return 11;
-    if (count <= 14) return 8;
+    if (count <= 8) return 13;
+    if (count <= 14) return 11;
     return 6;
 };
 
@@ -238,11 +238,20 @@ type UniverseLayoutPoint = {
 
 
 
+// Planet-zu-Planet-Abstand in "horizontalen" Einheiten. Frueher wurde y mit
+// 1.15 gewichtet - also vertikal als LAENGER behandelt. Das Feld ist aber
+// etwa 2.2:1 breit, ein vertikales Prozent sind weniger als halb so viele
+// Pixel, und unter jedem Planeten haengen noch Name und Kennzahlen. Folge:
+// uebereinanderliegende Planeten galten als weit genug entfernt und
+// ueberlappten ("Intelligence" auf "Growth", "Product" hinter "R&D").
+// Mit 0.45 braucht ein rein vertikaler Nachbar gut den doppelten %-Abstand.
+const UNIVERSE_PAIR_Y_WEIGHT = 0.45;
+
 const universePairDistance = (a: UniverseLayoutPoint, b: UniverseLayoutPoint) => {
 
     const dx = a.x - b.x;
 
-    const dy = (a.y - b.y) * 1.15;
+    const dy = (a.y - b.y) * UNIVERSE_PAIR_Y_WEIGHT;
 
     return Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
 
@@ -315,7 +324,7 @@ const resolveUniverseCollisions = (
 
                 const dx = a.x - b.x;
 
-                const dy = (a.y - b.y) * 1.15;
+                const dy = (a.y - b.y) * UNIVERSE_PAIR_Y_WEIGHT;
 
                 const distance = Math.max(0.01, Math.sqrt(dx * dx + dy * dy));
 
@@ -331,11 +340,11 @@ const resolveUniverseCollisions = (
 
                 a.x += nx * push;
 
-                a.y += (ny * push) / 1.15;
+                a.y += (ny * push) / UNIVERSE_PAIR_Y_WEIGHT;
 
                 b.x -= nx * push;
 
-                b.y -= (ny * push) / 1.15;
+                b.y -= (ny * push) / UNIVERSE_PAIR_Y_WEIGHT;
 
                 clampUniversePoint(a);
 
@@ -429,13 +438,17 @@ export const buildOrganicUniverseLayout = (
         const signal = (metrics?.nodes || 0) + (metrics?.folders || 0) * 2 + (metrics?.spaces || 0) * 3;
         const vitality = Math.min(1, signal / maxSignal);
         const radialJitter = (((seed >>> 12) % 100) / 100) * 0.03;
-        const radiusBias = 0.40 + (1 - vitality) * 0.10 + radialJitter;
+        // Ab 8 Planeten reicht eine Bahn nicht mehr: Nachbarn wechseln
+        // zwischen innerer und aeusserer Bahn, statt sich zu beruehren.
+        const ringOffset = count > 7 ? (index % 2 === 0 ? -0.35 : 0.35) : 0;
+        const radiusBias = 0.40 + (1 - vitality) * 0.10 + radialJitter + ringOffset;
 
         // Generous orbit radius scaling so department planet nodes breathe clear of the central core
         // Scale orbit radii so planets stay within the central corridor (31% .. 69%) without hit-clamping
-        const countRadiusFactor = count <= 4 ? 1.08 : count <= 6 ? 1.0 : count <= 10 ? 0.9 : 0.78;
+        const countRadiusFactor = count <= 4 ? 1.08 : count <= 6 ? 1.04 : count <= 10 ? 1.16 : 1.24;
         const rx = (22 + radiusBias * 8) * countRadiusFactor;
-        const ry = (20 + radiusBias * 8) * countRadiusFactor;
+        // Vertikal mehr Raum nutzen: die Hoehe traegt pro Prozent weniger Pixel.
+        const ry = (27 + radiusBias * 10) * countRadiusFactor;
 
         return {
 

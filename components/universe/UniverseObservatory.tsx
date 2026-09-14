@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
-import type { CalendarPreviewItem, FeedPreviewItem, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
+import type { CalendarPreviewItem, FeedPreviewItem, LiveSourceStatus, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import type { BusinessSummary } from '@/lib/business/mrr';
@@ -13,6 +13,10 @@ interface Props {
     mail: MailPreviewItem[];
     calendar: CalendarPreviewItem[];
     feed: FeedPreviewItem[];
+    /** Whether mail/calendar actually answered - an empty list is not "ruhig" when the source failed. */
+    mailStatus?: LiveSourceStatus;
+    calendarStatus?: LiveSourceStatus;
+    onOpenIntegrations?: () => void;
     incidents: NightwatchIncidentItem[];
     business: BusinessSummary;
     substanceBars: SubstanceBar[];
@@ -132,12 +136,22 @@ export function UniverseObservatory(props: Props) {
                 <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
-                        value={props.calendar[0]?.title || 'Keine Termine im Horizont'} onClick={props.onOpenCalendar}
+                        value={props.calendarStatus === 'unavailable'
+                            ? 'Nicht erreichbar – Verbindung prüfen'
+                            : props.calendarStatus === 'loading' && !props.calendar[0]
+                                ? 'Wird geladen'
+                                : props.calendar[0]?.title || 'Keine Termine im Horizont'}
+                        onClick={props.calendarStatus === 'unavailable' && props.onOpenIntegrations ? props.onOpenIntegrations : props.onOpenCalendar}
                         drag={props.calendar[0] ? { kind: 'calendar', text: props.calendar[0].location || '' } : null}
                     />
                     <SignalRow
                         icon={<Mail size={13} />} label="Mail"
-                        value={props.mail[0]?.subject || 'Posteingang ruhig'} onClick={props.onOpenMail}
+                        value={props.mailStatus === 'unavailable'
+                            ? 'Nicht erreichbar – Verbindung prüfen'
+                            : props.mailStatus === 'loading' && !props.mail[0]
+                                ? 'Wird geladen'
+                                : props.mail[0]?.subject || 'Posteingang ruhig'}
+                        onClick={props.mailStatus === 'unavailable' && props.onOpenIntegrations ? props.onOpenIntegrations : props.onOpenMail}
                         drag={props.mail[0] ? { kind: 'mail', text: props.mail[0].snippet || '' } : null}
                     />
                     <SignalRow

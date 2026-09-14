@@ -139,12 +139,24 @@ function toIsoDate(value: Date) {
     return value.toISOString().slice(0, 10);
 }
 
-export function useCommunicationLiveData(autoLoad: boolean = true): CommunicationLiveData {
+/**
+ * Whether a source actually answered. An empty list alone cannot tell "nothing new"
+ * from "the connection failed" - on 14.09. an expired Google grant made the Universe
+ * show "Posteingang ruhig" while mail could not be read at all.
+ */
+export type LiveSourceStatus = 'idle' | 'loading' | 'ok' | 'unavailable';
+
+export function useCommunicationLiveData(autoLoad: boolean = true): CommunicationLiveData & {
+    mailStatus: LiveSourceStatus;
+    calendarStatus: LiveSourceStatus;
+} {
     const activeCompanyId = useNavStore((state) => state.activeCompanyId);
     const [mailPreview, setMailPreview] = useState<MailPreviewItem[]>([]);
     const [calendarPreview, setCalendarPreview] = useState<CalendarPreviewItem[]>([]);
     const [feedPreview, setFeedPreview] = useState<FeedPreviewItem[]>([]);
     const [cloudPreview, setCloudPreview] = useState<CloudPreviewItem[]>([]);
+    const [mailStatus, setMailStatus] = useState<LiveSourceStatus>(autoLoad ? 'loading' : 'idle');
+    const [calendarStatus, setCalendarStatus] = useState<LiveSourceStatus>(autoLoad ? 'loading' : 'idle');
     const [isLoading, setIsLoading] = useState(autoLoad);
     const hasLoadedRef = useRef(false);
     const inFlightRef = useRef<Promise<void> | null>(null);
@@ -160,7 +172,11 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
         setCalendarPreview([]);
         setFeedPreview([]);
         setCloudPreview([]);
-        if (autoLoad) setIsLoading(true);
+        if (autoLoad) {
+            setIsLoading(true);
+            setMailStatus('loading');
+            setCalendarStatus('loading');
+        }
     }, [activeCompanyId, autoLoad]);
 
     const refreshData = useCallback(async (options?: { background?: boolean }) => {
@@ -207,6 +223,10 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
                 const feedItems = normalizeList<any>(feedData, ["items", "feeds", "data"]);
 
                 if (scopeVersion !== scopeVersionRef.current) return;
+
+                // coreGet(isOptional) returns null when the source failed - that is not an empty inbox.
+                setMailStatus(mailData == null ? 'unavailable' : 'ok');
+                setCalendarStatus(calendarData == null ? 'unavailable' : 'ok');
 
                 setMailPreview(
                     mailItems.slice(0, 3).map((item: any) => ({
@@ -344,9 +364,11 @@ export function useCommunicationLiveData(autoLoad: boolean = true): Communicatio
             calendarPreview,
             feedPreview,
             cloudPreview,
+            mailStatus,
+            calendarStatus,
             isLoading,
             refresh,
         }),
-        [calendarPreview, cloudPreview, feedPreview, isLoading, mailPreview, refresh]
+        [calendarPreview, calendarStatus, cloudPreview, feedPreview, isLoading, mailPreview, mailStatus, refresh]
     );
 }

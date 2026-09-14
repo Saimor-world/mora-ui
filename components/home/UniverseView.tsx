@@ -100,7 +100,7 @@ export default function UniverseView() {
     const [folderMoons, setFolderMoons] = useState<Record<string, { id: string; name: string; documents?: number; updatedAt?: string | null }[]>>({});
     const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
-    const { mailPreview, calendarPreview, feedPreview } = useCommunicationLiveData();
+    const { mailPreview, calendarPreview, feedPreview, mailStatus, calendarStatus } = useCommunicationLiveData();
 
     useEffect(() => {
         if (!effectiveCompanyId) {
@@ -505,6 +505,9 @@ export default function UniverseView() {
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}
+                mailStatus={mailStatus}
+                calendarStatus={calendarStatus}
+                onOpenIntegrations={() => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } })}
                 incidents={nightwatchIncidents}
                 business={business}
                 substanceBars={substanceBars}
