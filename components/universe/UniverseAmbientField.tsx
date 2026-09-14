@@ -42,20 +42,36 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 anfuehlte. Deshalb hier weder das eine noch das andere: dunkel
                 genug, dass Farbe wieder traegt, durchlaessig genug, dass
                 Sterne, Aurora und Tageszeit sichtbar bleiben. */}
-            <div className="absolute inset-0 bg-[#050a12]/55" />
+            {/* Marius 14.09.: "echtes Universum als Grundlage, in den warmen
+                Farben". Ein echtes Weltraumfoto (Bernstein/Kupfer, Jade-Tuerkis,
+                dunkle ruhige Mitte) traegt jetzt das Feld. Es treibt kaum
+                merklich, damit der Raum lebt, ohne abzulenken. Fehlt die Datei,
+                bleibt einfach der geteilte Shell-Hintergrund sichtbar. */}
+            <motion.div
+                className="absolute -inset-[3%] bg-cover bg-center"
+                style={{ backgroundImage: 'url(/universe/deep-space-warm.jpg)' }}
+                animate={reducedMotion ? undefined : { scale: [1, 1.035, 1], x: [0, -14, 0], y: [0, 8, 0] }}
+                transition={{ duration: 90, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {/* Lesbarkeit: Mitte und Raender leicht abdunkeln, damit Planeten,
+                Namen und Kacheln tragen - das Foto bleibt an den Nebeln sichtbar. */}
+            <div
+                className="absolute inset-0"
+                style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(3,6,10,0.42) 0%, rgba(3,6,10,0.18) 55%, rgba(3,6,10,0.5) 100%)' }}
+            />
             <motion.div
                 className="absolute inset-0"
                 animate={{
                     background: lens === 'relations'
-                        ? 'radial-gradient(ellipse at 58% 42%, rgba(139,92,246,0.16), transparent 46%), radial-gradient(ellipse at 18% 78%, rgba(6,182,212,0.12), transparent 50%)'
-                        : 'radial-gradient(ellipse at 48% 38%, rgba(56,189,248,0.15), transparent 50%), radial-gradient(ellipse at 18% 82%, rgba(251,191,36,0.10), transparent 48%)',
+                        ? 'radial-gradient(ellipse at 58% 42%, rgba(45,212,191,0.10), transparent 46%), radial-gradient(ellipse at 18% 78%, rgba(217,119,6,0.10), transparent 50%)'
+                        : 'radial-gradient(ellipse at 48% 40%, rgba(251,191,36,0.07), transparent 50%), radial-gradient(ellipse at 82% 18%, rgba(45,212,191,0.07), transparent 48%)',
                 }}
                 transition={{ duration: 1.4, ease: 'easeInOut' }}
             />
 
             <motion.div
                 className="absolute left-[12%] top-[14%] h-[54vw] max-h-[720px] w-[54vw] max-w-[900px] rounded-full blur-[100px]"
-                style={{ background: 'radial-gradient(circle,rgba(56,189,248,0.1),rgba(45,60,125,0.04) 44%,transparent 72%)' }}
+                style={{ background: 'radial-gradient(circle,rgba(45,212,191,0.06),rgba(20,83,77,0.03) 44%,transparent 72%)' }}
                 animate={reducedMotion ? undefined : { x: [0, 34, -12, 0], y: [0, -24, 18, 0], scale: [1, 1.06, 0.98, 1] }}
                 transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
             />
