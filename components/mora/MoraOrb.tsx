@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PlasmaOrb } from './PlasmaOrb';
 
 interface MoraOrbProps {
     role?: 'admin' | 'member' | 'manager';
@@ -19,22 +19,17 @@ interface MoraOrbProps {
 }
 
 /**
- * THE ORB (V12) — MÔRA is the jade stone from the Saimôr sigil.
+ * THE ORB (V11) — unified Glas + Plasma-Herz
  *
- * Decided 2026-09-14: MÔRA is shown as the exact stone cut from the approved brand
- * artwork (public/brand/mora-stone-v1.png), the same image as on saimor.world. The
- * stone is never redrawn; state only changes the light around it (colour, breath,
- * resonance ring). Replaces the plasma heart (PlasmaOrb) of V11.
+ * The single canonical orb. One luminous body: a liquid-morphing glass hub
+ * breathing in sync with its PlasmaOrb heart, both driven by one state→colour
+ * palette. Replaces the old 3D/WebGL LiquidOrb (removed) — the liquid feel now
+ * lives in the 2D hub morph, so no WebGL cost and no preview crash.
  */
-const SIZE_CLASSES: Record<NonNullable<MoraOrbProps['size']>, { wrapper: string; stone: number }> = {
-    sm: { wrapper: 'w-[80px] h-[80px]', stone: 64 },
-    md: { wrapper: 'w-[140px] h-[140px]', stone: 112 },
-    lg: { wrapper: 'w-[220px] h-[220px]', stone: 176 },
-};
-
-const STATE_LABELS: Record<string, string> = {
-    idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm',
-    insight: 'Erkenntnis', demo: 'Demo', curious: 'Neugierig', learning: 'Lernt', watching: 'Beobachtet', listening: 'Hört zu',
+const SIZE_CLASSES: Record<NonNullable<MoraOrbProps['size']>, { wrapper: string; hub: string; plasma: number }> = {
+    sm: { wrapper: 'w-[80px] h-[80px]',  hub: 'w-16 h-16', plasma: 66 },
+    md: { wrapper: 'w-[140px] h-[140px]', hub: 'w-28 h-28', plasma: 116 },
+    lg: { wrapper: 'w-[220px] h-[220px]', hub: 'w-44 h-44', plasma: 182 },
 };
 
 export function MoraOrb({
@@ -50,6 +45,7 @@ export function MoraOrb({
     onCursorSpawn
 }: MoraOrbProps) {
     const [mounted, setMounted] = useState(false);
+    const [activeSparks, setActiveSparks] = useState<any[]>([]);
     const orbRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -58,7 +54,8 @@ export function MoraOrb({
     }, []);
 
     const getStateParams = () => {
-        // Jade is MÔRA's own colour; states tint only the light around the stone.
+        // Use custom accentColor if provided (e.g. from company branding)
+        // while maintaining the characteristic glow for specific states.
         const baseColor = accentColor || '#10B981';
 
         switch (state) {
@@ -82,7 +79,8 @@ export function MoraOrb({
         }
     };
 
-    const { color, glowIntensity, pulse } = getStateParams();
+    const params = getStateParams();
+    const { color, glowIntensity, pulse } = params;
     const sz = SIZE_CLASSES[size ?? 'md'];
 
     if (!mounted) return null;
@@ -91,59 +89,54 @@ export function MoraOrb({
         <div
             className={`relative select-none pointer-events-auto ${sz.wrapper} flex items-center justify-center`}
             ref={orbRef}
-            data-mora-state={state}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
-            {/* Soft presence field around the stone. */}
+            {/* Soft presence field. Keep it atmospheric, not a second orb body. */}
             <motion.div
-                className="absolute inset-[-30%] rounded-full mix-blend-screen pointer-events-none"
+                className="absolute inset-[-38%] rounded-full mix-blend-screen pointer-events-none"
                 style={{
-                    background: `radial-gradient(circle, ${color}40 0%, ${color}14 36%, transparent 66%)`,
-                    filter: 'blur(28px)',
+                    background: `radial-gradient(circle, ${color}30 0%, ${color}12 34%, transparent 68%)`,
+                    filter: 'blur(54px)',
                 }}
                 animate={isHovered
-                    ? { opacity: 0.55, scale: 1.08 }
-                    : { opacity: [0.28, 0.48, 0.28], scale: [1, 1.04, 1] }}
+                    ? { opacity: 0.22, scale: 1.08 }
+                    : { opacity: [0.08, 0.15, 0.08], scale: [1, 1.035, 1] }}
                 transition={isHovered
                     ? { duration: 0.18, ease: 'easeOut' }
-                    : { duration: pulse * 1.8, repeat: Infinity, ease: 'easeInOut' }}
+                    : { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' }}
             />
 
-            {/* THE STONE — exact brand artwork, gently breathing. */}
-            <motion.div
-                className="relative flex items-center justify-center rounded-full cursor-pointer"
+            {/* V10 STEAM DECK GLASS BORDER - THE HUB */}
+                <motion.div
+                    className={`relative ${sz.hub} flex items-center justify-center overflow-hidden cursor-pointer`}
                 style={{
-                    width: sz.stone,
-                    height: sz.stone,
-                    boxShadow: `0 18px 54px rgba(0,0,0,0.38), 0 0 ${glowIntensity}px ${color}40`,
+                        background: 'transparent',
+                        boxShadow: `0 18px 54px rgba(0,0,0,0.34), 0 0 46px ${color}32`,
                 }}
-                animate={{ scale: [1, 1.022, 1] }}
-                transition={{ duration: pulse * 1.6, repeat: Infinity, ease: 'easeInOut' }}
-                whileHover={{ scale: 1.06, boxShadow: `0 20px 70px rgba(0,0,0,0.6), 0 0 ${glowIntensity + 26}px ${color}80` }}
-                whileTap={{ scale: 0.96 }}
+                animate={{
+                    borderRadius: [
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                        '53% 47% 52% 48% / 47% 53% 49% 51%',
+                        '47% 53% 48% 52% / 52% 48% 53% 47%',
+                        '50% 50% 53% 47% / 48% 52% 47% 53%',
+                        '48% 52% 50% 50% / 52% 48% 50% 50%',
+                    ],
+                }}
+                transition={{ borderRadius: { duration: pulse * 2.2, repeat: Infinity, ease: 'easeInOut' } }}
+                whileHover={{ scale: 1.1, boxShadow: `0 20px 80px rgba(0,0,0,0.9), 0 0 70px ${color}90, inset 0 0 40px ${color}40` }}
+                whileTap={{ scale: 0.95 }}
             >
-                <Image
-                    src="/brand/mora-stone-v1.png"
-                    alt="MÔRA"
-                    width={504}
-                    height={504}
-                    sizes={`${sz.stone}px`}
-                    priority={size === 'lg'}
-                    draggable={false}
-                    className="h-full w-full select-none pointer-events-none"
-                />
-
-                {/* State tint inside the gold ring (not for idle - pure jade). */}
-                {state !== 'idle' && (
-                    <motion.div
-                        className="absolute inset-[9%] rounded-full pointer-events-none mix-blend-soft-light"
-                        style={{ backgroundColor: color }}
-                        animate={{ opacity: [0.18, 0.32, 0.18] }}
-                        transition={{ duration: pulse * 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                {/* PLASMA CONTENT — MORA'S HEART. Fills + centred; the hub's
+                    overflow-hidden + morphing borderRadius clip it into the liquid blob. */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-100 saturate-[1.24] contrast-[1.06]">
+                    <PlasmaOrb
+                        color={color}
+                        state={state as any}
+                        size={sz.plasma}
                     />
-                )}
+                </div>
 
                 {/* Hover Focus Ring */}
                 <AnimatePresence>
@@ -169,7 +162,7 @@ export function MoraOrb({
                         >
                             <div className="px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-xl border border-white/10 text-[9px] tracking-[0.3em] uppercase font-bold text-white shadow-2xl flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
-                                Mora: {STATE_LABELS[state ?? ''] || state}
+                                Mora: {{ idle: 'Bereit', thinking: 'Denkt nach', watch: 'Beobachtet', focus: 'Fokussiert', alert: 'Alarm', insight: 'Erkenntnis', demo: 'Demo', curious: 'Neugierig', learning: 'Lernt', watching: 'Beobachtet', listening: 'Hört zu' }[state ?? ''] || state}
                             </div>
                         </motion.div>
                     )}
@@ -178,13 +171,32 @@ export function MoraOrb({
                 {/* Company Logo Overlay */}
                 {companyLogo && (
                     <motion.div
-                        className="absolute z-20 w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]"
+                        className="relative z-20 w-12 h-12 rounded-full flex items-center justify-center bg-black/50 backdrop-blur-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)]"
                         style={{ borderBottomColor: `${color}40` }}
                     >
                         {/* eslint-disable-next-line @next/next/no-img-element -- company logos can come from arbitrary upload URLs */}
                         <img src={companyLogo} alt="Logo" className="w-7 h-7 object-contain opacity-90" />
                     </motion.div>
                 )}
+
+                {/* GLASS SHEEN — crisp top-left glint (the "Glas" in Glas + Plasma-Herz) */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'radial-gradient(38% 30% at 36% 30%, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.045) 28%, transparent 54%)',
+                        mixBlendMode: 'screen',
+                        opacity: 0.55,
+                    }}
+                />
+                {/* DEPTH — soft inner shadow lower-right gives the body sphere volume */}
+                <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        background: 'radial-gradient(62% 62% at 70% 76%, rgba(0,0,0,0.22) 0%, rgba(0,0,0,0.05) 34%, transparent 58%)',
+                        mixBlendMode: 'multiply',
+                        opacity: 0.42,
+                    }}
+                />
             </motion.div>
 
             {/* RESONANCE STATE RINGS */}
