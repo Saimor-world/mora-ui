@@ -24,13 +24,10 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            set -euo pipefail
-            sudo bash -lc '
-              set -euo pipefail
-              cd /root/saimor/ops
-              bash deploy-ui.sh
-            '
+          # This key is restricted on the server to a forced command
+          # (saimor-deploy-ui-gate, saimor-ops). The server ignores any script; the gate
+          # only accepts this one line, runs the UI deploy and fails unless it was recorded.
+          script: deploy ui
 
       - name: Confirm
         run: echo "UI deployed at $(date -u)"
