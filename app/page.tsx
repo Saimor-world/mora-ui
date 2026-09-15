@@ -28,7 +28,7 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                         Môra öffnet den Raum
                     </div>
                     <p className="mt-2 text-xs leading-relaxed text-emerald-100/55">
-                        Sitzung wird geprüft — kein lokaler Core, kein verborgenes Demo. Der Einstieg erscheint gleich.
+                        Deine Sitzung wird geprüft. Gleich kannst du dich anmelden oder deinen Arbeitsraum öffnen.
                     </p>
                 </div>
                 {delayed && (
@@ -41,7 +41,7 @@ function EntryLoading({ delayed = false }: { delayed?: boolean }) {
                         Neu laden
                     </button>
                     <p className="text-[11px] leading-relaxed text-emerald-100/40">
-                        Das dauert ungewöhnlich lange. Kein lokaler Core hinter dieser Seite.
+                        Die Verbindung dauert länger als erwartet. Lade die Seite erneut, wenn der Einstieg nicht erscheint.
                     </p>
                     </>
                 )}
@@ -159,4 +159,3 @@ export default function RootPage() {
         </Suspense>
     );
 }
-
