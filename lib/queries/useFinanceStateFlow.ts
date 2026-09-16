@@ -111,9 +111,29 @@ export function useFinanceRecords(companyId?: string | null, limit = 50, enabled
   });
 }
 
-export function financeRecordItems(payload: FinanceRecordList | FinanceRecord[] | null | undefined): FinanceRecord[] {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.items)) return payload.items;
-  if (Array.isArray(payload?.records)) return payload.records;
-  return [];
+export function isCompanyFinanceScope(
+  scope: { company_id?: string | null; owner_kind?: string | null } | null | undefined,
+  companyId?: string | null,
+): boolean {
+  if (!scope || scope.owner_kind !== 'company') return false;
+  return companyId ? scope.company_id === companyId : Boolean(scope.company_id);
+}
+
+export function financeMoneyTruth(value: FinanceMoney | null | undefined): FinanceMoney | null {
+  return value ?? null;
+}
+
+export function financeRecordItems(
+  payload: FinanceRecordList | FinanceRecord[] | null | undefined,
+  companyId?: string | null,
+): FinanceRecord[] {
+  const items = Array.isArray(payload)
+    ? payload
+    : Array.isArray(payload?.items)
+      ? payload.items
+      : Array.isArray(payload?.records)
+        ? payload.records
+        : [];
+
+  return items.filter((record) => isCompanyFinanceScope(record?.scope, companyId));
 }
