@@ -32,11 +32,6 @@ function AppSkeleton() {
 const WorkApp = dynamic(() => import('@/apps/work'), { ssr: false, loading: () => <AppSkeleton /> });
 const AppsLibrary = dynamic(() => import('@/apps/apps'), { ssr: false, loading: () => <AppSkeleton /> });
 
-/**
- * Compatibility bridge while the old Dock still emits apps-main/"Arbeit".
- * This lets the visible OS migrate first without a risky rewrite of the giant Dock.
- * Explicit tool-library opens keep rendering the real app library.
- */
 function LegacyAppsBridge(props: AppProps) {
   const paneTitle = usePaneStore((s) => s.getPane(props.paneId)?.title);
   return paneTitle === 'Arbeit' ? <WorkApp {...props} /> : <AppsLibrary {...props} />;
@@ -70,7 +65,7 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   mail:            dynamic(() => import('@/apps/mail'),          { ssr: false, loading: () => <AppSkeleton /> }),
   feeds:           dynamic(() => import('@/apps/feeds'),         { ssr: false, loading: () => <AppSkeleton /> }),
   'website-dossier': dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
-  finance:         dynamic(() => import('@/apps/finance'),       { ssr: false, loading: () => <AppSkeleton /> }),
+  finance:         dynamic(() => import('@/apps/finance-v2'),    { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
