@@ -10,7 +10,7 @@ export type FinanceMoney = {
 
 export type FinanceEvidence = {
   id?: string;
-  source_kind: 'manual' | 'provider' | 'on_ledger' | string;
+  source_kind?: 'manual' | 'provider' | 'on_ledger' | string;
   reference: string;
   label?: string | null;
   observed_at?: string | null;
@@ -22,35 +22,43 @@ export type FinanceAccountState = {
   display_name: string;
   account_type?: string | null;
   currency: string;
+  status?: string | null;
   source_kind?: string | null;
-  truth_state: string;
+  truth_state: 'observed' | 'missing_observation' | string;
   observed_balance: FinanceMoney | null;
   projected_balance: FinanceMoney | null;
-  observation?: {
-    as_of?: string | null;
-    coverage?: string | null;
-    freshness?: string | null;
-    evidence?: FinanceEvidence | null;
-  } | null;
+  movement_after_observation?: FinanceMoney | null;
+  as_of?: string | null;
+  freshness?: string | null;
+  coverage?: string | null;
+  evidence?: FinanceEvidence | null;
 };
 
 export type FinanceCurrencyState = {
   currency: string;
-  coverage: string;
+  coverage: 'complete' | 'partial' | 'unknown' | string;
+  included_accounts?: number;
+  omitted_accounts?: number;
   observed_total: FinanceMoney | null;
   projected_total: FinanceMoney | null;
+  aggregate_is_partial?: boolean;
+};
+
+export type FinanceScope = {
+  tenant_id: string;
+  company_id: string;
+  owner_kind: 'company';
 };
 
 export type FinanceState = {
-  scope: {
-    tenant_id: string;
-    company_id: string;
-    owner_kind: 'company';
-  };
-  truth_state: string;
+  scope: FinanceScope;
+  as_of?: string | null;
+  truth_state: 'missing' | 'partial' | 'observed' | string;
   accounts: FinanceAccountState[];
   currency_states: FinanceCurrencyState[];
+  recent_records?: FinanceRecord[];
   warnings: string[];
+  notes?: string[];
 };
 
 export type FinancePosting = {
@@ -63,7 +71,7 @@ export type FinancePosting = {
 
 export type FinanceRecord = {
   id: string;
-  scope: FinanceState['scope'];
+  scope: FinanceScope;
   classification: string;
   founder_treatment?: string | null;
   effective_at?: string | null;
@@ -78,7 +86,7 @@ export type FinanceRecord = {
 };
 
 export type FinanceRecordList = {
-  items?: FinanceRecord[];
+  scope?: FinanceScope;
   records?: FinanceRecord[];
   next_cursor?: string | null;
 };
@@ -98,13 +106,13 @@ export function useFinanceState(companyId?: string | null, enabled = true) {
 }
 
 export function useFinanceRecords(companyId?: string | null, limit = 50, enabled = true) {
-  return useQuery<FinanceRecordList | FinanceRecord[] | null>({
+  return useQuery<FinanceRecordList | null>({
     queryKey: queryKeys.financeRecords(companyId, limit),
     queryFn: () =>
       coreGet(`/v3/finance/records?company_id=${encodeURIComponent(companyId || '')}&limit=${limit}`, {
         isOptional: true,
         throwAuthErrors: true,
-      }) as Promise<FinanceRecordList | FinanceRecord[] | null>,
+      }) as Promise<FinanceRecordList | null>,
     enabled: Boolean(companyId && enabled),
     staleTime: STALE_TIMES.financeRecords,
     refetchOnWindowFocus: true,
@@ -123,17 +131,18 @@ export function financeMoneyTruth(value: FinanceMoney | null | undefined): Finan
   return value ?? null;
 }
 
+export function financeStateTruth(
+  state: FinanceState | null | undefined,
+  companyId?: string | null,
+): FinanceState | null {
+  if (!state || !isCompanyFinanceScope(state.scope, companyId)) return null;
+  return state;
+}
+
 export function financeRecordItems(
-  payload: FinanceRecordList | FinanceRecord[] | null | undefined,
+  payload: FinanceRecordList | null | undefined,
   companyId?: string | null,
 ): FinanceRecord[] {
-  const items = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload?.items)
-      ? payload.items
-      : Array.isArray(payload?.records)
-        ? payload.records
-        : [];
-
+  const items = Array.isArray(payload?.records) ? payload.records : [];
   return items.filter((record) => isCompanyFinanceScope(record?.scope, companyId));
 }
