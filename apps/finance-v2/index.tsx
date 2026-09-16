@@ -5,6 +5,7 @@ import { Activity, ArrowRight, Building2, CircleAlert, Landmark, ReceiptText, Sh
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import {
   financeRecordItems,
@@ -18,14 +19,18 @@ type Section = 'state' | 'flow' | 'treasury' | 'capital';
 
 function money(value: FinanceMoney | null | undefined) {
   if (!value) return '—';
-  const numeric = Number(value.value);
-  if (!Number.isFinite(numeric)) return `${value.value} ${value.currency}`;
-  return new Intl.NumberFormat('de-DE', {
-    style: 'currency',
-    currency: value.currency || 'EUR',
-    minimumFractionDigits: Math.min(value.scale ?? 2, 6),
-    maximumFractionDigits: Math.min(value.scale ?? 2, 6),
-  }).format(numeric);
+  const raw = value.value.trim();
+  const negative = raw.startsWith('-');
+  const unsigned = negative ? raw.slice(1) : raw;
+  if (!/^\d+(\.\d+)?$/.test(unsigned)) return `${value.value} ${value.currency}`;
+
+  const [wholeRaw, fractionRaw = ''] = unsigned.split('.');
+  const whole = wholeRaw.replace(/^0+(?=\d)/, '') || '0';
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const fraction = fractionRaw.padEnd(value.scale, '0').slice(0, value.scale);
+  const symbol = value.currency === 'EUR' ? '€' : value.currency;
+  const decimal = value.scale > 0 ? `,${fraction}` : '';
+  return `${negative ? '-' : ''}${grouped}${decimal} ${symbol}`;
 }
 
 function labelForClassification(value: string) {
@@ -51,8 +56,8 @@ function companyId(company: any): string | null {
 }
 
 function StateBadge({ state }: { state: string }) {
-  const good = ['complete', 'current', 'verified'].includes(state);
-  const warn = ['partial', 'stale', 'missing_observation', 'unknown'].includes(state);
+  const good = ['complete', 'current', 'verified', 'observed'].includes(state);
+  const warn = ['partial', 'stale', 'missing_observation', 'missing', 'unknown'].includes(state);
   return (
     <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.16em] ${
       good
@@ -114,16 +119,26 @@ export default function FinanceV2App({ paneId }: AppProps) {
   const focusPane = usePaneStore((state) => state.focusPane);
   const updatePanePosition = usePaneStore((state) => state.updatePanePosition);
   const updatePaneSize = usePaneStore((state) => state.updatePaneSize);
+  const activeCompanyId = useSessionStore((state) => state.user?.active_company_id || null);
+  const activeCompanyName = useSessionStore((state) => state.user?.active_company_name || null);
   const [section, setSection] = useState<Section>('state');
 
   const companiesQuery = useCompanies({ includeDemo: false });
   const companies = Array.isArray(companiesQuery.data) ? companiesQuery.data : [];
-  const company = companies[0] || null;
-  const selectedCompanyId = companyId(company);
+  const singleCompanyId = companies.length === 1 ? companyId(companies[0]) : null;
+  const selectedCompanyId = activeCompanyId || singleCompanyId;
+  const company = selectedCompanyId
+    ? companies.find((candidate) => companyId(candidate) === selectedCompanyId) || null
+    : null;
+  const resolvedCompanyName = company ? companyName(company) : activeCompanyName || null;
+  const scopeSource = activeCompanyId ? 'active company' : singleCompanyId ? 'single-company fallback' : 'unresolved';
 
   const stateQuery = useFinanceState(selectedCompanyId, Boolean(selectedCompanyId));
   const recordsQuery = useFinanceRecords(selectedCompanyId, 50, Boolean(selectedCompanyId));
-  const records = useMemo(() => financeRecordItems(recordsQuery.data), [recordsQuery.data]);
+  const records = useMemo(
+    () => financeRecordItems(recordsQuery.data, selectedCompanyId),
+    [recordsQuery.data, selectedCompanyId],
+  );
   const state = stateQuery.data;
 
   if (!pane) return null;
@@ -136,7 +151,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
   ];
 
   const primaryCurrency = state?.currency_states?.[0] || null;
-  const hasVerifiedState = Boolean(state && state.accounts?.length > 0);
+  const hasVerifiedState = Boolean(state && state.accounts?.some((account) => account.truth_state === 'observed'));
 
   return (
     <GlassPanel
@@ -172,16 +187,17 @@ export default function FinanceV2App({ paneId }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-100/42">
-                <Building2 size={11} /> {company ? companyName(company) : 'Company scope unresolved'}
+                <Building2 size={11} /> {resolvedCompanyName || 'Company scope unresolved'}
               </div>
               <h1 className="mt-3 text-[30px] font-medium tracking-[-0.05em] text-white/92">Financial State</h1>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/34">
                 Belegte Unternehmenswahrheit aus CORE. Fehlende Daten bleiben unbekannt; persönliche Vermögenswerte erscheinen hier nicht.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {state?.truth_state && <StateBadge state={state.truth_state} />}
               <span className="rounded-full border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/34">company only</span>
+              <span className="rounded-full border border-white/[0.07] bg-white/[0.018] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/24">{scopeSource}</span>
             </div>
           </div>
 
@@ -206,8 +222,8 @@ export default function FinanceV2App({ paneId }: AppProps) {
         <div className="min-h-0 flex-1 overflow-y-auto py-5 pr-1">
           {!selectedCompanyId && (
             <TruthEmpty
-              title="Kein Unternehmenskontext belegt"
-              copy="Finance zeigt erst dann Zahlen, wenn CORE eine autorisierte Company liefert. Es wird kein privater oder Demo-Kontext eingesetzt."
+              title="Kein eindeutiger Unternehmenskontext"
+              copy="Finance nutzt die aktive Company aus der Session. Nur bei genau einer autorisierten Company ist ein Single-Company-Fallback erlaubt. Bei mehreren Firmen ohne aktiven Scope werden keine Finanzdaten geladen."
             />
           )}
 
@@ -272,6 +288,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
                           <StateBadge state={account.truth_state} />
                         </div>
                         <div className="mt-1 text-[10px] text-white/28">{account.account_type || 'account'} · {account.source_kind || 'source unknown'}</div>
+                        <div className="mt-1 text-[9px] text-white/20">{account.as_of ? `as of ${new Date(account.as_of).toLocaleString('de-DE')}` : 'no observed checkpoint'}</div>
                       </div>
                       <div className="text-left md:text-right">
                         <div className="text-sm tabular-nums text-white/80">{money(account.observed_balance)}</div>
@@ -306,7 +323,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
               <section className="rounded-[30px] border border-white/[0.07] bg-black/14 p-6">
                 <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Treasury</div>
                 <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Cash truth before runway theatre.</h2>
-                <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">Treasury zeigt zunächst belegte Konten, Observations und Commitments. Runway wird erst berechnet, wenn wiederkehrende Kosten und Reserve-Regeln als Company-Truth vorliegen.</p>
+                <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">Treasury zeigt zunächst belegte Konten und Observations. Runway wird erst berechnet, wenn wiederkehrende Kosten, Commitments und Reserve-Regeln als Company-Truth vorliegen.</p>
               </section>
             ) : (
               <TruthEmpty title="Treasury wartet auf belegte Konten" copy="Runway und Reserve werden nicht aus Schätzungen erfunden. Erst ein bestätigter Company-State aktiviert diese Ebene." />
