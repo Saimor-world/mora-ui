@@ -1,8 +1,10 @@
 import {
   financeMoneyTruth,
   financeRecordItems,
+  financeStateTruth,
   isCompanyFinanceScope,
   type FinanceRecord,
+  type FinanceState,
 } from '@/lib/queries/useFinanceStateFlow';
 
 const companyRecord: FinanceRecord = {
@@ -18,6 +20,37 @@ const companyRecord: FinanceRecord = {
     label: 'Founder transfer receipt',
   },
   postings: [],
+};
+
+const companyState: FinanceState = {
+  scope: { tenant_id: 'tenant-1', company_id: 'company-1', owner_kind: 'company' },
+  truth_state: 'partial',
+  accounts: [
+    {
+      id: 'account-1',
+      display_name: 'Manual company cash',
+      currency: 'EUR',
+      truth_state: 'observed',
+      observed_balance: { value: '123.45', currency: 'EUR', scale: 2 },
+      projected_balance: { value: '123.45', currency: 'EUR', scale: 2 },
+      as_of: '2026-09-16T10:00:00Z',
+      coverage: 'complete',
+      freshness: 'current',
+      evidence: { id: 'evidence-1', reference: 'receipt-001', label: 'Opening balance receipt' },
+    },
+  ],
+  currency_states: [
+    {
+      currency: 'EUR',
+      coverage: 'complete',
+      included_accounts: 1,
+      omitted_accounts: 0,
+      observed_total: { value: '123.45', currency: 'EUR', scale: 2 },
+      projected_total: { value: '123.45', currency: 'EUR', scale: 2 },
+      aggregate_is_partial: false,
+    },
+  ],
+  warnings: [],
 };
 
 describe('Finance company truth helpers', () => {
@@ -39,22 +72,35 @@ describe('Finance company truth helpers', () => {
     expect(isCompanyFinanceScope(null)).toBe(false);
   });
 
+  it('rejects state for the wrong company and preserves exact backend account truth fields', () => {
+    expect(financeStateTruth(companyState, 'company-2')).toBeNull();
+    const state = financeStateTruth(companyState, 'company-1');
+    expect(state?.accounts[0].as_of).toBe('2026-09-16T10:00:00Z');
+    expect(state?.accounts[0].coverage).toBe('complete');
+    expect(state?.accounts[0].evidence?.reference).toBe('receipt-001');
+    expect(state?.currency_states[0].aggregate_is_partial).toBe(false);
+  });
+
   it('filters personal/cross-company records while preserving classification and evidence', () => {
-    const payload = [
-      companyRecord,
-      {
-        ...companyRecord,
-        id: 'record-personal',
-        scope: { ...companyRecord.scope, owner_kind: 'personal' },
-        classification: 'customer_receipt',
-      } as unknown as FinanceRecord,
-      {
-        ...companyRecord,
-        id: 'record-other-company',
-        scope: { ...companyRecord.scope, company_id: 'company-2' },
-        classification: 'operating_expense',
-      },
-    ];
+    const payload = {
+      scope: companyRecord.scope,
+      records: [
+        companyRecord,
+        {
+          ...companyRecord,
+          id: 'record-personal',
+          scope: { ...companyRecord.scope, owner_kind: 'personal' },
+          classification: 'customer_receipt',
+        } as unknown as FinanceRecord,
+        {
+          ...companyRecord,
+          id: 'record-other-company',
+          scope: { ...companyRecord.scope, company_id: 'company-2' },
+          classification: 'operating_expense',
+        },
+      ],
+      next_cursor: null,
+    };
 
     const items = financeRecordItems(payload, 'company-1');
 
@@ -73,7 +119,10 @@ describe('Finance company truth helpers', () => {
       evidence: { source_kind: 'provider', reference: 'bank-event-123' },
     };
 
-    const [record] = financeRecordItems({ items: [customerReceipt] }, 'company-1');
+    const [record] = financeRecordItems(
+      { scope: companyRecord.scope, records: [customerReceipt], next_cursor: null },
+      'company-1',
+    );
     expect(record.classification).toBe('customer_receipt');
     expect(record.founder_treatment).toBeNull();
     expect(record.evidence?.source_kind).toBe('provider');
