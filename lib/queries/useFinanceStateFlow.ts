@@ -91,34 +91,6 @@ export type FinanceRecordList = {
   next_cursor?: string | null;
 };
 
-export function useFinanceState(companyId?: string | null, enabled = true) {
-  return useQuery<FinanceState | null>({
-    queryKey: queryKeys.financeState(companyId),
-    queryFn: () =>
-      coreGet(`/v3/finance/state?company_id=${encodeURIComponent(companyId || '')}`, {
-        isOptional: true,
-        throwAuthErrors: true,
-      }) as Promise<FinanceState | null>,
-    enabled: Boolean(companyId && enabled),
-    staleTime: STALE_TIMES.financeState,
-    refetchOnWindowFocus: true,
-  });
-}
-
-export function useFinanceRecords(companyId?: string | null, limit = 50, enabled = true) {
-  return useQuery<FinanceRecordList | null>({
-    queryKey: queryKeys.financeRecords(companyId, limit),
-    queryFn: () =>
-      coreGet(`/v3/finance/records?company_id=${encodeURIComponent(companyId || '')}&limit=${limit}`, {
-        isOptional: true,
-        throwAuthErrors: true,
-      }) as Promise<FinanceRecordList | null>,
-    enabled: Boolean(companyId && enabled),
-    staleTime: STALE_TIMES.financeRecords,
-    refetchOnWindowFocus: true,
-  });
-}
-
 export function isCompanyFinanceScope(
   scope: { company_id?: string | null; owner_kind?: string | null } | null | undefined,
   companyId?: string | null,
@@ -143,6 +115,44 @@ export function financeRecordItems(
   payload: FinanceRecordList | null | undefined,
   companyId?: string | null,
 ): FinanceRecord[] {
+  if (payload?.scope && !isCompanyFinanceScope(payload.scope, companyId)) return [];
   const items = Array.isArray(payload?.records) ? payload.records : [];
   return items.filter((record) => isCompanyFinanceScope(record?.scope, companyId));
+}
+
+export function useFinanceState(companyId?: string | null, enabled = true) {
+  return useQuery<FinanceState | null>({
+    queryKey: queryKeys.financeState(companyId),
+    queryFn: async () => {
+      const state = await coreGet(`/v3/finance/state?company_id=${encodeURIComponent(companyId || '')}`, {
+        isOptional: true,
+        throwAuthErrors: true,
+      }) as FinanceState | null;
+      return financeStateTruth(state, companyId);
+    },
+    enabled: Boolean(companyId && enabled),
+    staleTime: STALE_TIMES.financeState,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useFinanceRecords(companyId?: string | null, limit = 50, enabled = true) {
+  return useQuery<FinanceRecordList | null>({
+    queryKey: queryKeys.financeRecords(companyId, limit),
+    queryFn: async () => {
+      const payload = await coreGet(`/v3/finance/records?company_id=${encodeURIComponent(companyId || '')}&limit=${limit}`, {
+        isOptional: true,
+        throwAuthErrors: true,
+      }) as FinanceRecordList | null;
+      if (!payload) return null;
+      if (payload.scope && !isCompanyFinanceScope(payload.scope, companyId)) return null;
+      return {
+        ...payload,
+        records: financeRecordItems(payload, companyId),
+      };
+    },
+    enabled: Boolean(companyId && enabled),
+    staleTime: STALE_TIMES.financeRecords,
+    refetchOnWindowFocus: true,
+  });
 }
