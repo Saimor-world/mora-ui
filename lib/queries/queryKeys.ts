@@ -9,62 +9,29 @@
 // expect each data type to change in real usage.
 
 export const STALE_TIMES = {
-  // One company per server instance. Structure barely changes during a session.
-  // Admin explicit refresh available via queryClient.invalidateQueries().
-  companies: 30 * 60 * 1000, // 30 minutes
-
-  // Admin-only changes. No live collaborative editing of org structure.
-  // Explicit refresh triggered by settings action, not automatic.
-  departments: 10 * 60 * 1000, // 10 minutes
-
-  // Active working layer — team members in same department may create spaces/folders.
-  // "One truth" exists on the server; clients see it within this window.
-  spaces: 5 * 60 * 1000,   // 5 minutes
-  folders: 5 * 60 * 1000,  // 5 minutes
-
-  // Documents are actively edited. Whole company on own devices means
-  // multiple users may create/update nodes concurrently.
-  // refetchOnWindowFocus: true added per-query for active document views.
-  nodes: 2 * 60 * 1000, // 2 minutes
-
-  // Full hierarchy tree — expensive fetch, structure-only (no content).
-  // Changes only when departments/spaces are created/renamed by admins.
-  tree: 15 * 60 * 1000, // 15 minutes
-
-  // Like a Windows account — role/company don't change mid-session.
-  // Only invalidated explicitly on logout or admin role-change action.
+  companies: 30 * 60 * 1000,
+  departments: 10 * 60 * 1000,
+  spaces: 5 * 60 * 1000,
+  folders: 5 * 60 * 1000,
+  nodes: 2 * 60 * 1000,
+  tree: 15 * 60 * 1000,
   userProfile: Infinity,
-
-  // Perception bundle — short stale because user navigation/edits invalidate it.
-  // 30s matches the spec target (§2.2).
-  perception: 30 * 1000, // 30 seconds
-
-  // Radar notifications — short stale; WebSocket invalidates immediately on push.
-  radar: 30 * 1000, // 30 seconds
-
-  // Larry workspace artifacts — dashboard ingest can arrive any time.
-  larryArtifacts: 60 * 1000, // 1 minute
-
-  // Team roster + online status — WebSocket invalidates between polls.
-  teamMembers: 30 * 1000, // 30 seconds
-
-  // Nightwatch glance widgets — keep cached across surface transitions.
-  nightwatchIncidents: 60 * 1000, // 1 minute
-  nightwatchMonitors: 60 * 1000, // 1 minute
-
-  // Bridge / system stats — shared across OrgStats + BridgePulse + Universe nebula.
-  bridgePulse: 60 * 1000, // 1 minute
-
-  // RSS / Atom items — glance + reader panes.
-  rssFeed: 60 * 1000, // 1 minute
+  perception: 30 * 1000,
+  radar: 30 * 1000,
+  larryArtifacts: 60 * 1000,
+  teamMembers: 30 * 1000,
+  nightwatchIncidents: 60 * 1000,
+  nightwatchMonitors: 60 * 1000,
+  bridgePulse: 60 * 1000,
+  rssFeed: 60 * 1000,
   workspaceAccess: 60 * 1000,
   workspaceCatalog: 30 * 60 * 1000,
   tasks: 30 * 1000,
   financialPulse: 60 * 1000,
+  financeState: 30 * 1000,
+  financeRecords: 30 * 1000,
 };
 
-// Query key factory — canonical cache keys for every domain.
-// Structure: [domain, ...params] so invalidation is surgical.
 export const queryKeys = {
   companies: () => ['companies'] as const,
   company: (id: string) => ['companies', id] as const,
@@ -97,7 +64,6 @@ export const queryKeys = {
 
   perceptionRoot: () => ['perception'] as const,
   perception: (key: string) => ['perception', key] as const,
-
   radar: () => ['radar'] as const,
 
   larryArtifacts: (companyId?: string | null, limit?: number) =>
@@ -106,22 +72,15 @@ export const queryKeys = {
       : (['larryArtifacts', companyId] as const),
 
   teamMembers: () => ['teamMembers'] as const,
+  tasks: (companyId?: string | null) => ['tasks', companyId ?? 'account'] as const,
+  financialPulse: (scopeId?: string | null) => ['financialPulse', scopeId ?? 'account'] as const,
+  financeState: (companyId?: string | null) => ['finance', 'state', companyId ?? 'none'] as const,
+  financeRecords: (companyId?: string | null, limit = 50) => ['finance', 'records', companyId ?? 'none', limit] as const,
 
-  tasks: (companyId?: string | null) =>
-    ['tasks', companyId ?? 'account'] as const,
-
-  financialPulse: (scopeId?: string | null) =>
-    ['financialPulse', scopeId ?? 'account'] as const,
-
-  nightwatchIncidents: (includeResolved = true) =>
-    ['nightwatchIncidents', includeResolved] as const,
-
+  nightwatchIncidents: (includeResolved = true) => ['nightwatchIncidents', includeResolved] as const,
   nightwatchMonitors: () => ['nightwatchMonitors'] as const,
-
   bridgePulse: () => ['bridgePulse'] as const,
-
-  rssFeed: (limit = 30, companyId?: string | null) =>
-    ['integrations', 'rss', 'items', companyId ?? 'account', limit] as const,
+  rssFeed: (limit = 30, companyId?: string | null) => ['integrations', 'rss', 'items', companyId ?? 'account', limit] as const,
   workspaceAccess: () => ['workspace', 'access'] as const,
   workspaceCatalog: () => ['workspace', 'catalog'] as const,
 };
