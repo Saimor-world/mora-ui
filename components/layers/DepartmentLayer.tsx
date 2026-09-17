@@ -13,7 +13,7 @@ import { queryKeys } from '@/lib/queries/queryKeys';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Star } from '@/components/mora/Star';
 import { Folder } from '@/components/mora/Folder';
-import { ArrowLeft, Plus, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, FileText, RefreshCw, WifiOff } from 'lucide-react';
 import { LoadingState } from '@/components/ui/LoadingState';
 import { LayerInsightRail } from '@/components/layers/LayerInsightRail';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
@@ -87,7 +87,7 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
     const addSpace = addSpaceMutation.mutate;
 
     const { data: departments = [] } = useDepartments(activeCompanyId);
-    const { data: spaces = [], isLoading: isLoadingSpaces } = useSpaces(activeDepartmentId);
+    const { data: spaces = [], isLoading: isLoadingSpaces, isError: isSpacesError, refetch: refetchSpaces } = useSpaces(activeDepartmentId);
     const { data: treeData = [] } = useTree(activeCompanyId);
     const { openPane } = usePaneStore();
     const safeDepartments = useMemo(() => (Array.isArray(departments) ? departments : []), [departments]);
@@ -572,11 +572,8 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             </>
             )}
 
-            {/* Back-to-HQ breadcrumb — the drill-down's only way out besides
-                Escape/Dock. Used to be gated behind !cosmosMode, but
-                DepartmentSurface (the real, live department route) always
-                renders with cosmosMode, so this control was unreachable in
-                production: once inside a department there was no way back. */}
+            {!cosmosMode && (
+            <>
             <motion.button
                 data-testid="nav-back-to-universe"
                 onClick={handleNavigateToExplore}
@@ -602,8 +599,6 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                 </div>
             </motion.button>
 
-            {!cosmosMode && (
-            <>
             <motion.button
                 onClick={() => {
                     if (!activeDepartmentId) return;
@@ -1108,7 +1103,42 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                             </div>
                         ))}
 
-                        {spaces.length === 0 && !isLoadingSpaces && (
+                        {/* Fehlgeschlagener Abruf sieht bewusst anders aus als eine echte
+                            Leere: "Bereich erstellen" waere hier eine falsche Aufforderung -
+                            die Abteilung hat vielleicht laengst Bereiche, nur die Anfrage ist
+                            gescheitert. useSpaces() liefert isError erst, seit fetchSpaces()
+                            nicht mehr isOptional ist (das verwandelte jeden Fehler lautlos in
+                            eine leere Liste, ununterscheidbar von "wirklich keine Bereiche"). */}
+                        {isSpacesError && !isLoadingSpaces && (
+                            <motion.div
+                                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-5 mt-32"
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4, duration: 0.5 }}
+                            >
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <WifiOff size={20} className="mb-1 text-amber-300/70" />
+                                    <p className="text-white/60 text-sm font-light tracking-widest uppercase">
+                                        Bereiche nicht erreichbar
+                                    </p>
+                                    <p className="text-white/40 text-xs font-light text-center max-w-[220px] leading-relaxed">
+                                        Der Abruf ist fehlgeschlagen. Das sagt nichts darueber aus,<br />ob diese Abteilung Bereiche hat.
+                                    </p>
+                                </div>
+                                <motion.button
+                                    type="button"
+                                    onClick={() => refetchSpaces()}
+                                    className="pointer-events-auto flex items-center gap-2 px-6 py-2.5 rounded-full border border-amber-400/22 bg-amber-500/10 hover:bg-amber-500/18 text-amber-200/85 hover:text-amber-100 text-xs tracking-widest transition-all cursor-pointer z-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/70 focus-visible:ring-offset-2 focus-visible:ring-offset-black/60"
+                                    whileHover={{ scale: prefersReducedMotion ? 1 : 1.05 }}
+                                    whileTap={{ scale: prefersReducedMotion ? 1 : 0.97 }}
+                                >
+                                    <RefreshCw size={14} />
+                                    Erneut versuchen
+                                </motion.button>
+                            </motion.div>
+                        )}
+
+                        {spaces.length === 0 && !isLoadingSpaces && !isSpacesError && (
                             <motion.div
                                 className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-5 mt-32 pointer-events-none"
                                 initial={{ opacity: 0, y: 10 }}
