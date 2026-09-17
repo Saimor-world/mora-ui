@@ -74,8 +74,10 @@ export const queryKeys = {
   teamMembers: () => ['teamMembers'] as const,
   tasks: (companyId?: string | null) => ['tasks', companyId ?? 'account'] as const,
   financialPulse: (scopeId?: string | null) => ['financialPulse', scopeId ?? 'account'] as const,
-  financeState: (companyId?: string | null) => ['finance', 'state', companyId ?? 'none'] as const,
-  financeRecords: (companyId?: string | null, limit = 50) => ['finance', 'records', companyId ?? 'none', limit] as const,
+  financeState: (companyId?: string | null, identityKey?: string | null) =>
+    ['finance', 'state', identityKey ?? 'anonymous', companyId ?? 'none'] as const,
+  financeRecords: (companyId?: string | null, limit = 50, identityKey?: string | null) =>
+    ['finance', 'records', identityKey ?? 'anonymous', companyId ?? 'none', limit] as const,
 
   nightwatchIncidents: (includeResolved = true) => ['nightwatchIncidents', includeResolved] as const,
   nightwatchMonitors: () => ['nightwatchMonitors'] as const,
