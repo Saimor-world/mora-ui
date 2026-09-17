@@ -572,8 +572,11 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
             </>
             )}
 
-            {!cosmosMode && (
-            <>
+            {/* Back-to-HQ breadcrumb — the drill-down's only way out besides
+                Escape/Dock. Used to be gated behind !cosmosMode, but
+                DepartmentSurface (the real, live department route) always
+                renders with cosmosMode, so this control was unreachable in
+                production: once inside a department there was no way back. */}
             <motion.button
                 data-testid="nav-back-to-universe"
                 onClick={handleNavigateToExplore}
@@ -599,6 +602,8 @@ export const DepartmentLayer: React.FC<DepartmentLayerProps> = ({
                 </div>
             </motion.button>
 
+            {!cosmosMode && (
+            <>
             <motion.button
                 onClick={() => {
                     if (!activeDepartmentId) return;
