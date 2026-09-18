@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { coreGet } from '@/lib/api/http';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { CoreError, coreGet, corePost } from '@/lib/api/http';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys, STALE_TIMES } from './queryKeys';
 
 export type FinanceMoney = {
@@ -15,6 +16,16 @@ export type FinanceEvidence = {
   label?: string | null;
   observed_at?: string | null;
   created_at?: string | null;
+  kind?: 'manual_statement' | 'core_node' | string;
+  has_resolved_resource?: boolean;
+};
+
+export type FinanceEvidenceInput = {
+  source_kind: 'manual';
+  reference: string;
+  label?: string | null;
+  observed_at?: string | null;
+  resource_node_id?: string | null;
 };
 
 export type FinanceAccountState = {
@@ -91,12 +102,139 @@ export type FinanceRecordList = {
   next_cursor?: string | null;
 };
 
+export type FinanceEvidenceDetail = {
+  scope: FinanceScope;
+  evidence: FinanceEvidence | null;
+  resource: {
+    kind: 'core_node';
+    id: string;
+    title: string;
+    type?: string | null;
+    open_target: { type: 'node'; id: string };
+  } | null;
+};
+
+export type FinanceWriteReceipt = {
+  kind: string;
+  id?: string | null;
+  company_id?: string | null;
+  persisted: boolean;
+  financial_action_executed: boolean;
+};
+
+export type FinanceWriteEnvelope<T> = {
+  data: T;
+  receipt: FinanceWriteReceipt;
+  meta?: Record<string, unknown>;
+};
+
+export type ManualFinanceAccount = {
+  id: string;
+  scope: FinanceScope;
+  display_name: string;
+  account_type?: string | null;
+  currency: string;
+  source_kind: 'manual';
+  status: string;
+  truth_state: 'missing_observation';
+};
+
+export type FinanceObservation = {
+  id: string;
+  scope: FinanceScope;
+  account_id: string;
+  amount: FinanceMoney;
+  as_of: string;
+  source_kind: 'manual';
+  coverage: string;
+  freshness: string;
+  evidence_id: string;
+};
+
+export type ManualAccountCreateInput = {
+  company_id: string;
+  display_name: string;
+  currency: 'EUR';
+  account_type?: string | null;
+};
+
+export type BalanceObservationCreateInput = {
+  company_id: string;
+  account_id: string;
+  amount: FinanceMoney;
+  as_of: string;
+  evidence: FinanceEvidenceInput;
+  coverage: 'partial' | 'unknown';
+  freshness?: 'current' | 'stale' | 'unknown';
+};
+
+export type FinancialRecordCreateInput = {
+  company_id: string;
+  account_id: string;
+  classification:
+    | 'founder_funding'
+    | 'customer_receipt'
+    | 'operating_expense'
+    | 'internal_transfer'
+    | 'refund'
+    | 'adjustment'
+    | 'unclassified';
+  amount: FinanceMoney;
+  effective_at: string;
+  evidence: FinanceEvidenceInput;
+  idempotency_key: string;
+  memo?: string | null;
+  founder_treatment?: 'equity' | 'loan' | 'unclassified' | null;
+  direction?: 'credit' | 'debit' | null;
+  destination_account_id?: string | null;
+};
+
+export type FinancialCorrectionCreateInput = {
+  company_id: string;
+  idempotency_key: string;
+  evidence: FinanceEvidenceInput;
+  reason: string;
+  effective_at?: string | null;
+};
+
+export type FinanceReadErrorKind = 'unauthenticated' | 'denied' | 'scope_mismatch' | 'unavailable';
+
+type FinanceIdentity = {
+  tenantId: string | null;
+  identityKey: string;
+  sessionGeneration: number;
+};
+
+function useFinanceIdentity(): FinanceIdentity {
+  const user = useSessionStore((state) => state.user);
+  const sessionGeneration = useSessionStore((state) => state.sessionGeneration);
+  return {
+    tenantId: user?.tenant_id ?? null,
+    identityKey: user
+      ? `${user.id}:${user.role}:g${sessionGeneration}`
+      : `anonymous:g${sessionGeneration}`,
+    sessionGeneration,
+  };
+}
+
+export function financeReadErrorKind(error: unknown): FinanceReadErrorKind {
+  if (error instanceof CoreError) {
+    if (error.status === 401) return 'unauthenticated';
+    if (error.status === 403 && error.details?.code === 'finance_scope_mismatch') return 'scope_mismatch';
+    if (error.status === 403) return 'denied';
+  }
+  return 'unavailable';
+}
+
 export function isCompanyFinanceScope(
-  scope: { company_id?: string | null; owner_kind?: string | null } | null | undefined,
+  scope: { tenant_id?: string | null; company_id?: string | null; owner_kind?: string | null } | null | undefined,
   companyId?: string | null,
+  tenantId?: string | null,
 ): boolean {
   if (!scope || scope.owner_kind !== 'company') return false;
-  return companyId ? scope.company_id === companyId : Boolean(scope.company_id);
+  if (companyId && scope.company_id !== companyId) return false;
+  if (tenantId && scope.tenant_id !== tenantId) return false;
+  return Boolean(scope.company_id && scope.tenant_id);
 }
 
 export function financeMoneyTruth(value: FinanceMoney | null | undefined): FinanceMoney | null {
@@ -106,53 +244,255 @@ export function financeMoneyTruth(value: FinanceMoney | null | undefined): Finan
 export function financeStateTruth(
   state: FinanceState | null | undefined,
   companyId?: string | null,
+  tenantId?: string | null,
 ): FinanceState | null {
-  if (!state || !isCompanyFinanceScope(state.scope, companyId)) return null;
+  if (!state || !isCompanyFinanceScope(state.scope, companyId, tenantId)) return null;
   return state;
 }
 
 export function financeRecordItems(
   payload: FinanceRecordList | null | undefined,
   companyId?: string | null,
+  tenantId?: string | null,
 ): FinanceRecord[] {
-  if (payload?.scope && !isCompanyFinanceScope(payload.scope, companyId)) return [];
+  if (payload?.scope && !isCompanyFinanceScope(payload.scope, companyId, tenantId)) return [];
   const items = Array.isArray(payload?.records) ? payload.records : [];
-  return items.filter((record) => isCompanyFinanceScope(record?.scope, companyId));
+  return items.filter((record) => isCompanyFinanceScope(record?.scope, companyId, tenantId));
+}
+
+function requireRead<T>(value: T | null | undefined, message: string): T {
+  if (value == null) throw new CoreError(message, 503);
+  return value;
+}
+
+function requireScope<T extends { scope?: FinanceScope | null }>(
+  value: T,
+  companyId: string,
+  tenantId: string,
+): T {
+  if (!isCompanyFinanceScope(value.scope, companyId, tenantId)) {
+    throw new CoreError('Finance scope mismatch', 403, { code: 'finance_scope_mismatch' });
+  }
+  return value;
+}
+
+function validateWriteEnvelope<T extends { scope?: FinanceScope | null }>(
+  envelope: FinanceWriteEnvelope<T> | null | undefined,
+  companyId: string,
+  tenantId: string,
+): FinanceWriteEnvelope<T> {
+  const value = requireRead(envelope, 'Finance write returned no receipt');
+  requireScope(value.data, companyId, tenantId);
+  if (
+    !value.receipt?.persisted
+    || value.receipt.company_id !== companyId
+    || value.receipt.financial_action_executed !== false
+  ) {
+    throw new CoreError('Finance write receipt did not prove a safe persistence-only action', 502);
+  }
+  return value;
+}
+
+function shouldRetryFinance(failureCount: number, error: unknown) {
+  const kind = financeReadErrorKind(error);
+  if (kind === 'unauthenticated' || kind === 'denied' || kind === 'scope_mismatch') return false;
+  return failureCount < 1;
 }
 
 export function useFinanceState(companyId?: string | null, enabled = true) {
-  return useQuery<FinanceState | null>({
-    queryKey: queryKeys.financeState(companyId),
+  const identity = useFinanceIdentity();
+  return useQuery<FinanceState>({
+    queryKey: queryKeys.financeState(identity.tenantId, identity.identityKey, companyId),
     queryFn: async () => {
-      const state = await coreGet(`/v3/finance/state?company_id=${encodeURIComponent(companyId || '')}`, {
-        isOptional: true,
-        throwAuthErrors: true,
-      }) as FinanceState | null;
-      return financeStateTruth(state, companyId);
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const state = requireRead(
+        await coreGet(`/v3/finance/state?company_id=${encodeURIComponent(requestedCompanyId)}`, {
+          throwAuthErrors: true,
+        }) as FinanceState | null,
+        'Finance state is unavailable',
+      );
+      const scoped = financeStateTruth(state, requestedCompanyId, tenantId);
+      if (!scoped) {
+        throw new CoreError('Finance scope mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      return scoped;
     },
-    enabled: Boolean(companyId && enabled),
+    enabled: Boolean(companyId && identity.tenantId && enabled),
     staleTime: STALE_TIMES.financeState,
     refetchOnWindowFocus: true,
+    retry: shouldRetryFinance,
   });
 }
 
 export function useFinanceRecords(companyId?: string | null, limit = 50, enabled = true) {
-  return useQuery<FinanceRecordList | null>({
-    queryKey: queryKeys.financeRecords(companyId, limit),
+  const identity = useFinanceIdentity();
+  return useQuery<FinanceRecordList>({
+    queryKey: queryKeys.financeRecords(identity.tenantId, identity.identityKey, companyId, limit),
     queryFn: async () => {
-      const payload = await coreGet(`/v3/finance/records?company_id=${encodeURIComponent(companyId || '')}&limit=${limit}`, {
-        isOptional: true,
-        throwAuthErrors: true,
-      }) as FinanceRecordList | null;
-      if (!payload) return null;
-      if (payload.scope && !isCompanyFinanceScope(payload.scope, companyId)) return null;
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const payload = requireRead(
+        await coreGet(
+          `/v3/finance/records?company_id=${encodeURIComponent(requestedCompanyId)}&limit=${limit}`,
+          { throwAuthErrors: true },
+        ) as FinanceRecordList | null,
+        'Finance flow is unavailable',
+      );
+      requireScope(payload, requestedCompanyId, tenantId);
       return {
         ...payload,
-        records: financeRecordItems(payload, companyId),
+        records: financeRecordItems(payload, requestedCompanyId, tenantId),
       };
     },
-    enabled: Boolean(companyId && enabled),
+    enabled: Boolean(companyId && identity.tenantId && enabled),
     staleTime: STALE_TIMES.financeRecords,
     refetchOnWindowFocus: true,
+    retry: shouldRetryFinance,
+  });
+}
+
+export function useFinanceRecord(
+  companyId?: string | null,
+  recordId?: string | null,
+  enabled = true,
+) {
+  const identity = useFinanceIdentity();
+  return useQuery<FinanceRecord>({
+    queryKey: queryKeys.financeRecord(identity.tenantId, identity.identityKey, companyId, recordId),
+    queryFn: async () => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const requestedRecordId = requireRead(recordId, 'Finance record is unresolved');
+      const record = requireRead(
+        await coreGet(
+          `/v3/finance/records/${encodeURIComponent(requestedRecordId)}?company_id=${encodeURIComponent(requestedCompanyId)}`,
+          { throwAuthErrors: true },
+        ) as FinanceRecord | null,
+        'Finance record is unavailable',
+      );
+      return requireScope(record, requestedCompanyId, tenantId);
+    },
+    enabled: Boolean(companyId && recordId && identity.tenantId && enabled),
+    staleTime: STALE_TIMES.financeRecords,
+    retry: shouldRetryFinance,
+  });
+}
+
+export function useFinanceEvidence(
+  companyId?: string | null,
+  evidenceId?: string | null,
+  enabled = true,
+) {
+  const identity = useFinanceIdentity();
+  return useQuery<FinanceEvidenceDetail>({
+    queryKey: queryKeys.financeEvidence(identity.tenantId, identity.identityKey, companyId, evidenceId),
+    queryFn: async () => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const requestedEvidenceId = requireRead(evidenceId, 'Finance evidence is unresolved');
+      const detail = requireRead(
+        await coreGet(
+          `/v3/finance/evidence/${encodeURIComponent(requestedEvidenceId)}?company_id=${encodeURIComponent(requestedCompanyId)}`,
+          { throwAuthErrors: true },
+        ) as FinanceEvidenceDetail | null,
+        'Finance evidence is unavailable',
+      );
+      return requireScope(detail, requestedCompanyId, tenantId);
+    },
+    enabled: Boolean(companyId && evidenceId && identity.tenantId && enabled),
+    staleTime: STALE_TIMES.financeRecords,
+    retry: shouldRetryFinance,
+  });
+}
+
+function useFinanceWriteInvalidation(companyId?: string | null) {
+  const identity = useFinanceIdentity();
+  const queryClient = useQueryClient();
+
+  const invalidate = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.financeRoot(identity.tenantId, identity.identityKey, companyId),
+    });
+  };
+
+  return { identity, invalidate };
+}
+
+export function useCreateFinanceAccount(companyId?: string | null) {
+  const { identity, invalidate } = useFinanceWriteInvalidation(companyId);
+  return useMutation<FinanceWriteEnvelope<ManualFinanceAccount>, Error, ManualAccountCreateInput>({
+    mutationFn: async (input) => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      if (input.company_id !== requestedCompanyId) {
+        throw new CoreError('Finance write company mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      const envelope = await corePost('/v3/finance/accounts', input, {
+        preserveEnvelope: true,
+        throwAuthErrors: true,
+      }) as FinanceWriteEnvelope<ManualFinanceAccount> | null;
+      return validateWriteEnvelope(envelope, requestedCompanyId, tenantId);
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useCreateFinanceObservation(companyId?: string | null) {
+  const { identity, invalidate } = useFinanceWriteInvalidation(companyId);
+  return useMutation<FinanceWriteEnvelope<FinanceObservation>, Error, BalanceObservationCreateInput>({
+    mutationFn: async (input) => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      if (input.company_id !== requestedCompanyId) {
+        throw new CoreError('Finance write company mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      const envelope = await corePost('/v3/finance/observations', input, {
+        preserveEnvelope: true,
+        throwAuthErrors: true,
+      }) as FinanceWriteEnvelope<FinanceObservation> | null;
+      return validateWriteEnvelope(envelope, requestedCompanyId, tenantId);
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useCreateFinanceRecord(companyId?: string | null) {
+  const { identity, invalidate } = useFinanceWriteInvalidation(companyId);
+  return useMutation<FinanceWriteEnvelope<FinanceRecord>, Error, FinancialRecordCreateInput>({
+    mutationFn: async (input) => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      if (input.company_id !== requestedCompanyId) {
+        throw new CoreError('Finance write company mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      const envelope = await corePost('/v3/finance/records', input, {
+        preserveEnvelope: true,
+        throwAuthErrors: true,
+      }) as FinanceWriteEnvelope<FinanceRecord> | null;
+      return validateWriteEnvelope(envelope, requestedCompanyId, tenantId);
+    },
+    onSuccess: invalidate,
+  });
+}
+
+export function useCorrectFinanceRecord(companyId?: string | null, recordId?: string | null) {
+  const { identity, invalidate } = useFinanceWriteInvalidation(companyId);
+  return useMutation<FinanceWriteEnvelope<FinanceRecord>, Error, FinancialCorrectionCreateInput>({
+    mutationFn: async (input) => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const requestedRecordId = requireRead(recordId, 'Finance record is unresolved');
+      if (input.company_id !== requestedCompanyId) {
+        throw new CoreError('Finance write company mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      const envelope = await corePost(
+        `/v3/finance/records/${encodeURIComponent(requestedRecordId)}/corrections`,
+        input,
+        { preserveEnvelope: true, throwAuthErrors: true },
+      ) as FinanceWriteEnvelope<FinanceRecord> | null;
+      return validateWriteEnvelope(envelope, requestedCompanyId, tenantId);
+    },
+    onSuccess: invalidate,
   });
 }
