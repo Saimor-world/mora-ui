@@ -6,6 +6,7 @@ import {
   type FinanceRecord,
   type FinanceState,
 } from '@/lib/queries/useFinanceStateFlow';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 const companyRecord: FinanceRecord = {
   id: 'record-company',
@@ -108,6 +109,18 @@ describe('Finance company truth helpers', () => {
     expect(items[0].classification).toBe('founder_funding');
     expect(items[0].evidence?.reference).toBe('receipt-001');
     expect(items[0].evidence?.label).toBe('Founder transfer receipt');
+  });
+
+  it('binds Finance cache keys to tenant, principal generation and company', () => {
+    const a = queryKeys.financeState('tenant-1', 'user-a:owner:g1', 'company-1');
+    const b = queryKeys.financeState('tenant-1', 'user-b:owner:g1', 'company-1');
+    const c = queryKeys.financeState('tenant-1', 'user-a:owner:g2', 'company-1');
+    const d = queryKeys.financeState('tenant-2', 'user-a:owner:g1', 'company-1');
+
+    expect(a).not.toEqual(b);
+    expect(a).not.toEqual(c);
+    expect(a).not.toEqual(d);
+    expect(a).toEqual(['finance', 'tenant-1', 'user-a:owner:g1', 'company-1', 'state']);
   });
 
   it('never reclassifies a customer receipt as founder funding or revenue', () => {
