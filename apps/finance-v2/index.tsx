@@ -7,6 +7,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
+import XrplSignGuard from './XrplSignGuard';
 import {
   financeRecordItems,
   type FinanceMoney,
@@ -331,16 +332,19 @@ export default function FinanceV2App({ paneId }: AppProps) {
           )}
 
           {selectedCompanyId && state && section === 'capital' && (
-            <section className="rounded-[30px] border border-white/[0.07] bg-[radial-gradient(circle_at_100%_0%,rgba(16,185,129,0.07),transparent_36%),rgba(0,0,0,0.14)] p-6">
-              <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/34">Capital · next layer</div>
-              <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Investments and XRPL research join here — after ownership.</h2>
-              <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">Der bisherige XRPL/Capital-Bestand wird selektiv hierher migriert. Eine öffentliche Wallet oder Watch-Adresse gilt dabei nicht automatisch als SAIMÔR-Eigentum. Signing bleibt außerhalb des OS.</p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <StateBadge state="read_only" />
-                <StateBadge state="ownership_required" />
-                <StateBadge state="external_signing" />
-              </div>
-            </section>
+            <div className="space-y-4">
+              <section className="rounded-[30px] border border-white/[0.07] bg-[radial-gradient(circle_at_100%_0%,rgba(16,185,129,0.07),transparent_36%),rgba(0,0,0,0.14)] p-6">
+                <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/34">Capital · XRPL Lab</div>
+                <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Research the ledger without giving the OS signing authority.</h2>
+                <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">Eine öffentliche Wallet oder Watch-Adresse gilt nicht automatisch als SAIMÔR-Eigentum. Der erste migrierte XRPL-Baustein ist deshalb bewusst ein lokaler Sign-Review: verstehen, was eine Transaktion tun würde, bevor sie im externen Wallet bestätigt wird.</p>
+                <div className="mt-5 flex flex-wrap gap-2">
+                  <StateBadge state="read_only" />
+                  <StateBadge state="ownership_required" />
+                  <StateBadge state="external_signing" />
+                </div>
+              </section>
+              <XrplSignGuard />
+            </div>
           )}
         </div>
       </div>
