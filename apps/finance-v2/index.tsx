@@ -18,11 +18,15 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
+import { financeRecordMovementSummary, formatFinanceMoney } from '@/lib/finance/format';
+import FinanceEntryPanel from './FinanceEntryPanel';
+import RecordDetailPanel from './RecordDetailPanel';
+import XrplWatchLab from './XrplWatchLab';
 import {
   financeReadErrorKind,
-  financeRecordItems,
+  financeReadErrorKind,
   type FinanceRecord,
-  useFinanceRecords,
+  useFinanceFlow,
   useFinanceState,
 } from '@/lib/queries/useFinanceStateFlow';
 import {
