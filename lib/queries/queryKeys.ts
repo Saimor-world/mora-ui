@@ -77,25 +77,25 @@ export const queryKeys = {
   financeRoot: (tenantId?: string | null, identityKey?: string | null, companyId?: string | null) =>
     ['finance', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', companyId ?? 'none'] as const,
   financeState: (tenantId?: string | null, identityKey?: string | null, companyId?: string | null) =>
-    [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'state'] as const,
+    ['finance', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', companyId ?? 'none', 'state'] as const,
   financeRecords: (
     tenantId?: string | null,
     identityKey?: string | null,
     companyId?: string | null,
     limit = 50,
-  ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'records', limit] as const,
+  ) => ['finance', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', companyId ?? 'none', 'records', limit] as const,
   financeRecord: (
     tenantId?: string | null,
     identityKey?: string | null,
     companyId?: string | null,
     recordId?: string | null,
-  ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'record', recordId ?? 'none'] as const,
+  ) => ['finance', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', companyId ?? 'none', 'record', recordId ?? 'none'] as const,
   financeEvidence: (
     tenantId?: string | null,
     identityKey?: string | null,
     companyId?: string | null,
     evidenceId?: string | null,
-  ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'evidence', evidenceId ?? 'none'] as const,
+  ) => ['finance', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', companyId ?? 'none', 'evidence', evidenceId ?? 'none'] as const,
 
   nightwatchIncidents: (includeResolved = true) => ['nightwatchIncidents', includeResolved] as const,
   nightwatchMonitors: () => ['nightwatchMonitors'] as const,
