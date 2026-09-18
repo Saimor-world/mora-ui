@@ -18,22 +18,17 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
-import { financeRecordMovementSummary, formatFinanceMoney } from '@/lib/finance/format';
-import FinanceEntryPanel from './FinanceEntryPanel';
-import RecordDetailPanel from './RecordDetailPanel';
-import XrplWatchLab from './XrplWatchLab';
-import {
-  financeReadErrorKind,
-  financeReadErrorKind,
-  type FinanceRecord,
-  useFinanceFlow,
-  useFinanceState,
-} from '@/lib/queries/useFinanceStateFlow';
 import {
   differenceFinanceMoney,
   financeRecordMovementSummary,
   formatFinanceMoney,
 } from '@/lib/finance/format';
+import {
+  financeReadErrorKind,
+  type FinanceRecord,
+  useFinanceFlow,
+  useFinanceState,
+} from '@/lib/queries/useFinanceStateFlow';
 import FinanceEntryPanel from './FinanceEntryPanel';
 import RecordDetailPanel from './RecordDetailPanel';
 import XrplWatchLab from './XrplWatchLab';
@@ -209,19 +204,19 @@ export default function FinanceV2App({ paneId }: AppProps) {
   const resolvedCompanyName = company ? companyName(company) : activeCompanyName || null;
 
   const stateQuery = useFinanceState(selectedCompanyId, Boolean(selectedCompanyId));
-  const recordsQuery = useFinanceRecords(selectedCompanyId, 50, Boolean(selectedCompanyId));
+  const flowQuery = useFinanceFlow(selectedCompanyId, 25, Boolean(selectedCompanyId));
 
   const stateErrorKind = financeReadErrorKind(stateQuery.error);
-  const recordsErrorKind = financeReadErrorKind(recordsQuery.error);
+  const flowErrorKind = financeReadErrorKind(flowQuery.error);
   const stateDenied = stateQuery.isError
     && ['unauthenticated', 'denied', 'scope_mismatch'].includes(stateErrorKind);
-  const recordsDenied = recordsQuery.isError
-    && ['unauthenticated', 'denied', 'scope_mismatch'].includes(recordsErrorKind);
+  const flowDenied = flowQuery.isError
+    && ['unauthenticated', 'denied', 'scope_mismatch'].includes(flowErrorKind);
 
   const state = stateDenied ? null : stateQuery.data;
   const records = useMemo(
-    () => recordsDenied ? [] : financeRecordItems(recordsQuery.data, selectedCompanyId),
-    [recordsDenied, recordsQuery.data, selectedCompanyId],
+    () => flowDenied ? [] : (flowQuery.data?.pages.flatMap((page) => page.records || []) || []),
+    [flowDenied, flowQuery.data],
   );
 
   useEffect(() => {
@@ -244,7 +239,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
   );
   const hasObservedState = Boolean(state?.accounts?.some((account) => account.truth_state === 'observed'));
   const stateLastKnown = Boolean(state && stateQuery.isError && stateErrorKind === 'unavailable');
-  const flowLastKnown = Boolean(recordsQuery.data && recordsQuery.isError && recordsErrorKind === 'unavailable');
+  const flowLastKnown = Boolean(flowQuery.data?.pages?.length && flowQuery.isError && flowErrorKind === 'unavailable');
 
   const openEvidenceNode = (nodeId: string) => {
     openPane({
@@ -473,21 +468,21 @@ export default function FinanceV2App({ paneId }: AppProps) {
 
           {selectedCompanyId && state && section === 'flow' && !selectedRecordId && (
             <div className="space-y-4">
-              {recordsDenied ? (
+              {flowDenied ? (
                 <ReadError
                   denied
                   title="Zugriff auf Bewegungen verweigert"
                   copy="Zwischengespeicherte Bewegungen werden für diesen Zugriff nicht angezeigt."
                 />
-              ) : recordsQuery.isLoading && !recordsQuery.data ? (
+              ) : flowQuery.isLoading && !flowQuery.data ? (
                 <div className="grid min-h-[180px] place-items-center rounded-[28px] border border-white/[0.06] bg-black/10">
                   <Activity className="animate-pulse text-emerald-200/50" size={22} />
                 </div>
-              ) : recordsQuery.isError && !recordsQuery.data ? (
+              ) : flowQuery.isError && !flowQuery.data ? (
                 <ReadError
                   title="Bewegungen momentan nicht erreichbar"
                   copy="Der Finanzstatus oben bleibt davon getrennt. Ein fehlgeschlagener Flow-Read wird nicht als leerer Verlauf dargestellt."
-                  onRetry={() => void recordsQuery.refetch()}
+                  onRetry={() => void flowQuery.refetch()}
                 />
               ) : records.length ? (
                 <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5">
@@ -495,7 +490,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
                     <div>
                       <div className="text-[13px] font-medium text-white/76">Bewegungen</div>
                       <div className="mt-1 text-[10px] text-white/28">
-                        Letzte bis zu 50 journalisierte Vorgänge. Jeder Vorgang lässt sich bis zu Buchungszeilen und Beleg öffnen.
+                        Journalisierte Vorgänge in Seiten zu je 25. Jeder Vorgang lässt sich bis zu Buchungszeilen und Beleg öffnen.
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -511,10 +506,22 @@ export default function FinanceV2App({ paneId }: AppProps) {
                   {records.map((record) => (
                     <RecordRow key={record.id} record={record} onOpen={() => setSelectedRecordId(record.id)} />
                   ))}
-                  <div className="mt-4 border-t border-white/[0.05] pt-3 text-[9px] text-white/28">
-                    {recordsQuery.data?.next_cursor
-                      ? 'Weitere ältere Vorgänge sind vorhanden; diese Ansicht zeigt bewusst nur den aktuellen Ausschnitt.'
-                      : 'Für den aktuellen Filter sind keine weiteren älteren Vorgänge angekündigt.'}
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.05] pt-3">
+                    <div className="text-[9px] text-white/28">
+                      {flowQuery.hasNextPage
+                        ? 'Weitere ältere Vorgänge sind vorhanden.'
+                        : 'Keine weiteren älteren Vorgänge angekündigt.'}
+                    </div>
+                    {flowQuery.hasNextPage && (
+                      <button
+                        type="button"
+                        disabled={flowQuery.isFetchingNextPage}
+                        onClick={() => void flowQuery.fetchNextPage()}
+                        className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[10px] text-white/48 disabled:opacity-35"
+                      >
+                        {flowQuery.isFetchingNextPage ? 'Lädt…' : 'Ältere laden'}
+                      </button>
+                    )}
                   </div>
                 </section>
               ) : (
