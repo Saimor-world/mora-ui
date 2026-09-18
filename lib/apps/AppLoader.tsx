@@ -32,6 +32,11 @@ function AppSkeleton() {
 const WorkApp = dynamic(() => import('@/apps/work'), { ssr: false, loading: () => <AppSkeleton /> });
 const AppsLibrary = dynamic(() => import('@/apps/apps'), { ssr: false, loading: () => <AppSkeleton /> });
 
+/**
+ * Compatibility bridge while the old Dock still emits apps-main/"Arbeit".
+ * This lets the visible OS migrate first without a risky rewrite of the giant Dock.
+ * Explicit tool-library opens keep rendering the real app library.
+ */
 function LegacyAppsBridge(props: AppProps) {
   const paneTitle = usePaneStore((s) => s.getPane(props.paneId)?.title);
   return paneTitle === 'Arbeit' ? <WorkApp {...props} /> : <AppsLibrary {...props} />;
