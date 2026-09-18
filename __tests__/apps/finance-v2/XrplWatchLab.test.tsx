@@ -69,5 +69,5 @@ it('surfaces XRPL read failures without inventing an empty ledger state', async 
 
   expect(await screen.findByRole('alert')).toHaveTextContent('XRPL upstream unavailable');
   expect(screen.getByText('Ownership unassigned')).toBeInTheDocument();
-  expect(screen.getByText('— XRP')).toBeInTheDocument();
+  expect(screen.getAllByText('— XRP')).toHaveLength(2);
 });
