@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CoreError, coreGet, corePost } from '@/lib/api/http';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys, STALE_TIMES } from './queryKeys';
@@ -345,6 +345,36 @@ export function useFinanceRecords(companyId?: string | null, limit = 50, enabled
         records: financeRecordItems(payload, requestedCompanyId, tenantId),
       };
     },
+    enabled: Boolean(companyId && identity.tenantId && enabled),
+    staleTime: STALE_TIMES.financeRecords,
+    refetchOnWindowFocus: true,
+    retry: shouldRetryFinance,
+  });
+}
+
+export function useFinanceFlow(companyId?: string | null, limit = 25, enabled = true) {
+  const identity = useFinanceIdentity();
+  return useInfiniteQuery<FinanceRecordList>({
+    queryKey: [...queryKeys.financeRecords(identity.tenantId, identity.identityKey, companyId, limit), 'infinite'],
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const cursorParam = pageParam ? `&cursor=${encodeURIComponent(String(pageParam))}` : '';
+      const payload = requireRead(
+        await coreGet(
+          `/v3/finance/records?company_id=${encodeURIComponent(requestedCompanyId)}&limit=${limit}${cursorParam}`,
+          { throwAuthErrors: true },
+        ) as FinanceRecordList | null,
+        'Finance flow is unavailable',
+      );
+      requireScope(payload, requestedCompanyId, tenantId);
+      return {
+        ...payload,
+        records: financeRecordItems(payload, requestedCompanyId, tenantId),
+      };
+    },
+    getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
     enabled: Boolean(companyId && identity.tenantId && enabled),
     staleTime: STALE_TIMES.financeRecords,
     refetchOnWindowFocus: true,
