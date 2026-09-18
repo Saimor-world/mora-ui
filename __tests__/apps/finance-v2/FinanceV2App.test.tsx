@@ -131,7 +131,7 @@ it('composes State, manual entry, paginated Flow and record detail in one native
   renderWithProviders(<FinanceV2App paneId="finance-test" />, { queryClient });
 
   expect(await screen.findByText('Finanzstatus')).toBeInTheDocument();
-  expect(screen.getByText('100,00 €')).toBeInTheDocument();
+  expect(screen.getAllByText('100,00 €').length).toBeGreaterThanOrEqual(2);
   expect(screen.getByText('125,00 €')).toBeInTheDocument();
   expect(screen.getByTestId('finance-entry-panel')).toBeInTheDocument();
 
@@ -147,6 +147,7 @@ it('composes State, manual entry, paginated Flow and record detail in one native
   expect(screen.getByText('cash:account-a')).toBeInTheDocument();
   expect(screen.getByText('Hosting receipt')).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: /Flow/i }));
+  const flowButtons = screen.getAllByRole('button', { name: /Flow/i });
+  fireEvent.click(flowButtons[flowButtons.length - 1]);
   expect(await screen.findByText('Bewegungen')).toBeInTheDocument();
 });
