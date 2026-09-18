@@ -28,7 +28,7 @@ function threadsFrom(value: unknown): Thread[] {
 }
 export function ContinuityPanel({ request }: { request: ContinuityRequest }) {
   const [threads, setThreads] = useState<Thread[] | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(true);
   const [message, setMessage] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const generation = useRef(0);
@@ -39,6 +39,7 @@ export function ContinuityPanel({ request }: { request: ContinuityRequest }) {
     setSelected(null);
     try {
       if (operation === "approve" && thread) {
+        if (Date.now() >= Date.parse(thread.proposal.expires_at)) throw new Error("Vorschlag abgelaufen. Bitte Kalender erneut prüfen.");
         const receipt = await request("approve", { id: thread.id, proposal_hash: thread.proposal_hash });
         if (!receipt || typeof receipt !== "object" || !("task_id" in receipt) || typeof receipt.task_id !== "string") {
           throw new Error("Bestätigung unklar. Bitte den Stand neu laden, bevor du erneut bestätigst.");
@@ -58,9 +59,19 @@ export function ContinuityPanel({ request }: { request: ContinuityRequest }) {
     }
   }, [request]);
   useEffect(() => {
-    void run("list");
+    const current = ++generation.current;
+    request("list").then(value => {
+      if (current === generation.current) setThreads(threadsFrom(value));
+    }).catch(error => {
+      if (current === generation.current) {
+        setThreads(null);
+        setMessage(error instanceof Error ? error.message : "Der Stand ist nicht verfügbar.");
+      }
+    }).finally(() => {
+      if (current === generation.current) setBusy(false);
+    });
     return () => { generation.current += 1; };
-  }, [run]);
+  }, [request]);
 
   return <section aria-label="Kalender-Fäden" aria-busy={busy}>
     <h3>Deine Kalender-Fäden</h3>
@@ -83,7 +94,7 @@ export function ContinuityPanel({ request }: { request: ContinuityRequest }) {
           <p>Quelle: {thread.proposal.evidence.provider} · beobachtet {new Date(thread.proposal.evidence.observed_at).toLocaleString("de-DE")}</p>
           <p>Beleglage: {thread.proposal.confidence.level === "high" ? "hoch" : "eingeschränkt"}. {thread.proposal.confidence.limitation}</p>
           <p>Es wird eine private interne Aufgabe angelegt. Dein Google-Kalender bleibt unverändert.</p>
-          <button type="button" disabled={busy || Date.now() >= Date.parse(thread.proposal.expires_at)}
+          <button type="button" disabled={busy}
             onClick={() => void run("approve", thread)}>Private Aufgabe bestätigen</button>{" "}
           <button type="button" onClick={() => setSelected(null)}>Zurück</button>
         </div> : <button type="button" disabled={busy} onClick={() => setSelected(thread.id)}>Vorschlag prüfen</button>}
