@@ -102,3 +102,37 @@ export function financeRecordMovementSummary(record: FinanceRecord): FinanceMove
     cashPostings,
   };
 }
+
+
+function decimalToAtomic(value: FinanceMoney): bigint | null {
+  const parsed = normalizeDecimal(value.value);
+  if (!parsed) return null;
+  const fraction = parsed.fraction.padEnd(value.scale, '0').slice(0, value.scale);
+  const raw = `${parsed.whole}${fraction}`.replace(/^0+(?=\d)/, '') || '0';
+  const atomic = BigInt(raw);
+  return parsed.negative ? -atomic : atomic;
+}
+
+export function differenceFinanceMoney(
+  closing: FinanceMoney | null | undefined,
+  opening: FinanceMoney | null | undefined,
+): FinanceMoney | null {
+  if (!closing || !opening) return null;
+  if (closing.currency !== opening.currency || closing.scale !== opening.scale) return null;
+  const closingAtomic = decimalToAtomic(closing);
+  const openingAtomic = decimalToAtomic(opening);
+  if (closingAtomic == null || openingAtomic == null) return null;
+
+  const scale = closing.scale;
+  const difference = closingAtomic - openingAtomic;
+  const negative = difference < BigInt(0);
+  const absolute = negative ? -difference : difference;
+  const raw = absolute.toString().padStart(scale + 1, '0');
+  const whole = scale > 0 ? raw.slice(0, -scale) : raw;
+  const fraction = scale > 0 ? raw.slice(-scale) : '';
+  return {
+    value: `${negative ? '-' : ''}${whole}${scale > 0 ? `.${fraction}` : ''}`,
+    currency: closing.currency,
+    scale,
+  };
+}
