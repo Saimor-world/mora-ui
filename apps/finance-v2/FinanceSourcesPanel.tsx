@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Cable, CircleAlert, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
-import { useConnectCompanyBitvavo, useFinanceConnections, useFinanceSources } from '@/lib/queries/useFinanceSources';
+import { useConnectCompanyBitvavo, useFinanceConnections, useFinanceSources, useOpenBankingInstitutions, useStartCompanyOpenBanking, useSyncFinanceConnection } from '@/lib/queries/useFinanceSources';
 
 const LABELS: Record<string, string> = {
   gocardless_bank_data: 'Open Banking / PSD2',
@@ -23,6 +23,11 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
   const [bitvavoKey, setBitvavoKey] = useState('');
   const [bitvavoSecret, setBitvavoSecret] = useState('');
   const [bitvavoAttested, setBitvavoAttested] = useState(false);
+  const institutions = useOpenBankingInstitutions('DE');
+  const startBank = useStartCompanyOpenBanking(companyId);
+  const syncConnection = useSyncFinanceConnection(companyId);
+  const [institutionId, setInstitutionId] = useState('');
+  const bankAuthorizationUrl = startBank.data?.data?.authorization_url as string | undefined;
 
   return (
     <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5" data-testid="finance-sources-panel">
@@ -75,6 +80,16 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
                   <div>{connection.account_count} Account{connection.account_count === 1 ? '' : 's'}</div>
                   <div>{connection.last_synced_at ? 'Sync ' + new Date(connection.last_synced_at).toLocaleString('de-DE') : 'Noch kein erfolgreicher Sync'}</div>
                   {connection.last_error_code && <div className="text-amber-100/52">Fehler: {connection.last_error_code}</div>}
+                  {connection.provider === 'gocardless_bank_data' && connection.status !== 'revoked' && (
+                    <button
+                      type="button"
+                      disabled={syncConnection.isPending}
+                      onClick={() => syncConnection.mutate(connection.id)}
+                      className="mt-2 rounded-lg border border-white/[0.08] px-2.5 py-1.5 text-[9px] text-white/44 disabled:opacity-35"
+                    >
+                      {syncConnection.isPending ? 'Synchronisiert…' : 'Bankstatus synchronisieren'}
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="mt-3 flex items-center gap-2 text-[10px] text-white/28">
@@ -85,6 +100,53 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           );
         })}
       </div>
+
+
+      {!connected.has('gocardless_bank_data') && (
+        <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
+          <div className="text-xs font-medium text-white/66">Bankkonto über PSD2 verbinden</div>
+          <p className="mt-1 text-[10px] leading-relaxed text-white/32">
+            Die Bank-Anmeldung findet beim regulierten Open-Banking-Flow statt. SAIMÔR erhält danach Konten, Salden und Transaktionen, aber kein Online-Banking-Passwort.
+          </p>
+          {institutions.isError ? (
+            <div role="alert" className="mt-3 text-[10px] text-amber-100/58">
+              Open Banking ist in CORE noch nicht mit Provider-Credentials konfiguriert.
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <select
+                aria-label="Bank auswählen"
+                value={institutionId}
+                onChange={(event) => setInstitutionId(event.target.value)}
+                className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-xs text-white/72"
+              >
+                <option value="">Bank auswählen…</option>
+                {(institutions.data?.institutions || []).map((institution) => (
+                  <option key={institution.id} value={institution.id}>{institution.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                disabled={!institutionId || startBank.isPending}
+                onClick={() => startBank.mutate({ institutionId, label: 'SAIMÔR Bank' })}
+                className="rounded-xl border border-emerald-300/16 bg-emerald-400/[0.065] px-4 py-2.5 text-xs font-medium text-emerald-100/72 disabled:opacity-35"
+              >
+                {startBank.isPending ? 'Consent wird erstellt…' : 'Bankfreigabe starten'}
+              </button>
+            </div>
+          )}
+          {startBank.error && <div role="alert" className="mt-2 text-[10px] text-red-100/66">{startBank.error.message}</div>}
+          {bankAuthorizationUrl && (
+            <a
+              href={bankAuthorizationUrl}
+              rel="noreferrer"
+              className="mt-3 inline-flex rounded-xl border border-emerald-300/18 px-4 py-2.5 text-xs font-medium text-emerald-100/76"
+            >
+              Zur sicheren Bankfreigabe
+            </a>
+          )}
+        </div>
+      )}
 
       {!connected.has('bitvavo') && (
         <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
