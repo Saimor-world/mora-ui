@@ -80,14 +80,14 @@ describe('buildWsUrl', () => {
         expect(url).toContain('token=mytoken');
     });
 
-    it('Branch B localhost: defaults to production websocket unless local core is explicit', () => {
+    it('keeps an unconfigured localhost websocket on the local proxy', () => {
         const url = buildWsUrl('tok', {
             coreApiUrl: '/api/core',
             hostname: 'localhost',
             host: 'localhost:3000',
             protocol: 'ws:',
         });
-        expect(url).toBe('wss://api.saimor.world/v3/realtime/subscribe?token=tok&event_types=all');
+        expect(url).toBe('ws://localhost:3000/api/core/v3/realtime/subscribe?token=tok&event_types=all');
     });
 
     it('uses explicit event_types when provided', () => {
@@ -114,6 +114,17 @@ describe('buildWsUrl', () => {
             protocol: 'wss:',
         });
         expect(url).toBe('wss://api.saimor.world/v3/realtime/subscribe?token=tok&event_types=all');
+    });
+
+    it('derives a customer instance API host from its OS host', () => {
+        const url = buildWsUrl('tok', {
+            coreApiUrl: '/api/core',
+            hostname: 'os.customer-014.example',
+            host: 'os.customer-014.example',
+            protocol: 'wss:',
+        });
+        expect(url).toBe('wss://api.customer-014.example/v3/realtime/subscribe?token=tok&event_types=all');
+        expect(url).not.toContain('saimor.world');
     });
 
     it('Branch C absolute coreApiUrl: http replaced with ws', () => {

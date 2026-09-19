@@ -45,7 +45,17 @@ describe('coreReachability', () => {
         expect(getPublicCoreBaseUrl()).toBe('https://api.saimor.world');
     });
 
-    it('falls back to the public API URL when internal routing fails', async () => {
+    it('has no Reference #001 public fallback when an instance config omits it', () => {
+        process.env = { ...process.env, NODE_ENV: 'production' };
+        delete process.env.NEXT_PUBLIC_SAIMOR_CORE_URL;
+        delete process.env.NEXT_PUBLIC_CORE_API_URL;
+        process.env.SAIMOR_CORE_URL = 'http://core:8081';
+
+        expect(getPublicCoreBaseUrl()).toBeNull();
+        expect(getCoreUpstreamBaseUrls()).toEqual(['http://core:8081']);
+    });
+
+    it('falls back to an explicitly configured public API URL when internal routing fails', async () => {
         process.env = { ...process.env, NODE_ENV: 'production' };
         process.env.SAIMOR_CORE_URL = 'http://core:8081';
         process.env.NEXT_PUBLIC_SAIMOR_CORE_URL = 'https://api.saimor.world';
