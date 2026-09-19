@@ -123,11 +123,6 @@ it('composes State, manual entry, paginated Flow and record detail in one native
     pages: [{ scope, records: [record], next_cursor: 'older|record-0' }],
     pageParams: [null],
   });
-  queryClient.setQueryData(
-    queryKeys.financeRecord('tenant-fin', identityKey, 'company-fin', 'record-1'),
-    record,
-  );
-
   renderWithProviders(<FinanceV2App paneId="finance-test" />, { queryClient });
 
   expect(await screen.findByText('Finanzstatus')).toBeInTheDocument();
@@ -141,6 +136,12 @@ it('composes State, manual entry, paginated Flow and record detail in one native
   expect(screen.getByText('Operating expense')).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Ältere laden' })).toBeInTheDocument();
 
+  // This query is not observed until the detail opens. The test QueryClient uses
+  // gcTime: 0, so seed it immediately before mounting the detail observer.
+  queryClient.setQueryData(
+    queryKeys.financeRecord('tenant-fin', identityKey, 'company-fin', 'record-1'),
+    record,
+  );
   fireEvent.click(screen.getByRole('button', { name: /Operating expense öffnen/i }));
 
   await waitFor(() => expect(screen.getByTestId('finance-record-detail')).toBeInTheDocument());
