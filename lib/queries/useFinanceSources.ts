@@ -114,3 +114,31 @@ export function useConnectCompanyXrpl(companyId?: string | null) {
     },
   });
 }
+
+
+export function useConnectCompanyBitvavo(companyId?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { apiKey: string; apiSecret: string; label?: string | null }>({
+    mutationFn: async ({ apiKey, apiSecret, label }) => {
+      if (!companyId) throw new Error('Company scope fehlt.');
+      return corePost(
+        '/v3/finance/connections/bitvavo',
+        {
+          api_key: apiKey,
+          api_secret: apiSecret,
+          owner_kind: 'company',
+          company_id: companyId,
+          label: label || null,
+          ownership_attested: true,
+        },
+        { throwAuthErrors: true, preserveEnvelope: true },
+      );
+    },
+    onSuccess: async () => {
+      const current = currentIdentity();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.financeConnections(current.tenantId, current.identityKey, 'company', companyId),
+      });
+    },
+  });
+}
