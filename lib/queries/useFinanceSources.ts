@@ -47,17 +47,17 @@ function currentIdentity() {
   const user = state.user;
   return {
     tenantId: user?.tenant_id ?? null,
-    identityKey: user ? \`\${user.id}:\${user.role}:g\${state.sessionGeneration}\` : \`anonymous:g\${state.sessionGeneration}\`,
+    identityKey: user ? `${user.id}:${user.role}:g${state.sessionGeneration}` : `anonymous:g${state.sessionGeneration}`,
   };
 }
 
 export function useFinanceSources(ownerKind: 'company' | 'personal' = 'company') {
   const user = useSessionStore((state) => state.user);
   const generation = useSessionStore((state) => state.sessionGeneration);
-  const identityKey = user ? \`\${user.id}:\${user.role}:g\${generation}\` : \`anonymous:g\${generation}\`;
+  const identityKey = user ? `${user.id}:${user.role}:g${generation}` : `anonymous:g${generation}`;
   return useQuery<{ owner_kind: string; sources: FinanceSource[]; connection_truth: 'capability_only' }>({
     queryKey: queryKeys.financeSources(user?.tenant_id, identityKey, ownerKind),
-    queryFn: () => coreGet(\`/v3/finance/sources?owner_kind=\${ownerKind}\`, { throwAuthErrors: true }),
+    queryFn: () => coreGet(`/v3/finance/sources?owner_kind=${ownerKind}`, { throwAuthErrors: true }),
     enabled: Boolean(user?.tenant_id),
     staleTime: STALE_TIMES.financeSources,
   });
@@ -66,13 +66,13 @@ export function useFinanceSources(ownerKind: 'company' | 'personal' = 'company')
 export function useFinanceConnections(ownerKind: 'company' | 'personal', companyId?: string | null) {
   const user = useSessionStore((state) => state.user);
   const generation = useSessionStore((state) => state.sessionGeneration);
-  const identityKey = user ? \`\${user.id}:\${user.role}:g\${generation}\` : \`anonymous:g\${generation}\`;
+  const identityKey = user ? `${user.id}:${user.role}:g${generation}` : `anonymous:g${generation}`;
   const params = ownerKind === 'company'
-    ? \`owner_kind=company&company_id=\${encodeURIComponent(companyId || '')}\`
+    ? `owner_kind=company&company_id=${encodeURIComponent(companyId || '')}`
     : 'owner_kind=personal';
   return useQuery<{ connections: FinanceConnection[]; connection_truth: 'persisted_only' }>({
     queryKey: queryKeys.financeConnections(user?.tenant_id, identityKey, ownerKind, companyId),
-    queryFn: () => coreGet(\`/v3/finance/connections?\${params}\`, { throwAuthErrors: true }),
+    queryFn: () => coreGet(`/v3/finance/connections?${params}`, { throwAuthErrors: true }),
     enabled: Boolean(user?.tenant_id && (ownerKind === 'personal' || companyId)),
     staleTime: STALE_TIMES.financeConnections,
     refetchOnWindowFocus: true,
@@ -82,7 +82,7 @@ export function useFinanceConnections(ownerKind: 'company' | 'personal', company
 export function useObserveXrpl() {
   return useMutation<XrplProof, Error, string>({
     mutationFn: (address) => coreGet(
-      \`/v3/finance/sources/xrpl/observe?address=\${encodeURIComponent(address)}\`,
+      `/v3/finance/sources/xrpl/observe?address=${encodeURIComponent(address)}`,
       { throwAuthErrors: true },
     ),
   });
