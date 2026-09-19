@@ -5,18 +5,17 @@
  * fall back to the public API URL when internal routing fails.
  */
 
-const DEFAULT_PUBLIC_CORE_URL = 'https://api.saimor.world';
-
 function trimTrailingSlashes(value: string): string {
     return value.replace(/\/+$/, '');
 }
 
-export function getPublicCoreBaseUrl(): string {
+export function getPublicCoreBaseUrl(): string | null {
     const raw =
         process.env.NEXT_PUBLIC_SAIMOR_CORE_URL ||
         process.env.NEXT_PUBLIC_CORE_API_URL ||
-        DEFAULT_PUBLIC_CORE_URL;
-    return trimTrailingSlashes(raw.trim() || DEFAULT_PUBLIC_CORE_URL);
+        '';
+    const normalized = trimTrailingSlashes(raw.trim());
+    return normalized || null;
 }
 
 export function getInternalCoreBaseUrl(): string | null {
@@ -56,8 +55,10 @@ export function coreUnreachableUserMessage(): string {
 export async function probePublicCoreHealth(timeoutMs = 4000): Promise<boolean> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const publicBase = getPublicCoreBaseUrl();
+    if (!publicBase) return false;
     try {
-        const response = await fetch(`${getPublicCoreBaseUrl()}/v3/health`, {
+        const response = await fetch(`${publicBase}/v3/health`, {
             method: 'GET',
             headers: { Accept: 'application/json' },
             cache: 'no-store',

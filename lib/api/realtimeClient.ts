@@ -69,13 +69,21 @@ export function buildWsUrl(token: string, opts?: BuildWsUrlOptions): string {
     }
 
     if (coreApiUrl.startsWith('/')) {
-        const apiHost = host.startsWith('hq.') ? host.replace(/^hq\./, 'api.') : 'api.saimor.world';
         const useLocalCore = process.env.NEXT_PUBLIC_LOCAL_CORE === 'true';
+        const isLocalHost = ['localhost', '127.0.0.1', '::1'].includes(hostname);
 
-        if (useLocalCore && ['localhost', '127.0.0.1', '::1'].includes(hostname)) {
+        if (useLocalCore && isLocalHost) {
             return `ws://localhost:8081/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
         }
-        return `wss://${apiHost}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
+
+        // Customer instances use os.<instance-domain> -> api.<instance-domain>.
+        // Unknown/single-host layouts fail inward through their own proxy path;
+        // they must never leak traffic to the Reference #001 API.
+        const apiHost = host.replace(/^(hq|os|yori)\./, 'api.');
+        if (apiHost === host) {
+            return `${protocol}//${host}${coreApiUrl}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
+        }
+        return `${protocol}//${apiHost}/v3/realtime/subscribe?token=${encodeURIComponent(token)}&event_types=${eventTypes}`;
     }
 
     const wsHost = coreApiUrl.replace(/^http/, 'ws');

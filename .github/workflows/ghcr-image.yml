@@ -71,9 +71,7 @@ jobs:
           images: ${{ env.UI_IMAGE }}
           tags: |
             type=sha,prefix=sha-
-            type=ref,event=branch
             type=ref,event=tag
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push UI image
         uses: docker/build-push-action@v6
@@ -84,9 +82,9 @@ jobs:
           tags: ${{ steps.meta_ui.outputs.tags }}
           labels: ${{ steps.meta_ui.outputs.labels }}
           build-args: |
-            NEXT_PUBLIC_CORE_API_URL=https://api.saimor.world
-            NEXT_PUBLIC_CORE_WS_URL=wss://api.saimor.world
-            NEXT_PUBLIC_SAIMOR_CORE_URL=https://api.saimor.world
+            NEXT_PUBLIC_CORE_API_URL=
+            NEXT_PUBLIC_CORE_WS_URL=
+            NEXT_PUBLIC_SAIMOR_CORE_URL=
             NEXT_PUBLIC_ALLOW_TOOL_EXECUTION=true
             NEXT_PUBLIC_DISABLE_WEBGL=true
           cache-from: type=gha
