@@ -27,6 +27,7 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
   const startBank = useStartCompanyOpenBanking(companyId);
   const syncConnection = useSyncFinanceConnection(companyId);
   const [institutionId, setInstitutionId] = useState('');
+  const [bankAttested, setBankAttested] = useState(false);
   const bankAuthorizationUrl = startBank.data?.data?.authorization_url as string | undefined;
 
   return (
@@ -108,6 +109,10 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           <p className="mt-1 text-[10px] leading-relaxed text-white/32">
             Die Bank-Anmeldung findet beim regulierten Open-Banking-Flow statt. SAIMÔR erhält danach Konten, Salden und Transaktionen, aber kein Online-Banking-Passwort.
           </p>
+          <label className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-white/40">
+            <input type="checkbox" checked={bankAttested} onChange={(event) => setBankAttested(event.target.checked)} />
+            <span>Ich bestätige, dass die auszuwählende Bankverbindung SAIMÔR gehört.</span>
+          </label>
           {institutions.isError ? (
             <div role="alert" className="mt-3 text-[10px] text-amber-100/58">
               Open Banking ist in CORE noch nicht mit Provider-Credentials konfiguriert.
@@ -127,7 +132,7 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
               </select>
               <button
                 type="button"
-                disabled={!institutionId || startBank.isPending}
+                disabled={!institutionId || !bankAttested || startBank.isPending}
                 onClick={() => startBank.mutate({ institutionId, label: 'SAIMÔR Bank' })}
                 className="rounded-xl border border-emerald-300/16 bg-emerald-400/[0.065] px-4 py-2.5 text-xs font-medium text-emerald-100/72 disabled:opacity-35"
               >
