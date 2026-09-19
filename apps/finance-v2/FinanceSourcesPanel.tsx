@@ -1,8 +1,8 @@
 'use client';
 
-import React from 'react';
-import { Cable, CircleAlert, RefreshCcw, ShieldCheck } from 'lucide-react';
-import { useFinanceConnections, useFinanceSources } from '@/lib/queries/useFinanceSources';
+import React, { useState } from 'react';
+import { Cable, CircleAlert, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
+import { useConnectCompanyBitvavo, useFinanceConnections, useFinanceSources } from '@/lib/queries/useFinanceSources';
 
 const LABELS: Record<string, string> = {
   gocardless_bank_data: 'Open Banking / PSD2',
@@ -19,6 +19,10 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
   const sources = useFinanceSources('company');
   const connections = useFinanceConnections('company', companyId);
   const connected = new Map((connections.data?.connections || []).map((item) => [item.provider, item]));
+  const bitvavo = useConnectCompanyBitvavo(companyId);
+  const [bitvavoKey, setBitvavoKey] = useState('');
+  const [bitvavoSecret, setBitvavoSecret] = useState('');
+  const [bitvavoAttested, setBitvavoAttested] = useState(false);
 
   return (
     <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5" data-testid="finance-sources-panel">
@@ -81,6 +85,53 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           );
         })}
       </div>
+
+      {!connected.has('bitvavo') && (
+        <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
+          <div className="flex items-center gap-2 text-xs font-medium text-white/66">
+            <KeyRound size={12} /> Bitvavo read-only verbinden
+          </div>
+          <p className="mt-1 text-[10px] leading-relaxed text-white/32">
+            Verwende einen API-Key mit ausschließlich View/Read-Zugriff. SAIMÔR implementiert hier keine Order-, Trade- oder Withdrawal-Methode.
+          </p>
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            <input
+              type="password"
+              autoComplete="off"
+              value={bitvavoKey}
+              onChange={(event) => setBitvavoKey(event.target.value)}
+              aria-label="Bitvavo API Key"
+              placeholder="API Key"
+              className="rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-xs text-white/72 outline-none"
+            />
+            <input
+              type="password"
+              autoComplete="off"
+              value={bitvavoSecret}
+              onChange={(event) => setBitvavoSecret(event.target.value)}
+              aria-label="Bitvavo API Secret"
+              placeholder="API Secret"
+              className="rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-xs text-white/72 outline-none"
+            />
+          </div>
+          <label className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-white/40">
+            <input type="checkbox" checked={bitvavoAttested} onChange={(event) => setBitvavoAttested(event.target.checked)} />
+            <span>Ich bestätige, dass dieses Bitvavo-Konto SAIMÔR gehört und der verwendete Key nur Leserechte haben soll.</span>
+          </label>
+          {bitvavo.error && <div role="alert" className="mt-2 text-[10px] text-red-100/66">{bitvavo.error.message}</div>}
+          <button
+            type="button"
+            disabled={!bitvavoAttested || bitvavoKey.length < 16 || bitvavoSecret.length < 16 || bitvavo.isPending}
+            onClick={() => bitvavo.mutate(
+              { apiKey: bitvavoKey, apiSecret: bitvavoSecret, label: 'SAIMÔR Bitvavo' },
+              { onSuccess: () => { setBitvavoKey(''); setBitvavoSecret(''); } },
+            )}
+            className="mt-3 rounded-xl border border-emerald-300/16 bg-emerald-400/[0.065] px-4 py-2.5 text-xs font-medium text-emerald-100/72 disabled:opacity-35"
+          >
+            {bitvavo.isPending ? 'Prüft echten Account…' : 'Bitvavo verbinden'}
+          </button>
+        </div>
+      )}
     </section>
   );
 }
