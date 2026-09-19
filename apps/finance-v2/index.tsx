@@ -561,7 +561,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
                   Watch-Adressen bleiben außerhalb der Unternehmenssumme, bis Eigentum ausdrücklich belegt und zugeordnet ist. Signieren bleibt außerhalb dieser Ansicht.
                 </p>
               </section>
-              <XrplWatchLab />
+              <XrplWatchLab companyId={selectedCompanyId} />
             </div>
           )}
         </div>
