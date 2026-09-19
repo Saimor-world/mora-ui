@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { CalendarContinuity } from './CalendarContinuity';
 import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type LucideIcon } from 'lucide-react';
 import type { TodaySourceStatus } from '@/lib/api/todayClient';
 import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
@@ -256,6 +257,8 @@ export function TodayOverview() {
           {...nightwatchCopy}
         />
       </div>
+      <CalendarContinuity />
     </section>
   );
 }
+
