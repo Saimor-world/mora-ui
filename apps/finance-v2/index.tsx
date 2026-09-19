@@ -30,6 +30,7 @@ import {
   useFinanceState,
 } from '@/lib/queries/useFinanceStateFlow';
 import FinanceEntryPanel from './FinanceEntryPanel';
+import FinanceSourcesPanel from './FinanceSourcesPanel';
 import RecordDetailPanel from './RecordDetailPanel';
 import XrplWatchLab from './XrplWatchLab';
 
@@ -534,18 +535,21 @@ export default function FinanceV2App({ paneId }: AppProps) {
             </div>
           )}
 
-          {selectedCompanyId && state && section === 'treasury' && (
-            hasObservedState ? (
-              <section className="rounded-[30px] border border-white/[0.07] bg-black/14 p-6">
-                <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Treasury</div>
-                <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Liquidität beginnt beim belegten Kontostand.</h2>
-                <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">
-                  Kontostände und journalisierte Bewegungen sind sichtbar. Runway und Reserven werden erst berechnet, wenn wiederkehrende Kosten und Verpflichtungen ausreichend erfasst sind.
-                </p>
-              </section>
-            ) : (
-              <TruthEmpty title="Treasury wartet auf einen Checkpoint" copy="Ohne beobachteten Kontostand werden weder Runway noch Reserve geschätzt." />
-            )
+          {selectedCompanyId && section === 'treasury' && (
+            <div className="space-y-4">
+              <FinanceSourcesPanel companyId={selectedCompanyId} />
+              {state && hasObservedState ? (
+                <section className="rounded-[30px] border border-white/[0.07] bg-black/14 p-6">
+                  <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Treasury</div>
+                  <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Liquidität beginnt beim belegten Kontostand.</h2>
+                  <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">
+                    Kontostände und journalisierte Bewegungen sind sichtbar. Runway und Reserven werden erst berechnet, wenn wiederkehrende Kosten und Verpflichtungen ausreichend erfasst sind.
+                  </p>
+                </section>
+              ) : (
+                <TruthEmpty title="Treasury wartet auf echte Quellen oder einen Checkpoint" copy="Ohne beobachteten Kontostand werden weder Runway noch Reserve geschätzt. Real Sources zeigt, was tatsächlich verbunden ist." />
+              )}
+            </div>
           )}
 
           {selectedCompanyId && section === 'capital' && !stateDenied && (
