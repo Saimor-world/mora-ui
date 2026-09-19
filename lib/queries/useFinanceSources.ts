@@ -142,3 +142,75 @@ export function useConnectCompanyBitvavo(companyId?: string | null) {
     },
   });
 }
+
+
+export type OpenBankingInstitution = {
+  id: string;
+  name: string;
+  bic?: string | null;
+  countries: string[];
+  logo?: string | null;
+  transaction_total_days?: string | null;
+};
+
+export function useOpenBankingInstitutions(country = 'DE') {
+  const user = useSessionStore((state) => state.user);
+  return useQuery<{ country: string; institutions: OpenBankingInstitution[]; source: string }>({
+    queryKey: ['finance-open-banking-institutions', user?.tenant_id ?? 'none', country],
+    queryFn: () => coreGet(
+      `/v3/finance/sources/open-banking/institutions?country=${encodeURIComponent(country)}`,
+      { throwAuthErrors: true },
+    ),
+    enabled: Boolean(user?.tenant_id),
+    staleTime: 24 * 60 * 60 * 1000,
+    retry: false,
+  });
+}
+
+export function useStartCompanyOpenBanking(companyId?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { institutionId: string; label?: string | null }>({
+    mutationFn: async ({ institutionId, label }) => {
+      if (!companyId) throw new Error('Company scope fehlt.');
+      return corePost(
+        '/v3/finance/connections/open-banking/start',
+        {
+          institution_id: institutionId,
+          owner_kind: 'company',
+          company_id: companyId,
+          label: label || null,
+          ownership_attested: true,
+        },
+        { throwAuthErrors: true, preserveEnvelope: true },
+      );
+    },
+    onSuccess: async () => {
+      const current = currentIdentity();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.financeConnections(current.tenantId, current.identityKey, 'company', companyId),
+      });
+    },
+  });
+}
+
+export function useSyncFinanceConnection(companyId?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, string>({
+    mutationFn: (connectionId) => corePost(
+      `/v3/finance/connections/${encodeURIComponent(connectionId)}/sync`,
+      {},
+      { throwAuthErrors: true, preserveEnvelope: true },
+    ),
+    onSuccess: async () => {
+      const current = currentIdentity();
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.financeConnections(current.tenantId, current.identityKey, 'company', companyId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.financeState(current.tenantId, current.identityKey, companyId),
+        }),
+      ]);
+    },
+  });
+}
