@@ -21,7 +21,7 @@ export interface RitualSceneDefinition {
     accentHex: string;   // solid hex — consumers needing hex (orb, canvas)
     aura: string;
     audioGain: number;
-    // A scene is a mood (Flow/Build/Lounge/Nacht) bound to a time-of-day window.
+    // A scene is a time-aware ambient state. Stable internal ids are kept for compatibility; display names may evolve independently.
     // These make that single identity renderable consistently everywhere — the
     // Control Center, the Audio settings and anywhere else show the SAME thing.
     timeRange: string;   // e.g. '05 – 11' — the window autoTime activates this scene
@@ -42,33 +42,33 @@ export const RITUAL_MODE_UPDATED_EVENT = 'saimor-ritual-mode-updated';
 export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
     flow: {
         id: 'flow',
-        label: 'Flow',
-        shortLabel: 'Flow',
-        description: 'Ruhig und offen für Schreiben, Lesen und entspannte Navigation.',
+        label: 'Dawn',
+        shortLabel: 'Dawn',
+        description: 'Weich, klar und leicht für Ankommen, Lesen und den ruhigen Start.',
         accent: 'rgba(16,185,129,0.72)',
         accentHex: '#10B981',
         aura: 'rgba(34,211,238,0.55)',
         audioGain: 0.92,
-        timeRange: '05 – 11',
-        timeLabel: 'morgens',
+        timeRange: '05 – 09',
+        timeLabel: 'früh',
     },
     build: {
         id: 'build',
-        label: 'Build',
-        shortLabel: 'Build',
-        description: 'Klarer Kontrast für Umsetzung, Struktur und schnelle Entscheidungen.',
+        label: 'Focus',
+        shortLabel: 'Focus',
+        description: 'Klar, präzise und ruhig für Umsetzung, Struktur und konzentrierte Arbeit.',
         accent: 'rgba(56,189,248,0.75)',
         accentHex: '#38BDF8',
         aura: 'rgba(251,191,36,0.55)',
         audioGain: 1.05,
-        timeRange: '11 – 17',
-        timeLabel: 'mittags',
+        timeRange: '09 – 17',
+        timeLabel: 'tagsüber',
     },
     lounge: {
         id: 'lounge',
-        label: 'Lounge',
-        shortLabel: 'Lounge',
-        description: 'Wärmer und weicher für Review, Lesen und ruhigere Sessions.',
+        label: 'Dusk',
+        shortLabel: 'Dusk',
+        description: 'Wärmer, weicher und fließender für Übergang, Review und kreatives Ausklingen.',
         accent: 'rgba(251,146,60,0.70)',
         accentHex: '#FB923C',
         aura: 'rgba(244,114,182,0.55)',
@@ -78,8 +78,8 @@ export const RITUAL_SCENES: Record<RitualSceneId, RitualSceneDefinition> = {
     },
     night: {
         id: 'night',
-        label: 'Nacht',
-        shortLabel: 'Nacht',
+        label: 'Night',
+        shortLabel: 'Night',
         description: 'Dunkler und stiller für späte, lange Arbeitsphasen.',
         accent: 'rgba(99,102,241,0.72)',
         accentHex: '#6366F1',
@@ -109,8 +109,8 @@ const readStoredSceneId = () => {
 
 export const getAutoRitualScene = (date: Date) => {
     const hour = date.getHours();
-    if (hour >= 5 && hour < 11) return 'flow';
-    if (hour >= 11 && hour < 17) return 'build';
+    if (hour >= 5 && hour < 9) return 'flow';
+    if (hour >= 9 && hour < 17) return 'build';
     if (hour >= 17 && hour < 22) return 'lounge';
     return 'night';
 };
