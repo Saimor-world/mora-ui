@@ -1,6 +1,9 @@
 'use client';
 
 import type { RitualSceneId } from '@/lib/os/ritualMode';
+import { queueAccountSettingsSync } from '@/lib/userSettings/persistAccountSettings';
+
+export type AmbientAudioTrackSource = 'local' | 'remote';
 
 export interface AmbientAudioTrackMeta {
     id: string;
@@ -8,10 +11,37 @@ export interface AmbientAudioTrackMeta {
     type: string;
     size: number;
     uploadedAt: string;
+    source?: AmbientAudioTrackSource;
+    url?: string;
+    sceneIds?: RitualSceneId[];
 }
 
 interface AmbientAudioTrackRecord extends AmbientAudioTrackMeta {
     blob: Blob;
+}
+
+interface AmbientAudioCatalogTrack {
+    id: string;
+    name: string;
+    url: string;
+    type?: string;
+    size?: number;
+    uploadedAt?: string;
+    sceneIds?: RitualSceneId[];
+}
+
+export interface AmbientRadioChannel {
+    id: RitualSceneId;
+    label: string;
+    timeRange: string;
+    description?: string;
+    trackIds?: string[];
+}
+
+interface AmbientAudioCatalog {
+    version?: number;
+    channels?: AmbientRadioChannel[];
+    tracks?: AmbientAudioCatalogTrack[];
 }
 
 export interface AmbientAudioSettings {
@@ -39,11 +69,14 @@ export const AMBIENT_AUDIO_STORAGE_KEYS = {
 
 export const AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT = 'saimor-ambient-audio-library-updated';
 export const AMBIENT_AUDIO_SETTINGS_UPDATED_EVENT = 'saimor-ambient-audio-settings-updated';
+export const AMBIENT_AUDIO_CATALOG_URL = '/ambient/catalog.json';
 
 const DB_NAME = 'saimor-ambient-audio';
 const STORE_NAME = 'tracks';
+const RITUAL_SCENE_IDS: RitualSceneId[] = ['flow', 'build', 'lounge', 'night'];
 
 let ambientAudioDbPromise: Promise<IDBDatabase> | null = null;
+let remoteCatalogPromise: Promise<AmbientAudioCatalog> | null = null;
 
 const supportsIndexedDb = () => typeof window !== 'undefined' && 'indexedDB' in window;
 
@@ -60,23 +93,29 @@ const readStoredTrackId = (key: string) => {
     return rawValue && rawValue.trim().length > 0 ? rawValue : null;
 };
 
+const sanitizeSceneTrackMap = (value: unknown): AmbientSceneTrackMap => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+
+    const parsed = value as Record<string, unknown>;
+    const result: AmbientSceneTrackMap = {};
+    for (const sceneId of RITUAL_SCENE_IDS) {
+        const candidate = parsed[sceneId];
+        if (typeof candidate === 'string' && candidate.trim().length > 0) {
+            result[sceneId] = candidate;
+        } else if (candidate === null) {
+            result[sceneId] = null;
+        }
+    }
+    return result;
+};
+
 const readStoredSceneTrackMap = (): AmbientSceneTrackMap => {
     if (typeof window === 'undefined') return {};
     const rawValue = window.localStorage.getItem(AMBIENT_AUDIO_STORAGE_KEYS.sceneTrackMap);
     if (!rawValue) return {};
 
     try {
-        const parsed = JSON.parse(rawValue) as Record<string, unknown>;
-        const result: AmbientSceneTrackMap = {};
-        for (const sceneId of ['flow', 'build', 'lounge', 'night'] as RitualSceneId[]) {
-            const value = parsed?.[sceneId];
-            if (typeof value === 'string' && value.trim().length > 0) {
-                result[sceneId] = value;
-            } else if (value === null) {
-                result[sceneId] = null;
-            }
-        }
-        return result;
+        return sanitizeSceneTrackMap(JSON.parse(rawValue));
     } catch {
         return {};
     }
@@ -99,6 +138,7 @@ export const persistAmbientAudioSettings = (
     updates: AmbientAudioSettingsUpdate
 ) => {
     updateUserSettings?.(updates);
+    queueAccountSettingsSync(updates);
 
     if (typeof window === 'undefined') return;
 
@@ -143,23 +183,17 @@ export const resolveAmbientAudioSettings = (userSettings?: Record<string, any> |
             : readStoredTrackId(AMBIENT_AUDIO_STORAGE_KEYS.trackId),
 });
 
-export const resolveAmbientSceneTrackMap = (_userSettings?: Record<string, any> | null): AmbientSceneTrackMap => (
-    readStoredSceneTrackMap()
-);
+export const resolveAmbientSceneTrackMap = (userSettings?: Record<string, any> | null): AmbientSceneTrackMap => {
+    const serverMap = sanitizeSceneTrackMap(userSettings?.ambientSceneTrackMap);
+    if (Object.keys(serverMap).length > 0) return serverMap;
+    return readStoredSceneTrackMap();
+};
 
 export const persistAmbientSceneTrackMap = (updates: AmbientSceneTrackMap) => {
+    const nextMap = sanitizeSceneTrackMap(updates);
+    queueAccountSettingsSync({ ambientSceneTrackMap: nextMap });
+
     if (typeof window === 'undefined') return;
-
-    const nextMap: AmbientSceneTrackMap = {};
-    for (const sceneId of ['flow', 'build', 'lounge', 'night'] as RitualSceneId[]) {
-        const value = updates?.[sceneId];
-        if (typeof value === 'string' && value.trim().length > 0) {
-            nextMap[sceneId] = value;
-        } else if (value === null) {
-            nextMap[sceneId] = null;
-        }
-    }
-
     window.localStorage.setItem(AMBIENT_AUDIO_STORAGE_KEYS.sceneTrackMap, JSON.stringify(nextMap));
     emitAmbientAudioSettingsUpdated();
 };
@@ -171,6 +205,87 @@ export const formatAmbientTrackSize = (bytes: number) => {
         return `${Math.max(1, Math.round(bytes / 1024))} KB`;
     }
     return `${megabytes.toFixed(megabytes >= 10 ? 0 : 1)} MB`;
+};
+
+const normalizeRemoteTrack = (track: AmbientAudioCatalogTrack): AmbientAudioTrackMeta | null => {
+    if (!track || typeof track !== 'object') return null;
+    if (typeof track.id !== 'string' || !track.id.trim()) return null;
+    if (typeof track.name !== 'string' || !track.name.trim()) return null;
+    if (typeof track.url !== 'string' || !track.url.trim()) return null;
+
+    const url = track.url.trim();
+    if (!url.startsWith('/') && !/^https:\/\//i.test(url)) return null;
+
+    const sceneIds = Array.isArray(track.sceneIds)
+        ? track.sceneIds.filter((value): value is RitualSceneId => RITUAL_SCENE_IDS.includes(value as RitualSceneId))
+        : undefined;
+
+    return {
+        id: track.id.trim(),
+        name: track.name.trim(),
+        type: typeof track.type === 'string' && track.type.trim() ? track.type.trim() : 'audio/mpeg',
+        size: Number.isFinite(track.size) && Number(track.size) > 0 ? Number(track.size) : 0,
+        uploadedAt:
+            typeof track.uploadedAt === 'string' && Number.isFinite(Date.parse(track.uploadedAt))
+                ? track.uploadedAt
+                : '1970-01-01T00:00:00.000Z',
+        source: 'remote',
+        url,
+        sceneIds,
+    };
+};
+
+const loadRemoteAmbientCatalog = async (): Promise<AmbientAudioCatalog> => {
+    if (typeof window === 'undefined') return { tracks: [], channels: [] };
+    if (!remoteCatalogPromise) {
+        remoteCatalogPromise = fetch(AMBIENT_AUDIO_CATALOG_URL, {
+            method: 'GET',
+            credentials: 'same-origin',
+            cache: 'no-cache',
+        })
+            .then(async (response) => {
+                if (!response.ok) return { tracks: [], channels: [] };
+                const payload = await response.json();
+                if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+                    return { tracks: [], channels: [] };
+                }
+                return payload as AmbientAudioCatalog;
+            })
+            .catch(() => ({ tracks: [], channels: [] }));
+    }
+    return remoteCatalogPromise;
+};
+
+export const refreshAmbientAudioCatalog = () => {
+    remoteCatalogPromise = null;
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent(AMBIENT_AUDIO_LIBRARY_UPDATED_EVENT));
+    }
+};
+
+const listRemoteAmbientAudioTracks = async (): Promise<AmbientAudioTrackMeta[]> => {
+    const catalog = await loadRemoteAmbientCatalog();
+    if (!Array.isArray(catalog.tracks)) return [];
+    return catalog.tracks
+        .map(normalizeRemoteTrack)
+        .filter((track): track is AmbientAudioTrackMeta => Boolean(track));
+};
+
+export const listAmbientRadioChannels = async (): Promise<AmbientRadioChannel[]> => {
+    const catalog = await loadRemoteAmbientCatalog();
+    if (!Array.isArray(catalog.channels)) return [];
+
+    return catalog.channels.filter((channel): channel is AmbientRadioChannel => (
+        Boolean(channel)
+        && RITUAL_SCENE_IDS.includes(channel.id)
+        && typeof channel.label === 'string'
+        && typeof channel.timeRange === 'string'
+    ));
+};
+
+const getRemoteAmbientAudioTrack = async (trackId: string) => {
+    const tracks = await listRemoteAmbientAudioTracks();
+    return tracks.find((track) => track.id === trackId) ?? null;
 };
 
 const openAmbientAudioDb = async () => {
@@ -221,11 +336,32 @@ const runAmbientAudioRequest = async <T>(
     });
 };
 
+const listLocalAmbientAudioTracks = async (): Promise<AmbientAudioTrackMeta[]> => {
+    if (!supportsIndexedDb()) return [];
+    try {
+        const records = await runAmbientAudioRequest<AmbientAudioTrackRecord[]>('readonly', (store) => store.getAll());
+        return records.map(({ blob: _blob, ...meta }) => ({ ...meta, source: 'local' as const }));
+    } catch {
+        return [];
+    }
+};
+
 export const listAmbientAudioTracks = async (): Promise<AmbientAudioTrackMeta[]> => {
-    const records = await runAmbientAudioRequest<AmbientAudioTrackRecord[]>('readonly', (store) => store.getAll());
-    return records
-        .map(({ blob: _blob, ...meta }) => meta)
-        .sort((left, right) => new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime());
+    const [remoteTracks, localTracks] = await Promise.all([
+        listRemoteAmbientAudioTracks(),
+        listLocalAmbientAudioTracks(),
+    ]);
+
+    const byId = new Map<string, AmbientAudioTrackMeta>();
+    for (const track of remoteTracks) byId.set(track.id, track);
+    for (const track of localTracks) {
+        if (!byId.has(track.id)) byId.set(track.id, track);
+    }
+
+    return [...byId.values()].sort((left, right) => {
+        if (left.source !== right.source) return left.source === 'remote' ? -1 : 1;
+        return new Date(right.uploadedAt).getTime() - new Date(left.uploadedAt).getTime();
+    });
 };
 
 export const storeAmbientAudioFiles = async (files: File[]) => {
@@ -238,6 +374,7 @@ export const storeAmbientAudioFiles = async (files: File[]) => {
             type: file.type || 'audio/mpeg',
             size: file.size,
             uploadedAt: new Date().toISOString(),
+            source: 'local',
             blob: file,
         };
 
@@ -248,6 +385,7 @@ export const storeAmbientAudioFiles = async (files: File[]) => {
             type: track.type,
             size: track.size,
             uploadedAt: track.uploadedAt,
+            source: 'local',
         });
     }
 
@@ -259,11 +397,36 @@ export const storeAmbientAudioFiles = async (files: File[]) => {
 };
 
 export const getAmbientAudioTrackBlob = async (trackId: string) => {
-    const record = await runAmbientAudioRequest<AmbientAudioTrackRecord | undefined>('readonly', (store) => store.get(trackId));
-    return record?.blob ?? null;
+    const remoteTrack = await getRemoteAmbientAudioTrack(trackId);
+    if (remoteTrack?.url) {
+        try {
+            const response = await fetch(remoteTrack.url, {
+                method: 'GET',
+                credentials: remoteTrack.url.startsWith('/') ? 'same-origin' : 'omit',
+                cache: 'force-cache',
+            });
+            if (response.ok) return await response.blob();
+        } catch {
+            // Fall through to the local library. A remote outage must not break
+            // a user's locally imported soundtrack.
+        }
+    }
+
+    if (!supportsIndexedDb()) return null;
+    try {
+        const record = await runAmbientAudioRequest<AmbientAudioTrackRecord | undefined>('readonly', (store) => store.get(trackId));
+        return record?.blob ?? null;
+    } catch {
+        return null;
+    }
 };
 
 export const removeAmbientAudioTrack = async (trackId: string) => {
+    const remoteTrack = await getRemoteAmbientAudioTrack(trackId);
+    if (remoteTrack) {
+        throw new Error('Remote ambient tracks are managed by the SAIMÔR Ambient catalog.');
+    }
+
     await runAmbientAudioRequest<undefined>('readwrite', (store) => store.delete(trackId));
 
     if (typeof window !== 'undefined') {
