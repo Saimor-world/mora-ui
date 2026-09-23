@@ -1,0 +1,41 @@
+name: Engineering Hygiene
+
+on:
+  pull_request:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-hygiene-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Require repository engineering profile
+        run: test -s ENGINEERING.md
+
+      - name: Reject unresolved merge markers
+        shell: bash
+        run: |
+          if git grep -n -I -E '^(<<<<<<<|>>>>>>>)' -- .; then
+            echo "::error::Unresolved merge-conflict marker found in tracked content."
+            exit 1
+          fi
+
+      - name: Reject unresolved index conflicts
+        shell: bash
+        run: |
+          if test -n "$(git ls-files -u)"; then
+            echo "::error::Git index contains unresolved merge entries."
+            git ls-files -u
+            exit 1
+          fi
