@@ -3,23 +3,23 @@
   "channels": [
     {
       "id": "flow",
-      "label": "SAIMÔR Flow",
-      "timeRange": "05 – 11",
-      "description": "Offen, ruhig und klar für den Start in den Tag.",
+      "label": "SAIMÔR Dawn",
+      "timeRange": "05 – 09",
+      "description": "Weich, offen und klar für den Start in den Tag.",
       "trackIds": []
     },
     {
       "id": "build",
-      "label": "SAIMÔR Build",
-      "timeRange": "11 – 17",
-      "description": "Präziser, fokussierter Klang für Umsetzung und Struktur.",
+      "label": "SAIMÔR Focus",
+      "timeRange": "09 – 17",
+      "description": "Präziser, ruhiger Klang für Fokus, Umsetzung und Struktur.",
       "trackIds": []
     },
     {
       "id": "lounge",
-      "label": "SAIMÔR Lounge",
+      "label": "SAIMÔR Dusk",
       "timeRange": "17 – 22",
-      "description": "Wärmer und weicher für Review, Lesen und Übergang.",
+      "description": "Wärmer, fließender und weicher für Übergang, Review und kreatives Ausklingen.",
       "trackIds": []
     },
     {
