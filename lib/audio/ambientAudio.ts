@@ -178,14 +178,17 @@ export const resolveAmbientAudioSettings = (userSettings?: Record<string, any> |
                     : DEFAULT_AMBIENT_AUDIO_VOLUME
             ),
     trackId:
-        typeof userSettings?.ambientAudioTrackId === 'string'
-            ? userSettings.ambientAudioTrackId
+        userSettings && Object.prototype.hasOwnProperty.call(userSettings, 'ambientAudioTrackId')
+            ? (typeof userSettings.ambientAudioTrackId === 'string' && userSettings.ambientAudioTrackId.trim()
+                ? userSettings.ambientAudioTrackId
+                : null)
             : readStoredTrackId(AMBIENT_AUDIO_STORAGE_KEYS.trackId),
 });
 
 export const resolveAmbientSceneTrackMap = (userSettings?: Record<string, any> | null): AmbientSceneTrackMap => {
-    const serverMap = sanitizeSceneTrackMap(userSettings?.ambientSceneTrackMap);
-    if (Object.keys(serverMap).length > 0) return serverMap;
+    if (userSettings && Object.prototype.hasOwnProperty.call(userSettings, 'ambientSceneTrackMap')) {
+        return sanitizeSceneTrackMap(userSettings.ambientSceneTrackMap);
+    }
     return readStoredSceneTrackMap();
 };
 
