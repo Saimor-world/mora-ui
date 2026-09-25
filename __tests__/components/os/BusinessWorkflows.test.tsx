@@ -107,7 +107,8 @@ it('shows tenant-scoped business and financial evidence and opens the selected w
   expect(onOpen).toHaveBeenCalledWith('action-center', 'Entscheidungen', { width: 940, height: 720 });
 
   fireEvent.click(screen.getByText('Finanzen & Liquidität'));
-  expect(onOpenDesk).toHaveBeenCalledTimes(1);
+  expect(onOpen).toHaveBeenCalledWith('finance', 'Finanzen & Liquidität', { width: 1120, height: 760 });
+  expect(onOpenDesk).not.toHaveBeenCalled();
 });
 
 it('does not request or expose finance values for a member role', () => {
