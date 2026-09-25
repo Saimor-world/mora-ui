@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "channels": [
+    {
+      "id": "flow",
+      "label": "SAIMÔR Dawn",
+      "timeRange": "05 – 09",
+      "description": "Weich, offen und klar für den Start in den Tag.",
+      "trackIds": []
+    },
+    {
+      "id": "build",
+      "label": "SAIMÔR Focus",
+      "timeRange": "09 – 17",
+      "description": "Präziser, ruhiger Klang für Fokus, Umsetzung und Struktur.",
+      "trackIds": []
+    },
+    {
+      "id": "lounge",
+      "label": "SAIMÔR Dusk",
+      "timeRange": "17 – 22",
+      "description": "Wärmer, fließender und weicher für Übergang, Review und kreatives Ausklingen.",
+      "trackIds": []
+    },
+    {
+      "id": "night",
+      "label": "SAIMÔR Night",
+      "timeRange": "22 – 05",
+      "description": "Dunkel, weit und minimal für späte Sessions.",
+      "trackIds": []
+    }
+  ],
+  "tracks": []
+}
