@@ -135,10 +135,10 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             ? 'Mit Zugangsdaten öffnen'
             : 'Eintreten';
     const demoEntrySubtitle = websiteEntryContext
-        ? 'Isolierten Preview-Tenant aus dem Website-Check erzeugen'
+        ? 'Deinen Vorschau-Arbeitsraum mit den Ergebnissen des Website-Checks öffnen'
         : surfaceProfile.isLocalTruthSurface
             ? 'Kein öffentlicher Demo-Account: bitte bewusst anmelden.'
-            : 'Dein eigener Raum — mit Kontext oder Login. Kein geteiltes Schaufenster.';
+            : 'Mit deinem Zugang anmelden. Für eine Vorschau starte den Security Check auf saimor.world.';
 
     const handleLogout = React.useCallback(async (showToast = true) => {
         await authLogout();
@@ -1356,7 +1356,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             }}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? Zurück zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
@@ -1507,7 +1507,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                             onClick={() => setMode('welcome')}
                                             className="w-full py-3 text-xs text-emerald-500/50 hover:text-emerald-400 transition-colors tracking-wider"
                                         >
-                                            {'? Zurück zum Einstieg'}
+                                            {'← Zurück zum Einstieg'}
                                         </button>
                                     </div>
                                 </div>
