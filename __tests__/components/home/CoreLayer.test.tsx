@@ -2,7 +2,7 @@
  * CoreLayer.test.tsx
  *
  * CoreLayer surface router:
- * coreMode='home'    → renders HomeSurfaceNext only
+ * coreMode='home'    → renders the canonical HomeSurfaceUnified only
  * coreMode='explore' → renders UniverseView only
  * coreMode changes   → surface switches accordingly
  */
@@ -14,8 +14,8 @@ import { useNavStore } from '@/lib/store/navStore';
 import { CoreLayer } from '@/components/home/CoreLayer';
 
 // Lightweight stubs so the test doesn't pull in heavy canvas/WebGL deps.
-jest.mock('@/components/home/HomeSurfaceNext', () => ({
-    HomeSurfaceNext: () => <div data-testid="home-surface">HomeSurfaceNext</div>,
+jest.mock('@/components/home/HomeSurfaceUnified', () => ({
+    HomeSurfaceUnified: () => <div data-testid="home-surface">HomeSurfaceUnified</div>,
 }));
 
 jest.mock('@/components/home/UniverseView', () => ({
@@ -59,7 +59,7 @@ describe('CoreLayer', () => {
         } as any);
     });
 
-    it('renders the next Home surface when coreMode is home', () => {
+    it('renders the canonical Home surface when coreMode is home', () => {
         setCoreMode('home');
         render(<CoreLayer />);
 
