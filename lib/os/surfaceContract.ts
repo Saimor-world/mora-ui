@@ -17,8 +17,10 @@ export const SAIMOR_PRODUCT_LABEL = 'Saimôr OS';
  * Product contract for the convergence from the historical OS + Desk split.
  *
  * There is one user-facing product: Saimôr OS.
- * The old Desk is migration inventory only. Its useful capabilities become
- * native OS surfaces and apps on the same Engine, identity and CORE truth.
+ * HomeSurfaceUnified is the canonical authenticated home surface.
+ * The old Desk and alternate Home experiments are migration inventory only.
+ * Useful capabilities become native OS surfaces and apps on the same Engine,
+ * identity and CORE truth.
  */
 export const SAIMOR_PRODUCT_CONTRACT = {
   product: SAIMOR_OS_PRODUCT,

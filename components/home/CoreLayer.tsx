@@ -4,7 +4,7 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useNavStore } from '@/lib/store/navStore';
-import { HomeSurfaceNext } from '@/components/home/HomeSurfaceNext';
+import { HomeSurfaceUnified } from '@/components/home/HomeSurfaceUnified';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
 
 /**
@@ -79,7 +79,7 @@ export const CoreLayer: React.FC = () => {
                     >
                         {activeMode === 'visitor' || activeMode === 'private_preview'
                             ? <VisitorHomeSurface />
-                            : <HomeSurfaceNext />}
+                            : <HomeSurfaceUnified />}
                     </motion.div>
                 ) : (
                     <motion.div
