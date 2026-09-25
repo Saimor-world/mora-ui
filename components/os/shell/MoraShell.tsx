@@ -396,10 +396,21 @@ export const MoraShell: React.FC = () => {
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
     const isAmbientRoomOpen = useNavStore((s) => s.voiceOverlayOpen);
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
-    /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
+    /**
+     * Universe owns its visual ambient. Keeping the shell canvas, canopy,
+     * mycelium, grid and dust mounted underneath duplicated the whole scene
+     * and kept several full-viewport blur layers moving behind an opaque
+     * Universe photograph. Pause/unmount those islands while Universe is open;
+     * the shared static plate and MoraLivingBackground still preserve scene
+     * continuity during the transition.
+     */
     const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
     const ambient = useAmbientCapability();
-    const mountHeavyAmbient = ambient.enableHeavy && ambient.heavyReady && !pauseHeavyBackground;
+    const mountHeavyAmbient =
+        ambient.enableHeavy &&
+        ambient.heavyReady &&
+        !pauseHeavyBackground &&
+        !universeLightAmbient;
     const starFieldDensity =
         ambient.density === 'low' || universeLightAmbient ? 'low' : 'medium';
 
@@ -766,7 +777,7 @@ export const MoraShell: React.FC = () => {
             <RitualSceneStyler muted={isUniverseExploreSurface} />
             <ShellStaticBackdrop />
             <MoraLivingBackground />
-            <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
+            <TemporalAtmosphere paused={pauseHeavyBackground || universeLightAmbient || !mountHeavyAmbient} />
 
             {mountHeavyAmbient && (
                 <>
