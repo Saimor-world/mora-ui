@@ -1,4 +1,4 @@
-import { corePost, coreGet } from './coreClient';
+import { corePost } from './coreClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { clearMoraWorkspaceIntent, readMoraWorkspaceIntent } from '@/lib/os/openMoraWorkspace';
@@ -227,14 +227,6 @@ export const m = {
             iterations: 1,
             metadata: response.metadata
         };
-    },
-
-    listTools: async () => {
-        return coreGet('/v3/mora/tools');
-    },
-
-    executeTools: async (payload: Record<string, unknown>) => {
-        return corePost('/v3/mora/tools/execute', payload);
     },
 };
 
