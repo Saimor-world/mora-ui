@@ -38,7 +38,7 @@ import { useCompanies } from "@/lib/queries/useCompanies";
 import { useTree } from "@/lib/queries/useTree";
 import { dispatchMoraPresence } from "@/lib/mora/presenceEvents";
 import { usePaneStore } from "@/lib/store/paneStore";
-import { parseAIResponse, executeCursorCommands } from "@/lib/ai/cursorBridge";
+import { executeCoreUiActions } from "@/lib/mora/coreUiActions";
 import { Loader2, Sparkles, Bot, User } from "lucide-react";
 import { executeAgenticLoop } from "@/lib/api/cognitionClient";
 import { openMoraCenter } from '@/lib/utils/openMoraCenter';
@@ -162,11 +162,10 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
             });
 
             if (response?.final_message) {
-                const { cleanContent, commands } = parseAIResponse(response.final_message);
-
-                if (commands.length > 0) {
-                    executeCursorCommands(commands);
-                }
+                // UI control comes only from CORE's structured ui_actions,
+                // never from markers in model text.
+                executeCoreUiActions(response.ui_actions);
+                const cleanContent = response.final_message;
 
                 if (response.final_state === 'S4_CONFIRM' && response.pending_confirmations.length > 0) {
                     const pending = response.pending_confirmations[0];

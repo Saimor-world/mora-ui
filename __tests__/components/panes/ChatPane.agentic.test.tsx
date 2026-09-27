@@ -36,11 +36,6 @@ jest.mock('@/lib/api/moraAgentClient', () => ({
   buildChatContext: jest.fn(() => ({})),
 }));
 
-jest.mock('@/lib/ai/cursorBridge', () => ({
-  parseAIResponse: jest.fn(),
-  executeCursorCommands: jest.fn(),
-}));
-
 jest.mock('@/lib/mora/presenceEvents', () => ({
   dispatchMoraPresence: (...args: any[]) => mockDispatchMoraPresence(...args),
 }));
