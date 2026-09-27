@@ -145,7 +145,11 @@ export async function fetchDepartments(companyId?: string): Promise<CoreDepartme
 
 export async function fetchSpaces(departmentId?: string): Promise<CoreSpace[]> {
     const query = departmentId ? `?department_id=${departmentId}` : '';
-    const result = await coreGet(`/v3/spaces${query}`, { isOptional: true });
+    // Deliberately not isOptional: DepartmentLayer needs to tell a real fetch
+    // failure apart from a genuinely empty department (which "leg einen
+    // Bereich an" only makes sense for) - isOptional:true would turn a
+    // non-ok response into a silent null indistinguishable from "no spaces".
+    const result = await coreGet(`/v3/spaces${query}`);
     return normalizeList<CoreSpace>(result, ['spaces']);
 }
 
