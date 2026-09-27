@@ -434,8 +434,8 @@ export const AmbientRoom: React.FC<AmbientRoomProps> = ({ variant = 'overlay', o
             await executeMoraTools(moraTools as any);
             speak('Erledigt.');
             setAmbientState('done');
-        } catch {
-            setErrorMsg('Ausführung fehlgeschlagen.');
+        } catch (err) {
+            setErrorMsg(err instanceof Error && err.message ? err.message : 'Ausführung fehlgeschlagen.');
             speak('Die Ausführung ist fehlgeschlagen.');
             setAmbientState('error');
         }

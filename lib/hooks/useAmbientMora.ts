@@ -13,13 +13,22 @@ import { toast } from 'sonner';
 import { corePost } from '@/lib/api/http';
 import { buildChatContext, type ChatContext } from '@/lib/api/moraAgentClient';
 import { getMoraPlaygroundTarget } from '@/lib/os/moraPlayground';
-import { createNode } from '@/lib/api/orgClient';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useNavStore } from '@/lib/store/navStore';
 import type { UiToolCall } from '@/lib/lagefeld/types';
 
+type CreateNodeInput = { title: string; content: string; folder_id?: string; folder_ref?: string; type?: string };
+type CreateFolderInput = { name: string; space_id?: string; parent_folder_id?: string; ref?: string };
+type UpdateNodeInput = { node_id: string; title?: string; content?: string };
+type RememberFactInput = { fact: string; category?: string };
+
+// Write tools are executed server-side by /v3/mora/field/execute exactly as
+// Môra proposed them; the confirmation card lists every one of them.
 export type AmbientToolCall =
-    | { tool: 'createNode';           input: { title: string; content: string; folder_id: string } }
+    | { tool: 'createNode';           input: CreateNodeInput }
+    | { tool: 'createFolder';         input: CreateFolderInput }
+    | { tool: 'updateNode';           input: UpdateNodeInput }
+    | { tool: 'rememberFact';         input: RememberFactInput }
     | { tool: 'openPane';             input: { type: string; title?: string; data?: Record<string, unknown> } }
     | { tool: 'navigateToDepartment'; input: { departmentId: string } }
     | { tool: 'searchGlobal';         input: { query: string } };
@@ -115,24 +124,24 @@ export function useAmbientMora(): UseAmbientMoraReturn {
                 throw new Error('Mora Field konnte die Aktion nicht ausführen.');
             }
 
-            const failed = (response.results ?? []).find(result => !result.ok);
-            if (failed) {
-                throw new Error(failed.error || 'Mora Field Aktion fehlgeschlagen.');
+            // Writes are not transactional: say how many already went through.
+            const results = response.results ?? [];
+            const failed = results.filter(result => !result.ok);
+            if (failed.length > 0) {
+                const firstError = failed[0].error || 'Mora Field Aktion fehlgeschlagen.';
+                const succeeded = results.length - failed.length;
+                throw new Error(
+                    succeeded > 0
+                        ? `${succeeded} von ${results.length} Aktionen ausgeführt. Fehler: ${firstError}`
+                        : firstError,
+                );
+            }
+            if (results.length > 0) {
+                toast.success(results.length === 1 ? 'Aktion ausgeführt.' : `${results.length} Aktionen ausgeführt.`);
             }
 
             for (const call of response.uiActions ?? []) {
                 switch (call.tool) {
-                    case 'createNode': {
-                        const newNode = await createNode({
-                            title: call.input.title,
-                            content: call.input.content,
-                            folder_id: call.input.folder_id,
-                            type: 'note',
-                        });
-                        toast.success(`Item "${newNode.title}" added!`);
-                        break;
-                    }
-
                     case 'openPane': {
                         const { openPane } = usePaneStore.getState();
                         openPane({
@@ -248,14 +257,41 @@ function mapFieldToolCalls(
 
         if (call.type === 'create_note') {
             const content = String(payload.content ?? transcript);
-            toolCalls.push({
-                tool: 'createNode',
-                input: {
-                    title: content.trim().slice(0, 100),
-                    content,
-                    folder_id: defaultFolderId || '',
-                },
-            });
+            const input: CreateNodeInput = {
+                title: String(payload.title || content.trim().slice(0, 100)),
+                content,
+            };
+            if (payload.folder_ref) {
+                input.folder_ref = String(payload.folder_ref);
+            } else {
+                input.folder_id = String(payload.folder_id || defaultFolderId || '');
+            }
+            if (payload.type) input.type = String(payload.type);
+            toolCalls.push({ tool: 'createNode', input });
+            continue;
+        }
+
+        if (call.type === 'create_folder' && payload.name) {
+            const input: CreateFolderInput = { name: String(payload.name) };
+            if (payload.space_id) input.space_id = String(payload.space_id);
+            if (payload.parent_folder_id) input.parent_folder_id = String(payload.parent_folder_id);
+            if (payload.ref) input.ref = String(payload.ref);
+            toolCalls.push({ tool: 'createFolder', input });
+            continue;
+        }
+
+        if (call.type === 'update_node' && payload.node_id) {
+            const input: UpdateNodeInput = { node_id: String(payload.node_id) };
+            if (payload.title) input.title = String(payload.title);
+            if (payload.content !== undefined && payload.content !== null) input.content = String(payload.content);
+            toolCalls.push({ tool: 'updateNode', input });
+            continue;
+        }
+
+        if (call.type === 'remember_fact' && payload.fact) {
+            const input: RememberFactInput = { fact: String(payload.fact) };
+            if (payload.category) input.category = String(payload.category);
+            toolCalls.push({ tool: 'rememberFact', input });
             continue;
         }
     }
@@ -285,6 +321,12 @@ function buildIntent(calls: AmbientToolCall[], transcript: string): string {
     switch (first.tool) {
         case 'createNode':
             return `Node erstellen: "${first.input.title}"`;
+        case 'createFolder':
+            return `Ordner anlegen: "${first.input.name}"`;
+        case 'updateNode':
+            return `Node ändern: "${first.input.title ?? first.input.node_id}"`;
+        case 'rememberFact':
+            return `Merken: "${first.input.fact}"`;
         case 'openPane':
             return `${first.input.type} öffnen`;
         case 'navigateToDepartment':

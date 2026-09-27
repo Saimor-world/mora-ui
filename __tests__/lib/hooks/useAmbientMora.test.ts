@@ -262,6 +262,66 @@ describe('useAmbientMora', () => {
         });
     });
 
+    it('keeps the planner title, folder and type for create_note instead of the transcript', async () => {
+        mockCorePost.mockResolvedValue({
+            text: 'Vorschlag.',
+            intent: 'plan',
+            toolCalls: [
+                { type: 'create_note', payload: { title: 'Kapitel 1', content: '# Eins', folder_id: 'f-growth', type: 'document' } },
+                { type: 'create_note', payload: { title: 'Kapitel 2', content: '# Zwei', folder_ref: 'plan' } },
+            ],
+        });
+        const { result } = renderHook(() => useAmbientMora());
+        let res: any;
+        await act(async () => {
+            res = await result.current.sendToMora('Leg den Growth Plan an', 'folder-default');
+        });
+        expect(res.toolCalls).toEqual([
+            { tool: 'createNode', input: { title: 'Kapitel 1', content: '# Eins', folder_id: 'f-growth', type: 'document' } },
+            { tool: 'createNode', input: { title: 'Kapitel 2', content: '# Zwei', folder_ref: 'plan' } },
+        ]);
+    });
+
+    it('maps folder creation, node update and memory proposals to their own tools', async () => {
+        mockCorePost.mockResolvedValue({
+            text: 'Vorschlag.',
+            intent: 'plan',
+            toolCalls: [
+                { type: 'create_folder', payload: { name: 'Growth Plan', space_id: 's-1', ref: 'plan' } },
+                { type: 'update_node', payload: { node_id: 'n-1', content: 'neu' } },
+                { type: 'remember_fact', payload: { fact: 'Q1 Fokus ist Growth', category: 'goal' } },
+            ],
+        });
+        const { result } = renderHook(() => useAmbientMora());
+        let res: any;
+        await act(async () => {
+            res = await result.current.sendToMora('Plan', 'folder-default');
+        });
+        expect(res.toolCalls).toEqual([
+            { tool: 'createFolder', input: { name: 'Growth Plan', space_id: 's-1', ref: 'plan' } },
+            { tool: 'updateNode', input: { node_id: 'n-1', content: 'neu' } },
+            { tool: 'rememberFact', input: { fact: 'Q1 Fokus ist Growth', category: 'goal' } },
+        ]);
+    });
+
+    it('drops write proposals that lack their required target instead of substituting one', async () => {
+        mockCorePost.mockResolvedValue({
+            text: 'Vorschlag.',
+            intent: 'plan',
+            toolCalls: [
+                { type: 'create_folder', payload: {} },
+                { type: 'update_node', payload: { content: 'ohne Ziel' } },
+                { type: 'remember_fact', payload: {} },
+            ],
+        });
+        const { result } = renderHook(() => useAmbientMora());
+        let res: any;
+        await act(async () => {
+            res = await result.current.sendToMora('Mach was', 'folder-default');
+        });
+        expect(res.toolCalls).toEqual([]);
+    });
+
     it('does not create storage actions from generic text even when a default folder exists', async () => {
         const { result } = renderHook(() => useAmbientMora());
         let res: any;
@@ -363,6 +423,25 @@ describe('useAmbientMora', () => {
         expect(mockOpenPane).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'search', data: { query: 'Sprint Retro' } }),
         );
+    });
+
+    it('executeMoraTools reports partial success when only some writes fail', async () => {
+        mockCorePost.mockResolvedValueOnce({
+            results: [
+                { ok: true },
+                { ok: false, error: 'Folder not accessible' },
+                { ok: true },
+            ],
+            uiActions: [],
+        });
+        const { result } = renderHook(() => useAmbientMora());
+        await act(async () => {
+            await expect(result.current.executeMoraTools([
+                { tool: 'createFolder', input: { name: 'Plan', ref: 'plan' } },
+                { tool: 'createNode', input: { title: 'A', content: 'a', folder_id: 'fremd' } },
+                { tool: 'createNode', input: { title: 'B', content: 'b', folder_ref: 'plan' } },
+            ])).rejects.toThrow('2 von 3 Aktionen ausgeführt. Fehler: Folder not accessible');
+        });
     });
 
     it('executeMoraTools throws when backend execution fails', async () => {

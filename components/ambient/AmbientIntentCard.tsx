@@ -44,11 +44,12 @@ export const AmbientIntentCard: React.FC<AmbientIntentCardProps> = ({
 }) => {
     const hasAction = toolCalls.length > 0;
     const hasPreview = !!fieldPreview && fieldPreview.cards.length > 0;
-    const actionLabel = hasAction
-        ? hasPreview
+    // Every call is listed: "Ausführen" confirms all of them, so none may be hidden.
+    const actionLabels = toolCalls.map(call =>
+        hasPreview && call.tool === 'openPane' && call.input.type === 'lagefeld'
             ? `Lagefeld — ${fieldPreview!.cards.length} Karten`
-            : describeAction(toolCalls[0])
-        : null;
+            : describeAction(call),
+    );
 
     return (
         <motion.div
@@ -80,7 +81,7 @@ export const AmbientIntentCard: React.FC<AmbientIntentCardProps> = ({
             </div>
 
             {/* Action row */}
-            {hasAction && actionLabel && (
+            {hasAction && (
                 <div className="flex items-start gap-3">
                     <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"
                          style={{ background: 'rgba(52,211,153,0.10)', border: '1px solid rgba(52,211,153,0.2)' }}>
@@ -88,11 +89,13 @@ export const AmbientIntentCard: React.FC<AmbientIntentCardProps> = ({
                     </div>
                     <div>
                         <div className="text-[10px] tracking-widest uppercase text-emerald-300/50 mb-0.5">
-                            Aktion
+                            {actionLabels.length > 1 ? `Aktionen (${actionLabels.length})` : 'Aktion'}
                         </div>
-                        <div className="text-sm text-white/70">
-                            {actionLabel}
-                        </div>
+                        <ul data-testid="intent-actions" className="text-sm text-white/70 flex flex-col gap-0.5 max-h-40 overflow-y-auto">
+                            {actionLabels.map((label, index) => (
+                                <li key={index}>{label}</li>
+                            ))}
+                        </ul>
                     </div>
                 </div>
             )}
@@ -161,6 +164,12 @@ function describeAction(call: AmbientToolCall): string {
     switch (call.tool) {
         case 'createNode':
             return `Node erstellen → „${call.input.title}"`;
+        case 'createFolder':
+            return `Ordner anlegen → „${call.input.name}"`;
+        case 'updateNode':
+            return `Node ändern → ${call.input.title ? `„${call.input.title}"` : call.input.node_id}`;
+        case 'rememberFact':
+            return `Merken → „${call.input.fact}"`;
         case 'openPane':
             return `${call.input.type} öffnen`;
         case 'navigateToDepartment':
