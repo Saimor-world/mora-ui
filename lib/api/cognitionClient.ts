@@ -7,6 +7,7 @@
 
 import { coreGet, corePost } from './coreClient';
 import { useNavStore } from '@/lib/store/navStore';
+import type { CoreUiAction } from '@/lib/mora/coreUiActions';
 
 export interface ProactiveSuggestion {
     type: 'action' | 'optimization' | 'insight';
@@ -157,6 +158,8 @@ export interface AgentResponse {
     pending_confirmations: AgentPendingConfirmation[];
     mode: string;
     transparency_note: string;
+    /** Safe UI actions derived by CORE from tool calls (never from model text) */
+    ui_actions?: CoreUiAction[];
     /** Present when the agent created a work-session plan (Core 6d53ddd) */
     work_session_plan?: { plan_id: string; session_id?: string; title?: string; summary?: string; state?: string; stats?: Record<string, any> };
 }
