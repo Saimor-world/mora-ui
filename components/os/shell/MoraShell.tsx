@@ -117,6 +117,7 @@ const MyceliumOverlay = dynamic(
 import { Dock } from '@/components/mora/Dock';
 import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 import { FirstRunTour } from '@/components/onboarding/FirstRunTour';
+import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
 import { useMoraSpeaks } from '@/lib/queries/useMoraSpeaks';
 // 1.0 gated (future-tier) — see docs/plans/2026-03-27-surface-hierarchy-1.0.md
 // import { ResonanceRoom } from '@/components/mora/ResonanceRoom';
@@ -880,6 +881,8 @@ export const MoraShell: React.FC = () => {
 
             {/* MÔRA product tour — ambient intro near orb; greeting deferred until tour dismissed */}
             {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <FirstRunTour />}
+            {/* Welcome tour — first-run experience for new users */}
+            {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <WelcomeTour />}
             {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <MoraGreetingBubble />}
 
             {/* Spotlight (Cmd+K) */}
