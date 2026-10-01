@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Cable, CircleAlert, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
 import { useConnectCompanyBitvavo, useFinanceConnections, useFinanceSources, useOpenBankingInstitutions, useStartCompanyOpenBanking, useSyncFinanceConnection } from '@/lib/queries/useFinanceSources';
+import type { FinanceConnection, FinanceSource } from '@/lib/queries/useFinanceSources';
 
 const LABELS: Record<string, string> = {
   gocardless_bank_data: 'Open Banking / PSD2',
@@ -15,10 +16,19 @@ const LABELS: Record<string, string> = {
   physical_asset: 'Physische Assets',
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Bankfreigabe offen', connected: 'Verbunden', reauth_required: 'Neue Freigabe nötig',
+  degraded: 'Aktualisierung fehlgeschlagen', revoked: 'Freigabe beendet',
+};
+
 export default function FinanceSourcesPanel({ companyId }: { companyId: string }) {
   const sources = useFinanceSources('company');
   const connections = useFinanceConnections('company', companyId);
-  const connected = new Map((connections.data?.connections || []).map((item) => [item.provider, item]));
+  const connected = new Set((connections.data?.connections || []).map((item) => item.provider));
+  const sourceRows = (sources.data?.sources || []).flatMap<{ source: FinanceSource; connection?: FinanceConnection }>((source) => {
+    const matches = (connections.data?.connections || []).filter((item) => item.provider === source.id);
+    return matches.length ? matches.map((connection) => ({ source, connection })) : [{ source, connection: undefined }];
+  });
   const bitvavo = useConnectCompanyBitvavo(companyId);
   const [bitvavoKey, setBitvavoKey] = useState('');
   const [bitvavoSecret, setBitvavoSecret] = useState('');
@@ -60,18 +70,17 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
       )}
 
       <div className="mt-5 grid gap-2 md:grid-cols-2">
-        {(sources.data?.sources || []).map((source) => {
-          const connection = connected.get(source.id);
+        {sourceRows.map(({ source, connection }) => {
           const isConnected = connection?.status === 'connected';
           return (
-            <div key={source.id} className="rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
+            <div key={`${source.id}:${connection?.id || 'new'}`} className="rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="text-xs font-medium text-white/68">{LABELS[source.id] || source.label}</div>
                 <div className={isConnected
                   ? 'rounded-full border border-emerald-300/12 bg-emerald-400/[0.05] px-2 py-1 text-[8px] uppercase tracking-[0.14em] text-emerald-100/58'
                   : 'rounded-full border border-white/[0.07] px-2 py-1 text-[8px] uppercase tracking-[0.14em] text-white/28'
                 }>
-                  {connection?.status || 'nicht verbunden'}
+                  {connection ? STATUS_LABELS[connection.status] || connection.status : 'Nicht verbunden'}
                 </div>
               </div>
               <div className="mt-2 text-[9px] uppercase tracking-[0.12em] text-white/24">{source.mode}</div>
@@ -81,6 +90,14 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
                   <div>{connection.account_count} Account{connection.account_count === 1 ? '' : 's'}</div>
                   <div>{connection.last_synced_at ? 'Sync ' + new Date(connection.last_synced_at).toLocaleString('de-DE') : 'Noch kein erfolgreicher Sync'}</div>
                   {connection.last_error_code && <div className="text-amber-100/52">Fehler: {connection.last_error_code}</div>}
+                  {connection.status === 'pending' && connection.authorization_url && (
+                    <a href={connection.authorization_url} rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-emerald-300/18 px-3 py-2 text-xs text-emerald-100/80">
+                      Bankfreigabe fortsetzen
+                    </a>
+                  )}
+                  {connection.status === 'pending' && !connection.authorization_url && (
+                    <p>Der Freigabe-Link ist nicht verfügbar. Starte unten eine neue Bankfreigabe.</p>
+                  )}
                   {connection.provider === 'gocardless_bank_data' && connection.status !== 'revoked' && (
                     <button
                       type="button"
@@ -101,11 +118,12 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           );
         })}
       </div>
+      {syncConnection.error && <div role="alert" className="mt-3 text-xs text-red-100/80">Bankdaten konnten nicht aktualisiert werden: {syncConnection.error.message}. Der letzte bekannte Stand bleibt erhalten.</div>}
 
 
-      {!connected.has('gocardless_bank_data') && (
+      {companyId && (
         <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4">
-          <div className="text-xs font-medium text-white/66">Bankkonto über PSD2 verbinden</div>
+          <div className="text-xs font-medium text-white/80">Bankkonto verbinden oder Freigabe erneuern</div>
           <p className="mt-1 text-[10px] leading-relaxed text-white/32">
             Die Bank-Anmeldung findet beim regulierten Open-Banking-Flow statt. SAIMÔR erhält danach Konten, Salden und Transaktionen, aber kein Online-Banking-Passwort.
           </p>
@@ -115,7 +133,8 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           </label>
           {institutions.isError ? (
             <div role="alert" className="mt-3 text-[10px] text-amber-100/58">
-              Open Banking ist in CORE noch nicht mit Provider-Credentials konfiguriert.
+              Die Bankauswahl konnte nicht geladen werden. {institutions.error.message}
+              <button type="button" onClick={() => void institutions.refetch()} className="ml-2 underline">Erneut versuchen</button>
             </div>
           ) : (
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">

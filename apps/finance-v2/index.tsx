@@ -53,6 +53,19 @@ function companyName(company: any) {
   return company?.name || company?.display_name || company?.title || 'SAIMÔR';
 }
 
+function financeWarningCopy(value: string) {
+  const copy: Record<string, string> = {
+    no_company_finance_accounts: 'Für dieses Unternehmen ist noch kein Konto erfasst.',
+    incomplete_balance_coverage: 'Für mindestens ein Konto fehlt ein belegter Saldo.',
+    partial_observation_coverage: 'Die erfassten Salden decken den Finanzstand noch nicht vollständig ab.',
+    stale_balance_observation: 'Mindestens ein Kontostand ist älter als 24 Stunden oder das Konto ist nicht mehr aktiv.',
+    balance_freshness_unknown: 'Die Aktualität mindestens eines Kontostands konnte nicht bestätigt werden.',
+    'Observed balances are checkpoints; projected balances add later CORE postings after the checkpoint and are not reconciliation claims.': 'Die Projektion ergänzt den belegten Kontostand um später erfasste Bewegungen. Sie ist noch kein abgeglichener Bankstand.',
+    'Partial aggregates disclose omitted accounts and are not full-company balance claims.': 'Fehlende Kontostände werden nicht als null gerechnet. Die Summe kann deshalb unvollständig sein.',
+  };
+  return copy[value] || 'Ein weiterer Datenpunkt muss geprüft werden.';
+}
+
 function companyId(company: any): string | null {
   const value = company?.id || company?.company_id;
   return typeof value === 'string' && value ? value : null;
@@ -396,7 +409,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <StateBadge state={primaryCurrency?.coverage || 'unknown'} />
-                    {primaryCurrency?.aggregate_is_partial && <StateBadge state="partial" />}
+                    {primaryCurrency?.aggregate_is_partial && primaryCurrency?.coverage !== 'partial' && <StateBadge state="partial" />}
                   </div>
                 </div>
               </section>
@@ -447,7 +460,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
                   </div>
                   <div className="mt-3 space-y-2">
                     {[...(state.warnings || []), ...(state.notes || [])].map((item) => (
-                      <div key={item} className="text-[10px] leading-relaxed text-white/38">{item.replaceAll('_', ' ')}</div>
+                        <div key={item} className="text-xs leading-relaxed text-white/65">{financeWarningCopy(item)}</div>
                     ))}
                   </div>
                 </section>
