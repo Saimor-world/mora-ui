@@ -11,12 +11,12 @@ if (typeof global.cancelAnimationFrame === 'undefined') {
   (global as any).cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as NodeJS.Timeout);
 }
 
-if (typeof window.requestAnimationFrame === 'undefined') {
+if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'undefined') {
   window.requestAnimationFrame = (callback: FrameRequestCallback) =>
     Number(setTimeout(() => callback(Date.now()), 16));
 }
 
-if (typeof window.cancelAnimationFrame === 'undefined') {
+if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'undefined') {
   window.cancelAnimationFrame = (id: number) => clearTimeout(id as unknown as NodeJS.Timeout);
 }
 
@@ -45,35 +45,38 @@ if (typeof global.ResizeObserver === 'undefined') {
   global.ResizeObserver = MockResizeObserver;
 }
 
-Object.defineProperty(window.HTMLCanvasElement.prototype, 'getContext', {
-  value: function getContext() {
-    return {
-      clearRect: () => {},
-      fillRect: () => {},
-      createRadialGradient: () => ({ addColorStop: () => {} }),
-      setTransform: () => {},
-      beginPath: () => {},
-      arc: () => {},
-      quadraticCurveTo: () => {},
-      fill: () => {},
-      save: () => {},
-      restore: () => {},
-      translate: () => {},
-      scale: () => {},
-      moveTo: () => {},
-      lineTo: () => {},
-      setLineDash: () => {},
-      lineDashOffset: 0,
-      globalCompositeOperation: 'source-over',
-      stroke: () => {},
-      strokeStyle: '',
-      lineWidth: 1,
-      lineCap: 'round',
-      fillStyle: '',
-      font: '',
-      textAlign: 'left',
-      textBaseline: 'alphabetic',
-      fillText: () => {},
-    } as unknown as CanvasRenderingContext2D;
-  },
-});
+// Node-environment tests (route handlers, middleware) have no DOM.
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window.HTMLCanvasElement.prototype, 'getContext', {
+    value: function getContext() {
+      return {
+        clearRect: () => {},
+        fillRect: () => {},
+        createRadialGradient: () => ({ addColorStop: () => {} }),
+        setTransform: () => {},
+        beginPath: () => {},
+        arc: () => {},
+        quadraticCurveTo: () => {},
+        fill: () => {},
+        save: () => {},
+        restore: () => {},
+        translate: () => {},
+        scale: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        setLineDash: () => {},
+        lineDashOffset: 0,
+        globalCompositeOperation: 'source-over',
+        stroke: () => {},
+        strokeStyle: '',
+        lineWidth: 1,
+        lineCap: 'round',
+        fillStyle: '',
+        font: '',
+        textAlign: 'left',
+        textBaseline: 'alphabetic',
+        fillText: () => {},
+      } as unknown as CanvasRenderingContext2D;
+    },
+  });
+}

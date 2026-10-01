@@ -1,12 +1,23 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
+import {
+    hasCoreSessionCookie,
+    hasValidCoreSession,
+    nextAuthVerificationSecret,
+} from "@/lib/auth/coreSessionGuard";
 
 /**
  * SAIMOR Auth Middleware
  *
  * Local Truth is core-session first.
  * NextAuth JWT remains only a fallback bridge for non-local / legacy flows.
+ *
+ * Pages: a CORE session cookie is enough to render the shell, because every
+ * data call goes to CORE, which validates the session itself.
+ * API routes run on this server with its own privileges, so they need a
+ * session CORE actually confirms (or a verified NextAuth token) — cookie
+ * presence alone is not accepted there.
  */
 
 const PUBLIC_PATHS = [
@@ -63,23 +74,28 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const hasCoreSession = !!request.cookies.get("mora_session")?.value;
+    const isApiRoute = pathname.startsWith("/api/");
+
     // mora_auth_token is the readable bridge for website-entry preview sessions
     // (HttpOnly mora_session may be absent on the HQ host when login went via BFF
     // or when CORE Set-Cookie was cross-origin). Accept it in production too.
-    const hasAuthToken = !!request.cookies.get("mora_auth_token")?.value;
-    if (hasCoreSession || hasAuthToken) {
+    if (isApiRoute) {
+        if (await hasValidCoreSession(request.cookies)) {
+            return NextResponse.next();
+        }
+    } else if (hasCoreSessionCookie(request.cookies)) {
         return NextResponse.next();
     }
 
-    const token = isLocalhost
+    const secret = nextAuthVerificationSecret();
+    const token = isLocalhost || !secret
         ? null
-        : await getToken({
-              req: request,
-              secret: process.env.NEXTAUTH_SECRET || "dev_secret_key_change_me_in_prod",
-          });
+        : await getToken({ req: request, secret });
 
     if (!token) {
+        if (isApiRoute) {
+            return NextResponse.json({ error: "Login required" }, { status: 401 });
+        }
         const loginUrl = new URL("/", request.url);
         if (pathname !== "/") {
             loginUrl.searchParams.set("callbackUrl", pathname);

@@ -131,6 +131,30 @@ describe('AmbientIntentCard', () => {
         expect(screen.getByTestId('intent-dismiss')).toBeDisabled();
     });
 
+    it('lists every action that Ausführen will confirm, not only the first', () => {
+        render(
+            <AmbientIntentCard
+                intent="Growth Plan anlegen"
+                toolCalls={[
+                    { tool: 'createFolder', input: { name: 'Growth Plan', ref: 'plan' } },
+                    { tool: 'createNode', input: { title: 'Kapitel 1', content: 'a', folder_ref: 'plan' } },
+                    { tool: 'updateNode', input: { node_id: 'n-1', title: 'Q1 Fokus' } },
+                    { tool: 'rememberFact', input: { fact: 'Q1 Fokus ist Growth' } },
+                ]}
+                onExecute={jest.fn()}
+                onDismiss={jest.fn()}
+            />
+        );
+        expect(screen.getByText('Aktionen (4)')).toBeInTheDocument();
+        const items = screen.getByTestId('intent-actions').querySelectorAll('li');
+        expect(Array.from(items).map(li => li.textContent)).toEqual([
+            'Ordner anlegen → „Growth Plan"',
+            'Node erstellen → „Kapitel 1"',
+            'Node ändern → „Q1 Fokus"',
+            'Merken → „Q1 Fokus ist Growth"',
+        ]);
+    });
+
     it('renders action description for openPane', () => {
         render(
             <AmbientIntentCard
