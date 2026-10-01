@@ -40,6 +40,18 @@ function deliveredAmount(entry: any, tx: any) {
   return tx?.DeliverMax ?? tx?.Amount ?? null;
 }
 
+function decodeNftUri(value: unknown) {
+  const hex = String(value || '').trim();
+  if (!hex || hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) return null;
+
+  try {
+    const decoded = Buffer.from(hex, 'hex').toString('utf8').replace(/\0/g, '').trim();
+    return decoded || null;
+  } catch {
+    return null;
+  }
+}
+
 function normalizeTransaction(entry: any, address: string) {
   const tx = entry?.tx_json || entry?.tx || {};
   const destinationTag = Number.isInteger(tx?.DestinationTag) ? Number(tx.DestinationTag) : null;
@@ -75,9 +87,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const [accountInfo, lines, server, history] = await Promise.all([
+    const [accountInfo, lines, nftResponse, server, history] = await Promise.all([
       rpc<any>('account_info', { account: address, ledger_index: 'validated', signer_lists: true }),
       rpc<any>('account_lines', { account: address, ledger_index: 'validated', limit: 400 }),
+      rpc<any>('account_nfts', { account: address, ledger_index: 'validated', limit: 400 }).catch(() => null),
       rpc<any>('server_info', {}),
       rpc<any>('account_tx', {
         account: address,
@@ -113,6 +126,18 @@ export async function GET(request: NextRequest) {
         }))
       : [];
 
+    const nfts = Array.isArray(nftResponse?.account_nfts)
+      ? nftResponse.account_nfts.map((nft: any) => ({
+          id: String(nft.NFTokenID || ''),
+          issuer: String(nft.Issuer || ''),
+          taxon: Number(nft.NFTokenTaxon || 0),
+          serial: Number(nft.nft_serial || 0),
+          flags: Number(nft.Flags || 0),
+          uriHex: nft.URI ? String(nft.URI) : null,
+          uri: decodeNftUri(nft.URI),
+        }))
+      : [];
+
     const transactions = Array.isArray(history?.transactions)
       ? history.transactions.map((entry: any) => normalizeTransaction(entry, address))
       : [];
@@ -140,7 +165,7 @@ export async function GET(request: NextRequest) {
       network: 'mainnet',
       mode: 'read-only',
       address,
-      ledgerIndex: accountInfo?.ledger_index ?? lines?.ledger_index ?? null,
+      ledgerIndex: accountInfo?.ledger_index ?? lines?.ledger_index ?? nftResponse?.ledger_index ?? null,
       xrp,
       drops: drops.toString(),
       availableXrp,
@@ -161,6 +186,11 @@ export async function GET(request: NextRequest) {
         namespace: '0x53',
         recognizedPayments: commerceTransactions.length,
         recognizedRevenueXrp: Number(commerceRevenueDrops) / 1_000_000,
+      },
+      nfts,
+      nftInventory: {
+        status: !Array.isArray(nftResponse?.account_nfts) ? 'unavailable' : nftResponse?.marker ? 'partial' : 'complete',
+        ledgerIndex: nftResponse?.ledger_index ?? null,
       },
       trustLines,
       transactions,
