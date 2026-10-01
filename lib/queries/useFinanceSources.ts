@@ -209,7 +209,8 @@ export function useSyncFinanceConnection(companyId?: string | null) {
       {},
       { throwAuthErrors: true, preserveEnvelope: true },
     ),
-    onSuccess: async () => {
+    // CORE persists degraded status even when the provider request fails.
+    onSettled: async () => {
       const current = currentIdentity();
       await Promise.all([
         queryClient.invalidateQueries({
