@@ -26,6 +26,7 @@ export type FinanceConnection = {
   last_synced_at?: string | null;
   account_count: number;
   last_error_code?: string | null;
+  authorization_url?: string | null;
 };
 
 export type XrplProof = {
@@ -35,7 +36,12 @@ export type XrplProof = {
   ledger_index: number;
   balance_drops: string;
   balance_xrp: string;
-  owner_count: number;
+  owner_count: number | null;
+  ledger_hash: string;
+  ledger_closed_at: string;
+  validated: true;
+  trust_lines_coverage: 'complete' | 'partial';
+  available_balance_xrp: null;
   trust_lines: Array<{ currency: string; issuer: string; balance: string; limit: string }>;
   observed_at: string;
   signing_available: false;
@@ -155,8 +161,10 @@ export type OpenBankingInstitution = {
 
 export function useOpenBankingInstitutions(country = 'DE') {
   const user = useSessionStore((state) => state.user);
+  const generation = useSessionStore((state) => state.sessionGeneration);
+  const identityKey = user ? `${user.id}:${user.role}:g${generation}` : `anonymous:g${generation}`;
   return useQuery<{ country: string; institutions: OpenBankingInstitution[]; source: string }>({
-    queryKey: ['finance-open-banking-institutions', user?.tenant_id ?? 'none', country],
+    queryKey: ['finance-open-banking-institutions', user?.tenant_id ?? 'none', identityKey, country],
     queryFn: () => coreGet(
       `/v3/finance/sources/open-banking/institutions?country=${encodeURIComponent(country)}`,
       { throwAuthErrors: true },
