@@ -30,8 +30,8 @@ const GROUPS: AppUniverseGroup[] = [
   {
     id: 'people',
     label: 'Menschen',
-    description: 'Team, Benutzer und Verantwortlichkeiten.',
-    appIds: ['team', 'users'],
+    description: 'Team, Benutzer, Klient:innen und Verantwortlichkeiten.',
+    appIds: ['team', 'users', 'begleitungen'],
   },
   {
     id: 'studio',
