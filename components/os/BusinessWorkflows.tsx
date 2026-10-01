@@ -174,7 +174,7 @@ export function BusinessWorkflows({
       },
       {
         id: 'finance',
-        action: { kind: 'desk' },
+        action: { kind: 'pane', id: 'finance', size: { width: 1120, height: 760 } },
         verb: 'Steuern',
         title: 'Finanzen & Liquidität',
         icon: CircleDollarSign,

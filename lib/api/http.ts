@@ -56,6 +56,7 @@ type CoreRequestOptions = {
     skipAuth?: boolean;
     isOptional?: boolean; // If true, non-auth failures may return null for optional/background reads.
     throwAuthErrors?: boolean; // Opt-in: preserve 401/403 as CoreError instead of collapsing them to null.
+    preserveEnvelope?: boolean; // Opt-in for callers that need v3 receipt/meta alongside data.
     headers?: Record<string, string>;
 };
 
@@ -200,7 +201,7 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
             typeof json.meta === 'object' &&
             json.meta?.api_version === 'v3'
         ) {
-            return json.data;
+            return options.preserveEnvelope ? json : json.data;
         }
         return json;
     } catch {
