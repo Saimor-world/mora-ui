@@ -37,6 +37,11 @@ export function ToolTrace({ steps }: { steps?: ToolTraceStep[] }) {
         );
     }
 
+    const formatDuration = (ms: number): string => {
+        if (ms < 1000) return `${ms}ms`;
+        return `${(ms / 1000).toFixed(1)}s`;
+    };
+
     return (
         <div data-testid="tool-trace" className="mt-2">
             <button
@@ -49,6 +54,7 @@ export function ToolTrace({ steps }: { steps?: ToolTraceStep[] }) {
             <div className="flex flex-wrap gap-x-3 gap-y-1">
                 {steps.map((step, i) => {
                     const Icon = ICONS[step.kind] ?? Wrench;
+                    const durationText = step.durationMs != null ? ` (${formatDuration(step.durationMs)})` : '';
                     return (
                         <span
                             key={i}
@@ -56,7 +62,7 @@ export function ToolTrace({ steps }: { steps?: ToolTraceStep[] }) {
                             title={step.ok ? undefined : 'Aktion nicht abgeschlossen'}
                         >
                             <Icon size={11} className={step.ok ? TONES.success.text : TONES.warning.text} />
-                            <span>{step.label}{step.detail ? `: ${step.detail}` : ''}</span>
+                            <span>{step.label}{step.detail ? `: ${step.detail}` : ''}{durationText}</span>
                         </span>
                     );
                 })}

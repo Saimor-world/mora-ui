@@ -17,6 +17,7 @@ export interface ToolTraceStep {
     label: string;
     ok: boolean;
     detail?: string;
+    durationMs?: number;
 }
 
 interface ToolResultLike {
@@ -24,6 +25,7 @@ interface ToolResultLike {
     params?: Record<string, any>;
     success: boolean;
     error?: string;
+    duration_ms?: number;
 }
 
 const LABELS: Record<ToolTraceKind, string> = {
@@ -80,8 +82,12 @@ export function toToolTrace(tools: ToolResultLike[] | undefined | null): ToolTra
     if (!Array.isArray(tools)) return [];
     return tools.map((entry) => {
         if (!entry.success) {
-            // honest failure — no green step, no leaked detail
-            return { kind: 'failed' as const, label: LABELS.failed, ok: false };
+            return {
+                kind: 'failed' as const,
+                label: LABELS.failed,
+                ok: false,
+                durationMs: entry.duration_ms,
+            };
         }
         const kind = kindForTool(entry.tool);
         return {
@@ -89,6 +95,7 @@ export function toToolTrace(tools: ToolResultLike[] | undefined | null): ToolTra
             label: LABELS[kind],
             ok: true,
             detail: detailFor(entry.params),
+            durationMs: entry.duration_ms,
         };
     });
 }
