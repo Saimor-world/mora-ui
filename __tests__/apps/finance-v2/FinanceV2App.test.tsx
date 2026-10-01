@@ -4,6 +4,7 @@ import FinanceV2App from '@/apps/finance-v2';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
+import { coreGet } from '@/lib/api/http';
 import { createTestQueryClient, renderWithProviders, resetAllStores } from '../../test-utils';
 
 jest.mock('@/components/layers/GlassPanel', () => ({
@@ -15,12 +16,24 @@ jest.mock('@/components/layers/GlassPanel', () => ({
   ),
 }));
 
+jest.mock('@/lib/api/http', () => {
+  const actual = jest.requireActual('@/lib/api/http');
+  return {
+    ...actual,
+    coreGet: jest.fn(),
+    corePost: jest.fn(),
+  };
+});
+
+const mockCoreGet = coreGet as jest.Mock;
+
 const scope = { tenant_id: 'tenant-fin', company_id: 'company-fin', owner_kind: 'company' as const };
 const identityKey = 'user-finance:owner:g1';
 
 beforeEach(() => {
   resetAllStores();
   usePaneStore.getState().reset();
+  jest.clearAllMocks();
   useSessionStore.setState({
     user: {
       id: 'user-finance',
@@ -50,6 +63,36 @@ beforeEach(() => {
 
 it('composes State, manual entry, paginated Flow and record detail in one native Finance pane', async () => {
   const queryClient = createTestQueryClient();
+
+  const record = {
+    id: 'record-1',
+    scope,
+    classification: 'operating_expense',
+    effective_at: '2026-09-18T13:00:00Z',
+    source_kind: 'manual',
+    memo: 'Hosting',
+    evidence: { reference: 'hosting-proof', label: 'Hosting receipt' },
+    postings: [
+      {
+        id: 'posting-cash',
+        account_id: 'account-a',
+        ledger_code: 'cash:account-a',
+        amount: { value: '-25.00', currency: 'EUR', scale: 2 },
+      },
+      {
+        id: 'posting-expense',
+        account_id: null,
+        ledger_code: 'expense:operating',
+        amount: { value: '25.00', currency: 'EUR', scale: 2 },
+      },
+    ],
+    corrections: [],
+  };
+
+  mockCoreGet.mockImplementation(async (path: string) => {
+    if (path.startsWith('/v3/finance/records/record-1')) return record;
+    return null;
+  });
 
   queryClient.setQueryData([...queryKeys.companies(), false], [
     { id: 'company-fin', name: 'SAIMÔR' },
@@ -94,30 +137,6 @@ it('composes State, manual entry, paginated Flow and record detail in one native
     ...queryKeys.financeRecords('tenant-fin', identityKey, 'company-fin', 25),
     'infinite',
   ];
-  const record = {
-    id: 'record-1',
-    scope,
-    classification: 'operating_expense',
-    effective_at: '2026-09-18T13:00:00Z',
-    source_kind: 'manual',
-    memo: 'Hosting',
-    evidence: { reference: 'hosting-proof', label: 'Hosting receipt' },
-    postings: [
-      {
-        id: 'posting-cash',
-        account_id: 'account-a',
-        ledger_code: 'cash:account-a',
-        amount: { value: '-25.00', currency: 'EUR', scale: 2 },
-      },
-      {
-        id: 'posting-expense',
-        account_id: null,
-        ledger_code: 'expense:operating',
-        amount: { value: '25.00', currency: 'EUR', scale: 2 },
-      },
-    ],
-    corrections: [],
-  };
 
   queryClient.setQueryData(flowKey, {
     pages: [{ scope, records: [record], next_cursor: 'older|record-0' }],
