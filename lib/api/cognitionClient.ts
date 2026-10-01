@@ -126,6 +126,7 @@ export interface AgentToolResult {
     success: boolean;
     result: any;
     error?: string;
+    duration_ms?: number;
 }
 
 export interface AgentIteration {
