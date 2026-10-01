@@ -1,73 +1,98 @@
 import React from 'react';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import XrplWatchLab from '@/apps/finance-v2/XrplWatchLab';
+import { useConnectCompanyXrpl, useObserveXrpl } from '@/lib/queries/useFinanceSources';
 
-const originalFetch = global.fetch;
+jest.mock('@/lib/queries/useFinanceSources', () => ({
+  useObserveXrpl: jest.fn(),
+  useConnectCompanyXrpl: jest.fn(),
+}));
 
-afterEach(() => {
-  global.fetch = originalFetch;
-  jest.restoreAllMocks();
+const observe = useObserveXrpl as jest.Mock;
+const connect = useConnectCompanyXrpl as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
 });
 
-it('shows a public XRPL address as read-only observation, never as company ownership', async () => {
-  const mockFetch = jest.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({
+it('keeps a live ledger observation outside company truth until ownership is explicitly attested', () => {
+  const observeMutate = jest.fn();
+  const connectMutate = jest.fn();
+  observe.mockReturnValue({
+    mutate: observeMutate,
+    data: {
+      source: 'xrpl',
       network: 'mainnet',
-      mode: 'read-only',
       address: 'rExamplePublicAddress123456789ABCDEFG',
-      ledgerIndex: 99112233,
-      xrp: 125.5,
-      availableXrp: 115.5,
-      reserve: { requiredXrp: 10 },
-      ownerCount: 4,
-      trustLines: [],
-      transactions: [],
-      fetchedAt: '2026-09-18T18:00:00Z',
-      commerce: {
-        recognizedPayments: 2,
-        recognizedRevenueXrp: 999,
-      },
-    }),
+      ledger_index: 99112233,
+      balance_drops: '125500000',
+      balance_xrp: '125.500000',
+      owner_count: 4,
+      trust_lines: [],
+      observed_at: '2026-09-19T12:00:00Z',
+      signing_available: false,
+      proof_hash: 'a'.repeat(64),
+    },
+    isPending: false,
+    isSuccess: true,
+    error: null,
   });
-  global.fetch = mockFetch as any;
+  connect.mockReturnValue({
+    mutate: connectMutate,
+    isPending: false,
+    isSuccess: false,
+    error: null,
+  });
 
-  render(<XrplWatchLab />);
-
-  const input = screen.getByLabelText('XRPL Watch-Adresse');
-  fireEvent.change(input, { target: { value: 'rExamplePublicAddress123456789ABCDEFG' } });
-  fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
-
-  await waitFor(() => expect(mockFetch).toHaveBeenCalledWith(
-    '/api/finance/xrpl?address=rExamplePublicAddress123456789ABCDEFG',
-    { cache: 'no-store' },
-  ));
-
-  expect(await screen.findByText('125,5 XRP')).toBeInTheDocument();
-  expect(screen.getByText('Ownership unassigned')).toBeInTheDocument();
-  expect(screen.getByText('not company total')).toBeInTheDocument();
-  expect(screen.getByText(/signing disabled/i)).toBeInTheDocument();
-
-  // Legacy/experimental commerce fields from the endpoint are intentionally not
-  // rendered as recognized accounting revenue in native Finance.
-  expect(screen.queryByText(/999/)).not.toBeInTheDocument();
-  expect(screen.queryByText(/recognized revenue/i)).not.toBeInTheDocument();
-});
-
-it('surfaces XRPL read failures without inventing an empty ledger state', async () => {
-  global.fetch = jest.fn().mockResolvedValue({
-    ok: false,
-    json: async () => ({ error: 'XRPL upstream unavailable' }),
-  }) as any;
-
-  render(<XrplWatchLab />);
+  render(<XrplWatchLab companyId="company-1" />);
 
   fireEvent.change(screen.getByLabelText('XRPL Watch-Adresse'), {
     target: { value: 'rExamplePublicAddress123456789ABCDEFG' },
   });
   fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
 
-  expect(await screen.findByRole('alert')).toHaveTextContent('XRPL upstream unavailable');
+  expect(observeMutate).toHaveBeenCalledWith('rExamplePublicAddress123456789ABCDEFG');
+  expect(screen.getByText('125,5 XRP')).toBeInTheDocument();
   expect(screen.getByText('Ownership unassigned')).toBeInTheDocument();
-  expect(screen.getAllByText('— XRP')).toHaveLength(2);
+  expect(screen.getByText('not company total')).toBeInTheDocument();
+  expect(screen.getByText(/signing disabled/i)).toBeInTheDocument();
+
+  const connectButton = screen.getByRole('button', { name: /Als SAIMÔR-Eigentum verbinden/i });
+  expect(connectButton).toBeDisabled();
+
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect(connectButton).toBeEnabled();
+  fireEvent.click(connectButton);
+
+  expect(connectMutate).toHaveBeenCalledWith({
+    address: 'rExamplePublicAddress123456789ABCDEFG',
+    label: 'SAIMÔR XRPL',
+  });
+});
+
+it('surfaces CORE ledger failures without inventing a zero balance', () => {
+  observe.mockReturnValue({
+    mutate: jest.fn(),
+    data: null,
+    isPending: false,
+    isSuccess: false,
+    error: new Error('XRPL ledger source unavailable'),
+  });
+  connect.mockReturnValue({
+    mutate: jest.fn(),
+    isPending: false,
+    isSuccess: false,
+    error: null,
+  });
+
+  render(<XrplWatchLab companyId="company-1" />);
+
+  fireEvent.change(screen.getByLabelText('XRPL Watch-Adresse'), {
+    target: { value: 'rExamplePublicAddress123456789ABCDEFG' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Beobachten' }));
+
+  expect(screen.getByRole('alert')).toHaveTextContent('XRPL ledger source unavailable');
+  expect(screen.getByText('Ownership unassigned')).toBeInTheDocument();
+  expect(screen.getByText('— XRP')).toBeInTheDocument();
 });

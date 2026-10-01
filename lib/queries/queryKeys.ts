@@ -63,6 +63,8 @@ export const STALE_TIMES = {
   financialPulse: 60 * 1000,
   financeState: 30 * 1000,
   financeRecords: 30 * 1000,
+  financeSources: 5 * 60 * 1000,
+  financeConnections: 30 * 1000,
 };
 
 // Query key factory — canonical cache keys for every domain.
@@ -131,6 +133,14 @@ export const queryKeys = {
     companyId?: string | null,
     recordId?: string | null,
   ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'record', recordId ?? 'none'] as const,
+  financeSources: (tenantId?: string | null, identityKey?: string | null, ownerKind = 'company') =>
+    ['finance-sources', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', ownerKind] as const,
+  financeConnections: (
+    tenantId?: string | null,
+    identityKey?: string | null,
+    ownerKind = 'company',
+    companyId?: string | null,
+  ) => ['finance-connections', tenantId ?? 'tenant-unknown', identityKey ?? 'anonymous', ownerKind, companyId ?? 'none'] as const,
   financeEvidence: (
     tenantId?: string | null,
     identityKey?: string | null,
