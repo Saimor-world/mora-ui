@@ -14,6 +14,7 @@ const pending = { id: 'bank-a', provider: 'gocardless_bank_data', status: 'pendi
 
 beforeEach(() => {
   jest.clearAllMocks();
+  window.sessionStorage.clear();
   (queries.useFinanceSources as jest.Mock).mockReturnValue({ data: { sources: [
     { id: 'gocardless_bank_data', label: 'Bank', mode: 'open_banking' },
   ] } });
@@ -43,7 +44,7 @@ it('renders each bank connection and synchronizes the selected one', () => {
   render(<FinanceSourcesPanel companyId="company-a" />);
   expect(screen.getByText('Bank A')).toBeInTheDocument();
   expect(screen.getByText('Bank B')).toBeInTheDocument();
-  fireEvent.click(screen.getAllByRole('button', { name: 'Bankstatus synchronisieren' })[1]);
+  fireEvent.click(screen.getAllByRole('button', { name: 'Daten synchronisieren' })[0]);
   expect(mutate).toHaveBeenCalledWith('bank-b');
 });
 
