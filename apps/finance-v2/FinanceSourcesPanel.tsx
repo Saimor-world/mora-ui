@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Cable, CircleAlert, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
 import {
   useConnectCompanyBitvavo,
@@ -38,6 +38,7 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
     return matches.length ? matches.map((connection) => ({ source, connection })) : [{ source, connection: undefined }];
   });
   const revolut = useStartCompanyRevolut(companyId);
+  const [revolutCallbackUrl, setRevolutCallbackUrl] = useState('/finance/revolut/callback');
   const [revolutClientId, setRevolutClientId] = useState('');
   const [revolutPrivateKey, setRevolutPrivateKey] = useState('');
   const [revolutKeyName, setRevolutKeyName] = useState('');
@@ -45,6 +46,10 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
   const [revolutAttested, setRevolutAttested] = useState(false);
   const revolutAuthorizationUrl = revolut.data?.data?.authorization_url as string | undefined;
   const revolutConnectionId = revolut.data?.data?.connection_id as string | undefined;
+
+  useEffect(() => {
+    setRevolutCallbackUrl(window.location.origin + '/finance/revolut/callback');
+  }, []);
 
   const bitvavo = useConnectCompanyBitvavo(companyId);
   const [bitvavoKey, setBitvavoKey] = useState('');
@@ -209,7 +214,7 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
             SAIMÔR speichert danach nur den passenden privaten Schlüssel verschlüsselt in CORE und fordert ausschließlich den READ-Scope an.
           </p>
           <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2 text-[9px] text-white/34">
-            Callback: <span className="font-mono text-white/52">{typeof window !== 'undefined' ? window.location.origin + '/finance/revolut/callback' : '/finance/revolut/callback'}</span>
+            Callback: <span className="font-mono text-white/52">{revolutCallbackUrl}</span>
           </div>
 
           <div className="mt-3 grid gap-2 md:grid-cols-2">
@@ -261,11 +266,9 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
           {revolut.error && <div role="alert" className="mt-2 text-[10px] text-red-100/66">{revolut.error.message}</div>}
           <button
             type="button"
-            disabled={!revolutAttested || revolutClientId.length < 8 || !revolutPrivateKey.includes('PRIVATE KEY') || revolut.isPending}
+            disabled={!revolutCallbackUrl.startsWith('https://') || !revolutAttested || revolutClientId.length < 8 || !revolutPrivateKey.includes('PRIVATE KEY') || revolut.isPending}
             onClick={() => {
-              const redirectUri = typeof window !== 'undefined'
-                ? window.location.origin + '/finance/revolut/callback'
-                : '/finance/revolut/callback';
+              const redirectUri = revolutCallbackUrl;
               revolut.mutate(
                 {
                   clientId: revolutClientId,
