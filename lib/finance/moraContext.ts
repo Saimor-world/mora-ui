@@ -18,8 +18,7 @@ export interface FinanceChange {
     | 'balance_changed'
     | 'new_transaction'
     | 'listing_created'
-    | 'listing_sold'
-    | 'listing_cancelled'
+    | 'listing_removed_unverified'
     | 'reserve_changed'
     | 'owner_count_changed';
   account?: string;
@@ -186,8 +185,8 @@ export function detectChanges(
       });
     } else {
       changes.push({
-        type: current.openListingsCount === 0 ? 'listing_sold' : 'listing_cancelled',
-        description: `ORIGIN #111 listing ${current.openListingsCount === 0 ? 'sold or cancelled' : 'reduced'}`,
+        type: 'listing_removed_unverified',
+        description: 'ORIGIN #111 listing count decreased. Sale vs cancellation is not verified yet.',
         previousValue: previous.openListingsCount,
         currentValue: current.openListingsCount,
         evidence: {
@@ -232,6 +231,10 @@ export interface MoraFinanceContext {
     broker: 'not_connected';
   };
   recentChanges: FinanceChange[];
+  changeDetection: {
+    status: 'compared' | 'no_previous_snapshot';
+    note: string;
+  };
   lastSync: string;
 }
 
@@ -256,6 +259,8 @@ export function buildMoraContext(
 
   if (changes.length > 0) {
     summary += ` ${changes.length} recent change(s) detected.`;
+  } else if (!previousSnapshot) {
+    summary += ' No persisted previous snapshot was supplied, so change detection has not run yet.';
   }
 
   return {
@@ -288,6 +293,12 @@ export function buildMoraContext(
       broker: 'not_connected',
     },
     recentChanges: changes,
+    changeDetection: {
+      status: previousSnapshot ? 'compared' : 'no_previous_snapshot',
+      note: previousSnapshot
+        ? 'Current finance state was compared against the supplied previous snapshot.'
+        : 'No persisted previous snapshot was supplied. recentChanges must not be interpreted as proof that nothing changed.',
+    },
     lastSync: state.lastUpdated,
   };
 }
