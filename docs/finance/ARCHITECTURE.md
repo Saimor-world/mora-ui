@@ -213,8 +213,18 @@ Change types detected:
 - `balance_changed` - XRP balance changed
 - `new_transaction` - New transaction detected
 - `listing_created` - NFT sell offer created
-- `listing_sold` - NFT listing sold/cancelled
+- `listing_removed_unverified` - A previously visible offer disappeared; this is **not** treated as a sale until transaction evidence proves sale vs cancellation
 - `owner_count_changed` - Reserve objects changed
+
+### Snapshot persistence status
+
+The comparison logic requires a previous persisted snapshot. The current `mora-ui` API does **not** persist finance snapshots by itself and currently calls the context builder without a previous snapshot. Therefore:
+
+- `recentChanges: []` does not prove that nothing changed.
+- Durable change detection belongs in CORE / the finance persistence layer.
+- A disappearance of an XRPL offer must never be booked as realized revenue without transaction evidence.
+- `realizedSalesXrp` remains zero until an accepted offer/payment is verified and persisted.
+
 
 ## Future Provider Integration
 
