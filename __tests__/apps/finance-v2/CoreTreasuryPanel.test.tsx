@@ -114,7 +114,7 @@ it('shows CORE treasury classification, hot-minter activity and ORIGIN listing w
 
   expect(await screen.findByTestId('core-treasury-card')).toBeInTheDocument();
   expect(screen.getByTestId('core-hot-minter-card')).toBeInTheDocument();
-  expect(screen.getByText('111 XRP')).toBeInTheDocument();
+  expect(screen.getAllByText('111 XRP').length).toBeGreaterThanOrEqual(2);
   expect(screen.getByText('113 XRP')).toBeInTheDocument();
   expect(screen.getByText('0,00002 XRP')).toBeInTheDocument();
   expect(screen.getByText('SAIMÔR // ORIGIN #111')).toBeInTheDocument();
