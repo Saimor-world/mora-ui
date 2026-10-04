@@ -9,11 +9,13 @@ import {
   Database,
   ExternalLink,
   Eye,
+  HardDrive,
   KeyRound,
   Link2,
   LockKeyhole,
   RefreshCcw,
   ShieldCheck,
+  Sparkles,
   Unplug,
   WalletCards,
 } from 'lucide-react';
@@ -21,6 +23,7 @@ import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CAPITAL_OPPORTUNITIES } from '@/lib/capital/opportunities';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { KNOWN_ACCOUNTS, ORIGIN_NFT, MINTING_STATUS } from '@/lib/finance/types';
 
 const STORAGE_KEY = 'saimor.finance.xrpl.canary';
 
@@ -47,19 +50,12 @@ type XrplTransaction = {
   validated: boolean;
 };
 
-type XrplSnapshot = {
-  network: 'mainnet';
-  mode: 'read-only';
+type AccountSnapshot = {
   address: string;
-  ledgerIndex: number | null;
-  xrp: number;
-  drops: string;
-  availableXrp: number;
-  reserve: {
-    baseXrp: number;
-    incrementXrp: number;
-    requiredXrp: number;
-  };
+  role: { type: string; label: string; description: string };
+  xrp: number | null;
+  availableXrp: number | null;
+  reserve: { baseXrp: number; incrementXrp: number; requiredXrp: number };
   ownerCount: number;
   sequence: number;
   security: {
@@ -70,6 +66,42 @@ type XrplSnapshot = {
   };
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
+  evidence: { source: string; fetchedAt: string; ledgerIndex: number | null; confidence: string };
+  error: string | null;
+};
+
+type OriginNftSnapshot = {
+  nftokenId: string;
+  name: string;
+  issuer: string;
+  owner: string | null;
+  flags: number;
+  flagsDescription: { onlyXrp: boolean; transferable: boolean; mutable: boolean };
+  transferFee: number;
+  transferFeePercent: number;
+  artIpfs: string;
+  metadataIpfs: string;
+  status: string;
+  verified: boolean;
+  evidence: { source: string; fetchedAt: string; confidence: string } | null;
+};
+
+type CompanyFinanceSnapshot = {
+  mode: 'company';
+  network: string;
+  accessMode: string;
+  reserve: { baseXrp: number; incrementXrp: number };
+  validatedLedger: number;
+  treasury: AccountSnapshot | null;
+  hotMinter: AccountSnapshot | null;
+  originNft: OriginNftSnapshot;
+  mintingStatus: { range: string; status: string; note: string };
+  totals: {
+    companyXrp: number;
+    treasuryXrp: number | null;
+    hotMinterXrp: number | null;
+    note: string;
+  };
   fetchedAt: string;
 };
 
@@ -103,14 +135,67 @@ function describeAmount(amount: unknown) {
   return '—';
 }
 
-function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'safe' | 'warn' | 'neutral' }) {
+function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'safe' | 'warn' | 'neutral' | 'info' }) {
   const classes = tone === 'safe'
     ? 'border-emerald-300/14 bg-emerald-400/[0.055] text-emerald-100/68'
     : tone === 'warn'
       ? 'border-amber-300/12 bg-amber-400/[0.045] text-amber-100/58'
-      : 'border-white/[0.07] bg-white/[0.025] text-white/42';
+      : tone === 'info'
+        ? 'border-violet-300/12 bg-violet-400/[0.045] text-violet-100/58'
+        : 'border-white/[0.07] bg-white/[0.025] text-white/42';
 
   return <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${classes}`}>{children}</span>;
+}
+
+function AccountCard({ account, title, description }: { account: AccountSnapshot | null; title: string; description: string }) {
+  if (!account) {
+    return (
+      <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.02] p-4">
+        <div className="text-[11px] font-medium text-white/52">{title}</div>
+        <div className="mt-1 text-[9px] text-white/28">{description}</div>
+        <div className="mt-3 text-[10px] text-amber-200/60">Not available</div>
+      </div>
+    );
+  }
+
+  const hasError = account.error !== null;
+  const xrp = account.xrp ?? 0;
+  const availableXrp = account.availableXrp ?? 0;
+
+  return (
+    <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <div className="text-[11px] font-medium text-white/72">{title}</div>
+          <div className="mt-0.5 font-mono text-[9px] text-white/28">{shortAddress(account.address)}</div>
+        </div>
+        {hasError ? (
+          <StatePill tone="warn">Error</StatePill>
+        ) : account.evidence.confidence === 'live' ? (
+          <StatePill tone="safe">Live</StatePill>
+        ) : (
+          <StatePill tone="warn">Stale</StatePill>
+        )}
+      </div>
+
+      {hasError ? (
+        <div className="mt-3 text-[10px] text-amber-200/60">{account.error}</div>
+      ) : (
+        <>
+          <div className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/88">
+            {formatNumber(xrp)} <span className="text-[14px] text-white/40">XRP</span>
+          </div>
+          <div className="mt-1 flex items-center gap-3 text-[9px] text-white/32">
+            <span>Available: {formatNumber(availableXrp)} XRP</span>
+            <span>Reserve: {formatNumber(account.reserve.requiredXrp)} XRP</span>
+          </div>
+          <div className="mt-2 text-[8px] text-white/20">
+            Owner count: {account.ownerCount} · Ledger: {account.evidence.ledgerIndex ?? '—'}
+          </div>
+        </>
+      )}
+    </div>
+  );
 }
 
 function opportunityStatusLabel(status: 'open' | 'available' | 'verify') {
@@ -134,76 +219,42 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
   const updatePanePosition = usePaneStore((s) => s.updatePanePosition);
   const updatePaneSize = usePaneStore((s) => s.updatePaneSize);
 
-  const managedTreasuryAddress = process.env.NEXT_PUBLIC_SAIMOR_CANARY_XRPL_ADDRESS || '';
-  const configuredAddress = typeof initialData?.address === 'string' ? initialData.address : '';
-  const initialAddress = configuredAddress || managedTreasuryAddress;
-  const [address, setAddress] = useState(initialAddress);
-  const [draftAddress, setDraftAddress] = useState(initialAddress);
-  const [snapshot, setSnapshot] = useState<XrplSnapshot | null>(null);
+  const [companySnapshot, setCompanySnapshot] = useState<CompanyFinanceSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (configuredAddress || managedTreasuryAddress) return;
-    const stored = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) || '' : '';
-    if (stored) {
-      setAddress(stored);
-      setDraftAddress(stored);
-    }
-  }, [configuredAddress, managedTreasuryAddress]);
-
-  const load = useCallback(async (target: string) => {
-    if (!target) return;
+  const loadCompanyData = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/finance/xrpl?address=${encodeURIComponent(target)}`, { cache: 'no-store' });
+      const response = await fetch('/api/finance/xrpl?mode=company', { cache: 'no-store' });
       const body = await response.json();
-      if (!response.ok) throw new Error(body?.error || 'Wallet konnte nicht gelesen werden.');
-      setSnapshot(body);
+      if (!response.ok) throw new Error(body?.error || 'Konnte Company Finance nicht laden.');
+      setCompanySnapshot(body);
     } catch (err) {
-      setSnapshot(null);
-      setError(err instanceof Error ? err.message : 'Wallet konnte nicht gelesen werden.');
+      setCompanySnapshot(null);
+      setError(err instanceof Error ? err.message : 'Konnte Company Finance nicht laden.');
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (address) load(address);
-  }, [address, load]);
+    loadCompanyData();
+  }, [loadCompanyData]);
 
-  const saveAddress = useCallback(() => {
-    const next = draftAddress.trim();
-    if (!next) return;
-    localStorage.setItem(STORAGE_KEY, next);
-    setAddress(next);
-  }, [draftAddress]);
-
-  const disconnect = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    setAddress('');
-    setDraftAddress('');
-    setSnapshot(null);
-    setError(null);
-  }, []);
-
-  const positiveTokens = useMemo(
-    () => (snapshot?.trustLines || []).filter((line) => Number(line.balance) > 0),
-    [snapshot],
-  );
-
-  const reserveShare = snapshot && snapshot.xrp > 0
-    ? Math.min(100, (snapshot.reserve.requiredXrp / snapshot.xrp) * 100)
-    : 0;
-
-  const successfulRecent = useMemo(
-    () => (snapshot?.transactions || []).filter((tx) => tx.validated && (!tx.result || tx.result === 'tesSUCCESS')).length,
-    [snapshot],
+  const successfulRecentTreasury = useMemo(
+    () => (companySnapshot?.treasury?.transactions || []).filter((tx) => tx.validated && (!tx.result || tx.result === 'tesSUCCESS')).length,
+    [companySnapshot],
   );
 
   if (!pane) return null;
+
+  const treasury = companySnapshot?.treasury;
+  const hotMinter = companySnapshot?.hotMinter;
+  const originNft = companySnapshot?.originNft;
+  const totals = companySnapshot?.totals;
 
   return (
     <GlassPanel
@@ -239,202 +290,170 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
-                <Eye size={11} /> XRPL Mainnet · Saimôr operational capital
+                <Eye size={11} /> XRPL Mainnet · Saimôr company capital
               </div>
-              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Treasury</h2>
+              <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Finance</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Diese Ledger-kontrollierte XRPL-Adresse gehört zum operativen Kapital von Saimôr. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben auf dem Ledger und vollständig außerhalb des OS.
+                Company-owned XRPL accounts. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben auf dem Ledger und vollständig außerhalb des OS.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <StatePill tone="safe">Read only in MÔRA</StatePill>
-                <StatePill>Saimôr operational</StatePill>
+                <StatePill tone="safe">Read only</StatePill>
+                <StatePill>Company owned</StatePill>
                 <StatePill>Ledger self custody</StatePill>
                 <StatePill tone="warn">External signing</StatePill>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              {address && !managedTreasuryAddress && (
-                <button
-                  type="button"
-                  onClick={disconnect}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/[0.07] bg-white/[0.02] px-3 py-2 text-[10px] text-white/36 hover:text-white/62"
-                >
-                  <Unplug size={12} /> Trennen
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => address && load(address)}
-                disabled={!address || loading}
-                className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[10px] text-white/52 transition-colors hover:bg-white/[0.06] disabled:opacity-35"
-              >
-                <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} /> Aktualisieren
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => loadCompanyData()}
+              disabled={loading}
+              className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.035] px-3 py-2 text-[10px] text-white/52 transition-colors hover:bg-white/[0.06] disabled:opacity-35"
+            >
+              <RefreshCcw size={12} className={loading ? 'animate-spin' : ''} /> Aktualisieren
+            </button>
           </div>
         </section>
-
-        {!address && (
-          <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-5">
-            <div className="text-sm font-medium text-white/82">XRPL-Adresse beobachten</div>
-            <p className="mt-1 text-[11px] text-white/34">
-              Fallback für eine zusätzliche öffentliche Watch-Adresse. Keine Seed Phrase, kein Private Key und kein Signing-Pfad werden gespeichert.
-            </p>
-            <div className="mt-4 flex gap-2">
-              <input
-                value={draftAddress}
-                onChange={(event) => setDraftAddress(event.target.value)}
-                placeholder="r…"
-                className="min-w-0 flex-1 rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 font-mono text-xs text-white/78 outline-none focus:border-emerald-300/24"
-              />
-              <button
-                type="button"
-                onClick={saveAddress}
-                className="rounded-xl border border-emerald-300/16 bg-emerald-400/[0.07] px-4 py-2 text-xs font-medium text-emerald-100/76 hover:bg-emerald-400/[0.11]"
-              >
-                Beobachten
-              </button>
-            </div>
-          </section>
-        )}
 
         {error && (
           <div className="rounded-xl border border-red-300/16 bg-red-500/[0.06] px-4 py-3 text-xs text-red-200/75">{error}</div>
         )}
 
-        {address && (
+        {companySnapshot && (
           <>
-            <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Coins size={11} /> XRP balance</div>
-                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
-                <div className="mt-1 font-mono text-[9px] text-white/24">{shortAddress(address)}</div>
+            <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+              <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
+                <HardDrive size={14} className="text-emerald-200/60" /> Company Accounts
               </div>
-              <div className="rounded-[20px] border border-emerald-300/[0.09] bg-emerald-400/[0.02] p-4">
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-emerald-100/34"><WalletCards size={11} /> Spendable</div>
-                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.availableXrp) : '—'}</div>
-                <div className="mt-1 text-[9px] text-white/24">nach aktueller Ledger-Reserve</div>
-              </div>
-              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><LockKeyhole size={11} /> Reserve</div>
-                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? formatNumber(snapshot.reserve.requiredXrp) : '—'}</div>
-                <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.04]">
-                  <div className="h-full rounded-full bg-white/20" style={{ width: `${reserveShare}%` }} />
-                </div>
-              </div>
-              <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
-                <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.18em] text-white/32"><Link2 size={11} /> Issued assets</div>
-                <div className="mt-2 text-[30px] font-medium tracking-[-0.04em] text-white/88">{snapshot ? positiveTokens.length : '—'}</div>
-                <div className="mt-1 text-[9px] text-white/24">{snapshot ? `${snapshot.trustLines.length} Trustlines gesamt` : 'Trustlines'}</div>
-              </div>
-            </section>
+              <p className="mt-1 text-[9px] text-white/28">
+                Treasury ≠ Hot Minter. Hot Minter ist operativ für NFT-Minting, nicht die Treasury.
+              </p>
 
-            <section className="grid gap-3 xl:grid-cols-[1.15fr_0.85fr]">
-              <div className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[13px] font-medium text-white/76">Assets on ledger</div>
-                    <div className="mt-1 text-[9px] text-white/28">
-                      {snapshot?.ledgerIndex ? `Validated ledger ${snapshot.ledgerIndex}` : 'Warte auf Ledger-Daten'}
+              <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                <AccountCard
+                  account={treasury ?? null}
+                  title="SAIMÔR · 111 Treasury"
+                  description="Sovereign treasury, read-only"
+                />
+                <AccountCard
+                  account={hotMinter ?? null}
+                  title="Origin Hot Minter"
+                  description="Operational wallet, NOT treasury"
+                />
+              </div>
+
+              {totals && (
+                <div className="mt-4 rounded-xl border border-emerald-300/[0.08] bg-emerald-400/[0.02] p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/34">Total Company XRP</div>
+                      <div className="mt-1 text-[22px] font-medium tracking-[-0.04em] text-white/82">
+                        {formatNumber(totals.companyXrp)} <span className="text-[12px] text-white/36">XRP</span>
+                      </div>
+                    </div>
+                    <div className="text-right text-[9px] text-white/24">
+                      <div>Treasury: {totals.treasuryXrp !== null ? formatNumber(totals.treasuryXrp) : '—'}</div>
+                      <div>Hot Minter: {totals.hotMinterXrp !== null ? formatNumber(totals.hotMinterXrp) : '—'}</div>
                     </div>
                   </div>
-                  {snapshot?.fetchedAt && <div className="text-[9px] text-white/20">{new Date(snapshot.fetchedAt).toLocaleTimeString('de-DE')}</div>}
+                </div>
+              )}
+            </section>
+
+            {originNft && (
+              <section className="rounded-[22px] border border-violet-300/[0.09] bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,0.06),transparent_30%),rgba(0,0,0,0.14)] p-4">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
+                  <Sparkles size={14} className="text-violet-200/60" /> ORIGIN NFT #111
+                </div>
+
+                <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] font-medium text-white/72">{originNft.name}</div>
+                    <div className="mt-1 font-mono text-[8px] text-white/24 break-all">{originNft.nftokenId}</div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <StatePill tone={originNft.status === 'LIVE_GENESIS_MAINNET_PROOF' ? 'safe' : 'warn'}>
+                      {originNft.status.replace(/_/g, ' ')}
+                    </StatePill>
+                    {originNft.verified && <StatePill tone="safe">Verified</StatePill>}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 text-[10px] text-white/42 sm:grid-cols-2">
+                  <div>
+                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Issuer</div>
+                    <div className="mt-0.5 font-mono text-white/52">{shortAddress(originNft.issuer)}</div>
+                    <div className="text-[8px] text-white/20">(Hot Minter, NOT Treasury)</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Flags (XLS-20)</div>
+                    <div className="mt-0.5 flex flex-wrap gap-1">
+                      {originNft.flagsDescription.onlyXrp && <StatePill>OnlyXRP</StatePill>}
+                      {originNft.flagsDescription.transferable && <StatePill>Transferable</StatePill>}
+                      {originNft.flagsDescription.mutable && <StatePill>Mutable</StatePill>}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Transfer Fee</div>
+                    <div className="mt-0.5 text-white/52">{originNft.transferFeePercent}%</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Art IPFS</div>
+                    <div className="mt-0.5 font-mono text-[8px] text-white/36 truncate">{originNft.artIpfs}</div>
+                  </div>
+                </div>
+
+                <div className="mt-4 rounded-lg border border-amber-300/[0.08] bg-amber-400/[0.02] p-3">
+                  <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.16em] text-amber-200/48">
+                    <LockKeyhole size={10} /> Minting Status: {companySnapshot.mintingStatus.range}
+                  </div>
+                  <div className="mt-1 text-[10px] text-white/52">
+                    {companySnapshot.mintingStatus.status.replace(/_/g, ' ')}
+                  </div>
+                  <div className="mt-1 text-[9px] text-white/28">
+                    {companySnapshot.mintingStatus.note}
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {treasury && treasury.transactions.length > 0 && (
+              <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[13px] font-medium text-white/76">Treasury Activity</div>
+                    <div className="mt-1 text-[9px] text-white/28">{successfulRecentTreasury} validierte erfolgreiche Einträge</div>
+                  </div>
+                  <Database size={13} className="text-white/20" />
                 </div>
 
                 <div className="mt-3 divide-y divide-white/[0.05]">
-                  <div className="flex items-center justify-between py-3">
-                    <div>
-                      <div className="text-[12px] font-medium text-white/72">XRP</div>
-                      <div className="text-[9px] text-white/26">Native asset</div>
-                    </div>
-                    <div className="font-mono text-[12px] text-white/68">{snapshot ? formatNumber(snapshot.xrp) : '—'}</div>
-                  </div>
-                  {positiveTokens.map((line) => (
-                    <div key={`${line.currency}-${line.issuer}`} className="flex items-center justify-between gap-4 py-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <div className="text-[12px] font-medium text-white/72">{line.currency}</div>
-                          {line.freeze && <StatePill tone="warn">Frozen</StatePill>}
+                  {treasury.transactions.slice(0, 6).map((tx) => {
+                    const DirectionIcon = tx.direction === 'in' ? ArrowDownLeft : ArrowUpRight;
+                    return (
+                      <div key={`${tx.hash}-${tx.ledgerIndex}`} className="flex items-center gap-3 py-3">
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.05] ${tx.direction === 'in' ? 'text-emerald-200/60' : 'text-amber-200/55'}`}>
+                          <DirectionIcon size={13} />
                         </div>
-                        <div className="truncate font-mono text-[9px] text-white/24">Issuer {shortAddress(line.issuer)}</div>
-                      </div>
-                      <div className="shrink-0 font-mono text-[12px] text-white/68">{formatBalance(line.balance)}</div>
-                    </div>
-                  ))}
-                  {snapshot && positiveTokens.length === 0 && (
-                    <div className="py-5 text-[10px] text-white/28">Keine positiven issued-token balances gefunden.</div>
-                  )}
-                </div>
-              </div>
-
-              <div className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
-                <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
-                  <KeyRound size={13} className="text-emerald-200/48" /> Account security
-                </div>
-                <div className="mt-4 space-y-3">
-                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
-                    <span className="text-[10px] text-white/32">OS signing path</span>
-                    <StatePill tone="safe">Disabled</StatePill>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
-                    <span className="text-[10px] text-white/32">Master key</span>
-                    <span className="text-[10px] text-white/58">{snapshot ? (snapshot.security.masterKeyDisabled ? 'Disabled on ledger' : 'Enabled on ledger') : '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
-                    <span className="text-[10px] text-white/32">Regular key</span>
-                    <span className="font-mono text-[9px] text-white/50">{snapshot ? (snapshot.security.regularKey ? shortAddress(snapshot.security.regularKey) : 'None') : '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 border-b border-white/[0.045] pb-3">
-                    <span className="text-[10px] text-white/32">Signer lists</span>
-                    <span className="text-[10px] text-white/58">{snapshot?.security.signerListCount ?? '—'}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <span className="text-[10px] text-white/32">Sequence</span>
-                    <span className="font-mono text-[10px] text-white/58">{snapshot?.sequence ?? '—'}</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="text-[13px] font-medium text-white/76">Recent ledger activity</div>
-                  <div className="mt-1 text-[9px] text-white/28">{snapshot ? `${successfulRecent} validierte erfolgreiche Einträge im geladenen Fenster` : 'Nur Beobachtung'}</div>
-                </div>
-                <Database size={13} className="text-white/20" />
-              </div>
-
-              <div className="mt-3 divide-y divide-white/[0.05]">
-                {(snapshot?.transactions || []).slice(0, 6).map((tx) => {
-                  const DirectionIcon = tx.direction === 'in' ? ArrowDownLeft : ArrowUpRight;
-                  return (
-                    <div key={`${tx.hash}-${tx.ledgerIndex}`} className="flex items-center gap-3 py-3">
-                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.05] ${tx.direction === 'in' ? 'text-emerald-200/60' : 'text-amber-200/55'}`}>
-                        <DirectionIcon size={13} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-medium text-white/66">{tx.type}</span>
-                          <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">{tx.direction}</span>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-medium text-white/66">{tx.type}</span>
+                            <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">{tx.direction}</span>
+                          </div>
+                          <div className="mt-0.5 truncate font-mono text-[8px] text-white/20">
+                            {tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-8)}` : `Ledger ${tx.ledgerIndex ?? '—'}`}
+                          </div>
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[8px] text-white/20">
-                          {tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-8)}` : `Ledger ${tx.ledgerIndex ?? '—'}`}
+                        <div className="shrink-0 text-right">
+                          <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
+                          <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? new Date(tx.closeTimeIso).toLocaleDateString('de-DE') : tx.result || 'validated'}</div>
                         </div>
                       </div>
-                      <div className="shrink-0 text-right">
-                        <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
-                        <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? new Date(tx.closeTimeIso).toLocaleDateString('de-DE') : tx.result || 'validated'}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {snapshot && snapshot.transactions.length === 0 && (
-                  <div className="py-5 text-[10px] text-white/28">Keine letzten Transaktionen zurückgegeben.</div>
-                )}
-              </div>
-            </section>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
           </>
         )}
 
