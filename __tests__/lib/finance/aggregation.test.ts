@@ -74,7 +74,7 @@ describe('Finance Aggregation', () => {
 
       const state = aggregateCompanyState([companyAccount, personalAccount], null);
 
-      expect(state.totalCashXrp).toBe(100);
+      expect(state.cashTotalXrp).toBe(100);
       expect(state.sovereignTreasuryXrp).toBe(100);
     });
 
@@ -94,7 +94,7 @@ describe('Finance Aggregation', () => {
 
       expect(state.sovereignTreasuryXrp).toBe(113);
       expect(state.hotMinterXrp).toBe(5);
-      expect(state.totalCashXrp).toBe(118);
+      expect(state.cashTotalXrp).toBe(118);
     });
 
     it('does NOT count asking price as an asset', () => {
@@ -107,7 +107,7 @@ describe('Finance Aggregation', () => {
       const state = aggregateCompanyState([treasury], null);
 
       expect(state.aggregateAskingPriceXrp).toBe(0);
-      expect(state.totalCashXrp).toBe(100);
+      expect(state.cashTotalXrp).toBe(100);
     });
 
     it('handles account errors gracefully', () => {
@@ -121,7 +121,7 @@ describe('Finance Aggregation', () => {
       const state = aggregateCompanyState([errorAccount], null);
 
       expect(state.sovereignTreasuryXrp).toBeNull();
-      expect(state.totalCashXrp).toBe(0);
+      expect(state.cashTotalXrp).toBe(0);
     });
   });
 

@@ -19,6 +19,7 @@ import type {
   FinanceOwner,
   FinanceEvidence,
   OriginNftStatus,
+  NftSellOffer,
 } from './types';
 import { KNOWN_ACCOUNTS, ORIGIN_NFT } from './types';
 
@@ -307,11 +308,39 @@ export async function fetchAccountNfts(address: string): Promise<any[]> {
   }
 }
 
+export async function fetchNftSellOffers(nftokenId: string): Promise<NftSellOffer[]> {
+  try {
+    const result = await xrplRpc<any>('nft_sell_offers', { nft_id: nftokenId, ledger_index: 'validated' });
+    const offers = result?.offers;
+    if (!Array.isArray(offers)) return [];
+
+    return offers.map((offer: any) => {
+      const amountDrops = typeof offer.amount === 'string' ? offer.amount : '0';
+      return {
+        offerId: String(offer.nft_offer_index || offer.index || ''),
+        nftokenId,
+        owner: String(offer.owner || ''),
+        destination: offer.destination ? String(offer.destination) : null,
+        amountDrops,
+        amountXrp: Number(amountDrops) / 1_000_000,
+        flags: Number(offer.flags || 0),
+        expiration: offer.expiration ? Number(offer.expiration) : null,
+        ledgerIndex: offer.ledger_index ? Number(offer.ledger_index) : null,
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchOriginNftStatus(): Promise<OriginNftStatus> {
   const fetchedAt = new Date().toISOString();
 
   try {
-    const nfts = await fetchAccountNfts(ORIGIN_NFT.issuer);
+    const [nfts, sellOffers] = await Promise.all([
+      fetchAccountNfts(ORIGIN_NFT.issuer),
+      fetchNftSellOffers(ORIGIN_NFT.nftokenId),
+    ]);
     const found = nfts.find((nft: any) => nft.NFTokenID === ORIGIN_NFT.nftokenId);
 
     if (found) {
@@ -327,6 +356,7 @@ export async function fetchOriginNftStatus(): Promise<OriginNftStatus> {
         artIpfs: ORIGIN_NFT.artIpfs,
         metadataIpfs: ORIGIN_NFT.metadataIpfs,
         verified: true,
+        sellOffers,
         evidence: {
           source: 'xrpl_mainnet_nft_lookup',
           fetchedAt,
@@ -349,6 +379,7 @@ export async function fetchOriginNftStatus(): Promise<OriginNftStatus> {
       artIpfs: ORIGIN_NFT.artIpfs,
       metadataIpfs: ORIGIN_NFT.metadataIpfs,
       verified: false,
+      sellOffers,
       evidence: {
         source: 'xrpl_mainnet_nft_lookup',
         fetchedAt,
@@ -357,7 +388,7 @@ export async function fetchOriginNftStatus(): Promise<OriginNftStatus> {
         confidence: 'stale',
       },
     };
-  } catch (error) {
+  } catch {
     return {
       nftokenId: ORIGIN_NFT.nftokenId,
       issuer: ORIGIN_NFT.issuer,
@@ -370,6 +401,7 @@ export async function fetchOriginNftStatus(): Promise<OriginNftStatus> {
       artIpfs: ORIGIN_NFT.artIpfs,
       metadataIpfs: ORIGIN_NFT.metadataIpfs,
       verified: false,
+      sellOffers: [],
       evidence: {
         source: 'xrpl_mainnet_nft_lookup',
         fetchedAt,
