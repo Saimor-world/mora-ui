@@ -116,7 +116,7 @@ it('shows CORE treasury classification, hot-minter activity and ORIGIN listing w
   expect(screen.getByTestId('core-hot-minter-card')).toBeInTheDocument();
   expect(screen.getAllByText('111 XRP').length).toBeGreaterThanOrEqual(2);
   expect(screen.getByText('113 XRP')).toBeInTheDocument();
-  expect(screen.getByText('0,00002 XRP')).toBeInTheDocument();
+  expect(screen.getAllByText('0,00002 XRP').length).toBeGreaterThanOrEqual(2);
   expect(screen.getByText('SAIMÔR // ORIGIN #111')).toBeInTheDocument();
   expect(screen.getByText('offenes Listing · kein Vermögen')).toBeInTheDocument();
   expect(screen.getByText('Realisierte Sales')).toBeInTheDocument();
