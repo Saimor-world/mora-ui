@@ -220,6 +220,36 @@ describe('MÔRA Finance Context', () => {
 
       expect(changes.some(c => c.type === 'listing_created')).toBe(true);
     });
+
+    it('does not claim a removed listing was sold without evidence', () => {
+      const previous: FinanceSnapshot = {
+        treasuryXrp: null,
+        treasuryAvailable: null,
+        treasuryOwnerCount: null,
+        hotMinterXrp: 5,
+        hotMinterAvailable: 3.6,
+        hotMinterOwnerCount: 2,
+        openListingsCount: 1,
+        aggregateAskingPriceXrp: 111,
+        latestTxHashes: [],
+        fetchedAt: new Date().toISOString(),
+      };
+
+      const hotMinter = createMockSnapshot({
+        owner: 'company',
+        xrp: 5,
+        role: { type: 'SAIMOR_ORIGIN_HOT_MINTER', label: 'Hot Minter', description: '' },
+      });
+      const state = aggregateCompanyState([hotMinter], createMockOriginNft());
+      const current = createSnapshot(state);
+
+      const changes = detectChanges(previous, current, state);
+      const listingChange = changes.find(c => c.type === 'listing_removed_unverified');
+
+      expect(listingChange).toBeDefined();
+      expect(listingChange?.description).toContain('not verified');
+      expect(changes.some(c => c.type === ('listing_sold' as never))).toBe(false);
+    });
   });
 
   describe('buildMoraContext', () => {
@@ -237,6 +267,8 @@ describe('MÔRA Finance Context', () => {
       expect(context.mode).toBe('read-only');
       expect(context.companyState.treasuryXrp).toBe(113);
       expect(context.originNft.verified).toBe(true);
+      expect(context.changeDetection.status).toBe('no_previous_snapshot');
+      expect(context.changeDetection.note).toContain('No persisted previous snapshot');
     });
 
     it('includes open listings note about not being assets', () => {
