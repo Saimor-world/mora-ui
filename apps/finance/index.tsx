@@ -16,16 +16,19 @@ import {
   RefreshCcw,
   ShieldCheck,
   Sparkles,
+  Tag,
   Unplug,
   WalletCards,
+  Banknote,
+  Building2,
+  CreditCard,
+  TrendingUp,
 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { CAPITAL_OPPORTUNITIES } from '@/lib/capital/opportunities';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { KNOWN_ACCOUNTS, ORIGIN_NFT, MINTING_STATUS } from '@/lib/finance/types';
-
-const STORAGE_KEY = 'saimor.finance.xrpl.canary';
 
 type TrustLine = {
   currency: string;
@@ -50,6 +53,18 @@ type XrplTransaction = {
   validated: boolean;
 };
 
+type NftSellOffer = {
+  offerId: string;
+  nftokenId: string;
+  owner: string;
+  destination: string | null;
+  amountDrops: string;
+  amountXrp: number;
+  flags: number;
+  expiration: number | null;
+  ledgerIndex: number | null;
+};
+
 type AccountSnapshot = {
   address: string;
   role: { type: string; label: string; description: string };
@@ -66,8 +81,21 @@ type AccountSnapshot = {
   };
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
-  evidence: { source: string; fetchedAt: string; ledgerIndex: number | null; confidence: string };
+  evidence: { source: string; fetchedAt: string; ledgerIndex: number | null; validatedLedger: number | null; confidence: string };
   error: string | null;
+};
+
+type OpenListing = {
+  type: string;
+  offerId: string;
+  nftokenId: string;
+  nftName: string;
+  askingPriceXrp: number;
+  seller: string;
+  destination: string | null;
+  expiration: string | null;
+  evidence: { source: string; fetchedAt: string; ledgerIndex: number | null; confidence: string };
+  note: string;
 };
 
 type OriginNftSnapshot = {
@@ -83,24 +111,43 @@ type OriginNftSnapshot = {
   metadataIpfs: string;
   status: string;
   verified: boolean;
+  sellOffers: NftSellOffer[];
   evidence: { source: string; fetchedAt: string; confidence: string } | null;
+};
+
+type ProviderStatus = {
+  status: 'connected' | 'not_connected' | 'error';
+  lastSync?: string;
 };
 
 type CompanyFinanceSnapshot = {
   mode: 'company';
   network: string;
   accessMode: string;
-  reserve: { baseXrp: number; incrementXrp: number };
-  validatedLedger: number;
+  reserve: { baseXrp: number; incrementXrp: number; validatedLedger: number };
   treasury: AccountSnapshot | null;
   hotMinter: AccountSnapshot | null;
   originNft: OriginNftSnapshot;
-  mintingStatus: { range: string; status: string; note: string };
-  totals: {
-    companyXrp: number;
+  openListings: OpenListing[];
+  aggregates: {
+    cashTotalXrp: number;
+    availableTotalXrp: number;
+    reservedTotalXrp: number;
     treasuryXrp: number | null;
     hotMinterXrp: number | null;
+    aggregateAskingPriceXrp: number;
+    openListingsCount: number;
+    floorPriceXrp: number | null;
+    realizedSalesXrp: number;
     note: string;
+  };
+  mintingStatus: { range: string; status: string; note: string };
+  providers: {
+    xrpl: ProviderStatus;
+    bank_psd2: ProviderStatus;
+    revolut_business: ProviderStatus;
+    bitvavo: ProviderStatus;
+    xtb: ProviderStatus;
   };
   fetchedAt: string;
 };
@@ -120,6 +167,14 @@ function formatBalance(value: string) {
   return formatNumber(numeric);
 }
 
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('de-DE');
+}
+
 function describeAmount(amount: unknown) {
   if (typeof amount === 'string') {
     const drops = Number(amount);
@@ -135,24 +190,25 @@ function describeAmount(amount: unknown) {
   return '—';
 }
 
-function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'safe' | 'warn' | 'neutral' | 'info' }) {
+function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; tone?: 'safe' | 'warn' | 'neutral' | 'info' | 'muted' }) {
   const classes = tone === 'safe'
     ? 'border-emerald-300/14 bg-emerald-400/[0.055] text-emerald-100/68'
     : tone === 'warn'
       ? 'border-amber-300/12 bg-amber-400/[0.045] text-amber-100/58'
       : tone === 'info'
         ? 'border-violet-300/12 bg-violet-400/[0.045] text-violet-100/58'
-        : 'border-white/[0.07] bg-white/[0.025] text-white/42';
+        : tone === 'muted'
+          ? 'border-white/[0.05] bg-white/[0.015] text-white/28'
+          : 'border-white/[0.07] bg-white/[0.025] text-white/42';
 
   return <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${classes}`}>{children}</span>;
 }
 
-function AccountCard({ account, title, description }: { account: AccountSnapshot | null; title: string; description: string }) {
+function AccountCard({ account, title }: { account: AccountSnapshot | null; title: string }) {
   if (!account) {
     return (
       <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.02] p-4">
         <div className="text-[11px] font-medium text-white/52">{title}</div>
-        <div className="mt-1 text-[9px] text-white/28">{description}</div>
         <div className="mt-3 text-[10px] text-amber-200/60">Not available</div>
       </div>
     );
@@ -161,12 +217,13 @@ function AccountCard({ account, title, description }: { account: AccountSnapshot
   const hasError = account.error !== null;
   const xrp = account.xrp ?? 0;
   const availableXrp = account.availableXrp ?? 0;
+  const lastTx = account.transactions[0] || null;
 
   return (
     <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="text-[11px] font-medium text-white/72">{title}</div>
+          <div className="text-[11px] font-medium text-white/72">{account.role.label}</div>
           <div className="mt-0.5 font-mono text-[9px] text-white/28">{shortAddress(account.address)}</div>
         </div>
         {hasError ? (
@@ -185,14 +242,66 @@ function AccountCard({ account, title, description }: { account: AccountSnapshot
           <div className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/88">
             {formatNumber(xrp)} <span className="text-[14px] text-white/40">XRP</span>
           </div>
-          <div className="mt-1 flex items-center gap-3 text-[9px] text-white/32">
-            <span>Available: {formatNumber(availableXrp)} XRP</span>
-            <span>Reserve: {formatNumber(account.reserve.requiredXrp)} XRP</span>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 text-[9px]">
+            <div className="rounded-lg border border-emerald-300/[0.06] bg-emerald-400/[0.02] p-2">
+              <div className="text-emerald-100/36">Available</div>
+              <div className="mt-0.5 font-medium text-white/68">{formatNumber(availableXrp)} XRP</div>
+            </div>
+            <div className="rounded-lg border border-white/[0.05] bg-white/[0.015] p-2">
+              <div className="text-white/28">Reserved</div>
+              <div className="mt-0.5 font-medium text-white/52">{formatNumber(account.reserve.requiredXrp)} XRP</div>
+            </div>
           </div>
-          <div className="mt-2 text-[8px] text-white/20">
-            Owner count: {account.ownerCount} · Ledger: {account.evidence.ledgerIndex ?? '—'}
+
+          <div className="mt-3 space-y-1.5 text-[8px] text-white/28">
+            <div className="flex justify-between">
+              <span>Owner count</span>
+              <span className="text-white/48">{account.ownerCount}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Ledger</span>
+              <span className="font-mono text-white/48">{account.evidence.ledgerIndex ?? '—'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Last sync</span>
+              <span className="text-white/48">{formatTime(account.evidence.fetchedAt)}</span>
+            </div>
+            {lastTx && (
+              <div className="flex justify-between">
+                <span>Last tx</span>
+                <span className="font-mono text-white/36">{lastTx.hash.slice(0, 8)}…</span>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-2 text-[7px] text-white/16">
+            Source: {account.evidence.source}
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({ name, icon: Icon, status }: { name: string; icon: React.ElementType; status: ProviderStatus }) {
+  const isConnected = status.status === 'connected';
+  const isError = status.status === 'error';
+
+  return (
+    <div className={`rounded-xl border p-3 ${isConnected ? 'border-emerald-300/[0.08] bg-emerald-400/[0.02]' : isError ? 'border-red-300/[0.08] bg-red-400/[0.02]' : 'border-white/[0.05] bg-white/[0.01]'}`}>
+      <div className="flex items-center gap-2">
+        <Icon size={12} className={isConnected ? 'text-emerald-200/60' : isError ? 'text-red-200/60' : 'text-white/24'} />
+        <span className={`text-[10px] ${isConnected ? 'text-emerald-100/60' : isError ? 'text-red-100/60' : 'text-white/32'}`}>{name}</span>
+      </div>
+      <div className="mt-1 flex items-center gap-1.5">
+        <div className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400/60' : isError ? 'bg-red-400/60' : 'bg-white/16'}`} />
+        <span className={`text-[8px] uppercase tracking-[0.1em] ${isConnected ? 'text-emerald-100/48' : isError ? 'text-red-100/48' : 'text-white/20'}`}>
+          {status.status.replace('_', ' ')}
+        </span>
+      </div>
+      {status.lastSync && (
+        <div className="mt-1 text-[7px] text-white/20">{formatTime(status.lastSync)}</div>
       )}
     </div>
   );
@@ -244,17 +353,14 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     loadCompanyData();
   }, [loadCompanyData]);
 
-  const successfulRecentTreasury = useMemo(
-    () => (companySnapshot?.treasury?.transactions || []).filter((tx) => tx.validated && (!tx.result || tx.result === 'tesSUCCESS')).length,
-    [companySnapshot],
-  );
-
   if (!pane) return null;
 
   const treasury = companySnapshot?.treasury;
   const hotMinter = companySnapshot?.hotMinter;
   const originNft = companySnapshot?.originNft;
-  const totals = companySnapshot?.totals;
+  const aggregates = companySnapshot?.aggregates;
+  const openListings = companySnapshot?.openListings || [];
+  const providers = companySnapshot?.providers;
 
   return (
     <GlassPanel
@@ -294,13 +400,12 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </div>
               <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Finance</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Company-owned XRPL accounts. MÔRA darf Bestand, Aktivität und Risiken verstehen; Signieren und Schlüssel bleiben auf dem Ledger und vollständig außerhalb des OS.
+                Live company financial state from XRPL mainnet. Read-only — MÔRA may explain changes but never signs.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <StatePill tone="safe">Read only</StatePill>
                 <StatePill>Company owned</StatePill>
-                <StatePill>Ledger self custody</StatePill>
-                <StatePill tone="warn">External signing</StatePill>
+                {companySnapshot && <StatePill tone="info">Ledger {companySnapshot.reserve.validatedLedger}</StatePill>}
               </div>
             </div>
 
@@ -326,39 +431,71 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 <HardDrive size={14} className="text-emerald-200/60" /> Company Accounts
               </div>
               <p className="mt-1 text-[9px] text-white/28">
-                Treasury ≠ Hot Minter. Hot Minter ist operativ für NFT-Minting, nicht die Treasury.
+                Treasury ≠ Hot Minter. Hot Minter is operational for NFT minting, not the treasury.
               </p>
 
               <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                <AccountCard
-                  account={treasury ?? null}
-                  title="SAIMÔR · 111 Treasury"
-                  description="Sovereign treasury, read-only"
-                />
-                <AccountCard
-                  account={hotMinter ?? null}
-                  title="Origin Hot Minter"
-                  description="Operational wallet, NOT treasury"
-                />
+                <AccountCard account={treasury ?? null} title="Treasury" />
+                <AccountCard account={hotMinter ?? null} title="Hot Minter" />
               </div>
 
-              {totals && (
-                <div className="mt-4 rounded-xl border border-emerald-300/[0.08] bg-emerald-400/[0.02] p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/34">Total Company XRP</div>
-                      <div className="mt-1 text-[22px] font-medium tracking-[-0.04em] text-white/82">
-                        {formatNumber(totals.companyXrp)} <span className="text-[12px] text-white/36">XRP</span>
-                      </div>
-                    </div>
-                    <div className="text-right text-[9px] text-white/24">
-                      <div>Treasury: {totals.treasuryXrp !== null ? formatNumber(totals.treasuryXrp) : '—'}</div>
-                      <div>Hot Minter: {totals.hotMinterXrp !== null ? formatNumber(totals.hotMinterXrp) : '—'}</div>
-                    </div>
+              {aggregates && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-xl border border-emerald-300/[0.08] bg-emerald-400/[0.02] p-3">
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-emerald-100/36">Cash Total</div>
+                    <div className="mt-1 text-[18px] font-medium text-white/82">{formatNumber(aggregates.cashTotalXrp)} XRP</div>
+                  </div>
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Available</div>
+                    <div className="mt-1 text-[18px] font-medium text-white/68">{formatNumber(aggregates.availableTotalXrp)} XRP</div>
+                  </div>
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Reserved</div>
+                    <div className="mt-1 text-[18px] font-medium text-white/52">{formatNumber(aggregates.reservedTotalXrp)} XRP</div>
                   </div>
                 </div>
               )}
             </section>
+
+            {openListings.length > 0 && (
+              <section className="rounded-[22px] border border-amber-300/[0.09] bg-[radial-gradient(circle_at_90%_0%,rgba(251,191,36,0.06),transparent_30%),rgba(0,0,0,0.14)] p-4">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
+                  <Tag size={14} className="text-amber-200/60" /> Open Listings
+                </div>
+                <p className="mt-1 text-[9px] text-amber-200/48">
+                  Asking prices are NOT counted as assets. Only realized sales count.
+                </p>
+
+                <div className="mt-3 space-y-2">
+                  {openListings.map((listing) => (
+                    <div key={listing.offerId} className="rounded-xl border border-amber-300/[0.06] bg-amber-400/[0.02] p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-[11px] font-medium text-white/68">{listing.nftName}</div>
+                          <div className="mt-0.5 font-mono text-[8px] text-white/24">{shortAddress(listing.nftokenId)}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[14px] font-medium text-amber-100/72">{formatNumber(listing.askingPriceXrp)} XRP</div>
+                          <div className="text-[8px] text-amber-100/36">asking price</div>
+                        </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 text-[8px] text-white/28">
+                        <span>Seller: {shortAddress(listing.seller)}</span>
+                        {listing.expiration && <span>· Expires: {formatDate(listing.expiration)}</span>}
+                      </div>
+                      <div className="mt-1 text-[7px] text-white/16">Source: {listing.evidence.source}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {aggregates && (
+                  <div className="mt-3 flex items-center justify-between rounded-lg border border-amber-300/[0.06] bg-amber-400/[0.015] p-2 text-[9px]">
+                    <span className="text-amber-100/40">Aggregate asking price (NOT an asset)</span>
+                    <span className="font-medium text-amber-100/60">{formatNumber(aggregates.aggregateAskingPriceXrp)} XRP</span>
+                  </div>
+                )}
+              </section>
+            )}
 
             {originNft && (
               <section className="rounded-[22px] border border-violet-300/[0.09] bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,0.06),transparent_30%),rgba(0,0,0,0.14)] p-4">
@@ -417,12 +554,28 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </section>
             )}
 
+            {providers && (
+              <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+                <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
+                  <Link2 size={14} className="text-white/40" /> Providers
+                </div>
+
+                <div className="mt-3 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <ProviderCard name="XRPL" icon={Coins} status={providers.xrpl} />
+                  <ProviderCard name="Bank (PSD2)" icon={Building2} status={providers.bank_psd2} />
+                  <ProviderCard name="Revolut" icon={CreditCard} status={providers.revolut_business} />
+                  <ProviderCard name="Bitvavo" icon={TrendingUp} status={providers.bitvavo} />
+                  <ProviderCard name="XTB" icon={Banknote} status={providers.xtb} />
+                </div>
+              </section>
+            )}
+
             {treasury && treasury.transactions.length > 0 && (
               <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <div className="text-[13px] font-medium text-white/76">Treasury Activity</div>
-                    <div className="mt-1 text-[9px] text-white/28">{successfulRecentTreasury} validierte erfolgreiche Einträge</div>
+                    <div className="mt-1 text-[9px] text-white/28">Recent transactions from {treasury.role.label}</div>
                   </div>
                   <Database size={13} className="text-white/20" />
                 </div>
@@ -446,7 +599,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                         </div>
                         <div className="shrink-0 text-right">
                           <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
-                          <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? new Date(tx.closeTimeIso).toLocaleDateString('de-DE') : tx.result || 'validated'}</div>
+                          <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? formatDate(tx.closeTimeIso) : tx.result || 'validated'}</div>
                         </div>
                       </div>
                     );
@@ -517,7 +670,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           </div>
           <div className="mt-2 text-[13px] text-white/68">Observe → understand → propose. Never sign.</div>
           <p className="mt-1 text-[10px] leading-relaxed text-white/30">
-            Chancen werden als Intents bewertet. Förderung kann vorbereitet werden; kapitalwirksame Aktionen bleiben getrennt und brauchen einen externen Signer.
+            MÔRA reads evidence-backed finance state and may explain changes. Asking prices are NOT assets. Only realized sales count.
           </p>
         </section>
       </div>

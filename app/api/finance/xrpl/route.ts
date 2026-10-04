@@ -4,7 +4,12 @@ import {
   fetchCompanyAccounts,
   fetchOriginNftStatus,
   fetchServerInfo,
+  aggregateCompanyState,
+  buildFinanceFeed,
+  buildMoraContext,
+  createSnapshot,
   KNOWN_ACCOUNTS,
+  ORIGIN_NFT,
 } from '@/lib/finance';
 
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
@@ -12,8 +17,9 @@ const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address')?.trim() || '';
   const mode = request.nextUrl.searchParams.get('mode') || 'single';
+  const format = request.nextUrl.searchParams.get('format') || 'detailed';
 
-  if (mode === 'company') {
+  if (mode === 'company' || mode === 'feed' || mode === 'mora') {
     try {
       const [accounts, serverInfo, originNft] = await Promise.all([
         fetchCompanyAccounts(),
@@ -21,8 +27,32 @@ export async function GET(request: NextRequest) {
         fetchOriginNftStatus(),
       ]);
 
+      const companyState = aggregateCompanyState(accounts, originNft);
       const treasury = accounts.find(a => a.role.type === 'SAIMOR_SOVEREIGN_TREASURY');
       const hotMinter = accounts.find(a => a.role.type === 'SAIMOR_ORIGIN_HOT_MINTER');
+
+      if (mode === 'feed') {
+        const feed = buildFinanceFeed(companyState, serverInfo);
+        return NextResponse.json(feed);
+      }
+
+      if (mode === 'mora') {
+        const moraContext = buildMoraContext(companyState, null);
+        return NextResponse.json(moraContext);
+      }
+
+      const openListings = companyState.openListings.map(l => ({
+        type: l.type,
+        offerId: l.offerId,
+        nftokenId: l.nftokenId,
+        nftName: l.nftName,
+        askingPriceXrp: l.askingPriceXrp,
+        seller: l.seller,
+        destination: l.destination,
+        expiration: l.expiration,
+        evidence: l.evidence,
+        note: 'Asking price is NOT an asset. Only realized sales count.',
+      }));
 
       return NextResponse.json({
         mode: 'company',
@@ -31,8 +61,8 @@ export async function GET(request: NextRequest) {
         reserve: {
           baseXrp: serverInfo.reserveBaseXrp,
           incrementXrp: serverInfo.reserveIncrementXrp,
+          validatedLedger: serverInfo.validatedLedger,
         },
-        validatedLedger: serverInfo.validatedLedger,
         treasury: treasury ? {
           address: treasury.address,
           role: treasury.role,
@@ -63,7 +93,7 @@ export async function GET(request: NextRequest) {
         } : null,
         originNft: {
           nftokenId: originNft.nftokenId,
-          name: 'SAIMÔR // ORIGIN #111 — Klarheit im Wandel',
+          name: ORIGIN_NFT.name,
           issuer: originNft.issuer,
           owner: originNft.owner,
           flags: originNft.flags,
@@ -78,24 +108,42 @@ export async function GET(request: NextRequest) {
           metadataIpfs: originNft.metadataIpfs,
           status: originNft.status,
           verified: originNft.verified,
+          sellOffers: originNft.sellOffers,
           evidence: originNft.evidence,
+        },
+        openListings,
+        aggregates: {
+          cashTotalXrp: companyState.cashTotalXrp,
+          availableTotalXrp: companyState.availableTotalXrp,
+          reservedTotalXrp: companyState.reservedTotalXrp,
+          treasuryXrp: companyState.sovereignTreasuryXrp,
+          hotMinterXrp: companyState.hotMinterXrp,
+          aggregateAskingPriceXrp: companyState.aggregateAskingPriceXrp,
+          openListingsCount: companyState.openListingsCount,
+          floorPriceXrp: companyState.floorPriceXrp,
+          realizedSalesXrp: companyState.realizedSalesXrp,
+          note: 'Treasury != Hot Minter. Asking prices NOT counted as assets.',
         },
         mintingStatus: {
           range: '#001-#110',
           status: 'PAUSED_AWAITING_FINAL_ART',
           note: 'No mint/list/pin code paths should be triggered',
         },
-        totals: {
-          companyXrp: (treasury?.xrp ?? 0) + (hotMinter?.xrp ?? 0),
-          treasuryXrp: treasury?.xrp ?? null,
-          hotMinterXrp: hotMinter?.xrp ?? null,
-          note: 'Treasury != Hot Minter. Hot Minter is operational, not treasury.',
+        providers: {
+          xrpl: {
+            status: accounts.some(a => a.evidence.confidence === 'live') ? 'connected' : 'error',
+            lastSync: companyState.lastUpdated,
+          },
+          bank_psd2: { status: 'not_connected' },
+          revolut_business: { status: 'not_connected' },
+          bitvavo: { status: 'not_connected' },
+          xtb: { status: 'not_connected' },
         },
         fetchedAt: new Date().toISOString(),
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'XRPL request failed';
-      return NextResponse.json({ error: message, mode: 'company' }, { status: 502 });
+      return NextResponse.json({ error: message, mode }, { status: 502 });
     }
   }
 

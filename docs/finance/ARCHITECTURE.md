@@ -163,16 +163,58 @@ As of 2026-10-04:
 ```
 lib/finance/
 ├── index.ts          # Public exports
-├── types.ts          # Type definitions, known accounts, constants
-├── xrplProvider.ts   # Read-only XRPL access
-└── aggregation.ts    # State aggregation with owner separation
+├── types.ts          # Type definitions, known accounts, feed schema
+├── xrplProvider.ts   # Read-only XRPL access (incl. NFT sell offers)
+├── aggregation.ts    # State aggregation with owner separation
+└── moraContext.ts    # MÔRA context with change detection
 
 app/api/finance/
-└── xrpl/route.ts     # API endpoint for XRPL data
+└── xrpl/route.ts     # API endpoint (modes: single, company, feed, mora)
 
 docs/finance/
 └── ARCHITECTURE.md   # This document
 ```
+
+## Feed Schema (finance-xrpl/1)
+
+Compatible with local `yori_finance_live_treasury.json`:
+
+```typescript
+{
+  system: 'saimor-finance',
+  schema_version: 'finance-xrpl/1',
+  mode: 'read-only',
+  generated_at_utc: string,
+  network: 'mainnet',
+  reserves: { base_xrp, increment_xrp, validated_ledger },
+  accounts: [{ address, role, label, balance_xrp, available_xrp, ... }],
+  company: {
+    sovereign_treasury_xrp, hot_minter_xrp,
+    cash_total_xrp, available_total_xrp, reserved_total_xrp,
+    realized_sales_xrp, aggregate_asking_price_xrp,
+    open_listings_count, floor_price_xrp
+  },
+  personal: { included: false },
+  origin: { genesis_111: {...}, collection: {...} },
+  providers: { xrpl, bank_psd2, revolut_business, bitvavo, xtb }
+}
+```
+
+## MÔRA Context
+
+MÔRA receives read-only finance context:
+- Company balances (treasury, hot minter, totals)
+- Open listings with note: "NOT counted as assets"
+- Origin NFT status and sell offers
+- Provider connection status
+- Recent changes detected via snapshot comparison
+
+Change types detected:
+- `balance_changed` - XRP balance changed
+- `new_transaction` - New transaction detected
+- `listing_created` - NFT sell offer created
+- `listing_sold` - NFT listing sold/cancelled
+- `owner_count_changed` - Reserve objects changed
 
 ## Future Provider Integration
 
