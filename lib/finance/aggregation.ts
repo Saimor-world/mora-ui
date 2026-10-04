@@ -22,6 +22,7 @@ import type {
   FinanceFeedAccount,
 } from './types';
 import { KNOWN_ACCOUNTS, ORIGIN_NFT } from './types';
+import { classifyAccountTransactions, rippleTimeToIso } from './xrplProvider';
 
 export function aggregateCompanyState(
   accounts: XrplAccountSnapshot[],
@@ -49,6 +50,15 @@ export function aggregateCompanyState(
   const availableTotalXrp = treasuryAvailable + hotMinterAvailable;
   const reservedTotalXrp = treasuryReserved + hotMinterReserved;
 
+  const treasuryBreakdown = treasury && !treasury.error
+    ? (treasury.breakdown ?? classifyAccountTransactions(treasury.address, treasury.transactions, treasury.xrp))
+    : null;
+  const hotMinterBreakdown = hotMinter && !hotMinter.error
+    ? (hotMinter.breakdown ?? classifyAccountTransactions(hotMinter.address, hotMinter.transactions, hotMinter.xrp))
+    : null;
+
+  const realizedSalesXrp = (treasuryBreakdown?.realizedSalesXrp ?? 0) + (hotMinterBreakdown?.realizedSalesXrp ?? 0);
+
   const openListings: OpenListing[] = [];
   let aggregateAskingPriceXrp = 0;
 
@@ -62,7 +72,7 @@ export function aggregateCompanyState(
         askingPriceXrp: offer.amountXrp,
         seller: offer.owner,
         destination: offer.destination,
-        expiration: offer.expiration ? new Date(offer.expiration * 1000).toISOString() : null,
+        expiration: offer.expiration ? rippleTimeToIso(offer.expiration) : null,
         evidence: {
           source: 'xrpl_mainnet_nft_offers',
           fetchedAt: originNft.evidence?.fetchedAt || new Date().toISOString(),
@@ -90,10 +100,12 @@ export function aggregateCompanyState(
     cashTotalXrp,
     availableTotalXrp,
     reservedTotalXrp,
-    realizedSalesXrp: 0,
+    realizedSalesXrp,
     aggregateAskingPriceXrp,
     openListingsCount: openListings.length,
     floorPriceXrp: openListings.length > 0 ? Math.min(...openListings.map(l => l.askingPriceXrp)) : null,
+    treasuryBreakdown,
+    hotMinterBreakdown,
     accounts: companyAccounts,
     originNft,
     openListings,

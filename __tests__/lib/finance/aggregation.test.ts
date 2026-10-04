@@ -123,6 +123,45 @@ describe('Finance Aggregation', () => {
       expect(state.sovereignTreasuryXrp).toBeNull();
       expect(state.cashTotalXrp).toBe(0);
     });
+
+    it('converts NFT sell offer expiration from Ripple Epoch to UTC ISO-8601', () => {
+      const hotMinter = createMockSnapshot({
+        owner: 'company',
+        xrp: 4.99999,
+        role: { type: 'SAIMOR_ORIGIN_HOT_MINTER', label: 'Hot Minter', description: '' },
+      });
+      const originNft: OriginNftStatus = {
+        nftokenId: '001A138896FFC115A26EB4E8D497207ACAA8C7CB7D80C385CDB238CB0666FA87',
+        issuer: 'rNmQjteRtj68W3AJz3AHxjpGH5HfkW1Lk6',
+        owner: 'rNmQjteRtj68W3AJz3AHxjpGH5HfkW1Lk6',
+        flags: 26,
+        transferFee: 5000,
+        taxon: 0,
+        uri: null,
+        status: 'LIVE_GENESIS_MAINNET_PROOF',
+        artIpfs: null,
+        metadataIpfs: null,
+        verified: true,
+        evidence: null,
+        sellOffers: [
+          {
+            offerId: 'offer-111',
+            nftokenId: '001A138896FFC115A26EB4E8D497207ACAA8C7CB7D80C385CDB238CB0666FA87',
+            owner: 'rNmQjteRtj68W3AJz3AHxjpGH5HfkW1Lk6',
+            destination: null,
+            amountDrops: '111000000',
+            amountXrp: 111,
+            flags: 1,
+            expiration: 829004960,
+            ledgerIndex: 103399728,
+          },
+        ],
+      };
+
+      const state = aggregateCompanyState([hotMinter], originNft);
+      expect(state.openListings).toHaveLength(1);
+      expect(state.openListings[0].expiration).toBe('2026-04-08T23:09:20.000Z');
+    });
   });
 
   describe('aggregatePersonalState', () => {

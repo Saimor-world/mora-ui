@@ -76,6 +76,16 @@ export interface XrplTrustLine {
   authorized: boolean | null;
 }
 
+export type XrplTxClassification =
+  | 'founder_funding'
+  | 'external_dust'
+  | 'nft_mint'
+  | 'nft_create_offer'
+  | 'nft_sale_accepted'
+  | 'nft_offer_cancelled'
+  | 'outgoing_payment'
+  | 'ledger_event';
+
 export interface XrplTransaction {
   hash: string;
   ledgerIndex: number | null;
@@ -87,9 +97,25 @@ export interface XrplTransaction {
   destinationTag: number | null;
   invoiceId: string | null;
   amount: unknown;
+  feeDrops?: string;
+  feeXrp?: number;
+  classification?: XrplTxClassification;
+  isRevenue?: boolean;
+  isFounderFunding?: boolean;
   result: string;
   validated: boolean;
   commerce: boolean;
+}
+
+export interface XrplWalletBreakdown {
+  targetAllocationXrp: number | null;
+  founderFundingXrp: number;
+  initialAllocationFundingXrp: number | null;
+  topUpFundingXrp: number | null;
+  externalDustXrp: number;
+  realizedSalesXrp: number;
+  totalFeesXrp: number;
+  ledgerBalanceXrp: number;
 }
 
 export interface XrplAccountSecurity {
@@ -115,6 +141,7 @@ export interface XrplAccountSnapshot {
 
   trustLines: XrplTrustLine[];
   transactions: XrplTransaction[];
+  breakdown?: XrplWalletBreakdown;
 
   evidence: FinanceEvidence;
   error: string | null;
@@ -178,6 +205,9 @@ export interface CompanyFinanceState {
   aggregateAskingPriceXrp: number;
   openListingsCount: number;
   floorPriceXrp: number | null;
+
+  treasuryBreakdown?: XrplWalletBreakdown | null;
+  hotMinterBreakdown?: XrplWalletBreakdown | null;
 
   accounts: XrplAccountSnapshot[];
   originNft: OriginNftStatus | null;

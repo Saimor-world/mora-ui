@@ -1,3 +1,6 @@
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   fetchAccountSnapshot,
@@ -8,16 +11,38 @@ import {
   buildFinanceFeed,
   buildMoraContext,
   createSnapshot,
+  type FinanceSnapshot,
   KNOWN_ACCOUNTS,
   ORIGIN_NFT,
 } from '@/lib/finance';
 
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
+const SNAPSHOT_FILE_PATH = path.join(os.tmpdir(), 'saimor-finance-xrpl-snapshot.json');
+
+async function loadPersistedSnapshot(): Promise<FinanceSnapshot | null> {
+  try {
+    const raw = await fs.readFile(SNAPSHOT_FILE_PATH, 'utf8');
+    const parsed = JSON.parse(raw) as FinanceSnapshot;
+    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.latestTxHashes)) {
+      return parsed;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function savePersistedSnapshot(snapshot: FinanceSnapshot): Promise<void> {
+  try {
+    await fs.writeFile(SNAPSHOT_FILE_PATH, JSON.stringify(snapshot, null, 2), 'utf8');
+  } catch {
+    // Non-fatal in read-only environments
+  }
+}
 
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address')?.trim() || '';
   const mode = request.nextUrl.searchParams.get('mode') || 'single';
-  const format = request.nextUrl.searchParams.get('format') || 'detailed';
 
   if (mode === 'company' || mode === 'feed' || mode === 'mora') {
     try {
@@ -37,7 +62,10 @@ export async function GET(request: NextRequest) {
       }
 
       if (mode === 'mora') {
-        const moraContext = buildMoraContext(companyState, null);
+        const previousSnapshot = await loadPersistedSnapshot();
+        const moraContext = buildMoraContext(companyState, previousSnapshot);
+        const currentSnapshot = createSnapshot(companyState);
+        await savePersistedSnapshot(currentSnapshot);
         return NextResponse.json(moraContext);
       }
 
@@ -74,6 +102,7 @@ export async function GET(request: NextRequest) {
           security: treasury.security,
           trustLines: treasury.trustLines,
           transactions: treasury.transactions,
+          breakdown: treasury.breakdown ?? companyState.treasuryBreakdown ?? null,
           evidence: treasury.evidence,
           error: treasury.error,
         } : null,
@@ -88,6 +117,7 @@ export async function GET(request: NextRequest) {
           security: hotMinter.security,
           trustLines: hotMinter.trustLines,
           transactions: hotMinter.transactions,
+          breakdown: hotMinter.breakdown ?? companyState.hotMinterBreakdown ?? null,
           evidence: hotMinter.evidence,
           error: hotMinter.error,
         } : null,
@@ -177,6 +207,7 @@ export async function GET(request: NextRequest) {
       security: snapshot.security,
       trustLines: snapshot.trustLines,
       transactions: snapshot.transactions,
+      breakdown: snapshot.breakdown ?? null,
       evidence: snapshot.evidence,
       error: snapshot.error,
       fetchedAt: snapshot.evidence.fetchedAt,
