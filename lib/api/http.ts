@@ -56,6 +56,7 @@ type CoreRequestOptions = {
     skipAuth?: boolean;
     isOptional?: boolean; // If true, non-auth failures may return null for optional/background reads.
     throwAuthErrors?: boolean; // Opt-in: preserve 401/403 as CoreError instead of collapsing them to null.
+    preserveEnvelope?: boolean; // Opt-in for callers that need v3 receipt/meta alongside data.
     headers?: Record<string, string>;
 };
 
@@ -200,7 +201,7 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
             typeof json.meta === 'object' &&
             json.meta?.api_version === 'v3'
         ) {
-            return json.data;
+            return options.preserveEnvelope ? json : json.data;
         }
         return json;
     } catch {
@@ -219,7 +220,7 @@ export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'm
     // wuerde aus der Beschleunigung eine stille Veraltung.
     // Auth-strict and tolerant callers intentionally use different keys so a
     // shared in-flight promise cannot change another caller's error semantics.
-    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${JSON.stringify(options.headers ?? null)}`;
+    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}`;
     return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 
