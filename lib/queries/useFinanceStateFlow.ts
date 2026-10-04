@@ -72,6 +72,101 @@ export type FinanceState = {
   notes?: string[];
 };
 
+export type FinanceXrplWalletClassification = {
+  role?: string | null;
+  counts_as_treasury?: boolean;
+  target_allocation_xrp?: string | null;
+  founder_funding_xrp?: string | null;
+  initial_allocation_funding_xrp?: string | null;
+  top_up_funding_xrp?: string | null;
+  external_dust_xrp?: string | null;
+  realized_sales_xrp?: string | null;
+  total_fees_xrp?: string | null;
+  ledger_balance_xrp?: string | null;
+  reserved_xrp?: string | null;
+  available_balance_xrp?: string | null;
+  sale_verified?: boolean;
+};
+
+export type FinanceOpenListing = {
+  offer_index?: string | null;
+  nftoken_id?: string | null;
+  owner?: string | null;
+  amount_drops?: string | null;
+  amount_xrp?: string | null;
+  destination?: string | null;
+  expiration?: string | null;
+  classification?: string | null;
+  counts_as_wealth?: boolean;
+  counts_as_treasury?: boolean;
+  counts_as_revenue?: boolean;
+};
+
+export type FinanceXrplActivity = {
+  hash: string;
+  booking_date?: string | null;
+  amount?: string | null;
+  currency?: string | null;
+  direction?: string | null;
+  status?: string | null;
+  counterparty?: string | null;
+  description?: string | null;
+  classification?: string | null;
+  type?: string | null;
+  fee_xrp?: string | null;
+  is_revenue?: boolean;
+  is_founder_funding?: boolean;
+  nftoken_id?: string | null;
+  offer_index?: string | null;
+};
+
+export type FinanceMoraAccount = {
+  id: string;
+  address_or_ref?: string | null;
+  display_name: string;
+  account_type?: string | null;
+  currency: string;
+  role?: string | null;
+  status?: string | null;
+  observed_balance?: FinanceMoney | null;
+  available_balance_xrp?: string | null;
+  reserved_xrp?: string | null;
+  wallet_classification?: FinanceXrplWalletClassification | null;
+  open_listings?: FinanceOpenListing[];
+  activity?: FinanceXrplActivity[];
+  observation_count?: number;
+  delta_since_previous?: FinanceMoney | null;
+};
+
+export type FinanceMoraChange = {
+  kind: string;
+  account_id?: string | null;
+  display_name?: string | null;
+  role?: string | null;
+  nftoken_id?: string | null;
+  sale_verified?: boolean;
+  note?: string | null;
+  delta?: FinanceMoney | null;
+  transaction?: FinanceXrplActivity | null;
+};
+
+export type FinanceMoraContext = {
+  scope: FinanceScope;
+  as_of?: string | null;
+  read_only: true;
+  comparison_status: 'compared' | 'no_previous_snapshot' | string;
+  recent_changes: FinanceMoraChange[];
+  sovereign_treasury: FinanceMoraAccount | null;
+  hot_minter: FinanceMoraAccount | null;
+  accounts: FinanceMoraAccount[];
+  disconnected_sources: Array<{
+    id: string;
+    label: string;
+    mode?: string | null;
+    status: string;
+  }>;
+};
+
 export type FinancePosting = {
   id: string;
   account_id?: string | null;
@@ -317,6 +412,35 @@ export function useFinanceState(companyId?: string | null, enabled = true) {
         throw new CoreError('Finance scope mismatch', 403, { code: 'finance_scope_mismatch' });
       }
       return scoped;
+    },
+    enabled: Boolean(companyId && identity.tenantId && enabled),
+    staleTime: STALE_TIMES.financeState,
+    refetchOnWindowFocus: true,
+    retry: shouldRetryFinance,
+  });
+}
+
+export function useFinanceMoraContext(companyId?: string | null, enabled = true) {
+  const identity = useFinanceIdentity();
+  return useQuery<FinanceMoraContext>({
+    queryKey: [...queryKeys.financeRoot(identity.tenantId, identity.identityKey, companyId), 'mora-context'],
+    queryFn: async () => {
+      const tenantId = requireRead(identity.tenantId, 'Finance identity is unresolved');
+      const requestedCompanyId = requireRead(companyId, 'Finance company is unresolved');
+      const context = requireRead(
+        await coreGet(
+          `/v3/finance/mora-context?company_id=${encodeURIComponent(requestedCompanyId)}`,
+          { throwAuthErrors: true },
+        ) as FinanceMoraContext | null,
+        'Finance intelligence context is unavailable',
+      );
+      if (!isCompanyFinanceScope(context.scope, requestedCompanyId, tenantId)) {
+        throw new CoreError('Finance scope mismatch', 403, { code: 'finance_scope_mismatch' });
+      }
+      if (context.read_only !== true) {
+        throw new CoreError('Finance intelligence context is not read-only', 502);
+      }
+      return context;
     },
     enabled: Boolean(companyId && identity.tenantId && enabled),
     staleTime: STALE_TIMES.financeState,
