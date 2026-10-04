@@ -14,6 +14,8 @@ import type {
   XrplReserve,
   XrplTrustLine,
   XrplTransaction,
+  XrplTxClassification,
+  XrplWalletBreakdown,
   XrplAccountSecurity,
   XrplAccountRole,
   FinanceOwner,
@@ -22,6 +24,17 @@ import type {
   NftSellOffer,
 } from './types';
 import { KNOWN_ACCOUNTS, ORIGIN_NFT } from './types';
+
+export const RIPPLE_EPOCH_OFFSET_SECONDS = 946_684_800;
+export const SOVEREIGN_TREASURY_TARGET_ALLOCATION_XRP = 111.0;
+const DUST_THRESHOLD_DROPS = 1_000;
+
+export function rippleTimeToIso(rippleSeconds: number | null | undefined): string | null {
+  if (typeof rippleSeconds !== 'number' || !Number.isFinite(rippleSeconds) || rippleSeconds <= 0) {
+    return null;
+  }
+  return new Date((rippleSeconds + RIPPLE_EPOCH_OFFSET_SECONDS) * 1000).toISOString();
+}
 
 const XRPL_ENDPOINTS = [
   process.env.XRPL_RPC_URL || 'https://xrplcluster.com',
@@ -120,6 +133,136 @@ function parseDeliveredAmount(entry: any, tx: any): unknown {
   return tx?.DeliverMax ?? tx?.Amount ?? null;
 }
 
+function classifySingleTransaction(
+  txType: string,
+  direction: 'in' | 'out',
+  amount: unknown,
+  commerce: boolean,
+): {
+  classification: XrplTxClassification;
+  isRevenue: boolean;
+  isFounderFunding: boolean;
+} {
+  if (txType === 'Payment') {
+    if (direction === 'in') {
+      const drops = typeof amount === 'string' && /^\d+$/.test(amount) ? Number(amount) : null;
+      if (drops !== null && drops <= DUST_THRESHOLD_DROPS) {
+        return {
+          classification: 'external_dust',
+          isRevenue: false,
+          isFounderFunding: false,
+        };
+      }
+      if (commerce) {
+        return {
+          classification: 'ledger_event',
+          isRevenue: true,
+          isFounderFunding: false,
+        };
+      }
+      return {
+        classification: 'founder_funding',
+        isRevenue: false,
+        isFounderFunding: true,
+      };
+    }
+    return {
+      classification: 'outgoing_payment',
+      isRevenue: false,
+      isFounderFunding: false,
+    };
+  }
+  if (txType === 'NFTokenMint') {
+    return {
+      classification: 'nft_mint',
+      isRevenue: false,
+      isFounderFunding: false,
+    };
+  }
+  if (txType === 'NFTokenCreateOffer') {
+    return {
+      classification: 'nft_create_offer',
+      isRevenue: false,
+      isFounderFunding: false,
+    };
+  }
+  if (txType === 'NFTokenAcceptOffer') {
+    return {
+      classification: 'nft_sale_accepted',
+      isRevenue: true,
+      isFounderFunding: false,
+    };
+  }
+  if (txType === 'NFTokenCancelOffer') {
+    return {
+      classification: 'nft_offer_cancelled',
+      isRevenue: false,
+      isFounderFunding: false,
+    };
+  }
+  return {
+    classification: 'ledger_event',
+    isRevenue: false,
+    isFounderFunding: false,
+  };
+}
+
+export function classifyAccountTransactions(
+  address: string,
+  transactions: XrplTransaction[],
+  ledgerBalanceXrp: number,
+): XrplWalletBreakdown {
+  const isTreasury = address === KNOWN_ACCOUNTS.SAIMOR_SOVEREIGN_TREASURY.address;
+  const targetAllocationXrp = isTreasury ? SOVEREIGN_TREASURY_TARGET_ALLOCATION_XRP : null;
+
+  let founderFundingDrops = 0;
+  let externalDustDrops = 0;
+  let realizedSalesDrops = 0;
+  let totalFeesDrops = 0;
+
+  for (const tx of transactions) {
+    if (tx.result && tx.result !== 'tesSUCCESS') continue;
+
+    if (tx.direction === 'out' && tx.feeDrops && /^\d+$/.test(tx.feeDrops)) {
+      totalFeesDrops += Number(tx.feeDrops);
+    }
+
+    const drops = typeof tx.amount === 'string' && /^\d+$/.test(tx.amount) ? Number(tx.amount) : null;
+    const txClass = tx.classification ?? classifySingleTransaction(tx.type, tx.direction, tx.amount, tx.commerce).classification;
+
+    if (txClass === 'founder_funding' && drops !== null) {
+      founderFundingDrops += drops;
+    } else if (txClass === 'external_dust' && drops !== null) {
+      externalDustDrops += drops;
+    } else if (txClass === 'nft_sale_accepted' && drops !== null) {
+      realizedSalesDrops += drops;
+    }
+  }
+
+  const founderFundingXrp = Number((founderFundingDrops / 1_000_000).toFixed(6));
+  const externalDustXrp = Number((externalDustDrops / 1_000_000).toFixed(6));
+  const realizedSalesXrp = Number((realizedSalesDrops / 1_000_000).toFixed(6));
+  const totalFeesXrp = Number((totalFeesDrops / 1_000_000).toFixed(6));
+
+  const initialAllocationFundingXrp = isTreasury
+    ? Number(Math.min(founderFundingXrp, SOVEREIGN_TREASURY_TARGET_ALLOCATION_XRP).toFixed(6))
+    : null;
+  const topUpFundingXrp = isTreasury
+    ? Number(Math.max(0, founderFundingXrp - SOVEREIGN_TREASURY_TARGET_ALLOCATION_XRP).toFixed(6))
+    : null;
+
+  return {
+    targetAllocationXrp,
+    founderFundingXrp,
+    initialAllocationFundingXrp,
+    topUpFundingXrp,
+    externalDustXrp,
+    realizedSalesXrp,
+    totalFeesXrp,
+    ledgerBalanceXrp: Number(ledgerBalanceXrp.toFixed(6)),
+  };
+}
+
 function normalizeTransaction(entry: any, address: string): XrplTransaction {
   const tx = entry?.tx_json || entry?.tx || {};
   const destinationTag = Number.isInteger(tx?.DestinationTag) ? Number(tx.DestinationTag) : null;
@@ -129,17 +272,40 @@ function normalizeTransaction(entry: any, address: string): XrplTransaction {
     && destinationTag >= SAIMOR_COMMERCE_TAG_MIN
     && destinationTag <= SAIMOR_COMMERCE_TAG_MAX;
 
+  const txType = String(tx?.TransactionType || 'Unknown');
+  const direction: 'in' | 'out' = tx?.Account === address ? 'out' : 'in';
+  const amount = parseDeliveredAmount(entry, tx);
+  const feeDrops = typeof tx?.Fee === 'string' && /^\d+$/.test(tx.Fee) ? tx.Fee : '0';
+  const feeXrp = Number(feeDrops) / 1_000_000;
+  const rippleDate = typeof tx?.date === 'number'
+    ? tx.date
+    : typeof entry?.date === 'number'
+      ? entry.date
+      : null;
+  const closeTimeIso = entry?.close_time_iso || rippleTimeToIso(rippleDate);
+  const { classification, isRevenue, isFounderFunding } = classifySingleTransaction(
+    txType,
+    direction,
+    amount,
+    commerce,
+  );
+
   return {
     hash: String(entry?.hash || tx?.hash || ''),
-    ledgerIndex: Number(entry?.ledger_index || 0) || null,
-    closeTimeIso: entry?.close_time_iso || null,
-    type: String(tx?.TransactionType || 'Unknown'),
-    direction: tx?.Account === address ? 'out' : 'in',
+    ledgerIndex: Number(entry?.ledger_index || tx?.ledger_index || 0) || null,
+    closeTimeIso,
+    type: txType,
+    direction,
     account: String(tx?.Account || ''),
     destination: tx?.Destination ? String(tx.Destination) : null,
     destinationTag,
     invoiceId: tx?.InvoiceID ? String(tx.InvoiceID) : null,
-    amount: parseDeliveredAmount(entry, tx),
+    amount,
+    feeDrops,
+    feeXrp,
+    classification,
+    isRevenue,
+    isFounderFunding,
     result: String(entry?.meta?.TransactionResult || entry?.meta?.transaction_result || ''),
     validated: entry?.validated !== false,
     commerce,
@@ -240,6 +406,8 @@ export async function fetchAccountSnapshot(
       ? history.transactions.map((entry: any) => normalizeTransaction(entry, address))
       : [];
 
+    const breakdown = classifyAccountTransactions(address, transactions, xrp);
+
     const evidence: FinanceEvidence = {
       source: 'xrpl_mainnet',
       fetchedAt,
@@ -262,6 +430,7 @@ export async function fetchAccountSnapshot(
       security,
       trustLines,
       transactions,
+      breakdown,
       evidence,
       error: null,
     };

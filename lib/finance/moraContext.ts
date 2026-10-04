@@ -212,6 +212,8 @@ export interface MoraFinanceContext {
     cashTotalXrp: number;
     availableTotalXrp: number;
     reservedTotalXrp: number;
+    treasuryBreakdown?: CompanyFinanceState['treasuryBreakdown'];
+    hotMinterBreakdown?: CompanyFinanceState['hotMinterBreakdown'];
   };
   openListings: {
     count: number;
@@ -235,6 +237,7 @@ export interface MoraFinanceContext {
     status: 'compared' | 'no_previous_snapshot';
     note: string;
   };
+  snapshot?: FinanceSnapshot;
   lastSync: string;
 }
 
@@ -268,12 +271,14 @@ export function buildMoraContext(
     summary,
     companyState: {
       treasuryXrp: state.sovereignTreasuryXrp,
-      treasuryAvailable: state.availableTotalXrp - (state.accounts.find(a => a.role.type === 'SAIMOR_ORIGIN_HOT_MINTER')?.availableXrp ?? 0),
+      treasuryAvailable: currentSnapshot.treasuryAvailable,
       hotMinterXrp: state.hotMinterXrp,
-      hotMinterAvailable: state.accounts.find(a => a.role.type === 'SAIMOR_ORIGIN_HOT_MINTER')?.availableXrp ?? null,
+      hotMinterAvailable: currentSnapshot.hotMinterAvailable,
       cashTotalXrp: state.cashTotalXrp,
       availableTotalXrp: state.availableTotalXrp,
       reservedTotalXrp: state.reservedTotalXrp,
+      treasuryBreakdown: state.treasuryBreakdown ?? null,
+      hotMinterBreakdown: state.hotMinterBreakdown ?? null,
     },
     openListings: {
       count: state.openListingsCount,
@@ -299,6 +304,7 @@ export function buildMoraContext(
         ? 'Current finance state was compared against the supplied previous snapshot.'
         : 'No persisted previous snapshot was supplied. recentChanges must not be interpreted as proof that nothing changed.',
     },
+    snapshot: currentSnapshot,
     lastSync: state.lastUpdated,
   };
 }

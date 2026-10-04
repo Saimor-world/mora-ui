@@ -312,5 +312,29 @@ describe('MÔRA Finance Context', () => {
       expect(context.providers.revolut).toBe('not_connected');
       expect(context.providers.broker).toBe('not_connected');
     });
+
+    it('keeps treasuryAvailable null when treasury account has an error', () => {
+      const erroredTreasury = createMockSnapshot({
+        owner: 'company',
+        xrp: 0,
+        availableXrp: 0,
+        error: 'RPC timeout',
+        role: { type: 'SAIMOR_SOVEREIGN_TREASURY', label: 'Treasury', description: '' },
+      });
+      const hotMinter = createMockSnapshot({
+        owner: 'company',
+        xrp: 4.99999,
+        availableXrp: 3.59999,
+        role: { type: 'SAIMOR_ORIGIN_HOT_MINTER', label: 'Hot Minter', description: '' },
+      });
+
+      const state = aggregateCompanyState([erroredTreasury, hotMinter], null);
+      const context = buildMoraContext(state, null);
+
+      expect(context.companyState.treasuryXrp).toBeNull();
+      expect(context.companyState.treasuryAvailable).toBeNull();
+      expect(context.companyState.hotMinterXrp).toBe(4.99999);
+      expect(context.companyState.hotMinterAvailable).toBe(3.59999);
+    });
   });
 });

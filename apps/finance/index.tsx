@@ -49,8 +49,24 @@ type XrplTransaction = {
   account: string;
   destination: string | null;
   amount: unknown;
+  feeDrops?: string;
+  feeXrp?: number;
+  classification?: string;
+  isRevenue?: boolean;
+  isFounderFunding?: boolean;
   result: string;
   validated: boolean;
+};
+
+type WalletBreakdown = {
+  targetAllocationXrp: number | null;
+  founderFundingXrp: number;
+  initialAllocationFundingXrp: number | null;
+  topUpFundingXrp: number | null;
+  externalDustXrp: number;
+  realizedSalesXrp: number;
+  totalFeesXrp: number;
+  ledgerBalanceXrp: number;
 };
 
 type NftSellOffer = {
@@ -81,6 +97,7 @@ type AccountSnapshot = {
   };
   trustLines: TrustLine[];
   transactions: XrplTransaction[];
+  breakdown?: WalletBreakdown | null;
   evidence: { source: string; fetchedAt: string; ledgerIndex: number | null; validatedLedger: number | null; confidence: string };
   error: string | null;
 };
@@ -204,6 +221,27 @@ function StatePill({ children, tone = 'neutral' }: { children: React.ReactNode; 
   return <span className={`rounded-full border px-2.5 py-1 text-[9px] uppercase tracking-[0.14em] ${classes}`}>{children}</span>;
 }
 
+function classificationLabel(classification?: string) {
+  switch (classification) {
+    case 'founder_funding':
+      return 'Founder Funding (Capital)';
+    case 'external_dust':
+      return 'External Dust (Ignored)';
+    case 'nft_mint':
+      return 'NFTokenMint';
+    case 'nft_create_offer':
+      return 'NFTokenCreateOffer';
+    case 'nft_sale_accepted':
+      return 'NFTokenAcceptOffer (Sale)';
+    case 'nft_offer_cancelled':
+      return 'NFTokenCancelOffer';
+    case 'outgoing_payment':
+      return 'Outgoing Payment';
+    default:
+      return null;
+  }
+}
+
 function AccountCard({ account, title }: { account: AccountSnapshot | null; title: string }) {
   if (!account) {
     return (
@@ -218,6 +256,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
   const xrp = account.xrp ?? 0;
   const availableXrp = account.availableXrp ?? 0;
   const lastTx = account.transactions[0] || null;
+  const breakdown = account.breakdown ?? null;
 
   return (
     <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.025] p-4">
@@ -254,6 +293,40 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
             </div>
           </div>
 
+          {breakdown && (
+            <div className="mt-3 rounded-lg border border-white/[0.05] bg-black/20 p-2.5 space-y-1 text-[8px] text-white/36">
+              {breakdown.targetAllocationXrp !== null && (
+                <div className="flex justify-between">
+                  <span>Allocation target</span>
+                  <span className="font-mono text-white/64">{formatNumber(breakdown.targetAllocationXrp)} XRP</span>
+                </div>
+              )}
+              <div className="flex justify-between">
+                <span>Founder funding (not revenue)</span>
+                <span className="font-mono text-white/64">
+                  {formatNumber(breakdown.founderFundingXrp)} XRP
+                  {breakdown.initialAllocationFundingXrp !== null && breakdown.topUpFundingXrp
+                    ? ` (${formatNumber(breakdown.initialAllocationFundingXrp)} + ${formatNumber(breakdown.topUpFundingXrp)} top-up)`
+                    : ''}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>External dust (excluded)</span>
+                <span className="font-mono text-white/48">{formatNumber(breakdown.externalDustXrp)} XRP</span>
+              </div>
+              {breakdown.totalFeesXrp > 0 && (
+                <div className="flex justify-between">
+                  <span>Network fees</span>
+                  <span className="font-mono text-white/48">-{formatNumber(breakdown.totalFeesXrp)} XRP</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-white/[0.05] pt-1">
+                <span>Current ledger balance</span>
+                <span className="font-mono font-medium text-white/76">{formatNumber(breakdown.ledgerBalanceXrp)} XRP</span>
+              </div>
+            </div>
+          )}
+
           <div className="mt-3 space-y-1.5 text-[8px] text-white/28">
             <div className="flex justify-between">
               <span>Owner count</span>
@@ -281,6 +354,53 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
         </>
       )}
     </div>
+  );
+}
+
+function ActivitySection({ account, title }: { account: AccountSnapshot | null | undefined; title: string }) {
+  if (!account || account.transactions.length === 0) return null;
+
+  return (
+    <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <div className="text-[13px] font-medium text-white/76">{title}</div>
+          <div className="mt-1 text-[9px] text-white/28">Recent validated ledger events from {account.role.label}</div>
+        </div>
+        <Database size={13} className="text-white/20" />
+      </div>
+
+      <div className="mt-3 divide-y divide-white/[0.05]">
+        {account.transactions.slice(0, 8).map((tx) => {
+          const DirectionIcon = tx.direction === 'in' ? ArrowDownLeft : ArrowUpRight;
+          const classLabel = classificationLabel(tx.classification);
+          return (
+            <div key={`${tx.hash}-${tx.ledgerIndex}`} className="flex items-center gap-3 py-3">
+              <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.05] ${tx.direction === 'in' ? 'text-emerald-200/60' : 'text-amber-200/55'}`}>
+                <DirectionIcon size={13} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-medium text-white/66">{tx.type}</span>
+                  <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">{tx.direction}</span>
+                  {classLabel && <StatePill tone={tx.classification === 'external_dust' ? 'muted' : tx.isFounderFunding ? 'info' : 'neutral'}>{classLabel}</StatePill>}
+                </div>
+                <div className="mt-0.5 truncate font-mono text-[8px] text-white/20">
+                  {tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-8)}` : `Ledger ${tx.ledgerIndex ?? '—'}`}
+                </div>
+              </div>
+              <div className="shrink-0 text-right">
+                <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
+                {typeof tx.feeXrp === 'number' && tx.feeXrp > 0 && tx.direction === 'out' && (
+                  <div className="font-mono text-[8px] text-amber-200/40">Fee: {formatNumber(tx.feeXrp)} XRP</div>
+                )}
+                <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? formatDate(tx.closeTimeIso) : tx.result || 'validated'}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -570,43 +690,8 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </section>
             )}
 
-            {treasury && treasury.transactions.length > 0 && (
-              <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[13px] font-medium text-white/76">Treasury Activity</div>
-                    <div className="mt-1 text-[9px] text-white/28">Recent transactions from {treasury.role.label}</div>
-                  </div>
-                  <Database size={13} className="text-white/20" />
-                </div>
-
-                <div className="mt-3 divide-y divide-white/[0.05]">
-                  {treasury.transactions.slice(0, 6).map((tx) => {
-                    const DirectionIcon = tx.direction === 'in' ? ArrowDownLeft : ArrowUpRight;
-                    return (
-                      <div key={`${tx.hash}-${tx.ledgerIndex}`} className="flex items-center gap-3 py-3">
-                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-white/[0.05] ${tx.direction === 'in' ? 'text-emerald-200/60' : 'text-amber-200/55'}`}>
-                          <DirectionIcon size={13} />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[11px] font-medium text-white/66">{tx.type}</span>
-                            <span className="text-[8px] uppercase tracking-[0.12em] text-white/20">{tx.direction}</span>
-                          </div>
-                          <div className="mt-0.5 truncate font-mono text-[8px] text-white/20">
-                            {tx.hash ? `${tx.hash.slice(0, 10)}…${tx.hash.slice(-8)}` : `Ledger ${tx.ledgerIndex ?? '—'}`}
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <div className="font-mono text-[10px] text-white/52">{describeAmount(tx.amount)}</div>
-                          <div className="mt-0.5 text-[8px] text-white/18">{tx.closeTimeIso ? formatDate(tx.closeTimeIso) : tx.result || 'validated'}</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+            <ActivitySection account={treasury} title="Treasury Activity" />
+            <ActivitySection account={hotMinter} title="Hot Minter Activity" />
           </>
         )}
 
