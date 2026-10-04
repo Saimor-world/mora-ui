@@ -70,7 +70,7 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   mail:            dynamic(() => import('@/apps/mail'),          { ssr: false, loading: () => <AppSkeleton /> }),
   feeds:           dynamic(() => import('@/apps/feeds'),         { ssr: false, loading: () => <AppSkeleton /> }),
   'website-dossier': dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
-  finance:         dynamic(() => import('@/apps/finance'),       { ssr: false, loading: () => <AppSkeleton /> }),
+  finance:         dynamic(() => import('@/apps/finance-v2'),    { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
