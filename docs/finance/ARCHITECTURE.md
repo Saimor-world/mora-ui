@@ -283,3 +283,31 @@ npx jest --testPathPattern="__tests__/lib/finance"
 - [ ] No secrets in client bundles
 - [ ] All XRPL access read-only
 - [ ] Owner separation validated
+
+
+## Profit Center V1
+
+The Capital section now distinguishes **financial truth** from **capital policy**.
+
+Derived monthly operating cash metrics may be computed in the UI from loaded,
+company-scoped CORE records, but they are not accounting profit:
+
+- customer receipts remain cash receipts until revenue recognition exists,
+- founder funding is capital, never performance,
+- internal transfers are neutral,
+- loaded reversal records are mapped back to the original classification,
+- unresolved corrections or incomplete Flow coverage fail closed for budget release.
+
+The first trading-budget policy is explicitly a **draft decision rule**, not
+canonical Finance truth:
+
+- draft trading budget: up to 10% of a positive, complete monthly operating cash result,
+- monthly loss stop: 5% of the released trading budget,
+- per-trade risk: 1% of the released trading budget,
+- leverage disabled in the first phase,
+- execution remains manual approval only.
+
+No trading method, signing path, order submission or custody capability is added
+by Profit Center V1. Persistent budgets, realized trading P&L, AMM/liquidity P&L
+and Finance-generated-profit attribution belong in CORE before they can become
+canonical company figures.
