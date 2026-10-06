@@ -52,7 +52,7 @@ function parseMoney(value: FinanceMoney | null | undefined): AtomicMoney | null 
 }
 
 function asMoney(atomic: bigint, currency: string, scale: number): FinanceMoney {
-  const negative = atomic < 0n;
+  const negative = atomic < BigInt(0);
   const absolute = negative ? -atomic : atomic;
   const raw = absolute.toString().padStart(scale + 1, '0');
   const whole = scale ? raw.slice(0, -scale) : raw;
@@ -78,7 +78,7 @@ function periodKey(value: string | Date, timeZone: string) {
 }
 
 function multiplyBps(value: bigint, bps: number) {
-  return (value * BigInt(bps)) / 10_000n;
+  return (value * BigInt(bps)) / BigInt(10_000);
 }
 
 export function buildMonthlyProfitCenter(
@@ -99,11 +99,11 @@ export function buildMonthlyProfitCenter(
 
   const byId = new Map(records.map((record) => [record.id, record]));
   let scale = currency === 'EUR' ? 2 : 6;
-  let customerReceipts = 0n;
-  let operatingExpenseCash = 0n;
-  let refundsCash = 0n;
-  let founderFunding = 0n;
-  let excludedAdjustments = 0n;
+  let customerReceipts = BigInt(0);
+  let operatingExpenseCash = BigInt(0);
+  let refundsCash = BigInt(0);
+  let founderFunding = BigInt(0);
+  let excludedAdjustments = BigInt(0);
   let includedRecords = 0;
   let ignoredRecords = 0;
   let unresolvedCorrections = 0;
@@ -161,14 +161,14 @@ export function buildMonthlyProfitCenter(
   }
 
   const operatingCashResult = customerReceipts + operatingExpenseCash + refundsCash;
-  const operatingExpenses = operatingExpenseCash < 0n ? -operatingExpenseCash : -operatingExpenseCash;
-  const refunds = refundsCash < 0n ? -refundsCash : -refundsCash;
+  const operatingExpenses = operatingExpenseCash < BigInt(0) ? -operatingExpenseCash : -operatingExpenseCash;
+  const refunds = refundsCash < BigInt(0) ? -refundsCash : -refundsCash;
   const coverage = options.hasOlderRecords ? 'partial' : 'complete';
   const canDraftBudget = (
     coverage === 'complete'
     && ignoredRecords === 0
     && unresolvedCorrections === 0
-    && operatingCashResult > 0n
+    && operatingCashResult > BigInt(0)
   );
   const draftTradingBudgetAtomic = canDraftBudget
     ? multiplyBps(operatingCashResult, policy.tradingBudgetShareBps)
