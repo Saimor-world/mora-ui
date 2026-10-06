@@ -39,6 +39,7 @@ const PUBLIC_PREFIXES = [
     "/api/auth",
     "/api/v2/auth",
     "/api/core",
+    "/preview/",
     "/oauth/calendar",
     "/oauth/cloud",
 ];
