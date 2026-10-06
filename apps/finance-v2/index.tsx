@@ -34,6 +34,7 @@ import FinanceSourcesPanel from './FinanceSourcesPanel';
 import RecordDetailPanel from './RecordDetailPanel';
 import XrplWatchLab from './XrplWatchLab';
 import CoreTreasuryPanel from './CoreTreasuryPanel';
+import CapitalProfitCenter from './CapitalProfitCenter';
 
 type Section = 'state' | 'flow' | 'treasury' | 'capital';
 
@@ -558,10 +559,14 @@ export default function FinanceV2App({ paneId }: AppProps) {
 
           {selectedCompanyId && section === 'capital' && !stateDenied && (
             <div className="space-y-4">
-              <section className="rounded-[30px] border border-white/[0.07] bg-[radial-gradient(circle_at_100%_0%,rgba(16,185,129,0.07),transparent_36%),rgba(0,0,0,0.14)] p-6">
-                <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/34">Capital · XRPL Lab</div>
-                <h2 className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">Öffentliche Ledger-Daten beobachten, ohne Eigentum zu behaupten.</h2>
-                <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-white/34">
+              <CapitalProfitCenter
+                records={records}
+                hasOlderRecords={Boolean(flowQuery.hasNextPage)}
+              />
+              <section className="rounded-[26px] border border-white/[0.07] bg-black/14 p-5">
+                <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Research · XRPL Watch Lab</div>
+                <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-white/72">Beobachten, bevor Kapital freigegeben wird.</h3>
+                <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/30">
                   Watch-Adressen bleiben außerhalb der Unternehmenssumme, bis Eigentum ausdrücklich belegt und zugeordnet ist. Signieren bleibt außerhalb dieser Ansicht.
                 </p>
               </section>
