@@ -147,6 +147,16 @@ export const queryKeys = {
     companyId?: string | null,
     evidenceId?: string | null,
   ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'evidence', evidenceId ?? 'none'] as const,
+  financeProfitCenter: (
+    tenantId?: string | null,
+    identityKey?: string | null,
+    companyId?: string | null,
+  ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'profit-center'] as const,
+  financeCapitalPolicy: (
+    tenantId?: string | null,
+    identityKey?: string | null,
+    companyId?: string | null,
+  ) => [...queryKeys.financeRoot(tenantId, identityKey, companyId), 'capital-policy'] as const,
 
   nightwatchIncidents: (includeResolved = true) =>
     ['nightwatchIncidents', includeResolved] as const,
