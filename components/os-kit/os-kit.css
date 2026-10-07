@@ -427,10 +427,10 @@
 .os-atmo__phase { background: var(--os-phase-base); transition: background var(--os-atmo-transition) var(--os-motion-ease); }
 /* Kosmos, ruhige Flächen: Legacy-Home – hell, Phase sichtbar, Inhalt lesbar. */
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__plate { opacity: 0; }
-.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__base { opacity: 0.35; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__base { opacity: 0.15; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__living { opacity: 1; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__motion { opacity: 0.8; }
-.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__veil { opacity: 0.18; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__veil { opacity: 0; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__temporal { opacity: 0.45; }
 /* Klar: deckende Fläche, kein Schleier-Spiel. */
 .os-atmo[data-look='klar'] .os-atmo__veil { opacity: 0; }
@@ -467,3 +467,6 @@
 .os-briefing-demo ul { display: flex; flex-direction: column; gap: 4px; padding-left: 18px; list-style: disc; color: var(--os-text-muted); font-size: var(--os-type-body-size); }
 @media (max-width: 1439px) { .os-legacy-universe [data-meta-spaces] { display: none; } }
 @media (max-width: 1439px) { .os-legacy-universe__pill { max-width: 46vw; } .os-legacy-universe__pill strong { display: inline-block; max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; } }
+/* V1.5 Phase färbt auch das Universe-Bild (Kosmos) */
+.os-universe-tint { position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+.os-universe-tint::after { content: ''; position: absolute; inset: 0; z-index: 5; pointer-events: none; background: radial-gradient(ellipse at 20% 30%, var(--os-aura), transparent 60%), radial-gradient(ellipse at 80% 70%, var(--os-aura-secondary), transparent 60%), var(--os-phase-base); mix-blend-mode: color; opacity: 0.55; transition: background var(--os-atmo-transition) var(--os-motion-ease); }

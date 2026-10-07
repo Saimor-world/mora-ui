@@ -57,7 +57,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
   );
   return (
     <div className="os-legacy-universe relative h-full w-full overflow-hidden text-white" data-testid="demo-organization-universe" data-focus={selectedId ?? undefined}>
-      {look === 'klar' ? null : <UniverseAmbientField lens="organization" selected={Boolean(selectedId)} />}
+      {look === 'klar' ? null : <div className="os-universe-tint"><UniverseAmbientField lens="organization" selected={Boolean(selectedId)} /></div>}
       <div className="os-legacy-obs" data-testid="legacy-observatory">
         <UniverseObservatory
           mail={demo.mail} calendar={demo.calendar} feed={demo.feed} mailStatus="ok" calendarStatus="ok"
