@@ -222,3 +222,50 @@ Rückmeldung Marius: Universe, Hintergrundbild und Vibe bleiben – nur besser. 
 **Screenshots:** `shots-v1.1/` – `os-{d,m}-{today,mora,finance,knowledge,post,settings,labs,universe}.png`, `os-d-universe-reduced-motion.png`, `compare-d-today-v1-vs-v1.1.png` (V1 flach | V1.1 Heute | V1.1 Universe).
 
 **Grenzen V1.1:** Universe ohne CORE-Sitzung leer (nur Raum + Platzhalter-Kacheln der Legacy-View); Übergang nicht auf schwachen Geräten gemessen; `TemporalAtmosphere` ist bewusst stark gedämpft (soft-light, 14 %), weil sie sonst das Foto überstrahlt.
+
+## 24 V1.2 Universe-Experience
+
+Rückmeldung Marius zu V1.1: „Wo sind die Planeten, die ganze Logik, die ganze Experience dahinter?“ Ohne CORE-Sitzung zeigte die eingebettete Legacy-`UniverseView` nur Überschrift und zwei Kacheln, weil ihre Planeten ausschließlich aus CORE-Abteilungen entstehen.
+
+**Neu: `/os#universe` hat zwei Ansichten desselben Raums**
+
+1. **Landschaft** (Standard, neu): die OS-Bereiche als Planeten um **MÔRA als Kern**.
+   - Innerer Ring: Heute (Aufgaben & Termine), Post, Finance. Äußerer Ring: Wissen, Spaces, Verbindungen, Labs & System.
+   - Geneigte Umlaufbahnen mit Tiefe (vorne größer, hinten kleiner), sanfte Bahnbewegung (innen im Uhrzeigersinn, außen langsamer dagegen). Sie pausiert beim Hover, im Fokus, bei verstecktem Tab und mit `prefers-reduced-motion`.
+   - Planeten als ruhige Kugeln (Licht-Kern → Körper → Terminator, Atmosphärenring), Größe nach Substanz, Satelliten-Monde, Signalpunkt (warn/info). Die Farben kommen aus `osTokens.planet*`.
+   - **Stränge** mit dem Beleg-Modell aus `OrganizationField`/`lib/universe/types`: *belegt* (MÔRA → Planet mit Signal, fließend) und *vermutet* (gepunktet, z. B. Post ↔ Finance, wenn Betreffe „Rechnung/Beleg“ enthalten). Ohne Beleg wird kein Strang gezeichnet.
+   - **Hover:** Glühen, Bahn hält an, unter dem Namen steht das Signal.
+   - **Fokus/Zoom:** Klick zoomt die Kamera auf den Planeten. Die anderen treten zurück, die Monde erscheinen mit Namen auf eigener Bahn, und ein Glas-Detailpanel (Desktop rechts, Mobil als Sheet) zeigt Rolle, Kennzahlen, Signale, Monde, Stränge, **„Bereich öffnen“** (→ passende /os-Fläche; Spaces → Organisationsfeld) und „MÔRA fragen“. Esc oder ✕ führt zurück.
+   - **MÔRA-Aufmerksamkeit:** Die Pille „MÔRA schaut auf …“ wählt den wichtigsten Planeten (Warnung vor Info) und fokussiert ihn per Klick. Ein Klick auf den Kern öffnet MÔRA mit Kontext.
+   - Mobil: rundere Bahnen, kleinere Planeten, Rollen erst im Fokus, Detail als Sheet. Der Raum bleibt räumlich.
+   - Daten: `features/universe/data/useLandscape.ts` über **bestehende Hooks** (`useScopedToday`, `useFinanceSignal`, `useDepartments`, `useRecentMemories`, `useConnectionsOverview`, `LEGACY_APP_PLACEMENT`). In der lokalen Vorschau ohne Sitzung kommen klar markierte Beispieldaten (`Beispiel`-Badge, generische Inhalte). **Finance ist nie Beispiel**: ohne CORE steht dort „nicht belegt“ samt Vertragsstand. Ohne Daten ist ein Planet „unbekannt“ (entsättigt), nicht leer.
+   - Modell rein und testbar: `features/universe/data/landscape.ts`.
+2. **Organisationsfeld** (Legacy, unverändert eingebettet): die echte `UniverseView`.
+
+**Was aus dem Legacy-Universe zurück ist**
+
+| Legacy-Fähigkeit | Status V1.2 | Wo |
+|---|---|---|
+| Planeten für Abteilungen, Größe nach Substanz (`territoryDiameter`) | ✅ unverändert im Organisationsfeld; neu: Planeten für OS-Bereiche, Größe nach Substanz | Organisationsfeld / Landschaft |
+| Monde (Spaces/Ordner, `groupFoldersByDepartment`, `buildOrbitals`) | ✅ Legacy unverändert; Landschaft: Monde je Planet (Termine, Betreffe, Bereiche, Erinnerungen …) | beide |
+| Umlaufbahnen / Bewegung | ✅ neu gebaut (geneigte Ringe, Tiefe, Pause bei Hover/Fokus/reduced-motion) | Landschaft |
+| Verbindungen mit Beleg (`buildRelationStrands`, assigned/inferred) | ✅ gleiches Beleg-Modell, auf OS-Bereiche übertragen | Landschaft |
+| Fokus/Auswahl eines Planeten + Detail | ✅ Kamera-Zoom + Glas-Detailpanel + „Bereich öffnen“ | Landschaft |
+| MÔRA im Feld (`CursorAgent`, `chooseMoraAttention`) | ✅ Legacy unverändert; neu: MÔRA als Kern + Aufmerksamkeits-Pille | beide |
+| Signale (Mail, Kalender, Feed, Nightwatch) | ✅ Legacy-Observatory unverändert; Landschaft: Signalpunkte aus Tagesbild/Finance/Verbindungen | beide |
+| Observatory / Horizont / Wirtschaft / Nightwatch-Kacheln | ✅ unverändert | Organisationsfeld |
+| Fall-Capture (Gegenstand auf Planet ablegen → `intakeIntoDepartment`) | ✅ unverändert, nur mit Sitzung | Organisationsfeld |
+| In Abteilung (`DeptSpaceMap`) / Ordner im Finder öffnen | ✅ unverändert | Organisationsfeld |
+| „MÔRA fragen“ zu einem Planeten | ✅ beide (Landschaft → MÔRA-Panel der Shell) | beide |
+| Atmosphäre (Foto, Sterne, Tageszeit, Szene) | ✅ aus V1.1 | Shell |
+| Ticker (`buildTickerItems`) | ⚠️ nicht in der Landschaft; die Aufmerksamkeits-Pille erfüllt den Zweck ruhiger, ein Laufband widerspricht „ruhiges Cockpit“ | – |
+| Substanz-Balken (`buildSubstanceBars`) | ⚠️ nur im Organisationsfeld (Observatory); in der Landschaft zeigen Planetengröße und Detail-Kennzahlen dasselbe | Organisationsfeld |
+| Hover-Verweilzeiten (`hoverTiming`), Interaktionszonen (`interactionZones`) | ⚠️ nicht übernommen: Die Landschaft hat keine Widget-Spalten, mit denen Hover kollidiert. Stattdessen pausiert die Bahn beim Hover | – |
+| Mycelium/NeuralGrid/Fabric-Layout, semantische Ähnlichkeitskanten | ❌ nicht übernommen: experimentell, in der klassischen Shell ebenfalls ausgegraut; Kanten ohne Beleg widersprechen dem Beleg-Prinzip | Legacy (`/`) |
+| Onboarding/Ritual-Szenen (`RitualSceneStyler`) | ✅ Szenenfarbe gedämpft (V1.1). ❌ eigener Universe-Onboarding-Rundgang (QuickTips) nicht übernommen, weil er an MoraShell gebunden ist; der Einstieg kommt jetzt über die Heute-Karte und die Aufmerksamkeits-Pille | – |
+
+**Tests V1.2:** `__tests__/features/universe/landscape.test.ts` (Bereich → Ziel, Beispiel-Kennzeichnung, Finance nie Beispiel, Stränge nur mit Beleg, unbekannt ≠ leer, Aufmerksamkeit), `__tests__/features/universe/UniverseLandscape.test.tsx` (Kern, 7 Planeten, Bahnen, Stränge, Fokus → Detail → Bereich öffnen, Esc, reduced-motion), `OsUniverse.test.tsx` angepasst (Landschaft als Standard, Organisationsfeld-Ansicht = Legacy-View). Playwright: Landschaft Desktop (Fokus → Detail → `#post`) und Mobil mit reduced-motion.
+
+**Screenshots:** `shots-v1.2/os-{d,m}-universe-{overview,planet-hover,planet-focused,detail-panel,organisationsfeld}.png`.
+
+**Grenzen V1.2:** Mit echter CORE-Sitzung nicht verifiziert (die Hooks sind dieselben wie auf Heute/Wissen/Einstellungen). Spaces-Monde mit Sitzung = Abteilungsnamen, noch keine Ordner. Planeten-Positionen sind fest (Winkel je Bereich), kein Drag. Das Organisationsfeld bleibt ohne Sitzung leer, und das ist Absicht: Es zeigt nur echte Abteilungen.

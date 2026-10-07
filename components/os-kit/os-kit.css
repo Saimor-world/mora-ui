@@ -227,3 +227,10 @@
   .os-ulx__strand--assigned, .os-ulx__core-ring, .os-ulx__satellite, .os-ulx__signal--warning, .os-ulx__detail { animation: none; }
 }
 .os-universe__lens { display: inline-flex; gap: var(--os-space-1); }
+.os-ulx__attention > span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+@media (max-width: 899px) {
+  .os-shell[data-place='universe'] .os-shell__content { height: calc(100% - 48px); }
+  .os-universe__field { margin-bottom: var(--os-bottom-bar); }
+  .os-universe__intro .os-text-meta { display: none; }
+  .os-universe__intro .os-text-title { font-size: var(--os-type-body-size); }
+}
