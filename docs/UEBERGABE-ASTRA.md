@@ -1,22 +1,23 @@
 <!-- Übergabe an Astra · alle Teile in einem Dokument · Screens: UEBERGABE-ASTRA/screens im Übergabe-Zip -->
 # Übergabe an Astra – SAIMÔR OS-Prototyp (07.10.2026)
 
-Repo `Saimor-world/mora-ui` · Branch `grok/os-recovery-prototype-v1` · PR #101 (Draft) · Code-Head `0efcb994` (V1.6)
+Repo `Saimor-world/mora-ui` · Branch `grok/os-recovery-prototype-v1` · PR #101 (Draft) · Code-Stand **V1.7 „Andockstation“** (Quellen-Redesign gebaut, siehe 04 › 4.4)
 
 | Datei | Inhalt |
 |---|---|
 | [01-STATUS.md] | Repo, Branch, PR, Start lokal (Flags, Dev-Login mit lokalem CORE, Ports), Tests, Versionen V1–V1.6 |
 | [02-VISION-UND-REGELN.md] | Marius' Vision, Designregeln, Definition of Done, Sicherheitsregeln |
 | [03-MARKTRECHERCHE.md] | Wie die Besten Quellen und Onboarding lösen, generisch vs. innovativ, Konzepte für SAIMÔR, Links |
-| [04-KRITIK-UND-REDESIGN-BRIEF.md] | Ehrliche Kritik an Quellen-Seite und Onboarding (mit Screens), Redesign-Brief |
+| [04-KRITIK-UND-REDESIGN-BRIEF.md] | Ehrliche Kritik an Quellen-Seite und Onboarding (V1.6, mit Screens), Redesign-Brief, **4.4 Umsetzung V1.7 und was offen ist** |
 | [05-OFFENE-PUNKTE-UND-BACKLOG.md] | Priorisiertes Backlog P0–P3 |
-| [06-STARTPROMPT-ASTRA.md] | Fertiger Startprompt |
-| `UEBERGABE-ASTRA/screens/` (Übergabe-Zip) | Ausgewählte Screens: 1x Ist-Quellen, 2x Ist-Onboarding, 3x Flächen, 4x Phasen, 5x Legacy-Vergleich |
+| [06-STARTPROMPT-ASTRA.md] | Fertiger Startprompt. **Neue erste Aufgabe: erste echte lokale Quelle, damit das Briefing live geht** |
+| `werkzeuge/` | Kontrast-Messung: `contrast-pixels.mjs` (Playwright-Messung) und `contrast-analyze.py` (Auswertung). Pfade ggf. anpassen. |
+| `UEBERGABE-ASTRA/screens/` (Übergabe-Zip) | Ausgewählte Screens: 1x Ist-Quellen, 2x Ist-Onboarding, 3x Flächen, 4x Phasen, 5x Legacy-Vergleich, **6x V1.7 Andockstation** (65 = Testaufnahme mit gemockter CORE-Antwort) |
 
 Im Repo liegt dieselbe Übergabe als `docs/UEBERGABE-ASTRA.md` (ohne Bilder).
 
 
-# 1 · Status (Stand 07.10.2026, 20:00 Berlin)
+# 1 · Status (Stand 07.10.2026, 22:00 Berlin)
 
 ## Repo, Branch, PR
 | | |
@@ -25,9 +26,9 @@ Im Repo liegt dieselbe Übergabe als `docs/UEBERGABE-ASTRA.md` (ohne Bilder).
 | Branch | `grok/os-recovery-prototype-v1` |
 | Basis | `main @ a053dd39` |
 | PR | **#101**, Draft, nicht gemergt, **nicht deployed** |
-| Code-Head | `0efcb994` (V1.6). Danach kommt nur noch die Doku-Übergabe (`docs/UEBERGABE-ASTRA.md`). |
+| Code-Head | V1.7 „Andockstation“ (`9f969603` und Folge-Commits, siehe `git log`). Doku-Übergabe: `docs/UEBERGABE-ASTRA.md`. |
 | CI | GitHub Actions „CI“ (lint, verify:types, critical-flow, os-smoke, Jest, Build) und Vercel Preview: grün, `mergeable_state: clean` |
-| Hauptdoku | `OS-RECOVERY-PROTOTYPE-V1.md` im Repo-Root, §1–§28 (Versionen ab §23) |
+| Hauptdoku | `OS-RECOVERY-PROTOTYPE-V1.md` im Repo-Root, §1–§29 (Versionen ab §23, V1.7 = §29) |
 
 „unstable“ am PR erscheint nur, solange CI nach einem Push noch läuft. Das ist kein Code-Fehler.
 
@@ -71,12 +72,12 @@ NEXT_PUBLIC_OS_PROTOTYPE=1 SAIMOR_CORE_URL=http://localhost:8081 npx next start 
 ```bash
 npx tsc --noEmit                         # 0 Fehler
 npm run lint                             # 0 Fehler (nur Alt-Warnungen in HomeSurface)
-npx jest --maxWorkers=2                  # 269 Suites / 1547 Tests
-npx playwright test e2e/os-prototype     # 42 Tests; Server auf :3000 (Vorschau-Build) muss laufen
+npx jest --maxWorkers=2                  # 271 Suites / 1557 Tests
+npx playwright test e2e/os-prototype     # 48 Tests; Server auf :3000 (Vorschau-Build) muss laufen
 npm run verify:types && npm run verify:critical-flow && npm run verify:os:smoke   # wie CI
 ```
 - **Viewports:** 1024×768, 1280×800, 1440×900, 1180×820 und 820×1180. Nur Desktop und iPad, kein Phone.
-- **Kontrast:** `contrast-pixels.mjs` und `contrast-analyze.py` (im Übergabe-Zip und unter `os-recovery-v1/`). Letzter Lauf: 0 von 3 200 Textstellen unter 4.5:1.
+- **Kontrast:** `contrast-pixels.mjs` und `contrast-analyze.py` (im Übergabe-Zip und unter `os-recovery-v1/`). V1.6: 0 von 3 200 Textstellen unter 4.5:1. V1.7 (misst jetzt auch SVG-Text, Fläche `sources`): 0 von 1 720.
 - **Privacy-Grep** über den Diff muss 0 ergeben. Muster: Mail-Domains, IBAN, Telefonnummern, `ghp_`, `github_pat_`, `sk-…`, Private Keys sowie Pilot- und Kundennamen.
 - **Achtung:** `npm ci --dry-run` löscht trotzdem `node_modules`.
 
@@ -92,9 +93,10 @@ npm run verify:types && npm run verify:critical-flow && npm run verify:os:smoke 
 | **V1.5** | Heller Legacy-Hintergrund. Looks **Kosmos/Klar**. **4 Tagesphasen** (Flow, Build, Lounge, Nacht) färben alles. Synthetische Ambient-Loops (Platzhalter, standardmäßig aus). Ehrliches MÔRA-Morgenbriefing. Universe-UX-Kritik und Fixes. Inventar ruhender Teile (§27.5). |
 | **V1.5.1** | Klar mit dezenten Phasenfarben. Begrüßung folgt der gewählten Phase. (§27.7) |
 | **V1.6** | Onboarding in 4 Schritten (firstRunStore), Agenten-Feed (`/v3/agency/thoughts`), Einstellungen › Quellen (`/v3/connections`, Verbinden nur gegen lokalen CORE), Kontrast gemessen und auf 0 Unterschreitungen gebracht. Fixes: Briefing-Envelope, `/os` lädt die Sitzung selbst, kaputte Tailwind-Opacity-Klassen im Universe. (§28) **Marius' Urteil: Quellen-Seite und Onboarding-Schritt sind zu generisch. Siehe 04.** |
+| **V1.7** | **Andockstation:** Quellen docken als Stationen an die Abteilungs-Planeten an, die sie speisen. Ein MÔRA-Satz, eine Aktion, Freigabe-Schleuse, erstes Signal, Fehler übersetzt, Progressive Disclosure. Kosmos und Klar, alle Phasen. Onboarding Schritt 3 nutzt dieselbe Szene. Alte Liste und Tab „Verbindungen“ aufgelöst. (§29, 04 › 4.4) |
 
 ## Wichtige Dateien
-`app/os/page.tsx` · `components/os-shell/*` (OsShell, OsDock, OsAtmosphere, ControlCenter, CommandPalette, OsOnboarding, OsSessionBoot, AmbientPlayer) · `components/os-kit/*` (Primitive, `os-kit.css`: nur `var(--os-*)`, keine rgba/hex) · `lib/design/osTokens.ts` (Tokens, `osPhaseVariables`) · `lib/os-prototype/*` (shellStore, usePhase, useSources, onboarding, demoPack, scene) · `features/*` (today, universe, mora, post, knowledge, finance, settings, labs) · `e2e/os-prototype.spec.ts` · `public/ambient/*.mp3`.
+`app/os/page.tsx` · `components/os-shell/*` (OsShell, OsDock, OsAtmosphere, ControlCenter, CommandPalette, OsOnboarding, OsSessionBoot, AmbientPlayer) · `components/os-kit/*` (Primitive, `os-kit.css`: nur `var(--os-*)`, keine rgba/hex) · `lib/design/osTokens.ts` (Tokens, `osPhaseVariables`) · `lib/os-prototype/*` (shellStore, usePhase, useSources, sourceDock, onboarding, demoPack, scene) · `features/settings/ui/SourceDock.tsx` (Andockstation) · `features/*` (today, universe, mora, post, knowledge, finance, settings, labs) · `e2e/os-prototype.spec.ts` · `public/ambient/*.mp3`.
 
 
 # 2 · Marius' Produktvision und Designregeln
@@ -234,9 +236,11 @@ Ziel: verstehen, was die Besten machen, was davon **generisch** ist und was SAIM
 
 # 4 · Ehrliche Kritik und Redesign-Brief
 
+> **Stand 07.10.2026, abends: Der Brief aus 4.3 ist für Quellen-Seite und Onboarding-Schritt 3 als V1.7 „Andockstation“ umgebaut** (Commit `9f969603` ff., Doc §29). Was erledigt ist und was bleibt, steht in **4.4**. 4.1 und 4.2 beschreiben den V1.6-Stand, der kritisiert wurde (Screens `10`–`23`).
+
 Marius' Urteil zu V1.6: *Die Integrations- und Quellen-Seite und der Quellen-Schritt im Onboarding sehen wieder zu generisch aus, überladen, zu viele Infotext-Felder. Weg von seinem Know-how. Alles muss innovativ und premium sein.* Das Urteil trifft zu. Die Funktion stimmt (echte Status aus CORE, ehrlich, nur lokal verbindbar), die Form ist Standard-SaaS.
 
-## 4.1 Quellen-Seite (Einstellungen › Quellen)
+## 4.1 Quellen-Seite (Einstellungen › Quellen) – Kritik an V1.6
 Screens: `screens/10-ist-quellen-seite-live.jpg`, `11-ist-quellen-seite-ohne-sitzung.jpg`, `12-ist-quelle-verbinden-fehler.jpg`
 
 | # | Befund | Warum das falsch ist |
@@ -252,7 +256,7 @@ Screens: `screens/10-ist-quellen-seite-live.jpg`, `11-ist-quellen-seite-ohne-sit
 | 9 | Tabs „Quellen“ **und** „Verbindungen“ nebeneinander | Doppelt und verwirrend. Die alte Verbindungsliste (`/v3/integrations/overview`) muss aufgelöst werden. |
 | 10 | Grüne Hint-Kästen mit Rand und Icon überall | Ein generisches UI-Kit-Gefühl („vibe-coded“), keine eigene Handschrift. |
 
-## 4.2 Onboarding
+## 4.2 Onboarding – Kritik an V1.6
 Screens: `screens/20-…` bis `23-ist-onboarding-*.jpg`
 
 | # | Befund | Warum das falsch ist |
@@ -303,23 +307,51 @@ Screens: `screens/20-…` bis `23-ist-onboarding-*.jpg`
 
 **Nicht tun:** Logo-Raster, Katalog-first, Status-Tabellen, Infotext-Kästen, Modal-Wizard, Konfetti, Emojis, Comic-Illustrationen, erfundene Verbindungen oder Zahlen, Produktions-Calls.
 
+## 4.4 Umsetzung V1.7 „Andockstation“ – erledigt und offen
+Screens: `screens/60`–`68` (`65` ist eine **Testaufnahme mit gemockter CORE-Antwort**, weil es lokal noch keine echte Quelle gibt).
+
+| Brief-Punkt | V1.7 | Beleg |
+|---|---|---|
+| Andocken statt Liste | ✅ Szene mit MÔRA-Kern, Abteilungs-Planeten (echt, sonst aus dem Onboarding, sonst Demo-Beispiel), Stationen auf dem Andock-Ring; angedockt = leuchtend seitlich am Planeten, mit Faden | `60`, `62` |
+| Eine Aktion pro Bildschirm | ✅ ein MÔRA-Satz und ein Knopf („Google Kalender andocken“) | `60` |
+| MÔRA spricht, die Seite schweigt | ✅ höchstens ein Satz je Zustand, Hinweis zu den Feldern eingeklappt | `60`–`64` |
+| Freigabe-Schleuse | ✅ was hereinkommt, wo es andockt, „MÔRA handelt nur nach deiner Bestätigung“; Felder bzw. OAuth erst danach | `61` |
+| Wirkung zeigen | ✅ „{Station} speist jetzt {Planet}“ und erstes Signal aus `/v3/briefing`, ehrlich „Kommt mit dem ersten Abgleich“, wenn noch nichts da ist | `65` (gemockt) |
+| Progressive Disclosure | ✅ Kalender, Mail und Dateien sichtbar; Werkzeuge, Zahlungen und Admin-Fälle hinter „Weitere Stationen“; Admin nur als Kontur ohne Knopf | `62` |
+| Kosmos / Klar, alle Phasen | ✅ Raumfenster gegen Orbital-Instrument, Phasenfarben; Kontrast 0 Unterschreitungen (auch SVG-Text gemessen) | `64`, `68` |
+| Fehler übersetzt | ✅ MÔRA-Satz plus „Details von CORE“ mit dem Original | `63` |
+| Onboarding-Schritt | ✅ „Erste Station andocken“ mit derselben Szene; die eben eingegebenen Abteilungen werden sofort Planeten | `66` |
+| Alte Variante aufgelöst | ✅ Liste und Tab „Verbindungen“ entfernt, `?section=connections` führt auf Quellen, Universe-Planet „Quellen“ liest `/v3/connections` | Doc §29.4 |
+| Desktop / iPad | ✅ 5 Größen ohne Label-Überlappung (Playwright), iPad hoch mit Karte unter der Szene | `67` |
+
+**Noch offen (ehrlich):**
+1. **Keine echte Quelle angedockt.** „Angedockt“ und das erste Signal sind nur gemockt belegt. Das Briefing auf „Heute“ ist noch nie live gewesen. → **Astras erste Aufgabe** (06).
+2. **Onboarding als Ganzes** ist weiter ein Modal mit 4 Schritten. Nur Schritt 3 ist neu. Prinzip 8 („Inbetriebnahme im Universe statt Modal“) ist offen, ebenso die leeren Look-Vorschauen in Schritt 1 und die Tour-Kästen in Schritt 4.
+3. **Abdocken** gibt es im UI nicht. Den CORE-Endpunkt prüfen und nur lokal anbinden.
+4. **Zuordnung Station → Planet** ist eine Schlagwort-Heuristik, also nur Darstellung. Später wählbar und mit Bestätigung in CORE speichern.
+5. **OAuth-Rückkehr** (`return_to`) ist mit keinem echten Provider getestet. Lokal ist Google-OAuth nicht konfiguriert.
+6. Der Kopf der Einstellungsseite („Wenige Schalter, klar benannt.“) und der Darstellungsblock stehen weiter über den Tabs. Die Andockstation liegt dadurch unterhalb der ersten Bildschirmhöhe.
+
 
 # 5 · Offene Punkte und priorisiertes Backlog
 
 ## P0 – als Nächstes
-1. **Redesign Quellen und Onboarding-Quellen-Schritt** nach Brief 04 › 4.3. Danach die alte Liste und den Tab „Verbindungen“ auflösen.
-2. **Erste echte lokale Quelle**, damit das Briefing live geht.
+1. ✅ **Erledigt in V1.7:** Redesign Quellen und Onboarding-Quellen-Schritt („Andockstation“, Doc §29, 04 › 4.4).
+2. **→ JETZT ZUERST: Erste echte lokale Quelle**, damit „angedockt“ und das Briefing echt werden.
    - Mit einem Test-Konto gegen den lokalen CORE: Nextcloud (WebDAV) oder Mail (IMAP mit App-Passwort). Zugangsdaten nur lokal, nie committen.
    - Prüfen, ob `/v3/briefing` mit verbundener Quelle nicht „degraded“ liefert.
-   - Ziel: Das Briefing auf „Heute“ schaltet sichtbar von „startet, sobald …“ auf live.
+   - In der Andockstation andocken (Freigabe → Felder). Prüfen: Die Station leuchtet am Planeten, das erste Signal kommt echt.
+   - Ziel: Das Briefing auf „Heute“ schaltet sichtbar von „startet, sobald …“ auf live. Die gemockte Testaufnahme `screens/65` durch eine echte ersetzen.
 3. **Onboarding-Firma und -Abteilungen in CORE übernehmen**, mit Bestätigung.
    - Heute bleiben die Namen nur lokal (`saimor_os_onboarding_org`).
    - Danach den Vorschlag „Als echte Abteilungen anlegen?“ anbieten, über den vorhandenen `DepartmentWizard` bzw. die CORE-Departments-API, nur nach Klick.
 
 ## P1
-4. **Kontrastprüfung in CI.** `contrast-pixels.mjs` und `contrast-analyze.py` als Playwright-Check (Pfade relativ machen). Fehlschlag bei Werten unter 4.5:1.
+- **Andockstation, Rest:** Abdocken (CORE-Endpunkt prüfen, nur lokal), Planet-Zuordnung wählbar machen (mit Bestätigung), OAuth-Rückkehr mit echtem Provider testen, Quellen-Tab weiter oben auf der Einstellungsseite.
+- **Onboarding als Inbetriebnahme im Universe** (Brief 4.3, Prinzip 8). Heute ist es ein Modal, nur Schritt 3 ist neu.
+4. **Kontrastprüfung in CI.** `contrast-pixels.mjs` und `contrast-analyze.py` als Playwright-Check (Pfade relativ machen). Fehlschlag bei Werten unter 4.5:1. Seit V1.7 misst das Skript auch SVG-Text; die Fläche `sources` steht in `SURF`.
 5. **Echte Ambient-Musik von Marius.** Vier Loops (flow, build, lounge, night) als `public/ambient/<phase>.mp3` mit gleichen Namen. Die heutigen sind synthetische Platzhalter: 48 s, 112 kbps.
-6. **Look-Karten-Vorschau** in Einstellungen und Onboarding reparieren; heute sind es leere Balken.
+6. **Look-Karten-Vorschau** in Einstellungen und Onboarding reparieren; heute sind es leere Balken (Klar-Karte; Kosmos zeigt nur den Phasen-Verlauf).
 7. **Legacy-Teile, die noch fehlen** (§26): Sprache bzw. Mikrofon, Community Wall, Kunden-Vorschauen/Administration, Aufräumen-Bündel im Postfach, Mail-Triage (#54), Lesen und Antworten in Post, Finder-Kern (Ordnerbaum, Vorschau) in Wissen, Streaming und Tool-Traces in MÔRA. **Kalender-Fäden gehören zu YORI und bleiben getrennt.**
 
 ## P2
@@ -351,8 +383,8 @@ Du übernimmst den SAIMÔR-OS-Prototyp von einem anderen Agenten. Arbeite auf De
 
 KONTEXT
 - Repo: Saimor-world/mora-ui · Branch: grok/os-recovery-prototype-v1 · PR #101 (Draft, nicht gemergt, nicht deployed).
-- Code-Stand V1.6 (Head 0efcb994), danach nur Doku. Lies zuerst docs/UEBERGABE-ASTRA.md (Status, Vision, Marktrecherche,
-  Kritik, Backlog) und OS-RECOVERY-PROTOTYPE-V1.md §23–§28 (Versionsgeschichte, Inventar ruhender Teile in §27.5).
+- Code-Stand V1.7 „Andockstation“ (Quellen-Redesign ist gebaut). Lies zuerst docs/UEBERGABE-ASTRA.md (Status, Vision,
+  Marktrecherche, Kritik + Umsetzung 4.4, Backlog) und OS-RECOVERY-PROTOTYPE-V1.md §23–§29 (§29 = V1.7, §27.5 = ruhende Teile).
 - Lokal: NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local → http://localhost:3000/os (Demo-Daten).
   Mit lokalem CORE (Port 8081) für echte Sitzung; Details in docs/UEBERGABE-ASTRA.md Abschnitt 1.
 
@@ -375,14 +407,22 @@ Keine privaten oder Pilot-Namen – Privacy-Grep über den Diff = 0. YORI bleibt
 Nur lokaler CORE. Push nur mit dem bereitgestellten Token, Token nie ausgeben.
 
 DEINE ERSTE AUFGABE
-Redesign der Quellen-Seite (Einstellungen › Quellen) und des Quellen-Schritts im Onboarding nach dem Brief in
-docs/UEBERGABE-ASTRA.md Abschnitt 4.3. Kernidee: Quellen sind Stationen/Monde, die im Universe an die Planeten
-(Abteilungen) andocken, die sie speisen; eine fokussierte Aktion pro Bildschirm; MÔRA erklärt statt Textfelder;
-Freigabe-Schleuse; Progressive Disclosure; nach dem Andocken erscheint das erste echte Signal. Onboarding wird
-eine Inbetriebnahme im Universe statt eines Modal-Wizards.
-Vorgehen: 1) Ist-Screens in UEBERGABE-ASTRA/screens ansehen. 2) Zwei bis drei Konzept-Skizzen beschreiben und
-Marius vorlegen, BEVOR du baust. 3) Nach Freigabe umsetzen mit vorhandenen Endpunkten (GET /v3/connections,
-POST /v3/connections/{provider}/connect – nur lokal), alte Liste und Tab „Verbindungen“ auflösen.
+Die erste echte lokale Quelle andocken, damit das MÔRA-Morgenbriefing auf „Heute“ zum ersten Mal live läuft.
+Ausgangslage: Die Andockstation (Einstellungen › Quellen, Onboarding Schritt 3) ist fertig: Szene mit Abteilungs-
+Planeten, ein MÔRA-Satz, Freigabe-Schleuse, Fehler übersetzt. Status kommt aus GET /v3/connections, Andocken über
+POST /v3/connections/{provider}/connect (nur gegen lokalen CORE). „Angedockt“ und „erstes Signal“ sind bisher nur mit
+gemockter CORE-Antwort belegt (screens/65). Das Briefing war noch nie live.
+Vorgehen:
+1) Lokalen CORE (8081) und /os gegen ihn starten (docs/UEBERGABE-ASTRA.md Abschnitt 1 B). Dev-Login mit lokalem Testkonto.
+2) Eine Test-Quelle wählen, die keine echten Kunden- oder Privatdaten enthält: z. B. eine lokale Nextcloud-Testinstanz
+   (Docker) oder ein IMAP-Testkonto, das Marius bereitstellt. Zugangsdaten nur lokal/als Umgebungsvariable, nie committen,
+   nie ausgeben. Vorher prüfen, ob CORE localhost-Ziele zulässt (SSRF-Schutz) – nichts an CORE-Sicherheit aufweichen.
+3) In der Andockstation andocken. Verifizieren: Station leuchtet am Planeten, GET /v3/connections meldet connected,
+   „Erstes Signal“ kommt echt aus /v3/briefing, auf „Heute“ erscheint das Briefing statt „startet, sobald …“.
+4) Wenn CORE ein Briefing nur „degraded“ liefert: Ursache in CORE finden und berichten, nicht im UI überdecken.
+5) Echte Screens statt der gemockten Testaufnahme, Doc-Abschnitt §30, PR #101 aktualisieren.
+Danach (nur nach Marius' Freigabe): Abdocken, Onboarding als Inbetriebnahme im Universe (Brief 4.3 Prinzip 8),
+Onboarding-Abteilungen mit Bestätigung in CORE anlegen. Siehe Backlog (05).
 
 QUALITÄT
 Commit oft. tsc, npm run lint, npx jest --maxWorkers=2, npx playwright test e2e/os-prototype (Server :3000),

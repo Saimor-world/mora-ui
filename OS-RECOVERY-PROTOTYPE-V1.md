@@ -438,3 +438,61 @@ tsc 0 · lint 0 Fehler · Jest 268 Suites / 1542 Tests grün · Playwright 39/39
 
 ### 28.6 Tests
 tsc 0 · lint 0 Fehler · Jest 269 Suites / 1547 Tests · Playwright 42/42 (inkl. Onboarding, Agenten-Feed, Quellen ohne Sitzung; Viewports 1024×768, 1280×800, 1440×900, 1180×820, 820×1180) · Privacy-Grep 0 · Screens `shots-v1.6/`.
+
+## 29. V1.7 – Andockstation (Quellen-Redesign)
+
+Anlass: Marius' Urteil zu V1.6 – Quellen-Seite und Onboarding-Schritt „zu generisch, überladen, zu viele Infotext-Felder“. Umgesetzt wurde **nur** der Redesign-Brief aus `docs/UEBERGABE-ASTRA.md` §4.3, mit Marius' Freigabe vom 07.10.2026 abends.
+
+### 29.1 Idee
+Quellen sind **Stationen**, die an die **Abteilungs-Planeten** andocken, die sie speisen. MÔRA sitzt als Kern in der Mitte (wie im Universe). Status 1:1 aus `GET /v3/connections`, Andocken über `POST /v3/connections/{provider}/connect`. Beides gibt es in CORE schon, im Prototyp **nur gegen einen lokalen CORE** (`isLocalCore()`).
+
+### 29.2 Was man sieht
+- **Szene** (`features/settings/ui/SourceDock.tsx`, Logik `lib/os-prototype/sourceDock.ts`):
+  - innere Bahn mit Planeten: echte Abteilungen aus `/v3/departments`, sonst die eigenen aus dem Onboarding (nur lokal), ohne Sitzung das Demo-Paket;
+  - äußerer Andock-Ring mit freien Stationen;
+  - angedockte Stationen leuchten seitlich an ihrem Planeten, mit Faden;
+  - die gewählte Station zeigt die Anflugbahn.
+- **Zuordnung:** per Schlagwort im Abteilungsnamen, z. B. Kalender → Management, Mail → Vertrieb, Dateien → Wissen/Tech, Zahlungen → Finanzen. Ohne Treffer dockt die Station am Firmenkern an. Das ist **reine Darstellung**, CORE speichert keine Zuordnung.
+- **Eine Aktion:** MÔRA nennt mit genau einem Satz die nächste sinnvolle Station, z. B. „Mit dem Kalender startet dein Morgenbriefing.“, dazu ein Knopf „… andocken“.
+- **Progressive Disclosure:**
+  - sichtbar sind Kalender, Mail, Dateien und alles bereits Angedockte;
+  - Werkzeuge, Zahlungen und Admin-Fälle liegen hinter „Weitere Stationen“;
+  - Admin-Fälle („Server-Einrichtung fehlt“) erscheinen nur als Kontur, ohne Knopf, mit dem Satz „Diese Station richtet ein Admin auf dem Server ein.“
+- **Freigabe-Schleuse:** vor dem Andocken drei Zeilen mit Icon: was hereinkommt, wo es andockt, „MÔRA handelt nur nach deiner Bestätigung“. Erst danach erscheinen die Zugangsfelder (`field_schema`, Hinweis eingeklappt) bzw. der OAuth-Start.
+- **Erstes Signal:** nach dem Andocken „{Station} speist jetzt {Planet}.“ und ein Signal aus `/v3/briefing`. Ist das Briefing „degraded“ oder leer, steht dort ehrlich „Kommt mit dem ersten Abgleich.“ Dazu der Knopf „Zu Heute“.
+- **Fehler:** MÔRA übersetzt den CORE-Fehler in einen nächsten Schritt (abgelehnt, nicht erreichbar, Admin). Der Originaltext bleibt unter „Details von CORE“.
+- **Ohne Sitzung / Demo-Konto:** Beispiel-Szene mit „Beispiel“-Plakette, Legende (angedockt/bereit) und einem Satz. Kein toter Textkasten.
+- **Looks:**
+  - Kosmos ist ein Raumfenster mit Sternen, Glühen und pulsierendem Halo;
+  - Klar ist dieselbe Szene als Orbital-Instrument: deckend, Fadenkreuz, ohne Glühen;
+  - Phasenfarben über `--os-accent`/`--os-aura`;
+  - neue Farbwerte als Tokens `--os-station-*` in `osTokens.ts`; `os-kit.css` bleibt ohne rgba/hex.
+- **Lesbarkeit:** Die Schrift in der Szene bleibt in echten Pixeln gleich groß (ResizeObserver → `--station-k`). Die Labels haben einen Halo. Bei schmalem Rahmen (unter 800 px, z. B. iPad hoch) liegt die Karte unter der Szene.
+
+### 29.3 Onboarding
+Schritt 3 heißt jetzt „Erste Station andocken“ und nutzt dieselbe Andockstation in kompakter Form. Die gerade eingegebenen Abteilungen erscheinen sofort als Planeten. Der Link „Zu Einstellungen › Quellen“, eine Sackgasse, ist weg.
+
+### 29.4 Alte Variante aufgelöst
+- `SourcesPanel` (Liste) und der Tab **„Verbindungen“** sind entfernt, ebenso `useConnections.ts` (`/v3/integrations/overview`).
+- Der alte Deep-Link `?section=connections` führt auf Quellen.
+- Der Universe-Planet „Verbindungen“ heißt „Quellen“ und liest `/v3/connections`.
+- Die Texte in Control Center, Heute, Manifest und Labs sind angepasst.
+- Die Chips im Morgenbriefing zeigen keine Admin-Zustände mehr.
+
+### 29.5 Verifikation
+- tsc 0 · lint 0 Fehler (nur die alte HomeSurface-Warnung).
+- Jest 271 Suites / 1557 Tests, neu: `__tests__/os-v17` mit Logik- und Komponententests (Fluss Freigabe → Felder → angedockt → erstes Signal, Fehlerübersetzung, Admin-Kontur, nie verbinden ohne lokalen CORE).
+- Playwright 48/48. Neu: Ehrlichkeit ohne Sitzung, Deep-Link, und je Größe 1024×768, 1280×800, 1440×900, 1180×820, 820×1180 keine überlappenden Labels, alles in der Szene, Karte frei, Schrift ≥ 9 px.
+- Kontrast: Das Skript misst jetzt auch SVG-Text (`fill`, Größe × viewBox-Skalierung). Ergebnis 0 von 1 720 (Quellen, Einstellungen, Heute, Universe × 4 Phasen × 2 Looks) bzw. 0 von 1 096 nach dem Token-Umbau.
+- Live am lokalen CORE:
+  - die Station-Liste kommt aus CORE;
+  - die Freigabe für Google Kalender liefert „OAuth not configured“, übersetzt in den Admin-Satz;
+  - Notion mit falschem Token liefert „Zugangsdaten abgelehnt“, das Original steht unter Details.
+- Der Zustand „angedockt“ ist **nur als Testaufnahme mit gemockter CORE-Antwort** belegt (`shots-v1.7/nachher/mock-*`), weil es lokal noch keine echte Quelle gibt.
+- Screens: `shots-v1.7/vorher` (V1.6) und `shots-v1.7/nachher`.
+
+### 29.6 Offen
+- **Erste echte lokale Quelle** (z. B. Nextcloud-Testinstanz oder IMAP-Testkonto), damit „angedockt“ und das Briefing echt werden.
+- **Abdocken** fehlt im UI. CORE-Endpunkt prüfen, nur lokal.
+- Die Zuordnung Station → Planet ist heuristisch. Später ggf. vom Nutzer wählbar und in CORE gespeichert, mit Bestätigung.
+- OAuth-Rückkehr (`return_to`) ist mit einem echten Provider noch nicht getestet.
