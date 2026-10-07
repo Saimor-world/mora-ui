@@ -162,11 +162,11 @@ function kebab(value: string) {
 export type OsPhase = 'flow' | 'build' | 'lounge' | 'night';
 export type OsLook = 'kosmos' | 'klar';
 
-const PHASE_PALETTE: Record<OsPhase, { accent: string; rgb: string; aura: string; aura2: string; base: string; baseKlar: string; glass: string }> = {
-  flow:   { accent: '#6ee7b7', rgb: '16,185,129',  aura: 'rgba(16,185,129,0.30)',  aura2: 'rgba(34,211,238,0.22)',  base: 'linear-gradient(160deg, #0f4f63 0%, #177a86 40%, #2f8f86 64%, #a59a52 100%)', baseKlar: 'linear-gradient(180deg, #121b1f 0%, #0e1518 100%)', glass: 'rgba(10,30,36,0.46)' },
-  build:  { accent: '#7dd3fc', rgb: '56,189,248',  aura: 'rgba(56,189,248,0.30)',  aura2: 'rgba(251,191,36,0.22)',  base: 'linear-gradient(160deg, #134a7c 0%, #2a7bb3 42%, #5b97bf 66%, #c39a4a 100%)', baseKlar: 'linear-gradient(180deg, #131a22 0%, #0f141b 100%)', glass: 'rgba(10,24,40,0.46)' },
-  lounge: { accent: '#fdba74', rgb: '251,146,60',  aura: 'rgba(251,146,60,0.28)',  aura2: 'rgba(244,114,182,0.22)', base: 'linear-gradient(160deg, #3b2150 0%, #6a3360 40%, #a24f58 66%, #cf8448 100%)', baseKlar: 'linear-gradient(180deg, #1c1719 0%, #151214 100%)', glass: 'rgba(34,16,28,0.46)' },
-  night:  { accent: '#a5b4fc', rgb: '99,102,241',  aura: 'rgba(99,102,241,0.30)',  aura2: 'rgba(34,211,238,0.16)',  base: 'linear-gradient(160deg, #0c1230 0%, #1d2860 45%, #2b2f78 70%, #12405a 100%)', baseKlar: 'linear-gradient(180deg, #11131b 0%, #0c0e14 100%)', glass: 'rgba(10,12,30,0.50)' },
+const PHASE_PALETTE: Record<OsPhase, { accent: string; rgb: string; aura: string; aura2: string; base: string; baseKlar: string; klarGlass: string; klarGlassStrong: string; glass: string }> = {
+  flow:   { accent: '#6ee7b7', rgb: '16,185,129',  aura: 'rgba(16,185,129,0.30)',  aura2: 'rgba(34,211,238,0.22)',  base: 'linear-gradient(160deg, #0f4f63 0%, #177a86 40%, #2f8f86 64%, #a59a52 100%)', baseKlar: 'linear-gradient(170deg, #15302c 0%, #11201f 45%, #0e1716 100%)', klarGlass: 'rgba(18,40,38,0.94)', klarGlassStrong: 'rgba(20,44,41,0.97)', glass: 'rgba(10,30,36,0.46)' },
+  build:  { accent: '#7dd3fc', rgb: '56,189,248',  aura: 'rgba(56,189,248,0.30)',  aura2: 'rgba(251,191,36,0.22)',  base: 'linear-gradient(160deg, #134a7c 0%, #2a7bb3 42%, #5b97bf 66%, #c39a4a 100%)', baseKlar: 'linear-gradient(170deg, #172a40 0%, #121c2a 45%, #0e141c 100%)', klarGlass: 'rgba(18,32,48,0.94)', klarGlassStrong: 'rgba(20,36,52,0.97)', glass: 'rgba(10,24,40,0.46)' },
+  lounge: { accent: '#fdba74', rgb: '251,146,60',  aura: 'rgba(251,146,60,0.28)',  aura2: 'rgba(244,114,182,0.22)', base: 'linear-gradient(160deg, #3b2150 0%, #6a3360 40%, #a24f58 66%, #cf8448 100%)', baseKlar: 'linear-gradient(170deg, #36241c 0%, #231a18 45%, #171213 100%)', klarGlass: 'rgba(44,30,26,0.94)', klarGlassStrong: 'rgba(48,33,28,0.97)', glass: 'rgba(34,16,28,0.46)' },
+  night:  { accent: '#a5b4fc', rgb: '99,102,241',  aura: 'rgba(99,102,241,0.30)',  aura2: 'rgba(34,211,238,0.16)',  base: 'linear-gradient(160deg, #0c1230 0%, #1d2860 45%, #2b2f78 70%, #12405a 100%)', baseKlar: 'linear-gradient(170deg, #1d1f3c 0%, #15162a 45%, #0d0e18 100%)', klarGlass: 'rgba(26,28,52,0.94)', klarGlassStrong: 'rgba(29,31,57,0.97)', glass: 'rgba(10,12,30,0.50)' },
 };
 
 export function osPhaseVariables(phase: OsPhase, look: OsLook): Record<string, string> {
@@ -177,12 +177,14 @@ export function osPhaseVariables(phase: OsPhase, look: OsLook): Record<string, s
     '--os-accent-soft': `rgba(${p.rgb},0.14)`,
     '--os-accent-line': `rgba(${p.rgb},0.34)`,
     '--os-focus': `rgba(${p.rgb},0.6)`,
-    '--os-aura': klar ? `rgba(${p.rgb},0.06)` : p.aura,
+    '--os-aura': klar ? `rgba(${p.rgb},0.10)` : p.aura,
     '--os-aura-secondary': klar ? 'transparent' : p.aura2,
     '--os-phase-base': klar ? p.baseKlar : p.base,
-    '--os-glass': klar ? 'rgba(22,28,32,0.94)' : 'rgba(10,20,30,0.30)',
-    '--os-glass-strong': klar ? 'rgba(24,30,34,0.97)' : 'rgba(8,16,24,0.42)',
-    '--os-surface': klar ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.04)',
+    '--os-glass': klar ? p.klarGlass : 'rgba(10,20,30,0.30)',
+    '--os-glass-strong': klar ? p.klarGlassStrong : 'rgba(8,16,24,0.42)',
+    '--os-surface': klar ? `rgba(${p.rgb},0.06)` : 'rgba(255,255,255,0.04)',
+    ...(klar ? { '--os-hairline': `rgba(${p.rgb},0.20)` } : {}),
+    '--os-surface-klar': `rgba(${p.rgb},0.05)`,
     '--os-glass-filter': klar ? 'none' : 'blur(18px) saturate(1.2)',
   };
 }

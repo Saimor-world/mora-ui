@@ -1,4 +1,5 @@
 'use client';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React, { useMemo } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
 import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
@@ -14,7 +15,9 @@ import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
 
-function greeting(date = new Date()) {
+const PHASE_GREETING = { flow: 'Guten Morgen', build: 'Guten Tag', lounge: 'Guten Abend', night: 'Guten Abend' } as const;
+function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date()) {
+  if (phase) return PHASE_GREETING[phase];
   const h = date.getHours();
   return h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
 }
@@ -38,6 +41,7 @@ function Section({ icon, title, children, aside }: { icon: React.ReactNode; titl
 }
 
 export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps) {
+  const phaseOverride = useOsShellStore((s) => s.phaseOverride);
   const userName = useSessionStore((s) => s.user?.name?.split(' ')[0] ?? null);
   const today = useScopedToday({ backgroundRefresh: true });
   const finance = useFinanceSignal();
@@ -51,7 +55,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
     <div className="flex flex-col gap-6" data-testid="feature-today">
       <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
-        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting()}{userName ? `, ${userName}` : ''}.</Text></div>
+        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'

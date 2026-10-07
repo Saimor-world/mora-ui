@@ -399,3 +399,8 @@ Vergleiche: `shots-v1.4/compare-<fläche>.png` (V1.3.1 → V1.4 bei 1280x800) un
 
 ### 27.6 Tests
 tsc 0 · lint 0 Fehler · Jest 268 Suites / 1542 Tests grün · Playwright 39/39 (1024x768, 1280x800, 1440x900, 1180x820, 820x1180) · Screens `shots-v1.5/` (70, inkl. 4 Phasen × Kosmos/Klar, Legacy-Vergleiche).
+
+### 27.7 V1.5.1 – Klar mit Phasenfarbe, Begrüßung folgt Phase
+- Klar zeigt pro Phase einen dezenten Ton: Hintergrund-Verlauf (Flow Petrol-Grün, Build Stahlblau, Lounge warmes Braun, Nacht Indigo), getönte deckende Karten, Kartenränder in Phasenfarbe (20 %), Akzent der Phase. Weiterhin ohne Foto/Blur; Text hell auf dunkel (Kontrast ≥ 4.5:1).
+- Begrüßung auf Heute folgt einem gesetzten Phasen-Override (Flow „Guten Morgen“, Build „Guten Tag“, Lounge/Nacht „Guten Abend“), sonst Uhrzeit.
+- Screens: `shots-v1.5.1/` inkl. `phases-klar-grid.png`.
