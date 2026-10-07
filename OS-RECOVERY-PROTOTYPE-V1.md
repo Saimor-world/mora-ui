@@ -351,3 +351,51 @@ Noch nicht übernommen: Ambient-Audio/Musik, Sprache (Mikrofon), Community Wall,
 - **Shell:** Topbar-Kollisionstest, nur Tokens im CSS (kein rgba/hex).
 
 Vergleiche: `shots-v1.4/compare-<fläche>.png` (V1.3.1 → V1.4 bei 1280x800) und `shots-v1.4/compare-legacy-*.png` (echtes Legacy-OS → /os).
+
+## 27. V1.5 – Look, Phasen, Ambient, Briefing, Ruhendes Inventar
+
+### 27.1 Hintergrund & Look
+- Kosmos übernimmt den helleren Legacy-Home-Hintergrund (ShellStaticBackdrop, MoraLivingBackground, RitualSceneStyler) auf allen /os-Flächen; Glas heller (0.30), Schleier entfernt.
+- Einstellungen → „Darstellung“: **Kosmos** (Atmosphäre) vs **Klar** (nüchtern, ohne Foto/Blur/Raster). Gleiche Funktionen, lokal gespeichert (`saimor_os_look`).
+
+### 27.2 Vier Tagesphasen
+- Flow (Morgen) · Build (Tag) · Lounge (Abend) · Nacht, automatisch nach Uhrzeit (legacy `ritualMode`), Override in Einstellungen (`saimor_os_phase_override`) und per `?phase=&look=` für Screenshots.
+- `osPhaseVariables()` färbt Akzent, Aura, Glas, Fokus; Universe erhält zusätzlich einen Phasen-Tint.
+- Ambient: `public/ambient/{flow,build,lounge,night}.mp3`, 48-s-Loops, selbst synthetisiert (numpy/scipy, kein fremdes Material). **Platzhalterqualität** – gleiche Dateinamen ersetzen genügt. Standard AUS, Schalter in Einstellungen und Control Center, Start nur nach Nutzerklick (Autoplay-Ablehnung → Schalter zurück), Reduced Motion: kein Fade, leiser.
+
+### 27.3 Morgenbriefing
+- Erscheint nur, wenn `/v3/connections` mindestens eine verbundene Quelle meldet und `/v3/briefing` nicht degradiert ist.
+- Sonst ehrlich: „Briefing startet, sobald Quellen angebunden sind“, Quellenliste, aufklappbare, klar markierte Beispiel-Vorschau. (Legacy `useDailyBriefing` täuschte bei Fehlern „Normalbetrieb“ vor – nicht übernommen.)
+
+### 27.4 Universe-UX-Kritik (Sicht Mittelstand-Kunde) & Fixes
+| Befund | Fix |
+|---|---|
+| Unklar, was die Kugeln bedeuten | H1 „Simple Coffee Group – deine Abteilungen“ + Erklärzeile |
+| Fachjargon (Linsen, Substanz, Relationen) | „Abteilungen/Arbeitsbereiche“, „Dokumente je Abteilung“, „belegt / von MÔRA vermutet“ |
+| Kein klarer nächster Schritt | Pill „Nächster Schritt: … Ansehen →“, Button „Abteilung hinzufügen“ |
+| Doppelte Überschriften, Zeilen zu lang bei 1280 | Feld-H1 entfernt, Meta/Pill gekürzt unter 1440 px |
+| Grammatik (1 Bereiche) | korrekte Singular/Plural |
+| Rechte Spalte ohne Ordnung | Eyebrows Demnächst / Umsatz / Systemstatus |
+
+### 27.5 Ruhendes Inventar (mora-ui + saimor-core)
+| Teil | Zustand | Urteil |
+|---|---|---|
+| `/v3/connections` | kein UI-Aufruf | **lohnt** – integriert (Briefing-Quellen) |
+| `/v3/briefing` + useDailyBriefing | nur Hook, fälscht Fehlerzustand | **verbessern** – integriert, ehrlich |
+| Memory pending/approve/reject (memoryClient) | nie angezeigt | **lohnt** – integriert in MÔRA → Erinnerungen |
+| CalendarContinuity / `/v3/continuity` | ohne Route | **lohnt** – Post (live), Demo ehrliche Karte |
+| DepartmentWizard | ohne Route | **lohnt** – Universe „Abteilung hinzufügen“ (Demo gesperrt) |
+| Ritual-Szenen, AmbientVoicePill-Idee | halb verdrahtet | **lohnt** – Phasen + Ambient |
+| QuickMemoryInput | kaputter Import (`learnInsight`) | verbessern – Funktion in MoraMemories |
+| MoraThoughtStream (`/v3/agency/thoughts`) | ungenutzt | verbessern – später als Agenten-Feed |
+| HomeSurface (1459 Z.), MemoryWidget, InsightCard, CompanyOrbit, SpaceTileGrid | ersetzt durch /os | verbessern/abbauen – Muster übernommen |
+| SpatialMindfield, IntelligencePlayfield, SynthesisPanel, SemanticLinesRenderer, semanticStore/-Similarity | Experimente | vorerst weglassen |
+| Layers (DeepSpace/Moon/Planet/Folder), EstateMorphDeck, OrbMessageEffect | Effektstudien | vorerst weglassen |
+| SecurityCheckPlaygroundLogin, devToken, coreSessionGuard | Dev-Werkzeug | weglassen (nicht in Produkt) |
+| workflowStore (n8n), connectors, useLocalAI | halb gebaut | verbessern – nach Connector-Backend |
+| firstRunStore, MoraHint, LockedPlanetTooltip, CognitionBadge, MemoryBadge | klein, ungenutzt | verbessern – für Onboarding V1.6 |
+| dockStore, ThoughtBubbleContext, nodeInteractions, openLagefeldPane, signalFlow, lagefeld/fixtures | Altzustand | weglassen (durch Shell-Store ersetzt) |
+| `/v3/mise`, `/v3/blockchain`, `/v3/earth(/verwaltung)` | ohne UI | vorerst weglassen |
+
+### 27.6 Tests
+tsc 0 · lint 0 Fehler · Jest 268 Suites / 1542 Tests grün · Playwright 39/39 (1024x768, 1280x800, 1440x900, 1180x820, 820x1180) · Screens `shots-v1.5/` (70, inkl. 4 Phasen × Kosmos/Klar, Legacy-Vergleiche).
