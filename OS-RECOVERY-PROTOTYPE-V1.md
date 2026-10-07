@@ -188,3 +188,37 @@ Der Prototyp fügt **keine** neue Agent-Kopplung hinzu; MÔRA spricht nur `/v3/c
 
 ## 22 Privatsphäre
 Diff-Suche nach Pilot-/Kundennamen, gesperrtem Connector-Begriff und Token-/Key-Mustern (`ghp_`, `github_pat`, `sk-…`, `BEGIN … KEY`, Seeds) → 0 Treffer. Beispieldaten generisch (`example.com/.org`).
+
+## 23 V1.1 Universe & Atmosphäre
+
+Rückmeldung Marius: Universe, Hintergrundbild und Vibe bleiben – nur besser. Und: das volle Universe gibt es nur **im Universe**; alle anderen Flächen bekommen denselben Vibe, aber deutlich ruhiger.
+
+**Zwei Atmosphären-Modi (Manifest-Feld `atmosphere`, Default `calm`):**
+
+| Modus | Flächen | Was zu sehen ist |
+|---|---|---|
+| `calm` | Heute, MÔRA, Finance, Post, Wissen, Einstellungen, Labs | `ShellStaticBackdrop` + dasselbe `deep-space-warm.jpg`, stark weichgezeichnet und abgedunkelt (Filter aus `osAtmosphere.calm`), kräftiger Schleier. **Keine Sterne, keine Bewegung.** Inhalt steht vorn. |
+| `universe` | Universe (`#universe`) | Dimmung fällt weg (Bild in voller Stärke, `UniverseAmbientField` aus `UniverseView`), `MoraLivingBackground` (gedämpft), `RitualSceneStyler muted`; `StarField` und `TemporalAtmosphere` werden **per Idle lazy** nachgeladen. |
+
+- Übergang: weiche CSS-Transition (900 ms) auf Filter/Opacity von Bild, Schleier und Ebenen – mit `prefers-reduced-motion` **ohne** Animation (Sprung).
+- Bewegung (`StarField`/`TemporalAtmosphere`) nur, wenn `useAmbientCapability` es erlaubt (kein reduced-motion, kein Save-Data) **und** Viewport ≥ 900 px. Mobil: statisches Bild mit Schleier.
+- Umsetzung: `components/os-shell/OsAtmosphere.tsx`, Shell setzt `data-atmosphere` am Root.
+
+**Wiederverwendet (keine Kopien):** `ShellStaticBackdrop` (→ `WorldSurface`), `MoraLivingBackground`, `StarField`, `TemporalAtmosphere`, `RitualSceneStyler`, `useAmbientCapability`, `UniverseView` (inkl. `UniverseAmbientField`, `OrganizationField`, Observatory/Ticker), Assets `public/universe/deep-space-warm.jpg`, `public/brand/mora-stone-v1.png`.
+
+**Neu / verbessert:**
+- Universe als eigener **Ort**: 2.-Ebene-Navigation „Universe“ (`#universe`, Mobil unter „Mehr“) – die 6 Hauptflächen bleiben. Feature `features/universe` rendert die echte `UniverseView` unter einer schmalen Intro-Leiste (kein Überlappen mehr mit „Woraus Organisation besteht“).
+- Karte auf Heute: „Den Raum deines Unternehmens betreten“ → führt ins Universe.
+- `MoraStone` (os-kit) aus `mora-stone-v1.png` mit Halo und Denk-Zustand – in Sidebar, Topbar, Mobil-Leiste und Konsole (ersetzt den CSS-Orb).
+- Alle Flächen als ruhiges Glas (Blur, Sättigung, Kante, Innenlicht), Sidebar mit Schleier-Verlauf, Display-Schrift leichter/größer (38 px / 300), Marke gesperrt (`.os-brand`, 0.34em).
+- Alle Farben aus `osTokens` (`glass*`, `veil*`, `railVeil*`, `stoneHalo*`, `osAtmosphere`); `os-kit.css` enthält kein rgba/hex.
+
+**Zwei Bugfixes in Legacy (wirken auch in der klassischen Oberfläche):**
+1. `lib/store/universeFieldStore.ts`: `setField`/`clearField` schreiben nur bei echter Änderung (vorher neues Array/Objekt bei jedem Messen → alle Leser rerendern).
+2. `components/home/UniverseView.tsx`: setzt `statsMap`/`folderMoons` ohne Firma nicht mehr bei jedem Lauf auf ein neues `{}` – das war zusammen mit (1) die Render-Schleife (React #185) auf `/#universe` ohne Sitzung.
+
+**Tests V1.1:** `__tests__/components/os-shell/OsUniverse.test.tsx` (Layer ruhig auf Heute, voll im Universe, Heute → Universe, Deep-Link, Nav), `__tests__/components/os-kit/MoraStone.test.tsx`, `__tests__/lib/universeFieldStore.test.ts`; Playwright: Universe-Fläche, Atmosphären-Modi, Heute → Universe ohne Page-Errors.
+
+**Screenshots:** `shots-v1.1/` – `os-{d,m}-{today,mora,finance,knowledge,post,settings,labs,universe}.png`, `os-d-universe-reduced-motion.png`, `compare-d-today-v1-vs-v1.1.png` (V1 flach | V1.1 Heute | V1.1 Universe).
+
+**Grenzen V1.1:** Universe ohne CORE-Sitzung leer (nur Raum + Platzhalter-Kacheln der Legacy-View); Übergang nicht auf schwachen Geräten gemessen; `TemporalAtmosphere` ist bewusst stark gedämpft (soft-light, 14 %), weil sie sonst das Foto überstrahlt.
