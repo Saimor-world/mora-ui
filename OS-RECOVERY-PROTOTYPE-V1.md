@@ -297,3 +297,11 @@ Feedback von Marius: „Ich habe ein Dock etc. in meinem OS. Orientiere dich an 
 - Unit-Tests `__tests__/features/universe/demoUniverse.test.ts`, Shell- und Universe-Tests auf Dock und Organisationsfeld umgestellt. e2e: Dock als Navigation (Desktop und mobil), Original-Feld mit Demo-Paket, MÔRA-Kern, Beispiel, Finance ohne €.
 - Screenshots `shots-v1.3/`: `os-{d,m}-*.png`, `sbs-d-dock.png`, `sbs-d-universe.png`, `sbs-d-today.png`, `sbs-m-*.png`, `os-d-dock-crop.png`.
 - **Grenze:** Das Legacy-OS hinter dem Login lässt sich ohne CORE-Sitzung nicht vollständig aufnehmen. Der lokale Demo-Fallback (`demo/demo123`) funktioniert nur im Dev-Modus und braucht danach CORE. Die Vergleiche zeigen deshalb den Legacy-Einstieg ohne CORE sowie die V1.1/V1.2-Stände. Die Legacy-Dock-Werte sind aus dem Code übernommen.
+
+### 25.4 V1.3.1 Universe-Fixes (Marius: „buggy“)
+- **Fäden**: In der Vorschau starten alle Fäden am MÔRA-Kern (Feldmitte) und enden in den Planetenmitten. Sie werden auf das Feld beschnitten und gehen nicht mehr zu den Seitenkarten. Das läuft über die Opt-in-Props `strandOrigin` und `centerSlot` am Original-`OrganizationField` sowie einen optionalen Parameter in `buildRelationStrands`; ohne diese Angaben verhält sich die Legacy-Ansicht wie bisher. Die Positionen sind Prozentwerte im gemessenen Feld und folgen deshalb jeder Größenänderung.
+- **Legende** liegt oben, unter der Überschrift oder rechts oben, nicht mehr auf den Planeten.
+- **Planeten**: `vivid` gibt kräftigere Akzentverläufe, einen sichtbaren Ring, ein helles Gebäude-Symbol und hellere Beschriftungen, auch mobil. Es gibt keine Abdunklung durch die Aufmerksamkeit mehr; die Pille zeigt sie weiterhin.
+- **Layout**: Ellipse um den Kern ab einer Höhe von 820 px, darunter vermessene feste Positionen. Das Observatorium erscheint erst ab 1440×860, damit das Feld nie eingeklemmt wird. Bei flachen Fenstern entfallen die Überschrift und die Kennzahlzeile.
+- **Dock** ist immer voll sichtbar; das Universe endet über dem Dock.
+- **e2e** bei 1024×640, 1280×800, 1440×900 und 390×844: keine überlappenden Boxen (Planet, Name, Kennzahl, Abzeichen, Kern, Legende, Pille, Intro, Seitenkarten, Dock, Kopfzeile), alle Fäden innerhalb des Feldes, Dock im Viewport, auf allen Flächen endet der Inhalt über dem Dock. Screenshots in `shots-v1.3.1/`.
