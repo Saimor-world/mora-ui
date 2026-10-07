@@ -404,3 +404,37 @@ tsc 0 · lint 0 Fehler · Jest 268 Suites / 1542 Tests grün · Playwright 39/39
 - Klar zeigt pro Phase einen dezenten Ton: Hintergrund-Verlauf (Flow Petrol-Grün, Build Stahlblau, Lounge warmes Braun, Nacht Indigo), getönte deckende Karten, Kartenränder in Phasenfarbe (20 %), Akzent der Phase. Weiterhin ohne Foto/Blur; Text hell auf dunkel (Kontrast ≥ 4.5:1).
 - Begrüßung auf Heute folgt einem gesetzten Phasen-Override (Flow „Guten Morgen“, Build „Guten Tag“, Lounge/Nacht „Guten Abend“), sonst Uhrzeit.
 - Screens: `shots-v1.5.1/` inkl. `phases-klar-grid.png`.
+
+## 28. V1.6 – Onboarding, Agenten-Feed, Quellen, Kontrast
+
+### 28.1 Ruhiges Onboarding
+- `components/os-shell/OsOnboarding.tsx`, `lib/os-prototype/onboarding.ts`. Baut auf dem Legacy-`firstRunStore` auf (gleiche Schlüssel `saimor_product_tour_dismissed` / Restart-Event), dadurch stimmen klassische Oberfläche und /os überein.
+- 4 Schritte: Darstellung (Look + Phase) → Firma & Abteilungen (nur lokal, `saimor_os_onboarding_org`, nichts an CORE) → erste Quelle (ehrlicher Status aus `/v3/connections`, ohne Sitzung klarer Hinweis) → kurze Tour (Dock wird hervorgehoben, Universe, ⌘K).
+- Überspringen jederzeit (auch Esc), erneut starten: Einstellungen › „Einführung erneut starten“. Für Screenshots `?onboarding=off`.
+- Aus Legacy übernommen und überarbeitet: `MoraHint` → `os-kit/Hint` (Tokens statt fester Farben, role="note"), `MemoryBadge` → `CountBadge`.
+
+### 28.2 Agenten-Feed
+- `features/mora/ui/AgentFeed.tsx` aus dem routenlosen Legacy-`MoraThoughtStream`. Quelle `GET /v3/agency/thoughts` (Cognition-Log des Mandanten).
+- Verbessert: Liste statt rotierender Zeile, React-Query-Polling 30 s, ehrlicher Leerzustand, toleriert CORE-Zeitstempel „+00:00Z“, deutsche Labels.
+- Auf Heute (3 Einträge, kompakt) und in MÔRA › Agenten. Demo-Einträge tragen „Beispiel“.
+- Lokal verifiziert: echte Suchanfragen am lokalen CORE erscheinen als „Anfrage · Suche · vor n min“.
+
+### 28.3 Quellen-Seite (Einstellungen › Quellen)
+- `features/settings/ui/SourcesPanel.tsx`, `lib/os-prototype/useSources.ts`. Liste und Status 1:1 aus `/v3/connections` (Kalender, Google Drive, SharePoint, Nextcloud, E-Mail, Notion, MailerLite, Calendly, Stripe, PayPal) mit Status verbunden / bereit / Server-Einrichtung fehlt.
+- „Verbinden“ nutzt die vorhandenen CORE-Flows `POST /v3/connections/{provider}/connect` (OAuth-Start bzw. Zugangsdaten-Prüfung). Freigeschaltet nur, wenn Seite **und** CORE-URL auf localhost zeigen. Zugangsdaten werden nicht im Browser gespeichert, Felder nach dem Senden geleert. Fehler von CORE werden wörtlich gezeigt (z. B. „Google Calendar OAuth not configured“, „Notion rejected the token“).
+- Demo-Konten: CORE liefert bewusst keine Quellen – die Seite sagt das so.
+- Briefing nutzt denselben Hook. **Fehler aus V1.5 behoben:** das Briefing las das v3-Envelope doppelt (`data.data.connections`) und konnte live nie erscheinen.
+- **Fehler behoben:** /os hat die CORE-Sitzung nie selbst geladen (nur über „/“). `OsSessionBoot` liest jetzt das Profil (ohne Weiterleitungen/Logout).
+
+### 28.4 Kontrast (gemessen)
+- Werkzeug: `contrast-pixels.mjs` + `contrast-analyze.py` (im Zip). Liest Textfarbe inkl. Alpha/Opacity, rendert die Seite ohne Text und misst den echten Hintergrund pixelgenau (schlechtester Wert aus Median/10./90. Perzentil). Grenze 4.5:1, große Schrift 3:1. axe-core allein meldete wegen Verläufen/Glas fast alles als „incomplete“.
+- 8 Flächen × 4 Phasen × Kosmos/Klar bei 1440×900, ca. 3 200 Textstellen pro Lauf.
+- Vorher: 1 262 Unterschreitungen (Klar 125 je Phase, Kosmos bis 205). **Danach: 0 von 3 200** (alle Phasen, beide Looks; Bericht `shots-v1.6/contrast-report.json`).
+- Fixes: `textMuted` 0.62→0.82, `textFaint` 0.40→0.70; Kosmos: Schleier hinter Inhaltsspalte und Topbar, gedämpfte Texte als „muted“; Status/Beispiel/⌘-Plaketten deckend unterlegt; Universe-Widgets heller.
+- **Legacy-Fehler gefunden:** Tailwind-Klassen wie `bg-[#071522]/92` oder `text-white/48` (Opacity außerhalb der Skala) wurden nie erzeugt → Universe-Panels waren durchsichtig. 36 Stellen auf `/[0.92]`-Syntax umgestellt.
+
+### 28.5 PR #101 „unstable“
+- Ursache war kein Code: Die PR wurde Sekunden nach dem Push aktualisiert, während CI noch lief (pending ⇒ „unstable“). Alle CI-Läufe (lint, verify:types, critical-flow, os-smoke, Jest, Build) und Vercel waren grün, danach `mergeable_state: clean`. CI-Schritte zusätzlich lokal nachgefahren: grün.
+
+### 28.6 Tests
+tsc 0 · lint 0 Fehler · Jest 269 Suites / 1547 Tests · Playwright 42/42 (inkl. Onboarding, Agenten-Feed, Quellen ohne Sitzung; Viewports 1024×768, 1280×800, 1440×900, 1180×820, 820×1180) · Privacy-Grep 0 · Screens `shots-v1.6/`.
