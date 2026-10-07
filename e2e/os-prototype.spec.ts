@@ -71,6 +71,7 @@ test.describe('OS prototype (/os, local preview)', () => {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/os#universe');
+    await page.getByTestId('universe-lens-landscape').click();
     const field = page.getByTestId('universe-landscape');
     await expect(field).toBeVisible();
     await expect(page.locator('[data-planet]')).toHaveCount(7);
@@ -89,11 +90,44 @@ test.describe('OS prototype (/os, local preview)', () => {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
     const page = await ctx.newPage();
     await page.goto('/os#universe');
+    await page.getByTestId('universe-lens-landscape').click();
     const field = page.getByTestId('universe-landscape');
     await expect(field).toHaveAttribute('data-layout', 'mobile');
     await expect(field).toHaveAttribute('data-motion', 'still');
     await page.locator('[data-planet="today"]').click();
     await expect(page.getByTestId('universe-detail')).toBeVisible();
     await ctx.close();
+  });
+
+  test('V1.3: Marius\' dock is the main navigation (desktop + mobile)', async ({ browser }) => {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+      const ctx = await browser.newContext({ viewport });
+      const page = await ctx.newPage();
+      await page.goto('/os#today');
+      const dock = page.getByTestId('os-dock');
+      await expect(dock).toBeVisible();
+      await expect(page.locator('.os-shell__rail')).toHaveCount(0);
+      await dock.getByRole('button', { name: 'Post', exact: true }).click();
+      await expect(page).toHaveURL(/#post$/);
+      await expect(page.getByTestId('feature-post')).toContainText('Wochenlieferung Arabica');
+      await dock.getByTestId('dock-mora').click();
+      await ctx.close();
+    }
+  });
+
+  test('V1.3: original Organisationsfeld with the demo pack, MÔRA core, Beispiel', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#universe');
+    await expect(page.getByTestId('demo-organization-universe')).toBeVisible();
+    await expect(page.getByText('Store San Francisco').first()).toBeVisible();
+    await expect(page.getByTestId('universe-core')).toBeVisible();
+    await expect(page.getByTestId('universe-attention')).toContainText('Beispiel');
+    await page.goto('/os#knowledge');
+    await expect(page.getByTestId('knowledge-demo-docs')).toContainText('employee_handbook.pdf');
+    await page.goto('/os#finance');
+    await expect(page.getByTestId('feature-finance')).not.toContainText('€');
+    expect(errors).toEqual([]);
   });
 });

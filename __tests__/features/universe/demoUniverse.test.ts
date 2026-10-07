@@ -1,0 +1,30 @@
+import { buildDemoUniverse } from '@/features/universe/data/demoUniverse';
+import { DEMO_DEPARTMENTS, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
+import { sampleTodaySnapshot } from '@/features/today/data/sample';
+
+describe('V1.3 demo pack (Simple Coffee Group) → original universe shapes', () => {
+  const demo = buildDemoUniverse();
+  it('every department becomes a territory with folder moons and doc counts', () => {
+    expect(demo.territories).toHaveLength(DEMO_DEPARTMENTS.length);
+    const tech = demo.territories.find((t) => t.name === 'Technology & AI')!;
+    expect(tech.documents).toBe(3);
+    expect(tech.spaceList?.map((s) => s.name)).toEqual(['Core System']);
+    demo.territories.forEach((t) => { expect(t.x).toBeGreaterThan(0); expect(t.y).toBeGreaterThan(0); });
+  });
+  it('signals point only to existing territories; MÔRA looks at San Francisco', () => {
+    const ids = new Set(demo.territories.map((t) => t.id));
+    demo.signals.forEach((s) => expect(ids.has(s.targetId)).toBe(true));
+    expect(demo.attention.targetId).toBe('demo-sf');
+  });
+  it('carries no money: business summary has no currency and no revenue', () => {
+    expect(demo.business).toEqual({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
+  });
+  it('Heute sample uses the demo mail and calendar', () => {
+    const s = sampleTodaySnapshot();
+    expect(s.mail.items.map((m) => m.subject)).toEqual(DEMO_MAIL.map((m) => m.subject));
+    expect(s.calendar.events[0].title).toBe('Store Stuttgart — Schichtplanung Q3');
+  });
+  it('contains no private names', () => {
+    expect(JSON.stringify(demo)).not.toMatch(/luana|lumiina|chaturbate/i);
+  });
+});

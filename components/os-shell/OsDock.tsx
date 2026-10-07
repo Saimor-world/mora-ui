@@ -27,9 +27,10 @@ export interface OsDockProps {
 }
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onNotifications, onMora, onMore }: OsDockProps) {
-  const icon = (m: FeatureManifest, mobile = false) => (
-    <span key={m.id} className={mobile ? 'os-dock__item os-dock__item--mobile' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id}>
-      <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} active={m.id === activeId && !(mobile && moraOpen)} isStandardMode={false} onClick={() => onNavigate(m.id)}>
+  const onMobile = new Set(mobileItems.map((m) => m.id));
+  const icon = (m: FeatureManifest) => (
+    <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
+      <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} active={m.id === activeId} isStandardMode={false} onClick={() => onNavigate(m.id)}>
         {m.id === activeId ? <span className="os-dock__dot" aria-hidden /> : null}
       </CapsuleDockIcon>
     </span>
@@ -46,7 +47,6 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--apps">
           {items.map((m) => icon(m))}
-          {mobileItems.map((m) => icon(m, true))}
           <span className="os-dock__item os-dock__item--mobile">
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>

@@ -47,7 +47,7 @@ describe('OsShell navigation', () => {
     fireEvent.click(within(nav).getByRole('button', { name: 'Finance' }));
     expect(await screen.findByTestId('feature-finance')).toBeInTheDocument();
     expect(window.location.hash).toBe('#finance');
-    expect(within(nav).getByRole('button', { name: 'Finance' })).toHaveAttribute('aria-current', 'page');
+    expect(within(nav).getByRole('button', { name: 'Finance' }).closest('[data-feature]')).toHaveAttribute('data-active', 'true');
   });
 
   it('opens MÔRA globally (toggle and ⌘J) with module context', async () => {
