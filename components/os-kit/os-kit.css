@@ -460,3 +460,8 @@
 /* V1.5 Universe-UX: eine Überschrift, klare nächste Aktion */
 .os-legacy-universe__header h1 { display: none; }
 .os-legacy-universe__pill-cta { margin-left: var(--os-space-2); color: var(--os-accent); font-weight: 500; white-space: nowrap; }
+.os-briefing-sources { display: flex; flex-wrap: wrap; gap: var(--os-space-2); }
+.os-briefing-sources span { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px dashed var(--os-hairline-strong); border-radius: var(--os-radius-pill); font-size: var(--os-type-meta-size); color: var(--os-text-faint); }
+.os-briefing-sources i { width: 6px; height: 6px; border-radius: 50%; background: var(--os-text-faint); }
+.os-briefing-demo { padding: var(--os-space-4); border: 1px dashed var(--os-tone-warning-border); border-radius: var(--os-radius-lg); }
+.os-briefing-demo ul { display: flex; flex-direction: column; gap: 4px; padding-left: 18px; list-style: disc; color: var(--os-text-muted); font-size: var(--os-type-body-size); }

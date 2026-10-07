@@ -12,6 +12,7 @@ import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
 import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
+import { MoraBriefing } from './ui/MoraBriefing';
 
 function greeting(date = new Date()) {
   const h = date.getHours();
@@ -57,6 +58,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
       </header>
+
+      <MoraBriefing live={!preview && Boolean(userName)} />
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">
