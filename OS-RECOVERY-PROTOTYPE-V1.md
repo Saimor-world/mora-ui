@@ -187,4 +187,4 @@ SSH (`~/.ssh/grokbot_saimor`): **nicht genutzt** – Host-Key für hq.saimor.wor
 Der Prototyp fügt **keine** neue Agent-Kopplung hinzu; MÔRA spricht nur `/v3/chat`.
 
 ## 22 Privatsphäre
-Diff-Suche `luana|lumiina|chaturbate|ghp_|github_pat|sk-…|BEGIN … KEY|seed` → 0 Treffer. Beispieldaten generisch (`example.com/.org`).
+Diff-Suche nach Pilot-/Kundennamen, gesperrtem Connector-Begriff und Token-/Key-Mustern (`ghp_`, `github_pat`, `sk-…`, `BEGIN … KEY`, Seeds) → 0 Treffer. Beispieldaten generisch (`example.com/.org`).
