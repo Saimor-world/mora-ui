@@ -234,3 +234,9 @@
   .os-universe__intro .os-text-meta { display: none; }
   .os-universe__intro .os-text-title { font-size: var(--os-type-body-size); }
 }
+
+/* ===== V1.3 Am Original orientiert ===== */
+.os-legacy-universe__core { position: absolute; left: 50%; top: calc((210px + 100% - 96px) / 2); transform: translate(-50%, -50%); display: none; flex-direction: column; align-items: center; gap: var(--os-space-2); background: none; border: 0; cursor: pointer; color: var(--os-text); z-index: 5; }
+@media (min-width: 1024px) { .os-legacy-universe__core { display: flex; } }
+.os-legacy-universe .os-ulx__attention { z-index: 60; }
+@media (max-width: 1023px) { .os-legacy-universe__legend { display: none; } }

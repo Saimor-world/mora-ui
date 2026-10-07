@@ -1,11 +1,13 @@
 'use client';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
-import { Button, FailureState, Loading, ResponsiveGrid, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
+import { Button, SampleTag, FailureState, Loading, ResponsiveGrid, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { DEMO_CALENDAR, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -28,14 +30,22 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
   return <>{render(q.data)}</>;
 }
 
-export default function PostSurface(_props: FeatureSurfaceProps) {
-  const inbox = usePostInbox();
-  const calendar = usePostCalendar();
+function demoQuery<T>(data: T[]) { return { isLoading: false, isError: false, error: null, data, refetch: () => undefined, fetchStatus: 'idle' as const }; }
+
+export default function PostSurface({ preview }: FeatureSurfaceProps) {
+  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const sample = Boolean(preview) && !hasSession;
+  const liveInbox = usePostInbox();
+  const liveCalendar = usePostCalendar();
+  const today = new Date().toISOString().slice(0, 10);
+  // Lokale Vorschau: Demo-Paket „Simple Coffee Group“ (saimor-core demo_isolation.py), als Beispiel markiert.
+  const inbox = sample ? demoQuery(DEMO_MAIL.map((m) => ({ id: m.id, subject: m.subject, from: m.from, snippet: m.snippet, read: m.read }))) : liveInbox;
+  const calendar = sample ? demoQuery(DEMO_CALENDAR.map((e) => ({ id: e.id, title: e.title, date: today, time: e.time }))) : liveCalendar;
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-post">
       <header>
-        <Text variant="eyebrow">Post</Text>
+        <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">Post</Text>{sample ? <SampleTag /> : null}</Stack>
         <Text variant="display" className="mt-2">Nachrichten und Termine.</Text>
         <Text className="mt-2 max-w-2xl">
           Ein Ort für das, was hereinkommt und was ansteht. Antworten und Termine anlegen laufen vorerst über die
@@ -48,7 +58,7 @@ export default function PostSurface(_props: FeatureSurfaceProps) {
             <div className="os-list">
               {items.slice(0, 8).map((m) => (
                 <div key={m.id} className="os-list-row">
-                  <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text></Stack>
+                  <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text>{m.snippet ? <Text variant="meta" className="truncate">{m.snippet}</Text> : null}</Stack>
                   {m.read === false ? <Status tone="info">neu</Status> : null}
                 </div>
               ))}
