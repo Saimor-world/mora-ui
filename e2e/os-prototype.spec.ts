@@ -65,4 +65,35 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.waitForTimeout(1500);
     expect(errors).toEqual([]);
   });
+
+  test('universe landscape: planets around MÔRA, focus → detail → open area', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#universe');
+    const field = page.getByTestId('universe-landscape');
+    await expect(field).toBeVisible();
+    await expect(page.locator('[data-planet]')).toHaveCount(7);
+    await expect(page.getByTestId('universe-core')).toBeVisible();
+    await expect(page.getByText('Beispiel', { exact: true }).first()).toBeVisible();
+    await page.locator('[data-planet="post"]').click({ force: true });
+    await expect(field).toHaveAttribute('data-focus', 'post');
+    await expect(page.getByTestId('universe-detail')).toBeVisible();
+    await page.getByTestId('universe-open-area').click();
+    await expect(page).toHaveURL(/#post$/);
+    await expect(page.getByTestId('feature-post')).toBeVisible();
+    expect(errors).toEqual([]);
+  });
+
+  test('universe mobile stays spatial; reduced motion keeps planets still', async ({ browser }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await page.goto('/os#universe');
+    const field = page.getByTestId('universe-landscape');
+    await expect(field).toHaveAttribute('data-layout', 'mobile');
+    await expect(field).toHaveAttribute('data-motion', 'still');
+    await page.locator('[data-planet="today"]').click();
+    await expect(page.getByTestId('universe-detail')).toBeVisible();
+    await ctx.close();
+  });
 });

@@ -45,11 +45,13 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     expect(within(layer).queryByTestId('legacy-ritual-styler')).toBeNull();
   });
 
-  it('Heute → Universe: card leads into the real UniverseView, atmosphere switches to universe', async () => {
+  it('Heute → Universe: card leads into the landscape, Organisationsfeld lens keeps the real UniverseView, atmosphere switches to universe', async () => {
     renderShell();
     fireEvent.click(await screen.findByTestId('today-universe-card'));
-    expect(await screen.findByTestId('legacy-universe-view')).toBeInTheDocument();
+    expect(await screen.findByTestId('universe-landscape')).toBeInTheDocument();
     expect(window.location.hash).toBe('#universe');
+    fireEvent.click(screen.getByTestId('universe-lens-organization'));
+    expect(await screen.findByTestId('legacy-universe-view')).toBeInTheDocument();
     const layer = screen.getByTestId('os-universe-layer');
     expect(layer).toHaveAttribute('data-mode', 'universe');
     expect(within(layer).getByTestId('legacy-living-background')).toBeInTheDocument();

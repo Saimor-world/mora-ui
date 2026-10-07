@@ -78,16 +78,17 @@ export function UniverseLandscape({ landscape, sample, onOpenArea, onAskMora, in
   const reduced = usePrefersReducedMotion();
   const [focusId, setFocusId] = useState<PlanetId | null>(initialFocus);
   const [hoverId, setHoverId] = useState<PlanetId | null>(null);
-  const t = useOrbitClock(!reduced && !focusId);
+  // Orbit pauses while hovering a planet so it can be read and clicked calmly.
+  const t = useOrbitClock(!reduced && !focusId && !hoverId);
   const mobile = w < 640;
 
   const geo = useMemo(() => {
     const cx = w / 2;
     const cy = h * (mobile ? 0.46 : 0.5);
     const tilt = mobile ? 0.92 : 0.44;
-    const rx0 = mobile ? w * 0.27 : Math.min(w * 0.2, 290);
+    const rx0 = mobile ? w * 0.27 : Math.min(w * 0.22, 310);
     const rx1 = mobile ? w * 0.43 : Math.min(w * 0.39, 560);
-    const ry0 = Math.min(rx0 * tilt, h * 0.24);
+    const ry0 = Math.min(rx0 * (mobile ? tilt : 0.54), h * 0.26);
     const ry1 = Math.min(rx1 * tilt, h * 0.4);
     return { cx, cy, rings: [{ rx: rx0, ry: ry0 }, { rx: rx1, ry: ry1 }], base: mobile ? 44 : 70 };
   }, [w, h, mobile]);
@@ -178,7 +179,7 @@ export function UniverseLandscape({ landscape, sample, onOpenArea, onAskMora, in
           const dim = Boolean(focusId) && !isFocus;
           const v = PLANET_VAR[planet.id];
           return (
-            <div key={planet.id} className="os-ulx__planet-wrap" style={{ left: x, top: y, zIndex: 10 + Math.round(depth * 10) + (isFocus ? 20 : 0), opacity: dim ? 0.28 : 1 }}>
+            <div key={planet.id} className="os-ulx__planet-wrap" style={{ left: x, top: y, zIndex: 10 + Math.round(depth * 10) + (isFocus ? 20 : 0), opacity: dim ? 0.14 : 1 }}>
               {isFocus ? (
                 <div className="os-ulx__moons" style={{ width: d * 3.1, height: d * 3.1 }} aria-label={`Monde von ${planet.title}`}>
                   {planet.moons.map((m, i) => {
@@ -211,7 +212,7 @@ export function UniverseLandscape({ landscape, sample, onOpenArea, onAskMora, in
                 ))}
                 {planet.signals.length ? <span className={`os-ulx__signal os-ulx__signal--${planet.signals[0].tone}`} aria-hidden /> : null}
               </button>
-              <div className="os-ulx__label" style={{ top: d / 2 + 8 }}>
+              <div className="os-ulx__label" style={{ top: d / 2 + 8, visibility: dim ? 'hidden' : undefined }}>
                 <span className="os-ulx__name">{planet.title}</span>
                 {!mobile || isFocus ? <span className="os-ulx__role">{hoverId === planet.id && planet.signals[0] ? planet.signals[0].label : planet.role}</span> : null}
               </div>
