@@ -240,3 +240,34 @@
 @media (min-width: 1024px) { .os-legacy-universe__core { display: flex; } }
 .os-legacy-universe .os-ulx__attention { z-index: 60; }
 @media (max-width: 1023px) { .os-legacy-universe__legend { display: none; } }
+/* Shell ohne generische Seitenleiste: Marius' Dock ist die Hauptnavigation. */
+.os-shell { grid-template-columns: minmax(0, 1fr) auto; }
+.os-shell__rail, .os-shell__bottom { display: none !important; }
+.os-shell__content { padding-bottom: var(--os-dock-space); }
+.os-shell[data-place='universe'] .os-shell__content { padding-bottom: 0; height: calc(100% - 56px - var(--os-dock-space)); }
+.os-shell__user { display: none; }
+@media (min-width: 1200px) { .os-shell__user { display: inline; } }
+@media (max-width: 899px) { .os-shell__health { display: none; } }
+.os-dock { position: fixed; left: var(--os-space-4); right: var(--os-space-4); bottom: var(--os-space-4); z-index: 70; display: flex; justify-content: center; pointer-events: none; }
+.os-dock__capsule { pointer-events: auto; position: relative; display: flex; align-items: center; gap: var(--os-space-2); padding: 6px var(--os-space-4); border-radius: var(--os-radius-pill); background: var(--os-dock-capsule); border: 1px solid var(--os-dock-edge); box-shadow: var(--os-dock-shadow); backdrop-filter: blur(64px); -webkit-backdrop-filter: blur(64px); max-width: 100%; }
+.os-dock__grid { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; overflow: hidden; background-image: linear-gradient(var(--os-dock-grid) 1px, transparent 1px), linear-gradient(90deg, var(--os-dock-grid) 1px, transparent 1px); background-size: 32px 32px; animation: os-dock-shimmer 9s ease-in-out infinite; }
+.os-dock__line { position: absolute; left: 12%; right: 12%; top: 0; height: 1px; background: var(--os-dock-line); pointer-events: none; }
+@keyframes os-dock-shimmer { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.8; } }
+.os-dock__group { position: relative; display: flex; align-items: center; gap: var(--os-space-1); }
+.os-dock__divider { position: relative; width: 1px; height: 28px; background: var(--os-dock-edge); }
+.os-dock__item { position: relative; display: inline-flex; }
+.os-dock__item--mobile { display: none; }
+.os-dock__dot { position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px; margin-left: -2px; border-radius: 50%; background: var(--os-signal-safe, currentColor); }
+.os-dock__legacy { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--os-radius-pill); color: var(--os-text-faint); transition: transform var(--os-motion-fast) var(--os-motion-ease); }
+.os-dock__legacy:hover { color: var(--os-text); transform: scale(1.1); }
+.os-dock__stone { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: var(--os-radius-pill); border: 1px solid var(--os-dock-stone-ring); background: none; cursor: pointer; transition: transform var(--os-motion-fast) var(--os-motion-ease), box-shadow var(--os-motion-base); }
+.os-dock__stone:hover, .os-dock__stone[aria-pressed='true'] { transform: scale(1.08); box-shadow: var(--os-dock-stone-glow); }
+@media (max-width: 899px) {
+  .os-dock { left: var(--os-space-2); right: var(--os-space-2); bottom: calc(var(--os-space-2) + env(safe-area-inset-bottom)); }
+  .os-dock__capsule { padding: 4px var(--os-space-2); gap: 2px; }
+  .os-dock__item--desktop, .os-dock__legacy, .os-dock__group--tools > :nth-child(2) { display: none; }
+  .os-dock__item--mobile { display: inline-flex; }
+  .os-dock__group--tools ~ .os-dock__divider:first-of-type { display: none; }
+  .os-universe__field { margin-bottom: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .os-dock__grid { animation: none; } .os-dock__stone, .os-dock__legacy { transition: none; } }

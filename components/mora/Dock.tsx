@@ -145,7 +145,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
 const MagneticDockIconMemo = React.memo(MagneticDockIcon);
 
 // ─── Capsule Dock Icon (Unified rounded icon with custom tooltips) ────────────────────────
-interface CapsuleDockIconProps {
+export interface CapsuleDockIconProps {
     icon: React.ComponentType<any>;
     label: string;
     description: string;
@@ -160,7 +160,7 @@ interface CapsuleDockIconProps {
     children?: React.ReactNode;
 }
 
-const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
+export const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
     icon: Icon,
     label,
     description,

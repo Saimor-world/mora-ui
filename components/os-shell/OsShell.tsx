@@ -15,6 +15,7 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
+import { OsDock } from './OsDock';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -96,32 +97,9 @@ export function OsShell({ preview }: { preview: boolean }) {
       <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} />
 
-        <nav className="os-shell__rail" aria-label="Hauptnavigation">
-          <div className="px-3 pb-6">
-            <Text variant="title" as="div" className="os-brand">SAIMÔR</Text>
-            <Text variant="meta" className="mt-1">Klarheit im Wandel.</Text>
-          </div>
-          {nav.primary.map((m) => {
-            const Icon = m.icon;
-            return <NavItem key={m.id} icon={m.id === 'mora' ? <MoraStone size={20} /> : <Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} data-feature={m.id} />;
-          })}
-          <div className="my-3 px-3"><Divider /></div>
-          {nav.secondary.map((m) => {
-            const Icon = m.icon;
-            return <NavItem key={m.id} icon={<Icon size={16} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} data-feature={m.id} />;
-          })}
-          <div className="mt-auto flex flex-col gap-3 px-3">
-            <Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status>
-            <Link href="/" className="os-text-meta os-tone-faint hover:underline" data-testid="legacy-shell-link">
-              <LayoutGrid size={12} className="mr-1 inline" />Klassische Oberfläche (Universe)
-            </Link>
-            {userName ? <Text variant="meta">{userName}</Text> : null}
-          </div>
-        </nav>
-
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
-            <Text variant="eyebrow">{active.title}</Text>
+            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text><span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status></span>{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
             <Stack direction="row" gap={1} align="center">
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
@@ -148,29 +126,24 @@ export function OsShell({ preview }: { preview: boolean }) {
           </Panel>
         ) : null}
 
-        <nav className="os-shell__bottom" aria-label="Navigation mobil" style={{ gridTemplateColumns: `repeat(${nav.mobileBar.length + 1}, 1fr)` }}>
-          {nav.mobileBar.map((m) => {
-            const Icon = m.icon;
-            const isMora = m.id === 'mora';
-            return (
-              <NavItem
-                key={m.id}
-                compact
-                icon={isMora ? <MoraStone size={24} /> : <Icon size={18} />}
-                label={m.title}
-                active={isMora ? moraOpen : m.id === active.id && !moraOpen}
-                onClick={() => (isMora ? setMoraOpen(!moraOpen) : (setMoraOpen(false), navigate(m.id)))}
-              />
-            );
-          })}
-          <NavItem compact icon={<MoreHorizontal size={18} />} label="Mehr" active={moreOpen || nav.mobileMore.some((m) => m.id === active.id)} onClick={() => setMoreOpen((v) => !v)} />
-        </nav>
+        <OsDock
+          items={[...nav.primary, ...nav.secondary].filter((m) => m.id !== 'mora')}
+          mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
+          activeId={active.id}
+          moraOpen={moraOpen}
+          moreActive={moreOpen || nav.mobileMore.some((m) => m.id === active.id)}
+          onNavigate={(id) => { if (typeof window !== 'undefined' && window.innerWidth < 900) setMoraOpen(false); navigate(id); }}
+          onSearch={() => setPaletteOpen(true)}
+          onNotifications={() => setTrayOpen((v) => !v)}
+          onMora={() => setMoraOpen(!moraOpen)}
+          onMore={() => setMoreOpen((v) => !v)}
+        />
 
         {moreOpen ? (
           <div className="os-dialog-backdrop" style={{ alignItems: 'flex-end', padding: 0 }} onMouseDown={(e) => e.target === e.currentTarget && setMoreOpen(false)}>
             <div className="os-dialog" role="dialog" aria-label="Weitere Bereiche" style={{ width: '100%', borderRadius: 'var(--os-radius-xl) var(--os-radius-xl) 0 0', paddingBottom: 'calc(var(--os-bottom-bar) + var(--os-space-4))' }}>
               <Stack gap={1}>
-                {nav.mobileMore.map((m) => {
+                {[...nav.mobileMore, ...nav.mobileBar.filter((m) => m.id === 'mora')].map((m) => {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}

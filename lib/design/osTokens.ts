@@ -46,6 +46,15 @@ export const osColor = {
   veilCalmOuter: 'rgba(3,6,8,0.84)',
   /** Lighter veil inside the Universe place (only for legibility at the edges). */
   veilUniverse: 'rgba(3,6,8,0.28)',
+  /** V1.3 – exakt die Kapsel aus components/mora/Dock.tsx (Legacy-Dock). */
+  dockCapsule: 'linear-gradient(180deg, rgba(12,26,34,0.55) 0%, rgba(10,13,28,0.45) 54%, rgba(2,7,10,0.6) 100%)',
+  dockEdge: 'rgba(103,232,249,0.16)',
+  dockAccent: 'rgba(34,211,238,0.14)',
+  dockShadow: '0 24px 60px rgba(0,0,0,0.55), 0 0 20px rgba(34,211,238,0.14), inset 0 1px 0 rgba(255,255,255,0.07)',
+  dockGrid: 'rgba(103,232,249,0.05)',
+  dockLine: 'linear-gradient(90deg, transparent, rgba(34,211,238,0.55), rgba(16,185,129,0.45), transparent)',
+  dockStoneRing: 'rgba(52,211,153,0.42)',
+  dockStoneGlow: '0 0 22px rgba(16,185,129,0.32)',
   /** Mobile static plate veil. */
   veilMobile: 'rgba(3,6,8,0.78)',
   railVeilTop: 'rgba(4,8,9,0.78)',
@@ -98,7 +107,7 @@ export const osType = {
 
 export const osMotion = { fast: '120ms', base: '200ms', slow: '360ms', ease: 'cubic-bezier(0.2, 0.8, 0.2, 1)' } as const;
 
-export const osLayout = { railWidth: '232px', moraWidth: '380px', bottomBar: '64px', contentMax: '1120px', mobileBreakpoint: 900 } as const;
+export const osLayout = { railWidth: '232px', moraWidth: '380px', bottomBar: '64px', dockSpace: '96px', contentMax: '1120px', mobileBreakpoint: 900 } as const;
 
 export type OsTone = SemanticMeaning;
 
@@ -128,6 +137,7 @@ export function osCssVariables(): Record<string, string> {
   vars['--os-rail-width'] = osLayout.railWidth;
   vars['--os-mora-width'] = osLayout.moraWidth;
   vars['--os-bottom-bar'] = osLayout.bottomBar;
+  vars['--os-dock-space'] = osLayout.dockSpace;
   vars['--os-content-max'] = osLayout.contentMax;
   const tones: SemanticMeaning[] = ['critical', 'warning', 'safe', 'ai', 'info', 'neutral'];
   for (const tone of tones) {
