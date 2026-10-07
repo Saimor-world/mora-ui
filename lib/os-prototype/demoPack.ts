@@ -21,7 +21,14 @@ export interface DemoDepartment { id: string; name: string; description: string;
 const doc = (name: string, summary: string, tags: string[]): DemoDocument => ({ name, summary, tags });
 
 export const DEMO_DEPARTMENTS: DemoDepartment[] = [
-  { id: 'demo-management', name: 'Management', description: 'Holding und Zentralverwaltung.', color: '#fbbf24', folders: [] },
+  // saimor-core demo_service: Management › Calendar mit den 3 Termin-Knoten.
+  { id: 'demo-management', name: 'Management', description: 'Holding und Zentralverwaltung.', color: '#fbbf24', folders: [
+    { name: 'Calendar', documents: [
+      doc('Store Stuttgart — Schichtplanung Q3', 'Termin: Schichtplanung für das dritte Quartal.', ['termin', 'stuttgart']),
+      doc('Brand Review — Q2 Kampagne', 'Termin: Review der Q2-Kampagne.', ['termin', 'marketing']),
+      doc('SF Innovation Lab — AI Barista Pilot', 'Termin: Pilot im Innovation Lab San Francisco.', ['termin', 'san francisco']),
+    ] },
+  ] },
   { id: 'demo-hr', name: 'HR & Culture', description: 'Handbuch, Onboarding, Feedback.', color: '#f472b6', folders: [
     { name: 'Handbook', documents: [
       doc('employee_handbook.pdf', 'Werte, Arbeitszeit, Urlaub, Zusammenarbeit.', ['hr', 'handbook']),
