@@ -19,13 +19,13 @@ describe('feature manifest registry', () => {
   it('exposes exactly six calm primary surfaces in order, plus Labs/System as secondary', () => {
     const nav = navigationModel(owner);
     expect(nav.primary.map((m) => m.title)).toEqual(['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen']);
-    expect(nav.secondary.map((m) => m.id)).toEqual(['labs']);
+    expect(nav.secondary.map((m) => m.id)).toEqual(['universe', 'labs']);
   });
 
   it('keeps MÔRA in the mobile bar and moves settings/labs into "Mehr"', () => {
     const nav = navigationModel(owner);
     expect(nav.mobileBar.map((m) => m.id)).toEqual(['today', 'mora', 'finance', 'post', 'knowledge']);
-    expect(nav.mobileMore.map((m) => m.id)).toEqual(['settings', 'labs']);
+    expect(nav.mobileMore.map((m) => m.id)).toEqual(['settings', 'universe', 'labs']);
   });
 
   it('hides permission-restricted features for roles without access', () => {
