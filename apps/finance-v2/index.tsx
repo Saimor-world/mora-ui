@@ -202,7 +202,10 @@ export type FinanceV2Section = Section;
  * Pane-independent Finance v2 workspace. Extracted so the OS prototype shell
  * (features/finance) can embed it without the floating GlassPanel window.
  */
-export function FinanceV2Workspace({ initialSection = 'state' }: { initialSection?: Section } = {}) {
+export function FinanceV2Workspace({
+  initialSection = 'state',
+  hideSectionNav = false,
+}: { initialSection?: Section; hideSectionNav?: boolean } = {}) {
   const openPane = usePaneStore((state) => state.openPane);
   const activeCompanyId = useSessionStore((state) => state.user?.active_company_id || null);
   const activeCompanyName = useSessionStore((state) => state.user?.active_company_name || null);
@@ -286,6 +289,7 @@ export function FinanceV2Workspace({ initialSection = 'state' }: { initialSectio
           </div>
         </div>
 
+        {!hideSectionNav && (
         <nav className="mt-5 flex flex-wrap gap-1.5" aria-label="Finance sections">
           {sections.map((item) => (
             <button
@@ -305,6 +309,7 @@ export function FinanceV2Workspace({ initialSection = 'state' }: { initialSectio
             </button>
           ))}
         </nav>
+        )}
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto py-5 pr-1">
