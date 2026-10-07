@@ -28,7 +28,7 @@ export default function MoraSurface({ navigate, preview }: FeatureSurfaceProps) 
         ))}
       </div>
       <Surface padding={5} style={{ minHeight: 520, display: 'flex', flexDirection: 'column' }}>
-        {tab === 'chat' ? <MoraConsole variant="page" navigate={navigate} /> : tab === 'signals' ? <MoraSignals navigate={navigate} demo={demo} /> : <MoraMemories />}
+        {tab === 'chat' ? <MoraConsole variant="page" navigate={navigate} /> : tab === 'signals' ? <MoraSignals navigate={navigate} demo={demo} /> : <MoraMemories live={!demo && hasSession} />}
       </Surface>
       <div className="flex flex-wrap items-center gap-3">
         <Text variant="meta">Ausführliche Verläufe, Werkzeug-Spuren und Provider-Auswahl bleiben in der klassischen Chat-App.</Text>

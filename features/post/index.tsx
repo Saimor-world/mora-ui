@@ -9,6 +9,7 @@ import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { DEMO_CALENDAR, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
+import { CalendarContinuity } from '@/components/home/CalendarContinuity';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -78,6 +79,13 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           )} />
         </Column>
       </ResponsiveGrid>
+      {/* V1.5: Kalender-Fäden aus dem Legacy-Home (CalendarContinuity, /v3/continuity) – vorbereitende Aufgaben zu Terminen, nur mit deiner Freigabe. */}
+      {sample ? (
+        <Surface padding={5} data-testid="post-continuity">
+          <Text variant="eyebrow">Kalender-Fäden</Text>
+          <Text className="mt-2">Vorbereitungs-Aufgaben zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>
+        </Surface>
+      ) : <CalendarContinuity />}
     </div>
   );
 }

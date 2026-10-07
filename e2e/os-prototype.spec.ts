@@ -293,4 +293,35 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.goto('/os#post');
     await expect(page.getByRole('button', { name: /^Mit MÔRA/ }).first()).toBeVisible();
   });
+  test('V1.5: Look Klar/Kosmos + Phasen-Override werden lokal gespeichert, Ambient aus per Default', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#settings');
+    await expect(page.getByTestId('look-settings')).toBeVisible();
+    await expect(page.getByTestId('ambient-toggle')).toHaveAttribute('aria-pressed', 'false');
+    await page.getByTestId('look-klar').click();
+    await page.getByTestId('phase-lounge').click();
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-look', 'klar');
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-phase', 'lounge');
+    await page.reload();
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-look', 'klar');
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-phase', 'lounge');
+    await expect(page.getByTestId('context-clock')).toContainText('LOUNGE');
+    await page.getByTestId('phase-auto').click();
+    await page.getByTestId('look-kosmos').click();
+  });
+
+  test('V1.5: Morgenbriefing ehrlich ohne Quellen, Beispiel-Vorschau markiert', async ({ page }) => {
+    await page.goto('/os#today');
+    await expect(page.getByTestId('briefing-pending')).toContainText('Briefing startet, sobald Quellen angebunden sind');
+    await page.getByTestId('briefing-preview-toggle').click();
+    await expect(page.getByTestId('briefing-demo')).toContainText('Beispiel');
+  });
+
+  test('V1.5: Universe spricht Alltagssprache und zeigt den nächsten Schritt', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#universe');
+    await expect(page.getByTestId('universe-lens-organization')).toHaveText('Abteilungen');
+    await expect(page.getByTestId('universe-attention')).toContainText('Nächster Schritt');
+    await expect(page.getByTestId('feature-universe')).not.toContainText(' Docs');
+  });
 });

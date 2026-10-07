@@ -1,4 +1,6 @@
 'use client';
+import { useNavStore } from '@/lib/store/navStore';
+import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
 import React, { useState } from 'react';
 import { Button, SampleTag, Stack, Surface, Text } from '@/components/os-kit';
 import UniverseView from '@/components/home/UniverseView';
@@ -25,10 +27,14 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
   const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
   const hasSession = useSessionStore((st) => Boolean(st.user?.tenant_id));
   const demo = preview && !hasSession;
+  const companyId = useNavStore((s) => s.activeCompanyId);
+  const [wizard, setWizard] = React.useState(false);
   const openArea = (target: string) => (target === 'universe:organization' ? setLens('organization') : navigate(target));
 
   return (
     <div className="os-universe" data-testid="feature-universe" data-lens={lens}>
+      {/* V1.5: DepartmentWizard war im Legacy-Bestand ohne Einstieg. */}
+      {wizard && companyId ? <DepartmentWizard isOpen onClose={() => setWizard(false)} companyId={companyId} /> : null}
       <Surface padding={4} className="os-universe__intro" aria-label="Universe">
         <Stack direction="row" align="center" justify="space-between" gap={3} wrap>
           <Stack gap={1} className="min-w-0">
@@ -47,7 +53,7 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
               <button type="button" role="tab" className="os-tab" aria-selected={lens === 'organization'} onClick={() => setLens('organization')} data-testid="universe-lens-organization">Abteilungen</button>
               <button type="button" role="tab" className="os-tab" aria-selected={lens === 'landscape'} onClick={() => setLens('landscape')} data-testid="universe-lens-landscape">Arbeitsbereiche</button>
             </div>
-            <Button size="sm" variant="ghost" onClick={() => navigate('today')}>Zurück zu Heute</Button>
+            <Button size="sm" variant="ghost" disabled={demo || !companyId} title={demo ? 'Braucht eine CORE-Sitzung' : undefined} onClick={() => setWizard(true)} data-testid="universe-add-department">Abteilung hinzufügen</Button>
           </Stack>
         </Stack>
       </Surface>
