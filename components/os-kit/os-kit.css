@@ -271,3 +271,7 @@
   .os-universe__field { margin-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .os-dock__grid { animation: none; } .os-dock__stone, .os-dock__legacy { transition: none; } }
+.os-universe[data-lens='organization'] .os-universe__intro { position: absolute; left: 50%; transform: translateX(-50%); top: 0; z-index: 80; width: min(760px, calc(100% - 32px)); }
+.os-universe[data-lens='organization'] .os-universe__intro .os-text-meta { display: none; }
+.os-universe[data-lens='organization'] { position: relative; }
+@media (max-width: 1023px) { .os-universe[data-lens='organization'] .os-universe__intro { position: relative; left: auto; transform: none; width: auto; } }

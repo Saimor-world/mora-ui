@@ -50,13 +50,6 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
           <SampleTag />
         </button>
       ) : null}
-      {!selectedId ? (
-        <div className="os-ulx__legend os-legacy-universe__legend" aria-hidden>
-          <span><i className="os-ulx__key os-ulx__key--assigned" />belegt</span>
-          <span><i className="os-ulx__key os-ulx__key--inferred" />vermutet</span>
-          <span><i className="os-ulx__key os-ulx__key--signal" />Signal</span>
-        </div>
-      ) : null}
     </div>
   );
 }
