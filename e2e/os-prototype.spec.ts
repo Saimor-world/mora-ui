@@ -245,4 +245,40 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await expect(page.getByTestId('os-small-notice')).toBeHidden();
   });
+  test('V1.4 legacy: Kontext-Kapsel, Control Center (C), Focus Mode, Heute-Karten, Palette-Start', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#today');
+    await expect(page.getByTestId('today-now')).toBeVisible();
+    await expect(page.getByTestId('today-launch')).toBeVisible();
+    await expect(page.getByTestId('context-capsule')).toContainText('Simple Coffee Group');
+    await page.getByTestId('context-capsule').getByRole('button', { name: /Universe/ }).click();
+    await expect(page).toHaveURL(/#universe/);
+    await page.keyboard.press('c');
+    await expect(page.getByTestId('control-center')).toBeVisible();
+    await page.getByTestId('focus-toggle').click();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('control-center')).toHaveCount(0);
+    await expect(page.getByTestId('focus-left')).toHaveText(/2[45]:\d\d/);
+    await page.keyboard.press('Control+k');
+    await expect(page.getByTestId('palette-home')).toBeVisible();
+  });
+  for (const [w, h] of [[1024, 768], [1280, 800], [1440, 900], [1180, 820], [820, 1180]] as const) {
+    test(`V1.4 topbar ${w}x${h}: Kontext-Kapsel kollidiert nicht`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: h });
+      for (const s of ['today', 'universe']) {
+        await page.goto(`/os#${s}`);
+        await expect(page.getByTestId('context-capsule')).toBeAttached();
+        const r = await page.evaluate(() => {
+          const cap = document.querySelector('[data-testid="context-capsule"]')!;
+          const kids = [...cap.querySelectorAll('.os-context__capsule > *'), document.querySelector('.os-context__clock')!].filter((e) => getComputedStyle(e).display !== 'none' && (e as HTMLElement).offsetWidth > 0).map((e) => e.getBoundingClientRect());
+          const others = [...document.querySelectorAll('.os-shell__topbar > div:first-child > *, [aria-label="Befehle öffnen"], [data-testid="mora-toggle"]')].map((e) => e.getBoundingClientRect()).filter((b) => b.width > 0);
+          const capBox = cap.getBoundingClientRect();
+          const hit = others.some((o) => kids.some((k) => Math.min(k.right, o.right) - Math.max(k.left, o.left) > 0 && Math.min(k.bottom, o.bottom) - Math.max(k.top, o.top) > 0));
+          const clipped = kids.slice(0, -1).some((k) => k.right > capBox.right + 1);
+          return { hit, clipped };
+        });
+        expect(r).toEqual({ hit: false, clipped: false });
+      }
+    });
+  }
 });

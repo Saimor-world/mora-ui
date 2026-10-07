@@ -63,7 +63,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
     }
     if (demo) {
       for (const d of DEMO_DEPARTMENTS) {
-        if (n ? match(d.name, d.description) : out.length < 12) {
+        if (n && match(d.name, d.description)) {
           out.push({ id: `p-${d.id}`, group: 'Planeten', label: d.name, hint: `Beispiel · Planet im Universe · ${d.description}`, icon: <Building2 size={15} />,
             run: () => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); } });
         }
@@ -121,6 +121,29 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
           />
           <span className="os-kbd">esc</span>
         </div>
+        {!trimmed && demo ? (
+          <div className="os-palette-home" data-testid="palette-home">
+            <div>
+              <Text variant="eyebrow" className="mb-2">Schnellsuche</Text>
+              <div className="os-palette-home__chips">
+                {['Alle Dateien', 'Budget', 'Onboarding', 'Kampagne'].map((c) => (
+                  <button key={c} type="button" onClick={() => (c === 'Alle Dateien' ? (navigate('knowledge'), onClose()) : setQ(c))}>{c}</button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Text variant="eyebrow" className="mb-2">Abteilungen</Text>
+              <div className="os-palette-home__planets">
+                {DEMO_DEPARTMENTS.map((d) => (
+                  <button key={d.id} type="button" title={d.name} onClick={() => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); onClose(); }}>
+                    <span style={{ ['--planet' as string]: d.color }} aria-hidden><Building2 size={14} /></span>
+                    <em>{d.name}</em>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="max-h-[56vh] overflow-y-auto p-2" role="listbox" aria-label="Ergebnisse">
           {groups.map((g) => (
             <div key={g} className="py-1">

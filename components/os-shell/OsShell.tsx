@@ -17,6 +17,8 @@ import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
+import { ContextCapsule, ContextClock } from './ContextCapsule';
+import { ControlCenter } from './ControlCenter';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -77,6 +79,7 @@ export function OsShell({ preview }: { preview: boolean }) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(true); return; }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setMoraOpen(!useOsShellStore.getState().moraOpen); return; }
       // V1.4 Dock-Kürzel: nur ohne Modifier und nicht beim Schreiben.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'f') { e.preventDefault(); const st0 = useOsShellStore.getState(); st0.setFocusUntil(st0.focusUntil ? null : Date.now() + 25 * 60_000); return; }
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
@@ -84,6 +87,8 @@ export function OsShell({ preview }: { preview: boolean }) {
       if (st.paletteOpen) return;
       if (e.key === '?') { e.preventDefault(); setShortcutsOpen(!st.shortcutsOpen); return; }
       if (e.key === 'Escape' && st.shortcutsOpen) { setShortcutsOpen(false); return; }
+      if (e.key === 'Escape' && st.controlOpen) { st.setControlOpen(false); return; }
+      if (e.key.toLowerCase() === 'c') { e.preventDefault(); st.setControlOpen(!st.controlOpen); return; }
       if (/^[1-9]$/.test(e.key)) { const m = dockItems[Number(e.key) - 1]; if (m) { e.preventDefault(); navigate(m.id); } return; }
       if (e.key.toLowerCase() === 'm') { e.preventDefault(); setMoraOpen(!st.moraOpen); return; }
       if (e.key.toLowerCase() === 'u' && dockItems.some((m) => m.id === 'universe')) { e.preventDefault(); navigate('universe'); }
@@ -96,6 +101,10 @@ export function OsShell({ preview }: { preview: boolean }) {
   const ActiveSurface = lazyFor(active);
   const online = health.data?.state === 'online';
   const atmosphere = active.atmosphere ?? 'calm';
+
+  const demoMode = preview && !userName;
+  const org = demoMode ? 'Simple Coffee Group' : 'Deine Organisation';
+  const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {
     useOsShellStore.getState().setMoraDraft(text);
@@ -117,7 +126,9 @@ export function OsShell({ preview }: { preview: boolean }) {
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
             <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text><span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status></span>{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
+            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} />
             <Stack direction="row" gap={1} align="center">
+              <ContextClock />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
@@ -151,6 +162,8 @@ export function OsShell({ preview }: { preview: boolean }) {
           moreActive={moreOpen || nav.mobileMore.some((m) => m.id === active.id)}
           onNavigate={(id) => { if (typeof window !== 'undefined' && window.innerWidth < 900) setMoraOpen(false); navigate(id); }}
           onSearch={() => setPaletteOpen(true)}
+          onControl={() => useOsShellStore.getState().setControlOpen(!controlOpen)}
+          controlOpen={controlOpen}
           onNotifications={() => setTrayOpen((v) => !v)}
           onMora={() => setMoraOpen(!moraOpen)}
           onMore={() => setMoreOpen((v) => !v)}
@@ -171,6 +184,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
       </div>
 
+      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode} /> : null}
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}

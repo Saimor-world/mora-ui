@@ -28,9 +28,19 @@ export interface OsShellState {
   /** V1.4: keyboard shortcut overlay (?). */
   shortcutsOpen: boolean;
   setShortcutsOpen(open: boolean): void;
+  /** V1.4 (aus dem Legacy-OS): Control Center. */
+  controlOpen: boolean;
+  setControlOpen(open: boolean): void;
+  /** V1.4 (aus dem Legacy-OS): Focus Mode bis Zeitpunkt (ms), sonst null. */
+  focusUntil: number | null;
+  setFocusUntil(t: number | null): void;
 }
 
 export const useOsShellStore = create<OsShellState>((set) => ({
+  controlOpen: false,
+  setControlOpen: (controlOpen) => set({ controlOpen }),
+  focusUntil: null,
+  setFocusUntil: (focusUntil) => set({ focusUntil }),
   activeFeatureId: 'today',
   moraOpen: false,
   paletteOpen: false,

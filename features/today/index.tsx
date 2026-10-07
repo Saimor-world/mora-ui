@@ -1,7 +1,7 @@
 'use client';
 import React, { useMemo } from 'react';
-import { ArrowRight, CalendarDays, CircleDot, Inbox, ListTodo, Sparkles, Wallet } from 'lucide-react';
-import { Button, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
+import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
+import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import type { TodaySnapshot, TodaySourceStatus } from '@/lib/api/todayClient';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -50,13 +50,32 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
     <div className="flex flex-col gap-6" data-testid="feature-today">
       <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
-        <Text variant="display" className="mt-2">{greeting()}{userName ? `, ${userName}` : ''}.</Text>
+        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting()}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
       </header>
+
+      {snapshot ? (
+        <section aria-label="Heute · Aktuell" data-testid="today-now">
+          <Text variant="eyebrow" className="mb-2">Heute · Aktuell — das ist heute relevant</Text>
+          <div className="os-today-now">
+            {([
+              ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
+              ['Mail', Mail, snapshot.mail.items[0]?.subject ?? 'Nichts Neues', `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`, () => navigate('post')],
+              ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
+              ['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')],
+            ] as const).map(([label, Icon, title, copy, run]) => (
+              <button key={label} type="button" className="os-today-now__card" onClick={run} data-testid={`today-now-${label.split(' ')[0].toLowerCase()}`}>
+                <span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {label} <ArrowUpRight size={12} className="ml-auto" aria-hidden /></span>
+                <b>{title}</b><span>{copy}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {sample ? <MoraLagebild navigate={navigate} /> : null}
 
@@ -156,6 +175,21 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           </ResponsiveGrid>
         </>
       ) : null}
+
+      <section aria-label="Weiter" data-testid="today-launch">
+        <Text variant="eyebrow" className="mb-2">Weiter — dort weitermachen, wo gerade etwas anliegt</Text>
+        <div className="os-today-launch">
+          {([
+            ['Universe', 'Raum & Zusammenhänge', Compass, () => navigate('universe')],
+            ['Arbeit', 'Offene Arbeit und nächste Schritte', ListTodo, () => openLegacyApp('tasks')],
+            ['Mail', 'Lesen, antworten, sortieren', Mail, () => navigate('post')],
+            ['Kalender', 'Termine und feste Punkte', CalendarDays, () => navigate('post')],
+            ['Dateien', 'Dokumente im Arbeitskontext', BookOpen, () => navigate('knowledge')],
+          ] as const).map(([t, d, Icon, run]) => (
+            <button key={t} type="button" className="os-today-now__card" onClick={run}><span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {d}</span><b>{t}</b></button>
+          ))}
+        </div>
+      </section>
 
       <Section icon={<Sparkles size={14} />} title="MÔRA-Hinweise" aside={<Button size="sm" onClick={() => navigate('mora')}>MÔRA fragen</Button>}>
         <Stack gap={2}>{hints.map((h) => <Text key={h}>{h}</Text>)}</Stack>

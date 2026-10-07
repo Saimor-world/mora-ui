@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import React from 'react';
-import { Bell, LayoutGrid, MoreHorizontal, Search } from 'lucide-react';
+import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
 import { MoraStone } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
@@ -21,12 +21,14 @@ export interface OsDockProps {
   unread?: number;
   onNavigate: (id: string) => void;
   onSearch: () => void;
+  onControl?: () => void;
+  controlOpen?: boolean;
   onNotifications: () => void;
   onMora: () => void;
   onMore: () => void;
 }
 
-export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onNotifications, onMora, onMore }: OsDockProps) {
+export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore }: OsDockProps) {
   const onMobile = new Set(mobileItems.map((m) => m.id));
   const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
@@ -42,6 +44,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__line" aria-hidden />
         <div className="os-dock__group os-dock__group--tools">
           <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
+          {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <CapsuleDockIcon icon={Bell} label="Mitteilungen" description="Was hereingekommen ist" isStandardMode={false} badge={unread} onClick={onNotifications} />
         </div>
         <span className="os-dock__divider" aria-hidden />

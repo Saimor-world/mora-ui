@@ -12,6 +12,8 @@ export function ShortcutsOverlay({ items, onClose }: { items: FeatureManifest[];
     ['U', 'Universe'],
     ['⌘J / Ctrl J', 'MÔRA öffnen oder schließen'],
     ['Esc', 'Schließen, Fokus im Universe lösen'],
+    ['C', 'Control Center (Kontext, Szene, Focus)'],
+    ['Strg ⇧ F', 'Focus Mode 25 Minuten an/aus'],
     ['?', 'Diese Übersicht'],
   ];
   return (
