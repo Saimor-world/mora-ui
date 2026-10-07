@@ -269,3 +269,31 @@ Rückmeldung Marius zu V1.1: „Wo sind die Planeten, die ganze Logik, die ganze
 **Screenshots:** `shots-v1.2/os-{d,m}-universe-{overview,planet-hover,planet-focused,detail-panel,organisationsfeld}.png`.
 
 **Grenzen V1.2:** Mit echter CORE-Sitzung nicht verifiziert (die Hooks sind dieselben wie auf Heute/Wissen/Einstellungen). Spaces-Monde mit Sitzung = Abteilungsnamen, noch keine Ordner. Planeten-Positionen sind fest (Winkel je Bereich), kein Drag. Das Organisationsfeld bleibt ohne Sitzung leer, und das ist Absicht: Es zeigt nur echte Abteilungen.
+
+## 25 V1.3 Am Original orientiert
+
+Feedback von Marius: „Ich habe ein Dock etc. in meinem OS. Orientiere dich an MEINEM und mach es nur besser. Es sieht aus wie jede andere App (0815). Die alten Planeten waren besser. Der MÔRA-Teil ist super. Schau dir die Demodaten in meinem OS genauer an.“
+
+### 25.1 Was im bestehenden OS gefunden wurde
+- **Dock** (`components/mora/Dock.tsx`, Export `Dock`, 1733 Zeilen): schwebende Kapsel unten (`fixed bottom-4`, `rounded-full`, `backdrop-blur-3xl`), Verlauf `rgba(12,26,34,.55) → rgba(10,13,28,.45) → rgba(2,7,10,.6)`, Szenen-Rand, tiefer Schatten mit Akzent-Glow, pulsierendes 32-px-Raster, Akzentlinie oben. Links Werkzeuge (Suche, Control Center, Sprache, Musik), Trenner, Mitte die Apps (`MagneticDockIcon`, Hover-Vergrößerung `scale-110`), rechts Fokus, Mitteilungen, Sitzung, Firmenwechsel und der MÔRA-Stein (40 px, `/brand/mora-stone-v1.png`, smaragdgrüner Ring). Icons 48 px rund, `text-cyan-50/64`, aktiv `bg-cyan-400/16` mit Cyan-Rand, violette Badges, schwarzer Tooltip mit Titel, Beschreibung und Kürzel, grüner Aktiv-Punkt. Einträge aus `getCoreDockItems` (Heute, Arbeit, MÔRA, Universe, Einstellungen).
+- **Shell-Layout**: Vollbild-Universe als Desktop, Fenster (Panes) darüber, das Dock als einzige Hauptnavigation, keine Seitenleiste.
+- **Planeten** (`components/universe/OrganizationField.tsx`): Abteilungen als Planeten (Radialverlauf im Akzent, dunkler Kern, `Building2`-Symbol mit Glow), Ordner als Monde auf Umlaufbahnen, Dokument-Sterne, Signal-Abzeichen, Name und Kennzahlen darunter, Überschrift „Woraus {Firma} besteht“, Beziehungsfäden „belegt / nur vermutet“. Dazu `UniverseAmbientField` und `UniverseObservatory` (Verteilung, Horizont mit Mail, Kalender und Feed, Wirtschaft, Wache).
+- **Demo**: `public_demo`-Profil „Beispielsystem“, `ensureGuidedDemoCompany(pack)`, Demo-Packs `coffee` (Simple Coffee Group) und `mittelstand`. Inhalte in saimor-core `core/services/demo_content_packs.py` und `demo_isolation.py`: 7 Abteilungen, Ordner, 16 Dokumente, 4 Aufgaben, 5 MÔRA-Beobachtungen (Mindloop), 4 Mails, 3 Termine, Feed-Quellen. **Keine Finanzwerte** im Coffee-Pack.
+
+### 25.2 Was V1.3 daraus macht
+- **Marius' Dock ist die Hauptnavigation.** `OsDock` nutzt das jetzt exportierte Legacy-`CapsuleDockIcon` (einzige Änderung in `Dock.tsx`: `export`) und dieselbe Kapsel, dasselbe Raster und dieselbe Akzentlinie, als Tokens in `osTokens` (`dock*`). Aufbau wie im Original: links Suche und Mitteilungen, Mitte die Orte, rechts die klassische Oberfläche und der MÔRA-Stein mit Smaragdring (Klick öffnet das Panel, Doppelklick öffnet den MÔRA-Ort). Die generische Seitenleiste und die mobile Leiste sind entfernt. Mobil gibt es dasselbe Dock mit Heute, Finance, Post, Wissen, „Mehr“ und dem Stein.
+- **Original-Planeten**: Das Universe startet im Organisationsfeld. Mit Sitzung erscheint die echte `UniverseView`. In der lokalen Vorschau rendern dieselben Komponenten (`UniverseAmbientField`, `UniverseObservatory`, `OrganizationField`) mit dem Demo-Paket. Neu ist nur der MÔRA-Kern aus V1.2 in der Feldmitte und die Aufmerksamkeits-Pille („MÔRA schaut auf Store San Francisco …“, Beispiel). Die V1.2-Landschaft ist als zweite Linse „OS-Bereiche“ verfügbar.
+- **Demo-Daten überall**: `lib/os-prototype/demoPack.ts` spiegelt den Coffee-Pack mit Quellenangabe. Sie speisen:
+  - Heute: Aufgaben, Termine, Mails
+  - Post: die 4 Mails, die 3 Termine
+  - Wissen: Dokumentenliste mit lokaler Suche, „Was MÔRA bemerkt hat“ aus dem Mindloop
+  - Universe: Planeten, Monde, Signale, Observatorium
+  - OS-Bereiche
+  
+  Jede dieser Flächen trägt den Hinweis „Beispiel“. **Finance bleibt ohne Zahl** (das Demo-Paket definiert keine), und das Observatorium zeigt „Noch kein Umsatz“.
+- Unverändert: der MÔRA-Kern, die Pille und der Stein, die ruhige und die volle Atmosphäre, YORI getrennt, kein Schreiben (Fallen-Ablage meldet in der Vorschau ehrlich `false`).
+
+### 25.3 Tests und Belege
+- Unit-Tests `__tests__/features/universe/demoUniverse.test.ts`, Shell- und Universe-Tests auf Dock und Organisationsfeld umgestellt. e2e: Dock als Navigation (Desktop und mobil), Original-Feld mit Demo-Paket, MÔRA-Kern, Beispiel, Finance ohne €.
+- Screenshots `shots-v1.3/`: `os-{d,m}-*.png`, `sbs-d-dock.png`, `sbs-d-universe.png`, `sbs-d-today.png`, `sbs-m-*.png`, `os-d-dock-crop.png`.
+- **Grenze:** Das Legacy-OS hinter dem Login lässt sich ohne CORE-Sitzung nicht vollständig aufnehmen. Der lokale Demo-Fallback (`demo/demo123`) funktioniert nur im Dev-Modus und braucht danach CORE. Die Vergleiche zeigen deshalb den Legacy-Einstieg ohne CORE sowie die V1.1/V1.2-Stände. Die Legacy-Dock-Werte sind aus dem Code übernommen.
