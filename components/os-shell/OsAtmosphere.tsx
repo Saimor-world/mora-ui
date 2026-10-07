@@ -49,8 +49,8 @@ export function OsAtmosphere({ mode }: { mode: AtmosphereMode }) {
       <div className="os-atmo__living" data-testid="os-atmo-living">{universe ? <MoraLivingBackground /> : null}</div>
       {motion ? (
         <div className="os-atmo__motion" data-testid="os-atmo-motion">
-          <StarField density={capability.density === "low" ? "low" : "medium"} opacity={0.55} />
-          <TemporalAtmosphere />
+          <StarField density={capability.density === "low" ? "low" : "medium"} opacity={0.4} />
+          <div className="os-atmo__temporal"><TemporalAtmosphere /></div>
         </div>
       ) : null}
       {universe ? <RitualSceneStyler muted /> : null}

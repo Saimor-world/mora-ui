@@ -116,8 +116,10 @@
 .os-atmo__plate { inset: -6%; background-image: var(--os-atmo-image); background-size: cover; background-position: center; filter: var(--os-atmo-calm-filter); opacity: 0.9; transition: filter var(--os-atmo-transition) var(--os-motion-ease), opacity var(--os-atmo-transition) var(--os-motion-ease); }
 .os-atmo__living, .os-atmo__motion { opacity: 0; transition: opacity var(--os-atmo-transition) var(--os-motion-ease); }
 .os-atmo__veil { background: radial-gradient(ellipse at 50% 40%, var(--os-veil-calm-inner) 0%, var(--os-veil-calm-outer) 100%); transition: opacity var(--os-atmo-transition) var(--os-motion-ease); }
-.os-atmo[data-mode='universe'] .os-atmo__plate { filter: var(--os-atmo-universe-filter); opacity: 0; }
-.os-atmo[data-mode='universe'] .os-atmo__living, .os-atmo[data-mode='universe'] .os-atmo__motion { opacity: 1; }
+.os-atmo[data-mode='universe'] .os-atmo__plate { filter: var(--os-atmo-universe-filter); opacity: 1; inset: 0; }
+.os-atmo[data-mode='universe'] .os-atmo__living { opacity: 0.22; }
+.os-atmo[data-mode='universe'] .os-atmo__motion { opacity: 1; }
+.os-atmo__temporal { position: absolute; inset: 0; opacity: 0.14; mix-blend-mode: soft-light; isolation: isolate; }
 .os-atmo[data-mode='universe'] .os-atmo__veil { opacity: 0; }
 @media (max-width: 899px) {
   .os-atmo__plate { filter: var(--os-atmo-calm-filter); }

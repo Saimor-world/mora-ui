@@ -42,8 +42,8 @@ export const osColor = {
   glassHighlight: 'rgba(255,255,255,0.05)',
   glassShadow: 'rgba(0,0,0,0.38)',
   /** Veil over the dimmed universe plate on calm surfaces (strong, content in front). */
-  veilCalmInner: 'rgba(3,6,8,0.62)',
-  veilCalmOuter: 'rgba(3,6,8,0.88)',
+  veilCalmInner: 'rgba(3,6,8,0.4)',
+  veilCalmOuter: 'rgba(3,6,8,0.84)',
   /** Lighter veil inside the Universe place (only for legibility at the edges). */
   veilUniverse: 'rgba(3,6,8,0.28)',
   /** Mobile static plate veil. */
@@ -57,7 +57,7 @@ export const osColor = {
 /** Atmosphere: how the shared universe image is treated per mode (non-colour values). */
 export const osAtmosphere = {
   image: '/universe/deep-space-warm.jpg',
-  calm: { blur: '22px', brightness: '0.42', saturate: '0.8' },
+  calm: { blur: '16px', brightness: '0.72', saturate: '0.9' },
   universe: { blur: '0px', brightness: '1', saturate: '1' },
   transition: '900ms',
   glassBlur: '18px',
