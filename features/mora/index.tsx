@@ -5,11 +5,12 @@ import { MoraMemories, MoraSignals } from './ui/MoraSignals';
 import { Surface, Text } from '@/components/os-kit';
 import type { FeatureSurfaceProps } from '../types';
 import { MoraConsole } from './ui/MoraConsole';
+import { AgentFeed } from './ui/AgentFeed';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { Button } from '@/components/os-kit';
 
 export default function MoraSurface({ navigate, preview }: FeatureSurfaceProps) {
-  const [tab, setTab] = useState<'chat' | 'memories' | 'signals'>('chat');
+  const [tab, setTab] = useState<'chat' | 'memories' | 'signals' | 'agents'>('chat');
   const hasSession = useSessionStore((s) => Boolean(s.user));
   const demo = Boolean(preview) && !hasSession;
   return (
@@ -23,12 +24,12 @@ export default function MoraSurface({ navigate, preview }: FeatureSurfaceProps) 
         </Text>
       </header>
       <div className="os-tabs" role="tablist" aria-label="MÔRA">
-        {([['chat', 'Chat'], ['memories', 'Erinnerungen'], ['signals', 'Signale']] as const).map(([id, l]) => (
+        {([['chat', 'Chat'], ['memories', 'Erinnerungen'], ['signals', 'Signale'], ['agents', 'Agenten']] as const).map(([id, l]) => (
           <button key={id} type="button" className="os-tab" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} data-testid={`mora-tab-${id}`}>{l}</button>
         ))}
       </div>
       <Surface padding={5} style={{ minHeight: 520, display: 'flex', flexDirection: 'column' }}>
-        {tab === 'chat' ? <MoraConsole variant="page" navigate={navigate} /> : tab === 'signals' ? <MoraSignals navigate={navigate} demo={demo} /> : <MoraMemories live={!demo && hasSession} />}
+        {tab === 'chat' ? <MoraConsole variant="page" navigate={navigate} /> : tab === 'agents' ? <AgentFeed live={!demo && hasSession} demo={demo} limit={20} /> : tab === 'signals' ? <MoraSignals navigate={navigate} demo={demo} /> : <MoraMemories live={!demo && hasSession} />}
       </Surface>
       <div className="flex flex-wrap items-center gap-3">
         <Text variant="meta">Ausführliche Verläufe, Werkzeug-Spuren und Provider-Auswahl bleiben in der klassischen Chat-App.</Text>

@@ -6,6 +6,8 @@ import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Tex
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
+import { OsOnboarding } from './OsOnboarding';
+import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 import type { FeatureManifest, FeatureSurfaceProps } from '@/features/types';
@@ -108,7 +110,8 @@ export function OsShell({ preview }: { preview: boolean }) {
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
   const look = mounted ? lookStored : 'kosmos';
-  const org = demoMode ? 'Simple Coffee Group' : 'Deine Organisation';
+  const localCompany = mounted ? readLocalOrg().company : '';
+  const org = demoMode ? 'Simple Coffee Group' : localCompany || 'Deine Organisation';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {
@@ -120,6 +123,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
+      <OsOnboarding live={Boolean(userName)} navigate={navigate} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv

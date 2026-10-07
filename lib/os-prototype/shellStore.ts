@@ -35,6 +35,9 @@ export interface OsShellState {
   focusUntil: number | null;
   setFocusUntil(t: number | null): void;
   /** V1.5: Look (Kosmos/Klar), Phasen-Override, Ambient-Audio – lokal gespeichert. */
+  /** V1.6: Einstellungen in einem bestimmten Abschnitt öffnen (z. B. „sources“). */
+  settingsSection: string | null;
+  setSettingsSection(id: string | null): void;
   look: 'kosmos' | 'klar';
   setLook(l: 'kosmos' | 'klar'): void;
   phaseOverride: 'flow' | 'build' | 'lounge' | 'night' | null;
@@ -75,6 +78,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setControlOpen: (controlOpen) => set({ controlOpen }),
   focusUntil: null,
   setFocusUntil: (focusUntil) => set({ focusUntil }),
+  settingsSection: null,
+  setSettingsSection: (settingsSection) => set({ settingsSection }),
   activeFeatureId: 'today',
   moraOpen: false,
   paletteOpen: false,

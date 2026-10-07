@@ -7,6 +7,12 @@ import { expect, test } from '@playwright/test';
  */
 const SURFACES = ['today', 'mora', 'finance', 'post', 'knowledge', 'settings', 'labs', 'universe'];
 
+// V1.6: Onboarding erscheint beim ersten Besuch – für die übrigen Tests als erledigt markieren.
+test.beforeEach(async ({ page }, info) => {
+  if (info.title.startsWith('onboarding')) return;
+  await page.addInitScript(() => { try { window.localStorage.setItem('saimor_product_tour_dismissed', '1'); } catch { /* ignore */ } });
+});
+
 test.describe('OS prototype (/os, local preview)', () => {
   for (const id of SURFACES) {
     test(`surface ${id} renders without page errors`, async ({ page }) => {
@@ -323,5 +329,51 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(page.getByTestId('universe-lens-organization')).toHaveText('Abteilungen');
     await expect(page.getByTestId('universe-attention')).toContainText('Nächster Schritt');
     await expect(page.getByTestId('feature-universe')).not.toContainText(' Docs');
+  });
+
+  test('onboarding: first visit shows 4 calm steps, can be skipped and restarted', async ({ page }) => {
+    await page.goto('/os#today');
+    const ob = page.getByTestId('onboarding');
+    await expect(ob).toBeVisible();
+    await page.getByTestId('ob-look-klar').click();
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-look', 'klar');
+    await page.getByTestId('onboarding-next').click();
+    await page.getByTestId('ob-company').fill('Muster GmbH');
+    await page.getByTestId('ob-dept').fill('Vertrieb');
+    await page.getByTestId('ob-dept-add').click();
+    await expect(page.getByTestId('ob-depts')).toContainText('Vertrieb');
+    await page.getByTestId('onboarding-next').click();
+    await expect(page.getByTestId('ob-sources')).toContainText('Ohne CORE-Sitzung');
+    await page.getByTestId('onboarding-next').click();
+    await expect(page.getByTestId('ob-tour')).toBeVisible();
+    await expect(page.getByTestId('os-dock')).toHaveAttribute('data-tour-spot', '');
+    await page.getByTestId('onboarding-skip').click();
+    await expect(ob).toHaveCount(0);
+    const org = await page.evaluate(() => window.localStorage.getItem('saimor_os_onboarding_org'));
+    expect(org).toContain('Vertrieb');
+    await page.reload();
+    await expect(page.getByTestId('feature-today')).toBeVisible();
+    await expect(page.getByTestId('onboarding')).toHaveCount(0);
+    await page.goto('/os#settings');
+    await page.getByTestId('onboarding-restart').click();
+    await expect(page.getByTestId('onboarding')).toBeVisible();
+  });
+
+  test('agent feed: demo entries are marked as Beispiel on Heute and in MÔRA', async ({ page }) => {
+    await page.goto('/os#today');
+    const feed = page.getByTestId('agent-feed');
+    await expect(feed).toBeVisible();
+    await expect(feed.locator('.os-sample-tag')).toBeVisible();
+    await expect(feed.locator('.os-agent-feed__item')).toHaveCount(3);
+    await page.goto('/os#mora');
+    await page.getByTestId('mora-tab-agents').click();
+    await expect(page.getByTestId('agent-feed').locator('.os-sample-tag')).toBeVisible();
+  });
+
+  test('sources page is honest without a CORE session', async ({ page }) => {
+    await page.goto('/os#settings');
+    await page.getByTestId('settings-tab-sources').click();
+    await expect(page.getByTestId('sources-panel')).toContainText('erst mit einer Sitzung');
+    await expect(page.getByText('verbunden', { exact: true })).toHaveCount(0);
   });
 });

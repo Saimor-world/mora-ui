@@ -4,6 +4,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Sunrise } from 'lucide-react';
 import { Button, MoraStone, SampleTag, Stack, Status, Surface, Text } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
+import { connectedSources, useSources } from '@/lib/os-prototype/useSources';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { DEMO_CALENDAR, DEMO_MAIL, DEMO_MINDLOOP, DEMO_TASKS } from '@/lib/os-prototype/demoPack';
 
 /**
@@ -15,7 +17,6 @@ import { DEMO_CALENDAR, DEMO_MAIL, DEMO_MINDLOOP, DEMO_TASKS } from '@/lib/os-pr
  * und CORE ein nicht-degradiertes Briefing liefert. Sonst ein ehrlicher Zustand
  * mit den Quellen – und optional eine klar markierte Demo-Vorschau.
  */
-interface Connections { data?: { connections?: Array<{ provider?: string; status?: string; label?: string }> } }
 interface Briefing { status?: string; text?: string; date?: string }
 
 const SOURCES = ['Mail', 'Kalender', 'Cloud-Dateien', 'Branchen-Feeds'];
@@ -31,10 +32,11 @@ function demoBriefing(): string[] {
   ];
 }
 
-export function MoraBriefing({ live }: { live: boolean }) {
+export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id: string) => void }) {
   const [preview, setPreview] = useState(false);
-  const conns = useQuery({ queryKey: ['os', 'connections'], queryFn: () => coreGet('/v3/connections') as Promise<Connections>, enabled: live, staleTime: 60_000, retry: false });
-  const connected = (conns.data?.data?.connections || []).filter((c) => !c.status || /connected|active|ok/i.test(c.status));
+  // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
+  const conns = useSources(live);
+  const connected = connectedSources(conns.data?.connections);
   const ready = live && connected.length > 0;
   const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready, staleTime: 60_000, retry: false });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
@@ -52,9 +54,12 @@ export function MoraBriefing({ live }: { live: boolean }) {
           <Text tone="default" data-testid="briefing-pending">Briefing startet, sobald Quellen angebunden sind.</Text>
           <Text variant="meta" className="mt-1">MÔRA fasst morgens nur zusammen, was sich in echten Quellen wirklich verändert hat – ohne Quellen gibt es nichts Ehrliches zu berichten.</Text>
           <div className="os-briefing-sources mt-3" aria-label="Quellen">
-            {SOURCES.map((s) => <span key={s}><i aria-hidden /> {s} · {live ? 'nicht verbunden' : 'braucht CORE-Sitzung'}</span>)}
+            {live && conns.data?.connections?.length
+              ? conns.data.connections.slice(0, 6).map((c) => <span key={c.id} data-status={c.status}><i aria-hidden /> {c.label} · {c.status === 'available' ? 'nicht verbunden' : c.status === 'setup_required' ? 'Einrichtung fehlt' : c.status}</span>)
+              : SOURCES.map((s) => <span key={s}><i aria-hidden /> {s} · {live ? 'nicht verbunden' : 'braucht CORE-Sitzung'}</span>)}
           </div>
           <Stack direction="row" gap={2} className="mt-3">
+            {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen anbinden</Button> : null}
             <Button size="sm" variant="ghost" onClick={() => setPreview((v) => !v)} data-testid="briefing-preview-toggle">{preview ? 'Vorschau schließen' : 'So sähe es aus (Beispiel)'}</Button>
           </Stack>
           {preview ? (

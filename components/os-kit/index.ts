@@ -9,3 +9,4 @@ export { Dialog } from './Dialog';
 export { StateView, Loading, Empty, ErrorState, FailureState, SampleTag, stateForFailure, type OsStateKind } from './States';
 export { cx } from './cx';
 export { MoraStone } from './MoraStone';
+export { Hint, CountBadge } from './Hint';

@@ -1,5 +1,6 @@
 'use client';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { AgentFeed } from '@/features/mora/ui/AgentFeed';
 import React, { useMemo } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
 import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
@@ -63,7 +64,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         </Text>
       </header>
 
-      <MoraBriefing live={!preview && Boolean(userName)} />
+      <MoraBriefing live={!preview && Boolean(userName)} navigate={navigate} />
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">
@@ -85,6 +86,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       ) : null}
 
       {sample ? <MoraLagebild navigate={navigate} /> : null}
+
+      <AgentFeed live={!preview && Boolean(userName)} demo={Boolean(sample)} limit={3} compact />
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>

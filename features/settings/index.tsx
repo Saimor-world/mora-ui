@@ -1,5 +1,6 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { Button, FailureState, Loading, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { enabledFeatureFlags, isOsPrototypeEnabled } from '@/lib/os-prototype/flags';
@@ -9,10 +10,13 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
 import { LookSettings } from './ui/LookSettings';
 import { connectionRows, useConnectionsOverview } from './data/useConnections';
+import { SourcesPanel } from './ui/SourcesPanel';
+import { requestOnboarding } from '@/lib/os-prototype/onboarding';
 
 export const SETTINGS_SECTIONS = [
   { id: 'account', label: 'Konto' },
   { id: 'identity', label: 'Identität' },
+  { id: 'sources', label: 'Quellen' },
   { id: 'connections', label: 'Verbindungen' },
   { id: 'permissions', label: 'Berechtigungen' },
   { id: 'system', label: 'System' },
@@ -29,6 +33,13 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
 
 export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
   const [section, setSection] = useState<SectionId>('account');
+  const wanted = useOsShellStore((s) => s.settingsSection);
+  useEffect(() => {
+    const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('section') : null;
+    const target = (wanted || fromUrl) as SectionId | null;
+    if (target && SETTINGS_SECTIONS.some((x) => x.id === target)) setSection(target);
+    if (wanted) useOsShellStore.getState().setSettingsSection(null);
+  }, [wanted]);
   const user = useSessionStore((s) => s.user);
   const permissions = useSessionStore((s) => s.permissions);
   const connections = useConnectionsOverview();
@@ -42,9 +53,13 @@ export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
         <Text variant="display" className="mt-2">Wenige Schalter, klar benannt.</Text>
       </header>
       <LookSettings />
+      <Stack direction="row" gap={3} align="center" wrap>
+        <Text variant="meta">Einführung (Look, Firma, Quelle, kurze Tour) jederzeit wiederholen.</Text>
+        <Button size="sm" variant="ghost" onClick={() => requestOnboarding()} data-testid="onboarding-restart">Einführung erneut starten</Button>
+      </Stack>
       <div className="os-tabs" role="tablist" aria-label="Einstellungen">
         {SETTINGS_SECTIONS.map((s) => (
-          <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className="os-tab" onClick={() => setSection(s.id)}>{s.label}</button>
+          <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className="os-tab" onClick={() => setSection(s.id)} data-testid={`settings-tab-${s.id}`}>{s.label}</button>
         ))}
       </div>
 
@@ -61,6 +76,8 @@ export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
             <Row label="Scope-Quelle" value={user.scope_source || '—'} />
           </div>
         ) : <FailureState kind="unauthenticated" compact />)}
+
+        {section === 'sources' && <SourcesPanel live={Boolean(user)} demo={Boolean(preview) && !user} />}
 
         {section === 'connections' && (
           <Stack gap={4}>
