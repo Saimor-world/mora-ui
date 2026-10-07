@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { CalendarDays, CircleDot, Inbox, ListTodo, Sparkles, Wallet } from 'lucide-react';
+import { ArrowRight, CalendarDays, CircleDot, Inbox, ListTodo, Sparkles, Wallet } from 'lucide-react';
 import { Button, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import type { TodaySnapshot, TodaySourceStatus } from '@/lib/api/todayClient';
@@ -56,6 +56,17 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
       </header>
+
+      <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
+        <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
+          <Stack gap={1} className="min-w-0">
+            <Text variant="eyebrow">Universe</Text>
+            <Text variant="title" as="div">Den Raum deines Unternehmens betreten</Text>
+            <Text variant="meta">Bereiche, Spaces und Zusammenhänge – als Landschaft statt als Liste.</Text>
+          </Stack>
+          <ArrowRight size={16} className="os-tone-accent" aria-hidden />
+        </Stack>
+      </Surface>
 
       {today.loading && !snapshot ? <Loading lines={4} /> : null}
       {!today.loading && !snapshot ? (

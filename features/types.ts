@@ -32,6 +32,8 @@ export interface FeatureManifest {
   visibility: 'nav' | 'palette';
   /** Mobile placement: in the bottom bar, or in the "Mehr" sheet. */
   mobile: 'bar' | 'more';
+  /** Atmosphere of the shell while this feature is active. Default 'calm'. */
+  atmosphere?: 'calm' | 'universe';
   load: () => Promise<{ default: ComponentType<FeatureSurfaceProps> }>;
   mora: {
     /** How MÔRA names the module context ("Du bist in Finance"). */

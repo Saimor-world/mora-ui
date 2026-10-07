@@ -34,6 +34,34 @@ export const osColor = {
   aura: 'rgba(16,185,129,0.16)',
   auraSecondary: 'rgba(34,211,238,0.08)',
   focus: 'rgba(110,231,183,0.55)',
+  /** V1.1 glass panels over the universe plate. */
+  glass: 'rgba(8,14,16,0.46)',
+  glassStrong: 'rgba(8,14,16,0.62)',
+  glassHover: 'rgba(16,26,28,0.56)',
+  glassEdge: 'rgba(255,255,255,0.09)',
+  glassHighlight: 'rgba(255,255,255,0.05)',
+  glassShadow: 'rgba(0,0,0,0.38)',
+  /** Veil over the dimmed universe plate on calm surfaces (strong, content in front). */
+  veilCalmInner: 'rgba(3,6,8,0.62)',
+  veilCalmOuter: 'rgba(3,6,8,0.88)',
+  /** Lighter veil inside the Universe place (only for legibility at the edges). */
+  veilUniverse: 'rgba(3,6,8,0.28)',
+  /** Mobile static plate veil. */
+  veilMobile: 'rgba(3,6,8,0.78)',
+  railVeilTop: 'rgba(4,8,9,0.78)',
+  railVeilBottom: 'rgba(4,8,9,0.42)',
+  stoneHalo: 'rgba(110,231,183,0.28)',
+  stoneHaloThinking: 'rgba(110,231,183,0.5)',
+} as const;
+
+/** Atmosphere: how the shared universe image is treated per mode (non-colour values). */
+export const osAtmosphere = {
+  image: '/universe/deep-space-warm.jpg',
+  calm: { blur: '22px', brightness: '0.42', saturate: '0.8' },
+  universe: { blur: '0px', brightness: '1', saturate: '1' },
+  transition: '900ms',
+  glassBlur: '18px',
+  glassSaturate: '1.25',
 } as const;
 
 export const osSpace = { 0: '0px', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 5: '20px', 6: '24px', 8: '32px', 10: '40px', 12: '48px', 16: '64px' } as const;
@@ -43,8 +71,9 @@ export const osRadius = { sm: '10px', md: '14px', lg: '20px', xl: '28px', pill: 
 
 export const osType = {
   family: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
-  display: { size: '30px', line: '1.12', weight: '500', tracking: '-0.035em' },
-  title: { size: '19px', line: '1.25', weight: '500', tracking: '-0.02em' },
+  display: { size: '38px', line: '1.1', weight: '300', tracking: '-0.03em' },
+  title: { size: '20px', line: '1.25', weight: '400', tracking: '-0.015em' },
+  brand: { size: '15px', line: '1.2', weight: '400', tracking: '0.34em' },
   body: { size: '14px', line: '1.55', weight: '400', tracking: '0' },
   meta: { size: '12px', line: '1.45', weight: '400', tracking: '0' },
   eyebrow: { size: '10.5px', line: '1.3', weight: '500', tracking: '0.2em' },
@@ -70,7 +99,15 @@ export function osCssVariables(): Record<string, string> {
     vars[`--os-type-${key}-weight`] = t.weight;
     vars[`--os-type-${key}-tracking`] = t.tracking;
   }
+  vars['--os-type-brand-size'] = osType.brand.size;
+  vars['--os-type-brand-weight'] = osType.brand.weight;
+  vars['--os-type-brand-tracking'] = osType.brand.tracking;
   for (const [k, v] of Object.entries(osMotion)) vars[`--os-motion-${k}`] = v;
+  vars['--os-atmo-image'] = `url(${osAtmosphere.image})`;
+  vars['--os-atmo-calm-filter'] = `blur(${osAtmosphere.calm.blur}) brightness(${osAtmosphere.calm.brightness}) saturate(${osAtmosphere.calm.saturate})`;
+  vars['--os-atmo-universe-filter'] = `blur(${osAtmosphere.universe.blur}) brightness(${osAtmosphere.universe.brightness}) saturate(${osAtmosphere.universe.saturate})`;
+  vars['--os-atmo-transition'] = osAtmosphere.transition;
+  vars['--os-glass-filter'] = `blur(${osAtmosphere.glassBlur}) saturate(${osAtmosphere.glassSaturate})`;
   vars['--os-rail-width'] = osLayout.railWidth;
   vars['--os-mora-width'] = osLayout.moraWidth;
   vars['--os-bottom-bar'] = osLayout.bottomBar;

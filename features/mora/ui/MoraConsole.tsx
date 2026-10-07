@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowUp, CornerDownRight, ShieldCheck, X } from 'lucide-react';
-import { Button, Dialog, Input, Stack, Status, Surface, Text, cx } from '@/components/os-kit';
+import { Button, Dialog, Input, Stack, Status, Surface, Text, MoraStone, cx } from '@/components/os-kit';
 import { getFeature } from '@/features/registry';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
@@ -63,7 +63,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
   return (
     <div className={cx('flex h-full min-h-0 flex-col', variant === 'panel' ? 'p-5' : '')} data-testid={`mora-console-${variant}`}>
       <Stack direction="row" align="center" gap={3}>
-        <span className={cx('os-mora-orb', send.isPending && 'os-mora-orb--thinking')} aria-hidden />
+        <MoraStone size={34} thinking={send.isPending} />
         <div className="min-w-0 flex-1">
           <Text variant="title" as="h2">MÔRA</Text>
           <Text variant="meta">Kontext: {contextLabel}{surfaceContext ? ` · ${surfaceContext}` : ''}</Text>

@@ -6,6 +6,7 @@ import { postManifest } from './post/manifest';
 import { knowledgeManifest } from './knowledge/manifest';
 import { settingsManifest } from './settings/manifest';
 import { labsManifest } from './labs/manifest';
+import { universeManifest } from './universe/manifest';
 
 /**
  * Feature registry — driven exclusively by manifests. Adding a feature means
@@ -18,6 +19,7 @@ export const FEATURE_MANIFESTS: FeatureManifest[] = [
   postManifest,
   knowledgeManifest,
   settingsManifest,
+  universeManifest,
   labsManifest,
 ];
 

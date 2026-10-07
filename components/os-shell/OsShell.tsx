@@ -1,8 +1,9 @@
 'use client';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
-import { Command, LayoutGrid, MoreHorizontal, Sparkles } from 'lucide-react';
-import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
+import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
+import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
+import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables } from '@/lib/design/osTokens';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 import type { FeatureManifest, FeatureSurfaceProps } from '@/features/types';
@@ -77,6 +78,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const active = getFeature(activeFeatureId) || FEATURE_MANIFESTS[0];
   const ActiveSurface = lazyFor(active);
   const online = health.data?.state === 'online';
+  const atmosphere = active.atmosphere ?? 'calm';
 
   const askMora = (text: string) => {
     useOsShellStore.getState().setMoraDraft(text);
@@ -85,23 +87,23 @@ export function OsShell({ preview }: { preview: boolean }) {
   };
 
   return (
-    <div className="os-root relative" style={osCssVariables() as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id}>
+    <div className="os-root relative" style={osCssVariables() as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere}>
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
-      <div className="os-shell" style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
-        <div className="os-atmosphere" aria-hidden />
+      <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
+        <OsAtmosphere mode={atmosphere} />
 
         <nav className="os-shell__rail" aria-label="Hauptnavigation">
           <div className="px-3 pb-6">
-            <Text variant="title" as="div" className="tracking-[0.12em]">SAIMÔR</Text>
+            <Text variant="title" as="div" className="os-brand">SAIMÔR</Text>
             <Text variant="meta" className="mt-1">Klarheit im Wandel.</Text>
           </div>
           {nav.primary.map((m) => {
             const Icon = m.icon;
-            return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} data-feature={m.id} />;
+            return <NavItem key={m.id} icon={m.id === 'mora' ? <MoraStone size={20} /> : <Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} data-feature={m.id} />;
           })}
           <div className="my-3 px-3"><Divider /></div>
           {nav.secondary.map((m) => {
@@ -125,7 +127,7 @@ export function OsShell({ preview }: { preview: boolean }) {
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
-              <Button size="sm" icon={<Sparkles size={14} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
+              <Button size="sm" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>
@@ -154,7 +156,7 @@ export function OsShell({ preview }: { preview: boolean }) {
               <NavItem
                 key={m.id}
                 compact
-                icon={isMora ? <span className="os-mora-orb" style={{ width: 22, height: 22 }} /> : <Icon size={18} />}
+                icon={isMora ? <MoraStone size={24} /> : <Icon size={18} />}
                 label={m.title}
                 active={isMora ? moraOpen : m.id === active.id && !moraOpen}
                 onClick={() => (isMora ? setMoraOpen(!moraOpen) : (setMoraOpen(false), navigate(m.id)))}

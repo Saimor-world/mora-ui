@@ -108,3 +108,54 @@
 .os-list > * + * { border-top: 1px solid var(--os-hairline); }
 .os-list-row { display: flex; align-items: center; justify-content: space-between; gap: var(--os-space-3); padding: var(--os-space-3) 0; }
 .os-root .os-palette-input:focus-visible { outline: none; }
+
+/* ── V1.1 Universe & Atmosphäre ─────────────────────────────────────────── */
+.os-root { background: var(--os-canvas); }
+.os-atmo { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.os-atmo > * { position: absolute; inset: 0; }
+.os-atmo__plate { inset: -6%; background-image: var(--os-atmo-image); background-size: cover; background-position: center; filter: var(--os-atmo-calm-filter); opacity: 0.9; transition: filter var(--os-atmo-transition) var(--os-motion-ease), opacity var(--os-atmo-transition) var(--os-motion-ease); }
+.os-atmo__living, .os-atmo__motion { opacity: 0; transition: opacity var(--os-atmo-transition) var(--os-motion-ease); }
+.os-atmo__veil { background: radial-gradient(ellipse at 50% 40%, var(--os-veil-calm-inner) 0%, var(--os-veil-calm-outer) 100%); transition: opacity var(--os-atmo-transition) var(--os-motion-ease); }
+.os-atmo[data-mode='universe'] .os-atmo__plate { filter: var(--os-atmo-universe-filter); opacity: 0; }
+.os-atmo[data-mode='universe'] .os-atmo__living, .os-atmo[data-mode='universe'] .os-atmo__motion { opacity: 1; }
+.os-atmo[data-mode='universe'] .os-atmo__veil { opacity: 0; }
+@media (max-width: 899px) {
+  .os-atmo__plate { filter: var(--os-atmo-calm-filter); }
+  .os-atmo__veil { background: var(--os-veil-mobile); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .os-atmo__plate, .os-atmo__living, .os-atmo__motion, .os-atmo__veil { transition: none; }
+}
+.os-root .ritual-scene-overlay { z-index: 0 !important; }
+
+/* Glass surfaces */
+.os-surface { background: var(--os-glass); border-color: var(--os-glass-edge); backdrop-filter: var(--os-glass-filter); -webkit-backdrop-filter: var(--os-glass-filter); box-shadow: inset 0 1px 0 var(--os-glass-highlight), 0 18px 48px -24px var(--os-glass-shadow); }
+.os-surface--strong { background: var(--os-glass-strong); }
+.os-surface--quiet { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
+.os-surface--interactive:hover { background: var(--os-glass-hover); }
+.os-panel, .os-dialog { background: var(--os-glass-strong); backdrop-filter: var(--os-glass-filter); -webkit-backdrop-filter: var(--os-glass-filter); }
+.os-shell__rail { background: linear-gradient(180deg, var(--os-rail-veil-top), var(--os-rail-veil-bottom)); backdrop-filter: var(--os-glass-filter); -webkit-backdrop-filter: var(--os-glass-filter); border-right-color: var(--os-glass-edge); }
+@media (max-width: 899px) { .os-shell__bottom { background: var(--os-glass-strong); backdrop-filter: var(--os-glass-filter); -webkit-backdrop-filter: var(--os-glass-filter); } }
+.os-brand { font-size: var(--os-type-brand-size); font-weight: var(--os-type-brand-weight); letter-spacing: var(--os-type-brand-tracking); }
+
+/* Universe place: full bleed */
+.os-shell[data-place='universe'] .os-shell__content { max-width: none; padding: 0; height: calc(100% - 56px); }
+.os-universe { display: flex; flex-direction: column; height: 100%; min-height: 560px; }
+.os-universe__intro { margin: var(--os-space-4) var(--os-space-8) 0; }
+.os-universe__field { position: relative; flex: 1; min-height: 0; }
+@media (max-width: 899px) { .os-universe__intro { margin: var(--os-space-3) var(--os-space-4) 0; } .os-universe { min-height: calc(100dvh - 160px); } }
+
+/* Universe entry card on Heute */
+.os-universe-card { position: relative; overflow: hidden; min-height: 132px; display: flex; align-items: flex-end; }
+.os-universe-card::before { content: ''; position: absolute; inset: 0; background-image: var(--os-atmo-image); background-size: cover; background-position: 30% 40%; opacity: 0.85; transition: transform var(--os-motion-slow) var(--os-motion-ease); }
+.os-universe-card::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, var(--os-veil-calm-outer), var(--os-veil-universe)); }
+.os-universe-card:hover::before { transform: scale(1.03); }
+.os-universe-card > * { position: relative; z-index: 1; width: 100%; }
+@media (prefers-reduced-motion: reduce) { .os-universe-card::before { transition: none; } .os-universe-card:hover::before { transform: none; } }
+
+/* MÔRA stone */
+.os-mora-stone { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
+.os-mora-stone img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; position: relative; z-index: 1; }
+.os-mora-stone--halo::before { content: ''; position: absolute; inset: -35%; border-radius: 50%; background: radial-gradient(circle, var(--os-stone-halo), transparent 68%); }
+.os-mora-stone--thinking::before { background: radial-gradient(circle, var(--os-stone-halo-thinking), transparent 68%); animation: os-breathe 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .os-mora-stone--thinking::before { animation: none; } }
