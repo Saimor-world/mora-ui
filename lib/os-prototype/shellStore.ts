@@ -19,6 +19,15 @@ export interface OsShellState {
   toggleMora(): void;
   setPaletteOpen(open: boolean): void;
   setSurfaceContext(context: string | null): void;
+  /** V1.4: planet the Universe should focus when it opens (department id). */
+  universeFocus: string | null;
+  setUniverseFocus(id: string | null): void;
+  /** V1.4: query Wissen should start with (e.g. from the palette or a planet). */
+  knowledgeQuery: string | null;
+  setKnowledgeQuery(q: string | null): void;
+  /** V1.4: keyboard shortcut overlay (?). */
+  shortcutsOpen: boolean;
+  setShortcutsOpen(open: boolean): void;
 }
 
 export const useOsShellStore = create<OsShellState>((set) => ({
@@ -33,4 +42,10 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   toggleMora: () => set((s) => ({ moraOpen: !s.moraOpen })),
   setPaletteOpen: (open) => set({ paletteOpen: open }),
   setSurfaceContext: (context) => set({ surfaceContext: context }),
+  universeFocus: null,
+  setUniverseFocus: (id) => set({ universeFocus: id }),
+  knowledgeQuery: null,
+  setKnowledgeQuery: (q) => set({ knowledgeQuery: q }),
+  shortcutsOpen: false,
+  setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 }));

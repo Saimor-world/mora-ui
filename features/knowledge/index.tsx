@@ -5,6 +5,7 @@ import { Button, SampleTag, FailureState, Input, Loading, ResponsiveGrid, Stack,
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useKnowledgeSearch, useRecentMemories } from './data/useKnowledge';
 import { DEMO_COMPANY_NAME, DEMO_MINDLOOP, demoAllDocuments } from '@/lib/os-prototype/demoPack';
@@ -18,7 +19,11 @@ export const KNOWLEDGE_SOURCES: Array<{ appId: string; icon: React.ReactNode; co
 ];
 
 export default function KnowledgeSurface({ navigate, preview }: FeatureSurfaceProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(() => {
+    const q = useOsShellStore.getState().knowledgeQuery;
+    if (q) useOsShellStore.getState().setKnowledgeQuery(null);
+    return q ?? '';
+  });
   const deferred = useDeferredValue(query);
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const search = useKnowledgeSearch(deferred);

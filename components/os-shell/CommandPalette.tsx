@@ -1,7 +1,9 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AppWindow, CornerDownLeft, FileText, Search, Sparkles } from 'lucide-react';
+import { AppWindow, Building2, CornerDownLeft, FileText, Search, Sparkles } from 'lucide-react';
+import { DEMO_DEPARTMENTS, demoAllDocuments } from '@/lib/os-prototype/demoPack';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { Stack, Text, cx } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
@@ -9,7 +11,7 @@ import { searchGlobal } from '@/lib/api/searchClient';
 
 interface Item {
   id: string;
-  group: 'Bereiche' | 'MÔRA' | 'Klassische Apps' | 'Inhalte';
+  group: 'Bereiche' | 'MÔRA' | 'Planeten' | 'Dokumente' | 'Klassische Apps' | 'Inhalte';
   label: string;
   hint?: string;
   icon: React.ReactNode;
@@ -25,6 +27,8 @@ export interface CommandPaletteProps {
   navigate: (id: string) => void;
   askMora: (text: string) => void;
   searchEnabled: boolean;
+  /** Lokale Vorschau: Planeten und Dokumente aus dem Demo-Paket (Beispiel). */
+  demo?: boolean;
 }
 
 /**
@@ -32,7 +36,7 @@ export interface CommandPaletteProps {
  * every legacy app, "ask MÔRA", and CORE keyword search (same searchClient the
  * legacy Spotlight/Search app use).
  */
-export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false }: CommandPaletteProps) {
   const [q, setQ] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,6 +61,22 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         out.push({ id: `f-${f.id}`, group: 'Bereiche', label: f.title, hint: f.description, icon: <Icon size={15} />, run: () => navigate(f.id) });
       }
     }
+    if (demo) {
+      for (const d of DEMO_DEPARTMENTS) {
+        if (n ? match(d.name, d.description) : out.length < 12) {
+          out.push({ id: `p-${d.id}`, group: 'Planeten', label: d.name, hint: `Beispiel · Planet im Universe · ${d.description}`, icon: <Building2 size={15} />,
+            run: () => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); } });
+        }
+      }
+      if (n) {
+        for (const doc of demoAllDocuments()) {
+          if (match(doc.name, doc.summary, doc.department, ...doc.tags)) {
+            out.push({ id: `d-${doc.name}`, group: 'Dokumente', label: doc.name, hint: `Beispiel · ${doc.department} · ${doc.summary}`, icon: <FileText size={15} />,
+              run: () => { useOsShellStore.getState().setKnowledgeQuery(doc.name); navigate('knowledge'); } });
+          }
+        }
+      }
+    }
     if (trimmed) {
       out.push({ id: 'ask', group: 'MÔRA', label: `MÔRA fragen: „${trimmed}“`, icon: <Sparkles size={15} />, run: () => askMora(trimmed) });
     }
@@ -72,7 +92,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       out.push({ id: `s-${nodeId || title}`, group: 'Inhalte', label: String(title), hint: r?.type, icon: <FileText size={15} />, run: () => nodeId && openLegacyApp('document', { nodeId }) });
     }
     return out;
-  }, [features, trimmed, search.data, navigate, askMora]);
+  }, [features, trimmed, search.data, navigate, askMora, demo]);
 
   useEffect(() => { setIndex(0); }, [trimmed]);
   if (!open) return null;
@@ -89,7 +109,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
             ref={inputRef}
             aria-label="Suchen oder Befehl"
             className="os-palette-input h-14 flex-1 bg-transparent os-text-body os-tone-default outline-none"
-            placeholder="Bereich, App, Inhalt – oder MÔRA fragen…"
+            placeholder="Ort, Planet, Dokument, App – oder MÔRA fragen…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {

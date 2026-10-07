@@ -313,3 +313,8 @@
 @media (min-width: 1024px) { .os-legacy-universe__mobile { display: none; } }
 /* Sehr flache Fenster: Kennzahlzeile unter dem Namen weglassen (steht in der Detailansicht). */
 @media (max-height: 700px) and (min-width: 1024px) { .os-legacy-universe [data-territory-meta] { display: none; } }
+
+/* ===== V1.4 Kommandozentrale ===== */
+.os-shortcuts { width: min(520px, 100%); }
+.os-shortcuts__grid { display: grid; grid-template-columns: max-content 1fr; gap: var(--os-space-2) var(--os-space-4); align-items: center; }
+.os-shortcuts__key { justify-self: start; min-width: 28px; text-align: center; }

@@ -16,6 +16,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
+import { ShortcutsOverlay } from './ShortcutsOverlay';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -67,14 +68,29 @@ export function OsShell({ preview }: { preview: boolean }) {
     return () => window.removeEventListener('hashchange', onHash);
   }, [ctx, setActiveFeature]);
 
+  const dockItems = useMemo(() => [...nav.primary, ...nav.secondary].filter((m) => m.id !== 'mora'), [nav]);
+  const shortcutsOpen = useOsShellStore((s) => s.shortcutsOpen);
+  const setShortcutsOpen = useOsShellStore((s) => s.setShortcutsOpen);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(true); }
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setMoraOpen(!useOsShellStore.getState().moraOpen); }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(true); return; }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'j') { e.preventDefault(); setMoraOpen(!useOsShellStore.getState().moraOpen); return; }
+      // V1.4 Dock-Kürzel: nur ohne Modifier und nicht beim Schreiben.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      const st = useOsShellStore.getState();
+      if (st.paletteOpen) return;
+      if (e.key === '?') { e.preventDefault(); setShortcutsOpen(!st.shortcutsOpen); return; }
+      if (e.key === 'Escape' && st.shortcutsOpen) { setShortcutsOpen(false); return; }
+      if (/^[1-9]$/.test(e.key)) { const m = dockItems[Number(e.key) - 1]; if (m) { e.preventDefault(); navigate(m.id); } return; }
+      if (e.key.toLowerCase() === 'm') { e.preventDefault(); setMoraOpen(!st.moraOpen); return; }
+      if (e.key.toLowerCase() === 'u' && dockItems.some((m) => m.id === 'universe')) { e.preventDefault(); navigate('universe'); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [setPaletteOpen, setMoraOpen]);
+  }, [setPaletteOpen, setMoraOpen, setShortcutsOpen, dockItems, navigate]);
 
   const active = getFeature(activeFeatureId) || FEATURE_MANIFESTS[0];
   const ActiveSurface = lazyFor(active);
@@ -127,7 +143,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
 
         <OsDock
-          items={[...nav.primary, ...nav.secondary].filter((m) => m.id !== 'mora')}
+          items={dockItems}
           mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
           activeId={active.id}
           moraOpen={moraOpen}
@@ -154,6 +170,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
       </div>
 
+      {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
@@ -161,6 +178,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         navigate={navigate}
         askMora={askMora}
         searchEnabled={online && !preview}
+        demo={preview && !userName}
       />
     </div>
   );

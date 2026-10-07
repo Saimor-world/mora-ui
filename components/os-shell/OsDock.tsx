@@ -28,9 +28,9 @@ export interface OsDockProps {
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onNotifications, onMora, onMore }: OsDockProps) {
   const onMobile = new Set(mobileItems.map((m) => m.id));
-  const icon = (m: FeatureManifest) => (
+  const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
-      <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} active={m.id === activeId} isStandardMode={false} onClick={() => onNavigate(m.id)}>
+      <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} shortcut={i < 9 ? String(i + 1) : null} active={m.id === activeId} isStandardMode={false} onClick={() => onNavigate(m.id)}>
         {m.id === activeId ? <span className="os-dock__dot" aria-hidden /> : null}
       </CapsuleDockIcon>
     </span>
@@ -46,7 +46,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         </div>
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--apps">
-          {items.map((m) => icon(m))}
+          {items.map((m, i) => icon(m, i))}
           <span className="os-dock__item os-dock__item--mobile">
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>
@@ -54,7 +54,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--right">
           <Link href="/" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link>
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · ⌘J" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
+          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
             <MoraStone size={34} halo={moraOpen} />
           </button>
         </div>
