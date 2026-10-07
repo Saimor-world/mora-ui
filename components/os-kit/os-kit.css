@@ -236,10 +236,6 @@
 }
 
 /* ===== V1.3 Am Original orientiert ===== */
-.os-legacy-universe__core { position: absolute; left: 50%; top: calc((210px + 100% - 96px) / 2); transform: translate(-50%, -50%); display: none; flex-direction: column; align-items: center; gap: var(--os-space-2); background: none; border: 0; cursor: pointer; color: var(--os-text); z-index: 5; }
-@media (min-width: 1024px) { .os-legacy-universe__core { display: flex; } }
-.os-legacy-universe .os-ulx__attention { z-index: 60; }
-@media (max-width: 1023px) { .os-legacy-universe__legend { display: none; } }
 /* Shell ohne generische Seitenleiste: Marius' Dock ist die Hauptnavigation. */
 .os-shell { grid-template-columns: minmax(0, 1fr) auto; }
 .os-shell__rail, .os-shell__bottom { display: none !important; }
@@ -271,7 +267,49 @@
   .os-universe__field { margin-bottom: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .os-dock__grid { animation: none; } .os-dock__stone, .os-dock__legacy { transition: none; } }
-.os-universe[data-lens='organization'] .os-universe__intro { position: absolute; left: 50%; transform: translateX(-50%); top: 0; z-index: 80; width: min(760px, calc(100% - 32px)); }
+
+/* ===== V1.3.1 Universe-Rahmen: nichts kollidiert, Fäden bleiben im Feld ===== */
+@media (min-width: 900px) { .os-universe { min-height: 0; } }
+.os-universe[data-lens='organization'] .os-universe__intro { margin-bottom: 0; }
 .os-universe[data-lens='organization'] .os-universe__intro .os-text-meta { display: none; }
-.os-universe[data-lens='organization'] { position: relative; }
-@media (max-width: 1023px) { .os-universe[data-lens='organization'] .os-universe__intro { position: relative; left: auto; transform: none; width: auto; } }
+.os-universe[data-lens='organization'] .os-universe__field { margin-bottom: 0; }
+.os-legacy-universe { --ou-side: var(--os-space-8); --ou-top: 64px; --ou-bottom: 72px; }
+.os-legacy-universe__header { pointer-events: none; position: absolute; left: var(--ou-side); right: var(--ou-side); top: var(--os-space-4); z-index: 30; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.os-legacy-universe__header h1 { font-size: 22px !important; }
+.os-legacy-universe__field { position: absolute; left: var(--ou-side); right: var(--ou-side); top: var(--ou-top); bottom: var(--ou-bottom); display: none; }
+.os-legacy-universe__legend { pointer-events: none; position: absolute; right: var(--os-space-6); top: var(--os-space-4); z-index: 30; display: none; }
+.os-legacy-universe__legend > div { padding: 6px 12px; }
+.os-legacy-universe [data-territory-label] + span { white-space: nowrap; }
+.os-legacy-universe__core { display: flex; flex-direction: column; align-items: center; gap: var(--os-space-1); background: none; border: 0; cursor: pointer; color: var(--os-text); position: relative; }
+.os-legacy-universe__core .os-ulx__core-ring { width: 150px; height: 150px; }
+.os-legacy-universe__core .os-ulx__core-ring--2 { width: 104px; height: 104px; }
+.os-legacy-universe .os-legacy-universe__pill { bottom: var(--os-space-3); z-index: 60; }
+.os-legacy-obs { display: none; }
+@media (min-width: 1024px) {
+  .os-legacy-universe__field { display: block; }
+  .os-legacy-universe__legend { display: block; }
+  .os-legacy-universe__header { left: 30%; right: 30%; }
+}
+/* Observatorium nur, wenn links und rechts genug Platz bleibt. */
+@media (min-width: 1440px) and (min-height: 860px) {
+  .os-legacy-obs { display: block; }
+  .os-legacy-universe { --ou-side: 300px; --ou-top: 96px; }
+  .os-legacy-universe__header { left: var(--ou-side); right: var(--ou-side); }
+  .os-legacy-obs > div > div { top: var(--os-space-3); bottom: var(--os-space-3) !important; overflow-y: auto; scrollbar-width: none; }
+  .os-legacy-obs > div > div:last-child { top: auto; }
+  .os-legacy-universe__legend { right: auto; left: 50%; transform: translateX(-50%); top: 52px; }
+}
+@media (max-height: 700px) and (min-width: 1024px) {
+  .os-legacy-universe__header { display: none; }
+  .os-legacy-universe { --ou-top: 28px; --ou-bottom: 56px; }
+}
+@media (max-width: 1023px) {
+  .os-legacy-universe__header { top: var(--os-space-4); }
+  .os-legacy-universe .os-legacy-universe__pill { max-width: calc(100% - 24px); }
+}
+.os-legacy-universe__mobile { position: absolute; left: 0; right: 0; top: 64px; bottom: 60px; z-index: 20; overflow-y: auto; padding: var(--os-space-2) var(--os-space-5) var(--os-space-8); }
+.os-legacy-universe__header h1 { line-height: 1.2; }
+@media (max-width: 1023px) { .os-legacy-universe__header h1 { font-size: 18px !important; } }
+@media (min-width: 1024px) { .os-legacy-universe__mobile { display: none; } }
+/* Sehr flache Fenster: Kennzahlzeile unter dem Namen weglassen (steht in der Detailansicht). */
+@media (max-height: 700px) and (min-width: 1024px) { .os-legacy-universe [data-territory-meta] { display: none; } }

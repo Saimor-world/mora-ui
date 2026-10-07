@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { OrganizationField } from '@/components/universe/OrganizationField';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
@@ -10,41 +10,56 @@ import { buildDemoUniverse } from '../data/demoUniverse';
  * Lokale Vorschau des ORIGINAL-Universe: dieselben Komponenten wie
  * UniverseView (Ambient-Feld, Observatorium, Organisationsfeld mit
  * Abteilungs-Planeten und Ordner-Monden), gespeist aus dem Demo-Paket
- * „Simple Coffee Group“. Dazu der MÔRA-Kern aus V1.2 in der Mitte.
+ * „Simple Coffee Group“. Der MÔRA-Kern sitzt in der Feldmitte, alle Fäden
+ * laufen vom Kern zu den Planeten und bleiben im Feld (V1.3.1).
  * Nichts wird geschrieben: Ablegen per Fall meldet ehrlich „nicht möglich“.
  */
 export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea: (target: string) => void; onAskMora: (text: string) => void }) {
-  const demo = useMemo(() => buildDemoUniverse(), []);
+  // Flache Fenster (z. B. 1024x640): flachere, breitere Ellipse, damit nichts kollidiert.
+  const [compact, setCompact] = useState(false);
+  useEffect(() => {
+    const check = () => setCompact(window.innerHeight < 820);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  const demo = useMemo(() => buildDemoUniverse({ compact }), [compact]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const noop = () => onOpenArea('post');
+  const core = (
+    <button type="button" className="os-legacy-universe__core" data-testid="universe-core" aria-label="MÔRA – Kern des Universe. Fragen"
+      onClick={() => onAskMora(`Ich bin im Universe der ${demo.organizationName}. Was steckt hinter „${demo.attention.message}“?`)}>
+      <span className="os-ulx__core-ring" aria-hidden />
+      <span className="os-ulx__core-ring os-ulx__core-ring--2" aria-hidden />
+      <MoraStone size={compact ? 48 : 64} />
+      <span className="os-ulx__core-label">MÔRA</span>
+    </button>
+  );
   return (
     <div className="os-legacy-universe relative h-full w-full overflow-hidden text-white" data-testid="demo-organization-universe">
       <UniverseAmbientField lens="organization" selected={Boolean(selectedId)} />
-      <UniverseObservatory
-        mail={demo.mail} calendar={demo.calendar} feed={demo.feed} mailStatus="ok" calendarStatus="ok"
-        incidents={[]} business={demo.business} substanceBars={demo.substanceBars}
-        onSelectTerritory={setSelectedId} territoryCount={demo.territories.length}
-        documentCount={demo.territories.reduce((n, t) => n + t.documents, 0)} selected={Boolean(selectedId)}
-        onOpenMail={noop} onOpenCalendar={noop} onOpenFeed={() => onOpenArea('knowledge')} onOpenNightwatch={() => onOpenArea('settings')}
-      />
-      {!selectedId ? (
-        <button type="button" className="os-legacy-universe__core" data-testid="universe-core" aria-label="MÔRA – Kern des Universe. Fragen"
-          onClick={() => onAskMora(`Ich bin im Universe der ${demo.organizationName}. Was steckt hinter „${demo.attention.message}“?`)}>
-          <span className="os-ulx__core-ring" aria-hidden />
-          <span className="os-ulx__core-ring os-ulx__core-ring--2" aria-hidden />
-          <MoraStone size={74} />
-          <span className="os-ulx__core-label">MÔRA</span>
-        </button>
-      ) : null}
+      <div className="os-legacy-obs" data-testid="legacy-observatory">
+        <UniverseObservatory
+          mail={demo.mail} calendar={demo.calendar} feed={demo.feed} mailStatus="ok" calendarStatus="ok"
+          incidents={[]} business={demo.business} substanceBars={demo.substanceBars}
+          onSelectTerritory={setSelectedId} territoryCount={demo.territories.length}
+          documentCount={demo.territories.reduce((n, t) => n + t.documents, 0)} selected={Boolean(selectedId)}
+          onOpenMail={noop} onOpenCalendar={noop} onOpenFeed={() => onOpenArea('knowledge')} onOpenNightwatch={() => onOpenArea('settings')}
+        />
+      </div>
       <OrganizationField
         lens="relations" organizationName={demo.organizationName} territories={demo.territories} signals={demo.signals}
-        selectedId={selectedId} onSelect={setSelectedId} attentionId={demo.attention.targetId}
+        selectedId={selectedId} onSelect={setSelectedId} attentionId={null}
         onOpen={() => onOpenArea('knowledge')} onOpenMoon={() => onOpenArea('knowledge')}
         onAskMora={(t) => onAskMora(`Was weißt du über ${t.name}?`)}
         onFile={async () => false}
+        strandOrigin={{ x: 50, y: 50 }}
+        centerSlot={selectedId ? null : core}
+        vivid
+        frame={{ header: 'os-legacy-universe__header', field: 'os-legacy-universe__field', legend: 'os-legacy-universe__legend', mobile: 'os-legacy-universe__mobile' }}
       />
       {!selectedId ? (
-        <button type="button" className="os-ulx__attention" data-testid="universe-attention" onClick={() => setSelectedId(demo.attention.targetId)}>
+        <button type="button" className="os-ulx__attention os-legacy-universe__pill" data-testid="universe-attention" onClick={() => setSelectedId(demo.attention.targetId)}>
           <MoraStone size={18} halo={false} />
           <span>MÔRA schaut auf <strong>{demo.attention.message}</strong></span>
           <SampleTag />

@@ -29,3 +29,31 @@ describe('V1.3 demo pack (Simple Coffee Group) → original universe shapes', ()
     expect(JSON.stringify(demo)).not.toMatch(blocked);
   });
 });
+
+describe('V1.3.1 threads and layout', () => {
+  const { buildRelationStrands } = jest.requireActual('@/lib/universe/relations');
+  it('with an origin override every strand starts at the MÔRA core and ends at its planet centre', () => {
+    const demo = buildDemoUniverse();
+    const strands = buildRelationStrands(demo.signals, demo.territories, { x: 50, y: 50 });
+    expect(strands.length).toBeGreaterThan(0);
+    strands.forEach((s: any) => {
+      const [, sx, sy] = /^M\s*([\d.]+)[ ,]([\d.]+)/.exec(s.d)!.map(Number);
+      expect(Math.hypot(sx - 50, sy - 50)).toBeLessThan(4); // beginnt am Kernrand
+      const t = demo.territories.find((x) => x.id === s.targetId)!;
+      expect([s.endX, s.endY]).toEqual([t.x, t.y]);
+    });
+  });
+  it('without override the legacy edge origins stay unchanged', () => {
+    const demo = buildDemoUniverse();
+    const strands = buildRelationStrands(demo.signals, demo.territories);
+    expect(strands.some((s: any) => { const [, sx, sy] = /^M\s*(-?[\d.]+)[ ,](-?[\d.]+)/.exec(s.d)!.map(Number); return Math.hypot(sx - 50, sy - 50) > 20; })).toBe(true);
+  });
+  it('all planets stay inside the field (0..100) in both layouts', () => {
+    for (const compact of [false, true]) {
+      buildDemoUniverse({ compact }).territories.forEach((t) => {
+        expect(t.x).toBeGreaterThan(0); expect(t.x).toBeLessThan(100);
+        expect(t.y).toBeGreaterThan(0); expect(t.y).toBeLessThan(100);
+      });
+    }
+  });
+});

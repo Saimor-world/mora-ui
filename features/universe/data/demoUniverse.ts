@@ -1,4 +1,3 @@
-import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
 import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import type { UniverseSignal } from '@/lib/universe/types';
 import type { OrganizationTerritory } from '@/components/universe/OrganizationField';
@@ -10,11 +9,12 @@ import { DEMO_CALENDAR, DEMO_COMPANY_NAME, DEMO_DEPARTMENTS, DEMO_FEED_SOURCES, 
  * Keine neuen Planeten – dieselben Abteilungs-Planeten, Ordner-Monde,
  * Signale wie mit echter CORE-Sitzung.
  */
-export function buildDemoUniverse() {
+export function buildDemoUniverse(opts: { compact?: boolean } = {}) {
   const metrics: Record<string, { nodes: number; spaces: number; folders: number; source: 'derived' }> = {};
   DEMO_DEPARTMENTS.forEach((d) => { metrics[d.id] = { nodes: demoDocumentCount(d), spaces: d.folders.length, folders: d.folders.length, source: 'derived' }; });
-  const sorted = [...DEMO_DEPARTMENTS].sort((a, b) => `${a.id}:${a.name}`.localeCompare(`${b.id}:${b.name}`));
-  const placed = buildOrganicUniverseLayout(sorted, metrics) as Array<(typeof DEMO_DEPARTMENTS)[number] & { x: number; y: number }>;
+  const placed = opts.compact
+    ? DEMO_DEPARTMENTS.map((d) => ({ ...d, x: COMPACT_POSITIONS[d.id]?.[0] ?? 50, y: COMPACT_POSITIONS[d.id]?.[1] ?? 50 }))
+    : ringLayout(DEMO_DEPARTMENTS);
   const territories: OrganizationTerritory[] = placed.map((d) => ({
     id: d.id, name: d.name, description: d.description, color: d.color, x: d.x, y: d.y,
     spaces: metrics[d.id].spaces, folders: metrics[d.id].folders, documents: metrics[d.id].nodes,
@@ -41,3 +41,27 @@ export function buildDemoUniverse() {
     attention: { targetId: 'demo-sf', message: 'Store San Francisco: Budget-Dokument seit 60+ Tagen nicht aktualisiert' },
   };
 }
+
+/**
+ * V1.3.1: feste Ellipse um den MÔRA-Kern (Feldmitte 50/50). Gleichmaessige
+ * Winkel, leicht versetzt, damit kein Planet direkt ueber oder unter dem Kern
+ * steht und Beschriftungen sich nicht treffen. Prozent im Feld.
+ */
+export function ringLayout<T>(items: T[], rx = 40, ry = 32, cy = 45, startDeg?: number): Array<T & { x: number; y: number }> {
+  const n = items.length;
+  const start = startDeg ?? -90 + 360 / n / 2;
+  return items.map((item, i) => {
+    const a = (start + (360 / n) * i) * (Math.PI / 180);
+    return { ...item, x: Math.round((50 + rx * Math.cos(a)) * 10) / 10, y: Math.round((cy + ry * Math.sin(a)) * 10) / 10 };
+  });
+}
+
+/**
+ * Flache Fenster (Höhe < 820 px): feste, im Browser vermessene Positionen
+ * (1024x640 und 1280x800 ohne Überlappung von Planeten, Namen, Abzeichen,
+ * Kern, Legende und Pille). Prozent im Feld, Kern bei 50/50.
+ */
+export const COMPACT_POSITIONS: Record<string, [number, number]> = {
+  'demo-sf': [24, 16], 'demo-management': [50, 8], 'demo-hr': [72, 20],
+  'demo-heilbronn': [7, 52], 'demo-tech': [93, 56], 'demo-stuttgart': [27, 82], 'demo-marketing': [73, 84],
+};
