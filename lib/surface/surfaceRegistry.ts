@@ -16,7 +16,7 @@ export type PaneType =
     | 'mail' | 'calendar' | 'integrations' | 'browser' | 'terminal' | 'mora-hub'
     | 'actions' | 'action-center' | 'work-session' | 'apps' | 'website-dossier'
     | 'timeline' | 'tasks' | 'canvas' | 'nightwatch' | 'lagefeld' | 'codex'
-    | 'wall' | 'feeds' | 'finance' | 'work';
+    | 'wall' | 'feeds' | 'finance' | 'finance-v2' | 'work';
 
 export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     work:            'core_work',
@@ -26,6 +26,7 @@ export const SURFACE_TIERS: Record<PaneType, SurfaceTier> = {
     team:            'core_work',
     settings:        'core_work',
     finance:         'core_work',
+    'finance-v2':    'app',
 
     notes:            'app',
     'meine-dateien':  'app',

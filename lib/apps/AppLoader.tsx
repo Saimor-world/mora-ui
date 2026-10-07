@@ -71,6 +71,9 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   feeds:           dynamic(() => import('@/apps/feeds'),         { ssr: false, loading: () => <AppSkeleton /> }),
   'website-dossier': dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
   finance:         dynamic(() => import('@/apps/finance'),       { ssr: false, loading: () => <AppSkeleton /> }),
+  // Finance v2 (Profit Center, CORE Treasury, Sources, XRPL Watch Lab). Wired 2026-10 for the OS prototype;
+  // the legacy shell keeps `finance` until CORE serves /v3/finance/profit-center + capital-policy live.
+  'finance-v2':    dynamic(() => import('@/apps/finance-v2'),    { ssr: false, loading: () => <AppSkeleton /> }),
 };
 
 export const APP_IDS: string[] = Object.keys(APP_MAP).sort();
