@@ -85,7 +85,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
       {!selectedId ? (
         <button type="button" className="os-ulx__attention os-legacy-universe__pill" data-testid="universe-attention" onClick={() => setSelectedId(demo.attention.targetId)}>
           <MoraStone size={18} halo={false} />
-          <span>MÔRA schaut auf <strong>{demo.attention.message}</strong></span>
+          <span>Nächster Schritt: <strong>{demo.attention.message}</strong></span><span className="os-legacy-universe__pill-cta">Ansehen →</span>
           <SampleTag />
         </button>
       ) : null}

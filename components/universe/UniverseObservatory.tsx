@@ -91,7 +91,7 @@ function SignalRow({ icon, label, value, onClick, drag }: {
 function BusinessInstrument({ business }: { business: BusinessSummary }) {
     if (business.activeCount === 0) {
         return (
-            <Instrument eyebrow="Wirtschaft" title="Noch kein Umsatz">
+            <Instrument eyebrow="Umsatz" title="Noch kein Umsatz">
                 <p className="text-[11px] leading-relaxed text-white/48">
                     Vorbereitet auf den ersten zahlenden Kunden. Paddle ist angebunden – sobald ein Abo aktiv wird, erscheint es hier.
                 </p>
@@ -133,7 +133,7 @@ export function UniverseObservatory(props: Props) {
         <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 lg:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
             <div className={'absolute bottom-28 left-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
-                <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
+                <Instrument eyebrow="Demnächst" title="Termine, Post, Branche">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
                         value={props.calendarStatus === 'unavailable'
@@ -169,7 +169,7 @@ export function UniverseObservatory(props: Props) {
             </div>
             <div className={'absolute bottom-28 right-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 <BusinessInstrument business={props.business} />
-                <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
+                <Instrument eyebrow="Systemstatus" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">
                             <span className="flex items-center gap-2 text-xs text-white/70">

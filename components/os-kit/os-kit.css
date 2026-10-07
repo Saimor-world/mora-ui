@@ -428,9 +428,9 @@
 /* Kosmos, ruhige Flächen: Legacy-Home – hell, Phase sichtbar, Inhalt lesbar. */
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__plate { opacity: 0; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__base { opacity: 0.35; }
-.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__living { opacity: 0.9; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__living { opacity: 1; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__motion { opacity: 0.8; }
-.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__veil { opacity: 0.32; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__veil { opacity: 0.18; }
 .os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__temporal { opacity: 0.45; }
 /* Klar: deckende Fläche, kein Schleier-Spiel. */
 .os-atmo[data-look='klar'] .os-atmo__veil { opacity: 0; }
@@ -457,3 +457,6 @@
 .os-ambient-volume { display: inline-flex; align-items: center; gap: var(--os-space-2); font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
 .os-ambient-volume input { accent-color: var(--os-accent); width: 140px; }
 @media (max-width: 1099px) { .os-phase-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* V1.5 Universe-UX: eine Überschrift, klare nächste Aktion */
+.os-legacy-universe__header h1 { display: none; }
+.os-legacy-universe__pill-cta { margin-left: var(--os-space-2); color: var(--os-accent); font-weight: 500; white-space: nowrap; }

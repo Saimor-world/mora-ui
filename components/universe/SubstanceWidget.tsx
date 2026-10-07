@@ -30,7 +30,7 @@ export function SubstanceWidget({ bars, onSelect }: {
             <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">Verteilung</p>
             <h2 className="mt-1 flex items-center gap-2 text-sm font-medium tracking-[-0.01em] text-white/82">
                 <Layers size={13} className="text-violet-200/70" />
-                Wo die Arbeit liegt
+                Dokumente je Abteilung
             </h2>
 
             {leer ? (
@@ -50,7 +50,7 @@ export function SubstanceWidget({ bars, onSelect }: {
                             <span className="flex items-baseline justify-between gap-2">
                                 <span className="truncate text-[11px] text-white/72 transition group-hover:text-white/95">{bar.name}</span>
                                 <span className="shrink-0 text-[9px] tabular-nums text-white/38">
-                                    {bar.documents} Dok · {bar.folders} Ord
+                                    {bar.documents} Dok. · {bar.folders} Ordner
                                 </span>
                             </span>
                             <span className="mt-1 block h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07]">

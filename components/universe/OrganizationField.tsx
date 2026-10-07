@@ -587,7 +587,7 @@ function MobileTerritory({
             </span>
             <span className="mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
             <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
-                {territory.spaces} Bereiche · {territory.documents} Docs
+                {territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'} · {territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}
             </span>
         </button>
     );
@@ -670,12 +670,12 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
         <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/94 px-5 py-2.5 text-[10px] text-white/52">
             <span className="flex items-center gap-2">
                 <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#fcd34d" strokeWidth="1.6" strokeLinecap="round" /></svg>
-                {assigned} belegt
+                {assigned} Zusammenhänge belegt
             </span>
             <span className="h-3 w-px bg-white/12" />
             <span className="flex items-center gap-2">
                 <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3 4" strokeLinecap="round" /></svg>
-                {inferred} nur vermutet
+                {inferred} von MÔRA vermutet
             </span>
         </div>
     );

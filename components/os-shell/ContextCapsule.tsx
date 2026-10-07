@@ -2,7 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { Compass, Home, Timer } from 'lucide-react';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import { sceneFor } from '@/lib/os-prototype/scene';
+import { SCENES } from '@/lib/os-prototype/scene';
+import { usePhase } from '@/lib/os-prototype/usePhase';
 
 /**
  * Aus dem Legacy-OS übernommen: die Kontext-Kapsel oben (Instanz · Organisation ·
@@ -36,7 +37,8 @@ export function ContextClock() {
     const t = setInterval(() => { setNow(new Date()); if (Date.now() >= focusUntil) useOsShellStore.getState().setFocusUntil(null); }, 1000);
     return () => clearInterval(t);
   }, [focusUntil]);
-  const scene = sceneFor(now);
+  const { phase } = usePhase();
+  const scene = SCENES.find((x) => x.id === phase) ?? SCENES[1];
   const left = focusUntil ? Math.max(0, focusUntil - now.getTime()) : 0;
   const mm = String(Math.floor(left / 60000)).padStart(2, '0');
   const ss = String(Math.floor((left % 60000) / 1000)).padStart(2, '0');

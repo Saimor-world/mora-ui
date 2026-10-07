@@ -4,7 +4,8 @@ import { BookOpen, Compass, Home, MessageCircle, Settings, Timer, X, type Lucide
 import { Status, Text } from '@/components/os-kit';
 import { DEMO_DEPARTMENTS, demoDocumentCount } from '@/lib/os-prototype/demoPack';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import { SCENES, sceneFor } from '@/lib/os-prototype/scene';
+import { SCENES } from '@/lib/os-prototype/scene';
+import { usePhase } from '@/lib/os-prototype/usePhase';
 
 /**
  * Aus dem Legacy-OS übernommen (Dock › Control Center): Live-Kontext, Szene
@@ -13,7 +14,8 @@ import { SCENES, sceneFor } from '@/lib/os-prototype/scene';
  * große Touch-Ziele, keine Hover-Abhängigkeit.
  */
 export function ControlCenter({ onClose, navigate, online, org, demo }: { onClose: () => void; navigate: (id: string) => void; online: boolean; org: string; demo: boolean }) {
-  const scene = sceneFor();
+  const { phase } = usePhase();
+  const scene = SCENES.find((x) => x.id === phase) ?? SCENES[1];
   const focusUntil = useOsShellStore((s) => s.focusUntil);
   const audioOn = useOsShellStore((s) => s.audioOn);
   const go = (id: string) => { navigate(id); onClose(); };

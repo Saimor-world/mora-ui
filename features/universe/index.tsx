@@ -33,10 +33,10 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
         <Stack direction="row" align="center" justify="space-between" gap={3} wrap>
           <Stack gap={1} className="min-w-0">
             <Stack direction="row" gap={2} align="center"><Text variant="eyebrow">Universe</Text>{landscape.sample ? <SampleTag /> : null}</Stack>
-            <Text variant="title" as="h1">Der Raum deines Unternehmens.</Text>
+            <Text variant="title" as="h1">{lens === 'organization' ? (demo ? 'Simple Coffee Group – deine Abteilungen' : 'Deine Abteilungen') : 'Deine Arbeitsbereiche'}</Text>
             <Text variant="meta">
               {lens === 'organization'
-                ? (demo ? 'Lokale Vorschau mit dem Demo-Paket „Simple Coffee Group“: Abteilungen als Planeten, Ordner als Monde. Mit CORE-Sitzung erscheint deine Organisation.' : 'Deine Abteilungen als Planeten, Ordner als Monde.')
+                ? 'Jede Kugel ist eine Abteilung. Klicke eine an, um Dokumente, Aufgaben und Hinweise zu sehen. Linien zeigen Zusammenhänge, die MÔRA gefunden hat.'
                 : landscape.sample
                   ? 'Lokale Vorschau: die OS-Bereiche um MÔRA, gespeist aus dem Demo-Paket.'
                   : 'Deine OS-Bereiche als Planeten um MÔRA. Wähle einen Planeten, um hineinzuzoomen.'}
@@ -44,8 +44,8 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
           </Stack>
           <Stack direction="row" gap={2} wrap>
             <div className="os-tabs os-universe__lens" role="tablist" aria-label="Ansicht">
-              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'organization'} onClick={() => setLens('organization')} data-testid="universe-lens-organization">Organisationsfeld</button>
-              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'landscape'} onClick={() => setLens('landscape')} data-testid="universe-lens-landscape">OS-Bereiche</button>
+              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'organization'} onClick={() => setLens('organization')} data-testid="universe-lens-organization">Abteilungen</button>
+              <button type="button" role="tab" className="os-tab" aria-selected={lens === 'landscape'} onClick={() => setLens('landscape')} data-testid="universe-lens-landscape">Arbeitsbereiche</button>
             </div>
             <Button size="sm" variant="ghost" onClick={() => navigate('today')}>Zurück zu Heute</Button>
           </Stack>
