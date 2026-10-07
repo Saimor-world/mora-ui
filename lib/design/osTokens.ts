@@ -55,6 +55,16 @@ export const osColor = {
   dockLine: 'linear-gradient(90deg, transparent, rgba(34,211,238,0.55), rgba(16,185,129,0.45), transparent)',
   dockStoneRing: 'rgba(52,211,153,0.42)',
   dockStoneGlow: '0 0 22px rgba(16,185,129,0.32)',
+  /** V1.7 Andockstation (Quellen-Szene): Raumfenster, Sterne, Schrift-Halo, Stationsring, Planetenlicht. */
+  stationSpace: 'rgba(3,8,16,0.74)',
+  stationSpaceLow: 'rgba(3,8,16,0.56)',
+  stationStar: 'rgba(255,255,255,0.5)',
+  stationHalo: 'rgba(3,8,14,0.88)',
+  stationHaloKlar: 'rgba(12,16,22,0.9)',
+  stationRing: 'rgba(4,10,18,0.72)',
+  stationPlanetLight: '#ffffff',
+  stationPlanetShade: '#050a12',
+  stationPlanetEdge: 'rgba(255,255,255,0.22)',
   /** Mobile static plate veil. */
   veilMobile: 'rgba(3,6,8,0.78)',
   railVeilTop: 'rgba(4,8,9,0.78)',

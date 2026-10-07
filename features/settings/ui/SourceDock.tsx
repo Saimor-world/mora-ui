@@ -276,9 +276,9 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
           <defs>
             {planets.map((p, i) => (
               <radialGradient key={p.id} id={`dock-pl-${i}`} cx="35%" cy="30%" r="75%">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity={klar ? 0.15 : 0.55} />
+                <stop offset="0%" style={{ stopColor: 'var(--os-station-planet-light)' }} stopOpacity={klar ? 0.15 : 0.55} />
                 <stop offset="38%" stopColor={p.color} stopOpacity={klar ? 0.55 : 0.9} />
-                <stop offset="100%" stopColor="#050a12" stopOpacity={klar ? 0.6 : 0.95} />
+                <stop offset="100%" style={{ stopColor: 'var(--os-station-planet-shade)' }} stopOpacity={klar ? 0.6 : 0.95} />
               </radialGradient>
             ))}
           </defs>
@@ -304,7 +304,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             return (
               <g key={p.id} className="os-station-planet" data-testid={`dock-planet-${p.id}`}>
                 {!klar ? <circle cx={pt.x} cy={pt.y} r={23} fill={p.color} className="os-station-planet__glow" /> : null}
-                <circle cx={pt.x} cy={pt.y} r={16} fill={`url(#dock-pl-${i})`} className="os-station-planet__body" stroke={klar ? p.color : 'rgba(255,255,255,0.22)'} />
+                <circle cx={pt.x} cy={pt.y} r={16} fill={`url(#dock-pl-${i})`} className="os-station-planet__body" stroke={klar ? p.color : 'var(--os-station-planet-edge)'} />
                 <text x={pt.x} y={below ? pt.y + 33 : pt.y - 24} textAnchor="middle" className="os-station-label os-station-label--planet">{p.name}</text>
               </g>
             );
