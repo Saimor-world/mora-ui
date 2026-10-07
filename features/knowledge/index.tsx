@@ -74,6 +74,12 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
       ) : null}
 
       {sample ? (
+        <div className="os-mora-stats" data-testid="knowledge-storage" aria-label="Ablageorte">
+          {([['Gerät', '—'], ['Privat', '—'], ['Workspace', String(demoAllDocuments().length)], ['Cloud', 'nicht verbunden']] as const).map(([l, v]) => <div key={l}><b>{v}</b><span>{l}</span></div>)}
+        </div>
+      ) : null}
+
+      {sample ? (
         <ResponsiveGrid columns={2}>
           <Surface padding={5} data-testid="knowledge-demo-docs">
             <Stack direction="row" justify="space-between" align="center" className="mb-3"><Text variant="eyebrow">{q ? `Treffer in ${DEMO_COMPANY_NAME}` : `Dokumente · ${DEMO_COMPANY_NAME}`}</Text><SampleTag /></Stack>

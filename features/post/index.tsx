@@ -1,4 +1,5 @@
 'use client';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
 import { Button, SampleTag, FailureState, Loading, ResponsiveGrid, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
@@ -57,9 +58,11 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => (
             <div className="os-list">
               {items.slice(0, 8).map((m) => (
-                <div key={m.id} className="os-list-row">
-                  <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text>{m.snippet ? <Text variant="meta" className="truncate">{m.snippet}</Text> : null}</Stack>
+                <div key={m.id} className="os-list-row os-mail-row">
+                  <span className="os-mail-avatar" aria-hidden>{String(m.from_addr || m.from || '?').charAt(0).toUpperCase()}</span>
+                  <Stack gap={0} className="min-w-0 flex-1"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text>{m.snippet ? <Text variant="meta" className="truncate">{m.snippet}</Text> : null}</Stack>
                   {m.read === false ? <Status tone="info">neu</Status> : null}
+                  <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setMoraDraft(`Fasse zusammen und schlage eine Antwort vor: „${m.subject || ''}“`); useOsShellStore.getState().setMoraOpen(true); }} aria-label={`Mit MÔRA: ${m.subject || ''}`}>Mit MÔRA</Button>
                 </div>
               ))}
             </div>

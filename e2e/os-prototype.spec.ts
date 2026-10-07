@@ -281,4 +281,16 @@ test.describe('OS prototype (/os, local preview)', () => {
       }
     });
   }
+  test('V1.4 legacy: MÔRA-Signale → Navigieren → Planet-Detail; Wissen-Ablageorte; Post „Mit MÔRA“', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#mora');
+    await page.getByTestId('mora-tab-signals').click();
+    await expect(page.getByTestId('mora-signals')).toBeVisible();
+    await page.getByTestId('mora-signal-demo-ml-4').getByRole('button', { name: 'Navigieren' }).click();
+    await expect(page.getByTestId('planet-detail')).toContainText('San Francisco');
+    await page.goto('/os#knowledge');
+    await expect(page.getByTestId('knowledge-storage')).toContainText('Workspace');
+    await page.goto('/os#post');
+    await expect(page.getByRole('button', { name: /^Mit MÔRA/ }).first()).toBeVisible();
+  });
 });

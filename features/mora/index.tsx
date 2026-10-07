@@ -1,12 +1,17 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { MoraMemories, MoraSignals } from './ui/MoraSignals';
 import { Surface, Text } from '@/components/os-kit';
 import type { FeatureSurfaceProps } from '../types';
 import { MoraConsole } from './ui/MoraConsole';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { Button } from '@/components/os-kit';
 
-export default function MoraSurface({ navigate }: FeatureSurfaceProps) {
+export default function MoraSurface({ navigate, preview }: FeatureSurfaceProps) {
+  const [tab, setTab] = useState<'chat' | 'memories' | 'signals'>('chat');
+  const hasSession = useSessionStore((s) => Boolean(s.user));
+  const demo = Boolean(preview) && !hasSession;
   return (
     <div className="flex flex-col gap-6" data-testid="feature-mora">
       <header>
@@ -17,8 +22,13 @@ export default function MoraSurface({ navigate }: FeatureSurfaceProps) {
           Nichts mit Außenwirkung passiert ohne deine Bestätigung. Überall erreichbar mit <span className="os-kbd">⌘ J</span>.
         </Text>
       </header>
+      <div className="os-tabs" role="tablist" aria-label="MÔRA">
+        {([['chat', 'Chat'], ['memories', 'Erinnerungen'], ['signals', 'Signale']] as const).map(([id, l]) => (
+          <button key={id} type="button" className="os-tab" role="tab" aria-selected={tab === id} onClick={() => setTab(id)} data-testid={`mora-tab-${id}`}>{l}</button>
+        ))}
+      </div>
       <Surface padding={5} style={{ minHeight: 520, display: 'flex', flexDirection: 'column' }}>
-        <MoraConsole variant="page" navigate={navigate} />
+        {tab === 'chat' ? <MoraConsole variant="page" navigate={navigate} /> : tab === 'signals' ? <MoraSignals navigate={navigate} demo={demo} /> : <MoraMemories />}
       </Surface>
       <div className="flex flex-wrap items-center gap-3">
         <Text variant="meta">Ausführliche Verläufe, Werkzeug-Spuren und Provider-Auswahl bleiben in der klassischen Chat-App.</Text>

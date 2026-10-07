@@ -413,3 +413,12 @@
 .os-palette-home__planets button:hover, .os-palette-home__planets button:focus-visible { background: var(--os-surface-hover); }
 .os-palette-home__planets span { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px; color: var(--planet); border: 1px solid color-mix(in srgb, var(--planet) 45%, transparent); background: color-mix(in srgb, var(--planet) 16%, transparent); }
 .os-palette-home__planets em { font-style: normal; font-size: 11px; color: var(--os-text-muted); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* V1.4 – MÔRA-Signale (Legacy-Tab) */
+.os-mora-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--os-space-2); }
+.os-mora-stats > div { display: flex; flex-direction: column; gap: 2px; padding: var(--os-space-3); border: 1px solid var(--os-hairline); border-radius: var(--os-radius-md); background: var(--os-surface); }
+.os-mora-stats b { font-size: 20px; font-weight: 500; color: var(--os-accent); }
+.os-mora-stats span { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--os-text-faint); }
+@media (pointer: coarse) { .os-tab { height: 44px; } }
+.os-mail-row { justify-content: flex-start; }
+.os-mail-avatar { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--os-hairline); background: var(--os-surface); font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
