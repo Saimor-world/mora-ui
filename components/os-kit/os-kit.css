@@ -465,3 +465,5 @@
 .os-briefing-sources i { width: 6px; height: 6px; border-radius: 50%; background: var(--os-text-faint); }
 .os-briefing-demo { padding: var(--os-space-4); border: 1px dashed var(--os-tone-warning-border); border-radius: var(--os-radius-lg); }
 .os-briefing-demo ul { display: flex; flex-direction: column; gap: 4px; padding-left: 18px; list-style: disc; color: var(--os-text-muted); font-size: var(--os-type-body-size); }
+@media (max-width: 1439px) { .os-legacy-universe [data-meta-spaces] { display: none; } }
+@media (max-width: 1439px) { .os-legacy-universe__pill { max-width: 46vw; } .os-legacy-universe__pill strong { display: inline-block; max-width: 28vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; } }

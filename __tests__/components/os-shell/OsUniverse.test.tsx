@@ -32,17 +32,16 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
   });
 
-  it('renders the universe layer calm on Heute: legacy backdrop + dimmed plate, no living background, no stars', async () => {
+  it('V1.5 Kosmos: Heute bekommt die helle Legacy-Home-Atmosphäre (living background + ritual styler), Bewegung nur bei Fähigkeit', async () => {
     renderShell();
     await screen.findByTestId('today-universe-card');
     const layer = screen.getByTestId('os-universe-layer');
     expect(layer).toHaveAttribute('data-mode', 'calm');
+    expect(layer).toHaveAttribute('data-look', 'kosmos');
     expect(layer).toHaveAttribute('data-motion', 'off');
     expect(within(layer).getByTestId('legacy-static-backdrop')).toBeInTheDocument();
-    expect(within(layer).getByTestId('os-atmo-plate')).toBeInTheDocument();
-    expect(within(layer).queryByTestId('legacy-living-background')).toBeNull();
+    expect(within(layer).getByTestId('legacy-living-background')).toBeInTheDocument();
     expect(within(layer).queryByTestId('os-atmo-motion')).toBeNull();
-    expect(within(layer).queryByTestId('legacy-ritual-styler')).toBeNull();
   });
 
   it('Heute → Universe: opens the ORIGINAL Organisationsfeld (real UniverseView with session), OS-Bereiche lens shows the landscape, atmosphere switches to universe', async () => {

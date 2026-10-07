@@ -520,8 +520,8 @@ function Territory({
             )}
             <span className={'mx-auto mt-3 block w-max whitespace-nowrap text-sm font-medium tracking-[-0.01em] ' + (vivid ? 'text-white' : 'text-white/88')} data-territory-label>{territory.name}</span>
             <span data-territory-meta className={'mx-auto mt-1 flex w-max items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] ' + (vivid ? 'text-white/60' : 'text-white/34')}>
-                <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
-                <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
+                <span data-meta-spaces>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
+                <span data-meta-spaces className="h-0.5 w-0.5 rounded-full bg-white/30" />
                 <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
             </span>
             {/* Was sich hier bewegt - an einer FESTEN Stelle unter dem
