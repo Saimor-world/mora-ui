@@ -59,6 +59,8 @@ interface Props {
     frame?: { header?: string; field?: string; legend?: string; mobile?: string };
     /** Opt-in: hellere Planeten (staerkere Akzentverlaeufe, lesbare Symbole). */
     vivid?: boolean;
+    /** Opt-in: eigenes Detailpanel statt des eingebauten (OS-Prototyp). */
+    renderDetail?: (territory: OrganizationTerritory) => React.ReactNode;
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
@@ -90,6 +92,7 @@ export function OrganizationField({
     centerSlot,
     frame,
     vivid = false,
+    renderDetail,
 }: Props) {
     const selected = useMemo(
         () => territories.find((item) => item.id === selectedId) ?? null,
@@ -318,7 +321,8 @@ export function OrganizationField({
                 </div>
             </div>
 
-            {selected && (
+            {selected && renderDetail ? renderDetail(selected) : null}
+            {selected && !renderDetail && (
                 <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"

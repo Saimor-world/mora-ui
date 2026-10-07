@@ -5,6 +5,8 @@ import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { MoraStone, SampleTag } from '@/components/os-kit';
 import { buildDemoUniverse } from '../data/demoUniverse';
+import { PlanetDetail } from './PlanetDetail';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 /**
  * Lokale Vorschau des ORIGINAL-Universe: dieselben Komponenten wie
@@ -24,7 +26,20 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
     return () => window.removeEventListener('resize', check);
   }, []);
   const demo = useMemo(() => buildDemoUniverse({ compact }), [compact]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    // V1.4: Fokus aus Lagebild oder Befehlspalette übernehmen.
+    const f = useOsShellStore.getState().universeFocus;
+    if (f) useOsShellStore.getState().setUniverseFocus(null);
+    return f;
+  });
+  const focusRequest = useOsShellStore((st) => st.universeFocus);
+  useEffect(() => { if (focusRequest) { setSelectedId(focusRequest); useOsShellStore.getState().setUniverseFocus(null); } }, [focusRequest]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !useOsShellStore.getState().paletteOpen) setSelectedId(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const openKnowledge = (q: string) => { useOsShellStore.getState().setKnowledgeQuery(q); onOpenArea('knowledge'); };
   const noop = () => onOpenArea('post');
   const core = (
     <button type="button" className="os-legacy-universe__core" data-testid="universe-core" aria-label="MÔRA – Kern des Universe. Fragen"
@@ -36,7 +51,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
     </button>
   );
   return (
-    <div className="os-legacy-universe relative h-full w-full overflow-hidden text-white" data-testid="demo-organization-universe">
+    <div className="os-legacy-universe relative h-full w-full overflow-hidden text-white" data-testid="demo-organization-universe" data-focus={selectedId ?? undefined}>
       <UniverseAmbientField lens="organization" selected={Boolean(selectedId)} />
       <div className="os-legacy-obs" data-testid="legacy-observatory">
         <UniverseObservatory
@@ -53,6 +68,10 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
         onOpen={() => onOpenArea('knowledge')} onOpenMoon={() => onOpenArea('knowledge')}
         onAskMora={(t) => onAskMora(`Was weißt du über ${t.name}?`)}
         onFile={async () => false}
+        renderDetail={(t) => (
+          <PlanetDetail territory={t} signals={demo.signals} onClose={() => setSelectedId(null)}
+            onOpenKnowledge={openKnowledge} onOpenPost={() => onOpenArea('post')} onAskMora={onAskMora} />
+        )}
         strandOrigin={{ x: 50, y: 50 }}
         centerSlot={selectedId ? null : core}
         vivid
