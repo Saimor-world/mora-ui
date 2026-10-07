@@ -23,8 +23,8 @@ export const osColor = {
   hairline: 'rgba(255,255,255,0.07)',
   hairlineStrong: 'rgba(255,255,255,0.14)',
   text: 'rgba(244,247,246,0.94)',
-  textMuted: 'rgba(226,234,232,0.62)',
-  textFaint: 'rgba(226,234,232,0.40)',
+  textMuted: 'rgba(226,234,232,0.82)',
+  textFaint: 'rgba(226,234,232,0.70)',
   /** Brand accent (emerald) — used sparingly: active nav, primary action, MÔRA presence. */
   accent: '#6ee7b7',
   accentSoft: 'rgba(110,231,183,0.10)',
@@ -180,8 +180,10 @@ export function osPhaseVariables(phase: OsPhase, look: OsLook): Record<string, s
     '--os-aura': klar ? `rgba(${p.rgb},0.10)` : p.aura,
     '--os-aura-secondary': klar ? 'transparent' : p.aura2,
     '--os-phase-base': klar ? p.baseKlar : p.base,
-    '--os-glass': klar ? p.klarGlass : 'rgba(10,20,30,0.30)',
-    '--os-glass-strong': klar ? p.klarGlassStrong : 'rgba(8,16,24,0.42)',
+    '--os-glass': klar ? p.klarGlass : 'rgba(8,16,26,0.46)',
+    '--os-glass-strong': klar ? p.klarGlassStrong : 'rgba(6,12,20,0.58)',
+    /* V1.6 Lesbarkeit: Kosmos bekommt hinter der Inhaltsspalte einen weichen Schleier (Kontrast ≥ 4.5:1). */
+    '--os-content-scrim': klar ? 'transparent' : 'rgba(4,10,18,0.52)',
     '--os-surface': klar ? `rgba(${p.rgb},0.06)` : 'rgba(255,255,255,0.04)',
     ...(klar ? { '--os-hairline': `rgba(${p.rgb},0.20)` } : {}),
     '--os-surface-klar': `rgba(${p.rgb},0.05)`,

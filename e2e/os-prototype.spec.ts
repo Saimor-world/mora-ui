@@ -88,6 +88,7 @@ test.describe('OS prototype (/os, local preview)', () => {
   test('V1.3: Marius\' dock is the main navigation (desktop + iPad)', async ({ browser }) => {
     for (const viewport of [{ width: 1440, height: 900 }, { width: 820, height: 1180 }]) {
       const ctx = await browser.newContext({ viewport });
+      await ctx.addInitScript(() => window.localStorage.setItem('saimor_product_tour_dismissed', '1'));
       const page = await ctx.newPage();
       await page.goto('/os#today');
       const dock = page.getByTestId('os-dock');
@@ -122,6 +123,7 @@ test.describe('OS prototype (/os, local preview)', () => {
   for (const [w, h] of SIZES) {
     test(`V1.4 universe ${w}x${h}: no overlapping boxes, threads stay inside the field, dock fully visible`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: 'reduce' });
+      await ctx.addInitScript(() => window.localStorage.setItem('saimor_product_tour_dismissed', '1'));
       const page = await ctx.newPage();
       await page.goto('/os#universe');
       await expect(page.getByTestId('demo-organization-universe')).toBeVisible();
@@ -172,6 +174,7 @@ test.describe('OS prototype (/os, local preview)', () => {
   for (const [w, h] of SIZES) {
     test(`V1.4 all surfaces ${w}x${h}: dock fully visible, content ends above the dock, topbar clear`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width: w, height: h } });
+      await ctx.addInitScript(() => window.localStorage.setItem('saimor_product_tour_dismissed', '1'));
       const page = await ctx.newPage();
       for (const id of ['today', 'mora', 'finance', 'post', 'knowledge', 'settings', 'labs']) {
         await page.goto(`/os#${id}`);

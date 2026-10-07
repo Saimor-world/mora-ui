@@ -52,7 +52,7 @@ export function UniverseTicker({ items }: { items: TickerItem[] }) {
 
     return (
         <div
-            className="pointer-events-none absolute inset-x-0 top-[176px] z-[25] overflow-hidden border-y border-white/[0.06] bg-[#050c16]/92 py-1.5"
+            className="pointer-events-none absolute inset-x-0 top-[176px] z-[25] overflow-hidden border-y border-white/[0.06] bg-[#050c16]/[0.92] py-1.5"
             aria-hidden="true"
         >
             <div
@@ -65,7 +65,7 @@ export function UniverseTicker({ items }: { items: TickerItem[] }) {
                         {items.map((item) => {
                             const tone = toneFor(item.id);
                             return (
-                                <span key={copy + ':' + item.id} className="flex items-center gap-2 text-[10px] font-medium tracking-[0.08em] text-white/56">
+                                <span key={copy + ':' + item.id} className="flex items-center gap-2 text-[10px] font-medium tracking-[0.08em] text-white/[0.56]">
                                     <span style={{ color: tone.color }}>{tone.icon}</span>
                                     {item.text}
                                     <span className="ml-6 h-1 w-1 rounded-full bg-white/20" />
