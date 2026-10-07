@@ -1,23 +1,20 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
-import { Button, FailureState, Loading, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
-import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
+import { Button, FailureState, Stack, Status, Surface, Text } from '@/components/os-kit';
 import { enabledFeatureFlags, isOsPrototypeEnabled } from '@/lib/os-prototype/flags';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
 import { LookSettings } from './ui/LookSettings';
-import { connectionRows, useConnectionsOverview } from './data/useConnections';
-import { SourcesPanel } from './ui/SourcesPanel';
+import { SourceDock } from './ui/SourceDock';
 import { requestOnboarding } from '@/lib/os-prototype/onboarding';
 
 export const SETTINGS_SECTIONS = [
   { id: 'account', label: 'Konto' },
   { id: 'identity', label: 'Identität' },
   { id: 'sources', label: 'Quellen' },
-  { id: 'connections', label: 'Verbindungen' },
   { id: 'permissions', label: 'Berechtigungen' },
   { id: 'system', label: 'System' },
 ] as const;
@@ -31,18 +28,18 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return <div className="os-list-row"><Text variant="meta">{label}</Text><Text tone="default" as="div">{value}</Text></div>;
 }
 
-export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
+export default function SettingsSurface({ preview, navigate }: FeatureSurfaceProps) {
   const [section, setSection] = useState<SectionId>('account');
   const wanted = useOsShellStore((s) => s.settingsSection);
   useEffect(() => {
     const fromUrl = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('section') : null;
-    const target = (wanted || fromUrl) as SectionId | null;
+    const raw = wanted || fromUrl;
+    const target = (raw === 'connections' ? 'sources' : raw) as SectionId | null; // V1.7: „Verbindungen“ ist in Quellen aufgegangen
     if (target && SETTINGS_SECTIONS.some((x) => x.id === target)) setSection(target);
     if (wanted) useOsShellStore.getState().setSettingsSection(null);
   }, [wanted]);
   const user = useSessionStore((s) => s.user);
   const permissions = useSessionStore((s) => s.permissions);
-  const connections = useConnectionsOverview();
   const health = useCoreHealth();
   const flags = Array.from(enabledFeatureFlags());
 
@@ -77,29 +74,7 @@ export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
           </div>
         ) : <FailureState kind="unauthenticated" compact />)}
 
-        {section === 'sources' && <SourcesPanel live={Boolean(user)} demo={Boolean(preview) && !user} />}
-
-        {section === 'connections' && (
-          <Stack gap={4}>
-            {!user ? <FailureState kind="unauthenticated" compact subject="/v3/integrations/overview" />
-              : connections.isLoading ? <Loading />
-              : connections.isError ? <FailureState kind={classifyCoreFailure(connections.error)} compact />
-              : connections.data === null ? <StateView kind="offline" compact detail="/v3/integrations/overview" />
-              : (
-                <div className="os-list">
-                  {connectionRows(connections.data).map((r) => (
-                    <div key={r.id} className="os-list-row">
-                      <Stack gap={0}><Text tone="default">{r.label}</Text>{r.detail ? <Text variant="meta">{r.detail}</Text> : null}</Stack>
-                      <Status tone={r.state === 'configured' ? 'safe' : r.state === 'not_configured' ? 'neutral' : 'warning'}>
-                        {r.state === 'configured' ? 'eingerichtet (laut CORE)' : r.state === 'not_configured' ? 'nicht eingerichtet' : 'unbekannt'}
-                      </Status>
-                    </div>
-                  ))}
-                </div>
-              )}
-            <div><Button size="sm" onClick={() => openLegacyApp('integrations')}>Verbindungen verwalten</Button></div>
-          </Stack>
-        )}
+        {section === 'sources' && <SourceDock live={Boolean(user)} navigate={navigate} />}
 
         {section === 'permissions' && (
           <Stack gap={3}>

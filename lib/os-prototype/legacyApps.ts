@@ -31,7 +31,7 @@ export const LEGACY_APP_PLACEMENT: LegacyAppEntry[] = [
   { appId: 'mail', placement: 'post', note: 'Postfach – Post zeigt Überblick und öffnet es.' },
   { appId: 'calendar', placement: 'post', note: 'Kalender – Post zeigt Termine und öffnet ihn.' },
   { appId: 'settings', placement: 'settings', note: 'Vollständige alte Einstellungen (1.806 Z.) – Einstieg aus Einstellungen.' },
-  { appId: 'integrations', placement: 'settings', note: 'Verbindungen – Einstellungen › Verbindungen.' },
+  { appId: 'integrations', placement: 'settings', note: 'Klassische Integrationen – abgelöst durch Einstellungen › Quellen (Andockstation).' },
   { appId: 'work', placement: 'work', note: 'Arbeitsfläche (Cockpit).' },
   { appId: 'tasks', placement: 'work', note: 'Aufgaben – offene Arbeit erscheint in Heute.' },
   { appId: 'action-center', placement: 'work', note: 'Action Center.' },

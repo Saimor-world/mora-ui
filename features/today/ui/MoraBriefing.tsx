@@ -55,11 +55,11 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
           <Text variant="meta" className="mt-1">MÔRA fasst morgens nur zusammen, was sich in echten Quellen wirklich verändert hat – ohne Quellen gibt es nichts Ehrliches zu berichten.</Text>
           <div className="os-briefing-sources mt-3" aria-label="Quellen">
             {live && conns.data?.connections?.length
-              ? conns.data.connections.slice(0, 6).map((c) => <span key={c.id} data-status={c.status}><i aria-hidden /> {c.label} · {c.status === 'available' ? 'nicht verbunden' : c.status === 'setup_required' ? 'Einrichtung fehlt' : c.status}</span>)
+              ? conns.data.connections.filter((c) => c.status !== 'setup_required').slice(0, 5).map((c) => <span key={c.id} data-status={c.status}><i aria-hidden /> {c.label} · {c.status === 'available' ? 'nicht angedockt' : c.status}</span>)
               : SOURCES.map((s) => <span key={s}><i aria-hidden /> {s} · {live ? 'nicht verbunden' : 'braucht CORE-Sitzung'}</span>)}
           </div>
           <Stack direction="row" gap={2} className="mt-3">
-            {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen anbinden</Button> : null}
+            {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
             <Button size="sm" variant="ghost" onClick={() => setPreview((v) => !v)} data-testid="briefing-preview-toggle">{preview ? 'Vorschau schließen' : 'So sähe es aus (Beispiel)'}</Button>
           </Stack>
           {preview ? (

@@ -1,18 +1,18 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Command, LayoutGrid, Orbit, Plus, X } from 'lucide-react';
-import { Button, Hint, Input, MoraStone, Stack, Status, Text } from '@/components/os-kit';
+import { Button, Hint, Input, MoraStone, Stack, Text } from '@/components/os-kit';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { SCENES } from '@/lib/os-prototype/scene';
-import { connectedSources, useSources } from '@/lib/os-prototype/useSources';
+import { SourceDock } from '@/features/settings/ui/SourceDock';
 import { finishOnboarding, isOnboardingDone, ONBOARDING_RESTART_EVENT, readLocalOrg, saveLocalOrg } from '@/lib/os-prototype/onboarding';
 
 /**
  * V1.6 Ruhiges Onboarding (aus Legacy FirstRunTour/firstRunStore, überarbeitet):
  * vier kurze Schritte, jederzeit überspringbar, in Einstellungen wiederholbar.
- * 1 Look & Phase · 2 Firma/Abteilungen (nur lokal) · 3 Quelle (ehrlicher Status) · 4 Tour Dock & Universe
+ * 1 Look & Phase · 2 Firma/Abteilungen (nur lokal) · 3 Erste Station (V1.7 Andockstation) · 4 Tour Dock & Universe
  */
-const STEPS = ['Darstellung', 'Deine Firma', 'Erste Quelle', 'Kurze Tour'] as const;
+const STEPS = ['Darstellung', 'Deine Firma', 'Erste Station', 'Kurze Tour'] as const;
 
 export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id: string) => void }) {
   const [open, setOpen] = useState(false);
@@ -22,7 +22,6 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
   const look = useOsShellStore((s) => s.look);
   const override = useOsShellStore((s) => s.phaseOverride);
   const st = useOsShellStore.getState;
-  const sources = useSources(open && live && step === 2);
 
   useEffect(() => {
     if (!isOnboardingDone()) { setOrg(readLocalOrg()); setOpen(true); }
@@ -49,8 +48,6 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
 
   if (!open) return null;
   const addDept = () => { const d = dept.trim(); if (d && !org.departments.includes(d) && org.departments.length < 12) setOrg((o) => ({ ...o, departments: [...o.departments, d] })); setDept(''); };
-  const list = sources.data?.connections || [];
-  const connected = connectedSources(list);
 
   return (
     <div className="os-dialog-backdrop os-onboarding-backdrop">
@@ -62,7 +59,7 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
         <ol className="os-onboarding__steps" aria-label="Fortschritt">
           {STEPS.map((s, i) => <li key={s} aria-current={i === step ? 'step' : undefined} data-done={i < step || undefined}>{s}</li>)}
         </ol>
-        <Text variant="title" as="h2" id="ob-title" className="mt-4">{['Wie soll SAIMÔR aussehen?', 'Wie heißt deine Firma?', 'Eine Quelle anbinden', 'So findest du dich zurecht'][step]}</Text>
+        <Text variant="title" as="h2" id="ob-title" className="mt-4">{['Wie soll SAIMÔR aussehen?', 'Wie heißt deine Firma?', 'Erste Station andocken', 'So findest du dich zurecht'][step]}</Text>
 
         <div className="os-onboarding__body mt-3">
           {step === 0 ? (
@@ -99,21 +96,9 @@ export function OsOnboarding({ live, navigate }: { live: boolean; navigate: (id:
           ) : null}
 
           {step === 2 ? (
-            <Stack gap={3} data-testid="ob-sources">
-              {!live ? (
-                <Hint tone="warning">Ohne CORE-Sitzung kann keine Quelle verbunden werden. Das Morgenbriefing bleibt deshalb aus – nichts wird vorgetäuscht.</Hint>
-              ) : sources.isLoading ? <Text variant="meta">Quellen werden bei CORE abgefragt …</Text>
-                : sources.isError ? <Hint tone="warning">CORE hat die Quellen nicht geliefert. Später in Einstellungen › Quellen erneut versuchen.</Hint>
-                : (
-                  <>
-                    <Text>{connected.length ? `${connected.length} Quelle${connected.length === 1 ? '' : 'n'} verbunden – das Briefing kann starten.` : 'Noch keine Quelle verbunden. Mit der ersten startet das Morgenbriefing.'}</Text>
-                    <div className="os-list">{list.slice(0, 5).map((s) => (
-                      <div key={s.id} className="os-list-row"><Text tone="default">{s.label}</Text><Status tone={s.status === 'connected' ? 'safe' : s.status === 'setup_required' ? 'warning' : 'neutral'}>{s.status === 'connected' ? 'verbunden' : s.status === 'available' ? 'bereit' : 'Einrichtung fehlt'}</Status></div>
-                    ))}</div>
-                  </>
-                )}
-              <div><Button size="sm" variant="ghost" onClick={() => { st().setSettingsSection('sources'); navigate('settings'); close(); }} data-testid="ob-open-sources">Zu Einstellungen › Quellen</Button></div>
-            </Stack>
+            <div data-testid="ob-sources">
+              <SourceDock live={live} compact navigate={(id) => { close(); navigate(id); }} />
+            </div>
           ) : null}
 
           {step === 3 ? (

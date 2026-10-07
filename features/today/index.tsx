@@ -24,7 +24,7 @@ function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date())
 }
 
 function SourceState({ status, label }: { status: TodaySourceStatus; label: string }) {
-  if (status === 'disconnected') return <StateView compact kind="not_configured" title={`${label} nicht verbunden`} copy="Verbinde die Quelle unter Einstellungen › Verbindungen." />;
+  if (status === 'disconnected') return <StateView compact kind="not_configured" title={`${label} nicht verbunden`} copy="Docke die Quelle unter Einstellungen › Quellen an." />;
   if (status === 'unavailable') return <StateView compact kind="backend_unavailable" title={`${label} gerade nicht verfügbar`} copy="CORE konnte diese Quelle nicht lesen. Das heißt nicht, dass nichts da ist." />;
   return null;
 }

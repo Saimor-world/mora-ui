@@ -24,7 +24,7 @@ export function ControlCenter({ onClose, navigate, online, org, demo }: { onClos
     ['universe', 'Universe', 'Abteilungen als Planeten, Zusammenhänge im Raum.', Compass],
     ['knowledge', 'Wissen', 'Direkt in Dokumente und Strukturen einsteigen.', BookOpen],
     ['mora', 'MÔRA', 'Direkt in den Dialog springen.', MessageCircle],
-    ['settings', 'Einstellungen', 'Verbindungen, Darstellung und Daten.', Settings],
+    ['settings', 'Einstellungen', 'Quellen, Darstellung und Daten.', Settings],
   ];
   return (
     <div className="os-dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => e.key === 'Escape' && onClose()}>

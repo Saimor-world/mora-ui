@@ -120,11 +120,11 @@ export function buildLandscape(input: LandscapeInput): Landscape {
 
   const c = input.connections;
   planets.push({
-    id: 'connections', title: 'Verbindungen', role: 'Quellen & Einstellungen', target: 'settings', ring: 1, angle: 245,
+    id: 'connections', title: 'Quellen', role: 'Andockstation', target: 'settings', ring: 1, angle: 245,
     size: 0.8, moons: moons([...(c?.configured ?? []), ...(c?.missing ?? [])], 'conn', 5),
-    signals: c?.missing.length ? [{ id: 'missing', label: `${c.missing.length} nicht eingerichtet`, tone: 'info' }] : [],
-    metrics: c ? [{ label: 'Eingerichtet', value: String(c.configured.length) }, { label: 'Offen', value: String(c.missing.length) }] : [],
-    summary: 'Nur „eingerichtet“, wenn CORE es bestätigt – nie verbunden auf Verdacht.',
+    signals: c?.missing.length ? [{ id: 'missing', label: `${c.missing.length} bereit zum Andocken`, tone: 'info' }] : [],
+    metrics: c ? [{ label: 'Angedockt', value: String(c.configured.length) }, { label: 'Bereit', value: String(c.missing.length) }] : [],
+    summary: 'Nur „angedockt“, wenn CORE es bestätigt – nie verbunden auf Verdacht.',
     tone: c ? 'calm' : 'unknown', sample: s,
   });
 

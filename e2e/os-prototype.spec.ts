@@ -346,7 +346,10 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.getByTestId('ob-dept-add').click();
     await expect(page.getByTestId('ob-depts')).toContainText('Vertrieb');
     await page.getByTestId('onboarding-next').click();
-    await expect(page.getByTestId('ob-sources')).toContainText('Ohne CORE-Sitzung');
+    // V1.7: Andockstation kompakt – eigene Abteilung als Planet, Beispiel-Stationen markiert.
+    await expect(page.getByTestId('ob-sources').getByTestId('sources-panel')).toHaveAttribute('data-state', 'sample');
+    await expect(page.getByTestId('ob-sources')).toContainText('Echt wird es mit deiner CORE-Sitzung.');
+    await expect(page.getByTestId('ob-sources').locator('.os-station-label--planet')).toContainText(['Vertrieb']);
     await page.getByTestId('onboarding-next').click();
     await expect(page.getByTestId('ob-tour')).toBeVisible();
     await expect(page.getByTestId('os-dock')).toHaveAttribute('data-tour-spot', '');
@@ -373,10 +376,56 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(page.getByTestId('agent-feed').locator('.os-sample-tag')).toBeVisible();
   });
 
-  test('sources page is honest without a CORE session', async ({ page }) => {
+  test('V1.7 sources: Andockstation is honest without a CORE session, old list and tab resolved', async ({ page }) => {
     await page.goto('/os#settings');
+    await expect(page.getByTestId('settings-tab-connections')).toHaveCount(0);
     await page.getByTestId('settings-tab-sources').click();
-    await expect(page.getByTestId('sources-panel')).toContainText('erst mit einer Sitzung');
+    const dock = page.getByTestId('sources-panel');
+    await expect(dock).toHaveAttribute('data-state', 'sample');
+    await expect(dock.locator('.os-sample-tag')).toBeVisible();
+    await expect(dock).toContainText('Echt wird es mit deiner CORE-Sitzung.');
+    await expect(dock.locator('.os-station-planet')).toHaveCount(6);
+    await expect(dock.locator('.os-station-st[data-status="connected"]')).toHaveCount(1);
+    await expect(page.getByTestId('dock-primary')).toHaveCount(0);
+    await expect(page.locator('.os-source-row')).toHaveCount(0);
     await expect(page.getByText('verbunden', { exact: true })).toHaveCount(0);
   });
+
+  test('V1.7 sources: old ?section=connections deep link lands on Quellen', async ({ page }) => {
+    await page.goto('/os?section=connections#settings');
+    await expect(page.getByTestId('settings-tab-sources')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('sources-panel')).toBeVisible();
+  });
+
+  for (const [w, h] of [[1024, 768], [1280, 800], [1440, 900], [1180, 820], [820, 1180]] as const) {
+    test(`V1.7 Andockstation ${w}x${h}: labels free, inside the scene, focus card clear`, async ({ browser }) => {
+      const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: 'reduce' });
+      await ctx.addInitScript(() => window.localStorage.setItem('saimor_product_tour_dismissed', '1'));
+      const page = await ctx.newPage();
+      await page.goto('/os?section=sources#settings');
+      await page.getByTestId('settings-tab-sources').click();
+      await expect(page.getByTestId('sources-panel')).toBeVisible();
+      await page.waitForTimeout(1100);
+      const r = await page.evaluate(() => {
+        const scene = document.querySelector('.os-station-scene')!.getBoundingClientRect();
+        const card = document.querySelector('[data-testid="dock-focus"]')!.getBoundingClientRect();
+        const labels = Array.from(document.querySelectorAll('.os-station-scene text')).map((t) => ({ n: t.textContent || '', b: t.getBoundingClientRect() }));
+        const over: string[] = []; const out: string[] = [];
+        for (let i = 0; i < labels.length; i++) {
+          const a = labels[i].b;
+          if (a.left < scene.left - 1 || a.right > scene.right + 1 || a.top < scene.top - 1 || a.bottom > scene.bottom + 1) out.push(labels[i].n);
+          for (let j = i + 1; j < labels.length; j++) { const c = labels[j].b; if (Math.min(a.right, c.right) - Math.max(a.left, c.left) > 1 && Math.min(a.bottom, c.bottom) - Math.max(a.top, c.top) > 1) over.push(labels[i].n + ' × ' + labels[j].n); }
+        }
+        const cardOver = Math.min(scene.right, card.right) - Math.max(scene.left, card.left) > 1 && Math.min(scene.bottom, card.bottom) - Math.max(scene.top, card.top) > 1;
+        const minFont = Math.min(...labels.map((l) => l.b.height));
+        return { over, out, cardOver, minFont, n: labels.length };
+      });
+      expect(r.n).toBeGreaterThan(6);
+      expect(r.over).toEqual([]);
+      expect(r.out).toEqual([]);
+      expect(r.cardOver).toBe(false);
+      expect(r.minFont).toBeGreaterThan(9);
+      await ctx.close();
+    });
+  }
 });
