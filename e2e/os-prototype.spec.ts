@@ -5,7 +5,7 @@ import { expect, test } from '@playwright/test';
  *   NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local npm run build && npm start
  *   BASE_URL=http://localhost:3000 npx playwright test e2e/os-prototype.spec.ts
  */
-const SURFACES = ['today', 'mora', 'finance', 'post', 'knowledge', 'settings', 'labs'];
+const SURFACES = ['today', 'mora', 'finance', 'post', 'knowledge', 'settings', 'labs', 'universe'];
 
 test.describe('OS prototype (/os, local preview)', () => {
   for (const id of SURFACES) {
@@ -38,5 +38,31 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(bar).toBeVisible();
     await bar.getByRole('button', { name: 'MÔRA' }).click();
     await expect(page.getByTestId('mora-console-panel')).toBeVisible();
+  });
+
+  test('universe layer: calm and dimmed on Heute, full in Universe', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#today');
+    const layer = page.getByTestId('os-universe-layer');
+    await expect(layer).toHaveAttribute('data-mode', 'calm');
+    await expect(layer).toHaveAttribute('data-motion', 'off');
+    const calmFilter = await page.getByTestId('os-atmo-plate').evaluate((el) => getComputedStyle(el).filter);
+    expect(calmFilter).toContain('blur');
+    await page.goto('/os#universe');
+    await expect(layer).toHaveAttribute('data-mode', 'universe');
+    await expect(layer).toHaveAttribute('data-motion', 'on', { timeout: 10_000 });
+  });
+
+  test('Heute → Universe via card, no page errors (React #185 fixed)', async ({ page }) => {
+    const errors: string[] = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#today');
+    await page.getByTestId('today-universe-card').click();
+    await expect(page).toHaveURL(/#universe$/);
+    await expect(page.getByTestId('feature-universe')).toBeVisible();
+    await expect(page.getByTestId('os-shell')).toHaveAttribute('data-atmosphere', 'universe');
+    await page.waitForTimeout(1500);
+    expect(errors).toEqual([]);
   });
 });
