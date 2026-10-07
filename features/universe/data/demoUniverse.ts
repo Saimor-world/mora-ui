@@ -65,8 +65,8 @@ export function ringLayout<T>(items: T[], rx = 40, ry = 32, cy = 45, startDeg?: 
  * Kern, Legende und Pille). Prozent im Feld, Kern bei 50/50.
  */
 export const COMPACT_POSITIONS: Record<string, [number, number]> = {
-  'demo-sf': [24, 16], 'demo-management': [50, 8], 'demo-hr': [72, 20],
-  'demo-heilbronn': [7, 52], 'demo-tech': [93, 56], 'demo-stuttgart': [27, 82], 'demo-marketing': [73, 84],
+  'demo-sf': [24, 22.8], 'demo-management': [50, 16], 'demo-hr': [72, 26.2],
+  'demo-heilbronn': [7, 53.4], 'demo-tech': [93, 56.8], 'demo-stuttgart': [27, 78.9], 'demo-marketing': [73, 80.6],
 };
 
 /** Flach UND mit Seitenkarten (z. B. 1280x800): schmaleres Feld. Vermessen im Browser. */

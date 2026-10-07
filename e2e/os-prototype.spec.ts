@@ -190,6 +190,7 @@ test.describe('OS prototype (/os, local preview)', () => {
   test('V1.4: command palette jumps to a planet and to a document', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/os#today');
+    await expect(page.getByTestId('mora-lagebild')).toBeVisible();
     await page.keyboard.press('Control+k');
     await page.getByLabel('Suchen oder Befehl').fill('San Francisco');
     await page.getByRole('option', { name: /Store San Francisco/ }).first().click();

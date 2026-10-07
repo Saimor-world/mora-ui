@@ -23,7 +23,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
   const compact = layout !== 'ring';
   useEffect(() => {
     const check = () => {
-      const flat = window.innerHeight < 820;
+      const flat = window.innerHeight < 860 || window.innerWidth < 1280;
       const side = window.innerWidth >= 1280 && window.innerHeight >= 760;
       setLayout(!flat ? 'ring' : side ? 'narrow' : 'compact');
     };
@@ -32,16 +32,14 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
     return () => window.removeEventListener('resize', check);
   }, []);
   const demo = useMemo(() => buildDemoUniverse({ layout }), [layout]);
-  const [selectedId, setSelectedId] = useState<string | null>(() => {
-    // V1.4: Fokus aus Lagebild oder Befehlspalette übernehmen.
-    const f = useOsShellStore.getState().universeFocus;
-    if (f) useOsShellStore.getState().setUniverseFocus(null);
-    return f;
-  });
+  // V1.4: Fokus aus Lagebild oder Befehlspalette. Er bleibt im Store, bis
+  // jemand selbst wählt oder schließt – so übersteht er auch ein Neu-Mounten.
   const focusRequest = useOsShellStore((st) => st.universeFocus);
-  useEffect(() => { if (focusRequest) { setSelectedId(focusRequest); useOsShellStore.getState().setUniverseFocus(null); } }, [focusRequest]);
+  const [ownSelection, setOwnSelection] = useState<string | null>(null);
+  const selectedId = focusRequest ?? ownSelection;
+  const setSelectedId = (id: string | null) => { useOsShellStore.getState().setUniverseFocus(null); setOwnSelection(id); };
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !useOsShellStore.getState().paletteOpen) setSelectedId(null); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && !useOsShellStore.getState().paletteOpen) { useOsShellStore.getState().setUniverseFocus(null); setOwnSelection(null); } };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
