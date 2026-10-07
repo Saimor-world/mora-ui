@@ -15,6 +15,7 @@ import { SCENES, sceneFor } from '@/lib/os-prototype/scene';
 export function ControlCenter({ onClose, navigate, online, org, demo }: { onClose: () => void; navigate: (id: string) => void; online: boolean; org: string; demo: boolean }) {
   const scene = sceneFor();
   const focusUntil = useOsShellStore((s) => s.focusUntil);
+  const audioOn = useOsShellStore((s) => s.audioOn);
   const go = (id: string) => { navigate(id); onClose(); };
   const links: Array<[string, string, string, LucideIcon]> = [
     ['today', 'Heute', 'Zurück auf die zentrale Oberfläche.', Home],
@@ -49,6 +50,10 @@ export function ControlCenter({ onClose, navigate, online, org, demo }: { onClos
             <Text variant="eyebrow" className="mt-4">Focus Mode</Text>
             <button type="button" className="os-cc__focus" data-testid="focus-toggle" onClick={() => useOsShellStore.getState().setFocusUntil(focusUntil ? null : Date.now() + 25 * 60_000)}>
               <Timer size={14} aria-hidden /> {focusUntil ? 'Focus beenden' : 'Focus · 25 min'}
+            </button>
+            <Text variant="eyebrow" className="mt-4">Ambient</Text>
+            <button type="button" className="os-cc__focus" data-testid="cc-ambient" aria-pressed={audioOn} onClick={() => useOsShellStore.getState().setAudioOn(!audioOn)}>
+              {audioOn ? 'Ambient aus' : 'Ambient an'}
             </button>
           </section>
           {links.map(([id, t, d, Icon]) => (

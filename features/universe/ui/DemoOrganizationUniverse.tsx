@@ -35,6 +35,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
   // V1.4: Fokus aus Lagebild oder Befehlspalette. Er bleibt im Store, bis
   // jemand selbst wählt oder schließt – so übersteht er auch ein Neu-Mounten.
   const focusRequest = useOsShellStore((st) => st.universeFocus);
+  const look = useOsShellStore((st) => st.look);
   const [ownSelection, setOwnSelection] = useState<string | null>(null);
   const selectedId = focusRequest ?? ownSelection;
   const setSelectedId = (id: string | null) => { useOsShellStore.getState().setUniverseFocus(null); setOwnSelection(id); };
@@ -56,7 +57,7 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
   );
   return (
     <div className="os-legacy-universe relative h-full w-full overflow-hidden text-white" data-testid="demo-organization-universe" data-focus={selectedId ?? undefined}>
-      <UniverseAmbientField lens="organization" selected={Boolean(selectedId)} />
+      {look === 'klar' ? null : <UniverseAmbientField lens="organization" selected={Boolean(selectedId)} />}
       <div className="os-legacy-obs" data-testid="legacy-observatory">
         <UniverseObservatory
           mail={demo.mail} calendar={demo.calendar} feed={demo.feed} mailStatus="ok" calendarStatus="ok"

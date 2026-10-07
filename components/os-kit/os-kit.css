@@ -422,3 +422,38 @@
 @media (pointer: coarse) { .os-tab { height: 44px; } }
 .os-mail-row { justify-content: flex-start; }
 .os-mail-avatar { flex: 0 0 auto; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--os-hairline); background: var(--os-surface); font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
+
+/* ── V1.5 Look Kosmos/Klar × Tagesphasen ─────────────────────────────────── */
+.os-atmo__phase { background: var(--os-phase-base); transition: background var(--os-atmo-transition) var(--os-motion-ease); }
+/* Kosmos, ruhige Flächen: Legacy-Home – hell, Phase sichtbar, Inhalt lesbar. */
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__plate { opacity: 0; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__base { opacity: 0.35; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__living { opacity: 0.9; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__motion { opacity: 0.8; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__veil { opacity: 0.32; }
+.os-atmo[data-look='kosmos'][data-mode='calm'] .os-atmo__temporal { opacity: 0.45; }
+/* Klar: deckende Fläche, kein Schleier-Spiel. */
+.os-atmo[data-look='klar'] .os-atmo__veil { opacity: 0; }
+.os-root[data-look='klar'] .os-legacy-universe [data-testid='universe-ambient'],
+.os-root[data-look='klar'] .os-legacy-universe .saimor-universe-ambient { display: none; }
+.os-root[data-look='klar'] .os-dock__grid, .os-root[data-look='klar'] .os-dock__line { display: none; }
+.os-root[data-look='klar'] .os-surface, .os-root[data-look='klar'] .os-today-now__card, .os-root[data-look='klar'] .os-cc__card, .os-root[data-look='klar'] .os-cc__link { backdrop-filter: none; box-shadow: none; }
+.os-look-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--os-space-3); }
+.os-look-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: var(--os-space-4); min-height: 120px; text-align: left; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-surface); color: var(--os-text-muted); }
+.os-look-card[aria-pressed='true'] { border-color: var(--os-accent-line); background: var(--os-accent-soft); }
+.os-look-card b { color: var(--os-text); font-weight: 500; }
+.os-look-card span:last-child { font-size: var(--os-type-meta-size); }
+.os-look-card__swatch { width: 100%; height: 36px; border-radius: var(--os-radius-md); margin-bottom: 6px; border: 1px solid var(--os-hairline); }
+.os-look-card__swatch--kosmos { background: var(--os-phase-base); }
+.os-look-card__swatch--klar { background: var(--os-canvas-raised); }
+.os-phase-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--os-space-2); }
+.os-phase-row button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 56px; padding: var(--os-space-2) var(--os-space-3); border: 1px solid var(--os-hairline); border-radius: var(--os-radius-md); font-size: var(--os-type-meta-size); color: var(--os-text-faint); text-align: left; }
+.os-phase-row button b { color: var(--os-text-muted); font-weight: 500; }
+.os-phase-row button[aria-pressed='true'] { border-color: var(--os-accent-line); background: var(--os-accent-soft); }
+.os-phase-row button[aria-pressed='true'] b { color: var(--os-text); }
+.os-ambient-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--os-space-4); }
+.os-ambient-toggle { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 var(--os-space-4); border: 1px solid var(--os-hairline-strong); border-radius: var(--os-radius-pill); color: var(--os-text); }
+.os-ambient-toggle[aria-pressed='true'] { border-color: var(--os-accent-line); background: var(--os-accent-soft); }
+.os-ambient-volume { display: inline-flex; align-items: center; gap: var(--os-space-2); font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
+.os-ambient-volume input { accent-color: var(--os-accent); width: 140px; }
+@media (max-width: 1099px) { .os-phase-row { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

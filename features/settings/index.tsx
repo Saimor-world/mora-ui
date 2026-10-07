@@ -7,6 +7,7 @@ import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
+import { LookSettings } from './ui/LookSettings';
 import { connectionRows, useConnectionsOverview } from './data/useConnections';
 
 export const SETTINGS_SECTIONS = [
@@ -40,6 +41,7 @@ export default function SettingsSurface({ preview }: FeatureSurfaceProps) {
         <Text variant="eyebrow">Einstellungen</Text>
         <Text variant="display" className="mt-2">Wenige Schalter, klar benannt.</Text>
       </header>
+      <LookSettings />
       <div className="os-tabs" role="tablist" aria-label="Einstellungen">
         {SETTINGS_SECTIONS.map((s) => (
           <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className="os-tab" onClick={() => setSection(s.id)}>{s.label}</button>

@@ -36,24 +36,29 @@ function useWideViewport(min = 900) {
   return wide;
 }
 
-export function OsAtmosphere({ mode }: { mode: AtmosphereMode }) {
+export function OsAtmosphere({ mode, look = 'kosmos' }: { mode: AtmosphereMode; look?: 'kosmos' | 'klar' }) {
   const capability = useAmbientCapability();
   const wide = useWideViewport();
   const universe = mode === 'universe';
-  const motion = universe && capability.enableHeavy && capability.heavyReady && wide;
+  const kosmos = look === 'kosmos';
+  // V1.5: Kosmos zeigt auf ALLEN Flächen die helle Legacy-Home-Atmosphäre
+  // (MoraLivingBackground + TemporalAtmosphere + RitualSceneStyler, wie MoraShell).
+  // Klar: ruhige Phasen-Fläche, kein Bildraum, keine Bewegung.
+  const motion = kosmos && capability.enableHeavy && capability.heavyReady && wide;
 
   return (
-    <div className="os-atmo" data-testid="os-universe-layer" data-mode={mode} data-motion={motion ? 'on' : 'off'} aria-hidden>
-      <div className="os-atmo__base"><ShellStaticBackdrop /></div>
-      <div className="os-atmo__plate" data-testid="os-atmo-plate" />
-      <div className="os-atmo__living" data-testid="os-atmo-living">{universe ? <MoraLivingBackground /> : null}</div>
+    <div className="os-atmo" data-testid="os-universe-layer" data-mode={mode} data-look={look} data-motion={motion ? 'on' : 'off'} aria-hidden>
+      <div className="os-atmo__phase" />
+      {kosmos ? <div className="os-atmo__base"><ShellStaticBackdrop /></div> : null}
+      {kosmos ? <div className="os-atmo__plate" data-testid="os-atmo-plate" /> : null}
+      <div className="os-atmo__living" data-testid="os-atmo-living">{kosmos ? <MoraLivingBackground /> : null}</div>
       {motion ? (
         <div className="os-atmo__motion" data-testid="os-atmo-motion">
           <StarField density={capability.density === "low" ? "low" : "medium"} opacity={0.4} />
           <div className="os-atmo__temporal"><TemporalAtmosphere /></div>
         </div>
       ) : null}
-      {universe ? <RitualSceneStyler muted /> : null}
+      {kosmos ? <RitualSceneStyler muted={universe} /> : null}
       <div className="os-atmo__veil" />
     </div>
   );

@@ -4,7 +4,9 @@ import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'reac
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
-import { osCssVariables } from '@/lib/design/osTokens';
+import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
+import { usePhase } from '@/lib/os-prototype/usePhase';
+import { AmbientPlayer } from './AmbientPlayer';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 import type { FeatureManifest, FeatureSurfaceProps } from '@/features/types';
 import { MoraConsole } from '@/features/mora/ui/MoraConsole';
@@ -103,6 +105,9 @@ export function OsShell({ preview }: { preview: boolean }) {
   const atmosphere = active.atmosphere ?? 'calm';
 
   const demoMode = preview && !userName;
+  const { phase, mounted } = usePhase();
+  const lookStored = useOsShellStore((s) => s.look);
+  const look = mounted ? lookStored : 'kosmos';
   const org = demoMode ? 'Simple Coffee Group' : 'Deine Organisation';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
@@ -113,7 +118,8 @@ export function OsShell({ preview }: { preview: boolean }) {
   };
 
   return (
-    <div className="os-root relative" style={osCssVariables() as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere}>
+    <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
+      <AmbientPlayer phase={phase} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
@@ -121,7 +127,7 @@ export function OsShell({ preview }: { preview: boolean }) {
       ) : null}
       <div className="os-small-notice" role="note" data-testid="os-small-notice">SAIMÔR ist eine Kommandozentrale – am besten auf Desktop, Laptop oder Tablet (ab 768 px).</div>
       <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
-        <OsAtmosphere mode={atmosphere} />
+        <OsAtmosphere mode={atmosphere} look={look} />
 
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">

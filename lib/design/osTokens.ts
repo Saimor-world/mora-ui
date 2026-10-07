@@ -152,3 +152,37 @@ export function osCssVariables(): Record<string, string> {
 function kebab(value: string) {
   return value.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
 }
+
+/* ── V1.5 Tagesphasen × Look ───────────────────────────────────────────────
+ * Vier Phasen wie im Legacy-Ritual (lib/os/ritualMode.ts: Flow/Build/Lounge/
+ * Nacht, gleiche Akzentfarben). Jede Phase färbt Akzent, Aura, Glas und
+ * Hintergrund. Look „Kosmos“ = Legacy-Home-Atmosphäre (hell, Raum),
+ * Look „Klar“ = ruhige Business-Darstellung: deckende Flächen, kein Bildraum.
+ */
+export type OsPhase = 'flow' | 'build' | 'lounge' | 'night';
+export type OsLook = 'kosmos' | 'klar';
+
+const PHASE_PALETTE: Record<OsPhase, { accent: string; rgb: string; aura: string; aura2: string; base: string; baseKlar: string; glass: string }> = {
+  flow:   { accent: '#6ee7b7', rgb: '16,185,129',  aura: 'rgba(16,185,129,0.30)',  aura2: 'rgba(34,211,238,0.22)',  base: 'linear-gradient(160deg, #0b3a4a 0%, #0f5163 38%, #1d6a6a 62%, #6b6a3a 100%)', baseKlar: 'linear-gradient(180deg, #121b1f 0%, #0e1518 100%)', glass: 'rgba(10,30,36,0.46)' },
+  build:  { accent: '#7dd3fc', rgb: '56,189,248',  aura: 'rgba(56,189,248,0.30)',  aura2: 'rgba(251,191,36,0.22)',  base: 'linear-gradient(160deg, #0d3157 0%, #1a5d8a 40%, #3a77a0 64%, #9a7a3a 100%)', baseKlar: 'linear-gradient(180deg, #131a22 0%, #0f141b 100%)', glass: 'rgba(10,24,40,0.46)' },
+  lounge: { accent: '#fdba74', rgb: '251,146,60',  aura: 'rgba(251,146,60,0.28)',  aura2: 'rgba(244,114,182,0.22)', base: 'linear-gradient(160deg, #2a1838 0%, #4a2546 40%, #7a3a46 66%, #a0623a 100%)', baseKlar: 'linear-gradient(180deg, #1c1719 0%, #151214 100%)', glass: 'rgba(34,16,28,0.46)' },
+  night:  { accent: '#a5b4fc', rgb: '99,102,241',  aura: 'rgba(99,102,241,0.30)',  aura2: 'rgba(34,211,238,0.16)',  base: 'linear-gradient(160deg, #070b1e 0%, #121a3e 45%, #1c2050 70%, #0b2a3a 100%)', baseKlar: 'linear-gradient(180deg, #11131b 0%, #0c0e14 100%)', glass: 'rgba(10,12,30,0.50)' },
+};
+
+export function osPhaseVariables(phase: OsPhase, look: OsLook): Record<string, string> {
+  const p = PHASE_PALETTE[phase];
+  const klar = look === 'klar';
+  return {
+    '--os-accent': p.accent,
+    '--os-accent-soft': `rgba(${p.rgb},0.14)`,
+    '--os-accent-line': `rgba(${p.rgb},0.34)`,
+    '--os-focus': `rgba(${p.rgb},0.6)`,
+    '--os-aura': klar ? `rgba(${p.rgb},0.06)` : p.aura,
+    '--os-aura-secondary': klar ? 'transparent' : p.aura2,
+    '--os-phase-base': klar ? p.baseKlar : p.base,
+    '--os-glass': klar ? 'rgba(22,28,32,0.94)' : p.glass,
+    '--os-glass-strong': klar ? 'rgba(24,30,34,0.97)' : `rgba(8,14,18,0.58)`,
+    '--os-surface': klar ? 'rgba(255,255,255,0.045)' : 'rgba(255,255,255,0.04)',
+    '--os-glass-filter': klar ? 'none' : 'blur(18px) saturate(1.2)',
+  };
+}
