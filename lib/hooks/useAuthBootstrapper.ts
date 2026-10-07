@@ -25,7 +25,7 @@ import { resolveCompanySelection } from '@/lib/auth/companySelection';
 // Type mapping: UserProfile (authClient) → User (sessionStore)
 // ---------------------------------------------------------------------------
 
-function mapProfileToUser(profile: UserProfile): User {
+export function mapProfileToUser(profile: UserProfile): User {
     return {
         id: profile.user_id,
         name: profile.full_name ?? profile.email ?? 'Unknown',

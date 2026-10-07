@@ -15,8 +15,12 @@ import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 export interface AgentThought { ts?: string; thought?: string; type?: string; signal_source?: string; latent_intent?: string }
 
 const TYPE_LABEL: Record<string, string> = {
-  search: 'Suche', node: 'Bereich', perception: 'Wahrnehmung', cognition: 'Überlegung', action: 'Aktion', signal: 'Signal',
+  search: 'Suche', user_interaction: 'Anfrage', node: 'Bereich', perception: 'Wahrnehmung', cognition: 'Überlegung', action: 'Aktion', signal: 'Signal',
 };
+
+const SOURCE_LABEL: Record<string, string> = { search_cortex: 'Suche', node_cortex: 'Bereiche', agency: 'Agent' };
+
+const INTENT_LABEL: Record<string, string> = { information_retrieval: 'Information finden' };
 
 export const DEMO_THOUGHTS: AgentThought[] = [
   { type: 'signal', signal_source: 'Wissen', thought: 'Budget-Dokument von Store San Francisco ist seit über 60 Tagen unverändert – zur Prüfung vorgemerkt.', latent_intent: 'Risiko früh zeigen' },
@@ -60,9 +64,9 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
             <li key={`${t.ts || 'demo'}-${i}`} className="os-agent-feed__item">
               <span className="os-agent-feed__dot" aria-hidden />
               <div className="min-w-0">
-                <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', t.signal_source, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
+                <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', SOURCE_LABEL[t.signal_source || ''] || t.signal_source, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
                 <Text tone="default" className={compact ? 'truncate' : undefined}>{t.thought || '—'}</Text>
-                {!compact && t.latent_intent ? <Text variant="meta">Absicht: {t.latent_intent}</Text> : null}
+                {!compact && t.latent_intent ? <Text variant="meta">Absicht: {INTENT_LABEL[t.latent_intent] || t.latent_intent}</Text> : null}
               </div>
             </li>
           );

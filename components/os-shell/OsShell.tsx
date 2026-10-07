@@ -7,6 +7,7 @@ import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
 import { OsOnboarding } from './OsOnboarding';
+import { OsSessionBoot } from './OsSessionBoot';
 import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { AmbientPlayer } from './AmbientPlayer';
 import { FEATURE_MANIFESTS, getFeature, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
@@ -123,6 +124,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
+      {!preview ? <OsSessionBoot /> : null}
       <OsOnboarding live={Boolean(userName)} navigate={navigate} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
