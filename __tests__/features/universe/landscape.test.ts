@@ -17,7 +17,10 @@ describe('universe landscape model', () => {
     expect(l.planets.find((p) => p.id === 'finance')!.metrics[0].value).toBe('nicht belegt');
   });
   it('draws assigned strands from MÔRA for signals and inferred strands only with evidence', () => {
-    const l = buildLandscape({ ...sampleLandscapeInput(), finance: { kind: 'state', label: 'x' }, labs });
+    const base = sampleLandscapeInput();
+    // Das Demo-Paket hat keine Rechnungs-Mail → keine vermutete Post→Finance-Linie.
+    expect(buildLandscape({ ...base, finance: { kind: 'state', label: 'x' }, labs }).strands.find((s) => s.id === 'post-finance')).toBeUndefined();
+    const l = buildLandscape({ ...base, mail: { unread: 1, subjects: ['Rechnung Oktober'] }, finance: { kind: 'state', label: 'x' }, labs });
     expect(l.strands.find((s) => s.id === 'mora-today')?.evidence).toBe('assigned');
     expect(l.strands.find((s) => s.id === 'post-finance')?.evidence).toBe('inferred');
     const empty = buildLandscape({ sample: false });

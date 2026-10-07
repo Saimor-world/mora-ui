@@ -4,7 +4,9 @@ import { UniverseLandscape } from '@/features/universe/ui/UniverseLandscape';
 import { buildLandscape } from '@/features/universe/data/landscape';
 import { sampleLandscapeInput } from '@/features/universe/data/sample';
 
-const landscape = buildLandscape({ ...sampleLandscapeInput(), finance: { kind: 'state', label: 'nicht geprüft' }, labs: { count: 3, names: ['A'] } });
+const base = sampleLandscapeInput();
+// Demo-Paket + eine Test-Mail mit Rechnungsbezug, damit die vermutete Post→Finance-Linie geprüft wird.
+const landscape = buildLandscape({ ...base, mail: { unread: 2, subjects: [...base.mail!.subjects, 'Rechnung Oktober'] }, finance: { kind: 'state', label: 'nicht geprüft' }, labs: { count: 3, names: ['A'] } });
 
 describe('UniverseLandscape', () => {
   it('renders planets around the MÔRA core, orbits and strands', () => {
@@ -22,7 +24,7 @@ describe('UniverseLandscape', () => {
     const panel = screen.getByTestId('universe-detail');
     expect(within(panel).getByText('Post')).toBeInTheDocument();
     expect(within(panel).getAllByText('Beispiel').length).toBeGreaterThan(0);
-    expect(within(panel).getByText('Beispiel: Rechnung Oktober')).toBeInTheDocument();
+    expect(within(panel).getByText(/Wochenlieferung Arabica/)).toBeInTheDocument();
     expect(screen.getByTestId('universe-landscape')).toHaveAttribute('data-focus', 'post');
     expect(screen.getByTestId('universe-landscape')).toHaveAttribute('data-motion', 'still');
     fireEvent.click(screen.getByTestId('universe-open-area'));
