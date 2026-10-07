@@ -560,6 +560,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
           {selectedCompanyId && section === 'capital' && !stateDenied && (
             <div className="space-y-4">
               <CapitalProfitCenter
+                companyId={selectedCompanyId}
                 records={records}
                 hasOlderRecords={Boolean(flowQuery.hasNextPage)}
               />
