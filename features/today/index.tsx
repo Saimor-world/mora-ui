@@ -11,6 +11,7 @@ import { CONTRACT_LABEL } from '@/features/finance/data/contracts';
 import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
 import { sampleTodaySnapshot } from './data/sample';
+import { MoraLagebild } from './ui/MoraLagebild';
 
 function greeting(date = new Date()) {
   const h = date.getHours();
@@ -56,6 +57,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
       </header>
+
+      {sample ? <MoraLagebild navigate={navigate} /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
