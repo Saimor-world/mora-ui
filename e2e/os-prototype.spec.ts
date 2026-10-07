@@ -31,12 +31,12 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(page.locator('[data-pane-stack]').first()).toBeVisible();
   });
 
-  test('mobile: bottom bar + MÔRA sheet', async ({ page }) => {
+  test('mobile: dock + MÔRA sheet from the MÔRA stone', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/os#today');
-    const bar = page.getByRole('navigation', { name: 'Navigation mobil' });
+    const bar = page.getByRole('navigation', { name: 'Hauptnavigation' });
     await expect(bar).toBeVisible();
-    await bar.getByRole('button', { name: 'MÔRA' }).click();
+    await bar.getByTestId('dock-mora').click();
     await expect(page.getByTestId('mora-console-panel')).toBeVisible();
   });
 
