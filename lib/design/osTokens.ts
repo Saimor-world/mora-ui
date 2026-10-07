@@ -52,6 +52,23 @@ export const osColor = {
   railVeilBottom: 'rgba(4,8,9,0.42)',
   stoneHalo: 'rgba(110,231,183,0.28)',
   stoneHaloThinking: 'rgba(110,231,183,0.5)',
+  /** V1.2 Universe planets: light core → deep body, calm and slightly desaturated. */
+  planetTodayLight: '#f6e7c1', planetTodayDeep: '#7a5a22',
+  planetPostLight: '#cfe9f7', planetPostDeep: '#245a78',
+  planetFinanceLight: '#c9f3df', planetFinanceDeep: '#1d6b4e',
+  planetKnowledgeLight: '#ddd3f7', planetKnowledgeDeep: '#4a3c82',
+  planetSpacesLight: '#f3d2bd', planetSpacesDeep: '#7d3f24',
+  planetConnectionsLight: '#cfeee9', planetConnectionsDeep: '#2b6660',
+  planetLabsLight: '#dadfe3', planetLabsDeep: '#3d464d',
+  planetShadow: 'rgba(0,0,0,0.72)',
+  planetRim: 'rgba(255,255,255,0.22)',
+  orbitLine: 'rgba(255,255,255,0.08)',
+  orbitLineStrong: 'rgba(110,231,183,0.22)',
+  strandAssigned: 'rgba(110,231,183,0.55)',
+  strandInferred: 'rgba(253,211,140,0.42)',
+  signalWarning: '#fcd34d',
+  signalInfo: '#7dd3fc',
+  coreGlow: 'rgba(110,231,183,0.14)',
 } as const;
 
 /** Atmosphere: how the shared universe image is treated per mode (non-colour values). */
