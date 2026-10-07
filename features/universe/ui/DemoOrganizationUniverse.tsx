@@ -4,7 +4,7 @@ import { OrganizationField } from '@/components/universe/OrganizationField';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { MoraStone, SampleTag } from '@/components/os-kit';
-import { buildDemoUniverse } from '../data/demoUniverse';
+import { buildDemoUniverse, type DemoLayout } from '../data/demoUniverse';
 import { PlanetDetail } from './PlanetDetail';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
@@ -18,14 +18,20 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
  */
 export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea: (target: string) => void; onAskMora: (text: string) => void }) {
   // Flache Fenster (z. B. 1024x640): flachere, breitere Ellipse, damit nichts kollidiert.
-  const [compact, setCompact] = useState(false);
+  // Layout passend zum Rahmen: Ellipse, kompakt (flach) oder schmal (flach + Seitenkarten ab 1280).
+  const [layout, setLayout] = useState<DemoLayout>('ring');
+  const compact = layout !== 'ring';
   useEffect(() => {
-    const check = () => setCompact(window.innerHeight < 820);
+    const check = () => {
+      const flat = window.innerHeight < 820;
+      const side = window.innerWidth >= 1280 && window.innerHeight >= 760;
+      setLayout(!flat ? 'ring' : side ? 'narrow' : 'compact');
+    };
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-  const demo = useMemo(() => buildDemoUniverse({ compact }), [compact]);
+  const demo = useMemo(() => buildDemoUniverse({ layout }), [layout]);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     // V1.4: Fokus aus Lagebild oder Befehlspalette übernehmen.
     const f = useOsShellStore.getState().universeFocus;

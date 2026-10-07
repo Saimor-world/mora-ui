@@ -110,6 +110,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
+      <div className="os-small-notice" role="note" data-testid="os-small-notice">SAIMÔR ist eine Kommandozentrale – am besten auf Desktop, Laptop oder Tablet (ab 768 px).</div>
       <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} />
 

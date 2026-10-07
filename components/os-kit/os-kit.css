@@ -285,13 +285,13 @@
 .os-legacy-universe__core .os-ulx__core-ring--2 { width: 104px; height: 104px; }
 .os-legacy-universe .os-legacy-universe__pill { bottom: var(--os-space-3); z-index: 60; }
 .os-legacy-obs { display: none; }
-@media (min-width: 1024px) {
+@media (min-width: 768px) {
   .os-legacy-universe__field { display: block; }
   .os-legacy-universe__legend { display: block; }
   .os-legacy-universe__header { left: 30%; right: 30%; }
 }
 /* Observatorium nur, wenn links und rechts genug Platz bleibt. */
-@media (min-width: 1440px) and (min-height: 860px) {
+@media (min-width: 1280px) and (min-height: 760px) {
   .os-legacy-obs { display: block; }
   .os-legacy-universe { --ou-side: 300px; --ou-top: 96px; }
   .os-legacy-universe__header { left: var(--ou-side); right: var(--ou-side); }
@@ -310,7 +310,7 @@
 .os-legacy-universe__mobile { position: absolute; left: 0; right: 0; top: 64px; bottom: 60px; z-index: 20; overflow-y: auto; padding: var(--os-space-2) var(--os-space-5) var(--os-space-8); }
 .os-legacy-universe__header h1 { line-height: 1.2; }
 @media (max-width: 1023px) { .os-legacy-universe__header h1 { font-size: 18px !important; } }
-@media (min-width: 1024px) { .os-legacy-universe__mobile { display: none; } }
+@media (min-width: 768px) { .os-legacy-universe__mobile { display: none; } }
 /* Sehr flache Fenster: Kennzahlzeile unter dem Namen weglassen (steht in der Detailansicht). */
 @media (max-height: 700px) and (min-width: 1024px) { .os-legacy-universe [data-territory-meta] { display: none; } }
 
@@ -332,3 +332,20 @@
 .os-planet-detail__stats strong { color: var(--os-text); font-weight: 500; font-size: var(--os-type-title-size); margin-right: 4px; }
 .os-planet-detail__row { width: 100%; text-align: left; background: none; border-left: 0; border-right: 0; cursor: pointer; }
 .os-planet-detail__actions { margin-top: auto; }
+
+/* Flach mit Seitenkarten (1280x800): Kopf schmal zwischen den Karten, Legende darunter. */
+@media (min-width: 1280px) and (min-height: 760px) and (max-height: 819px) {
+  .os-legacy-universe { --ou-top: 100px; --ou-bottom: 64px; }
+}
+/* iPad / Touch: größere Trefferflächen, nichts hängt am Hover. */
+@media (pointer: coarse) {
+  .os-dock [aria-label] { min-width: 52px; min-height: 52px; }
+  .os-tab, .os-btn, .os-list-row, .os-nav-item { min-height: 44px; }
+  .os-planet-detail__close { width: 48px; height: 48px; }
+  .os-legacy-universe [data-testid^='territory-'] { padding: 8px; }
+}
+/* Unter 768 px: ruhiger Hinweis statt eigener Handy-Layouts. */
+.os-small-notice { display: none; }
+@media (max-width: 767px) {
+  .os-small-notice { display: block; position: relative; z-index: 90; padding: var(--os-space-2) var(--os-space-4); font-size: var(--os-type-meta-size); color: var(--os-text-muted); background: var(--os-glass-strong); border-bottom: 1px solid var(--os-hairline); text-align: center; }
+}

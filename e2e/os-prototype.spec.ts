@@ -31,14 +31,6 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(page.locator('[data-pane-stack]').first()).toBeVisible();
   });
 
-  test('mobile: dock + MÔRA sheet from the MÔRA stone', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto('/os#today');
-    const bar = page.getByRole('navigation', { name: 'Hauptnavigation' });
-    await expect(bar).toBeVisible();
-    await bar.getByTestId('dock-mora').click();
-    await expect(page.getByTestId('mora-console-panel')).toBeVisible();
-  });
 
   test('universe layer: calm and dimmed on Heute, full in Universe', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -86,21 +78,9 @@ test.describe('OS prototype (/os, local preview)', () => {
     expect(errors).toEqual([]);
   });
 
-  test('universe mobile stays spatial; reduced motion keeps planets still', async ({ browser }) => {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
-    const page = await ctx.newPage();
-    await page.goto('/os#universe');
-    await page.getByTestId('universe-lens-landscape').click();
-    const field = page.getByTestId('universe-landscape');
-    await expect(field).toHaveAttribute('data-layout', 'mobile');
-    await expect(field).toHaveAttribute('data-motion', 'still');
-    await page.locator('[data-planet="today"]').click();
-    await expect(page.getByTestId('universe-detail')).toBeVisible();
-    await ctx.close();
-  });
 
-  test('V1.3: Marius\' dock is the main navigation (desktop + mobile)', async ({ browser }) => {
-    for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test('V1.3: Marius\' dock is the main navigation (desktop + iPad)', async ({ browser }) => {
+    for (const viewport of [{ width: 1440, height: 900 }, { width: 820, height: 1180 }]) {
       const ctx = await browser.newContext({ viewport });
       const page = await ctx.newPage();
       await page.goto('/os#today');
@@ -131,10 +111,10 @@ test.describe('OS prototype (/os, local preview)', () => {
     expect(errors).toEqual([]);
   });
 
-  const SIZES = [[1024, 640], [1280, 800], [1440, 900], [390, 844]] as const;
+  const SIZES = [[1024, 768], [1280, 800], [1440, 900], [1180, 820], [820, 1180]] as const;
 
   for (const [w, h] of SIZES) {
-    test(`V1.3.1 universe ${w}x${h}: no overlapping boxes, threads stay inside the field, dock fully visible`, async ({ browser }) => {
+    test(`V1.4 universe ${w}x${h}: no overlapping boxes, threads stay inside the field, dock fully visible`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width: w, height: h }, reducedMotion: 'reduce' });
       const page = await ctx.newPage();
       await page.goto('/os#universe');
@@ -184,7 +164,7 @@ test.describe('OS prototype (/os, local preview)', () => {
   }
 
   for (const [w, h] of SIZES) {
-    test(`V1.3.1 all surfaces ${w}x${h}: dock fully visible, content ends above the dock, topbar clear`, async ({ browser }) => {
+    test(`V1.4 all surfaces ${w}x${h}: dock fully visible, content ends above the dock, topbar clear`, async ({ browser }) => {
       const ctx = await browser.newContext({ viewport: { width: w, height: h } });
       const page = await ctx.newPage();
       for (const id of ['today', 'mora', 'finance', 'post', 'knowledge', 'settings', 'labs']) {
@@ -206,4 +186,62 @@ test.describe('OS prototype (/os, local preview)', () => {
       await ctx.close();
     });
   }
+
+  test('V1.4: command palette jumps to a planet and to a document', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#today');
+    await page.keyboard.press('Control+k');
+    await page.getByLabel('Suchen oder Befehl').fill('San Francisco');
+    await page.getByRole('option', { name: /Store San Francisco/ }).first().click();
+    await expect(page).toHaveURL(/#universe$/);
+    await expect(page.getByTestId('planet-detail')).toContainText('Store San Francisco');
+    await page.keyboard.press('Control+k');
+    await page.getByLabel('Suchen oder Befehl').fill('handbook');
+    await page.getByRole('option', { name: /employee_handbook\.pdf/ }).click();
+    await expect(page).toHaveURL(/#knowledge$/);
+    await expect(page.getByTestId('knowledge-demo-docs')).toContainText('employee_handbook.pdf');
+  });
+
+  test('V1.4: dock shortcuts 1–9, M, U and the ? overlay', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/os#today');
+    await expect(page.getByTestId('feature-today')).toBeVisible();
+    await page.keyboard.press('u');
+    await expect(page).toHaveURL(/#universe$/);
+    await page.keyboard.press('1');
+    await expect(page).toHaveURL(/#today$/);
+    await page.keyboard.press('Shift+?');
+    await expect(page.getByTestId('shortcuts-overlay')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('shortcuts-overlay')).toHaveCount(0);
+    await page.keyboard.press('m');
+    await expect(page.getByTestId('mora-console-panel')).toBeVisible();
+  });
+
+  test('V1.4: Lagebild → planet focus → glass detail → Wissen', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/os#today');
+    const lb = page.getByTestId('mora-lagebild');
+    await expect(lb).toContainText('Beispiel');
+    await expect(lb.locator('li')).toHaveCount(3);
+    await lb.getByTestId('lagebild-focus-demo-sf').click();
+    await expect(page).toHaveURL(/#universe$/);
+    const detail = page.getByTestId('planet-detail');
+    await expect(detail).toContainText('ai_barista_pilot.pdf');
+    await expect(detail).toContainText('Quartalsbericht');
+    await page.keyboard.press('Escape');
+    await expect(detail).toHaveCount(0);
+    await page.getByTestId('territory-demo-hr').click({ force: true });
+    await page.getByTestId('planet-open-knowledge').click();
+    await expect(page).toHaveURL(/#knowledge$/);
+    await expect(page.getByTestId('knowledge-demo-docs')).toContainText('employee_handbook.pdf');
+  });
+
+  test('V1.4: below 768 px a calm desktop/tablet hint, no dedicated phone layout', async ({ page }) => {
+    await page.setViewportSize({ width: 600, height: 900 });
+    await page.goto('/os#today');
+    await expect(page.getByTestId('os-small-notice')).toBeVisible();
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect(page.getByTestId('os-small-notice')).toBeHidden();
+  });
 });

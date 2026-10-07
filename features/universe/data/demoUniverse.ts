@@ -9,11 +9,14 @@ import { DEMO_CALENDAR, DEMO_COMPANY_NAME, DEMO_DEPARTMENTS, DEMO_FEED_SOURCES, 
  * Keine neuen Planeten – dieselben Abteilungs-Planeten, Ordner-Monde,
  * Signale wie mit echter CORE-Sitzung.
  */
-export function buildDemoUniverse(opts: { compact?: boolean } = {}) {
+export type DemoLayout = 'ring' | 'compact' | 'narrow';
+export function buildDemoUniverse(opts: { compact?: boolean; layout?: DemoLayout } = {}) {
+  const layout: DemoLayout = opts.layout ?? (opts.compact ? 'compact' : 'ring');
   const metrics: Record<string, { nodes: number; spaces: number; folders: number; source: 'derived' }> = {};
   DEMO_DEPARTMENTS.forEach((d) => { metrics[d.id] = { nodes: demoDocumentCount(d), spaces: d.folders.length, folders: d.folders.length, source: 'derived' }; });
-  const placed = opts.compact
-    ? DEMO_DEPARTMENTS.map((d) => ({ ...d, x: COMPACT_POSITIONS[d.id]?.[0] ?? 50, y: COMPACT_POSITIONS[d.id]?.[1] ?? 50 }))
+  const fixed = layout === 'compact' ? COMPACT_POSITIONS : layout === 'narrow' ? NARROW_POSITIONS : null;
+  const placed = fixed
+    ? DEMO_DEPARTMENTS.map((d) => ({ ...d, x: fixed[d.id]?.[0] ?? 50, y: fixed[d.id]?.[1] ?? 50 }))
     : ringLayout(DEMO_DEPARTMENTS);
   const territories: OrganizationTerritory[] = placed.map((d) => ({
     id: d.id, name: d.name, description: d.description, color: d.color, x: d.x, y: d.y,
@@ -64,4 +67,10 @@ export function ringLayout<T>(items: T[], rx = 40, ry = 32, cy = 45, startDeg?: 
 export const COMPACT_POSITIONS: Record<string, [number, number]> = {
   'demo-sf': [24, 16], 'demo-management': [50, 8], 'demo-hr': [72, 20],
   'demo-heilbronn': [7, 52], 'demo-tech': [93, 56], 'demo-stuttgart': [27, 82], 'demo-marketing': [73, 84],
+};
+
+/** Flach UND mit Seitenkarten (z. B. 1280x800): schmaleres Feld. Vermessen im Browser. */
+export const NARROW_POSITIONS: Record<string, [number, number]> = {
+  'demo-sf': [18, 18], 'demo-management': [50, 12], 'demo-hr': [82, 18],
+  'demo-heilbronn': [8, 54], 'demo-tech': [92, 54], 'demo-stuttgart': [24, 86], 'demo-marketing': [76, 86],
 };
