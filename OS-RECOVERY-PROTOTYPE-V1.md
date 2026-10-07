@@ -305,3 +305,49 @@ Feedback von Marius: „Ich habe ein Dock etc. in meinem OS. Orientiere dich an 
 - **Layout**: Ellipse um den Kern ab einer Höhe von 820 px, darunter vermessene feste Positionen. Das Observatorium erscheint erst ab 1440×860, damit das Feld nie eingeklemmt wird. Bei flachen Fenstern entfallen die Überschrift und die Kennzahlzeile.
 - **Dock** ist immer voll sichtbar; das Universe endet über dem Dock.
 - **e2e** bei 1024×640, 1280×800, 1440×900 und 390×844: keine überlappenden Boxen (Planet, Name, Kennzahl, Abzeichen, Kern, Legende, Pille, Intro, Seitenkarten, Dock, Kopfzeile), alle Fäden innerhalb des Feldes, Dock im Viewport, auf allen Flächen endet der Inhalt über dem Dock. Screenshots in `shots-v1.3.1/`.
+
+## 26. V1.4 „Kommandozentrale“
+
+**Zielgeräte:** Desktop/Laptop und iPad (ab 768 px). Unter 768 px erscheint nur ein ruhiger Hinweis („am besten auf Desktop/Tablet“), es gibt kein eigenes Phone-Layout und keine Phone-Tests.
+**Getestete Größen:** 1024x768, 1280x800, 1440x900, 1180x820 und 820x1180 (Playwright: 36 Tests, Kollisions- und Fadenprüfung je Größe).
+
+### 26.1 Kommandozentrale
+- **Befehlspalette (⌘/Strg K):** springt zu Orten, Planeten und Dokumenten, MÔRA fragen. Startzustand wie die Legacy-Suche: Schnellsuche-Chips plus ein Raster der Abteilungen.
+- **Tastenkürzel:** 1–9 für das Dock, M für MÔRA, U für Universe, C für das Control Center, Strg⇧F für Focus, ? für die Übersicht und Esc zum Schließen.
+- **MÔRA-Lagebild auf Heute:** 3 Prioritäten aus den Demo-Beobachtungen. Ein Klick fokussiert den Planeten.
+- **Planeten-Fokus:** öffnet ein Glas-Detailpanel mit Dokumenten, Aufgaben und Signalen der Abteilung, dazu „In Wissen/Post öffnen“ und „MÔRA fragen“. Der Fokus liegt jetzt im Store und übersteht auch ein Neu-Mounten der Fläche.
+- **iPad:** Hit-Areas ≥ 44 px (`pointer: coarse`) und keine Hover-Abhängigkeit.
+
+### 26.2 Echtes Legacy-OS per Dev-Login erkundet
+Ablauf: `lib/auth/devLogin.ts` (nur bei `NODE_ENV=development`) ruft `/api/auth/core-login` auf, das an CORE weiterleitet. Deshalb lief ein lokaler saimor-core: `ENVIRONMENT=development`, SQLite, Port 8081, PYTHONPATH=Repo-Root und `core/`. Er legt beim Start die „Simple Coffee Group“ an. Dazu kam ein lokaler Wegwerf-Nutzer `demo@saimor.io` im Tenant `tenant-demo` in der lokalen SQLite. Die Legacy-UI lief über `next dev` auf Port 3001, weil der CORE-CORS-Dev-Origin 3001 erlaubt. Keine Produktion, keine Secrets. Screens liegen unter `shots-v1.4/legacy/`.
+
+**Übernommen und verbessert:**
+| Legacy | /os V1.4 |
+|---|---|
+| Kontext-Kapsel (Lokale Instanz · Organisation · Demo · Home/Universe) | `ContextCapsule`: echte Schalter Heute/Universe; schrumpft kollisionsfrei (e2e-geprüft) |
+| Uhr-Pille „15:33 · MÔRA · BUILD“ | `ContextClock`: Szene nach Tageszeit, zeigt im Focus die Restzeit, öffnet das Control Center |
+| Control Center (Live-Kontext, Szene, Laufzeit, Sprungziele) | `ControlCenter` (Dock und Taste C): ehrlicher CORE-Status, Focus-Start, große Touch-Ziele |
+| Focus Mode (Strg⇧F, 25 min) | Strg⇧F bzw. Control Center, Countdown in der Uhr-Pille |
+| Home „Heute · Aktuell“ (Kalender/Mail/Aufgaben/Nightwatch) | 4 klickbare Karten aus dem Demo-Paket, Nightwatch live ehrlich „Unbekannt“ |
+| Home „Weiter“-Launcher | 5 Sprungkarten (Universe, Arbeit, Mail, Kalender, Dateien) |
+| MÔRA-Orb neben „Guten Tag.“ | MoraStone im Hero |
+| Suche: Quick Searches + Abteilungen | Palette-Startzustand |
+| MÔRA-Fenster: Tabs Chat/Erinnerungen/Signale, Live-Signale mit Explain/Navigate | Tabs auf der MÔRA-Fläche; Signale mit Kennzahlen, „Erklären“ (nur Entwurf) und „Navigieren“ (direkt Planet + Detail) |
+| MÔRA-Startvorschläge („Zeig mir Management“, „Was gibt es Neues?“ …) | übernommen |
+| Post: Absender-Avatar | Avatar plus „Mit MÔRA“ je Mail (Entwurf, nichts wird gesendet) |
+| Meine Dateien: Ablageorte Gerät/Privat/Workspace/Cloud | Wissen-Kacheln: Workspace = Demo-Dokumente, sonst ehrlich „—“ bzw. „nicht verbunden“ |
+| Universe-Seitenkarten (Verteilung, Horizont, Wirtschaft, Wache) | schon seit V1.3 aus dem Original; ab 1280 Breite sichtbar |
+
+Noch nicht übernommen: Ambient-Audio/Musik, Sprache (Mikrofon), Community Wall, Kunden-Vorschauen/Administration, Kalender-Fäden (YORI) und das Aufräumen-Bündel im Postfach.
+
+### 26.3 Qualitätspass je Fläche
+- **Heute:** Hero mit MÔRA-Stein, Aktuell-Karten, Lagebild, Weiter-Launcher, konsistente Glas-Karten und Hover-/Fokus-Zustände.
+- **MÔRA:** Tabs, Signale, ehrliche Leerzustände (Erinnerungen und Signale ohne CORE).
+- **Universe:** kollisionsfreie Planeten-Layouts für alle 5 Größen (im Browser vermessen), Fokus übersteht Remounts, Detailpanel.
+- **Post:** Avatare, „Mit MÔRA“, Beispiel-Badges.
+- **Wissen:** Ablageorte, Vorbelegung der Suche aus Palette und Planet.
+- **Finance:** unverändert ehrlich, keine erfundenen Zahlen (kein Umsatz ohne belegten Vertrag).
+- **Einstellungen/Labs:** Abstand zum Dock und zur Topbar e2e-geprüft.
+- **Shell:** Topbar-Kollisionstest, nur Tokens im CSS (kein rgba/hex).
+
+Vergleiche: `shots-v1.4/compare-<fläche>.png` (V1.3.1 → V1.4 bei 1280x800) und `shots-v1.4/compare-legacy-*.png` (echtes Legacy-OS → /os).
