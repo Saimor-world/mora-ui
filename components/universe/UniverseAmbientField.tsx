@@ -69,17 +69,23 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 transition={{ duration: 1.4, ease: 'easeInOut' }}
             />
 
-            <motion.div
+            {/* These two glows cover roughly half a megapixel each. Moving a
+                100–110px blur every frame forced Chrome to continually
+                composite large off-screen textures on top of the shell's own
+                atmosphere. Their colour and depth carry the look; their drift
+                was not perceptible enough to justify that permanent cost.
+                Keep them static and let the photograph, meteors, planets,
+                moons and ticker provide motion at much smaller paint bounds. */}
+            <div
                 className="absolute left-[12%] top-[14%] h-[54vw] max-h-[720px] w-[54vw] max-w-[900px] rounded-full blur-[100px]"
                 style={{ background: 'radial-gradient(circle,rgba(45,212,191,0.06),rgba(20,83,77,0.03) 44%,transparent 72%)' }}
-                animate={reducedMotion ? undefined : { x: [0, 34, -12, 0], y: [0, -24, 18, 0], scale: [1, 1.06, 0.98, 1] }}
-                transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
             />
-            <motion.div
+            <div
                 className="absolute -bottom-[20%] -left-[8%] h-[58%] w-[64%] rounded-full blur-[110px]"
-                style={{ background: 'radial-gradient(circle,rgba(212,167,61,0.12),rgba(115,83,35,0.04) 46%,transparent 72%)' }}
-                animate={reducedMotion ? undefined : { x: [0, 42, 0], opacity: [0.5, 0.72, 0.5] }}
-                transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
+                style={{
+                    background: 'radial-gradient(circle,rgba(212,167,61,0.12),rgba(115,83,35,0.04) 46%,transparent 72%)',
+                    opacity: 0.62,
+                }}
             />
 
             {!reducedMotion && [0, 1, 2].map((index) => (
