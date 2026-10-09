@@ -104,7 +104,9 @@ export default function UniverseView() {
 
     useEffect(() => {
         if (!effectiveCompanyId) {
-            setStatsMap({});
+            // Leere Werte nur setzen, wenn sie nicht schon leer sind: ein
+            // neues {} pro Lauf erzwang ohne Sitzung jedes Mal einen Render.
+            setStatsMap((current) => (Object.keys(current).length === 0 ? current : {}));
             return;
         }
         let cancelled = false;
@@ -291,7 +293,7 @@ export default function UniverseView() {
     // Ordner erst beim Aufklappen - deshalb hier ein eigener Abruf ueber die
     // ganze Firma (ein Aufruf, nicht einer je Bereich).
     useEffect(() => {
-        if (!effectiveCompanyId) { setFolderMoons({}); return; }
+        if (!effectiveCompanyId) { setFolderMoons((current) => (Object.keys(current).length === 0 ? current : {})); return; }
         let cancelled = false;
         const spaceToDepartment: Record<string, string> = {};
         Object.entries(spaceListByDepartment).forEach(([departmentId, spaces]) => {

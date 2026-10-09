@@ -196,18 +196,20 @@ function RecordRow({
   );
 }
 
-export default function FinanceV2App({ paneId }: AppProps) {
-  const pane = usePaneStore((state) => state.getPane(paneId));
-  const activePaneId = usePaneStore((state) => state.activePaneId);
+export type FinanceV2Section = Section;
+
+/**
+ * Pane-independent Finance v2 workspace. Extracted so the OS prototype shell
+ * (features/finance) can embed it without the floating GlassPanel window.
+ */
+export function FinanceV2Workspace({
+  initialSection = 'state',
+  hideSectionNav = false,
+}: { initialSection?: Section; hideSectionNav?: boolean } = {}) {
   const openPane = usePaneStore((state) => state.openPane);
-  const removePane = usePaneStore((state) => state.removePane);
-  const minimizePane = usePaneStore((state) => state.minimizePane);
-  const focusPane = usePaneStore((state) => state.focusPane);
-  const updatePanePosition = usePaneStore((state) => state.updatePanePosition);
-  const updatePaneSize = usePaneStore((state) => state.updatePaneSize);
   const activeCompanyId = useSessionStore((state) => state.user?.active_company_id || null);
   const activeCompanyName = useSessionStore((state) => state.user?.active_company_name || null);
-  const [section, setSection] = useState<Section>('state');
+  const [section, setSection] = useState<Section>(initialSection);
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
 
   const companiesQuery = useCompanies({ includeDemo: false });
@@ -239,8 +241,6 @@ export default function FinanceV2App({ paneId }: AppProps) {
     setSelectedRecordId(null);
   }, [selectedCompanyId]);
 
-  if (!pane) return null;
-
   const sections: Array<{ id: Section; label: string }> = [
     { id: 'state', label: 'State' },
     { id: 'flow', label: 'Flow' },
@@ -266,6 +266,303 @@ export default function FinanceV2App({ paneId }: AppProps) {
       data: { nodeId, companyId: selectedCompanyId },
     });
   };
+
+  return (
+    <div className="flex h-full min-h-0 flex-col overflow-hidden text-white">
+      <header className="border-b border-white/[0.055] px-1 pb-5">
+        <div className="flex flex-wrap items-start justify-between gap-5">
+          <div>
+            <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-100/42">
+              <Building2 size={11} /> {resolvedCompanyName || 'Unternehmen nicht ausgewählt'}
+            </div>
+            <h1 className="mt-3 text-[30px] font-medium tracking-[-0.05em] text-white/92">Finanzstatus</h1>
+            <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/34">
+              Belegte Unternehmenswerte, Bewegungen und offene Datenlücken. Manuelle Angaben bleiben als manuell erfasst gekennzeichnet.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
+            {state?.truth_state && <StateBadge state={state.truth_state} />}
+            {stateLastKnown && <StateBadge state="stale" />}
+            <span className="rounded-full border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/34">
+              Unternehmen
+            </span>
+          </div>
+        </div>
+
+        {!hideSectionNav && (
+        <nav className="mt-5 flex flex-wrap gap-1.5" aria-label="Finance sections">
+          {sections.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => {
+                setSection(item.id);
+                if (item.id !== 'flow') setSelectedRecordId(null);
+              }}
+              className={`rounded-full border px-3.5 py-2 text-[10px] transition ${
+                section === item.id
+                  ? 'border-emerald-200/18 bg-emerald-300/[0.075] text-emerald-50/86'
+                  : 'border-white/[0.06] bg-white/[0.018] text-white/34 hover:text-white/62'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+        )}
+      </header>
+
+      <div className="min-h-0 flex-1 overflow-y-auto py-5 pr-1">
+        {companiesQuery.isError && (
+          <ReadError
+            title="Unternehmenskontext nicht verfügbar"
+            copy="Die für Finance freigegebenen Unternehmen konnten nicht geladen werden. Es werden keine Finanzdaten aus einem geratenen Kontext angezeigt."
+            onRetry={() => void companiesQuery.refetch()}
+          />
+        )}
+
+        {!companiesQuery.isError && !selectedCompanyId && (
+          <TruthEmpty
+            title="Kein eindeutiges Unternehmen ausgewählt"
+            copy="Wähle ein aktives Unternehmen. Bei mehreren verfügbaren Unternehmen lädt Finance ohne eindeutigen Kontext keine Daten."
+          />
+        )}
+
+        {selectedCompanyId && stateDenied && (
+          <ReadError
+            denied
+            title={stateErrorKind === 'unauthenticated' ? 'Sitzung nicht autorisiert' : 'Zugriff auf Finanzstatus verweigert'}
+            copy="Zwischengespeicherte Finanzwerte werden für diesen Zugriff bewusst nicht angezeigt."
+          />
+        )}
+
+        {selectedCompanyId && !stateDenied && stateQuery.isLoading && !state && (
+          <div className="grid min-h-[240px] place-items-center rounded-[28px] border border-white/[0.06] bg-black/10">
+            <div className="text-center">
+              <Activity className="mx-auto animate-pulse text-emerald-200/50" size={24} />
+              <div className="mt-4 text-[10px] uppercase tracking-[0.2em] text-white/30">Finanzstatus wird geladen</div>
+            </div>
+          </div>
+        )}
+
+        {selectedCompanyId && !stateDenied && stateQuery.isError && !state && (
+          <ReadError
+            title="Finanzstatus momentan nicht erreichbar"
+            copy="Es wird kein leerer oder 0-€-Zustand daraus abgeleitet."
+            onRetry={() => void stateQuery.refetch()}
+          />
+        )}
+
+        {selectedCompanyId && state && stateLastKnown && (
+          <div className="mb-4 rounded-xl border border-amber-300/[0.10] bg-amber-400/[0.025] px-3 py-2 text-[10px] text-amber-50/52">
+            Letzter geladener Stand. Die Aktualisierung ist fehlgeschlagen; Werte werden nicht als aktuell ausgegeben.
+          </div>
+        )}
+
+        {selectedCompanyId && state && section === 'state' && (
+          <div className="space-y-4">
+            <section className="grid gap-3 md:grid-cols-3" aria-label="Finanzielle Entwicklung">
+              <div className="rounded-[24px] border border-white/[0.07] bg-black/14 p-5">
+                <div className="text-[9px] uppercase tracking-[0.18em] text-white/28">Letzter Checkpoint</div>
+                <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">
+                  {formatFinanceMoney(primaryCurrency?.observed_total)}
+                </div>
+                <div className="mt-2 text-[9px] text-white/26">
+                  {state.as_of ? new Date(state.as_of).toLocaleString('de-DE') : 'Kein gemeinsamer Zeitpunkt belegt'}
+                </div>
+              </div>
+              <div className="rounded-[24px] border border-white/[0.07] bg-black/14 p-5">
+                <div className="text-[9px] uppercase tracking-[0.18em] text-white/28">Bewegungen danach</div>
+                <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">
+                  {formatFinanceMoney(movementSinceCheckpoint)}
+                </div>
+                <div className="mt-2 text-[9px] text-white/26">Nur journalisierte Bewegungen seit dem Checkpoint.</div>
+              </div>
+              <div className="rounded-[24px] border border-emerald-300/[0.09] bg-emerald-400/[0.025] p-5">
+                <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/34">Aktuelle Projektion</div>
+                <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/90">
+                  {formatFinanceMoney(primaryCurrency?.projected_total)}
+                </div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <StateBadge state={primaryCurrency?.coverage || 'unknown'} />
+                  {primaryCurrency?.aggregate_is_partial && primaryCurrency?.coverage !== 'partial' && <StateBadge state="partial" />}
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[13px] font-medium text-white/76">Konten</div>
+                  <div className="mt-1 text-[10px] text-white/28">Nur explizit dem Unternehmen zugeordnete Konten.</div>
+                </div>
+                <WalletCards size={16} className="text-white/22" />
+              </div>
+
+              {state.accounts.length === 0 ? (
+                <div className="border-t border-white/[0.05] py-4 text-[11px] text-white/34">
+                  Noch kein Unternehmenskonto erfasst.
+                </div>
+              ) : (
+                state.accounts.map((account) => (
+                  <div key={account.id} className="grid gap-3 border-t border-white/[0.05] py-4 first:border-t-0 md:grid-cols-[1fr_auto]">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-white/72">{account.display_name}</span>
+                        <StateBadge state={account.truth_state} />
+                        {account.coverage && <StateBadge state={account.coverage} />}
+                        {account.freshness && <StateBadge state={account.freshness} />}
+                      </div>
+                      <div className="mt-1 text-[10px] text-white/28">
+                        {account.account_type || 'Konto'} · {account.source_kind === 'manual' ? 'manuell erfasst' : account.source_kind || 'Quelle unbekannt'}
+                      </div>
+                      <div className="mt-1 text-[9px] text-white/20">
+                        {account.as_of ? `Stand vom ${new Date(account.as_of).toLocaleString('de-DE')}` : 'Noch kein Checkpoint'}
+                      </div>
+                    </div>
+                    <div className="text-left md:text-right">
+                      <div className="text-sm tabular-nums text-white/80">{formatFinanceMoney(account.observed_balance)}</div>
+                      <div className="mt-1 text-[9px] text-white/24">Projektion {formatFinanceMoney(account.projected_balance)}</div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </section>
+
+            {(state.warnings?.length || state.notes?.length) ? (
+              <section className="rounded-[28px] border border-amber-300/[0.08] bg-amber-400/[0.02] p-5">
+                <div className="flex items-center gap-2 text-[10px] font-medium text-white/58">
+                  <CircleAlert size={12} /> Offene Datenpunkte
+                </div>
+                <div className="mt-3 space-y-2">
+                  {[...(state.warnings || []), ...(state.notes || [])].map((item) => (
+                      <div key={item} className="text-xs leading-relaxed text-white/65">{financeWarningCopy(item)}</div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
+            <FinanceEntryPanel companyId={selectedCompanyId} accounts={state.accounts} />
+          </div>
+        )}
+
+        {selectedCompanyId && state && section === 'flow' && selectedRecordId && (
+          <RecordDetailPanel
+            companyId={selectedCompanyId}
+            recordId={selectedRecordId}
+            accounts={state.accounts}
+            onClose={() => setSelectedRecordId(null)}
+            onOpenNode={openEvidenceNode}
+          />
+        )}
+
+        {selectedCompanyId && state && section === 'flow' && !selectedRecordId && (
+          <div className="space-y-4">
+            {flowDenied ? (
+              <ReadError
+                denied
+                title="Zugriff auf Bewegungen verweigert"
+                copy="Zwischengespeicherte Bewegungen werden für diesen Zugriff nicht angezeigt."
+              />
+            ) : flowQuery.isLoading && !flowQuery.data ? (
+              <div className="grid min-h-[180px] place-items-center rounded-[28px] border border-white/[0.06] bg-black/10">
+                <Activity className="animate-pulse text-emerald-200/50" size={22} />
+              </div>
+            ) : flowQuery.isError && !flowQuery.data ? (
+              <ReadError
+                title="Bewegungen momentan nicht erreichbar"
+                copy="Der Finanzstatus oben bleibt davon getrennt. Ein fehlgeschlagener Flow-Read wird nicht als leerer Verlauf dargestellt."
+                onRetry={() => void flowQuery.refetch()}
+              />
+            ) : records.length ? (
+              <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5">
+                <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="text-[13px] font-medium text-white/76">Bewegungen</div>
+                    <div className="mt-1 text-[10px] text-white/28">
+                      Journalisierte Vorgänge in Seiten zu je 25. Jeder Vorgang lässt sich bis zu Buchungszeilen und Beleg öffnen.
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {flowLastKnown && <StateBadge state="stale" />}
+                    <ReceiptText size={16} className="text-white/22" />
+                  </div>
+                </div>
+                {flowLastKnown && (
+                  <div className="my-3 rounded-xl border border-amber-300/[0.10] bg-amber-400/[0.025] px-3 py-2 text-[10px] text-amber-50/52">
+                    Letzter geladener Verlauf; Aktualisierung fehlgeschlagen.
+                  </div>
+                )}
+                {records.map((record) => (
+                  <RecordRow key={record.id} record={record} onOpen={() => setSelectedRecordId(record.id)} />
+                ))}
+                <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.05] pt-3">
+                  <div className="text-[9px] text-white/28">
+                    {flowQuery.hasNextPage
+                      ? 'Weitere ältere Vorgänge sind vorhanden.'
+                      : 'Keine weiteren älteren Vorgänge angekündigt.'}
+                  </div>
+                  {flowQuery.hasNextPage && (
+                    <button
+                      type="button"
+                      disabled={flowQuery.isFetchingNextPage}
+                      onClick={() => void flowQuery.fetchNextPage()}
+                      className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[10px] text-white/48 disabled:opacity-35"
+                    >
+                      {flowQuery.isFetchingNextPage ? 'Lädt…' : 'Ältere laden'}
+                    </button>
+                  )}
+                </div>
+              </section>
+            ) : (
+              <TruthEmpty
+                compact
+                title="Noch keine Bewegung erfasst"
+                copy="Ein leerer Verlauf bedeutet nicht 0 € Umsatz oder 0 € Kosten. Erfasse eine Bewegung im State-Bereich, wenn ein belegbarer Vorgang vorliegt."
+              />
+            )}
+          </div>
+        )}
+
+        {selectedCompanyId && section === 'treasury' && (
+          <div className="space-y-4">
+            <FinanceSourcesPanel companyId={selectedCompanyId} />
+            <CoreTreasuryPanel companyId={selectedCompanyId} />
+          </div>
+        )}
+
+        {selectedCompanyId && section === 'capital' && !stateDenied && (
+          <div className="space-y-4">
+            <CapitalProfitCenter
+              companyId={selectedCompanyId}
+              records={records}
+              hasOlderRecords={Boolean(flowQuery.hasNextPage)}
+            />
+            <section className="rounded-[26px] border border-white/[0.07] bg-black/14 p-5">
+              <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Research · XRPL Watch Lab</div>
+              <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-white/72">Beobachten, bevor Kapital freigegeben wird.</h3>
+              <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/30">
+                Watch-Adressen bleiben außerhalb der Unternehmenssumme, bis Eigentum ausdrücklich belegt und zugeordnet ist. Signieren bleibt außerhalb dieser Ansicht.
+              </p>
+            </section>
+            <XrplWatchLab companyId={selectedCompanyId} />
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default function FinanceV2App({ paneId }: AppProps) {
+  const pane = usePaneStore((state) => state.getPane(paneId));
+  const activePaneId = usePaneStore((state) => state.activePaneId);
+  const removePane = usePaneStore((state) => state.removePane);
+  const minimizePane = usePaneStore((state) => state.minimizePane);
+  const focusPane = usePaneStore((state) => state.focusPane);
+  const updatePanePosition = usePaneStore((state) => state.updatePanePosition);
+  const updatePaneSize = usePaneStore((state) => state.updatePaneSize);
+
+  if (!pane) return null;
 
   return (
     <GlassPanel
@@ -296,286 +593,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
       blurIntensity={26}
       opacity={0.42}
     >
-      <div className="flex h-full min-h-0 flex-col overflow-hidden text-white">
-        <header className="border-b border-white/[0.055] px-1 pb-5">
-          <div className="flex flex-wrap items-start justify-between gap-5">
-            <div>
-              <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-100/42">
-                <Building2 size={11} /> {resolvedCompanyName || 'Unternehmen nicht ausgewählt'}
-              </div>
-              <h1 className="mt-3 text-[30px] font-medium tracking-[-0.05em] text-white/92">Finanzstatus</h1>
-              <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/34">
-                Belegte Unternehmenswerte, Bewegungen und offene Datenlücken. Manuelle Angaben bleiben als manuell erfasst gekennzeichnet.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2">
-              {state?.truth_state && <StateBadge state={state.truth_state} />}
-              {stateLastKnown && <StateBadge state="stale" />}
-              <span className="rounded-full border border-white/[0.07] bg-white/[0.025] px-2.5 py-1 text-[9px] uppercase tracking-[0.15em] text-white/34">
-                Unternehmen
-              </span>
-            </div>
-          </div>
-
-          <nav className="mt-5 flex flex-wrap gap-1.5" aria-label="Finance sections">
-            {sections.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  setSection(item.id);
-                  if (item.id !== 'flow') setSelectedRecordId(null);
-                }}
-                className={`rounded-full border px-3.5 py-2 text-[10px] transition ${
-                  section === item.id
-                    ? 'border-emerald-200/18 bg-emerald-300/[0.075] text-emerald-50/86'
-                    : 'border-white/[0.06] bg-white/[0.018] text-white/34 hover:text-white/62'
-                }`}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto py-5 pr-1">
-          {companiesQuery.isError && (
-            <ReadError
-              title="Unternehmenskontext nicht verfügbar"
-              copy="Die für Finance freigegebenen Unternehmen konnten nicht geladen werden. Es werden keine Finanzdaten aus einem geratenen Kontext angezeigt."
-              onRetry={() => void companiesQuery.refetch()}
-            />
-          )}
-
-          {!companiesQuery.isError && !selectedCompanyId && (
-            <TruthEmpty
-              title="Kein eindeutiges Unternehmen ausgewählt"
-              copy="Wähle ein aktives Unternehmen. Bei mehreren verfügbaren Unternehmen lädt Finance ohne eindeutigen Kontext keine Daten."
-            />
-          )}
-
-          {selectedCompanyId && stateDenied && (
-            <ReadError
-              denied
-              title={stateErrorKind === 'unauthenticated' ? 'Sitzung nicht autorisiert' : 'Zugriff auf Finanzstatus verweigert'}
-              copy="Zwischengespeicherte Finanzwerte werden für diesen Zugriff bewusst nicht angezeigt."
-            />
-          )}
-
-          {selectedCompanyId && !stateDenied && stateQuery.isLoading && !state && (
-            <div className="grid min-h-[240px] place-items-center rounded-[28px] border border-white/[0.06] bg-black/10">
-              <div className="text-center">
-                <Activity className="mx-auto animate-pulse text-emerald-200/50" size={24} />
-                <div className="mt-4 text-[10px] uppercase tracking-[0.2em] text-white/30">Finanzstatus wird geladen</div>
-              </div>
-            </div>
-          )}
-
-          {selectedCompanyId && !stateDenied && stateQuery.isError && !state && (
-            <ReadError
-              title="Finanzstatus momentan nicht erreichbar"
-              copy="Es wird kein leerer oder 0-€-Zustand daraus abgeleitet."
-              onRetry={() => void stateQuery.refetch()}
-            />
-          )}
-
-          {selectedCompanyId && state && stateLastKnown && (
-            <div className="mb-4 rounded-xl border border-amber-300/[0.10] bg-amber-400/[0.025] px-3 py-2 text-[10px] text-amber-50/52">
-              Letzter geladener Stand. Die Aktualisierung ist fehlgeschlagen; Werte werden nicht als aktuell ausgegeben.
-            </div>
-          )}
-
-          {selectedCompanyId && state && section === 'state' && (
-            <div className="space-y-4">
-              <section className="grid gap-3 md:grid-cols-3" aria-label="Finanzielle Entwicklung">
-                <div className="rounded-[24px] border border-white/[0.07] bg-black/14 p-5">
-                  <div className="text-[9px] uppercase tracking-[0.18em] text-white/28">Letzter Checkpoint</div>
-                  <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">
-                    {formatFinanceMoney(primaryCurrency?.observed_total)}
-                  </div>
-                  <div className="mt-2 text-[9px] text-white/26">
-                    {state.as_of ? new Date(state.as_of).toLocaleString('de-DE') : 'Kein gemeinsamer Zeitpunkt belegt'}
-                  </div>
-                </div>
-                <div className="rounded-[24px] border border-white/[0.07] bg-black/14 p-5">
-                  <div className="text-[9px] uppercase tracking-[0.18em] text-white/28">Bewegungen danach</div>
-                  <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/86">
-                    {formatFinanceMoney(movementSinceCheckpoint)}
-                  </div>
-                  <div className="mt-2 text-[9px] text-white/26">Nur journalisierte Bewegungen seit dem Checkpoint.</div>
-                </div>
-                <div className="rounded-[24px] border border-emerald-300/[0.09] bg-emerald-400/[0.025] p-5">
-                  <div className="text-[9px] uppercase tracking-[0.18em] text-emerald-100/34">Aktuelle Projektion</div>
-                  <div className="mt-3 text-2xl font-medium tracking-[-0.04em] text-white/90">
-                    {formatFinanceMoney(primaryCurrency?.projected_total)}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <StateBadge state={primaryCurrency?.coverage || 'unknown'} />
-                    {primaryCurrency?.aggregate_is_partial && primaryCurrency?.coverage !== 'partial' && <StateBadge state="partial" />}
-                  </div>
-                </div>
-              </section>
-
-              <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <div>
-                    <div className="text-[13px] font-medium text-white/76">Konten</div>
-                    <div className="mt-1 text-[10px] text-white/28">Nur explizit dem Unternehmen zugeordnete Konten.</div>
-                  </div>
-                  <WalletCards size={16} className="text-white/22" />
-                </div>
-
-                {state.accounts.length === 0 ? (
-                  <div className="border-t border-white/[0.05] py-4 text-[11px] text-white/34">
-                    Noch kein Unternehmenskonto erfasst.
-                  </div>
-                ) : (
-                  state.accounts.map((account) => (
-                    <div key={account.id} className="grid gap-3 border-t border-white/[0.05] py-4 first:border-t-0 md:grid-cols-[1fr_auto]">
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm text-white/72">{account.display_name}</span>
-                          <StateBadge state={account.truth_state} />
-                          {account.coverage && <StateBadge state={account.coverage} />}
-                          {account.freshness && <StateBadge state={account.freshness} />}
-                        </div>
-                        <div className="mt-1 text-[10px] text-white/28">
-                          {account.account_type || 'Konto'} · {account.source_kind === 'manual' ? 'manuell erfasst' : account.source_kind || 'Quelle unbekannt'}
-                        </div>
-                        <div className="mt-1 text-[9px] text-white/20">
-                          {account.as_of ? `Stand vom ${new Date(account.as_of).toLocaleString('de-DE')}` : 'Noch kein Checkpoint'}
-                        </div>
-                      </div>
-                      <div className="text-left md:text-right">
-                        <div className="text-sm tabular-nums text-white/80">{formatFinanceMoney(account.observed_balance)}</div>
-                        <div className="mt-1 text-[9px] text-white/24">Projektion {formatFinanceMoney(account.projected_balance)}</div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </section>
-
-              {(state.warnings?.length || state.notes?.length) ? (
-                <section className="rounded-[28px] border border-amber-300/[0.08] bg-amber-400/[0.02] p-5">
-                  <div className="flex items-center gap-2 text-[10px] font-medium text-white/58">
-                    <CircleAlert size={12} /> Offene Datenpunkte
-                  </div>
-                  <div className="mt-3 space-y-2">
-                    {[...(state.warnings || []), ...(state.notes || [])].map((item) => (
-                        <div key={item} className="text-xs leading-relaxed text-white/65">{financeWarningCopy(item)}</div>
-                    ))}
-                  </div>
-                </section>
-              ) : null}
-
-              <FinanceEntryPanel companyId={selectedCompanyId} accounts={state.accounts} />
-            </div>
-          )}
-
-          {selectedCompanyId && state && section === 'flow' && selectedRecordId && (
-            <RecordDetailPanel
-              companyId={selectedCompanyId}
-              recordId={selectedRecordId}
-              accounts={state.accounts}
-              onClose={() => setSelectedRecordId(null)}
-              onOpenNode={openEvidenceNode}
-            />
-          )}
-
-          {selectedCompanyId && state && section === 'flow' && !selectedRecordId && (
-            <div className="space-y-4">
-              {flowDenied ? (
-                <ReadError
-                  denied
-                  title="Zugriff auf Bewegungen verweigert"
-                  copy="Zwischengespeicherte Bewegungen werden für diesen Zugriff nicht angezeigt."
-                />
-              ) : flowQuery.isLoading && !flowQuery.data ? (
-                <div className="grid min-h-[180px] place-items-center rounded-[28px] border border-white/[0.06] bg-black/10">
-                  <Activity className="animate-pulse text-emerald-200/50" size={22} />
-                </div>
-              ) : flowQuery.isError && !flowQuery.data ? (
-                <ReadError
-                  title="Bewegungen momentan nicht erreichbar"
-                  copy="Der Finanzstatus oben bleibt davon getrennt. Ein fehlgeschlagener Flow-Read wird nicht als leerer Verlauf dargestellt."
-                  onRetry={() => void flowQuery.refetch()}
-                />
-              ) : records.length ? (
-                <section className="rounded-[28px] border border-white/[0.07] bg-black/14 p-5">
-                  <div className="mb-2 flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[13px] font-medium text-white/76">Bewegungen</div>
-                      <div className="mt-1 text-[10px] text-white/28">
-                        Journalisierte Vorgänge in Seiten zu je 25. Jeder Vorgang lässt sich bis zu Buchungszeilen und Beleg öffnen.
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {flowLastKnown && <StateBadge state="stale" />}
-                      <ReceiptText size={16} className="text-white/22" />
-                    </div>
-                  </div>
-                  {flowLastKnown && (
-                    <div className="my-3 rounded-xl border border-amber-300/[0.10] bg-amber-400/[0.025] px-3 py-2 text-[10px] text-amber-50/52">
-                      Letzter geladener Verlauf; Aktualisierung fehlgeschlagen.
-                    </div>
-                  )}
-                  {records.map((record) => (
-                    <RecordRow key={record.id} record={record} onOpen={() => setSelectedRecordId(record.id)} />
-                  ))}
-                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-white/[0.05] pt-3">
-                    <div className="text-[9px] text-white/28">
-                      {flowQuery.hasNextPage
-                        ? 'Weitere ältere Vorgänge sind vorhanden.'
-                        : 'Keine weiteren älteren Vorgänge angekündigt.'}
-                    </div>
-                    {flowQuery.hasNextPage && (
-                      <button
-                        type="button"
-                        disabled={flowQuery.isFetchingNextPage}
-                        onClick={() => void flowQuery.fetchNextPage()}
-                        className="rounded-xl border border-white/[0.08] bg-white/[0.025] px-3 py-2 text-[10px] text-white/48 disabled:opacity-35"
-                      >
-                        {flowQuery.isFetchingNextPage ? 'Lädt…' : 'Ältere laden'}
-                      </button>
-                    )}
-                  </div>
-                </section>
-              ) : (
-                <TruthEmpty
-                  compact
-                  title="Noch keine Bewegung erfasst"
-                  copy="Ein leerer Verlauf bedeutet nicht 0 € Umsatz oder 0 € Kosten. Erfasse eine Bewegung im State-Bereich, wenn ein belegbarer Vorgang vorliegt."
-                />
-              )}
-            </div>
-          )}
-
-          {selectedCompanyId && section === 'treasury' && (
-            <div className="space-y-4">
-              <FinanceSourcesPanel companyId={selectedCompanyId} />
-              <CoreTreasuryPanel companyId={selectedCompanyId} />
-            </div>
-          )}
-
-          {selectedCompanyId && section === 'capital' && !stateDenied && (
-            <div className="space-y-4">
-              <CapitalProfitCenter
-                companyId={selectedCompanyId}
-                records={records}
-                hasOlderRecords={Boolean(flowQuery.hasNextPage)}
-              />
-              <section className="rounded-[26px] border border-white/[0.07] bg-black/14 p-5">
-                <div className="text-[9px] uppercase tracking-[0.22em] text-white/28">Research · XRPL Watch Lab</div>
-                <h3 className="mt-2 text-lg font-medium tracking-[-0.03em] text-white/72">Beobachten, bevor Kapital freigegeben wird.</h3>
-                <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/30">
-                  Watch-Adressen bleiben außerhalb der Unternehmenssumme, bis Eigentum ausdrücklich belegt und zugeordnet ist. Signieren bleibt außerhalb dieser Ansicht.
-                </p>
-              </section>
-              <XrplWatchLab companyId={selectedCompanyId} />
-            </div>
-          )}
-        </div>
-      </div>
+      <FinanceV2Workspace />
     </GlassPanel>
   );
 }

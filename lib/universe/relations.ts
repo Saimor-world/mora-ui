@@ -46,6 +46,10 @@ interface StrandTarget {
 export function buildRelationStrands(
     signals: UniverseSignal[],
     territories: StrandTarget[],
+    /** Optional: alle Faeden beginnen an diesem Punkt im Feld (z. B. am
+     *  MÔRA-Kern in der Mitte) statt an den Feldraendern. Ohne Angabe
+     *  unveraendert wie bisher. */
+    originOverride?: { x: number; y: number },
 ): RelationStrand[] {
     const byId = new Map(territories.map((territory) => [territory.id, territory]));
 
@@ -53,7 +57,7 @@ export function buildRelationStrands(
         const target = byId.get(signal.targetId);
         if (!target) return [];
 
-        const origin = FIELD_EDGE_ORIGINS[signal.kind];
+        const origin = originOverride ?? FIELD_EDGE_ORIGINS[signal.kind];
         if (!origin) return [];
 
         const route = buildSoftUniverseRoute(

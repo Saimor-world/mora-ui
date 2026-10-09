@@ -59,6 +59,18 @@ export const APP_REGISTRY: AppManifest[] = [
     singleton: true,
     isNew: true,
   },
+  {
+    id: 'finance-v2',
+    name: 'Finance',
+    description: 'Cashflow, Profit Center, CORE Treasury, Quellen und XRPL read-only',
+    icon: 'Landmark',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 1080, height: 760 },
+    singleton: true,
+    // Reached via the OS prototype (/os) Finance surface; legacy launcher stays unchanged.
+    launcherHidden: true,
+  },
 
   // ── Intelligence ──────────────────────────────────────────────────────────
   {
