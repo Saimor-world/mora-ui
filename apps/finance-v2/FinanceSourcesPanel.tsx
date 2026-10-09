@@ -1,8 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Cable, CircleAlert, KeyRound, RefreshCcw, ShieldCheck } from 'lucide-react';
-import { useConnectCompanyBitvavo, useFinanceConnections, useFinanceSources, useOpenBankingInstitutions, useStartCompanyOpenBanking, useSyncFinanceConnection } from '@/lib/queries/useFinanceSources';
+import {
+  useConnectCompanyBitvavo,
+  useFinanceConnections,
+  useFinanceSources,
+  useOpenBankingInstitutions,
+  useStartCompanyOpenBanking,
+  useStartCompanyRevolut,
+  useSyncFinanceConnection,
+} from '@/lib/queries/useFinanceSources';
 import type { FinanceConnection, FinanceSource } from '@/lib/queries/useFinanceSources';
 
 const LABELS: Record<string, string> = {
@@ -17,7 +25,7 @@ const LABELS: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: 'Bankfreigabe offen', connected: 'Verbunden', reauth_required: 'Neue Freigabe nötig',
+  pending: 'Freigabe offen', connected: 'Verbunden', reauth_required: 'Neue Freigabe nötig',
   degraded: 'Aktualisierung fehlgeschlagen', revoked: 'Freigabe beendet',
 };
 
@@ -29,6 +37,20 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
     const matches = (connections.data?.connections || []).filter((item) => item.provider === source.id);
     return matches.length ? matches.map((connection) => ({ source, connection })) : [{ source, connection: undefined }];
   });
+  const revolut = useStartCompanyRevolut(companyId);
+  const [revolutCallbackUrl, setRevolutCallbackUrl] = useState('/finance/revolut/callback');
+  const [revolutClientId, setRevolutClientId] = useState('');
+  const [revolutPrivateKey, setRevolutPrivateKey] = useState('');
+  const [revolutKeyName, setRevolutKeyName] = useState('');
+  const [revolutEnvironment, setRevolutEnvironment] = useState<'production' | 'sandbox'>('production');
+  const [revolutAttested, setRevolutAttested] = useState(false);
+  const revolutAuthorizationUrl = revolut.data?.data?.authorization_url as string | undefined;
+  const revolutConnectionId = revolut.data?.data?.connection_id as string | undefined;
+
+  useEffect(() => {
+    setRevolutCallbackUrl(window.location.origin + '/finance/revolut/callback');
+  }, []);
+
   const bitvavo = useConnectCompanyBitvavo(companyId);
   const [bitvavoKey, setBitvavoKey] = useState('');
   const [bitvavoSecret, setBitvavoSecret] = useState('');
@@ -91,21 +113,31 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
                   <div>{connection.last_synced_at ? 'Sync ' + new Date(connection.last_synced_at).toLocaleString('de-DE') : 'Noch kein erfolgreicher Sync'}</div>
                   {connection.last_error_code && <div className="text-amber-100/52">Fehler: {connection.last_error_code}</div>}
                   {connection.status === 'pending' && connection.authorization_url && (
-                    <a href={connection.authorization_url} rel="noreferrer" className="mt-2 inline-flex rounded-lg border border-emerald-300/18 px-3 py-2 text-xs text-emerald-100/80">
-                      Bankfreigabe fortsetzen
+                    <a
+                      href={connection.authorization_url}
+                      rel="noreferrer"
+                      onClick={() => {
+                        if (connection.provider === 'revolut_business' && typeof window !== 'undefined') {
+                          window.sessionStorage.setItem('saimor_revolut_connection_id', connection.id);
+                          window.sessionStorage.setItem('saimor_revolut_company_id', companyId);
+                        }
+                      }}
+                      className="mt-2 inline-flex rounded-lg border border-emerald-300/18 px-3 py-2 text-xs text-emerald-100/80"
+                    >
+                      {connection.provider === 'revolut_business' ? 'Revolut-Freigabe fortsetzen' : 'Bankfreigabe fortsetzen'}
                     </a>
                   )}
                   {connection.status === 'pending' && !connection.authorization_url && (
                     <p>Der Freigabe-Link ist nicht verfügbar. Starte unten eine neue Bankfreigabe.</p>
                   )}
-                  {connection.provider === 'gocardless_bank_data' && connection.status !== 'revoked' && (
+                  {['gocardless_bank_data', 'revolut_business'].includes(connection.provider) && connection.status === 'connected' && (
                     <button
                       type="button"
                       disabled={syncConnection.isPending}
                       onClick={() => syncConnection.mutate(connection.id)}
                       className="mt-2 rounded-lg border border-white/[0.08] px-2.5 py-1.5 text-[9px] text-white/44 disabled:opacity-35"
                     >
-                      {syncConnection.isPending ? 'Synchronisiert…' : 'Bankstatus synchronisieren'}
+                      {syncConnection.isPending ? 'Synchronisiert…' : 'Daten synchronisieren'}
                     </button>
                   )}
                 </div>
@@ -167,6 +199,115 @@ export default function FinanceSourcesPanel({ companyId }: { companyId: string }
               className="mt-3 inline-flex rounded-xl border border-emerald-300/18 px-4 py-2.5 text-xs font-medium text-emerald-100/76"
             >
               Zur sicheren Bankfreigabe
+            </a>
+          )}
+        </div>
+      )}
+
+      {!connected.has('revolut_business') && (
+        <div className="mt-4 rounded-[18px] border border-white/[0.06] bg-white/[0.018] p-4" data-testid="revolut-business-setup">
+          <div className="flex items-center gap-2 text-xs font-medium text-white/72">
+            <KeyRound size={12} /> Revolut Business READ verbinden
+          </div>
+          <p className="mt-1 max-w-3xl text-[10px] leading-relaxed text-white/32">
+            Registriere zuerst dein öffentliches X.509-Zertifikat und die Callback-URL in Revolut Business.
+            SAIMÔR speichert danach nur den passenden privaten Schlüssel verschlüsselt in CORE und fordert ausschließlich den READ-Scope an.
+          </p>
+          <div className="mt-3 rounded-xl border border-white/[0.06] bg-black/20 px-3 py-2 text-[9px] text-white/34">
+            Callback: <span className="font-mono text-white/52">{revolutCallbackUrl}</span>
+          </div>
+
+          <div className="mt-3 grid gap-2 md:grid-cols-2">
+            <input
+              value={revolutClientId}
+              onChange={(event) => setRevolutClientId(event.target.value)}
+              aria-label="Revolut Client ID"
+              placeholder="Revolut ClientID"
+              autoComplete="off"
+              className="rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-xs text-white/72 outline-none"
+            />
+            <select
+              value={revolutEnvironment}
+              onChange={(event) => setRevolutEnvironment(event.target.value as 'production' | 'sandbox')}
+              aria-label="Revolut Umgebung"
+              className="rounded-xl border border-white/[0.08] bg-black/25 px-3 py-2.5 text-xs text-white/72"
+            >
+              <option value="production">Production</option>
+              <option value="sandbox">Sandbox</option>
+            </select>
+          </div>
+
+          <label className="mt-2 flex cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/[0.08] bg-black/20 px-3 py-2.5 text-[10px] text-white/42">
+            <span>{revolutKeyName ? `Privater Schlüssel geladen: ${revolutKeyName}` : 'Passenden privaten PEM-Schlüssel auswählen'}</span>
+            <input
+              type="file"
+              accept=".pem,.key,.txt"
+              className="max-w-[190px] text-[9px]"
+              aria-label="Revolut Private Key Datei"
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  setRevolutPrivateKey('');
+                  setRevolutKeyName('');
+                  return;
+                }
+                const value = await file.text();
+                setRevolutPrivateKey(value);
+                setRevolutKeyName(file.name);
+              }}
+            />
+          </label>
+
+          <label className="mt-3 flex items-start gap-2 text-[10px] leading-relaxed text-white/40">
+            <input type="checkbox" checked={revolutAttested} onChange={(event) => setRevolutAttested(event.target.checked)} />
+            <span>Ich bestätige, dass dieser Revolut-Business-Zugang SAIMÔR gehört. Es werden ausschließlich READ-Rechte angefordert.</span>
+          </label>
+
+          {revolut.error && <div role="alert" className="mt-2 text-[10px] text-red-100/66">{revolut.error.message}</div>}
+          <button
+            type="button"
+            disabled={!revolutCallbackUrl.startsWith('https://') || !revolutAttested || revolutClientId.length < 8 || !revolutPrivateKey.includes('PRIVATE KEY') || revolut.isPending}
+            onClick={() => {
+              const redirectUri = revolutCallbackUrl;
+              revolut.mutate(
+                {
+                  clientId: revolutClientId,
+                  privateKeyPem: revolutPrivateKey,
+                  redirectUri,
+                  environment: revolutEnvironment,
+                  label: 'SAIMÔR Revolut Business',
+                },
+                {
+                  onSuccess: (payload) => {
+                    const id = payload?.data?.connection_id;
+                    if (id && typeof window !== 'undefined') {
+                      window.sessionStorage.setItem('saimor_revolut_connection_id', id);
+                      window.sessionStorage.setItem('saimor_revolut_company_id', companyId);
+                    }
+                    setRevolutPrivateKey('');
+                    setRevolutKeyName('');
+                  },
+                },
+              );
+            }}
+            className="mt-3 rounded-xl border border-emerald-300/16 bg-emerald-400/[0.065] px-4 py-2.5 text-xs font-medium text-emerald-100/72 disabled:opacity-35"
+          >
+            {revolut.isPending ? 'READ-Consent wird vorbereitet…' : 'Revolut READ-Consent starten'}
+          </button>
+
+          {revolutAuthorizationUrl && revolutConnectionId && (
+            <a
+              href={revolutAuthorizationUrl}
+              rel="noreferrer"
+              onClick={() => {
+                if (typeof window !== 'undefined') {
+                  window.sessionStorage.setItem('saimor_revolut_connection_id', revolutConnectionId);
+                  window.sessionStorage.setItem('saimor_revolut_company_id', companyId);
+                }
+              }}
+              className="ml-2 mt-3 inline-flex rounded-xl border border-emerald-300/18 px-4 py-2.5 text-xs font-medium text-emerald-100/76"
+            >
+              Bei Revolut freigeben
             </a>
           )}
         </div>
