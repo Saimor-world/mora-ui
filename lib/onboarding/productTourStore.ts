@@ -9,6 +9,10 @@ const LEGACY_LOCAL_KEY = 'saimor_first_run_tour_v1';
 /** Anonymous / pre-auth dismiss (visitors, website scan before login). */
 const LOCAL_DISMISS_KEY = 'saimor_product_tour_dismissed';
 
+const WEBSITE_ENTRY_CONTEXT_KEY = 'saimor_website_entry_context';
+const WEBSITE_ENTRY_SESSION_KIND_KEY = 'saimor_session_kind';
+const WEBSITE_ENTRY_PREVIEW_SESSION_KIND = 'website_entry_preview';
+
 export const PRODUCT_TOUR_RESTART_EVENT = 'saimor:product-tour-restart';
 export const PRODUCT_TOUR_STATE_EVENT = 'saimor:product-tour-state-changed';
 
@@ -23,6 +27,18 @@ function readLocalDismissed(): boolean {
         window.localStorage.getItem(LOCAL_DISMISS_KEY) === '1'
         || readLegacyLocalDismissed()
     );
+}
+
+function hasWebsiteEntryHandoff(): boolean {
+    if (typeof window === 'undefined') return false;
+    try {
+        return Boolean(
+            window.localStorage.getItem(WEBSITE_ENTRY_CONTEXT_KEY)
+            || window.localStorage.getItem(WEBSITE_ENTRY_SESSION_KIND_KEY) === WEBSITE_ENTRY_PREVIEW_SESSION_KIND
+        );
+    } catch {
+        return false;
+    }
 }
 
 function writeLocalDismissed(): void {
@@ -55,6 +71,10 @@ function notifyStateChanged(): void {
 }
 
 export function isProductTourDismissed(userSettings?: Record<string, unknown> | null): boolean {
+    // A Security-Check handoff already has its own guided first-run sequence:
+    // dossier first, then MÔRA. Treat the generic Home tour as temporarily
+    // suppressed so two onboarding systems never compete for the same screen.
+    if (hasWebsiteEntryHandoff()) return true;
     if (readSettingsDismissed(userSettings)) return true;
     return readLocalDismissed();
 }
