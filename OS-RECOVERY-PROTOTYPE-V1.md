@@ -496,3 +496,79 @@ Schritt 3 heißt jetzt „Erste Station andocken“ und nutzt dieselbe Andocksta
 - **Abdocken** fehlt im UI. CORE-Endpunkt prüfen, nur lokal.
 - Die Zuordnung Station → Planet ist heuristisch. Später ggf. vom Nutzer wählbar und in CORE gespeichert, mit Bestätigung.
 - OAuth-Rückkehr (`return_to`) ist mit einem echten Provider noch nicht getestet.
+
+## 30. V1.8 – Erste echte lokale Quelle (E-Mail)
+
+Anlass: Astra hatte festgestellt, dass der Mail-Dialog nur Gmail, Outlook und Yahoo kennt und es keinen lokalen Test-Server gibt. Außerdem speicherte „Verbinden“ nur die Zugangsdaten, und ein Abruffehler sah aus wie ein leeres Postfach. Ziel: eine echte lokale Quelle Ende zu Ende, damit „Angedockt“ nicht nur gemockt belegt ist.
+
+### 30.1 Ablauf (echt, lokal)
+1. **IMAP-Test-Server** (`saimor-core/scripts/dev_local_imap/server.py`, dev-only):
+   - lauscht nur auf `127.0.0.1:3143`, Postfach nur lesbar;
+   - liefert 5 synthetische deutsche Mails (Rechnung, Terminvorschlag, Frist, Anfrage, Newsletter), Domains `*.example.test`, nur Rollennamen;
+   - die Zugangsdaten kommen nur aus der Umgebung.
+2. **CORE** (nur lokal, als Patch, siehe 30.4): Anbieter `local_test` gibt es nur bei `ENVIRONMENT=development` **und** `SAIMOR_DEV_LOCAL_IMAP=1`, mit festem Host `127.0.0.1`. Verbinden heißt jetzt:
+   - **erst abrufen,**
+   - **dann speichern,**
+   - **dann aus CORE zurücklesen und bestätigen.**
+
+   Antwort: `{status: "connected", confirmed: true, fetched, verified_at, dev_only}`. Ein Fehler gibt 400 mit deutscher Meldung zurück, gespeichert wird dabei nichts.
+3. **Andockstation:**
+   - Die Station „E-Mail“ bietet im Dev-Modus „Lokaler Test-Server (nur Entwicklung)“ an.
+   - Während des Abrufs steht dort: „MÔRA ruft das Postfach ab. Angedockt ist es erst, wenn der Abruf klappt.“
+   - **„Angedockt“ erscheint nur bei `connected` + `confirmed`.** Eine fehlende Antwort (CORE weg, `corePost` liefert `null`) war vorher still ein Erfolg und ist jetzt ein Fehler.
+   - Erstes Signal ist die neueste echte Test-Mail (Betreff, Absender, Zeit), dazu die Kopfzeile der Zusammenfassung mit den Plaketten „regelbasiert“ und „Test-Server · nur Entwicklung“.
+4. **Heute:**
+   - Das Morgenbriefing zeigt die **regelbasierte MÔRA-Zusammenfassung** aus `GET /v3/connections/mail/summary`: Gruppen (Fristen, Rechnungen, Termine, Anfragen, ohne Regel), jede Zeile ein Quellverweis (Betreff · Absender · Zeit, `data-message-id`).
+   - Darüber steht ehrlich: „Ein KI-Briefing liefert CORE gerade nicht.“ Der lokale CORE hat keinen KI-Anbieter (`/v3/briefing` bleibt degradiert).
+   - „Heute · Aktuell › Mail“ und „Neue Informationen“ lesen live über `/v3/today` per IMAP.
+
+### 30.2 Ehrliche Zustände
+- **Fehler ≠ leer:**
+  - CORE: `ImapEmailSourceAdapter.list_threads` wirft `ImapFetchError` statt `[]`.
+  - UI: Heute zeigt bei gestopptem Server „Mail · Unbekannt · Postfach konnte gerade nicht gelesen werden.“ und „Post gerade nicht verfügbar“ statt „Nichts Neues“.
+- Falsches Passwort zeigt „Die Zugangsdaten wurden abgelehnt“ plus „Nichts wurde angedockt oder gespeichert. Ein Fehler ist kein leeres Postfach.“ Die Station bleibt „bereit“.
+- Server nicht erreichbar zeigt „Der Dienst war nicht erreichbar“, ebenfalls ohne gespeicherten Eintrag.
+- Leeres Postfach (Abruf ok, 0 Mails) zeigt „im Posteingang liegen keine Nachrichten“ und „wirklich leer“. Das ist ein eigener Zustand.
+- Gespeicherte, aber nie geprüfte Zugangsdaten gelten **nicht** mehr als verbunden („noch nicht durch einen Abruf bestätigt“).
+
+### 30.3 Dateien (mora-ui)
+- neu `lib/os-prototype/mailSummary.ts` (Typen, `useMailSummary`, `checkConnectResult`, `newestRef`, `senderName`);
+- neu `features/today/ui/MailSummary.tsx` (`MailSummaryView`, Varianten `full` und `signal`);
+- geändert `features/settings/ui/SourceDock.tsx` (bestätigtes Andocken, Abruf-Zustand, Mail-Signal, Info mit CORE-Detail);
+- geändert `lib/os-prototype/sourceDock.ts` (Übersetzungen für die deutschen CORE-Meldungen);
+- geändert `features/today/ui/MoraBriefing.tsx` und `features/today/index.tsx` (Mail-Karte: Fehler ist nie „Nichts Neues“);
+- geändert `os-kit.css` (`.os-mail-*`; Kartentext in „Heute · Aktuell“ von faint auf muted, weil der Live-Zustand 4,4 : 1 hatte);
+- neu `e2e/os-live-mail.spec.ts` und `__tests__/os-v18/*`.
+
+### 30.4 saimor-core (nicht gepusht)
+Die CORE-Änderungen liegen als Patch `saimor-core-v18-local-imap.patch` mit README daneben. Inhalt:
+- `ImapFetchError`;
+- `services/mail_verified_connect_service.py`;
+- `connections.py` (verifiziertes Verbinden, `GET /mail/summary`, `local_test` nur im Dev-Modus);
+- Test-Server;
+- 15 pytest-Tests.
+
+Keine Schema-Migration: Alles liegt in `config_json` der bestehenden Integration.
+
+### 30.5 Verifikation
+- tsc 0 · lint 0 Fehler.
+- Jest 274 Suites / 1 571 Tests.
+- Neu `__tests__/os-v18`: 3 Dateien, 14 Tests (Bestätigung nötig, `null` ist Fehler, Übersetzungen, Signal und Zusammenfassung, leer ≠ Fehler, 409).
+- CORE pytest: neu 15/15. Die ganze Suite `tests/` ist grün (1 373), `core/tests` hat 199 grün und 1 Fehler, der schon auf `main` besteht (`test_mise_openclaw_bridge`, unabhängig). Der Patch ließ sich auf einem sauberen `main`-Checkout anwenden und testen.
+- Playwright:
+  - **live** `e2e/os-live-mail.spec.ts` gegen den lokalen CORE und den Test-Server, 3/3: falsches Passwort, echtes Andocken bis Heute, gestoppter Server. Die Zugangsdaten kommen nur aus der Umgebung, ohne sie wird übersprungen;
+  - Vorschau-Suite `e2e/os-prototype.spec.ts` 48/48.
+- Kontrast:
+  - live mit Sitzung (Heute und Quellen × 4 Phasen × 2 Looks): 0 von 672;
+  - Vorschau (Heute, Quellen, Einstellungen × 4 × 2): 0 von 1 096. Das Datum in Heute steht jetzt in voller Textfarbe, vorher 4,3 : 1 über hellem Bildbereich.
+- Screens: `shots-v1.8/vorher` (Stand V1.7: nur Gmail/Outlook/Yahoo, „angedockt“ nur gemockt) und `shots-v1.8/nachher`:
+  - 01–10 echter Ablauf in Kosmos und Klar;
+  - 11–13 Fehlerzustände;
+  - dazu 1024×768 und 820×1180.
+
+### 30.6 Grenzen / offen
+- Nur gegen den **lokalen Test-Server** geprüft, nicht gegen echte Anbieter.
+- Die Zusammenfassung nutzt den beim Verbinden gespeicherten Abruf (bis 20 Mails). Ein Re-Sync, der ihn auffrischt, fehlt noch. Heute liest live.
+- Die Zusammenfassung ist bewusst regelbasiert (Stichwörter), keine KI.
+- Bestehende, nie verifizierte echte Mail-Zugänge erscheinen nach dem CORE-Patch als „bereit“, bis sie einmal neu verbunden werden. Das muss vor einem Deploy kommuniziert werden.
+- Abdocken im UI fehlt weiterhin. Die e2e-Tests setzen den lokalen Testeintrag über `DELETE /v3/integrations/mail` zurück, das deaktiviert ihn nur im lokalen SQLite.

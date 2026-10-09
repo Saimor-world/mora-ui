@@ -6,6 +6,7 @@ import { Button, MoraStone, SampleTag, Stack, Status, Surface, Text } from '@/co
 import { coreGet } from '@/lib/api/http';
 import { connectedSources, useSources } from '@/lib/os-prototype/useSources';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { MailSummaryView } from './MailSummary';
 import { DEMO_CALENDAR, DEMO_MAIL, DEMO_MINDLOOP, DEMO_TASKS } from '@/lib/os-prototype/demoPack';
 
 /**
@@ -16,6 +17,9 @@ import { DEMO_CALENDAR, DEMO_MAIL, DEMO_MINDLOOP, DEMO_TASKS } from '@/lib/os-pr
  * Regel: Das Briefing erscheint NUR, wenn mindestens eine Quelle verbunden ist
  * und CORE ein nicht-degradiertes Briefing liefert. Sonst ein ehrlicher Zustand
  * mit den Quellen – und optional eine klar markierte Demo-Vorschau.
+ * V1.8: Ist ein Postfach verifiziert angedockt, zeigt MÔRA die regelbasierte
+ * Mail-Zusammenfassung mit Quellverweisen – klar als „regelbasiert“ markiert,
+ * auch wenn CORE kein KI-Briefing liefern kann.
  */
 interface Briefing { status?: string; text?: string; date?: string }
 
@@ -40,15 +44,24 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
   const ready = live && connected.length > 0;
   const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready, staleTime: 60_000, retry: false });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
+  const mailDocked = live && connected.some((c) => c.group === 'mail');
 
   return (
     <Surface padding={5} data-testid="mora-briefing">
       <Stack direction="row" align="center" justify="space-between" className="mb-3">
         <Stack direction="row" gap={2} align="center"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
-        {real ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : preview ? <SampleTag /> : null}
+        {real || mailDocked ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : preview ? <SampleTag /> : null}
       </Stack>
-      {real ? (
-        <Stack direction="row" gap={3} align="flex-start"><MoraStone size={28} /><Text>{brief.data!.text}</Text></Stack>
+      {real || mailDocked ? (
+        <Stack gap={3}>
+          {real ? <Stack direction="row" gap={3} align="flex-start"><MoraStone size={28} /><Text>{brief.data!.text}</Text></Stack> : null}
+          {mailDocked ? (
+            <div data-testid="briefing-mail">
+              {!real ? <Text variant="meta" className="mb-2">Ein KI-Briefing liefert CORE gerade nicht. Das hier ist die regelbasierte Zusammenfassung deines Postfachs.</Text> : null}
+              <MailSummaryView enabled={mailDocked} variant="full" />
+            </div>
+          ) : null}
+        </Stack>
       ) : (
         <>
           <Text tone="default" data-testid="briefing-pending">Briefing startet, sobald Quellen angebunden sind.</Text>

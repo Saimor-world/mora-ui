@@ -1,23 +1,24 @@
 <!-- Übergabe an Astra · alle Teile in einem Dokument · Screens: UEBERGABE-ASTRA/screens im Übergabe-Zip -->
-# Übergabe an Astra – SAIMÔR OS-Prototyp (07.10.2026)
+# Übergabe an Astra – SAIMÔR OS-Prototyp (Stand 09.10.2026)
 
-Repo `Saimor-world/mora-ui` · Branch `grok/os-recovery-prototype-v1` · PR #101 (Draft) · Code-Stand **V1.7 „Andockstation“** (Quellen-Redesign gebaut, siehe 04 › 4.4)
+Repo `Saimor-world/mora-ui` · Branch `grok/os-recovery-prototype-v1` · PR #101 (Draft) · Code-Stand **V1.8 „Erste echte lokale Quelle“** (E-Mail über lokalen IMAP-Test-Server, verifiziert angedockt, siehe 04 › 4.5). CORE-Änderungen liegen als Patch `saimor-core-v18-local-imap.patch` bei (nicht gepusht).
 
 | Datei | Inhalt |
 |---|---|
 | [01-STATUS.md] | Repo, Branch, PR, Start lokal (Flags, Dev-Login mit lokalem CORE, Ports), Tests, Versionen V1–V1.6 |
 | [02-VISION-UND-REGELN.md] | Marius' Vision, Designregeln, Definition of Done, Sicherheitsregeln |
 | [03-MARKTRECHERCHE.md] | Wie die Besten Quellen und Onboarding lösen, generisch vs. innovativ, Konzepte für SAIMÔR, Links |
-| [04-KRITIK-UND-REDESIGN-BRIEF.md] | Ehrliche Kritik an Quellen-Seite und Onboarding (V1.6, mit Screens), Redesign-Brief, **4.4 Umsetzung V1.7 und was offen ist** |
+| [04-KRITIK-UND-REDESIGN-BRIEF.md] | Ehrliche Kritik an Quellen-Seite und Onboarding (V1.6, mit Screens), Redesign-Brief, **4.4 Umsetzung V1.7, 4.5 V1.8 und was offen ist** |
 | [05-OFFENE-PUNKTE-UND-BACKLOG.md] | Priorisiertes Backlog P0–P3 |
-| [06-STARTPROMPT-ASTRA.md] | Fertiger Startprompt. **Neue erste Aufgabe: erste echte lokale Quelle, damit das Briefing live geht** |
+| [06-STARTPROMPT-ASTRA.md] | Fertiger Startprompt. **Erste Aufgabe jetzt: CORE-Patch einspielen und prüfen, dann Re-Sync und Abdocken** |
+| `core-patch/` | V1.8 CORE-Teil: `saimor-core-v18-local-imap.patch` und README (anwenden, Env-Flags, Test-Server). Nicht in saimor-core gepusht. |
 | `werkzeuge/` | Kontrast-Messung: `contrast-pixels.mjs` (Playwright-Messung) und `contrast-analyze.py` (Auswertung). Pfade ggf. anpassen. |
-| `UEBERGABE-ASTRA/screens/` (Übergabe-Zip) | Ausgewählte Screens: 1x Ist-Quellen, 2x Ist-Onboarding, 3x Flächen, 4x Phasen, 5x Legacy-Vergleich, **6x V1.7 Andockstation** (65 = Testaufnahme mit gemockter CORE-Antwort) |
+| `UEBERGABE-ASTRA/screens/` (Übergabe-Zip) | Ausgewählte Screens: 1x Ist-Quellen, 2x Ist-Onboarding, 3x Flächen, 4x Phasen, 5x Legacy-Vergleich, **6x V1.7 Andockstation** (65 = alte Testaufnahme mit gemockter CORE-Antwort), **8x V1.8 echte lokale Quelle** (70–77, alles echt gegen lokalen CORE) |
 
 Im Repo liegt dieselbe Übergabe als `docs/UEBERGABE-ASTRA.md` (ohne Bilder).
 
 
-# 1 · Status (Stand 07.10.2026, 22:00 Berlin)
+# 1 · Status (Stand 09.10.2026 Berlin)
 
 ## Repo, Branch, PR
 | | |
@@ -26,9 +27,9 @@ Im Repo liegt dieselbe Übergabe als `docs/UEBERGABE-ASTRA.md` (ohne Bilder).
 | Branch | `grok/os-recovery-prototype-v1` |
 | Basis | `main @ a053dd39` |
 | PR | **#101**, Draft, nicht gemergt, **nicht deployed** |
-| Code-Head | V1.7 „Andockstation“ (`9f969603` und Folge-Commits, siehe `git log`). Doku-Übergabe: `docs/UEBERGABE-ASTRA.md`. |
-| CI | GitHub Actions „CI“ (lint, verify:types, critical-flow, os-smoke, Jest, Build) und Vercel Preview: grün, `mergeable_state: clean` |
-| Hauptdoku | `OS-RECOVERY-PROTOTYPE-V1.md` im Repo-Root, §1–§29 (Versionen ab §23, V1.7 = §29) |
+| Code-Head | V1.8 „Erste echte lokale Quelle“ (siehe `git log`). Doku-Übergabe: `docs/UEBERGABE-ASTRA.md`. CORE-Teil: Patch `saimor-core-v18-local-imap.patch` + README (im Übergabe-Zip), nicht in saimor-core gepusht. |
+| CI | GitHub Actions „CI“ (lint, verify:types, critical-flow, os-smoke, Jest, Build) und Vercel Preview. Der CI-Status nach den V1.7- und V1.8-Pushes ist **nicht bestätigt**, bitte am PR prüfen. |
+| Hauptdoku | `OS-RECOVERY-PROTOTYPE-V1.md` im Repo-Root, §1–§30 (Versionen ab §23, V1.7 = §29, V1.8 = §30) |
 
 „unstable“ am PR erscheint nur, solange CI nach einem Push noch läuft. Das ist kein Code-Fehler.
 
@@ -72,14 +73,22 @@ NEXT_PUBLIC_OS_PROTOTYPE=1 SAIMOR_CORE_URL=http://localhost:8081 npx next start 
 ```bash
 npx tsc --noEmit                         # 0 Fehler
 npm run lint                             # 0 Fehler (nur Alt-Warnungen in HomeSurface)
-npx jest --maxWorkers=2                  # 271 Suites / 1557 Tests
+npx jest --maxWorkers=2                  # 274 Suites / 1571 Tests (V1.8)
 npx playwright test e2e/os-prototype     # 48 Tests; Server auf :3000 (Vorschau-Build) muss laufen
+# V1.8 live (Live-Build + lokaler CORE + IMAP-Test-Server, Zugangsdaten nur per Umgebung): e2e/os-live-mail.spec.ts, 3 Tests
 npm run verify:types && npm run verify:critical-flow && npm run verify:os:smoke   # wie CI
 ```
 - **Viewports:** 1024×768, 1280×800, 1440×900, 1180×820 und 820×1180. Nur Desktop und iPad, kein Phone.
-- **Kontrast:** `contrast-pixels.mjs` und `contrast-analyze.py` (im Übergabe-Zip und unter `os-recovery-v1/`). V1.6: 0 von 3 200 Textstellen unter 4.5:1. V1.7 (misst jetzt auch SVG-Text, Fläche `sources`): 0 von 1 720.
+- **Kontrast:** `contrast-pixels.mjs` und `contrast-analyze.py` (im Übergabe-Zip und unter `os-recovery-v1/`). V1.6: 0 von 3 200 Textstellen unter 4.5:1. V1.7 (misst jetzt auch SVG-Text, Fläche `sources`): 0 von 1 720. V1.8: `LIVE_LOGIN=1` misst mit lokaler Sitzung, Heute und Quellen live 0 von 672.
 - **Privacy-Grep** über den Diff muss 0 ergeben. Muster: Mail-Domains, IBAN, Telefonnummern, `ghp_`, `github_pat_`, `sk-…`, Private Keys sowie Pilot- und Kundennamen.
 - **Achtung:** `npm ci --dry-run` löscht trotzdem `node_modules`.
+
+### C) V1.8: echte lokale Mail-Quelle (nur Entwicklung)
+1. Patch in saimor-core einspielen (`saimor-core-v18-local-imap.README.md`).
+2. Test-Server starten: `DEV_IMAP_USER=… DEV_IMAP_PASSWORD=… python scripts/dev_local_imap/server.py --port 3143`. Die Zugangsdaten nur in der Umgebung halten, nie committen; das Passwort braucht mindestens 10 Zeichen.
+3. CORE mit `ENVIRONMENT=development SAIMOR_DEV_LOCAL_IMAP=1 SAIMOR_DEV_IMAP_PORT=3143` starten.
+4. /os als Live-Build gegen :8081 starten. Dann Einstellungen › Quellen › E-Mail › „Lokaler Test-Server (nur Entwicklung)“.
+5. Live-e2e: `OS_LIVE_EMAIL=… OS_LIVE_PASSWORD=… DEV_IMAP_USER=… DEV_IMAP_PASSWORD=… npx playwright test e2e/os-live-mail.spec.ts`. Danach den IMAP-Server stoppen und mit `OS_LIVE_IMAP_DOWN=1` den Fehlerfall prüfen. Ohne diese Variablen wird die Suite übersprungen.
 
 ## Was jede Version enthält
 | Version | Inhalt (Doc-§) |
@@ -93,6 +102,7 @@ npm run verify:types && npm run verify:critical-flow && npm run verify:os:smoke 
 | **V1.5** | Heller Legacy-Hintergrund. Looks **Kosmos/Klar**. **4 Tagesphasen** (Flow, Build, Lounge, Nacht) färben alles. Synthetische Ambient-Loops (Platzhalter, standardmäßig aus). Ehrliches MÔRA-Morgenbriefing. Universe-UX-Kritik und Fixes. Inventar ruhender Teile (§27.5). |
 | **V1.5.1** | Klar mit dezenten Phasenfarben. Begrüßung folgt der gewählten Phase. (§27.7) |
 | **V1.6** | Onboarding in 4 Schritten (firstRunStore), Agenten-Feed (`/v3/agency/thoughts`), Einstellungen › Quellen (`/v3/connections`, Verbinden nur gegen lokalen CORE), Kontrast gemessen und auf 0 Unterschreitungen gebracht. Fixes: Briefing-Envelope, `/os` lädt die Sitzung selbst, kaputte Tailwind-Opacity-Klassen im Universe. (§28) **Marius' Urteil: Quellen-Seite und Onboarding-Schritt sind zu generisch. Siehe 04.** |
+| **V1.8** | **Erste echte lokale Quelle (E-Mail):** dev-only IMAP-Test-Server mit 5 synthetischen Mails. CORE verbindet erst nach erfolgreichem Abruf und bestätigtem Eintrag; ein Fehler ist nie mehr ein leeres Postfach. Andockstation dockt echt an und zeigt das erste Signal aus der echten Test-Mail. Heute zeigt die regelbasierte MÔRA-Zusammenfassung mit Quellverweisen. Live-e2e gegen lokalen CORE. CORE als Patch. (§30, 04 › 4.5) |
 | **V1.7** | **Andockstation:** Quellen docken als Stationen an die Abteilungs-Planeten an, die sie speisen. Ein MÔRA-Satz, eine Aktion, Freigabe-Schleuse, erstes Signal, Fehler übersetzt, Progressive Disclosure. Kosmos und Klar, alle Phasen. Onboarding Schritt 3 nutzt dieselbe Szene. Alte Liste und Tab „Verbindungen“ aufgelöst. (§29, 04 › 4.4) |
 
 ## Wichtige Dateien
@@ -325,23 +335,50 @@ Screens: `screens/60`–`68` (`65` ist eine **Testaufnahme mit gemockter CORE-An
 | Desktop / iPad | ✅ 5 Größen ohne Label-Überlappung (Playwright), iPad hoch mit Karte unter der Szene | `67` |
 
 **Noch offen (ehrlich):**
-1. **Keine echte Quelle angedockt.** „Angedockt“ und das erste Signal sind nur gemockt belegt. Das Briefing auf „Heute“ ist noch nie live gewesen. → **Astras erste Aufgabe** (06).
+1. ~~**Keine echte Quelle angedockt.**~~ → **In V1.8 gelöst** (siehe 4.5): E-Mail dockt echt gegen den lokalen CORE an. Das erste Signal und die Heute-Zusammenfassung sind echt (regelbasiert). Die KI-Variante von `/v3/briefing` bleibt lokal „degraded“, weil kein KI-Anbieter konfiguriert ist.
 2. **Onboarding als Ganzes** ist weiter ein Modal mit 4 Schritten. Nur Schritt 3 ist neu. Prinzip 8 („Inbetriebnahme im Universe statt Modal“) ist offen, ebenso die leeren Look-Vorschauen in Schritt 1 und die Tour-Kästen in Schritt 4.
 3. **Abdocken** gibt es im UI nicht. Den CORE-Endpunkt prüfen und nur lokal anbinden.
 4. **Zuordnung Station → Planet** ist eine Schlagwort-Heuristik, also nur Darstellung. Später wählbar und mit Bestätigung in CORE speichern.
 5. **OAuth-Rückkehr** (`return_to`) ist mit keinem echten Provider getestet. Lokal ist Google-OAuth nicht konfiguriert.
 6. Der Kopf der Einstellungsseite („Wenige Schalter, klar benannt.“) und der Darstellungsblock stehen weiter über den Tabs. Die Andockstation liegt dadurch unterhalb der ersten Bildschirmhöhe.
 
+## 4.5 Umsetzung V1.8 „Erste echte lokale Quelle“ – erledigt und offen
+Screens: `screens/70`–`77`, alle **echt** gegen den lokalen CORE und den IMAP-Test-Server. Sie ersetzen die gemockte `65`.
+
+| Ziel | V1.8 | Beleg |
+|---|---|---|
+| Lokaler Test-Server | ✅ minimaler IMAP4rev1-Server, nur 127.0.0.1, 5 synthetische Mails, Zugangsdaten nur in der Umgebung | Patch `scripts/dev_local_imap/` |
+| Dev-only-Pfad in CORE | ✅ `local_test` nur bei `ENVIRONMENT=development` + `SAIMOR_DEV_LOCAL_IMAP=1`, Host fest 127.0.0.1, sonst 403 | Patch, pytest |
+| Verbunden = verifiziert | ✅ erst abrufen, dann speichern, dann zurücklesen; nur `connected` + `confirmed` dockt im UI an | `72`, `73` |
+| Fehler ≠ leeres Postfach | ✅ `ImapFetchError` statt `[]`; Heute zeigt „Unbekannt / nicht verfügbar“; falsches Passwort und nicht erreichbarer Server sind Fehler, gespeichert wird nichts | `71`, `76`, `77` |
+| MÔRA-Zusammenfassung | ✅ regelbasiert (Stichwörter, keine KI), nur aus gespeicherten Nachrichten, mit Quellverweisen, Plakette „regelbasiert“ | `74`, `75` |
+| Heute live | ✅ Mail-Karte und „Neue Informationen“ lesen live per IMAP über `/v3/today`; das Morgenbriefing zeigt die Zusammenfassung | `74`, `75` |
+| Tests | ✅ Jest `__tests__/os-v18`, pytest 15 neu, Playwright live 3/3, Kontrast live 0/672 | Doc §30.5 |
+
+**Noch offen (ehrlich):**
+1. Der **CORE-Teil ist nur ein Patch** und nicht in saimor-core gemergt. Ohne Patch bietet CORE `local_test` nicht an, und das UI zeigt dann ehrlich nur Gmail, Outlook und Yahoo.
+2. Getestet ist nur gegen den **lokalen Test-Server**, nicht gegen echte Anbieter.
+3. Die Zusammenfassung stammt aus dem Abruf beim Verbinden (bis 20 Mails). Ein **Re-Sync**, der sie auffrischt, fehlt.
+4. Die **KI-Variante** des Briefings (`/v3/briefing`) braucht einen KI-Anbieter in CORE. Lokal ist keiner da, deshalb bleibt sie „degraded“. Das UI sagt das offen.
+5. **Abdocken** fehlt im UI weiterhin. Die Tests setzen den lokalen Testeintrag über `DELETE /v3/integrations/mail` zurück, das deaktiviert ihn nur in der lokalen SQLite.
+6. **Verhaltensänderung:** Echte, nie geprüfte Mail-Zugänge erscheinen nach dem Patch als „bereit“, bis sie neu verbunden werden. Vor einem Deploy kommunizieren.
+
 
 # 5 · Offene Punkte und priorisiertes Backlog
 
 ## P0 – als Nächstes
 1. ✅ **Erledigt in V1.7:** Redesign Quellen und Onboarding-Quellen-Schritt („Andockstation“, Doc §29, 04 › 4.4).
-2. **→ JETZT ZUERST: Erste echte lokale Quelle**, damit „angedockt“ und das Briefing echt werden.
+2. ✅ **Erledigt in V1.8: Erste echte lokale Quelle** (E-Mail über den lokalen IMAP-Test-Server, Doc §30, 04 › 4.5). Die gemockte `screens/65` ist durch die echten `70`–`77` ersetzt. Ursprünglicher Plan zur Einordnung:
    - Mit einem Test-Konto gegen den lokalen CORE: Nextcloud (WebDAV) oder Mail (IMAP mit App-Passwort). Zugangsdaten nur lokal, nie committen.
    - Prüfen, ob `/v3/briefing` mit verbundener Quelle nicht „degraded“ liefert.
    - In der Andockstation andocken (Freigabe → Felder). Prüfen: Die Station leuchtet am Planeten, das erste Signal kommt echt.
    - Ziel: Das Briefing auf „Heute“ schaltet sichtbar von „startet, sobald …“ auf live. Die gemockte Testaufnahme `screens/65` durch eine echte ersetzen.
+2a. **→ JETZT ZUERST: CORE-Patch `saimor-core-v18-local-imap.patch` reviewen und in saimor-core einspielen** (README liegt bei). Danach:
+   - **Re-Sync** für den Mail-Snapshot (Zusammenfassung auffrischen, mit `last_fetch_ok`/Fehlerstand);
+   - **Abdocken** im UI (nur lokal);
+   - einen echten Anbieter testen (App-Passwort von Marius, nur lokal);
+   - die Verhaltensänderung für nie verifizierte Zugänge kommunizieren.
+2b. **KI-Briefing** (`/v3/briefing`): ist lokal „degraded“ („No healthy real AI provider available“). Entscheiden, ob ein lokaler bzw. erlaubter KI-Anbieter angebunden wird; bis dahin bleibt die regelbasierte Zusammenfassung.
 3. **Onboarding-Firma und -Abteilungen in CORE übernehmen**, mit Bestätigung.
    - Heute bleiben die Namen nur lokal (`saimor_os_onboarding_org`).
    - Danach den Vorschlag „Als echte Abteilungen anlegen?“ anbieten, über den vorhandenen `DepartmentWizard` bzw. die CORE-Departments-API, nur nach Klick.
@@ -383,8 +420,10 @@ Du übernimmst den SAIMÔR-OS-Prototyp von einem anderen Agenten. Arbeite auf De
 
 KONTEXT
 - Repo: Saimor-world/mora-ui · Branch: grok/os-recovery-prototype-v1 · PR #101 (Draft, nicht gemergt, nicht deployed).
-- Code-Stand V1.7 „Andockstation“ (Quellen-Redesign ist gebaut). Lies zuerst docs/UEBERGABE-ASTRA.md (Status, Vision,
-  Marktrecherche, Kritik + Umsetzung 4.4, Backlog) und OS-RECOVERY-PROTOTYPE-V1.md §23–§29 (§29 = V1.7, §27.5 = ruhende Teile).
+- Code-Stand V1.8 „Erste echte lokale Quelle“ (Andockstation aus V1.7; E-Mail dockt jetzt echt über einen dev-only
+  IMAP-Test-Server an). Lies zuerst docs/UEBERGABE-ASTRA.md (Status, Vision, Marktrecherche, Kritik + Umsetzung 4.4/4.5,
+  Backlog) und OS-RECOVERY-PROTOTYPE-V1.md §23–§30 (§29 = V1.7, §30 = V1.8, §27.5 = ruhende Teile).
+- CORE-Teil von V1.8 liegt als Patch bei: saimor-core-v18-local-imap.patch + README (nicht in saimor-core gepusht).
 - Lokal: NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local → http://localhost:3000/os (Demo-Daten).
   Mit lokalem CORE (Port 8081) für echte Sitzung; Details in docs/UEBERGABE-ASTRA.md Abschnitt 1.
 
@@ -407,21 +446,21 @@ Keine privaten oder Pilot-Namen – Privacy-Grep über den Diff = 0. YORI bleibt
 Nur lokaler CORE. Push nur mit dem bereitgestellten Token, Token nie ausgeben.
 
 DEINE ERSTE AUFGABE
-Die erste echte lokale Quelle andocken, damit das MÔRA-Morgenbriefing auf „Heute“ zum ersten Mal live läuft.
-Ausgangslage: Die Andockstation (Einstellungen › Quellen, Onboarding Schritt 3) ist fertig: Szene mit Abteilungs-
-Planeten, ein MÔRA-Satz, Freigabe-Schleuse, Fehler übersetzt. Status kommt aus GET /v3/connections, Andocken über
-POST /v3/connections/{provider}/connect (nur gegen lokalen CORE). „Angedockt“ und „erstes Signal“ sind bisher nur mit
-gemockter CORE-Antwort belegt (screens/65). Das Briefing war noch nie live.
+Den V1.8-CORE-Patch prüfen und die echte lokale Mail-Quelle stabil machen.
+Ausgangslage: „Angedockt“ ist seit V1.8 echt belegt. E-Mail dockt gegen den lokalen CORE über einen dev-only IMAP-Test-Server
+(127.0.0.1:3143, synthetische Mails) an. CORE speichert erst nach erfolgreichem Abruf und bestätigt den Eintrag. Ein Fehler
+ist nie ein leeres Postfach. Heute zeigt die regelbasierte MÔRA-Zusammenfassung mit Quellverweisen (screens/70–77). Das
+KI-Briefing (/v3/briefing) bleibt lokal „degraded“, weil kein KI-Anbieter konfiguriert ist.
 Vorgehen:
-1) Lokalen CORE (8081) und /os gegen ihn starten (docs/UEBERGABE-ASTRA.md Abschnitt 1 B). Dev-Login mit lokalem Testkonto.
-2) Eine Test-Quelle wählen, die keine echten Kunden- oder Privatdaten enthält: z. B. eine lokale Nextcloud-Testinstanz
-   (Docker) oder ein IMAP-Testkonto, das Marius bereitstellt. Zugangsdaten nur lokal/als Umgebungsvariable, nie committen,
-   nie ausgeben. Vorher prüfen, ob CORE localhost-Ziele zulässt (SSRF-Schutz) – nichts an CORE-Sicherheit aufweichen.
-3) In der Andockstation andocken. Verifizieren: Station leuchtet am Planeten, GET /v3/connections meldet connected,
-   „Erstes Signal“ kommt echt aus /v3/briefing, auf „Heute“ erscheint das Briefing statt „startet, sobald …“.
-4) Wenn CORE ein Briefing nur „degraded“ liefert: Ursache in CORE finden und berichten, nicht im UI überdecken.
-5) Echte Screens statt der gemockten Testaufnahme, Doc-Abschnitt §30, PR #101 aktualisieren.
-Danach (nur nach Marius' Freigabe): Abdocken, Onboarding als Inbetriebnahme im Universe (Brief 4.3 Prinzip 8),
+1) saimor-core-v18-local-imap.patch lesen und mit git apply --check prüfen, dann lokal einspielen; pytest
+   tests/test_mail_verified_connect.py. Den Patch nur mit Marius' Freigabe in saimor-core einbringen.
+2) Lokal starten wie in docs/UEBERGABE-ASTRA.md Abschnitt 1 C. Die Live-e2e e2e/os-live-mail.spec.ts muss 3/3 grün sein,
+   die Zugangsdaten nur als Umgebungsvariablen.
+3) Re-Sync bauen: den Mail-Snapshot auffrischen, mit ehrlichem Fehlerstand (last_fetch_ok, Zeitpunkt). Fehler nie als leer zeigen.
+4) Abdocken im UI (nur lokaler CORE, mit Bestätigung).
+5) Erst danach und nur mit Marius' Freigabe: einen echten Anbieter mit App-Passwort lokal testen. Nichts an CORE-Sicherheit
+   aufweichen; der dev-only-Pfad bleibt an ENVIRONMENT=development + SAIMOR_DEV_LOCAL_IMAP=1 gebunden.
+Danach (nur nach Marius' Freigabe): KI-Briefing klären, Onboarding als Inbetriebnahme im Universe (Brief 4.3 Prinzip 8),
 Onboarding-Abteilungen mit Bestätigung in CORE anlegen. Siehe Backlog (05).
 
 QUALITÄT

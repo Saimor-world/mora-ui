@@ -397,7 +397,7 @@
 .os-today-now__card { display: flex; flex-direction: column; gap: 4px; min-height: 96px; padding: var(--os-space-4); text-align: left; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-lg); background: var(--os-surface); transition: border-color var(--os-motion-fast) var(--os-motion-ease), transform var(--os-motion-fast) var(--os-motion-ease); }
 .os-today-now__card:hover, .os-today-now__card:focus-visible { border-color: var(--os-accent-line); transform: translateY(-1px); }
 .os-today-now__card b { color: var(--os-text); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.os-today-now__card span { font-size: var(--os-type-meta-size); color: var(--os-text-faint); }
+.os-today-now__card span { font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
 .os-today-now__eyebrow { display: flex; align-items: center; gap: 6px; font-size: 10px !important; letter-spacing: .14em; text-transform: uppercase; }
 .os-today-launch { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--os-space-3); }
 @media (max-width: 1099px) { .os-today-now { grid-template-columns: repeat(2, minmax(0, 1fr)); } .os-today-launch { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
@@ -566,3 +566,13 @@
 .os-station-legend li { display: inline-flex; align-items: center; gap: 8px; }
 .os-station-legend i { width: 12px; height: 12px; border-radius: 50%; border: 1.2px dashed var(--os-text-faint); box-sizing: border-box; }
 .os-station-legend [data-status='connected'] i { border: 1.2px solid var(--os-accent); background: radial-gradient(circle, var(--os-accent) 0 3px, transparent 3.5px); }
+
+/* V1.8 MÔRA-Mail-Zusammenfassung (regelbasiert, mit Quellverweisen) */
+.os-mail-summary { display: flex; flex-direction: column; gap: 4px; }
+.os-mail-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--os-space-3); margin-top: var(--os-space-3); }
+.os-mail-group { padding: 10px 12px; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-md); }
+.os-mail-refs { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.os-mail-ref { display: flex; flex-direction: column; min-width: 0; }
+.os-mail-ref__subject { color: var(--os-text); font-size: var(--os-type-meta-size); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.os-mail-ref__meta { color: var(--os-text-muted); font-size: var(--os-type-meta-size); }
+.os-station-signal .os-mail-ref__subject { white-space: normal; }

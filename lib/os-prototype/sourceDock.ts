@@ -81,9 +81,12 @@ export const STATION_WHY: Record<string, string> = {
 /** CORE-Fehler in einen nächsten Schritt übersetzen. Der Originaltext bleibt als Detail einsehbar. */
 export function translateCoreError(raw: string): string {
   const t = raw || '';
+  if (/nur in der lokalen Entwicklung/i.test(t)) return 'Der lokale Test-Server ist nur in der lokalen Entwicklung freigeschaltet.';
+  if (/nicht bestätigt/i.test(t)) return 'CORE hat das Andocken nicht bestätigt. Bitte erneut versuchen.';
+  if (/Posteingang konnte nicht/i.test(t)) return 'Das Postfach antwortet, aber der Posteingang ließ sich nicht lesen.';
   if (/not configured|nicht .*konfiguriert|setup_required/i.test(t)) return 'Diese Station richtet ein Admin auf dem Server ein.';
   if (/demo|boundary/i.test(t)) return 'Demo-Konten docken nichts Echtes an.';
-  if (/reject|invalid|unauthori[sz]ed|forbidden|denied|abgelehnt|401|403|credential|passwor|token/i.test(t)) return 'Die Zugangsdaten wurden abgelehnt. Bitte prüfen und erneut andocken.';
+  if (/reject|invalid|unauthori[sz]ed|forbidden|denied|abgelehnt|401|403|credential|passwor|token|zugangsdaten|anmeldung .*fehlgeschlagen/i.test(t)) return 'Die Zugangsdaten wurden abgelehnt. Bitte prüfen und erneut andocken.';
   if (/timeout|timed out|unreachable|refused|resolve|network|ECONN|ENOTFOUND|nicht erreichbar/i.test(t)) return 'Der Dienst war nicht erreichbar. Adresse prüfen und erneut versuchen.';
   return 'Das Andocken hat nicht geklappt.';
 }

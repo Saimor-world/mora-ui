@@ -5,6 +5,8 @@ import { ArrowDownToLine, Orbit, ShieldCheck } from 'lucide-react';
 import { Button, FailureState, Input, MoraStone, SampleTag, Text, cx } from '@/components/os-kit';
 import { coreGet, corePost } from '@/lib/api/http';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
+import { checkConnectResult, type ConnectResult } from '@/lib/os-prototype/mailSummary';
+import { MailSummaryView } from '@/features/today/ui/MailSummary';
 import { DEMO_DEPARTMENTS } from '@/lib/os-prototype/demoPack';
 import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -24,10 +26,14 @@ import { useSessionStore } from '@/lib/store/sessionStore';
  * danach das erste echte Signal. Status 1:1 aus `GET /v3/connections`; Andocken über
  * `POST /v3/connections/{provider}/connect` – im Prototyp nur gegen einen lokalen CORE.
  * Zugangsdaten werden nie im Browser gespeichert; Felder werden nach dem Senden geleert.
+ * V1.8: „Angedockt“ erst, wenn CORE den Abruf bestätigt (`status: connected`, `confirmed: true`).
+ * Keine Antwort (CORE weg) ist ein Fehler, nie ein Erfolg. Mail zeigt danach das erste echte
+ * Signal aus dem gespeicherten Abruf plus die regelbasierte MÔRA-Zusammenfassung.
  */
 type Focus =
   | { kind: 'idle' }
-  | { kind: 'consent' | 'form' | 'busy' | 'docked' | 'admin' | 'info'; id: string }
+  | { kind: 'consent' | 'form' | 'busy' | 'admin' | 'info'; id: string }
+  | { kind: 'docked'; id: string; result?: ConnectResult }
   | { kind: 'error'; id: string; raw: string };
 
 interface Briefing { status?: string; text?: string }
@@ -125,7 +131,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
 
   const briefing = useQuery({
     queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
-    enabled: live && focus.kind === 'docked', staleTime: 30_000, retry: false,
+    enabled: live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
   const select = (s: DockStation) => {
@@ -149,10 +155,14 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     if (!local) return;
     setFocus({ kind: 'busy', id: s.id });
     try {
-      await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
+      const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
+      const check = checkConnectResult(s.group, res);
+      if (!check.ok) { setFocus({ kind: 'error', id: s.id, raw: check.reason }); return; }
       await qc.invalidateQueries({ queryKey: ['os', 'sources'] });
       qc.invalidateQueries({ queryKey: ['os', 'briefing'] });
-      setFocus({ kind: 'docked', id: s.id });
+      qc.invalidateQueries({ queryKey: ['os', 'mail-summary'] });
+      qc.invalidateQueries({ queryKey: ['os', 'today'] });
+      setFocus({ kind: 'docked', id: s.id, result: res as ConnectResult });
     } catch (err) {
       setFocus({ kind: 'error', id: s.id, raw: err instanceof Error ? err.message : String(err) });
     }
@@ -203,17 +213,26 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             {s.entry.action?.kind === 'oauth'
               ? <p className="os-station-line"><MoraStone size={22} thinking /> Anmeldung wird geöffnet …</p>
               : <ConnectFields entry={s.entry} busy={focus.kind === 'busy'} onSubmit={(v) => submit(s, v)} />}
+            {focus.kind === 'busy' && s.group === 'mail' ? (
+              <p className="os-station-line mt-3" data-testid="dock-connecting"><MoraStone size={22} thinking />MÔRA ruft das Postfach ab. Angedockt ist es erst, wenn der Abruf klappt.</p>
+            ) : null}
           </div>
         ) : null;
       case 'docked': {
         const text = briefing.data && briefing.data.status !== 'degraded' && briefing.data.text ? briefing.data.text : null;
+        const res = focus.result;
+        const mail = s?.group === 'mail';
         return (
           <div data-testid="dock-docked">
             <Text variant="eyebrow">Angedockt</Text>
             <p className="os-station-line mt-2"><MoraStone size={22} />{s?.label} speist jetzt {targetName(s)}.</p>
+            {mail && res?.confirmed ? (
+              <Text variant="meta" className="mt-1" data-testid="dock-verified">Abruf geklappt · {res.fetched ?? 0} Nachrichten · in CORE bestätigt{res.dev_only ? ' · lokaler Test-Server' : ''}</Text>
+            ) : null}
             <div className="os-station-signal" data-testid="dock-first-signal">
               <span className="os-station-signal__label">Erstes Signal</span>
-              {briefing.isLoading ? <p>MÔRA liest …</p> : text ? <p>{text.length > 220 ? `${text.slice(0, 217)} …` : text}</p> : <p>Kommt mit dem ersten Abgleich.</p>}
+              {mail ? <MailSummaryView enabled={live} variant="signal" />
+                : briefing.isLoading ? <p>MÔRA liest …</p> : text ? <p>{text.length > 220 ? `${text.slice(0, 217)} …` : text}</p> : <p>Kommt mit dem ersten Abgleich.</p>}
             </div>
             <div className="os-station-actions">
               {navigate ? <Button size="sm" onClick={() => navigate('today')} data-testid="dock-to-today">Zu Heute</Button> : null}
@@ -227,6 +246,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
           <div data-testid="dock-error">
             <Text variant="eyebrow">{s?.label}</Text>
             <p className="os-station-line mt-2"><MoraStone size={22} />{translateCoreError(focus.raw)}</p>
+            <Text variant="meta" className="mt-1">Nichts wurde angedockt oder gespeichert.{s?.group === 'mail' ? ' Ein Fehler ist kein leeres Postfach.' : ''}</Text>
             <details className="os-station-details"><summary>Details von CORE</summary><p data-testid="dock-error-raw">{focus.raw}</p></details>
             <div className="os-station-actions">
               {s && !/Admin/.test(translateCoreError(focus.raw)) ? <Button size="sm" onClick={() => setFocus({ kind: 'consent', id: s.id })} data-testid="dock-retry">Erneut versuchen</Button> : null}
@@ -247,7 +267,9 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
           <div data-testid="dock-info">
             <Text variant="eyebrow">Angedockt</Text>
             <p className="os-station-line mt-2"><MoraStone size={22} />{s?.label} speist {targetName(s)}.</p>
-            {s?.entry?.account_hint ? <Text variant="meta" className="mt-2">{s.entry.account_hint}</Text> : null}
+            {s?.entry?.detail ? <Text variant="meta" className="mt-2" data-testid="dock-info-detail">{s.entry.detail}</Text> : null}
+            {s?.entry?.account_hint ? <Text variant="meta" className="mt-1">{s.entry.account_hint}</Text> : null}
+            {s?.group === 'mail' ? <div className="os-station-signal"><span className="os-station-signal__label">Letztes Signal</span><MailSummaryView enabled={live} variant="signal" /></div> : null}
             <div className="os-station-actions"><Button variant="ghost" size="sm" onClick={back}>Zurück</Button></div>
           </div>
         );

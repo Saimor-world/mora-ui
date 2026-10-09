@@ -55,7 +55,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   return (
     <div className="flex flex-col gap-6" data-testid="feature-today">
       <header>
-        <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
+        <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
         <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
@@ -72,7 +72,11 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <div className="os-today-now">
             {([
               ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
-              ['Mail', Mail, snapshot.mail.items[0]?.subject ?? 'Nichts Neues', `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`, () => navigate('post')],
+              // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
+              ['Mail', Mail,
+                snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
+                snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
+                () => navigate('post')],
               ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               ['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')],
             ] as const).map(([label, Icon, title, copy, run]) => (
