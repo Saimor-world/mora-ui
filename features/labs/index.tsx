@@ -7,6 +7,9 @@ import { getAppManifest } from '@/lib/apps/appRegistry';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp, type LegacyPlacement } from '@/lib/os-prototype/legacyApps';
 import { getFeature } from '@/features/registry';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useSources } from '@/lib/os-prototype/useSources';
+import { SOURCE_DEPENDENT_APPS, CONNECTION_EVIDENCE_LABEL, assessSourceConnection } from '@/lib/os-prototype/appConnectionEvidence';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 
 /** A single catalog for both existing tools and classic apps, not a second OS. */
@@ -22,6 +25,12 @@ const PLACEMENT_FEATURE: Partial<Record<LegacyPlacement, string>> = { mora: 'mor
 
 export default function LabsSurface({ navigate, preview }: FeatureSurfaceProps) {
   const role = useSessionStore((s) => s.user?.role ?? null);
+  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const sources = useSources(!preview && hasSession);
+  const goToSources = () => {
+    useOsShellStore.getState().setSettingsSection('sources');
+    navigate('settings');
+  };
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState('all');
   const needle = query.trim().toLocaleLowerCase('de');
@@ -78,6 +87,15 @@ export default function LabsSurface({ navigate, preview }: FeatureSurfaceProps) 
             {g.entries.map((e) => {
               const feature = PLACEMENT_FEATURE[e.placement];
               const featureName = feature ? getFeature(feature)?.title : null;
+              const sourceGroup = SOURCE_DEPENDENT_APPS[e.appId];
+              const evidence = sourceGroup ? assessSourceConnection(sourceGroup, {
+                hasSession: !preview && hasSession,
+                isLoading: sources.isLoading,
+                isError: sources.isError,
+                isSuccess: sources.isSuccess,
+                connections: sources.data?.connections,
+              }) : null;
+              const requiresDock = evidence && evidence !== 'connected';
               return (
                 <Surface key={e.appId} padding={4} data-legacy-app={e.appId}>
                   <Stack gap={2}>
@@ -86,12 +104,22 @@ export default function LabsSurface({ navigate, preview }: FeatureSurfaceProps) 
                       <Text tone="default">{legacyAppName(e.appId)}</Text>
                     </Stack>
                     <Text variant="meta">{e.note}</Text>
+                    {evidence ? (
+                      <Status tone={evidence === 'connected' ? 'safe' : evidence === 'unavailable' ? 'warning' : 'neutral'}>
+                        {CONNECTION_EVIDENCE_LABEL[evidence]}
+                      </Status>
+                    ) : null}
                     <Stack direction="row" gap={2} wrap>
                       {feature ? (
                         <Button size="sm" onClick={() => navigate(feature)}>Zu {featureName}</Button>
+                      ) : requiresDock ? (
+                        <Button size="sm" onClick={goToSources}>Quellen prüfen</Button>
                       ) : (
                         <Button size="sm" onClick={() => openLegacyApp(e.appId)}>Klassisch öffnen</Button>
                       )}
+                      {requiresDock ? (
+                        <Button size="sm" variant="ghost" onClick={() => openLegacyApp(e.appId)}>Klassische App</Button>
+                      ) : null}
                       {feature && e.appId !== 'integrations' && e.appId !== 'finance-v2' ? (
                         <Button size="sm" variant="ghost" onClick={() => openLegacyApp(e.appId)}>Klassische App</Button>
                       ) : null}
