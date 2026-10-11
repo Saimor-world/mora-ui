@@ -37,9 +37,18 @@ describe('V1.7 SourceDock', () => {
   it('shows a labelled example scene without a session and never calls CORE', () => {
     renderDock({ live: false });
     expect(screen.getByTestId('sources-panel')).toHaveAttribute('data-state', 'sample');
-    expect(screen.getByText('Echt wird es mit deiner CORE-Sitzung.')).toBeInTheDocument();
+    expect(screen.getByText('Nur Vorschau. Echt wird es mit deiner CORE-Sitzung.')).toBeInTheDocument();
     expect(screen.getByText('Beispiel')).toBeInTheDocument();
     expect(coreGet).not.toHaveBeenCalled();
+  });
+
+  it('never turns a live empty CORE connection response into sample stations', async () => {
+    coreGet.mockResolvedValue({ connections: [] });
+    renderDock();
+    expect(await screen.findByTestId('dock-no-sources')).toHaveTextContent('keine Verbindung');
+    expect(screen.getByTestId('sources-panel')).not.toHaveAttribute('data-state', 'sample');
+    expect(screen.queryByTestId('dock-station-sample-calendar')).toBeNull();
+    expect(screen.queryByTestId('dock-sample')).toBeNull();
   });
 
   it('one focused action → approval → credentials → docked with an honest first signal', async () => {
