@@ -78,6 +78,14 @@ describe('V1.8 MailSummaryView', () => {
     expect(await screen.findByTestId('mail-summary-error')).toHaveTextContent('Kein verifiziert verbundenes Postfach.');
   });
 
+  it('does not read a private summary without an authenticated user', async () => {
+    useSessionStore.setState({ user: null, sessionGeneration: 2 });
+    coreGet.mockResolvedValue(SUMMARY);
+    renderView({ enabled: true });
+    expect(coreGet).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('mail-summary')).toBeNull();
+  });
+
   it('does not call CORE when disabled', () => {
     renderView({ enabled: false });
     expect(coreGet).not.toHaveBeenCalled();
