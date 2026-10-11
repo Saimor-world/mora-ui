@@ -1,4 +1,4 @@
-import { assessSourceConnection, CONNECTION_EVIDENCE_LABEL, SOURCE_DEPENDENT_APPS } from '@/lib/os-prototype/appConnectionEvidence';
+import { appPrimaryAction, assessSourceConnection, CONNECTION_EVIDENCE_LABEL, SOURCE_DEPENDENT_APPS } from '@/lib/os-prototype/appConnectionEvidence';
 import type { SourceEntry } from '@/lib/os-prototype/useSources';
 
 const entry = (group: string, status: string) =>
@@ -7,6 +7,16 @@ const entry = (group: string, status: string) =>
 const base = { hasSession: true, isLoading: false, isError: false, isSuccess: true };
 
 describe('new App-Center connector evidence', () => {
+  it('sends unverified mail and calendar into Settings › Quellen, not straight to Post', () => {
+    expect(appPrimaryAction('post', 'not_listed')).toBe('sources');
+    expect(appPrimaryAction('post', 'available')).toBe('sources');
+    expect(appPrimaryAction('post', 'unavailable')).toBe('sources');
+    expect(appPrimaryAction('post', 'no_session')).toBe('sources');
+    expect(appPrimaryAction('post', 'connected')).toBe('feature');
+    expect(appPrimaryAction(undefined, null)).toBe('legacy');
+    expect(appPrimaryAction('finance', null)).toBe('feature');
+  });
+
   it('only makes claims about source groups that have explicit CORE contracts', () => {
     expect(SOURCE_DEPENDENT_APPS.mail).toBe('mail');
     expect(SOURCE_DEPENDENT_APPS.calendar).toBe('calendar');

@@ -32,6 +32,16 @@ export function assessSourceConnection(
   return 'not_listed';
 }
 
+export type AppPrimaryAction = 'sources' | 'feature' | 'legacy';
+
+/** When a CORE-backed app is not confirmed connected, sources come first.
+ * A feature placement alone must never hide missing connection evidence.
+ */
+export function appPrimaryAction(feature: string | undefined, evidence: ConnectionEvidence | null): AppPrimaryAction {
+  if (evidence !== null && evidence !== 'connected') return 'sources';
+  return feature ? 'feature' : 'legacy';
+}
+
 export const CONNECTION_EVIDENCE_LABEL: Record<ConnectionEvidence, string> = {
   no_session: 'CORE-Sitzung erforderlich',
   checking: 'Quelle wird bei CORE geprüft',

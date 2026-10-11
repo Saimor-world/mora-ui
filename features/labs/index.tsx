@@ -8,7 +8,7 @@ import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp, type LegacyPlacemen
 import { getFeature } from '@/features/registry';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useSources } from '@/lib/os-prototype/useSources';
-import { SOURCE_DEPENDENT_APPS, CONNECTION_EVIDENCE_LABEL, assessSourceConnection } from '@/lib/os-prototype/appConnectionEvidence';
+import { SOURCE_DEPENDENT_APPS, CONNECTION_EVIDENCE_LABEL, assessSourceConnection, appPrimaryAction } from '@/lib/os-prototype/appConnectionEvidence';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 
@@ -95,7 +95,8 @@ export default function LabsSurface({ navigate, preview }: FeatureSurfaceProps) 
                 isSuccess: sources.isSuccess,
                 connections: sources.data?.connections,
               }) : null;
-              const requiresDock = evidence && evidence !== 'connected';
+              const primary = appPrimaryAction(feature, evidence);
+              const requiresDock = primary === 'sources';
               return (
                 <Surface key={e.appId} padding={4} data-legacy-app={e.appId}>
                   <Stack gap={2}>
@@ -110,10 +111,10 @@ export default function LabsSurface({ navigate, preview }: FeatureSurfaceProps) 
                       </Status>
                     ) : null}
                     <Stack direction="row" gap={2} wrap>
-                      {feature ? (
-                        <Button size="sm" onClick={() => navigate(feature)}>Zu {featureName}</Button>
-                      ) : requiresDock ? (
+                      {primary === 'sources' ? (
                         <Button size="sm" onClick={goToSources}>Quellen prüfen</Button>
+                      ) : primary === 'feature' && feature ? (
+                        <Button size="sm" onClick={() => navigate(feature)}>Zu {featureName}</Button>
                       ) : (
                         <Button size="sm" onClick={() => openLegacyApp(e.appId)}>Klassisch öffnen</Button>
                       )}

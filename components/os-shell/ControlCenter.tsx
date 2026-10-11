@@ -1,6 +1,6 @@
 'use client';
 import React from 'react';
-import { BookOpen, Compass, Home, MessageCircle, Settings, Timer, X, type LucideIcon } from 'lucide-react';
+import { AppWindow, BookOpen, Compass, Home, MessageCircle, Settings, Timer, X, type LucideIcon } from 'lucide-react';
 import { Status, Text } from '@/components/os-kit';
 import { DEMO_DEPARTMENTS, demoDocumentCount } from '@/lib/os-prototype/demoPack';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -25,6 +25,7 @@ export function ControlCenter({ onClose, navigate, online, org, demo }: { onClos
     ['knowledge', 'Wissen', 'Direkt in Dokumente und Strukturen einsteigen.', BookOpen],
     ['mora', 'MÔRA', 'Direkt in den Dialog springen.', MessageCircle],
     ['settings', 'Einstellungen', 'Quellen, Darstellung und Daten.', Settings],
+    ['labs', 'App-Center', 'Werkzeuge und klassische Übergangsfunktionen.', AppWindow],
   ];
   return (
     <div className="os-dialog-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()} onKeyDown={(e) => e.key === 'Escape' && onClose()}>
