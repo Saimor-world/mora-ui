@@ -6,6 +6,7 @@ const coreGet = jest.fn();
 jest.mock('@/lib/api/http', () => ({ coreGet: (...a: unknown[]) => coreGet(...a), corePost: jest.fn(), getCoreBaseUrl: () => 'http://localhost:8081' }));
 
 import { MailSummaryView } from '@/features/today/ui/MailSummary';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 const REF = (subject: string, date: string) => ({ uid: subject, message_id: `<${subject}@dev-imap.example.test>`, subject, from: `Testabsender <t@x.example.test>`, date });
 const SUMMARY = {
@@ -24,7 +25,16 @@ function renderView(props: React.ComponentProps<typeof MailSummaryView>) {
   return render(<QueryClientProvider client={qc}><MailSummaryView {...props} /></QueryClientProvider>);
 }
 
-beforeEach(() => coreGet.mockReset());
+beforeEach(() => {
+  coreGet.mockReset();
+  useSessionStore.setState({
+    user: { id: 'test-user-a', tenant_id: 'test-tenant-a', name: 'Test Person', role: 'owner' } as NonNullable<ReturnType<typeof useSessionStore.getState>['user']>,
+    sessionGeneration: 1,
+  });
+});
+afterEach(() => {
+  useSessionStore.setState({ user: null, sessionGeneration: 0 });
+});
 
 describe('V1.8 MailSummaryView', () => {
   it('shows groups with source references, labelled regelbasiert and dev-only', async () => {
@@ -66,6 +76,14 @@ describe('V1.8 MailSummaryView', () => {
     coreGet.mockRejectedValue(Object.assign(new Error('Kein verifiziert verbundenes Postfach.'), { status: 409 }));
     renderView({ enabled: true });
     expect(await screen.findByTestId('mail-summary-error')).toHaveTextContent('Kein verifiziert verbundenes Postfach.');
+  });
+
+  it('does not read a private summary without an authenticated user', async () => {
+    useSessionStore.setState({ user: null, sessionGeneration: 2 });
+    coreGet.mockResolvedValue(SUMMARY);
+    renderView({ enabled: true });
+    expect(coreGet).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('mail-summary')).toBeNull();
   });
 
   it('does not call CORE when disabled', () => {

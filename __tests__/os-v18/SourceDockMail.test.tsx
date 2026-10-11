@@ -9,6 +9,7 @@ jest.mock('@/lib/os-prototype/useSources', () => ({ ...jest.requireActual('@/lib
 jest.mock('@/lib/queries/useDepartments', () => ({ useDepartments: () => ({ data: [{ id: 'd1', name: 'Vertrieb' }, { id: 'd2', name: 'Management' }] }) }));
 
 import { SourceDock } from '@/features/settings/ui/SourceDock';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 const MAIL = {
   id: 'mail', label: 'E-Mail', group: 'mail', status: 'available', detail: '',
@@ -42,7 +43,15 @@ async function fillAndSubmit() {
 
 beforeEach(() => {
   coreGet.mockReset(); corePost.mockReset();
+  // The real OS signal is only available inside a tenant-scoped logged-in session.
+  useSessionStore.setState({
+    user: { id: 'dev-imap-test-user', tenant_id: 'dev-imap-test-tenant', name: 'QA', role: 'owner' } as NonNullable<ReturnType<typeof useSessionStore.getState>['user']>,
+    sessionGeneration: 1,
+  });
   coreGet.mockImplementation(async (path: string) => (path === '/v3/connections/mail/summary' ? SUMMARY : { connections: [MAIL] }));
+});
+afterEach(() => {
+  useSessionStore.setState({ user: null, sessionGeneration: 0 });
 });
 
 describe('V1.8 SourceDock · E-Mail', () => {
