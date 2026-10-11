@@ -167,8 +167,8 @@ test('synthetic CORE snapshot: Post -> Heute -> MÔRA uses the same mail referen
   await expect(page.getByTestId('mail-summary-method')).toContainText('regelbasiert');
   await expect(summary).toContainText('Test-Server · nur Entwicklung');
   // Other services intentionally unavailable; never claim a global all-clear.
-  await expect(page.getByTestId('today-now-calendar')).toContainText('Nicht erreichbar');
-  await expect(page.getByTestId('today-now-tasks')).toContainText('Nicht erreichbar');
+  await expect(page.getByTestId('today-now-kalender')).toContainText('Nicht erreichbar');
+  await expect(page.getByTestId('today-now-aufgaben')).toContainText('Nicht erreichbar');
   expect(seen.some((p) => p.endsWith('/connections/mail/summary'))).toBe(true);
   expect(seen.some((p) => p.includes('/today?company_id=company-browser-qa'))).toBe(true);
 });
