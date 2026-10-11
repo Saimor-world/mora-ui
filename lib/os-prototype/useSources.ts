@@ -25,7 +25,15 @@ export const STATUS_LABEL: Record<string, string> = {
 export function useSources(enabled: boolean) {
   return useQuery({
     queryKey: ['os', 'sources'],
-    queryFn: async () => (await coreGet('/v3/connections', { throwAuthErrors: true })) as SourcesResponse,
+    queryFn: async () => {
+      const result: unknown = await coreGet('/v3/connections', { throwAuthErrors: true });
+      // coreGet can return null on network failure. Never convert that into a
+      // successful empty connection list or a misleading demo state.
+      if (!result || typeof result !== 'object' || !Array.isArray((result as SourcesResponse).connections)) {
+        throw new Error('CORE hat keinen gültigen Quellenstatus geliefert.');
+      }
+      return result as SourcesResponse;
+    },
     enabled,
     staleTime: 60_000,
     retry: false,
