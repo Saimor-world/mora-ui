@@ -302,17 +302,8 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
                 </div>
               )}
               <div className="flex justify-between">
-                <span>Founder funding (not revenue)</span>
-                <span className="font-mono text-white/64">
-                  {formatNumber(breakdown.founderFundingXrp)} XRP
-                  {breakdown.initialAllocationFundingXrp !== null && breakdown.topUpFundingXrp
-                    ? ` (${formatNumber(breakdown.initialAllocationFundingXrp)} + ${formatNumber(breakdown.topUpFundingXrp)} top-up)`
-                    : ''}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span>External dust (excluded)</span>
-                <span className="font-mono text-white/48">{formatNumber(breakdown.externalDustXrp)} XRP</span>
+                <span>Einlagen und Umsatz</span>
+                <span className="text-white/64">Zuordnung offen</span>
               </div>
               {breakdown.totalFeesXrp > 0 && (
                 <div className="flex justify-between">
