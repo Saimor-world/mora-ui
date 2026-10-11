@@ -1,4 +1,4 @@
-import type { TodaySnapshot } from '@/lib/api/todayClient';
+import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import { sourceTruth } from './truth';
 
 export interface AttentionItem {
@@ -12,7 +12,7 @@ export interface AttentionItem {
 /** Derive "was Aufmerksamkeit braucht" from a snapshot — only from readable sources. */
 export function deriveAttention(s: TodaySnapshot): AttentionItem[] {
   const out: AttentionItem[] = [];
-  const readable = (source: TodaySnapshot['mail']) => sourceTruth(source) === 'verified';
+  const readable = (source: TodaySourceMeta) => sourceTruth(source) === 'verified';
   if (readable(s.tasks)) {
     for (const t of s.tasks.overdue.slice(0, 3)) out.push({ id: `t-${t.id}`, title: t.title, reason: 'Aufgabe überfällig', tone: 'warning', target: 'today' });
   }
