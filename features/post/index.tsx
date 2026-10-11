@@ -1,5 +1,7 @@
 'use client';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useSources } from '@/lib/os-prototype/useSources';
+import { assessSourceConnection, type ConnectionEvidence } from '@/lib/os-prototype/appConnectionEvidence';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
 import { Button, SampleTag, FailureState, Loading, ResponsiveGrid, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
@@ -34,11 +36,32 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
 
 function demoQuery<T>(data: T[]) { return { isLoading: false, isError: false, error: null, data, refetch: () => undefined, fetchStatus: 'idle' as const }; }
 
-export default function PostSurface({ preview }: FeatureSurfaceProps) {
+function SourceGate({ state, label, onConnect }: { state: ConnectionEvidence; label: string; onConnect: () => void }) {
+  if (state === 'checking') return <Loading lines={3} />;
+  if (state === 'unavailable') return <FailureState kind="offline" compact subject={label + ': Quellenstatus nicht abrufbar'} />;
+  if (state === 'no_session') return <FailureState kind="unauthenticated" compact subject={label} />;
+  return (
+    <div data-testid={`post-source-gate-${label === 'Posteingang' ? 'mail' : 'calendar'}`}>
+      <StateView kind="not_configured" compact title={label + ' nicht bestätigt'} copy="CORE meldet keine verifiziert verbundene Quelle. Ein leeres Postfach oder ein freier Kalender ist damit nicht belegt." />
+      <Button size="sm" variant="ghost" onClick={onConnect}>Quellen prüfen</Button>
+    </div>
+  );
+}
+
+export default function PostSurface({ preview, navigate }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
-  const sample = Boolean(preview) && !hasSession;
-  const liveInbox = usePostInbox();
-  const liveCalendar = usePostCalendar();
+  const sample = Boolean(preview);
+  const sources = useSources(!sample && hasSession);
+  const connections = sources.data?.connections;
+  const sourceState = { hasSession: hasSession && !sample, isLoading: sources.isLoading, isError: sources.isError, isSuccess: sources.isSuccess, connections };
+  const mailConnection = assessSourceConnection('mail', sourceState);
+  const calendarConnection = assessSourceConnection('calendar', sourceState);
+  const liveInbox = usePostInbox(!sample && mailConnection === 'connected');
+  const liveCalendar = usePostCalendar(!sample && calendarConnection === 'connected');
+  const goToSources = () => {
+    useOsShellStore.getState().setSettingsSection('sources');
+    navigate('settings');
+  };
   const today = new Date().toISOString().slice(0, 10);
   // Lokale Vorschau: Demo-Paket „Simple Coffee Group“ (saimor-core demo_isolation.py), als Beispiel markiert.
   const inbox = sample ? demoQuery(DEMO_MAIL.map((m) => ({ id: m.id, subject: m.subject, from: m.from, snippet: m.snippet, read: m.read }))) : liveInbox;
@@ -56,27 +79,27 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       </header>
       <ResponsiveGrid columns={2}>
         <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" onClick={() => openLegacyApp('mail')}>Postfach öffnen</Button>}>
-          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => (
+          {!sample && mailConnection !== 'connected' ? <SourceGate state={mailConnection} label="Posteingang" onConnect={goToSources} /> : <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => (
             <div className="os-list">
               {items.slice(0, 8).map((m) => (
                 <div key={m.id} className="os-list-row os-mail-row">
                   <span className="os-mail-avatar" aria-hidden>{String(m.from_addr || m.from || '?').charAt(0).toUpperCase()}</span>
                   <Stack gap={0} className="min-w-0 flex-1"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text>{m.snippet ? <Text variant="meta" className="truncate">{m.snippet}</Text> : null}</Stack>
                   {m.read === false ? <Status tone="info">neu</Status> : null}
-                  <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setMoraDraft(`Fasse zusammen und schlage eine Antwort vor: „${m.subject || ''}“`); useOsShellStore.getState().setMoraOpen(true); }} aria-label={`Mit MÔRA: ${m.subject || ''}`}>Mit MÔRA</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setMoraDraft(`Hilf mir bei einer Nachricht mit dem Betreff „${m.subject || '(ohne Betreff)'}“. Hier wurde dir nur der Betreff übergeben, nicht der Inhalt. Behaupte nicht, die Nachricht gelesen zu haben, und sende nichts ohne meine Freigabe.`); useOsShellStore.getState().setMoraOpen(true); }} aria-label={`Nur Betreff mit MÔRA besprechen: ${m.subject || ''}`} title="Nur Betreff, kein Mailinhalt wird übergeben">MÔRA zum Betreff</Button>
                 </div>
               ))}
             </div>
-          )} />
+          )} />}
         </Column>
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
-          <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
+          {!sample && calendarConnection !== 'connected' ? <SourceGate state={calendarConnection} label="Kalender" onConnect={goToSources} /> : <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
             <div className="os-list">
               {items.slice(0, 8).map((e) => (
                 <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.date}{e.time ? ` · ${e.time}` : ''}</Text></div>
               ))}
             </div>
-          )} />
+          )} />}
         </Column>
       </ResponsiveGrid>
       {/* V1.5: Kalender-Fäden aus dem Legacy-Home (CalendarContinuity, /v3/continuity) – vorbereitende Aufgaben zu Terminen, nur mit deiner Freigabe. */}

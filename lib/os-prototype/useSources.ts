@@ -1,6 +1,8 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet, getCoreBaseUrl } from '@/lib/api/http';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
 
 /**
  * V1.6 Quellen aus CORE (`GET /v3/connections`).
@@ -23,8 +25,13 @@ export const STATUS_LABEL: Record<string, string> = {
 };
 
 export function useSources(enabled: boolean) {
+  const tenant = useSessionStore((s) => s.user?.tenant_id ?? null);
+  const userId = useSessionStore((s) => s.user?.id ?? null);
+  const generation = useSessionStore((s) => s.sessionGeneration);
+  const company = useNavStore((s) => s.activeCompanyId);
   return useQuery({
-    queryKey: ['os', 'sources'],
+    // Never reuse one person's connector evidence after a principal/company switch.
+    queryKey: ['os', 'sources', tenant, userId, generation, company],
     queryFn: async () => {
       const result: unknown = await coreGet('/v3/connections', { throwAuthErrors: true });
       // coreGet can return null on network failure. Never convert that into a
