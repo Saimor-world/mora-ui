@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 /** HTTP-contract simulator, NOT a real CORE/IMAP E2E. Synthetic fixtures only. */
 test.setTimeout(60000);
-type Scenario = 'connected' | 'not_connected' | 'invalid_mail';
+type Scenario = 'connected' | 'not_connected' | 'invalid_mail' | 'today_connected' | 'today_mail_unavailable' | 'summary_unavailable';
 const seen: string[] = [];
 
 async function setup(page: Page, scenario: Scenario) {
@@ -35,6 +35,88 @@ async function setup(page: Page, scenario: Scenario) {
       ? { unexpected_shape: true }
       : [{ id: 'synthetic-1', subject: 'Test-Eingang mit CORE-Feld', from_addr: 'test@example.invalid',
            snippet: 'Nur synthetische Daten', read: false }];
+    else if (url.pathname.endsWith('/connections/mail/summary')) {
+      if (scenario === 'summary_unavailable') {
+        await route.fulfill({
+          status: 409, contentType: 'application/json',
+          body: JSON.stringify({ detail: 'Kein verifiziert verbundenes Postfach.' }),
+        });
+        return;
+      }
+      const now = new Date().toISOString();
+      payload = {
+        method: 'regelbasiert',
+        status: 'ok',
+        total: 1,
+        verified_at: now,
+        headline: '1 synthetische Nachricht im verifizierten Posteingang.',
+        source: { provider: 'local_test', dev_only: true },
+        groups: [{
+          key: 'rechnung',
+          label: 'Rechnungen & Zahlungen',
+          count: 1,
+          refs: [{
+            uid: 'synthetic-1',
+            message_id: '<synthetic-1@dev-imap.example.test>',
+            subject: 'Test-Eingang mit CORE-Feld',
+            from: 'Testabsender <test@example.invalid>',
+            date: now,
+          }],
+        }],
+        other: { count: 0, refs: [] },
+      };
+    }
+    else if (url.pathname.endsWith('/today')) {
+      const now = new Date().toISOString();
+      const date = now.slice(0, 10);
+      const unavailable = (source: string, level: 'company' | 'user' = 'company') => ({
+        status: 'unavailable',
+        source,
+        scope: { level, tenant_id: 'tenant-qa', user_id: 'qa-operator',
+          company_id: level === 'company' ? 'company-browser-qa' : null },
+        connection: 'not_verified',
+        complete: false,
+        as_of: now,
+        stale_after_seconds: 300,
+      });
+      const mailReadable = scenario !== 'today_mail_unavailable';
+      payload = {
+        status: 'degraded',
+        date,
+        timezone: 'Europe/Berlin',
+        generated_at: now,
+        requested_scope: {
+          tenant_id: 'tenant-qa',
+          user_id: 'qa-operator',
+          company_id: 'company-browser-qa',
+        },
+        mail: {
+          ...unavailable('imap', 'user'),
+          ...(mailReadable ? { status: 'ok', connection: 'connected', complete: true } : {}),
+          inbox_loaded: mailReadable ? 1 : null,
+          sample_limit: 5,
+          items: mailReadable ? [{
+            id: 'synthetic-1',
+            subject: 'Test-Eingang mit CORE-Feld',
+            from_addr: 'test@example.invalid',
+            snippet: 'Nur synthetische Daten',
+            read: false,
+          }] : [],
+        },
+        calendar: {
+          ...unavailable('calendar'), date, count: null, next_event: null, events: [],
+        },
+        tasks: {
+          ...unavailable('tasks'),
+          counts: { open: null, in_progress: null, due_today: null, overdue: null },
+          items: [], due_today: [], overdue: [],
+        },
+        nightwatch: {
+          ...unavailable('nightwatch'), open_incidents: null, health_score: null, incidents: [],
+        },
+      };
+    }
+    else if (url.pathname.endsWith('/briefing')) payload = { status: 'degraded' };
     else if (url.pathname.endsWith('/calendar/events')) payload = [];
     else if (url.pathname.endsWith('/health')) payload = { state: 'online' };
     else payload = { status: 'unavailable' };
@@ -70,3 +152,40 @@ test('CORE unexpected successful payload is not treated as empty', async ({ page
   await expect(page.getByText('Posteingang leer')).toHaveCount(0);
 });
 
+
+test('synthetic CORE snapshot: Post -> Heute -> MÔRA uses the same mail reference', async ({ page }) => {
+  await setup(page, 'today_connected');
+  await page.goto('/os#post');
+  await expect(page.getByText('Test-Eingang mit CORE-Feld')).toBeVisible({ timeout: 30000 });
+  await page.goto('/os#today');
+  await expect(page.getByTestId('today-now-mail')).toContainText('Test-Eingang mit CORE-Feld', { timeout: 30000 });
+  const summary = page.getByTestId('mail-summary');
+  await expect(summary).toContainText('1 synthetische Nachricht');
+  await expect(summary.getByTestId('mail-ref')).toHaveAttribute(
+    'data-message-id', '<synthetic-1@dev-imap.example.test>',
+  );
+  await expect(page.getByTestId('mail-summary-method')).toContainText('regelbasiert');
+  await expect(summary).toContainText('Test-Server · nur Entwicklung');
+  // Other services intentionally unavailable; never claim a global all-clear.
+  await expect(page.getByTestId('today-now-calendar')).toContainText('Nicht erreichbar');
+  await expect(page.getByTestId('today-now-tasks')).toContainText('Nicht erreichbar');
+  expect(seen.some((p) => p.endsWith('/connections/mail/summary'))).toBe(true);
+  expect(seen.some((p) => p.includes('/today?company_id=company-browser-qa'))).toBe(true);
+});
+
+test('source connected does not mean a successful Today mail read', async ({ page }) => {
+  await setup(page, 'today_mail_unavailable');
+  await page.goto('/os#today');
+  await expect(page.getByTestId('today-now-mail')).toContainText('Nicht erreichbar', { timeout: 30000 });
+  await expect(page.getByTestId('today-now-mail')).not.toContainText('Keine Nachrichten');
+  await expect(page.getByTestId('today-now-mail')).not.toContainText('Nichts Neues');
+});
+
+test('mail summary verification failure is visible and never represented as empty', async ({ page }) => {
+  await setup(page, 'summary_unavailable');
+  await page.goto('/os#today');
+  await expect(page.getByTestId('mail-summary-error')).toContainText(
+    'Kein verifiziert verbundenes Postfach', { timeout: 30000 },
+  );
+  await expect(page.getByTestId('mail-summary-empty')).toHaveCount(0);
+});
