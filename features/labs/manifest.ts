@@ -3,8 +3,8 @@ import type { FeatureManifest } from '../types';
 
 export const labsManifest: FeatureManifest = {
   id: 'labs',
-  title: 'Labs & System',
-  description: 'Alles Weitere – experimentell, systemnah oder klassisch. Nichts ist verloren.',
+  title: 'App-Center',
+  description: 'Deine Werkzeuge im neuen OS: Arbeit, Zusatz-Apps und klassische Übergangsfunktionen.',
   icon: FlaskConical,
   slot: 'secondary',
   order: 90,
@@ -12,9 +12,9 @@ export const labsManifest: FeatureManifest = {
   mobile: 'more',
   load: () => import('./index'),
   mora: {
-    contextLabel: 'Labs & System',
-    suggestions: ['Welche Labor-Apps gibt es?', 'Wo finde ich die alte Oberfläche?'],
+    contextLabel: 'App-Center',
+    suggestions: ['Wo finde ich meine Werkzeuge?', 'Welche Apps sind noch klassisch?'],
   },
   legacyApps: ['scanner', 'nightwatch', 'lagefeld', 'codex', 'canvas', 'grid', 'website-dossier', 'timeline', 'feeds', 'terminal', 'team', 'users', 'apps', 'work', 'tasks', 'action-center', 'work-session', 'finance'],
-  keywords: ['labs', 'system', 'legacy', 'alt', 'experimente', 'terminal', 'scanner', 'nightwatch'],
+  keywords: ['apps', 'app-center', 'werkzeuge', 'appbibliothek', 'labs', 'system', 'legacy', 'experimente', 'scanner'],
 };
