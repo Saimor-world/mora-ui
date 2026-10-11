@@ -32,13 +32,21 @@ describe('OsShell navigation', () => {
     useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
   });
 
-  it('renders the six primary surfaces and Labs from manifests', async () => {
+  it('renders the six primary surfaces and App-Center from manifests', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    for (const label of ['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'Labs & System']) {
+    for (const label of ['Heute', 'MÔRA', 'Finance', 'Post', 'Wissen', 'Einstellungen', 'App-Center']) {
       expect(within(nav).getByRole('button', { name: label })).toBeInTheDocument();
     }
     expect(await screen.findByTestId('feature-today')).toBeInTheDocument();
+  });
+
+  it('reaches the new App-Center through the OS navigation', async () => {
+    renderShell();
+    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    fireEvent.click(within(nav).getByRole('button', { name: 'App-Center' }));
+    expect(await screen.findByTestId('feature-labs')).toBeInTheDocument();
+    expect(window.location.hash).toBe('#labs');
   });
 
   it('navigates via manifests and reflects it in the hash', async () => {

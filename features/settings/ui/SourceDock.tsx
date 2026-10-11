@@ -82,8 +82,9 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
   const look = useOsShellStore((s) => s.look);
   const sources = useSources(live);
   const list = sources.data?.connections || [];
-  const boundary = live && sources.isSuccess && !list.length;
-  const sample = !live || boundary;
+  // A live empty CORE response is NOT a sample/demo source catalog.
+  const noLiveSources = live && sources.isSuccess && list.length === 0;
+  const sample = !live;
   const planets = usePlanets(live, sample);
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
@@ -182,7 +183,19 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
             <li data-status="connected"><i aria-hidden />angedockt</li>
             <li data-status="available"><i aria-hidden />bereit</li>
           </ul>
-          <p className="os-station-line mt-4"><MoraStone size={22} />{boundary ? 'Demo-Konten docken nichts Echtes an.' : 'Echt wird es mit deiner CORE-Sitzung.'}</p>
+          <p className="os-station-line mt-4"><MoraStone size={22} />Nur Vorschau. Echt wird es mit deiner CORE-Sitzung.</p>
+        </div>
+      );
+    }
+    if (noLiveSources) {
+      return (
+        <div data-testid="dock-no-sources">
+          <Text variant="eyebrow">Keine Quellen von CORE gemeldet</Text>
+          <p className="os-station-line mt-2"><MoraStone size={22} />
+            CORE meldet für diesen Arbeitsbereich keine Verbindung oder verfügbare Station.
+            Wir zeigen hier bewusst keine Demo-Stationen als echte Quellen.
+          </p>
+          {sources.data?.boundary ? <Text variant="meta" className="mt-2">Zugriffsgrenze: {sources.data.boundary}</Text> : null}
         </div>
       );
     }
