@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { assertDisposableMailRun } from './helpers/liveMailSafety';
 
 /**
  * V1.8 · Erste echte lokale Quelle (E-Mail) – gegen den LIVE lokalen CORE (:8081)
@@ -8,6 +9,8 @@ import { expect, test, type Page } from '@playwright/test';
  *   OS_LIVE_EMAIL / OS_LIVE_PASSWORD     lokales CORE-Testkonto
  *   DEV_IMAP_USER / DEV_IMAP_PASSWORD    lokaler IMAP-Test-Server
  *   OS_LIVE_CORE_URL (default http://localhost:8081)
+ *   OS_LIVE_TEST_SCOPE=disposable-local confirms disposable DB + test account
+ * CORE and UI must both be loopback origins; never use customer accounts.
  * UI muss als Live-Build mit NEXT_PUBLIC_SAIMOR_CORE_URL=http://localhost:8081 laufen.
  * OS_LIVE_IMAP_DOWN=1 prüft stattdessen den Fehlerfall bei gestopptem IMAP-Server.
  */
@@ -19,12 +22,19 @@ const imapDown = ENV.OS_LIVE_IMAP_DOWN === '1';
 test.describe.configure({ mode: 'serial' });
 test.skip(!ready, 'V1.8 live mail e2e needs local CORE + dev IMAP credentials from the environment');
 
+test.beforeEach(async ({ baseURL }) => {
+  // Run before navigation, authentication or destructive integration reset.
+  assertDisposableMailRun(CORE, baseURL, ENV.OS_LIVE_TEST_SCOPE);
+});
+
 async function login(page: Page) {
   await page.addInitScript(() => {
     localStorage.setItem('saimor_product_tour_dismissed', '1');
     localStorage.setItem('saimor_os_onboarding_org', JSON.stringify({ company: 'Lokale Testfirma', departments: ['Management', 'Vertrieb', 'Wissen', 'Finanzen', 'Marketing'] }));
   });
   await page.goto('/login');
+  // A redirected login must not receive local test credentials.
+  assertDisposableMailRun(CORE, new URL(page.url()).origin, ENV.OS_LIVE_TEST_SCOPE);
   const status = await page.evaluate(async ([email, password]) => (await fetch('/api/auth/core-login', {
     method: 'POST', headers: { 'content-type': 'application/json' }, credentials: 'include', body: JSON.stringify({ email, password }),
   })).status, [ENV.OS_LIVE_EMAIL!, ENV.OS_LIVE_PASSWORD!]);
@@ -33,6 +43,7 @@ async function login(page: Page) {
 
 /** Lokale Test-Verbindung im lokalen SQLite deaktivieren (nur Dev-CORE, nur Testkonto). */
 async function resetMail(page: Page) {
+  assertDisposableMailRun(CORE, new URL(page.url()).origin, ENV.OS_LIVE_TEST_SCOPE);
   const status = await page.evaluate(async (core) => (await fetch(`${core}/v3/integrations/mail`, { method: 'DELETE', credentials: 'include' })).status, CORE);
   expect(status).toBe(200);
 }
