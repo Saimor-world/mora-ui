@@ -4,6 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { Sunrise } from 'lucide-react';
 import { Button, MoraStone, SampleTag, Stack, Status, Surface, Text } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { osReadKey } from '@/lib/os-prototype/readScope';
 import { connectedSources, useSources } from '@/lib/os-prototype/useSources';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { MailSummaryView } from './MailSummary';
@@ -38,11 +41,21 @@ function demoBriefing(): string[] {
 
 export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id: string) => void }) {
   const [preview, setPreview] = useState(false);
+  const tenantId = useSessionStore((s) => s.user?.tenant_id ?? null);
+  const userId = useSessionStore((s) => s.user?.id ?? null);
+  const sessionGeneration = useSessionStore((s) => s.sessionGeneration);
+  const companyId = useNavStore((s) => s.activeCompanyId);
   // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
   const conns = useSources(live);
   const connected = connectedSources(conns.data?.connections);
-  const ready = live && connected.length > 0;
-  const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready, staleTime: 60_000, retry: false });
+  const ready = live && Boolean(tenantId && userId) && connected.length > 0;
+  const brief = useQuery({
+    queryKey: osReadKey('briefing', { tenantId, userId, sessionGeneration, companyId }),
+    queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
+    enabled: ready,
+    staleTime: 60_000,
+    retry: false,
+  });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
   const mailDocked = live && connected.some((c) => c.group === 'mail');
 

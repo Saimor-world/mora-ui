@@ -1,6 +1,9 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useNavStore } from '@/lib/store/navStore';
+import { osReadKey } from './readScope';
 
 /**
  * V1.8 MÔRA-Mail-Zusammenfassung aus CORE (`GET /v3/connections/mail/summary`).
@@ -54,10 +57,14 @@ export function senderName(from: string): string {
 }
 
 export function useMailSummary(enabled: boolean) {
+  const tenantId = useSessionStore((s) => s.user?.tenant_id ?? null);
+  const userId = useSessionStore((s) => s.user?.id ?? null);
+  const sessionGeneration = useSessionStore((s) => s.sessionGeneration);
+  const companyId = useNavStore((s) => s.activeCompanyId);
   return useQuery({
-    queryKey: ['os', 'mail-summary'],
+    queryKey: osReadKey('mail-summary', { tenantId, userId, sessionGeneration, companyId }),
     queryFn: async () => (await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true })) as MailSummary | null,
-    enabled,
+    enabled: enabled && Boolean(tenantId && userId),
     staleTime: 30_000,
     retry: false,
   });
