@@ -4,7 +4,7 @@ import type { FeatureManifest } from '../types';
 export const labsManifest: FeatureManifest = {
   id: 'labs',
   title: 'App-Center',
-  description: 'Deine Werkzeuge im neuen OS: Arbeit, Zusatz-Apps und klassische Übergangsfunktionen.'
+  description: 'Deine Werkzeuge im neuen OS: Arbeit, Zusatz-Apps und klassische Übergangsfunktionen.',
   icon: FlaskConical,
   slot: 'secondary',
   order: 90,
