@@ -5,13 +5,14 @@ import React, { useMemo } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
 import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { useScopedToday } from '@/lib/os/useScopedToday';
-import type { TodaySnapshot, TodaySourceStatus } from '@/lib/api/todayClient';
+import type { TodaySnapshot, TodaySourceMeta } from '@/lib/api/todayClient';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useFinanceSignal } from '@/features/finance/data/useFinanceSignal';
 import { CONTRACT_LABEL } from '@/features/finance/data/contracts';
 import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
+import { allSourcesVerified, sourceTruth, todayCards } from './data/truth';
 import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
@@ -23,10 +24,17 @@ function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date())
   return h < 11 ? 'Guten Morgen' : h < 17 ? 'Guten Tag' : 'Guten Abend';
 }
 
-function SourceState({ status, label }: { status: TodaySourceStatus; label: string }) {
-  if (status === 'disconnected') return <StateView compact kind="not_configured" title={`${label} nicht verbunden`} copy="Docke die Quelle unter Einstellungen › Quellen an." />;
-  if (status === 'unavailable') return <StateView compact kind="backend_unavailable" title={`${label} gerade nicht verfügbar`} copy="CORE konnte diese Quelle nicht lesen. Das heißt nicht, dass nichts da ist." />;
-  return null;
+function SourceState({ source, label }: { source: TodaySourceMeta; label: string }) {
+  const truth = sourceTruth(source);
+  if (truth === 'verified') return null;
+  const copy = truth === 'disconnected'
+    ? 'Docke die Quelle unter Einstellungen › Quellen an.'
+    : truth === 'unavailable'
+      ? 'CORE konnte diese Quelle nicht lesen. Das heißt nicht, dass nichts da ist.'
+      : truth === 'stale'
+        ? 'Der letzte belegte Stand ist veraltet. Bitte erneut synchronisieren.'
+        : 'Es gibt keinen vollständigen, aktuellen Stand für diese Quelle.';
+  return <StateView compact kind={truth === 'disconnected' ? 'not_configured' : 'backend_unavailable'} title={label + ': ' + truth} copy={copy} />;
 }
 
 function Section({ icon, title, children, aside }: { icon: React.ReactNode; title: string; children: React.ReactNode; aside?: React.ReactNode }) {
@@ -50,6 +58,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const snapshot: TodaySnapshot | null = today.snapshot || (sample ? sampleTodaySnapshot() : null);
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
+  const cards = snapshot ? todayCards(snapshot) : null;
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
   return (
@@ -71,14 +80,10 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <Text variant="eyebrow" className="mb-2">Heute · Aktuell — das ist heute relevant</Text>
           <div className="os-today-now">
             {([
-              ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
-              // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
-              ['Mail', Mail,
-                snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
-                snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
-                () => navigate('post')],
-              ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
-              ['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')],
+              ['Kalender', CalendarDays, cards?.calendar.title ?? 'Unbekannt', cards?.calendar.copy ?? 'Kein bestätigter Kalenderstand.', () => navigate('post')],
+              ['Mail', Mail, cards?.mail.title ?? 'Unbekannt', cards?.mail.copy ?? 'Kein bestätigter Mailstand.', () => navigate('post')],
+              ['Aufgaben · Organisation', ListTodo, cards?.tasks.title ?? 'Unbekannt', cards?.tasks.copy ?? 'Kein bestätigter Aufgabenstand.', () => openLegacyApp('tasks')],
+              ['Nightwatch', ShieldCheck, cards?.nightwatch.title ?? 'Unbekannt', cards?.nightwatch.copy ?? 'Kein bestätigter Nightwatch-Stand.', () => openLegacyApp('nightwatch')],
             ] as const).map(([label, Icon, title, copy, run]) => (
               <button key={label} type="button" className="os-today-now__card" onClick={run} data-testid={`today-now-${label.split(' ')[0].toLowerCase()}`}>
                 <span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {label} <ArrowUpRight size={12} className="ml-auto" aria-hidden /></span>
@@ -117,7 +122,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         <>
           <Section icon={<CircleDot size={14} />} title="Braucht Aufmerksamkeit" aside={sample ? <SampleTag /> : null}>
             {attention.length === 0 ? (
-              <Text>Nichts Dringendes. Alles Belegte ist im grünen Bereich.</Text>
+              <Text>{allSourcesVerified(snapshot)
+                ? 'Keine offenen Hinweise aus den bestätigten Quellen.'
+                : 'Keine bestätigten dringenden Hinweise. Nicht alle Quellen sind vollständig oder aktuell.'}</Text>
             ) : (
               <div className="os-list">
                 {attention.map((a) => (
@@ -132,9 +139,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
           <ResponsiveGrid columns={2}>
             <Section icon={<CalendarDays size={14} />} title="Termine heute" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
-              <SourceState status={snapshot.calendar.status} label="Kalender" />
-              {(snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'partial' || snapshot.calendar.status === 'stale') && (
-                snapshot.calendar.events.length === 0 ? <Text>Keine Termine heute.</Text> : (
+              <SourceState source={snapshot.calendar} label="Kalender" />
+              {(sourceTruth(snapshot.calendar) === 'verified') && (
+                snapshot.calendar.events.length === 0 ? <Text>{snapshot.calendar.count === 0 ? 'Keine Termine gemeldet.' : 'Termine vorhanden, Details noch nicht geladen.'}</Text> : (
                   <div className="os-list">
                     {snapshot.calendar.events.slice(0, 4).map((e) => (
                       <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
@@ -163,8 +170,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             </Section>
 
             <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('tasks')}>Aufgaben</Button>}>
-              <SourceState status={snapshot.tasks.status} label="Aufgaben" />
-              {snapshot.tasks.status !== 'disconnected' && snapshot.tasks.status !== 'unavailable' ? (
+              <SourceState source={snapshot.tasks} label="Aufgaben" />
+              {sourceTruth(snapshot.tasks) === 'verified' ? (
                 <Stack direction="row" gap={6} wrap>
                   {([['Offen', snapshot.tasks.counts.open], ['In Arbeit', snapshot.tasks.counts.in_progress], ['Heute fällig', snapshot.tasks.counts.due_today], ['Überfällig', snapshot.tasks.counts.overdue]] as const).map(([l, v]) => (
                     <Stack key={l} gap={0}><Text variant="title" as="div">{v ?? '—'}</Text><Text variant="meta">{l}</Text></Stack>
@@ -174,8 +181,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             </Section>
 
             <Section icon={<Inbox size={14} />} title="Neue Informationen" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
-              <SourceState status={snapshot.mail.status} label="Post" />
-              {snapshot.mail.items.length === 0 && snapshot.mail.status !== 'disconnected' && snapshot.mail.status !== 'unavailable' ? <Text>Nichts Neues.</Text> : (
+              <SourceState source={snapshot.mail} label="Post" />
+              {sourceTruth(snapshot.mail) === 'verified' ? (snapshot.mail.items.length === 0 ? <Text>Keine Nachrichten im geladenen Ausschnitt.</Text> : (
                 <div className="os-list">
                   {snapshot.mail.items.slice(0, 3).map((m) => (
                     <div key={m.id} className="os-list-row">
@@ -184,7 +191,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                     </div>
                   ))}
                 </div>
-              )}
+              )) : null}
             </Section>
           </ResponsiveGrid>
         </>
