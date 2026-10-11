@@ -136,8 +136,8 @@ function parseDeliveredAmount(entry: any, tx: any): unknown {
 function classifySingleTransaction(
   txType: string,
   direction: 'in' | 'out',
-  amount: unknown,
-  commerce: boolean,
+  _amount: unknown,
+  _commerce: boolean,
 ): {
   classification: XrplTxClassification;
   isRevenue: boolean;
@@ -145,25 +145,10 @@ function classifySingleTransaction(
 } {
   if (txType === 'Payment') {
     if (direction === 'in') {
-      const drops = typeof amount === 'string' && /^\d+$/.test(amount) ? Number(amount) : null;
-      if (drops !== null && drops <= DUST_THRESHOLD_DROPS) {
-        return {
-          classification: 'external_dust',
-          isRevenue: false,
-          isFounderFunding: false,
-        };
-      }
-      if (commerce) {
-        return {
-          classification: 'ledger_event',
-          isRevenue: true,
-          isFounderFunding: false,
-        };
-      }
       return {
-        classification: 'founder_funding',
+        classification: 'ledger_event',
         isRevenue: false,
-        isFounderFunding: true,
+        isFounderFunding: false,
       };
     }
     return {
@@ -188,8 +173,8 @@ function classifySingleTransaction(
   }
   if (txType === 'NFTokenAcceptOffer') {
     return {
-      classification: 'nft_sale_accepted',
-      isRevenue: true,
+      classification: 'ledger_event',
+      isRevenue: false,
       isFounderFunding: false,
     };
   }

@@ -1,6 +1,3 @@
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   fetchAccountSnapshot,
@@ -10,36 +7,11 @@ import {
   aggregateCompanyState,
   buildFinanceFeed,
   buildMoraContext,
-  createSnapshot,
-  type FinanceSnapshot,
   KNOWN_ACCOUNTS,
   ORIGIN_NFT,
 } from '@/lib/finance';
 
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
-const SNAPSHOT_FILE_PATH = path.join(os.tmpdir(), 'saimor-finance-xrpl-snapshot.json');
-
-async function loadPersistedSnapshot(): Promise<FinanceSnapshot | null> {
-  try {
-    const raw = await fs.readFile(SNAPSHOT_FILE_PATH, 'utf8');
-    const parsed = JSON.parse(raw) as FinanceSnapshot;
-    if (parsed && typeof parsed === 'object' && Array.isArray(parsed.latestTxHashes)) {
-      return parsed;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function savePersistedSnapshot(snapshot: FinanceSnapshot): Promise<void> {
-  try {
-    await fs.writeFile(SNAPSHOT_FILE_PATH, JSON.stringify(snapshot, null, 2), 'utf8');
-  } catch {
-    // Non-fatal in read-only environments
-  }
-}
-
 export async function GET(request: NextRequest) {
   const address = request.nextUrl.searchParams.get('address')?.trim() || '';
   const mode = request.nextUrl.searchParams.get('mode') || 'single';
@@ -62,10 +34,8 @@ export async function GET(request: NextRequest) {
       }
 
       if (mode === 'mora') {
-        const previousSnapshot = await loadPersistedSnapshot();
-        const moraContext = buildMoraContext(companyState, previousSnapshot);
-        const currentSnapshot = createSnapshot(companyState);
-        await savePersistedSnapshot(currentSnapshot);
+        // Durable comparisons belong to scoped CORE observations, never a shared temp file.
+        const moraContext = buildMoraContext(companyState, null);
         return NextResponse.json(moraContext);
       }
 

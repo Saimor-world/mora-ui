@@ -184,10 +184,10 @@ describe('XRPL Provider', () => {
       );
 
       expect(breakdown.targetAllocationXrp).toBe(111);
-      expect(breakdown.founderFundingXrp).toBe(113);
-      expect(breakdown.initialAllocationFundingXrp).toBe(111);
-      expect(breakdown.topUpFundingXrp).toBe(2);
-      expect(breakdown.externalDustXrp).toBe(0.00002);
+      expect(breakdown.founderFundingXrp).toBe(0);
+      expect(breakdown.initialAllocationFundingXrp).toBe(0);
+      expect(breakdown.topUpFundingXrp).toBe(0);
+      expect(breakdown.externalDustXrp).toBe(0);
       expect(breakdown.realizedSalesXrp).toBe(0);
       expect(breakdown.ledgerBalanceXrp).toBe(113.00002);
     });
@@ -267,8 +267,8 @@ describe('XRPL Provider', () => {
       );
 
       expect(breakdown.targetAllocationXrp).toBeNull();
-      expect(breakdown.founderFundingXrp).toBe(5);
-      expect(breakdown.externalDustXrp).toBe(0.00001);
+      expect(breakdown.founderFundingXrp).toBe(0);
+      expect(breakdown.externalDustXrp).toBe(0);
       expect(breakdown.totalFeesXrp).toBe(0.00002);
       expect(breakdown.realizedSalesXrp).toBe(0);
       expect(breakdown.ledgerBalanceXrp).toBe(4.99999);
