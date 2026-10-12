@@ -35,6 +35,7 @@ import RecordDetailPanel from './RecordDetailPanel';
 import XrplWatchLab from './XrplWatchLab';
 import CoreTreasuryPanel from './CoreTreasuryPanel';
 import CapitalProfitCenter from './CapitalProfitCenter';
+import DepartmentPlanning from './DepartmentPlanning';
 
 type Section = 'state' | 'flow' | 'treasury' | 'capital';
 
@@ -559,6 +560,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
 
           {selectedCompanyId && section === 'capital' && !stateDenied && (
             <div className="space-y-4">
+              <DepartmentPlanning key={selectedCompanyId} />
               <CapitalProfitCenter
                 companyId={selectedCompanyId}
                 records={records}
