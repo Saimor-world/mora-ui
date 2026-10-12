@@ -306,6 +306,9 @@ const LOADERS: Record<TunnelComponentKey, React.ComponentType> = {
   ),
 };
 
+/** Diese Vorschauen zeigen feste Beispieldaten (MOCK_RADAR, MOCK_INSIGHT, ConfirmCard) — sichtbar als Demo markiert. */
+const DEMO_DATA_KEYS = new Set<string>(["RadarCard", "MoraInsightPopup", "ConfirmCard"]);
+
 interface Props {
   componentKey: TunnelComponentKey;
   height?: number;
@@ -321,6 +324,14 @@ export function TunnelComponentPreview({ componentKey, height = 360 }: Props) {
           className="relative overflow-hidden rounded-xl border border-white/10 bg-black/40"
           style={{ minHeight: height }}
         >
+          {DEMO_DATA_KEYS.has(componentKey) && (
+            <span
+              data-testid="tunnel-demo-badge"
+              className="absolute right-2 top-2 z-10 rounded-full border border-amber-300/30 bg-amber-400/15 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-100"
+            >
+              Demo · keine echten Daten
+            </span>
+          )}
           <Comp />
         </div>
       </Suspense>
