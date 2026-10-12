@@ -64,6 +64,8 @@ import { MemoriesView } from './components/MemoriesView';
 import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 import { MemoryStats } from '@/components/mora/MoraMemory';
 import { SaveInsightButton, MemoryHint, RelevantMemories } from './components/MemoryComponents';
+import { MORA_MODES, sendModeMessage, type MoraMode, type MoraModeResult } from '@/lib/mora/moraModes';
+import { MoraModeAnswer } from '@/components/mora/MoraModeAnswer';
 import { SetupRequiredCard, InputLoadingPlaceholder, OfflineCard, ChatSuggestions, ChatSuggestionsMemo } from './components/ChatStatusCards';
 
 interface PendingAction {
@@ -90,6 +92,9 @@ interface Message {
     recalledMemoryIds?: string[];
     /** Phase 1 "visible agency": safe trace of what Mora did (searched/read/acted) */
     toolTrace?: ToolTraceStep[];
+    /** MÔRA-Arbeitsmodus (Bauen/Recherche) und dessen Zusatzdaten */
+    mode?: MoraMode;
+    modeDetails?: MoraModeResult;
 }
 
 
@@ -228,6 +233,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     const [agentMode, setAgentMode] = useState<'mora' | 'codex'>(
         (initialData?.agentMode as string | undefined) === 'codex' ? 'codex' : 'mora',
     );
+    const [moraMode, setMoraMode] = useState<MoraMode>('denken');
     const [memoriesSearchQuery, setMemoriesSearchQuery] = useState('');
     const [ambiguityChoice, setAmbiguityChoice] = useState<{
         query: string;
@@ -991,6 +997,32 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 
         setMessages(prev => [...prev, userMessage]);
         setInput('');
+        if (moraMode !== 'denken' && agentMode === 'mora') {
+            setIsLoading(true);
+            try {
+                const history = messages.filter((m) => !m.isTyping).map(({ role, content }) => ({ role, content }));
+                const result = await sendModeMessage(moraMode, userMessage.content, history);
+                setMessages(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: result.text || 'MÔRA hat keine Antwort geliefert.',
+                    timestamp: new Date(),
+                    mode: moraMode,
+                    modeDetails: result,
+                }]);
+            } catch {
+                setMessages(prev => [...prev, {
+                    id: crypto.randomUUID(),
+                    role: 'assistant',
+                    content: 'MÔRA ist in diesem Modus gerade nicht erreichbar. Versuch es gleich nochmal.',
+                    timestamp: new Date(),
+                    mode: moraMode,
+                }]);
+            } finally {
+                setIsLoading(false);
+            }
+            return;
+        }
         await processMessage(userMessage.content);
     };
 
@@ -1197,6 +1229,9 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                                 className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
                                                 dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
                                             />
+                                            {msg.role === 'assistant' && msg.modeDetails && (
+                                                <MoraModeAnswer result={msg.modeDetails} isStandardMode={isStandardMode} />
+                                            )}
                                             {msg.role === 'assistant' && msg.toolTrace && msg.toolTrace.length > 0 && (
                                                 <ToolTrace steps={msg.toolTrace} />
                                             )}
@@ -1556,6 +1591,42 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                             );
                         })()}
 
+                        {agentMode === 'mora' && (
+                            <div
+                                role="radiogroup"
+                                aria-label="MÔRA-Modus"
+                                data-testid="main-chat-mode-switch"
+                                className={`mb-2 flex items-center gap-1 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}
+                            >
+                                <span className={`mr-1 text-[10px] uppercase tracking-[0.14em] ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>Modus</span>
+                                <div className={`inline-flex rounded-full border p-0.5 ${isStandardMode ? 'border-[#E1E1E1] bg-white' : 'border-white/10 bg-white/[0.03]'}`}>
+                                    {MORA_MODES.map((m) => {
+                                        const active = moraMode === m.id;
+                                        return (
+                                            <button
+                                                key={m.id}
+                                                type="button"
+                                                role="radio"
+                                                aria-checked={active}
+                                                title={m.hint}
+                                                disabled={isLoading || isStreaming}
+                                                onClick={() => setMoraMode(m.id)}
+                                                className={`rounded-full px-3 py-1 text-xs transition-colors disabled:opacity-50 ${
+                                                    isStandardMode
+                                                        ? active ? 'bg-[#E5F3FF] text-[#0078D4]' : 'text-[#605E5C] hover:text-[#1F1F1F]'
+                                                        : active ? 'bg-violet-500/20 text-violet-100 shadow-[inset_0_0_0_1px_rgba(167,139,250,0.35)]' : 'text-white/45 hover:text-white/80'
+                                                }`}
+                                            >
+                                                {m.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <span className={`ml-2 truncate text-[10px] ${isStandardMode ? 'text-gray-400' : 'text-white/30'}`}>
+                                    {MORA_MODES.find((m) => m.id === moraMode)?.hint}
+                                </span>
+                            </div>
+                        )}
                         <div className={`flex items-end gap-2 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''}`}>
                             <textarea
                                 value={input}
