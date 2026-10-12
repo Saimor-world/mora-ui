@@ -29,13 +29,21 @@ const MoraShell = nextDynamic(
     },
 );
 
-const MorgenView = nextDynamic(
-    () => import('@/components/universe/MorgenView').then((m) => ({ default: m.MorgenView })),
+const MorgenOverlay = nextDynamic(
+    () => import('@/components/universe/MorgenOverlay').then((m) => ({ default: m.MorgenOverlay })),
     { ssr: false },
 );
 
 export default function HomePage() {
-    // Universe v2 „Der Morgen“ – nur mit NEXT_PUBLIC_UNIVERSE_V2=true (Standard: aus)
-    if (isUniverseV2Enabled()) return <MorgenView />;
+    // Universe v2 „Der Morgen“ – nur mit NEXT_PUBLIC_UNIVERSE_V2=true (Standard: aus).
+    // Leise Ebene ÜBER dem echten Universe: Hintergrund, Planeten und Dock bleiben unverändert.
+    if (isUniverseV2Enabled()) {
+        return (
+            <>
+                <MoraShell />
+                <MorgenOverlay />
+            </>
+        );
+    }
     return <MoraShell />;
 }
