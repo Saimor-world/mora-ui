@@ -34,6 +34,8 @@ import { searchGlobal, corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { mapRawSearchResult, openSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
+import { MORA_MODES, sendModeMessage, type MoraMode, type MoraModeResult } from '@/lib/mora/moraModes';
+import { MoraModeAnswer } from './MoraModeAnswer';
 
 interface SearchResult {
     id: string;
@@ -64,6 +66,8 @@ interface SearchPopupProps {
 interface MoraMessage {
     role: 'user' | 'assistant';
     content: string;
+    mode?: MoraMode;
+    details?: MoraModeResult;
 }
 
 export const SearchPopup: React.FC<SearchPopupProps> = ({
@@ -88,6 +92,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
     // Mora direct chat state
     const [moraMessages, setMoraMessages] = useState<MoraMessage[]>([]);
     const [isMoraThinking, setIsMoraThinking] = useState(false);
+    const [moraMode, setMoraMode] = useState<MoraMode>('denken');
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const previousCompanyIdRef = useRef<string | null | undefined>(activeCompanyId);
 
@@ -199,6 +204,18 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
         setOrbState('thinking');
 
         try {
+            if (moraMode !== 'denken') {
+                const history = moraMessages.map(({ role, content }) => ({ role, content }));
+                const result = await sendModeMessage(moraMode, message, history);
+                setMoraMessages(prev => [...prev, {
+                    role: 'assistant',
+                    content: result.text || 'MÔRA hat keine Antwort geliefert.',
+                    mode: moraMode,
+                    details: result,
+                }]);
+                setOrbState('idle');
+                return;
+            }
             const response = await corePost('/v3/chat', {
                 message: message,
                 context: buildChatContext({ session_id: 'search_popup' })
@@ -334,6 +351,33 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 <span>Direkter Draht zu Môra - Enter zum Senden</span>
                             </motion.div>
                         )}
+
+                        {/* MÔRA-Arbeitsmodus */}
+                        {isMoraMode && (
+                            <div role="radiogroup" aria-label="MÔRA-Modus" className="mt-3 flex items-center gap-1.5">
+                                {MORA_MODES.map((m) => {
+                                    const active = moraMode === m.id;
+                                    return (
+                                        <button
+                                            key={m.id}
+                                            type="button"
+                                            role="radio"
+                                            aria-checked={active}
+                                            title={m.hint}
+                                            disabled={isMoraThinking}
+                                            onClick={() => setMoraMode(m.id)}
+                                            className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
+                                                isStandardMode
+                                                    ? active ? 'bg-[#E5F3FF] text-[#0078D4]' : 'text-gray-500 hover:bg-gray-100'
+                                                    : active ? 'bg-emerald-500/15 text-emerald-300' : 'text-white/45 hover:bg-white/5 hover:text-white/70'
+                                            }`}
+                                        >
+                                            {m.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     {/* Mora Chat Area - shown when in Mora mode with messages */}
@@ -365,9 +409,13 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             }`}>
                                                 <Sparkles size={10} />
                                                 <span>Môra</span>
+                                                {msg.mode && msg.mode !== 'denken' && (
+                                                    <span className="opacity-70">· {MORA_MODES.find((m) => m.id === msg.mode)?.label}</span>
+                                                )}
                                             </div>
                                         )}
                                         <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        {msg.details && <MoraModeAnswer result={msg.details} isStandardMode={isStandardMode} />}
                                     </div>
                                 </motion.div>
                             ))}
