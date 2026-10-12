@@ -2,6 +2,7 @@
 
 import React from 'react';
 import nextDynamic from 'next/dynamic';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,13 @@ const MoraShell = nextDynamic(
     },
 );
 
+const MorgenView = nextDynamic(
+    () => import('@/components/universe/MorgenView').then((m) => ({ default: m.MorgenView })),
+    { ssr: false },
+);
+
 export default function HomePage() {
+    // Universe v2 „Der Morgen“ – nur mit NEXT_PUBLIC_UNIVERSE_V2=true (Standard: aus)
+    if (isUniverseV2Enabled()) return <MorgenView />;
     return <MoraShell />;
 }
