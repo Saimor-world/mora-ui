@@ -30,3 +30,5 @@ html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="seed"] .saimor-te
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="sleeping"] .saimor-territory-name { color: rgba(247,244,233,.8) !important; }
 /* Meta bricht um statt in die Instrumentenspalte zu laufen */
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { white-space: normal !important; max-width: 150px; margin-left: auto; margin-right: auto; text-align: center; line-height: 1.35; }
+/* Bildunterschrift „2 Bereiche · 12 Dokumente“: groß genug zum Lesen ohne Hover */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { font-size: 13px !important; font-weight: 450; letter-spacing: 0 !important; text-transform: none !important; color: rgba(247,244,233,.8) !important; max-width: 170px; margin-top: 3px !important; }
