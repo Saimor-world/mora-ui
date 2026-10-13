@@ -59,7 +59,7 @@ export const INSTRUMENTS = ['deptStats', 'nightwatch', 'signals', 'team', 'clock
 function Instruments({ context }: { context: WidgetContext }) {
   const [open, setOpen] = useState(true);
   return (
-    <aside className="pointer-events-auto absolute right-6 top-32 hidden w-[320px] md:block lg:right-16" style={{ bottom: 'calc(26vh + 150px)' }} data-testid="uv2-instruments">
+    <aside className="pointer-events-auto absolute right-6 top-32 hidden w-[320px] md:block lg:right-16" data-testid="uv2-instruments" {...{ style: { bottom: 'calc(26vh + 150px)', ['--scene-rgb' as any]: '214,168,72' } }}>
       <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between" style={{ ...TYPE.meta, color: UV.gold }}>
         <span>Instrumente</span><span style={{ color: UV.c(0.4) }}>{open ? 'Einklappen' : `${INSTRUMENTS.length} zeigen`}</span>
       </button>
@@ -70,8 +70,7 @@ function Instruments({ context }: { context: WidgetContext }) {
             if (!def) return null;
             return (
               <section key={t} data-widget-id={t} data-uv2-scope="" className="overflow-hidden" style={{ height: t === 'clock' ? 96 : 168, borderRadius: 12, border: `0.5px solid ${UV.c(0.1)}`, background: 'rgba(5,7,6,0.58)' }}>
-                <p className="px-3 pt-2.5" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.45) }}>{def.label}</p>
-                <div className="h-[calc(100%-26px)] overflow-hidden px-2.5 pb-2.5">{def.render({ context: { ...context, compact: true, gridSize: { w: 3, h: t === 'clock' ? 2 : 4 } } })}</div>
+                <div className="h-full overflow-hidden p-2.5" aria-label={def.label}>{def.render({ context: { ...context, compact: true, gridSize: { w: 3, h: t === 'clock' ? 2 : 4 } } })}</div>
               </section>
             );
           })}

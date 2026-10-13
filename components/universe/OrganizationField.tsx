@@ -579,7 +579,7 @@ function MobileTerritory({
             onClick={() => onSelect(selected ? null : territory.id)}
             data-mora-label={territory.name}
             data-testid={isUniverseV2Enabled() ? 'territory-' + territory.id : undefined}
-            className={(isUniverseV2Enabled() ? 'w-[96px] shrink-0 ' : '') + 'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
+            className={(isUniverseV2Enabled() ? 'w-[112px] shrink-0 ' : '') + 'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
                 (selected ? 'bg-white/[0.08]' : 'bg-transparent')}
         >
             <span

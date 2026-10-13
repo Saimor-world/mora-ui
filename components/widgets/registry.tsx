@@ -1547,7 +1547,7 @@ const NightwatchWidget: React.FC<{ context: WidgetContext }> = React.memo(({ con
     const cleanDays = bars.filter((b) => b === 0).length;
     const uptimePct = loaded ? Math.round((cleanDays / 7) * 100) : 0;
     const arcOffset = NW_ARC_C * (1 - uptimePct / 100);
-    const arcColor = critical > 0 ? 'rgb(248,113,113)' : warnings > 0 ? 'rgb(251,191,36)' : 'rgb(52,211,153)';
+    const arcColor = critical > 0 ? statusToneColor('alert') : warnings > 0 ? statusToneColor('warn') : statusToneColor('ok');
 
     // Smooth SVG area chart
     const CW = 200;

@@ -1,5 +1,6 @@
 "use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 
@@ -183,6 +184,11 @@ export function CursorAgent({
             {showTether && (
                 <svg className="fixed inset-0 pointer-events-none z-[9997]" width="100%" height="100%">
                     <defs>
+                        <linearGradient id="uv2-tether" gradientUnits="userSpaceOnUse" x1={homePosition.x} y1={homePosition.y} x2={currentPosition.x} y2={currentPosition.y}>
+                            <stop offset="0" stopColor="#F7F4E9" stopOpacity="0" />
+                            <stop offset="0.7" stopColor="#D6A848" stopOpacity="0.18" />
+                            <stop offset="1" stopColor="#D6A848" stopOpacity="0.4" />
+                        </linearGradient>
                         <filter id="mora-tether-glow">
                             <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
                             <feMerge>
@@ -196,11 +202,12 @@ export function CursorAgent({
                         y1={homePosition.y}
                         x2={currentPosition.x}
                         y2={currentPosition.y}
-                        stroke={visuals.color}
-                        strokeOpacity="0.32"
-                        strokeWidth="1.5"
-                        strokeDasharray={action === 'navigate' ? '6 6' : '0'}
-                        filter="url(#mora-tether-glow)"
+                        stroke={isUniverseV2Enabled() ? 'url(#uv2-tether)' : visuals.color}
+                        strokeOpacity={isUniverseV2Enabled() ? 1 : 0.32}
+                        strokeWidth={isUniverseV2Enabled() ? 0.6 : 1.5}
+                        strokeDasharray={isUniverseV2Enabled() ? '1 5' : action === 'navigate' ? '6 6' : '0'}
+                        strokeLinecap="round"
+                        filter={isUniverseV2Enabled() ? undefined : 'url(#mora-tether-glow)'}
                     />
                 </svg>
             )}

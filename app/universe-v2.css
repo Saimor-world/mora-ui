@@ -110,3 +110,17 @@ html[data-uv2="on"] [data-testid="uv2-lage"] [class*="uppercase"] { font-family:
 html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-cyan-"],[class*="text-sky-"],[class*="text-violet-"],[class*="text-blue-"]) { color: rgba(214,168,72,.85) !important; }
 html[data-uv2="on"] .uv2-util { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; color: rgba(247,244,233,.55); box-shadow: inset 0 0 0 .5px rgba(247,244,233,.16); transition: color .3s, box-shadow .3s; }
 html[data-uv2="on"] .uv2-util:hover { color: #D6A848; box-shadow: inset 0 0 0 .5px rgba(214,168,72,.5); }
+
+/* LAGE: volle Lesbarkeit, Kranz zurück in die Mitte, keine Überlagerung oben rechts */
+html[data-uv2="on"][data-uv2-lage="open"] [data-testid^="territory-"] { translate: 0 0 !important; }
+html[data-uv2="on"][data-uv2-lage="open"] [data-testid="uv2-utility"] { display: none !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] > div { opacity: 1 !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] .absolute.bottom-28 { bottom: 150px !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] .absolute.bottom-28 > * { background: rgba(5,7,6,.78) !important; border: .5px solid rgba(247,244,233,.12) !important; border-radius: 12px !important; backdrop-filter: blur(24px); box-shadow: none !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] .absolute.bottom-28 > .flex { background: none !important; border: 0 !important; backdrop-filter: none; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-white/2"],[class*="text-white/3"]) { color: rgba(247,244,233,.55) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-white/4"],[class*="text-white/5"],[class*="text-white/6"]) { color: rgba(247,244,233,.75) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-white/7"],[class*="text-white/8"],[class*="text-white/9"]) { color: rgba(247,244,233,.92) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-emerald-"],[class*="text-cyan-"]) { color: rgba(160,205,190,.9) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] [class*="text-[8px]"], html[data-uv2="on"] [data-testid="uv2-lage"] [class*="text-[9px]"] { font-size: 10px !important; }
+html[data-uv2="on"][data-uv2-lage="open"] [data-testid="uv2-ask"] { display: none !important; }

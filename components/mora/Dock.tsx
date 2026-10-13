@@ -1525,7 +1525,7 @@ export const Dock = () => {
                                         isStandardMode={isStandardMode}
                                     />
 
-                                    {<CapsuleDockIcon
+                                    {!v2 && <CapsuleDockIcon
                                         icon={Sparkles}
                                         label="Control Center"
                                         description={controlCenterNextMove.label}
@@ -1594,7 +1594,7 @@ export const Dock = () => {
                                             </div>
                                         );
                                     })}
-                                    {!websiteEntryContext && <AdminModeSwitcher />}
+                                    {!websiteEntryContext && !v2 && <AdminModeSwitcher />}
                                     {v2 && (
                                         <div className="relative hidden sm:flex" data-dock-more>
                                             <CapsuleDockIcon
@@ -1615,7 +1615,7 @@ export const Dock = () => {
                                                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
                                                         transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                                                         className="rounded-[22px] p-2"
-                                                        style={{ background: 'rgba(14,18,26,0.62)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.5)' }}
+                                                        style={{ background: v2 ? 'rgba(5,7,6,0.9)' : 'rgba(14,18,26,0.62)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.5)' }}
                                                     >
                                                         <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(4, moreDockItems.length + 1)}, 84px)` }}>
                                                             {[...moreDockItems.map((i) => ({ key: i.action, icon: i.icon, label: i.label, run: () => handleDockClick(i.action) })),
@@ -1637,7 +1637,7 @@ export const Dock = () => {
                                                             ))}
                                                         </div>
                                                         <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/[0.08] px-2 pt-2">
-                                                            <span className="text-[11px] text-white/45">Oder einfach MÔRA fragen · {spotlightShortcut}</span>
+                                                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/45" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>Steuerung · Fokus · Modus</span>
                                                             <div className="flex items-center gap-1">
                                                                 {!websiteEntryContext && <FocusModeWidget />}
                                                                 {!websiteEntryContext && <AdminModeSwitcher />}
@@ -1658,7 +1658,7 @@ export const Dock = () => {
                                 <div className="flex items-center gap-1 shrink-0">
                                     {!websiteEntryContext && (
                                         <div className="hidden items-center gap-1 shrink-0 sm:flex">
-                                            <FocusModeWidget />
+                                            {!v2 && <FocusModeWidget />}
                                             <NotificationCenter />
                                             {activePlanId && (
                                                 <SessionChip
