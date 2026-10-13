@@ -12,6 +12,9 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RITUAL_SCENES, getAutoRitualScene, type RitualSceneId } from '@/lib/os/ritualMode';
 import { RaumPreview } from '@/components/universe/RaumPreview';
+import { resolveRaumIntent } from '@/lib/os/raumIntent';
+import { corePost } from '@/lib/api/coreClient';
+import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { PRESENCE_KEYS, readQuietHours, readVoiceWarmth, voiceLabel } from '@/lib/os/presence';
 
 export interface RaumSection { id: string; label: string }
@@ -47,7 +50,7 @@ export function RaumV2(p: Props) {
   const [warmth, setWarmthState] = useState<number>(() => readVoiceWarmth());
   const [quiet, setQuietState] = useState<number | null>(() => readQuietHours().from);
   const [ask, setAsk] = useState('');
-  const [pending, setPending] = useState<{ snap: Snap; chips: string[] } | null>(null);
+  const [pending, setPending] = useState<{ snap: Snap; chips: string[]; source: 'mora' | 'offline'; note?: string } | null>(null);
   const [heard, setHeard] = useState<string | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -80,29 +83,22 @@ export function RaumV2(p: Props) {
   };
 
   // ── B: MÔRA line ─────────────────────────────────────────────
-  const apply = () => {
-    const t = ask.trim().toLowerCase(); if (!t) return;
+  const [thinking, setThinking] = useState(false);
+  const apply = async () => {
+    const text = ask.trim(); if (!text || thinking) return;
     const snap: Snap = { scene: p.scene, volume: p.volume, ambientOn: p.ambientOn, warmth, quiet };
-    const chips: string[] = [];
-    const sec = p.sections.find((s) => t.includes(s.label.toLowerCase().split(' ')[0]));
-    if (/stimme/.test(t)) {
-      if (/wärmer|weicher|tiefer|warm/.test(t)) { setWarmth(warmth + 25); chips.push(`Stimme ${voiceLabel(Math.min(100, warmth + 25))}`); }
-      else if (/klarer|heller|frischer|klar/.test(t)) { setWarmth(warmth - 25); chips.push(`Stimme ${voiceLabel(Math.max(0, warmth - 25))}`); }
-    } else if (/wärmer|abend|gemütlich|lounge/.test(t)) { p.onScene('lounge'); chips.push(`Licht ${SCENE_KELVIN[p.scene]} → ${SCENE_KELVIN.lounge} K`); }
-    else if (/nacht|dunkler|dunkel/.test(t)) { p.onScene('night'); chips.push(`Licht → Nacht`); }
-    else if (/morgen|frisch/.test(t)) { p.onScene('flow'); chips.push('Licht → Morgen'); }
-    else if (/heller|tag|fokus|arbeit/.test(t)) { p.onScene('build'); chips.push('Licht → Tag'); }
-    if (/leiser/.test(t)) { p.onVolume(Math.max(0, p.volume - 0.2)); chips.push(`Klang ${Math.round(p.volume * 100)} → ${Math.round(Math.max(0, p.volume - 0.2) * 100)}`); }
-    if (/lauter/.test(t)) { p.onVolume(Math.min(1, p.volume + 0.2)); chips.push(`Klang ${Math.round(p.volume * 100)} → ${Math.round(Math.min(1, p.volume + 0.2) * 100)}`); }
-    if (/(musik|klang) (an|ein)|spiel/.test(t) && !p.ambientOn) { p.onToggleAmbient(); chips.push('Klang an'); }
-    if (/(musik|klang) aus/.test(t) && p.ambientOn) { p.onToggleAmbient(); chips.push('Klang aus'); }
-    const q = t.match(/(still|ruhe|stille)\D*(\d{1,2})/);
-    if (q) { setQuiet(Number(q[2]) % 24); chips.push(`Stille ab ${Number(q[2]) % 24}:00`); }
-    else if (/keine (stille|ruhe)/.test(t)) { setQuiet(null); chips.push('Stille aus'); }
-    setHeard(ask.trim()); setAsk('');
-    if (chips.length) { setPending({ snap, chips }); return; }
-    if (sec) { p.onOpen(sec.id); return; }
-    setPending({ snap, chips: ['Nicht verstanden – versuch „abends wärmer“, „leiser“ oder „Stille ab 22“'] });
+    setThinking(true); setHeard(text);
+    const intent = await resolveRaumIntent(text, snap, p.sections, (body) => corePost('/v3/chat', { ...body, context: buildChatContext({ session_id: 'settings_raum' }) }));
+    setThinking(false); setAsk('');
+    const c = intent.change; const chips: string[] = [];
+    if (c.scene && c.scene !== p.scene) { p.onScene(c.scene); chips.push(`Licht ${SCENE_TIME[p.scene]} → ${SCENE_TIME[c.scene]} · ${SCENE_KELVIN[c.scene]} K`); }
+    if (c.volume !== undefined && Math.round(c.volume * 100) !== Math.round(p.volume * 100)) { p.onVolume(c.volume); chips.push(`Klang ${Math.round(p.volume * 100)} → ${Math.round(c.volume * 100)}`); }
+    if (c.ambientOn !== undefined && c.ambientOn !== p.ambientOn) { p.onToggleAmbient(); chips.push(c.ambientOn ? 'Klang an' : 'Klang aus'); }
+    if (c.warmth !== undefined && c.warmth !== warmth) { setWarmth(c.warmth); chips.push(`Stimme ${voiceLabel(warmth)} → ${voiceLabel(c.warmth)}`); }
+    if (c.quiet !== undefined && c.quiet !== quiet) { setQuiet(c.quiet); chips.push(c.quiet === null ? 'Stille aus' : `Stille ab ${c.quiet}:00`); }
+    if (chips.length) { setPending({ snap, chips, source: intent.source, note: intent.note }); return; }
+    if (c.open) { p.onOpen(c.open); return; }
+    setPending({ snap, chips: [Object.keys(c).length ? 'Ist schon so' : 'Nicht verstanden'], source: intent.source, note: intent.note });
   };
   const keep = () => setPending(null);
   const undo = () => {
@@ -173,14 +169,15 @@ export function RaumV2(p: Props) {
             {pending ? (
               <div className="uv2-raum__pending" data-testid="raum-pending">
                 {heard && <span className="uv2-raum__heard">„{heard}“</span>}
+                <span className="uv2-raum__src" data-src={pending.source} title={pending.source === 'mora' ? 'Von MÔRA verstanden' : 'MÔRA nicht erreichbar – lokal verstanden'}>{pending.source === 'mora' ? 'MÔRA' : 'offline'}</span>
                 <div className="uv2-raum__chips">{pending.chips.map((c) => <span key={c} className="uv2-raum__chip">{c}</span>)}</div>
                 <button type="button" className="uv2-pill" data-primary="" onClick={keep}>Behalten</button>
                 <button type="button" className="uv2-pill" onClick={undo}>Zurück</button>
               </div>
             ) : (
-              <form className="uv2-raum__ask" onSubmit={(e) => { e.preventDefault(); apply(); }}>
+              <form className="uv2-raum__ask" data-thinking={thinking ? '' : undefined} onSubmit={(e) => { e.preventDefault(); void apply(); }}>
                 <span className="uv2-raum__orb" aria-hidden />
-                <input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder="Sag MÔRA, wie es sein soll …" aria-label="MÔRA sagen, was sich ändern soll" data-testid="raum-ask" />
+                <input value={ask} onChange={(e) => setAsk(e.target.value)} placeholder={thinking ? 'MÔRA denkt …' : 'Sag MÔRA, wie es sein soll …'} disabled={thinking} aria-label="MÔRA sagen, was sich ändern soll" data-testid="raum-ask" />
               </form>
             )}
           </div>
