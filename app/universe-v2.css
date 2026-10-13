@@ -788,3 +788,18 @@ html[data-uv2="on"] .uv2-regaction:hover { color: rgb(var(--uv-cream)); border-b
 html[data-uv2="on"] .uv2-regaction--primary { color: var(--uv-gold); }
 html[data-uv2="on"] .uv2-regaction--primary:hover { color: var(--uv-gold); border-bottom-color: var(--uv-gold); }
 html[data-uv2="on"] .uv2-regaction:disabled { opacity: .4; }
+/* hd16 terminal command register */
+html[data-uv2="on"] .uv2-cmds { padding: 4px 16px 24px; }
+html[data-uv2="on"] .uv2-cmds__session { font-family: var(--uv-mono); font-size: 10px; letter-spacing: .1em; color: rgba(var(--uv-cream), .4); padding: 4px 0 14px; line-height: 1.8; }
+html[data-uv2="on"] .uv2-cmds__quick { display: flex; width: 100%; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--uv-hair); text-align: left; }
+html[data-uv2="on"] .uv2-cmds__quick span:first-child { font-family: var(--uv-mono); font-size: 13px; color: var(--uv-gold); }
+html[data-uv2="on"] .uv2-cmds__quick span:last-child { font-family: var(--uv-serif); font-size: 17px; color: rgba(var(--uv-cream), .7); }
+html[data-uv2="on"] .uv2-cmds__quick:hover span:last-child { color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] .uv2-cmd { border-bottom: 1px solid var(--uv-hair); padding: 14px 0; }
+html[data-uv2="on"] .uv2-cmd__head { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+html[data-uv2="on"] .uv2-cmd__cmd { font-family: var(--uv-mono); font-size: 13px; color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] .uv2-cmd__meta { font-family: var(--uv-mono); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: rgba(var(--uv-cream), .45); }
+html[data-uv2="on"] .uv2-cmd[data-tone="alert"] .uv2-cmd__meta { color: #e0a39a; }
+html[data-uv2="on"] .uv2-cmd__out { margin-top: 8px; padding-left: 14px; border-left: 1px solid rgba(214,168,72,.35); font-family: var(--uv-mono); font-size: 12px; line-height: 1.6; white-space: pre-wrap; word-break: break-word; color: rgba(var(--uv-cream), .68); max-height: 260px; overflow: auto; }
+html[data-uv2="on"] .uv2-cmd__out [data-uv2-line="error"] { color: #e0a39a; }
+html[data-uv2="on"] .uv2-cmd__out [data-uv2-line="mora"] { color: var(--uv-gold); }

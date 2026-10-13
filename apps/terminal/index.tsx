@@ -604,7 +604,55 @@ export default function TerminalApp({ paneId }: AppProps) {
                 </div>
 
                 <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {lines.map((line) => (
+                    {uv2() && (() => {
+                        type Block = { id: string; cmd: string; at: Date; out: TerminalLine[] };
+                        const pre: TerminalLine[] = []; const blocks: Block[] = [];
+                        for (const l of lines) {
+                            if (l.type === "input") blocks.push({ id: l.id, cmd: l.content.replace(/^\$\s?/, ""), at: l.timestamp, out: [] });
+                            else if (blocks.length) blocks[blocks.length - 1].out.push(l);
+                            else pre.push(l);
+                        }
+                        const status = (b: Block) => {
+                            const ex = b.out.find((o) => o.type === "system" && /^exit \d+/.test(o.content));
+                            if (b.out.some((o) => o.type === "error")) return { label: ex ? ex.content : "Fehler", tone: "alert" };
+                            if (ex) return { label: ex.content, tone: ex.content === "exit 0" ? "ok" : "alert" };
+                            return { label: b.out.length ? "ok" : (isProcessing ? "läuft" : "—"), tone: "ok" };
+                        };
+                        const quick = ["help", "status", "pwd", "ls"];
+                        return (
+                            <div className="uv2-cmds" data-testid="term-v2-register">
+                                {pre.length > 0 && (
+                                    <div className="uv2-cmds__session">{pre.filter((l) => l.content.trim() && !/^─+$/.test(l.content.trim())).map((l) => <div key={l.id}>{l.content}</div>)}</div>
+                                )}
+                                {blocks.length === 0 ? (
+                                    <div className="uv2-cmds__start">
+                                        <div className="uv2-regsec__head"><span>Erste Schritte</span></div>
+                                        {quick.map((q) => (
+                                            <button key={q} type="button" className="uv2-cmds__quick" disabled={isProcessing || connectionState === "unauthenticated"} onClick={() => void executeCommand(q)}>
+                                                <span>$ {q}</span><span>{q === "help" ? "Was geht hier?" : q === "status" ? "Sitzung und Rolle" : q === "pwd" ? "Wo bin ich?" : "Was liegt hier?"}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                ) : blocks.map((b) => {
+                                    const st = status(b);
+                                    return (
+                                        <article key={b.id} className="uv2-cmd" data-tone={st.tone}>
+                                            <header className="uv2-cmd__head">
+                                                <span className="uv2-cmd__cmd">$ {b.cmd}</span>
+                                                <span className="uv2-cmd__meta">{b.at.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} · {st.label}</span>
+                                            </header>
+                                            {b.out.filter((o) => !(o.type === "system" && /^exit \d+/.test(o.content))).length > 0 && (
+                                                <pre className="uv2-cmd__out">{b.out.filter((o) => !(o.type === "system" && /^exit \d+/.test(o.content))).map((o) => (
+                                                    <span key={o.id} data-uv2-line={o.type}>{o.content}{"\n"}</span>
+                                                ))}</pre>
+                                            )}
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                    {!uv2() && lines.map((line) => (
                         <div
                             key={line.id}
                             data-uv2-line={line.type}
