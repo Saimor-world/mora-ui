@@ -52,3 +52,17 @@ describe('jarvis registry', () => {
         expect(s.recent[0].action).toBe('os.openApp');
     });
 });
+
+describe('jarvis undo log persistence', () => {
+    it('persists entries to localStorage without undo closures or params and restores them as history', async () => {
+        const { clearLog, getLog, __reloadLogForTest } = await import('@/lib/jarvis/undoLog');
+        clearLog();
+        runAction('os.openApp', { app: 'finder' }, { source: 'mora' });
+        const raw = JSON.parse(window.localStorage.getItem('saimor_jarvis_log_v1') || '[]');
+        expect(raw[0]).toMatchObject({ actionId: 'os.openApp', summary: 'Finder geöffnet' });
+        expect(raw[0].params).toBeUndefined();
+        __reloadLogForTest();
+        expect(getLog()[0]).toMatchObject({ actionId: 'os.openApp', restored: true });
+        expect(getLog()[0].undo).toBeUndefined();
+    });
+});
