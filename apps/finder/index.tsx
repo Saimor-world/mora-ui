@@ -2336,26 +2336,25 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             })}</TileGrid>}
                                         </div>
                                     ) : uv2On() && viewMode === 'list' ? (
-                                        <div className="-mx-3 md:-mx-6" data-testid="finder-v2-register" onClick={(e) => e.stopPropagation()}>
-                                            {filteredFolders.length > 0 && (
-                                                <RegisterSection label="Ordner" count={filteredFolders.length}>
-                                                    {filteredFolders.map((folder) => (
-                                                        <RegisterRow key={folder.id} testId={`finder-v2-folder-${folder.id}`} meta="Ordner" title={folder.name}
-                                                            side="öffnen →" onClick={() => navigateToFolder(folder.id)} />
-                                                    ))}
-                                                </RegisterSection>
-                                            )}
-                                            {displayFiles.length > 0 && (
-                                                <RegisterSection label="Dateien" count={displayFiles.length}>
-                                                    {displayFiles.map((file) => (
-                                                        <RegisterRow key={file.id} testId={`finder-v2-file-${file.id}`}
-                                                            tone={resonanceIds.includes(file.id) ? 'gold' : undefined}
-                                                            meta={file.type === 'file' ? getSourceFileSecondaryLabel(file) : getContentSecondaryLabel(file)}
-                                                            title={file.name} side={getNodeOpenActionLabel(file)}
-                                                            onClick={() => { checkResonance(file.id); openFinderNode(file); }} />
-                                                    ))}
-                                                </RegisterSection>
-                                            )}
+                                        <div className="-mx-3 md:-mx-6" data-testid="finder-v2-table" onClick={(e) => e.stopPropagation()}>
+                                            <div className="uv2-ftable" role="table">
+                                                <div className="uv2-ftable__head" role="row"><span>Name</span><span>Art</span><span /></div>
+                                                {filteredFolders.map((folder) => (
+                                                    <button type="button" role="row" key={folder.id} className="uv2-ftable__row" onClick={() => navigateToFolder(folder.id)}>
+                                                        <span><FolderIcon className="uv2-ftable__ico" />{folder.name}</span><span>Ordner</span><ChevronRight className="uv2-ftable__chev" />
+                                                    </button>
+                                                ))}
+                                                {displayFiles.map((file) => {
+                                                    const Icon = TYPE_ICONS[file.type] || FileText;
+                                                    return (
+                                                        <button type="button" role="row" key={file.id} className="uv2-ftable__row" data-active={resonanceIds.includes(file.id) || selectedNodeId === file.id ? '' : undefined}
+                                                            onClick={() => { checkResonance(file.id); openFinderNode(file); }}>
+                                                            <span><Icon className="uv2-ftable__ico" />{file.name}</span>
+                                                            <span>{file.type === 'file' ? getSourceFileSecondaryLabel(file) : getContentSecondaryLabel(file)}</span><span />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     ) : viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
