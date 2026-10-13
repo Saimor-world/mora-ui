@@ -83,4 +83,15 @@ describe('WorkspaceControlTab', () => {
     await screen.findByRole('button', { name: 'Auswählen' });
     expect(mockOpenCheckout).toHaveBeenCalledWith(expect.objectContaining({ id: 'checkout-1' }));
   });
+  it('does not crash on a partial CORE snapshot (live-polish)', () => {
+    mockAccess.mockReturnValue({ data: { onboarding: null }, isLoading: false, isFetching: false, refetch: jest.fn() });
+    mockCatalog.mockReturnValue({ data: {} });
+    render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
+    expect(screen.getByText(/Ebenen bereit/)).toBeInTheDocument();
+  });
+
+  it('keeps umlauts intact in visible copy', () => {
+    const { container } = render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
+    expect(container.textContent).not.toMatch(/[A-Za-z]\?[a-z]/);
+  });
 });

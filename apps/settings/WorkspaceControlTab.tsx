@@ -14,10 +14,10 @@ export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations
   const catalog = useWorkspaceCatalog();
   const communication = useCommunicationSurface();
   const snapshot = access.data;
-  const products = snapshot?.access.products ?? [];
-  const subscription = snapshot?.billing.subscriptions[0];
+  const products = snapshot?.access?.products ?? [];
+  const subscription = snapshot?.billing?.subscriptions?.[0];
   const onboarding = snapshot?.onboarding;
-  const osPlan = catalog.data?.plans.find((plan) => plan.product === 'os' && plan.interval === 'month');
+  const osPlan = catalog.data?.plans?.find((plan) => plan.product === 'os' && plan.interval === 'month');
   const osPrice = osPlan ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: osPlan.price.currency }).format(osPlan.price.amount_minor / 100) : null;
   const connections = getWorkspaceConnections(communication.summary, communication.overview);
   const readyConnections = connections.filter((item) => item.ready).length;
