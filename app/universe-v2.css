@@ -1094,3 +1094,32 @@ html[data-uv2="on"] .uv2-task__tools button { display: grid; place-items: center
 html[data-uv2="on"] .uv2-task__tools button:hover { background: rgba(247,244,233,.08); color: rgb(var(--uv-cream)); }
 html[data-uv2="on"] .uv2-task__tools svg { width: 12px; height: 12px; }
 html[data-uv2="on"] [data-uv2-taskcol][data-drop] { outline: 1px dashed rgba(214,168,72,.6); outline-offset: 4px; border-radius: 14px; background: rgba(214,168,72,.04); }
+/* hd19g: Wache als OS – Status-Orb, Messkacheln, Monitor-Kacheln, Vorfälle mit Symbol-Aktionen */
+html[data-uv2="on"] .uv2-watch { position: relative; display: grid; grid-template-columns: 200px repeat(4, minmax(0, 1fr)); gap: 10px; align-items: stretch; }
+html[data-uv2="on"] .uv2-watch__orb { grid-row: span 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 16px; border-radius: 18px; background: rgba(247,244,233,.03); border: 1px solid rgba(247,244,233,.08); }
+html[data-uv2="on"] .uv2-watch__ring { display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 1px solid rgba(127,211,164,.5); color: #7FD3A4; box-shadow: 0 0 30px rgba(127,211,164,.2), inset 0 0 20px rgba(127,211,164,.1); }
+html[data-uv2="on"] .uv2-watch__ring svg { width: 26px; height: 26px; }
+html[data-uv2="on"] .uv2-watch[data-state="warning"] .uv2-watch__ring { border-color: rgba(214,168,72,.65); color: var(--uv-gold); box-shadow: 0 0 34px rgba(214,168,72,.3), inset 0 0 20px rgba(214,168,72,.12); }
+html[data-uv2="on"] .uv2-watch[data-state="critical"] .uv2-watch__ring { border-color: rgba(224,122,95,.7); color: #E07A5F; box-shadow: 0 0 34px rgba(224,122,95,.35); }
+html[data-uv2="on"] .uv2-watch[data-state="unknown"] .uv2-watch__ring { border-color: rgba(247,244,233,.25); color: rgba(var(--uv-cream), .5); box-shadow: none; }
+html[data-uv2="on"] .uv2-watch__orb strong { font: 400 20px var(--uv-serif); color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] .uv2-watch__orb small, html[data-uv2="on"] .uv2-watch__stat span { font: 9.5px var(--uv-mono); letter-spacing: .18em; text-transform: uppercase; color: rgba(var(--uv-cream), .5); }
+html[data-uv2="on"] .uv2-watch__stat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 18px; background: rgba(247,244,233,.03); border: 1px solid rgba(247,244,233,.08); color: rgba(var(--uv-cream), .55); }
+html[data-uv2="on"] .uv2-watch__stat > svg { width: 18px; height: 18px; }
+html[data-uv2="on"] .uv2-watch__stat b { font: 400 34px/1 var(--uv-serif); color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] .uv2-watch__stat[data-tone="warning"] b, html[data-uv2="on"] .uv2-watch__stat[data-tone="warning"] > svg { color: var(--uv-gold); }
+html[data-uv2="on"] .uv2-watch__stat[data-tone="critical"] b, html[data-uv2="on"] .uv2-watch__stat[data-tone="critical"] > svg { color: #E07A5F; }
+html[data-uv2="on"] .uv2-watch__bars { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
+html[data-uv2="on"] .uv2-watch__bars i { width: 8px; border-radius: 2px; background: var(--uv-gold); opacity: .7; }
+html[data-uv2="on"] .uv2-watch__refresh { position: absolute; top: 8px; right: 8px; padding: 5px !important; }
+html[data-uv2="on"] .uv2-incident { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: rgba(247,244,233,.03); border: 1px solid rgba(214,168,72,.25); }
+html[data-uv2="on"] .uv2-incident[data-sev="critical"] { border-color: rgba(224,122,95,.45); }
+html[data-uv2="on"] .uv2-incident[data-sev="critical"] .uv2-group__ico { color: #E07A5F; }
+html[data-uv2="on"] .uv2-incident__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; text-align: left; }
+html[data-uv2="on"] .uv2-incident__title { font: 500 13px var(--uv-sans); color: rgb(var(--uv-cream)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-uv2="on"] .uv2-incident__meta { font: 10px var(--uv-mono); letter-spacing: .08em; color: rgba(var(--uv-cream), .45); }
+html[data-uv2="on"] .uv2-incident__acts { display: inline-flex; gap: 4px; }
+html[data-uv2="on"] .uv2-incident__acts button { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(247,244,233,.1); color: rgba(var(--uv-cream), .7); }
+html[data-uv2="on"] .uv2-incident__acts button:hover { background: rgba(247,244,233,.08); }
+html[data-uv2="on"] .uv2-incident__acts button[data-primary] { background: var(--uv-gold); color: #050706; border-color: transparent; }
+html[data-uv2="on"] .uv2-incident__acts svg { width: 14px; height: 14px; }
