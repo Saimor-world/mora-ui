@@ -2,6 +2,7 @@
 
 import { uv2 } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile } from '@/components/universe/app/Tiles';
+import { CapitalDetailV2 } from './CapitalDetailV2';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownLeft,
@@ -32,7 +33,7 @@ import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { KNOWN_ACCOUNTS, ORIGIN_NFT, MINTING_STATUS } from '@/lib/finance/types';
 
-type TrustLine = {
+export type TrustLine = {
   currency: string;
   balance: string;
   issuer: string;
@@ -42,7 +43,7 @@ type TrustLine = {
   authorized: boolean | null;
 };
 
-type XrplTransaction = {
+export type XrplTransaction = {
   hash: string;
   ledgerIndex: number | null;
   closeTimeIso: string | null;
@@ -60,7 +61,7 @@ type XrplTransaction = {
   validated: boolean;
 };
 
-type WalletBreakdown = {
+export type WalletBreakdown = {
   targetAllocationXrp: number | null;
   founderFundingXrp: number;
   initialAllocationFundingXrp: number | null;
@@ -71,7 +72,7 @@ type WalletBreakdown = {
   ledgerBalanceXrp: number;
 };
 
-type NftSellOffer = {
+export type NftSellOffer = {
   offerId: string;
   nftokenId: string;
   owner: string;
@@ -83,7 +84,7 @@ type NftSellOffer = {
   ledgerIndex: number | null;
 };
 
-type AccountSnapshot = {
+export type AccountSnapshot = {
   address: string;
   role: { type: string; label: string; description: string };
   xrp: number | null;
@@ -104,7 +105,7 @@ type AccountSnapshot = {
   error: string | null;
 };
 
-type OpenListing = {
+export type OpenListing = {
   type: string;
   offerId: string;
   nftokenId: string;
@@ -117,7 +118,7 @@ type OpenListing = {
   note: string;
 };
 
-type OriginNftSnapshot = {
+export type OriginNftSnapshot = {
   nftokenId: string;
   name: string;
   issuer: string;
@@ -139,7 +140,7 @@ type ProviderStatus = {
   lastSync?: string;
 };
 
-type CompanyFinanceSnapshot = {
+export type CompanyFinanceSnapshot = {
   mode: 'company';
   network: string;
   accessMode: string;
@@ -529,6 +530,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               <div className="uv2-watch__stat"><LockKeyhole /><b>{aggregates ? formatNumber(aggregates.reservedTotalXrp, 2) : '–'}</b><span>Reserve</span></div>
               <div className="uv2-watch__stat" data-tone={openListings.length ? 'warning' : undefined}><Tag /><b>{openListings.length}</b><span>Angebote</span></div>
             </div>
+            {companySnapshot && <CapitalDetailV2 snap={companySnapshot} />}
             {error && !aggregates && <p className="uv2-cap__note">{/login|auth|401|403/i.test(error) ? 'Anmeldung nötig' : 'Ledger antwortet nicht'}</p>}
             <TileGrid label="Quellen" size="s">
               {([['XRPL', Coins, providers?.xrpl], ['Bank', Building2, providers?.bank_psd2], ['Revolut', CreditCard, providers?.revolut_business], ['Bitvavo', TrendingUp, providers?.bitvavo], ['XTB', Banknote, providers?.xtb]] as const).map(([n, I, st]) => (
@@ -576,7 +578,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/60">{/login|auth|401|403/i.test(error) ? 'Anmeldung nötig – die Finanzlage erscheint, sobald du in Saimôr angemeldet bist.' : error}</div>
         )}
 
-        {companySnapshot && (
+        {companySnapshot && !uv2() && (
           <>
             <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
               <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">

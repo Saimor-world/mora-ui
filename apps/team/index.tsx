@@ -614,7 +614,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                         if (!list.length) return null;
                                         return (
                                             <section key={st} className="uv2-members__group">
-                                                <h3 className="uv2-members__label"><span className="uv2-dot" data-on={st === 'online' ? '' : undefined} />{st === 'online' ? 'Jetzt da' : 'Abwesend'}<em>{list.length}</em></h3>
+                                                <div className="uv2-members__label"><span className="uv2-dot" data-on={st === 'online' ? '' : undefined} />{st === 'online' ? 'Jetzt da' : 'Abwesend'}<em>{list.length}</em></div>
                                                 <div className="uv2-members__grid">
                                                     {list.map((member) => {
                                                         const aura = getAura(member, currentUser?.role);
