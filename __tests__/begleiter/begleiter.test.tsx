@@ -26,7 +26,7 @@ describe('Begleiter – Bausteine', () => {
     expect(q.d.length).toBeGreaterThan(100);
   });
 
-  it('Push bleibt Stub ohne VAPID-Schlüssel', async () => {
+  it('Push ohne Worker/Gerät: unsupported', async () => {
     expect((await subscribePush(null)).state).toBe('unsupported');
   });
 

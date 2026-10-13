@@ -5,7 +5,7 @@ export type Proposal = { id: string; label: string; reason?: string; sources?: s
 export type Device = { id: string; name: string; created_at: string; last_used_at: string | null; revoked_at: string | null };
 export type StoredDevice = { device_id: string; credential_id: string; name: string };
 export type Decision = { id: string; status: string; execution?: { verified: boolean; check?: string }; result?: Record<string, unknown> };
-export type Purpose = 'inbox' | 'approve' | 'reject';
+export type Purpose = 'inbox' | 'approve' | 'reject' | 'push';
 
 const LS = 'saimor.begleiter.device';
 
@@ -94,4 +94,9 @@ export async function openInbox(dev: StoredDevice) {
 export async function decide(dev: StoredDevice, proposalId: string, decision: 'approve' | 'reject') {
   const a = await signed(dev, decision, proposalId);
   return j<Decision>('/decide', { method: 'POST', body: JSON.stringify({ ...a, decision }) });
+}
+
+export async function subscribeSigned(dev: StoredDevice, sub: { endpoint: string; p256dh: string; auth: string }) {
+  const a = await signed(dev, 'push');
+  return j<{ ok: boolean }>('/push/subscribe', { method: 'POST', body: JSON.stringify({ ...a, ...sub }) });
 }

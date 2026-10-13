@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { UV2_FONTS_HREF } from '@/lib/universe/tokens';
 import * as api from '@/lib/begleiter/api';
-import { registerWorker } from '@/lib/begleiter/push';
+import { registerWorker, subscribePush } from '@/lib/begleiter/push';
 import type { Decision, Proposal, StoredDevice } from '@/lib/begleiter/api';
 
 type View =
@@ -60,6 +60,7 @@ export default function BegleiterApp() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [name, setName] = useState('iPhone');
+  const [pushMsg, setPushMsg] = useState<string | null>(null);
 
   useEffect(() => {
     if (!document.getElementById('uv2-fonts')) {
@@ -141,6 +142,12 @@ export default function BegleiterApp() {
           <div className="bgl-ring"><div className="bgl-orb" /></div>
           <div className="bgl-foot">
             <button className="bgl-btn bgl-gold" disabled={busy} onClick={unlock} data-testid="unlock-btn"><span>{busy ? 'Einen Moment …' : 'Mit Face ID öffnen'}</span></button>
+            <button className="bgl-btn bgl-ghost" style={{ marginTop: 12 }} disabled={busy} data-testid="push-btn"
+              onClick={() => run(async () => {
+                const r = await subscribePush(await registerWorker(), dev);
+                setPushMsg({ ok: 'Mitteilungen sind an. Sie verraten nie Inhalte.', 'no-key': 'Mitteilungen sind am Server noch nicht eingerichtet.', unsupported: 'Erst zum Home-Bildschirm hinzufügen, dann geht es.', denied: 'Mitteilungen wurden abgelehnt.' }[r.state]);
+              })}>Mitteilungen einschalten</button>
+            {pushMsg && <div className="bgl-sig" role="status">{pushMsg}</div>}
             <button className="bgl-btn bgl-ghost" style={{ marginTop: 12 }} onClick={() => { api.saveDevice(null); setDev(null); setView({ k: 'unpaired' }); }}>Von diesem Handy trennen</button>
           </div>
         </>)}
