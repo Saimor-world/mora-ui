@@ -1054,3 +1054,18 @@ html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-r
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-row] p[class*="line-clamp"] { display: none !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-row] [data-uv2-mail-avatar] { display: flex !important; width: 30px !important; height: 30px !important; font: 400 14px var(--uv-serif) !important; color: rgba(var(--uv-cream), .7) !important; border: 1px solid rgba(247,244,233,.12); }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row="unread"][data-uv2-mail-row] [data-uv2-mail-avatar] { border-color: rgba(214,168,72,.6); color: var(--uv-gold) !important; background: rgba(214,168,72,.1) !important; }
+/* hd19e: Kalender als OS – Werkzeugleiste, Wochenbrett */
+html[data-uv2="on"] .uv2-ftool__crumb { font: 400 18px var(--uv-serif); color: rgb(var(--uv-cream)); white-space: nowrap; }
+html[data-uv2="on"] .uv2-pill.uv2-pill--gold { background: var(--uv-gold); color: #050706; border-color: transparent; font-weight: 600; }
+html[data-uv2="on"] .uv2-dot[data-warn] { background: #E0A04A; }
+html[data-uv2="on"] .uv2-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; height: 100%; min-height: 380px; }
+html[data-uv2="on"] .uv2-week__day { display: flex; flex-direction: column; gap: 6px; padding: 10px 8px; border-radius: 14px; background: rgba(247,244,233,.025); border: 1px solid rgba(247,244,233,.06); text-align: left; transition: border-color .2s, background .2s; }
+html[data-uv2="on"] .uv2-week__day:hover { border-color: rgba(214,168,72,.35); background: rgba(214,168,72,.04); }
+html[data-uv2="on"] .uv2-week__day[data-today] { border-color: rgba(214,168,72,.55); background: rgba(214,168,72,.07); }
+html[data-uv2="on"] .uv2-week__head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; font-family: var(--uv-mono); font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: rgba(var(--uv-cream), .5); }
+html[data-uv2="on"] .uv2-week__head b { font: 400 22px var(--uv-serif); letter-spacing: 0; color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] .uv2-week__day[data-today] .uv2-week__head b { color: var(--uv-gold); }
+html[data-uv2="on"] .uv2-week__ev { display: block; padding: 6px 7px; border-radius: 8px; background: rgba(214,168,72,.12); border-left: 2px solid var(--uv-gold); font: 500 11px/1.3 var(--uv-sans); color: rgb(var(--uv-cream)); overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+html[data-uv2="on"] .uv2-week__ev i { display: block; font: normal 9.5px var(--uv-mono); color: var(--uv-gold); margin-bottom: 1px; }
+html[data-uv2="on"] body:not(.standard-mode) .uv2-week[data-testid] .uv2-week__ev { display: block; white-space: normal; overflow-wrap: anywhere; -webkit-line-clamp: unset; max-height: none; hyphens: auto; }
+html[data-uv2="on"] [data-testid="uv2-calendar"]:has(.uv2-week) { gap: 20px; padding-left: 20px; padding-right: 20px; }
