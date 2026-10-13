@@ -1222,3 +1222,18 @@ html[data-uv2="on"] .uv2-lf__title small { display: block; font: 10.5px var(--uv
 .uv2-jv__cardico svg { width: 18px; height: 18px; }
 .uv2-jv__cardtxt { flex: 1; display: flex; flex-direction: column; font-size: 12.5px; }
 .uv2-jv__cardtxt span { color: rgba(239,230,210,.65); }
+
+/* ── hd21 Team: Mitglieder ── */
+.uv2-members { display: flex; flex-direction: column; gap: 22px; padding: 6px 4px; }
+.uv2-members__label { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 500 10.5px/1 "Space Mono", ui-monospace, monospace; letter-spacing: .18em; text-transform: uppercase; color: rgba(239,230,210,.5); }
+.uv2-members__label em { font-style: normal; color: rgba(239,230,210,.35); }
+.uv2-members__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.uv2-member { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 18px 10px 14px; border-radius: 18px; background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
+.uv2-member:hover { background: rgba(255,255,255,.06); }
+.uv2-member__avatar { position: relative; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font: 400 22px/1 "Cormorant Garamond", Georgia, serif; color: #fff8e6; background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--aura) 75%, white 10%), color-mix(in srgb, var(--aura) 35%, black 60%)); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.25); }
+.uv2-member[data-online] .uv2-member__avatar { box-shadow: inset 0 0 0 .5px rgba(255,255,255,.25), 0 0 18px color-mix(in srgb, var(--aura) 55%, transparent); }
+.uv2-member[data-online] .uv2-member__avatar::after { content: ''; position: absolute; right: 1px; bottom: 1px; width: 12px; height: 12px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 2.5px #121412; }
+.uv2-member:not([data-online]) .uv2-member__avatar { filter: saturate(.35) brightness(.8); }
+.uv2-member__name { font-size: 13px; color: #efe6d2; display: flex; align-items: center; gap: 6px; }
+.uv2-member__name small { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: rgba(216,181,106,.18); color: #e9cf8f; }
+.uv2-member__role { font-size: 11px; color: rgba(239,230,210,.45); }

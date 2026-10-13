@@ -1,7 +1,7 @@
 'use client';
 
 import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
-import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
+import { Segmented } from '@/components/universe/app/Tiles';
 import React, {
     useCallback,
     useEffect,
@@ -608,13 +608,30 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                     Noch keine Mitglieder.
                                 </div>
                             ) : uv2() ? (
-                                <TileGrid label="Mitglieder">
-                                    {members.map((member) => (
-                                        <Tile key={member.id} testId={`team-member-${member.id}`} icon={<span className="uv2-mono-glyph">{member.name.charAt(0).toUpperCase()}</span>}
-                                            label={member.is_self ? `${member.name} (Du)` : member.name} badge={member.role ? member.role.charAt(0).toUpperCase() : undefined}
-                                            state={member.status === 'online' ? 'on' : 'off'} />
-                                    ))}
-                                </TileGrid>
+                                <div className="uv2-members" data-testid="team-members-v2">
+                                    {(['online', 'offline'] as const).map((st) => {
+                                        const list = members.filter((m) => m.status === st);
+                                        if (!list.length) return null;
+                                        return (
+                                            <section key={st} className="uv2-members__group">
+                                                <h3 className="uv2-members__label"><span className="uv2-dot" data-on={st === 'online' ? '' : undefined} />{st === 'online' ? 'Jetzt da' : 'Abwesend'}<em>{list.length}</em></h3>
+                                                <div className="uv2-members__grid">
+                                                    {list.map((member) => {
+                                                        const aura = getAura(member, currentUser?.role);
+                                                        const role = isOwnerRole(member.role) ? 'Inhaber' : member.role === 'admin' ? 'Admin' : 'Mitglied';
+                                                        return (
+                                                            <div key={member.id} className="uv2-member" data-testid={`team-member-${member.id}`} data-online={st === 'online' ? '' : undefined}>
+                                                                <span className="uv2-member__avatar" style={{ ['--aura' as any]: aura }}>{member.name.charAt(0).toUpperCase()}</span>
+                                                                <span className="uv2-member__name">{member.name}{member.is_self && <small>Du</small>}</span>
+                                                                <span className="uv2-member__role">{role}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </section>
+                                        );
+                                    })}
+                                </div>
                             ) : (
                                 members.map(member => {
                                     const aura = getAura(member, currentUser?.role);
