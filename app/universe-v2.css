@@ -1421,3 +1421,11 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-bar .uv2-bar__title { margin: 
 .uv2-tip[data-tip]:hover::after, .uv2-tip[data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: .25s; }
 .uv2-capx__originArt.uv2-tip::after { left: 0; transform: translate(0, 4px); }
 .uv2-capx__originArt.uv2-tip:hover::after, .uv2-capx__originArt.uv2-tip:focus-visible::after { transform: translate(0, 0); }
+
+/* Verbindungen: Quellen als Kacheln statt Liste */
+.uv2-conn__side--tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 8px; }
+.uv2-conn__side--tiles .uv2-conn__group { grid-column: 1 / -1; }
+.uv2-conn__side--tiles .uv2-conn__item { position: relative; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 10px; min-height: 76px; padding: 12px; border-radius: 14px; background: rgba(255,255,255,.035); box-shadow: inset 0 0 0 .5px rgba(255,255,255,.08); }
+.uv2-conn__side--tiles .uv2-conn__item[aria-current="true"] { box-shadow: inset 0 0 0 1px rgba(214,168,72,.55); }
+.uv2-conn__side--tiles .uv2-conn__item .uv2-dot { position: absolute; top: 12px; right: 12px; }
+.uv2-conn__side--tiles .uv2-conn__name { font-size: 12px; line-height: 1.2; }
