@@ -1453,3 +1453,18 @@ html[data-uv2="on"] .uv2-jv__card { bottom: 92px; z-index: 2; }
 html[data-uv2="on"] [data-jv-target] { opacity: 1 !important; filter: brightness(1.32) saturate(1.1) drop-shadow(0 0 18px rgba(232,200,130,.55)) drop-shadow(0 0 44px rgba(216,181,106,.28)) !important; z-index: 5; transition: filter .5s cubic-bezier(.2,.8,.2,1); }
 html[data-uv2="on"] [data-jv-target] .saimor-territory-body { filter: brightness(1.28) saturate(1.12) !important; box-shadow: 0 0 0 1px rgba(243,223,174,.55), 0 0 36px 6px rgba(216,181,106,.38), 0 0 90px 18px rgba(216,181,106,.16) !important; border-radius: 50%; transition: filter .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s cubic-bezier(.2,.8,.2,1); }
 html[data-uv2="on"] [data-jv-target] * { opacity: 1; }
+
+/* ---------- Planeten-Modell v1: lesbare Namen, Meta nur wo es trägt ---------- */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-name {
+  font-family: var(--uv-sans) !important; font-size: 13px !important; letter-spacing: -.005em !important; text-transform: none !important;
+  font-weight: 500 !important; color: rgba(247,244,233,.9) !important; margin-top: 10px !important; white-space: nowrap;
+  text-shadow: 0 1px 12px rgba(0,0,0,.85);
+}
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-meta { font-size: 11.5px !important; margin-top: 2px !important; color: rgba(247,244,233,.5) !important; text-shadow: 0 1px 10px rgba(0,0,0,.85); }
+html[data-uv2="on"] [data-planet-kind="system"] .uv2-planet-meta { opacity: 0; transition: opacity .4s var(--uv-ease); }
+html[data-uv2="on"] [data-planet-kind="system"]:hover .uv2-planet-meta,
+html[data-uv2="on"] [data-planet-kind="system"][aria-pressed="true"] .uv2-planet-meta { opacity: 1; }
+html[data-uv2="on"] [data-planet-state="seed"] .saimor-territory-name { color: rgba(247,244,233,.55) !important; font-size: 12px !important; }
+html[data-uv2="on"] [data-planet-state="seed"] .uv2-planet-meta { color: rgba(214,168,72,.85) !important; }
+html[data-uv2="on"] [data-planet-state="sleeping"] .saimor-territory-name { color: rgba(247,244,233,.6) !important; }
+html[data-uv2="on"] [data-planet-kind="cluster"] .saimor-territory-name { letter-spacing: .01em !important; }
