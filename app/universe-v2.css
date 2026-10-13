@@ -675,3 +675,17 @@ html[data-uv2="on"] [data-uv2-app="terminal"] > div:last-child { padding: 14px 3
 html[data-uv2="on"] [data-uv2-app="terminal"] > div:last-child span { color: var(--uv-gold) !important; }
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [data-uv2-app="terminal"] input { background: transparent !important; border: 0 !important; font-family: var(--uv-mono) !important; color: rgb(var(--uv-cream)) !important; }
 html[data-uv2="on"] [data-uv2-app="terminal"] > div:nth-last-child(2) { padding: 20px 32px !important; }
+/* hd14 · Menschen: Register mit Initialen-Siegel */
+html[data-uv2="on"] [data-uv2-app="users"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-app="users"] [data-uv2-users-tools] { padding: 12px 32px !important; border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] [data-uv2-app="users"] [data-uv2-users-tools] > div > div:last-child { background: none !important; gap: 14px; }
+html[data-uv2="on"] [data-uv2-app="users"] [data-uv2-users-tools] > div > div:last-child button { background: none !important; padding: 4px 0 !important; font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .18em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-uv2-app="users"] [data-uv2-users-tools] > div > div:last-child button[class*="bg-emerald"] { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-uv2-app="users"] > div.flex-1 { padding: 0 32px 24px !important; }
+html[data-uv2="on"] [data-uv2-person] { background: none !important; border: 0 !important; border-bottom: .5px solid var(--uv-hair) !important; border-radius: 0 !important; padding: 14px 0 !important; gap: 16px !important; }
+html[data-uv2="on"] [data-uv2-person] > div:first-child { background: none !important; box-shadow: inset 0 0 0 .5px rgba(var(--uv-gold-rgb), .45); }
+html[data-uv2="on"] [data-uv2-person] > div:first-child span { color: var(--uv-gold) !important; font-family: var(--uv-serif); font-size: 18px !important; }
+html[data-uv2="on"] [data-uv2-person] .text-sm.font-medium { font-family: var(--uv-serif); font-size: 19px !important; font-weight: 400 !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] [data-uv2-person="invited"] .text-sm.font-medium { color: rgba(var(--uv-cream), .6) !important; font-style: italic; }
+html[data-uv2="on"] [data-uv2-person] select { background: none !important; border: .5px solid var(--uv-hair) !important; border-radius: 999px !important; }
+html[data-uv2="on"] [data-uv2-switch="on"] { background: rgba(var(--uv-gold-rgb), .6) !important; }

@@ -1,5 +1,6 @@
 "use client";
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Shield, Crown, User, Mail, Search, RefreshCw, Settings, Copy, Check } from 'lucide-react';
@@ -220,10 +221,19 @@ export default function UsersApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="h-full flex flex-col relative">
+            <div className="h-full flex flex-col relative" data-uv2-app="users">
+                {uv2() && !isLoading && (() => {
+                    const active = combinedMembers.filter((m) => m.status === 'active').length;
+                    const invited = combinedMembers.filter((m) => m.status === 'invited').length;
+                    return <AppHero app="users" eyebrow="Menschen · dieser Workspace"
+                        title={active === 1 ? 'Eine Person arbeitet hier.' : `${active} Menschen arbeiten hier.`}
+                        sub={invited > 0 ? `${invited} Einladung${invited === 1 ? '' : 'en'} warten auf Antwort. Rollen legen fest, wer was sieht.` : 'Rollen legen fest, wer was sieht. Geschützte Bereiche öffnen sich nur mit passender Rolle.'}
+                        figure={combinedMembers.length} figureLabel="Mitglieder"
+                        action={isAdmin ? { label: 'Jemanden einladen', onClick: () => setShowInviteModal(true) } : null} />;
+                })()}
                 {/* Header */}
-                <div className="p-4 border-b border-white/10">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="p-4 border-b border-white/10" data-uv2-users-tools>
+                    <div className="flex items-center justify-between mb-4" data-uv2-legacy-head>
                         <div className="flex items-center gap-2">
                             <Users className="text-emerald-400" size={20} />
                             <h2 className="text-lg font-medium">Benutzer und Team</h2>
@@ -276,6 +286,10 @@ export default function UsersApp({ paneId }: AppProps) {
                         <div className="flex items-center justify-center py-8">
                             <RefreshCw className="text-emerald-400 animate-spin" size={24} />
                         </div>
+                    ) : filteredMembers.length === 0 && uv2() ? (
+                        <AppEmpty compact glyph={<Users size={20} strokeWidth={1.25} />} title={combinedMembers.length === 0 ? 'Noch arbeitest du allein.' : 'Niemand passt zu diesem Filter.'}
+                            text={combinedMembers.length === 0 ? 'Lade Menschen ein. Sie sehen nur, was ihre Rolle erlaubt.' : 'Passe Suche oder Filter an.'}
+                            action={combinedMembers.length === 0 && isAdmin ? { label: 'Erste Einladung', onClick: () => setShowInviteModal(true) } : { label: 'Filter zurücksetzen', onClick: () => { setFilter('all'); setSearchQuery(''); } }} />
                     ) : filteredMembers.length === 0 ? (
                         <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-6 py-8 text-center text-white/50">
                             <Users size={34} className="mb-3 text-emerald-300/45" />
@@ -306,6 +320,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ delay: index * 0.05 }}
+                                            data-uv2-person={member.status}
                                             className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group"
                                         >
                                             <div className={`w-10 h-10 rounded-full ${roleConfig.bg} flex items-center justify-center`}>
