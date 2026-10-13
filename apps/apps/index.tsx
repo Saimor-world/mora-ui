@@ -1,7 +1,7 @@
 'use client';
 
 import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
-import { TileGrid, Tile } from '@/components/universe/app/Tiles';
+import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -198,7 +198,13 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     />
                 )}
 
-                {universeGroups.length > 1 && (
+                {isUniverseV2Enabled() && universeGroups.length > 1 && (
+                    <div className="uv2-ftool" data-testid="app-library-filters-v2" style={{ borderRadius: 14 }}>
+                        <Segmented value={activeGroupId} onChange={setActiveGroupId} label="Kategorien filtern"
+                            options={[{ id: 'all', label: 'Alle' }, ...universeGroups.map((g) => ({ id: g.id, label: `${g.label} ${g.apps.length}` }))]} />
+                    </div>
+                )}
+                {!isUniverseV2Enabled() && universeGroups.length > 1 && (
                     <div
                         className="flex flex-wrap gap-2 px-1"
                         role="tablist"
