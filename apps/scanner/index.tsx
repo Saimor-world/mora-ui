@@ -911,7 +911,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         </div>
                         <div>
                             <p className="text-white/70 font-medium">Dateien ablegen oder klicken zum Hochladen</p>
-                            <p className="text-xs text-white/30 mt-1">PDFs, Bilder und Office-Dateien werden zuerst als Dateien hochgeladen und bei Bedarf in Inhalte überführt.</p>
+                            <p className="text-xs text-white/30 mt-1">PDFs, Bilder und Office-Dateien – MÔRA ordnet sie für dich ein.</p>
                         </div>
                     </div>
                 </div>
