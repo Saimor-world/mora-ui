@@ -1637,7 +1637,7 @@ export const Dock = () => {
                                                             ))}
                                                         </div>
                                                         <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/[0.08] px-2 pt-2">
-                                                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/45" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>Steuerung · Fokus · Modus</span>
+                                                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/45" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>Steuerung · Fokus · Modus</span>
                                                             <div className="flex items-center gap-1">
                                                                 {!websiteEntryContext && <FocusModeWidget />}
                                                                 {!websiteEntryContext && <AdminModeSwitcher />}

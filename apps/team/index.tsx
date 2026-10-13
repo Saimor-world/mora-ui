@@ -513,7 +513,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                             {member.is_self ? 'Du' : member.name}
                                                         </div>
                                                         <div className="text-[9px] uppercase tracking-widest text-white/35">
-                                                            {member.role}
+                                                            {isOwnerRole(member.role) ? 'Inhaber' : member.role === 'admin' ? 'Admin' : 'Mitglied'}
                                                         </div>
                                                     </div>
                                                 </motion.div>

@@ -59,3 +59,5 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-settings-bar__title { font: 40
 /* Karten in Einstellungen: echte Karten mit Innenabstand (hd-Altregel machte sie zu Zeilen ohne Seitenabstand) */
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-settings-body][data-uv2-settings-body][data-uv2-settings-body] [class*="rounded-2xl"][class*="border"]:not(button):not(input):not(select) { padding: 18px 20px !important; }
 html[data-uv2="on"] body:not(.standard-mode) { font-variant-numeric: tabular-nums; }
+/* Verbindungen: Namen nie abgeschnitten */
+html[data-uv2="on"] body:not(.standard-mode) .uv2-conn__name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; line-height: 1.25 !important; overflow-wrap: normal; hyphens: auto; }

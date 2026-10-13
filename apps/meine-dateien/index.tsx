@@ -698,7 +698,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                     type="button"
                                     onClick={() => setSourceFilter(value)}
                                     className={v2 ? 'py-1 transition-colors' : `rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${sourceFilter === value ? 'bg-white/12 text-white' : 'text-white/42 hover:bg-white/[0.06] hover:text-white/70'}`}
-                                    style={v2 ? { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: sourceFilter === value ? '#D6A848' : 'rgba(247,244,233,0.45)' } : undefined}
+                                    style={v2 ? { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: sourceFilter === value ? '#D6A848' : 'rgba(247,244,233,0.45)' } : undefined}
                                 >
                                     {label}
                                 </button>

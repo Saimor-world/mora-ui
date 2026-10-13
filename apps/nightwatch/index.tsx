@@ -333,12 +333,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
 
     return (
         <GlassPanel
-            title={(
-                <span className="flex items-center gap-2">
-                    <Shield size={13} className="text-cyan-400/70" />
-                    <span>Nightwatch</span>
-                </span>
-            )}
+            title="Wache"
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

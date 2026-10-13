@@ -100,6 +100,7 @@ const SECONDARY_AREAS: Area[] = [
 ];
 
 function timeGreeting(hour: number) {
+  if (hour < 5) return 'Gute Nacht';
   if (hour < 11) return 'Guten Morgen';
   if (hour < 18) return 'Guten Tag';
   return 'Guten Abend';
@@ -350,7 +351,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
-  const M: React.CSSProperties = { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' };
+  const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"

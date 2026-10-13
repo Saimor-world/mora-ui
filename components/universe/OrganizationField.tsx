@@ -371,7 +371,7 @@ export function OrganizationField({
                         {selected.description || 'Noch keine Beschreibung hinterlegt.'}
                     </p>
                     {isUniverseV2Enabled() ? (
-                        <p className="mt-5 border-y border-white/[0.09] py-3 text-[10px] uppercase tracking-[0.2em] text-white/45" data-testid="planet-detail-facts" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>
+                        <p className="mt-5 border-y border-white/[0.09] py-3 text-[10px] uppercase tracking-[0.2em] text-white/45" data-testid="planet-detail-facts" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>
                             {[selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
                               selected.documents ? `${selected.documents} Dokumente` : null,
                               selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Noch leer'}
