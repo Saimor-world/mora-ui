@@ -38,3 +38,48 @@ export function playZoomTone(): void {
     setTimeout(() => ctx.close?.(), 900);
   } catch { /* Ton ist Zierde, nie Pflicht */ }
 }
+
+/**
+ * Kamera: Home und Universe sind ein Ort. Home = nah an MÔRAs Licht, Universe = weit.
+ * Beide Oberflächen benutzen dieselben Werte, damit der Wechsel eine einzige Fahrt ist.
+ */
+export type CameraShot = 'near' | 'far';
+export const CAMERA = {
+  /** Dauer einer Fahrt nah ↔ fern (ms). */
+  move: 1100,
+  /** Wie weit „nah“ in das Universe hineinfährt. */
+  nearScale: 1.6,
+  nearBlur: 12,
+  /** Im Nahbild bleibt das Universe als unscharfer Raum dahinter sichtbar. */
+  nearOpacity: 1,
+  /** …aber abgedunkelt, damit Text im Vordergrund trägt. */
+  nearBrightness: 0.5,
+  /** MÔRAs Licht als Fluchtpunkt (Viewport-%). */
+  origin: { x: 50, y: 49 },
+} as const;
+
+/** Ziel-Zustand der Universe-Ebene für eine Einstellung. */
+export function universeLayerFor(shot: CameraShot, reduced: boolean) {
+  if (reduced) return { scale: 1, opacity: 1, filter: shot === 'far' ? 'brightness(1)' : `brightness(${CAMERA.nearBrightness})` };
+  return shot === 'far'
+    ? { scale: 1, opacity: 1, filter: 'blur(0px) brightness(1)' }
+    : { scale: CAMERA.nearScale, opacity: CAMERA.nearOpacity, filter: `blur(${CAMERA.nearBlur}px) brightness(${CAMERA.nearBrightness})` };
+}
+
+/** Ziel-Zustand der Home-Ebene (Vordergrund) für eine Einstellung. */
+export function homeLayerFor(shot: CameraShot, reduced: boolean) {
+  if (reduced) return { scale: 1, opacity: shot === 'near' ? 1 : 0, filter: 'blur(0px)' };
+  return shot === 'near'
+    ? { scale: 1, opacity: 1, filter: 'blur(0px)' }
+    : { scale: 0.86, opacity: 0, filter: 'blur(8px)' };
+}
+
+export function cameraTransition(reduced: boolean) {
+  return reduced
+    ? { duration: 0.18, ease: 'linear' as const }
+    : { duration: CAMERA.move / 1000, ease: [0.65, 0, 0.35, 1] as const };
+}
+
+export function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+}

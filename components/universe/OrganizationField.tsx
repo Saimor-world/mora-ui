@@ -116,6 +116,7 @@ export function OrganizationField({
     // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
+    const publishedRef = useRef('');
 
     useLayoutEffect(() => {
         const publish = () => {
@@ -132,7 +133,13 @@ export function OrganizationField({
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
             // nichts, und jede Schicht darueber zeichnet folgerichtig nichts -
             // statt auf einen Punkt zu kollabieren.
-            setField(anchors, { left: box.left, top: box.top, width: box.width, height: box.height });
+            // Nur veröffentlichen, wenn sich wirklich etwas geändert hat – sonst schaukeln
+            // sich Feld und Universe gegenseitig hoch (z. B. während einer Kamerafahrt).
+            const rect = { left: Math.round(box.left), top: Math.round(box.top), width: Math.round(box.width), height: Math.round(box.height) };
+            const key = JSON.stringify([anchors, rect]);
+            if (key === publishedRef.current) return;
+            publishedRef.current = key;
+            setField(anchors, rect);
         };
 
         publish();
@@ -140,7 +147,7 @@ export function OrganizationField({
         return () => window.removeEventListener('resize', publish);
     }, [anchors, clearField, setField]);
 
-    useEffect(() => () => clearField(), [clearField]);
+    useEffect(() => () => { publishedRef.current = ''; clearField(); }, [clearField]);
 
     // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
     // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte

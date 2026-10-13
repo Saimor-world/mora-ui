@@ -1,5 +1,6 @@
 "use client";
 
+import { shortcutLabel } from '@/lib/os/shortcut';
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -1599,7 +1600,7 @@ export const Dock = () => {
                                             <CapsuleDockIcon
                                                 icon={Ellipsis}
                                                 label="Mehr"
-                                                description="Alle weiteren Orte · auch über MÔRA oder ⌘K"
+                                                description={`Alle weiteren Orte · auch über MÔRA oder ${shortcutLabel('K')}`}
                                                 active={moreOpen}
                                                 onClick={() => setMoreOpen((o) => !o)}
                                                 isStandardMode={isStandardMode}

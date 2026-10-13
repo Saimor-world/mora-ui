@@ -395,6 +395,8 @@ export const MoraShell: React.FC = () => {
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
+    /** Universe v2: Home, Universe und Planeten-Inneres teilen einen Kosmos – kein grüner Szenen-Schleier darüber. */
+    const v2SharedCosmos = isUniverseV2Enabled() && (viewLevel === 'core' || viewLevel === 'department');
     const isAmbientRoomOpen = useNavStore((s) => s.voiceOverlayOpen);
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
@@ -766,7 +768,7 @@ export const MoraShell: React.FC = () => {
                 z-11  RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
-            <RitualSceneStyler muted={isUniverseExploreSurface} />
+            <RitualSceneStyler muted={isUniverseExploreSurface || v2SharedCosmos} />
             <ShellStaticBackdrop />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
@@ -776,7 +778,7 @@ export const MoraShell: React.FC = () => {
                     {/* ForestLightCanopy fades to 6% in Universe — shared atmospheric truth */}
                     <div
                         className="transition-opacity duration-[1400ms] ease-in-out"
-                        style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
+                        style={{ opacity: isUniverseExploreSurface || v2SharedCosmos ? 0.06 : 1 }}
                     >
                         <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
                     </div>

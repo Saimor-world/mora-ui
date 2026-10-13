@@ -346,7 +346,6 @@ const V2_GLASS: React.CSSProperties = {
  * in einem ruhigen Raster. Keine Versalien-Eyebrows, keine doppelte Suche/Uhr.
  */
 function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstName: string; now: Date | null; onOpen: (t: OpenTarget) => void }) {
-  const openPane = usePaneStore((state) => state.openPane);
   const [ask, setAsk] = useState('');
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
@@ -368,7 +367,9 @@ function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstN
           </p>
           <form className="mt-7 max-w-[560px]" data-testid="uv2-home-ask"
             onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
-              openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: q } } as any); setAsk(''); }}>
+              // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
+              useNavStore.getState().setCoreMode('explore');
+              window.setTimeout(() => window.dispatchEvent(new CustomEvent('uv2:ask', { detail: q })), 700); setAsk(''); }}>
             <label className="flex h-12 items-center gap-3 rounded-full pl-4 pr-2" style={V2_GLASS}>
               <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: 'radial-gradient(circle, #ffe9c4, #f4b86a)', boxShadow: '0 0 12px rgba(255,214,150,0.8)' }} aria-hidden />
               <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA …"

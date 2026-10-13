@@ -26,6 +26,8 @@ import { feedsPaneRequest } from '@/lib/rss/feedsPane';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { resolveIntegrationConnectionStates } from '@/lib/integrations/connectionState';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { PlanetInterior } from '@/components/universe/PlanetInterior';
 
 /**
  * Department surface — zoomed into one planet, cosmos still visible.
@@ -119,6 +121,9 @@ export const DepartmentSurface: React.FC = () => {
   }, []);
 
   if (!activeDepartmentId) return null;
+
+  // Universe v2: der Kosmos bleibt im Planeten – Horizont, Monde, eine Glasfläche.
+  if (isUniverseV2Enabled()) return <PlanetInterior incidentPanels={departmentIncidentPanels} />;
 
   const widgetOpacity = universeWidgetOpacity(focusMode, false);
 

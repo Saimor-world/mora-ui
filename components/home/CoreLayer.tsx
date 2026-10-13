@@ -6,6 +6,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useNavStore } from '@/lib/store/navStore';
 import { HomeSurfaceUnified } from '@/components/home/HomeSurfaceUnified';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { CAMERA, cameraTransition, homeLayerFor, universeLayerFor, type CameraShot } from '@/lib/universe/motion';
 
 /**
  * CoreLayer — Surface router for viewLevel='core'.
@@ -65,6 +67,10 @@ export const CoreLayer: React.FC = () => {
         },
     };
 
+    if (isUniverseV2Enabled() && activeMode !== 'visitor' && activeMode !== 'private_preview') {
+        return <CameraCore shot={coreMode === 'home' ? 'near' : 'far'} reduced={!!prefersReducedMotion} />;
+    }
+
     return (
         <div className="absolute inset-0">
             <AnimatePresence initial={false} mode="wait">
@@ -97,3 +103,54 @@ export const CoreLayer: React.FC = () => {
         </div>
     );
 };
+
+/**
+ * Universe v2 – Home und Universe sind ein Ort. Beide Ebenen bleiben gemountet;
+ * der Wechsel ist eine einzige Kamerafahrt mit MÔRAs Licht als Fluchtpunkt:
+ * Home = nah (Universe unscharf dahinter), Universe = weit.
+ */
+function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
+    const t = cameraTransition(reduced);
+    // Home bleibt nur während der Fahrt gemountet – im Weitbild fängt es keine Klicks ab.
+    const [homeMounted, setHomeMounted] = React.useState(shot === 'near');
+    React.useEffect(() => {
+        if (shot === 'near') { setHomeMounted(true); return; }
+        const id = window.setTimeout(() => setHomeMounted(false), reduced ? 200 : CAMERA.move + 50);
+        return () => window.clearTimeout(id);
+    }, [shot, reduced]);
+    return (
+        <div className="absolute inset-0 overflow-hidden" data-testid="uv2-camera" data-shot={shot}>
+            <motion.div
+                className="absolute inset-0 z-10"
+                style={{ transformOrigin: `${CAMERA.origin.x}% ${CAMERA.origin.y}%`, pointerEvents: shot === 'far' ? 'auto' : 'none' }}
+                initial={false}
+                animate={universeLayerFor(shot, reduced)}
+                transition={t}
+                aria-hidden={shot !== 'far'}
+            >
+                <UniverseView />
+            </motion.div>
+            {/* MÔRAs Licht – im Nahbild groß und warm, im Weitbild tritt es zurück ins Universe */}
+            <motion.div aria-hidden className="pointer-events-none absolute z-[15] rounded-full" data-testid="uv2-near-light"
+                style={{ left: `${CAMERA.origin.x}%`, top: `${CAMERA.origin.y}%`, width: 900, height: 900, marginLeft: -450, marginTop: -450,
+                    background: 'radial-gradient(circle, rgba(255,222,170,0.28) 0%, rgba(255,200,140,0.09) 36%, transparent 66%)' }}
+                initial={false}
+                animate={shot === 'near' ? { opacity: 1, scale: 1 } : { opacity: 0, scale: reduced ? 1 : 0.25 }}
+                transition={t} />
+            <motion.div
+                className="absolute inset-0 z-20"
+                style={{ transformOrigin: `${CAMERA.origin.x}% ${CAMERA.origin.y}%`, pointerEvents: 'none' }}
+                initial={false}
+                animate={homeLayerFor(shot, reduced)}
+                transition={t}
+                aria-hidden={shot !== 'near'}
+            >
+                {homeMounted && (
+                    <div className={`absolute inset-0 ${shot === 'near' ? '' : '[&_*]:!pointer-events-none'}`}>
+                        <HomeSurfaceUnified />
+                    </div>
+                )}
+            </motion.div>
+        </div>
+    );
+}
