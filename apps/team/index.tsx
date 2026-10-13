@@ -1,6 +1,7 @@
 'use client';
 
-import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
 import React, {
     useCallback,
     useEffect,
@@ -361,15 +362,21 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full flex-col" data-uv2-app="team">
-                {uv2() && !isLoading && (
-                    <AppHero app="team" eyebrow={'Teamraum · ' + (isOperational ? 'verbunden' : 'nicht erreichbar')}
-                        title={members.length === 0 ? (isOperational ? 'Leer' : 'Offline') : `${members.length} im Raum`}
-                        sub={!isOperational ? 'Sobald die Verbindung steht, siehst du hier, wer da ist – und was ihr euch schreibt.' : messages.length > 0 ? `Zuletzt: „${messages[messages.length - 1].content.slice(0, 90)}“` : 'Ein gemeinsamer Ort für kurze Worte – ohne Postfach.'}
-                        figure={isOperational ? messages.length : undefined} figureLabel="Nachrichten"
-                        action={{ label: 'Jemanden einladen', onClick: () => setActiveTab('invite') }} />
+                {uv2() && (
+                    <div className="uv2-ftool" data-testid="team-v2-bar">
+                        <Segmented value={activeTab} onChange={(v) => setActiveTab(v)} label="Ansicht" options={[
+                            { id: 'room' as Tab, label: 'Raum', icon: <Users /> },
+                            { id: 'members' as Tab, label: `Mitglieder ${members.length}`, icon: <User /> },
+                            { id: 'invite' as Tab, label: 'Einladen', icon: <Plus /> },
+                        ]} />
+                        <span style={{ flex: 1 }} />
+                        <span className="uv2-dot" data-on={isOperational ? '' : undefined} data-warn={!isOperational && !isLoading ? '' : undefined} title={isOperational ? 'verbunden' : 'nicht erreichbar'} />
+                        <span className="uv2-notes__count">{isOperational ? `${members.filter((m) => m.status === 'online').length} online` : 'offline'}</span>
+                        <button type="button" className="uv2-pill uv2-pill--gold" onClick={() => setActiveTab('invite')}><Plus />Einladen</button>
+                    </div>
                 )}
                 {/* ── Tab bar ── */}
-                <div className="flex items-center gap-1 border-b border-white/5 p-2" data-uv2-tabs>
+                <div className="flex items-center gap-1 border-b border-white/5 p-2" data-uv2-tabs hidden={uv2() || undefined} style={uv2() ? { display: 'none' } : undefined}>
                     <button
                         onClick={() => setActiveTab('room')}
                         className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs transition-colors ${activeTab === 'room' ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5'}`}
@@ -600,6 +607,14 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                 <div className="flex h-full items-center justify-center text-xs text-white/30 italic">
                                     Noch keine Mitglieder.
                                 </div>
+                            ) : uv2() ? (
+                                <TileGrid label="Mitglieder">
+                                    {members.map((member) => (
+                                        <Tile key={member.id} testId={`team-member-${member.id}`} icon={<span className="uv2-mono-glyph">{member.name.charAt(0).toUpperCase()}</span>}
+                                            label={member.is_self ? `${member.name} (Du)` : member.name} badge={member.role ? member.role.charAt(0).toUpperCase() : undefined}
+                                            state={member.status === 'online' ? 'on' : 'off'} />
+                                    ))}
+                                </TileGrid>
                             ) : (
                                 members.map(member => {
                                     const aura = getAura(member, currentUser?.role);
