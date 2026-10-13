@@ -731,3 +731,4 @@ html[data-uv2="on"] [data-uv2-settings-nav] { background: transparent !important
 html[data-uv2="on"] [data-uv2-settings-nav] nav button { border-radius: 0 !important; background: transparent !important; border-left: 1px solid transparent; font-family: var(--uv-mono); font-size: 10.5px !important; letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
 html[data-uv2="on"] [data-uv2-settings-nav] nav button[class*="bg-white/[0.08]"] { color: rgb(var(--uv-cream)) !important; border-left-color: var(--uv-gold); }
 html[data-uv2="on"] [data-uv2-settings-nav] nav button svg, html[data-uv2="on"] [data-uv2-settings-nav] nav button span.ml-auto { display: none; }
+html[data-uv2="on"] [data-uv2-finder-banner] { display: none !important; }

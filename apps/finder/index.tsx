@@ -72,6 +72,7 @@ import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
@@ -1862,7 +1863,18 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
-                    <div className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
+                    {uv2On() && (() => {
+                        const here = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1].name : 'Eingang';
+                        const nF = filteredFolders.length, nD = displayFiles.length;
+                        return (
+                            <AppHero app="finder" eyebrow={`Finder · ${breadcrumbs.length > 0 ? breadcrumbs.map(b => b.name).join(' / ') : 'Eingang'}`}
+                                title={nF + nD === 0 ? `${here} ist noch leer.` : `${here}: ${nD} ${nD === 1 ? 'Datei' : 'Dateien'}${nF ? `, ${nF} ${nF === 1 ? 'Ordner' : 'Ordner'}` : ''}.`}
+                                sub="Alles, was hier liegt, kann MÔRA lesen – aber nur, wenn du sie fragst."
+                                figure={nD} figureLabel="Dateien"
+                                action={{ label: 'Datei hochladen', onClick: () => fileInputRef.current?.click() }} />
+                        );
+                    })()}
+                    <div data-uv2-finder-banner={uv2On() ? '' : undefined} className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
                         <div className="relative flex flex-col gap-2 overflow-hidden rounded-[18px] border border-emerald-300/[0.10] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.14),transparent_34%),linear-gradient(135deg,rgba(5,28,23,0.86),rgba(1,13,12,0.72)_58%,rgba(0,5,5,0.84))] px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.04)] lg:flex-row lg:items-center lg:justify-between">
                             <div className="pointer-events-none absolute -left-20 -top-24 h-48 w-48 rounded-full bg-emerald-300/16 blur-3xl" />
                             <div className="pointer-events-none absolute right-12 top-1/2 h-px w-64 bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
