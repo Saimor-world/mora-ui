@@ -133,6 +133,9 @@ export function OrganizationField({
         window.addEventListener('uv2:today-areas', on);
         return () => window.removeEventListener('uv2:today-areas', on);
     }, []);
+    // Abklingen über Stunden: alle 10 min neu bewerten (Übergang 1,6 s im CSS).
+    const [decayTick, setDecayTick] = useState(0);
+    useEffect(() => { const t = window.setInterval(() => setDecayTick((n) => n + 1), 600_000); return () => window.clearInterval(t); }, []);
     // Autonomie: Môra ordnet nach Aufmerksamkeit (echte Signale), nicht nach Menge.
     const attention = useMemo(() => {
         const extra: Record<string, number> = {};
@@ -141,17 +144,18 @@ export function OrganizationField({
             const t = territories.find((x) => x.name.trim().toLowerCase() === a);
             if (t) extra[t.id] = (extra[t.id] || 0) + (i === 0 ? 2.5 : 2);
         });
-        const scores = attentionScores(territories.map((t) => t.id), signals, extra);
+        const scores = attentionScores(territories.map((t) => t.id), signals, extra, Date.now() + decayTick * 0);
         return { scores, any: Object.values(scores).some((v) => v > 0) };
-    }, [territories, signals, todayAreas]);
+    }, [territories, signals, todayAreas, decayTick]);
     // Dieselbe Rangfolge geht an die Deutung (LAGE), damit Text und Feld übereinstimmen.
     useEffect(() => {
         const ranked = territories.map((t) => ({ name: t.name, score: attention.scores[t.id] || 0 })).sort((a, b) => b.score - a.score);
-        const detail = { vorn: ranked.filter((r) => r.score >= 0.85).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score < 0.35).map((r) => r.name) : [] };
+        const detail = { ohneQuelle: territories.filter((t) => t.metricSource === 'missing' && t.id !== '__weitere').map((t) => t.name), vorn: ranked.filter((r) => r.score >= 0.85).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score < 0.35).map((r) => r.name) : [] };
         (window as unknown as { __uv2Attention?: typeof detail }).__uv2Attention = detail;
         window.dispatchEvent(new CustomEvent('uv2:attention', { detail }));
     }, [territories, attention]);
     const publishedRef = useRef('');
+    const territoryCountRef = useRef(territories.length); territoryCountRef.current = territories.length;
 
     useLayoutEffect(() => {
         const publish = () => {
@@ -162,7 +166,7 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? 780 : 1350), box.height / 770));
+                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -481,6 +485,7 @@ function Territory({
             onClick={() => onSelect(selected ? null : territory.id)}
             data-uv2-planet={territory.id}
             data-uv2-attn={v2 ? attnLevel : undefined}
+            data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
                 (selected ? 'z-30' : 'hover:z-20')}
             style={{

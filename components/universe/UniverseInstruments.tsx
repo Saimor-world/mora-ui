@@ -190,7 +190,7 @@ export function LageSignals(props: {
     props.mail.slice(0, 2).forEach((m) => sigs.push({ kind: 'Mail', title: m.subject, when: relativeTime(m.date), t: Date.parse(m.date || '') || 0, open: props.onOpenMail }));
     props.feed.slice(0, 1).forEach((f) => sigs.push({ kind: 'Feed', title: f.title, t: 0, open: props.onOpenFeed }));
     const list = sigs.slice(0, 4);
-    const [focus, setFocus] = React.useState<{ vorn: string[]; ruhig: string[] }>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2Attention?: { vorn: string[]; ruhig: string[] } }).__uv2Attention) || { vorn: [], ruhig: [] });
+    const [focus, setFocus] = React.useState<{ vorn: string[]; ruhig: string[]; ohneQuelle?: string[] }>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2Attention?: { vorn: string[]; ruhig: string[]; ohneQuelle?: string[] } }).__uv2Attention) || { vorn: [], ruhig: [] });
     React.useEffect(() => {
         const on = (e: Event) => setFocus((e as CustomEvent).detail);
         window.addEventListener('uv2:attention', on);
@@ -205,6 +205,8 @@ export function LageSignals(props: {
     const und = (xs: string[]) => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' und ' + xs[xs.length - 1];
     if (focus.vorn.length) deutung.push(`Im Vordergrund: ${und(focus.vorn)}.`);
     const ruhig = focus.ruhig.filter((n) => n !== 'Weitere');
+    const oq = focus.ohneQuelle || [];
+    if (oq.length) deutung.push(oq.length === 1 ? `${oq[0]} hat noch keine Datenquelle.` : `${oq.length} Bereiche haben noch keine Datenquelle.`);
     if (ruhig.length) deutung.push(ruhig.length > 2 ? `${ruhig.length} Bereiche sind ruhig.` : `Ruhig: ${und(ruhig)}.`);
 
     return (

@@ -39,6 +39,10 @@ function center(card: Card) {
 
 export function LagefeldCanvas({ state }: { state: FieldState }) {
   if (isUniverseV2Enabled()) return <LagefeldColumns state={state} />;
+  return <LagefeldFreeCanvas state={state} />;
+}
+
+function LagefeldFreeCanvas({ state }: { state: FieldState }) {
   const cardsById = new Map(state.cards.map((card) => [card.id, card]));
   const bounds = useMemo(() => {
     const width = Math.max(

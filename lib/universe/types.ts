@@ -18,4 +18,6 @@ export interface UniverseSignal {
     evidence: SignalEvidence;
     href?: string;
     severity?: string;
+    /** Zeitpunkt des Signals (ISO) – Aufmerksamkeit klingt darüber ab. */
+    at?: string;
 }

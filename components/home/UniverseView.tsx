@@ -449,6 +449,7 @@ export default function UniverseView() {
                     subtitle: 'Mail · ' + item.from,
                     targetId,
                     kind: 'mail',
+                    at: item.date,
                     evidence: 'inferred',
                 });
             }
@@ -462,6 +463,7 @@ export default function UniverseView() {
                     subtitle: 'Kalender',
                     targetId,
                     kind: 'calendar',
+                    at: item.date ? (item.date.includes('T') ? item.date : item.date + 'T' + (item.time || '09:00').slice(0, 5) + ':00') : undefined,
                     evidence: 'inferred',
                 });
             }
@@ -546,7 +548,7 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
+            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
                     active
                     action="point"
                     target={attentionPoint}

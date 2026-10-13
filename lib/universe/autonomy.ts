@@ -23,15 +23,31 @@ export function capPlanets<T extends CapInput>(departments: T[], substance: Reco
     };
 }
 
-export type AttentionSignal = { targetId: string | null; kind: string };
+export type AttentionSignal = { targetId: string | null; kind: string; at?: string };
+
+/** Halbwertszeit vergangener Signale (Stunden). */
+export const ATTENTION_HALF_LIFE_H = 6;
+
+/**
+ * Abklingen über Stunden: Vergangenes halbiert sich alle 6 h; Kommendes zählt
+ * voll, wenn es innerhalb von 24 h liegt, sonst gedämpft (0,5). Ohne Zeit: voll.
+ */
+export function attentionDecay(at: string | undefined, now = Date.now()): number {
+    if (!at) return 1;
+    const t = Date.parse(at);
+    if (Number.isNaN(t)) return 1;
+    const h = (now - t) / 3_600_000;
+    if (h < 0) return -h <= 24 ? 1 : 0.5;
+    return Math.pow(0.5, h / ATTENTION_HALF_LIFE_H);
+}
 
 const WEIGHT: Record<string, number> = { nightwatch: 3, calendar: 2, mail: 1.5, rss: 0.75 };
 
 /** Aufmerksamkeit je Planet, 0..1 – relativ zum lautesten. Leere Lage = alle 0. */
-export function attentionScores(ids: string[], signals: AttentionSignal[], extra: Record<string, number> = {}): Record<string, number> {
+export function attentionScores(ids: string[], signals: AttentionSignal[], extra: Record<string, number> = {}, now = Date.now()): Record<string, number> {
     const raw: Record<string, number> = {};
     ids.forEach((id) => { raw[id] = extra[id] || 0; });
-    signals.forEach((s) => { if (s.targetId && s.targetId in raw) raw[s.targetId] += WEIGHT[s.kind] ?? 1; });
+    signals.forEach((s) => { if (s.targetId && s.targetId in raw) raw[s.targetId] += (WEIGHT[s.kind] ?? 1) * attentionDecay(s.at, now); });
     const max = Math.max(0, ...Object.values(raw));
     const out: Record<string, number> = {};
     ids.forEach((id) => { out[id] = max > 0 ? raw[id] / max : 0; });

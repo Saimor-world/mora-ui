@@ -1,4 +1,4 @@
-import { capPlanets, attentionScores, attentionLevel, attentionDiameter, MAX_PLANETS } from '@/lib/universe/autonomy';
+import { attentionDecay, capPlanets, attentionScores, attentionLevel, attentionDiameter, MAX_PLANETS } from '@/lib/universe/autonomy';
 
 const deps = (n: number) => Array.from({ length: n }, (_, i) => ({ id: 'd' + i, name: 'Bereich ' + i }));
 
@@ -30,5 +30,18 @@ describe('attention', () => {
         expect(s.a).toBeCloseTo(0.5);
         expect(attentionLevel(s.b, true)).toBe('vorn');
         expect(attentionLevel(0, true)).toBe('ruhig');
+    });
+});
+
+describe('attentionDecay', () => {
+    const now = Date.parse('2026-10-13T12:00:00Z');
+    it('halves every 6 hours in the past', () => {
+        expect(attentionDecay('2026-10-13T06:00:00Z', now)).toBeCloseTo(0.5);
+        expect(attentionDecay('2026-10-13T00:00:00Z', now)).toBeCloseTo(0.25);
+    });
+    it('counts upcoming events within 24h fully, later ones damped', () => {
+        expect(attentionDecay('2026-10-13T15:00:00Z', now)).toBe(1);
+        expect(attentionDecay('2026-10-16T15:00:00Z', now)).toBe(0.5);
+        expect(attentionDecay(undefined, now)).toBe(1);
     });
 });

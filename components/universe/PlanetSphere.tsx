@@ -178,9 +178,9 @@ export function generatedMaterial(name: string): Material {
   let h = 2166136261;
   for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   const hue = PALETTE_HUES[h % PALETTE_HUES.length] + ((h >>> 8) % 9) - 4;
-  const sat = 28 + ((h >>> 12) % 18);
+  const sat = 40 + ((h >>> 12) % 16);
   const m: Material = {
-    day: hsl(hue, sat + 10, 76), mid: hsl(hue, sat, 38), night: hsl(hue, sat, 7),
+    day: hsl(hue, sat + 12, 78), mid: hsl(hue, sat + 4, 46), night: hsl(hue, sat, 9),
     fx: 0.6 + ((h >>> 4) % 30) / 10, fy: 1.5 + ((h >>> 9) % 70) / 10, oct: 3 + ((h >>> 3) % 3),
     relief: 0.4 + ((h >>> 6) % 30) / 100,
     atmo: (() => { const c = hsl(hue, sat + 20, 82); return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)).join(','); })(),

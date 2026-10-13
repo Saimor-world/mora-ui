@@ -112,7 +112,7 @@ function IncidentRow({
 }) {
     const cfg = severityConfig(incident.severity);
     return (
-        <article className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
+        <article data-uv2-incident className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
             <div className="flex items-start gap-3">
                 <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -141,7 +141,7 @@ function IncidentRow({
                         </div>
                     )}
                 </div>
-                <div className="flex shrink-0 flex-col gap-1.5">
+                <div className="flex shrink-0 flex-col gap-1.5" data-uv2-incident-actions>
                     <button
                         type="button"
                         onClick={onOpen}
@@ -211,7 +211,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
                 fetchAllNightwatchIncidents(),
             ]);
             if (!mountedRef.current) return;
-            setIncidents(inc);
+            // Nur wirklich offene Vorfälle – auch wenn die Quelle Erledigtes mitliefert.
+            setIncidents(inc.filter((i) => !['resolved', 'closed', 'dismissed'].includes(String(i.status || 'open').toLowerCase())));
             setHistory(allIncidents);
             setMonitors(mon);
             setAvailable(true);

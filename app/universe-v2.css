@@ -389,3 +389,50 @@ html[data-uv2=on] [data-uv2-attn="ruhig"] .uv2-planet { filter: brightness(.8) s
     width: calc(100vw - 2 * var(--g-m) - var(--g-3) - var(--g-g)) !important;
   }
 }
+/* hd12: ruhig = leiser, nicht schmutzig – Farbe bleibt, Licht tritt zurück */
+html[data-uv2=on] [data-uv2-attn="ruhig"] .uv2-planet { filter: brightness(.88) saturate(.96) !important; opacity: .86; }
+html[data-uv2=on] [data-uv2-attn="ruhig"] .uv2-planet-meta { display: none; }
+html[data-uv2=on] [data-uv2-attn="ruhig"] [class*="tracking"][class*="uppercase"] { font-size: 9px !important; }
+/* ohne Datenquelle: feine gestrichelte Bahn statt Cursor-Punkt */
+html[data-uv2=on] [data-uv2-nosource] .uv2-planet::after { content: ""; position: absolute; inset: -9%; border-radius: 50%; border: 0.5px dashed rgba(247,244,233,.35); pointer-events: none; }
+
+/* ═══ hd12: App-Durchgang ═══ */
+/* Zugriff verweigert: ruhig, kein Alarmrot */
+html[data-uv2=on] .app-state--denied .app-state__icon { color: #D6A848 !important; border-color: rgba(214,168,72,.25) !important; background: rgba(214,168,72,.06) !important; }
+html[data-uv2=on] .app-state h3 { font-family: "Cormorant Garamond", serif; font-size: 22px; color: #F7F4E9; }
+html[data-uv2=on] .app-state > p:not(.app-state__eyebrow) { color: rgba(247,244,233,.62) !important; }
+html[data-uv2=on] .app-state__eyebrow { font-family: "Space Mono", monospace; color: #D6A848 !important; }
+/* Dekorative Farbkacheln (rote Post-Kachel u. ä.) → neutral mit Gold */
+html[data-uv2=on] [class*="bg-red-500/20"]:has(> svg), html[data-uv2=on] [class*="bg-emerald-500/20"]:has(> svg), html[data-uv2=on] [class*="bg-blue-500/20"]:has(> svg) { background: rgba(247,244,233,.06) !important; box-shadow: inset 0 0 0 .5px rgba(247,244,233,.12); }
+html[data-uv2=on] [class*="bg-red-500/20"] > svg, html[data-uv2=on] [class*="bg-emerald-500/20"] > svg, html[data-uv2=on] [class*="bg-blue-500/20"] > svg { color: #D6A848 !important; }
+/* Nightwatch: Vorfälle als ruhige Zeilen, Aktionen in einer Reihe */
+html[data-uv2=on] [data-uv2-incident] { background: rgba(5,7,6,.4) !important; border-color: rgba(247,244,233,.08) !important; border-left: 1px solid rgba(224,135,106,.7) !important; border-radius: 10px !important; }
+html[data-uv2=on] [data-uv2-incident] h3 { font-size: 15px !important; }
+html[data-uv2=on] [data-uv2-incident-actions] { flex-direction: row !important; align-items: center; opacity: .55; transition: opacity .3s cubic-bezier(.22,1,.36,1); }
+html[data-uv2=on] [data-uv2-incident]:hover [data-uv2-incident-actions], html[data-uv2=on] [data-uv2-incident]:focus-within [data-uv2-incident-actions] { opacity: 1; }
+html[data-uv2=on] [class*="bg-teal-"], html[data-uv2=on] [class*="bg-emerald-400"]:not([class*="rounded-full"]) { background-color: rgba(214,168,72,.55) !important; }
+/* Leerzustände in allen Apps: eine Typo-Hierarchie */
+html[data-uv2=on] [data-pane-density] .text-white\/30, html[data-uv2=on] [data-pane-density] .text-white\/32, html[data-uv2=on] [data-pane-density] .text-white\/35 { color: rgba(247,244,233,.55) !important; }
+
+/* hd12 · Kalender-Fäden: ungestyltes Panel fügt sich ins Raster statt als Streutext am Rand */
+html[data-uv2="on"] body:not(.standard-mode) section[aria-label="Kalender-Fäden"] {
+  margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--uv-hair); max-width: 640px;
+  color: rgba(var(--uv-cream), .72); font-size: 13px; line-height: 1.55;
+}
+html[data-uv2="on"] body:not(.standard-mode) section[aria-label="Kalender-Fäden"] h3 {
+  font-family: var(--uv-mono); font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--uv-gold); margin-bottom: 6px;
+}
+html[data-uv2="on"] body:not(.standard-mode) section[aria-label="Kalender-Fäden"] button {
+  margin: 10px 8px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--uv-border);
+  color: rgba(var(--uv-cream), .86); font-size: 12px; transition: border-color .2s var(--uv-ease), color .2s var(--uv-ease);
+}
+html[data-uv2="on"] body:not(.standard-mode) section[aria-label="Kalender-Fäden"] button:hover { border-color: var(--uv-gold); color: rgb(var(--uv-cream)); }
+html[data-uv2="on"] body:not(.standard-mode) section[aria-label="Kalender-Fäden"] article { padding: 10px 0; border-bottom: 1px solid var(--uv-hair); }
+/* Nightwatch: Smaragd-Reste neutral */
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] .bg-emerald-400 { background-color: var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] .text-emerald-300,
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] .text-emerald-400 { color: rgba(var(--uv-cream), .8) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] [class*="bg-emerald-500/"] { background-color: rgba(var(--uv-cream), .06) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] [class*="border-emerald"] { border-color: var(--uv-border) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-trend__bars i { background: rgba(var(--uv-gold-rgb), .55) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-pane-density] .text-cyan-400\/70 { color: rgba(var(--uv-gold-rgb), .7) !important; }
