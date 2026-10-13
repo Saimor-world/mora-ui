@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero } from '@/components/universe/app/AppStage';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -338,8 +339,15 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <header className="border-b border-white/[0.07] px-6 py-5">
-                    <div className="flex flex-wrap items-start justify-between gap-5">
+                {uv2 && (
+                    <AppHero app="integrations" eyebrow="Verbindungen · was MÔRA nutzen darf"
+                        title={readiness.ready === readiness.total ? 'Alles ist verbunden.' : readiness.ready === 0 ? 'Noch ist nichts verbunden.' : `${readiness.ready} von ${readiness.total} Quellen verbunden.`}
+                        sub="Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann sieht MÔRA echte Arbeit – nie mehr, als du freigibst."
+                        figure={readiness.ready} figureLabel={'von ' + readiness.total}
+                        action={readiness.ready < readiness.total ? { label: 'Google verbinden', onClick: () => void connectGoogleAll() } : { label: 'Aktualisieren', onClick: () => void refreshAll() }} />
+                )}
+                <header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
+                    <div className="flex flex-wrap items-start justify-between gap-5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                         <div className="min-w-0">
                             <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/50">Verbindungszentrale</p>
                             <h2 className="mt-2 text-2xl font-light tracking-[-0.03em] text-white/92">Was Môra wirklich nutzen darf</h2>
