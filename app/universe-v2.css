@@ -695,3 +695,11 @@ html[data-uv2="on"] [data-uv2-tabs] > button { background: none !important; bord
 html[data-uv2="on"] [data-uv2-tabs] > button svg { display: none; }
 html[data-uv2="on"] [data-uv2-tabs] > button[class*="bg-white/10"] { color: rgb(var(--uv-cream)) !important; border-bottom-color: var(--uv-gold); }
 html[data-uv2="on"] [data-uv2-tabs] > button:hover { color: rgb(var(--uv-cream)) !important; }
+/* hd14 · Arbeit: Fokus in der Bühne, darunter ruhige Spalten */
+html[data-uv2="on"] [data-uv2-app="work"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-app="work"][data-uv2-focus="hero"] > section.grid > div:first-child { display: none !important; }
+html[data-uv2="on"] [data-uv2-app="work"] > section.grid { grid-template-columns: 1fr 1fr !important; padding: 8px 32px !important; gap: 32px !important; }
+html[data-uv2="on"] [data-uv2-app="work"] > section > div, html[data-uv2="on"] [data-uv2-app="work"] > section.grid > div { background: none !important; border: 0 !important; border-top: .5px solid var(--uv-hair) !important; border-radius: 0 !important; padding: 16px 0 !important; }
+html[data-uv2="on"] [data-uv2-app="work"] [class*="tracking-[0.22em]"] { font-family: var(--uv-mono); color: var(--uv-gold) !important; font-size: 10px !important; }
+html[data-uv2="on"] [data-uv2-app="work"] h3 { font-family: var(--uv-serif); font-weight: 400 !important; font-size: 20px !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] [data-uv2-hero="work"] { margin: -4px -4px 0 -4px; }

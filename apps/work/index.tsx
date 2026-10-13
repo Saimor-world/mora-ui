@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, uv2 } from '@/components/universe/app/AppStage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -223,8 +224,15 @@ export default function WorkApp({ paneId }: AppProps) {
       draggable
       resizable
     >
-      <div className="flex h-full min-h-0 flex-col overflow-y-auto pr-1 text-white">
-        <header className="border-b border-white/[0.05] px-1 pb-5 pt-1">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto pr-1 text-white" data-uv2-app="work" data-uv2-focus={readable && focusTask ? 'hero' : undefined}>
+        {uv2() && !loading && (
+          <AppHero app="work" eyebrow={'Arbeit · ' + availabilityLabel(snapshot) + (readable && typeof overdueCount === 'number' && overdueCount > 0 ? ` · ${overdueCount} überfällig` : '')}
+            title={readable && focusTask ? focusTask.title : readable ? 'Nichts drängt.' : 'Was jetzt zählt.'}
+            sub={readable && focusTask ? [taskStatusLabel(focusTask.status), dueLabel(focusTask.due_date), focusTask.priority ? 'Priorität ' + focusTask.priority : null].filter(Boolean).join(' · ') : readable ? 'Keine offene Aufgabe in dieser Organisation. Leg die nächste an oder frag MÔRA.' : (readError ?? 'Der heutige Stand wird gelesen.')}
+            figure={readable && typeof openCount === 'number' ? openCount : undefined} figureLabel="offen"
+            action={{ label: focusTask ? (activePlanId ? 'Arbeitsplan öffnen' : 'Mit MÔRA planen') : 'Alle Aufgaben', onClick: focusTask ? openPlan : openTasks }} />
+        )}
+        <header className="border-b border-white/[0.05] px-1 pb-5 pt-1" data-uv2-legacy-head>
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.2em] text-white/26">
               <span className={`h-1.5 w-1.5 rounded-full ${readable ? 'bg-emerald-300/70' : 'bg-white/22'}`} />
