@@ -19,25 +19,22 @@ export function AppHero({ app, eyebrow, title, sub, figure, figureLabel, action,
   children?: React.ReactNode;
 }) {
   if (!isUniverseV2Enabled()) return null;
+  // hd21: kein Website-Kopf mehr – eine kompakte OS-Leiste (Status · Titel · Zahl · Handlung).
+  const subText = typeof sub === 'string' ? sub : undefined;
   return (
-    <header className="uv2-hero" data-uv2-hero={app}>
-      <div className="uv2-hero__text">
-        <p className="uv2-hero__eyebrow">{eyebrow}</p>
-        <h2 className="uv2-hero__title">{title}</h2>
-        {sub ? <p className="uv2-hero__sub">{sub}</p> : null}
-        {action ? (
-          <button type="button" className="uv2-hero__action" onClick={action.onClick}>
-            {action.icon}{action.label}
-          </button>
-        ) : null}
-      </div>
-      {figure !== undefined ? (
-        <div className="uv2-hero__figure" aria-label={figureLabel}>
-          <span className="uv2-hero__num">{figure}</span>
-          {figureLabel ? <span className="uv2-hero__numlabel">{figureLabel}</span> : null}
-        </div>
+    <header className="uv2-ftool uv2-bar" data-uv2-hero={app} title={subText}>
+      <span className="uv2-bar__eyebrow">{eyebrow}</span>
+      <h2 className="uv2-bar__title">{title}</h2>
+      {figure !== undefined && figure !== null && figure !== '' ? (
+        <span className="uv2-bar__count" aria-label={figureLabel ? `${figure} ${figureLabel}` : undefined}><b>{figure}</b>{figureLabel ? ` ${figureLabel}` : ''}</span>
       ) : null}
+      <span style={{ flex: 1 }} />
       {children}
+      {action ? (
+        <button type="button" className="uv2-pill uv2-pill--gold" onClick={action.onClick}>
+          {action.icon}{action.label}
+        </button>
+      ) : null}
     </header>
   );
 }
