@@ -492,7 +492,7 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && (
+            {attention && attentionPoint && !isUniverseV2Enabled() && (
                 <CursorAgent
                     active
                     action="point"

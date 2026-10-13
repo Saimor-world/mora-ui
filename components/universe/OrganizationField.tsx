@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ArrowUpRight, Building2, CalendarDays, FileText, Lock, Mail, Radio, Rss, Sparkles, X } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
 import { stableUniverseHash } from '@/lib/universe/layout';
@@ -305,7 +305,7 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
+                <aside data-testid="planet-detail" style={isUniverseV2Enabled() ? { background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', borderColor: 'transparent', borderRadius: 20, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 20px 50px rgba(0,0,0,0.45)' } : undefined} className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
@@ -347,6 +347,7 @@ export function OrganizationField({
                         <button
                             type="button"
                             disabled={selected.access === 'locked'}
+                            data-uv2-open="true"
                             onClick={() => onOpen(selected.id)}
                             className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/38"
                         >
@@ -475,7 +476,7 @@ function Territory({
                 >
                     {territory.access === 'locked'
                         ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
-                        : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
+                        : (() => { const Glyph = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <Glyph size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />; })()}
                 </span>
 
                 <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} />
@@ -496,11 +497,21 @@ function Territory({
                 </span>
             )}
             <span className="mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            {isUniverseV2Enabled() ? (
+                // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
+                (territory.spaces > 0 || territory.documents > 0) && (
+                    <span className="mt-1 block text-[11px] leading-[14px] text-white/45">
+                        {[territory.spaces > 0 && `${territory.spaces} ${territory.spaces === 1 ? 'Bereich' : 'Bereiche'}`,
+                          territory.documents > 0 && `${territory.documents} ${territory.documents === 1 ? 'Dokument' : 'Dokumente'}`].filter(Boolean).join(' · ')}
+                    </span>
+                )
+            ) : (
             <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
                 <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
                 <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
                 <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
             </span>
+            )}
             {/* Was sich hier bewegt - an einer FESTEN Stelle unter dem
                 Planeten, nicht als schwebendes Etikett am kreisenden Mond.
                 Dort landete es je nach Bahnstellung mitten auf der
@@ -517,11 +528,22 @@ function Territory({
             )}
             {territory.access === 'locked' ? (
                 <span className="mt-1.5 block text-[9px] text-amber-200/62">Mitgliedschaft erforderlich</span>
-            ) : territory.metricSource === 'missing' && (
+            ) : territory.metricSource === 'missing' && !isUniverseV2Enabled() && (
                 <span className="mt-1.5 block text-[9px] text-amber-200/52">Quelle fehlt</span>
             )}
         </button>
     );
+}
+
+/** v2: Jeder Planet bekommt ein eigenes Zeichen in derselben Strichstärke statt fünfmal dasselbe Gebäude. */
+export function planetGlyph(name: string): React.ComponentType<any> {
+    const n = name.toLowerCase();
+    if (/finanz|wirtschaft|finance|buchhalt/.test(n)) return Wallet;
+    if (/post|termin|kalender|mail/.test(n)) return Mail;
+    if (/werkstatt|engineering|technik|product|produkt/.test(n)) return Hammer;
+    if (/wissen|knowledge|doku/.test(n)) return BookOpen;
+    if (/wache|watch|sicherheit/.test(n)) return ShieldCheck;
+    return Building2;
 }
 
 function MobileTerritory({

@@ -45,6 +45,7 @@
  * ----------------------------------------------------------------
  */
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -478,7 +479,8 @@ export const MoraShell: React.FC = () => {
         if (typeof window === 'undefined') return;
         const isDev = process.env.NODE_ENV === 'development';
         const hasParam = window.location.search.includes('diagnostics=1');
-        setDiagnosticsEnabled(isDev || hasParam);
+        // Universe v2: Entwicklerwerkzeuge nie im Endkundenbild – nur mit ?diagnostics=1.
+        setDiagnosticsEnabled(isUniverseV2Enabled() ? hasParam : isDev || hasParam);
     }, []);
 
     useEffect(() => {
@@ -744,14 +746,15 @@ export const MoraShell: React.FC = () => {
             <ModeIndicatorBanner activeMode={activeMode} />
             <AmbientAudioController />
             <InteractionAudioController />
-            <MoraPulsePanel />
+            {!isUniverseV2Enabled() && <MoraPulsePanel />}
             {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
-            <QuickTips />
+            {/* v2: keine Tipp-Karten über dem Raum – ⌘K steht im Fächer und im Frag-MÔRA-Feld. */}
+            {!isUniverseV2Enabled() && <QuickTips />}
             {activeMode !== 'public_playground' && <MoraGreeting />}
-            <SystemStats />
+            {!isUniverseV2Enabled() && <SystemStats />}
 
             {/* ================================================================
                 LAYER 1: BACKGROUND (progressive island)
@@ -823,7 +826,7 @@ export const MoraShell: React.FC = () => {
                     contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
 
-                {!hasFullscreenPane && (
+                {!hasFullscreenPane && !isUniverseV2Enabled() && (
                     <div className="pointer-events-auto absolute right-8 top-32 z-[48] hidden items-center gap-2 lg:flex">
                         <button
                             type="button"

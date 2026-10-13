@@ -6,6 +6,7 @@ import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type Luci
 import type { TodaySourceStatus } from '@/lib/api/todayClient';
 import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 type TodayCardProps = {
   eyebrow: string;
@@ -206,6 +207,59 @@ export function TodayOverview() {
               : snapshot.status === 'degraded'
                 ? 'teilweise'
                 : 'nicht verfügbar';
+
+  if (isUniverseV2Enabled()) {
+    type Copy = { value: string; detail: string; unavailable?: boolean; attention?: boolean };
+    const sources: { key: string; label: string; icon: LucideIcon; copy: Copy; open: () => void }[] = [
+      { key: 'calendar', label: 'Kalender', icon: CalendarDays, copy: calendarCopy, open: () => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } }) },
+      { key: 'mail', label: 'Post', icon: Mail, copy: mailCopy, open: () => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } }) },
+      { key: 'tasks', label: 'Aufgaben', icon: ListTodo, copy: taskCopy, open: () => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } }) },
+      { key: 'watch', label: 'Wache', icon: Radar, copy: nightwatchCopy, open: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }) },
+    ];
+    const live = sources.filter((x) => !x.copy.unavailable);
+    const fog = sources.filter((x) => x.copy.unavailable);
+    const isLoading = loading && !snapshot;
+    return (
+      <section className="mt-12" data-testid="uv2-today">
+        <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-white/90">Heute</h2>
+        {live.length > 0 && (
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {live.map((x) => (
+              <button key={x.key} type="button" onClick={x.open}
+                className="group min-w-0 rounded-[20px] p-4 text-left transition-transform duration-300 active:scale-[0.98]"
+                style={{ background: 'rgba(22,24,30,0.5)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.12), 0 12px 32px rgba(0,0,0,0.3)' }}>
+                <div className="flex items-center gap-2 text-[12px] text-white/50"><x.icon size={14} strokeWidth={1.5} /> {x.label}</div>
+                <div className={`mt-2 truncate text-[17px] font-semibold tracking-[-0.015em] ${x.copy.attention ? 'text-amber-100' : 'text-white'}`}>{x.copy.value}</div>
+                <p className="mt-1 line-clamp-2 text-[13px] leading-[18px] text-white/55">{x.copy.detail}</p>
+              </button>
+            ))}
+          </div>
+        )}
+        {fog.length > 0 && (
+          <div className={`flex items-center justify-between gap-4 ${live.length ? 'mt-4' : 'mt-3'}`} data-testid="uv2-today-fog">
+            <p className="text-[15px] leading-[22px] text-white/55">
+              {isLoading
+                ? 'MÔRA sammelt deinen Tag …'
+                : live.length === 0
+                  ? <>Dein Tag liegt noch im Nebel. <span className="text-white/40">{fog.map((x) => x.label).join(', ').replace(/, ([^,]*)$/, ' und $1')} sind gerade nicht erreichbar.</span></>
+                  : <>Noch im Nebel: <span className="text-white/40">{fog.map((x) => x.label).join(', ')}</span></>}
+            </p>
+            {!isLoading && (
+              <div className="flex shrink-0 items-center gap-2">
+                <button type="button" onClick={() => void refresh(false)} className="h-8 rounded-full px-3.5 text-[13px] text-white/80 transition-colors hover:bg-white/15" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                  {refreshing ? 'Prüft …' : 'Erneut prüfen'}
+                </button>
+                <button type="button" onClick={openIntegrations} className="h-8 rounded-full bg-white px-3.5 text-[13px] font-semibold text-black transition-transform active:scale-[0.97]">
+                  Quellen verbinden
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {!(calendarCopy as Copy).unavailable && <CalendarContinuity />}
+      </section>
+    );
+  }
 
   return (
     <section className="mt-10">

@@ -8,6 +8,8 @@
  */
 import React, { useCallback, useEffect, useState } from 'react';
 import { coreGet } from '@/lib/api/http';
+import { usePaneStore } from '@/lib/store/paneStore';
+import { MOTION, playZoomTone } from '@/lib/universe/motion';
 
 type Item = { title: string; source: string; area?: string };
 type Proposal = { id: string; label: string; reason: string; sources: string[]; undo?: string };
@@ -114,6 +116,34 @@ export function MorgenOverlay() {
   const [anchors, setAnchors] = useState<Anchor[]>([]);
   const [dismissed, setDismissed] = useState(false);
   const [vw, setVw] = useState(1440);
+  const [zoom, setZoom] = useState<{ x: number; y: number; r: number; key: number } | null>(null);
+  const [ask, setAsk] = useState('');
+  const [detailOpen, setDetailOpen] = useState(false);
+  const openPane = usePaneStore((st) => st.openPane);
+
+  // Kinematischer Flug in einen Planeten: der Klick auf einen echten Planeten
+  // öffnet eine Iris aus seinem Mittelpunkt (650 ms), dann klärt sich der Raum (500 ms).
+  useEffect(() => {
+    let last: { x: number; y: number; r: number } | null = null;
+    const onClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement;
+      const el = t?.closest?.('[data-testid^="territory-"]') as HTMLElement | null;
+      if (el) {
+        // Erster Klick wählt nur aus – Position merken, noch nicht fliegen.
+        const body = el.querySelector<HTMLElement>('.saimor-territory-body') || el;
+        const r = body.getBoundingClientRect();
+        last = { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.max(r.width, r.height) / 2 };
+        return;
+      }
+      if (!t?.closest?.('[data-uv2-open]') || !last) return;
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      setZoom({ ...last, key: Date.now() });
+      playZoomTone();
+      window.setTimeout(() => setZoom(null), MOTION.zoom.total);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
+  }, []);
 
   useEffect(() => {
     setPhase(readPhase());
@@ -124,6 +154,7 @@ export function MorgenOverlay() {
 
   const measure = useCallback(() => {
     setVw(window.innerWidth);
+    setDetailOpen(!!document.querySelector('[data-testid="planet-detail"]'));
     // Echte Planeten des Universe: Organisationsfeld (data-mora-label) oder PlanetLayer (data-planet-name)
     const els = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="territory-"], [data-testid^="locked-territory-"], [data-planet-name]'));
     setAnchors(els.map((el) => {
@@ -148,10 +179,20 @@ export function MorgenOverlay() {
   const items = night ? [] : (data?.items ?? []).slice(0, Math.min(4, usable.length));
   const slots = assignToPlanets(items, usable.map((a) => a.name));
   const watch = anchors.find((a) => /wache|watch/i.test(a.name));
-  const showComet = !night && phase !== 'abend' && !!data?.proposal && !dismissed;
+  // Ist eine Planetenkarte offen, tritt der Vorschlag zurück – nie zwei Glasflächen übereinander.
+  const showComet = !night && phase !== 'abend' && !!data?.proposal && !dismissed && !detailOpen;
 
   // Nur im Universe (wenn echte Planeten sichtbar sind) – sonst bleibt das OS unberührt.
-  if (anchors.length === 0) return null;
+  const iris = zoom && (
+    <div key={zoom.key} className="pointer-events-none fixed inset-0 z-[40]" data-testid="uv2-zoom" aria-hidden>
+      <div className="absolute rounded-full" style={{ left: zoom.x - zoom.r, top: zoom.y - zoom.r, width: zoom.r * 2, height: zoom.r * 2,
+        background: 'radial-gradient(circle, rgba(8,12,22,0.97) 0%, rgba(8,12,22,0.93) 58%, rgba(255,214,160,0.22) 66%, transparent 71%)',
+        boxShadow: '0 0 80px 20px rgba(255,214,160,0.18)',
+        animation: `uv2iris ${MOTION.zoom.total}ms ${MOTION.ease.cinematic} both` }} />
+      <style>{`@keyframes uv2iris{0%{transform:scale(1);opacity:0}20%{opacity:1}55%{transform:scale(${Math.ceil((2 * Math.hypot(vw, 900)) / Math.max(8, zoom.r))});opacity:1}100%{transform:scale(${Math.ceil((2 * Math.hypot(vw, 900)) / Math.max(8, zoom.r))});opacity:0}}`}</style>
+    </div>
+  );
+  if (anchors.length === 0) return iris || null;
 
   const n = items.length;
   const SUB: Record<DayPhase, string> = {
@@ -175,8 +216,9 @@ export function MorgenOverlay() {
 
       {/* Eine Überschrift: MÔRAs Begrüßung + ein Satz. Ersetzt „Woraus … besteht“. */}
       <header className="absolute left-1/2 top-[104px] w-[min(640px,90vw)] -translate-x-1/2 text-center" data-testid="uv2-greeting"><div style={{ animation: `uv2in 1.2s ${ease} both` }}>
-        <h1 className="font-semibold text-white" style={{ fontSize: 34, lineHeight: '40px', letterSpacing: '-0.022em', textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>{GREETING[phase]}</h1>
-        <p className="mt-2 text-white/60" style={{ fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>{SUB[phase]}</p>
+        <h1 className={night ? 'font-normal text-white/70' : 'font-semibold text-white'} data-testid="uv2-greeting-title"
+          style={night ? { fontSize: 28, lineHeight: '34px', letterSpacing: '-0.018em', textShadow: '0 2px 18px rgba(0,0,0,0.5)' } : { fontSize: 34, lineHeight: '40px', letterSpacing: '-0.022em', textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>{GREETING[phase]}</h1>
+        <p className={night ? 'mt-2 text-white/45' : 'mt-2 text-white/60'} style={{ fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>{SUB[phase]}</p>
       </div></header>
 
       {/* Sternbilder an echten Planeten – zwei Textebenen, gleiche Abstände */}
@@ -184,10 +226,13 @@ export function MorgenOverlay() {
         const slot = slots[i];
         if (slot === null) return null;
         const a = usable[slot];
-        const toLeft = a.x < cx - 40;
         // Rechts nie unter das Vorschlagsfeld laufen (rechter Rand 24 + Breite 296 + Luft 24).
-        const limit = showComet ? vw - 24 - 296 - 24 : vw - 24;
-        const W = toLeft ? 176 : Math.max(120, Math.min(176, limit - (a.x + a.r + 16)));
+        const limit = detailOpen ? vw - 32 - 370 - 24 : showComet ? vw - 24 - 296 - 24 : vw - 24;
+        const rightRoom = limit - (a.x + a.r + 16);
+        // Reicht der Platz rechts nicht für eine ruhige Zeilenbreite, wandert das Sternbild nach links
+        // (vorher brach „Website-Update wartet auf Freigabe“ bei Werkstatt in vier Zeilen um).
+        const toLeft = a.x < cx - 40 || rightRoom < 168;
+        const W = toLeft ? 176 : Math.min(196, rightRoom);
         const left = toLeft ? a.x - a.r - 16 - W : a.x + a.r + 16;
         return (
           <div key={i} className="absolute flex items-start gap-2.5" data-testid="uv2-constellation"
@@ -230,7 +275,7 @@ export function MorgenOverlay() {
 
       {/* Ehrlicher Nebel – eine leise Zeile, kein Kasten */}
       {!!data?.nebel?.length && !night && (
-        <p className="absolute bottom-[124px] left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40" data-testid="nebel" style={{ fontSize: 12, textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
+        <p className="absolute bottom-[166px] left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40" data-testid="nebel" style={{ fontSize: 12, textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
           Noch im Nebel: {data.nebel.join(', ')}
         </p>
       )}
@@ -238,6 +283,26 @@ export function MorgenOverlay() {
       {demo && (
         <div className="absolute left-6 top-6 rounded-full px-2.5 py-1 font-medium text-amber-100/75" style={{ fontSize: 11, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 0 0.5px rgba(255,220,160,0.3)' }}>Entwurf · Beispieldaten</div>
       )}
+      {/* Frag MÔRA – das Gespräch beginnt im Raum, nicht in einem Fenster. */}
+      {!night && (
+        <div className="pointer-events-auto absolute bottom-[112px] left-1/2 w-[min(440px,80vw)] -translate-x-1/2">
+        <form data-testid="uv2-ask"
+          style={{ animation: `uv2in 1.2s ${ease} 2.2s both` }}
+          onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
+            openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: q } }); setAsk(''); }}>
+          <label className="flex h-10 items-center gap-2.5 rounded-full pl-3.5 pr-1.5"
+            style={{ background: 'rgba(18,22,30,0.46)', backdropFilter: 'blur(30px) saturate(160%)', WebkitBackdropFilter: 'blur(30px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 10px 30px rgba(0,0,0,0.35)' }}>
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: 'radial-gradient(circle, #ffe9c4, #f4b86a)', boxShadow: '0 0 10px rgba(255,214,150,0.8)' }} aria-hidden />
+            <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA – oder sag, wohin du willst"
+              className="min-w-0 flex-1 bg-transparent text-white placeholder:text-white/40 focus:outline-none" style={{ fontSize: 14, letterSpacing: '-0.01em' }} />
+            <kbd className="shrink-0 rounded-md px-1.5 py-0.5 text-white/40" style={{ fontSize: 11, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.18)' }}>⌘K</kbd>
+          </label>
+        </form>
+        </div>
+      )}
+
+      {iris}
+
       <style>{`@keyframes uv2breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}@keyframes uv2fade{from{opacity:0}to{opacity:1}}@keyframes uv2in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){[data-testid=universe-v2-overlay] *{animation:none!important}}`}</style>
     </div>
   );

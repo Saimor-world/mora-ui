@@ -8,6 +8,7 @@ import { useFolders } from '@/lib/queries/useFolders';
 import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -144,6 +145,44 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         (surfaceProfile.isHqSurface || !activeCompanyId)
     );
 
+    // Universe v2: die Kopfleiste ist nur noch ein Schalter „Home | Universe“.
+    // Kein Instanz-Badge, kein Firmenname (steht in MÔRAs Satz), kein zweiter Control-Center-Knopf.
+    if (isUniverseV2Enabled()) {
+        return (
+            <div className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 items-center gap-2 text-white" data-testid="uv2-header">
+                {showDeptBack && (
+                    <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
+                        className="flex h-8 items-center gap-1 rounded-full pl-2 pr-3 text-[13px] text-white/75 transition-colors hover:text-white"
+                        style={V2_GLASS}>
+                        <ChevronLeft size={15} strokeWidth={1.5} /> Universum
+                    </button>
+                )}
+                {showCoreSurfaceSwitch && (
+                    <div role="tablist" aria-label="Ansicht" className="relative flex h-8 items-center rounded-full p-[3px]" style={V2_GLASS}>
+                        {(['home', 'explore'] as const).map((m) => {
+                            const active = m === 'home' ? coreMode === 'home' : coreMode !== 'home';
+                            return (
+                                <button key={m} type="button" role="tab" aria-selected={active}
+                                    data-testid={m === 'explore' ? 'universe-toggle' : 'home-toggle'}
+                                    onClick={() => setCoreMode(m)}
+                                    className={`relative h-[26px] min-w-[84px] rounded-full px-3 text-[13px] font-medium tracking-[-0.01em] transition-all duration-300 ${active ? 'bg-white/[0.16] text-white shadow-[inset_0_0.5px_0_rgba(255,255,255,0.25)]' : 'text-white/55 hover:text-white/85'}`}
+                                    style={{ transitionTimingFunction: 'cubic-bezier(0.22,1,0.36,1)' }}>
+                                    {m === 'home' ? 'Home' : 'Universe'}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+                {showCompanySwitcher && (
+                    <button type="button" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}
+                        className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/70 hover:text-white" style={V2_GLASS}>
+                        <Globe size={13} strokeWidth={1.5} /> {activeCompany?.name}
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="fixed left-3 right-3 top-3 z-50 flex min-w-0 items-center justify-between gap-1 rounded-2xl border border-white/[0.10] bg-slate-950/38 px-1.5 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(96vw,920px)] sm:-translate-x-1/2 sm:justify-center sm:gap-2 sm:px-2">
             {showDeptBack && (
@@ -230,6 +269,13 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             </button>
         </div>
     );
+};
+
+const V2_GLASS: React.CSSProperties = {
+    background: 'rgba(18,22,30,0.5)',
+    backdropFilter: 'blur(30px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(160%)',
+    boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 8px 24px rgba(0,0,0,0.3)',
 };
 
 const CoreSurfaceButton: React.FC<{

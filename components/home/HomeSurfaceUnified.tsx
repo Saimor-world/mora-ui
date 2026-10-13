@@ -24,6 +24,7 @@ import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/s
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 type OpenTarget = {
   id: string;
@@ -198,6 +199,10 @@ export const HomeSurfaceUnified: React.FC = () => {
       size: { width: 920, height: 700 },
     });
 
+  if (isUniverseV2Enabled()) {
+    return <HomeV2 greeting={greeting} firstName={firstName} now={now} onOpen={open} />;
+  }
+
   return (
     <div
       {...surfaceMarker(SAIMOR_SURFACES.home)}
@@ -327,3 +332,80 @@ export const HomeSurfaceUnified: React.FC = () => {
     </div>
   );
 };
+
+const V2_GLASS: React.CSSProperties = {
+  background: 'rgba(22,24,30,0.5)',
+  backdropFilter: 'blur(40px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(40px) saturate(160%)',
+  boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.12), 0 12px 32px rgba(0,0,0,0.3)',
+};
+
+/**
+ * Universe v2 – Home auf Apple-Niveau: ein Datum, eine Begrüßung, ein Satz von MÔRA,
+ * ein Eingabefeld. Darunter „Heute“ (ehrlicher Nebel statt vier Fehlerkarten) und alle Orte
+ * in einem ruhigen Raster. Keine Versalien-Eyebrows, keine doppelte Suche/Uhr.
+ */
+function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstName: string; now: Date | null; onOpen: (t: OpenTarget) => void }) {
+  const openPane = usePaneStore((state) => state.openPane);
+  const [ask, setAsk] = useState('');
+  const ease = [0.22, 1, 0.36, 1] as const;
+  const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+  const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
+  return (
+    <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-24 text-white antialiased sm:px-10 lg:px-16"
+      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
+      <main className="relative mx-auto w-full max-w-[1120px]">
+        <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease }}>
+          <p className="text-[15px] font-medium text-white/50">{dateLabel}</p>
+          <div className="mt-2 flex items-center gap-4">
+            <h1 className="text-[64px] font-semibold leading-[1.02] tracking-[-0.035em] text-white" style={{ textShadow: '0 2px 30px rgba(0,0,0,0.35)' }}>
+              {greeting}{firstName ? `, ${firstName}.` : '.'}
+            </h1>
+          </div>
+          <p className="mt-3 max-w-[620px] text-[19px] leading-[26px] tracking-[-0.012em] text-white/60">
+            Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
+          </p>
+          <form className="mt-7 max-w-[560px]" data-testid="uv2-home-ask"
+            onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
+              openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: q } } as any); setAsk(''); }}>
+            <label className="flex h-12 items-center gap-3 rounded-full pl-4 pr-2" style={V2_GLASS}>
+              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: 'radial-gradient(circle, #ffe9c4, #f4b86a)', boxShadow: '0 0 12px rgba(255,214,150,0.8)' }} aria-hidden />
+              <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA …"
+                className="min-w-0 flex-1 bg-transparent text-[16px] tracking-[-0.01em] text-white placeholder:text-white/40 focus:outline-none" />
+              <button type="submit" aria-label="Senden" className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95">
+                <ArrowRight size={15} strokeWidth={2} />
+              </button>
+            </label>
+          </form>
+        </motion.section>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease, delay: 0.25 }}>
+          <TodayOverview />
+        </motion.div>
+
+        <motion.section className="mt-14" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease, delay: 0.45 }}>
+          <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-white/90">Orte</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {areas.map((area) => {
+              const Icon = area.icon;
+              return (
+                <button key={area.id} type="button" onClick={() => onOpen(area)}
+                  className="group flex items-center gap-3.5 rounded-[20px] p-4 text-left transition-transform duration-300 active:scale-[0.98]" style={V2_GLASS}>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white/[0.08] text-white/85">
+                    <Icon size={18} strokeWidth={1.5} />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[15px] font-semibold tracking-[-0.012em] text-white/90">{area.title}</span>
+                    <span className="mt-0.5 block truncate text-[13px] text-white/50">{area.description}</span>
+                  </span>
+                  <ArrowRight size={14} className="text-white/25 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+                </button>
+              );
+            })}
+          </div>
+        </motion.section>
+      </main>
+    </div>
+  );
+}

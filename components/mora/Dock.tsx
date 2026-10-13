@@ -6,8 +6,9 @@ import {
     Search, Minus, Building2, ChevronUp,
     Home, MessageCircle, FolderOpen, HardDrive, Users, FileText, Settings, FolderHeart,
     Music2, Pause, Play, SkipForward, Sparkles, Brain, X, Mic,
-    ShieldCheck, LayoutGrid, Compass
+    ShieldCheck, LayoutGrid, Compass, Ellipsis
 } from 'lucide-react';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { useNavStore } from '@/lib/store/navStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
@@ -583,6 +584,16 @@ export const Dock = () => {
 
     const [chatInput, setChatInput] = useState('');
     const [searchPopupOpen, setSearchPopupOpen] = useState(false);
+    // Universe v2: ruhiges Dock – 7–8 Ziele, der Rest im „Mehr“-Fächer (⌘K und MÔRA erreichen alles).
+    const v2 = isUniverseV2Enabled();
+    const [moreOpen, setMoreOpen] = useState(false);
+    useEffect(() => {
+        if (!moreOpen) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMoreOpen(false); };
+        const onDown = (e: MouseEvent) => { if (!(e.target as HTMLElement)?.closest?.('[data-dock-more]')) setMoreOpen(false); };
+        window.addEventListener('keydown', onKey); window.addEventListener('mousedown', onDown);
+        return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('mousedown', onDown); };
+    }, [moreOpen]);
     const [showCompanySwitcher, setShowCompanySwitcher] = useState(false);
     const [isProvisioningDemo, setIsProvisioningDemo] = useState(false);
     const [isCommandDeckOpen, setIsCommandDeckOpen] = useState(false);
@@ -795,6 +806,19 @@ export const Dock = () => {
 
         return items;
     }, [mod, DOCK_ICON_MAP, activeMode, user?.role]);
+
+    const V2_PRIMARY = ['home', 'cockpit'];
+    const primaryDockItems = useMemo(
+        () => (v2 ? dockItems.filter((i) => V2_PRIMARY.includes(i.action)) : dockItems),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [dockItems, v2],
+    );
+    // MÔRA-Chat ist der Stein rechts – kein doppeltes Symbol.
+    const moreDockItems = useMemo(
+        () => (v2 ? dockItems.filter((i) => !V2_PRIMARY.includes(i.action) && !['chat', 'workspace', 'map'].includes(i.action)) : []),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [dockItems, v2],
+    );
 
     const mobileDockItems = useMemo(
         () => activeMode === 'public_playground'
@@ -1500,14 +1524,14 @@ export const Dock = () => {
                                         isStandardMode={isStandardMode}
                                     />
 
-                                    <CapsuleDockIcon
+                                    {!v2 && <CapsuleDockIcon
                                         icon={Sparkles}
                                         label="Control Center"
                                         description={controlCenterNextMove.label}
                                         active={isCommandDeckOpen}
                                         onClick={toggleCommandDeck}
                                         isStandardMode={isStandardMode}
-                                    />
+                                    />}
 
                                     <CapsuleDockIcon
                                         icon={Mic}
@@ -1557,7 +1581,7 @@ export const Dock = () => {
 
                                 {/* CENTER: App Icons */}
                                 <div className="flex items-center gap-0.5 shrink-0 sm:gap-1">
-                                    {dockItems.map((item) => {
+                                    {primaryDockItems.map((item) => {
                                         const isMobilePrimary = mobileDockItems.some((mobileItem) => mobileItem.action === item.action);
                                         return (
                                             <div key={item.action} className={isMobilePrimary ? 'flex' : 'hidden sm:flex'}>
@@ -1569,7 +1593,61 @@ export const Dock = () => {
                                             </div>
                                         );
                                     })}
-                                    {!websiteEntryContext && <AdminModeSwitcher />}
+                                    {!websiteEntryContext && !v2 && <AdminModeSwitcher />}
+                                    {v2 && (
+                                        <div className="relative hidden sm:flex" data-dock-more>
+                                            <CapsuleDockIcon
+                                                icon={Ellipsis}
+                                                label="Mehr"
+                                                description="Alle weiteren Orte · auch über MÔRA oder ⌘K"
+                                                active={moreOpen}
+                                                onClick={() => setMoreOpen((o) => !o)}
+                                                isStandardMode={isStandardMode}
+                                            />
+                                            <AnimatePresence>
+                                                {moreOpen && (
+                                                    <div className="absolute bottom-full left-1/2 z-[9999] mb-4 -translate-x-1/2">
+                                                    <motion.div
+                                                        data-testid="dock-more-fan"
+                                                        initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                        exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                                                        transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                                                        className="rounded-[22px] p-2"
+                                                        style={{ background: 'rgba(14,18,26,0.62)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.5)' }}
+                                                    >
+                                                        <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(4, moreDockItems.length + 1)}, 84px)` }}>
+                                                            {[...moreDockItems.map((i) => ({ key: i.action, icon: i.icon, label: i.label, run: () => handleDockClick(i.action) })),
+                                                              { key: 'control-center', icon: Sparkles, label: 'Kontrolle', run: toggleCommandDeck }]
+                                                              .map((e, idx) => (
+                                                                <motion.button
+                                                                    key={e.key}
+                                                                    type="button"
+                                                                    data-testid={`dock-more-${e.key}`}
+                                                                    initial={{ opacity: 0, y: 6 }}
+                                                                    animate={{ opacity: 1, y: 0 }}
+                                                                    transition={{ delay: 0.03 * idx, duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+                                                                    onClick={() => { setMoreOpen(false); e.run(); }}
+                                                                    className="flex h-[72px] w-[84px] flex-col items-center justify-center gap-1.5 rounded-2xl text-white/75 transition-colors hover:bg-white/[0.08] hover:text-white"
+                                                                >
+                                                                    <e.icon size={20} strokeWidth={1.5} />
+                                                                    <span className="max-w-[80px] truncate text-[11px] leading-[14px]">{e.label}</span>
+                                                                </motion.button>
+                                                            ))}
+                                                        </div>
+                                                        <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/[0.08] px-2 pt-2">
+                                                            <span className="text-[11px] text-white/45">Oder einfach MÔRA fragen · {spotlightShortcut}</span>
+                                                            <div className="flex items-center gap-1">
+                                                                {!websiteEntryContext && <FocusModeWidget />}
+                                                                {!websiteEntryContext && <AdminModeSwitcher />}
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                    </div>
+                                                )}
+                                            </AnimatePresence>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Divider */}
@@ -1579,7 +1657,7 @@ export const Dock = () => {
                                 <div className="flex items-center gap-1 shrink-0">
                                     {!websiteEntryContext && (
                                         <div className="hidden items-center gap-1 shrink-0 sm:flex">
-                                            <FocusModeWidget />
+                                            {!v2 && <FocusModeWidget />}
                                             <NotificationCenter />
                                             {activePlanId && (
                                                 <SessionChip
@@ -1591,7 +1669,7 @@ export const Dock = () => {
                                         </div>
                                     )}
 
-                                    {!websiteEntryContext && (
+                                    {!websiteEntryContext && (!v2 || switcherCompanies.length > 1) && (
                                         <div className="relative hidden shrink-0 sm:block">
                                             <CapsuleDockIcon
                                                 icon={Building2}
