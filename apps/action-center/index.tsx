@@ -633,7 +633,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                         title={(() => { const w = events.filter((e) => canActOnPendingEvent(e)).length; const r = summary.active - w; const parts = [w ? `${w} ${w === 1 ? 'wartet' : 'warten'}` : '', r ? `${r} ${r === 1 ? 'läuft' : 'laufen'}` : ''].filter(Boolean); return parts.length ? parts.join(' · ') : 'Alles erledigt'; })()}
                         sub={`${summary.done} erledigt · ${summary.rejected} verworfen${summary.failed ? ` · ${summary.failed} fehlgeschlagen` : ''}. MÔRA handelt nur, wenn du bestätigst.`}
                         figure={summary.active} figureLabel="offen"
-                        action={{ label: tab === 'aktionen' ? 'Verlauf ansehen' : 'Zurück zu Aktionen', onClick: () => setTab(tab === 'aktionen' ? 'verlauf' : 'aktionen') }} />
+                        action={null} />
                 )}
                 {/* Tab bar */}
                 <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1" data-uv2-tabs={uv2 ? '' : undefined}>
@@ -662,7 +662,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                     const running = events.filter((e) => !canActOnPendingEvent(e) && groupStatusMap.active.includes(e.status));
                     const settled = events.filter((e) => !groupStatusMap.active.includes(e.status)).slice(0, 18);
                     const ico = (evt: ActionEvent) => { const k = evt.intent ?? ''; return /mail/.test(k) ? <Mail /> : /calendar|termin/.test(k) ? <CalendarDays /> : /file|node|intake/.test(k) ? <FileText /> : /navigat/.test(k) ? <Compass /> : <Activity />; };
-                    const short = (evt: ActionEvent) => intentLabelMap[evt.intent ?? ''] || formatActionTitle(evt);
+                    const short = (evt: ActionEvent) => intentLabelMap[evt.intent ?? ''] || (/calendar/.test(evt.intent ?? '') ? 'Termin' : /mail/.test(evt.intent ?? '') ? 'Mail' : 'Aktion');
                     if (events.length === 0) return (
                         <div className="flex flex-1 items-center justify-center" data-testid="ac-v2-empty">
                             <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Keine Aktionen" action={null} />

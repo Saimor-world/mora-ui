@@ -347,7 +347,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                         title={`${readiness.ready} von ${readiness.total} aktiv`}
                         sub="Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann sieht MÔRA echte Arbeit – nie mehr, als du freigibst."
                         figure={readiness.ready} figureLabel={'von ' + readiness.total}
-                        action={readiness.ready < readiness.total ? { label: 'Google verbinden', onClick: () => void connectGoogleAll() } : { label: 'Aktualisieren', onClick: () => void refreshAll() }} />
+                        action={null} />
                 )}
                 {uv2 && !uv2Details && (() => {
                     type Src = { id: string; kind: string; name: string; ok: boolean; text: string; open?: () => void; connect?: () => void; connectLabel?: string };
