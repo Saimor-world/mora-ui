@@ -2,6 +2,7 @@
 
 import { coreRequest, CoreError } from '@/lib/api/http';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { ContinuityPanel, type ContinuityRequest } from './ContinuityPanel';
 
 async function call(path: string, body?: object): Promise<unknown> {
@@ -33,6 +34,13 @@ export function CalendarContinuity() {
   const user = useSessionStore(state => state.user);
   const generation = useSessionStore(state => state.sessionGeneration);
   if (!user) return null;
+  if (isUniverseV2Enabled()) {
+    // Universe v2: Fäden sind ein Werkzeug, kein Hauptinhalt – zugeklappt als ruhige Zeile unter „Heute“.
+    return <details className="uv2-faeden" data-uv2-faeden>
+      <summary><span>Kalender-Fäden</span><em>Vorbereitung für die nächsten drei Tage</em></summary>
+      <ContinuityPanel key={`${user.tenant_id}:${user.id}:${generation}`} request={request} />
+    </details>;
+  }
   return <div className="mt-6 rounded-2xl border border-white/10 p-4 text-sm text-white/75 [&_button]:m-1 [&_button]:rounded-lg [&_button]:border [&_button]:border-white/20 [&_button]:px-3 [&_button]:py-2 [&_p]:my-2 [&_article]:mt-4">
     <ContinuityPanel key={`${user.tenant_id}:${user.id}:${generation}`} request={request} />
   </div>;

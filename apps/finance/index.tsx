@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownLeft,
@@ -511,8 +512,16 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
       blurIntensity={24}
       opacity={0.4}
     >
-      <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1 text-white">
-        <section className="rounded-[24px] border border-emerald-300/12 bg-[radial-gradient(circle_at_8%_0%,rgba(16,185,129,0.09),transparent_34%),rgba(0,0,0,0.14)] p-5">
+      <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1 text-white" data-uv2-app="finance">
+        {uv2() && (
+          <AppHero app="finance"
+            eyebrow={'Kapital · XRPL-Mainnet · nur lesend' + (companySnapshot ? ' · Ledger ' + companySnapshot.reserve.validatedLedger : '')}
+            title={aggregates ? <>{formatNumber(aggregates.availableTotalXrp)} XRP frei verfügbar.</> : error ? (/login|auth|401|403/i.test(error) ? 'Erst anmelden, dann zählen.' : 'Das Ledger antwortet gerade nicht.') : 'Die Finanzlage wird gelesen …'}
+            sub={error && !aggregates ? (/login|auth|401|403/i.test(error) ? 'Die Finanzlage erscheint, sobald du in Saimôr angemeldet bist. Echte Zahlen aus dem Ledger, nichts geschätzt.' : 'Saimôr zeigt keine geschätzten Zahlen. Versuch es gleich noch einmal.') : aggregates ? `${formatNumber(aggregates.reservedTotalXrp)} XRP sind als Ledger-Reserve gebunden. Angebotspreise zählen nicht als Vermögen. MÔRA erklärt Veränderungen, signiert aber nie.` : 'Echte Zahlen aus dem Ledger, nichts geschätzt. MÔRA liest nur und signiert nie.'}
+            figure={aggregates ? formatNumber(aggregates.cashTotalXrp) : undefined} figureLabel={aggregates ? 'XRP Kasse gesamt' : undefined}
+            action={{ label: loading ? 'Wird gelesen …' : 'Neu lesen', onClick: () => { if (!loading) void loadCompanyData(); } }} />
+        )}
+        <section data-uv2-legacy-head className="rounded-[24px] border border-emerald-300/12 bg-[radial-gradient(circle_at_8%_0%,rgba(16,185,129,0.09),transparent_34%),rgba(0,0,0,0.14)] p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
@@ -540,7 +549,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           </div>
         </section>
 
-        {error && (
+        {error && !uv2() && (
           <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/60">{/login|auth|401|403/i.test(error) ? 'Anmeldung nötig – die Finanzlage erscheint, sobald du in Saimôr angemeldet bist.' : error}</div>
         )}
 

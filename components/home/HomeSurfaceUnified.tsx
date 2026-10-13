@@ -361,12 +361,8 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
-            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" data-testid="uv2-home-actions" aria-label="Schnellzugriff">
-              <PresenceOrb />
-              {([['MÔRA', onMora], ['Suche', onSearch], ['Universe', onUniverse], ['Einstellungen', onSettings]] as const).map(([l, fn]) => (
-                <button key={l} type="button" onClick={fn} className="transition-colors hover:text-[#D6A848]" style={{ ...M, fontSize: 10, color: 'rgba(247,244,233,.5)' }}>{l}</button>
-              ))}
-            </nav>
+            {/* Eine Navigation: Orte oben, Werkzeuge im Dock. Hier nur MÔRAs Präsenz. */}
+            <div data-testid="uv2-home-actions" aria-hidden><PresenceOrb /></div>
           </div>
           <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
             {greeting}{firstName ? `, ${firstName}.` : '.'}

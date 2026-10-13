@@ -12,6 +12,7 @@ import { CalendarIntegration } from '@/components/integrations/CalendarIntegrati
 import { useCalendarEvents } from './hooks/useCalendarEvents';
 import { CalendarGrid } from './components/CalendarGrid';
 import { CalendarEventPanel } from './components/CalendarEventPanel';
+import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
 
 export default function CalendarApp({ paneId }: AppProps) {
   const {
@@ -67,7 +68,13 @@ export default function CalendarApp({ paneId }: AppProps) {
       {...GLASS_SHEET_PRESENTATION}
     >
       <div className="flex h-full flex-col overflow-hidden">
-        {showSetupState ? (
+        {showSetupState && uv2 ? (
+          <div className="flex flex-1 items-center justify-center" data-uv2-app="calendar">
+            <AppEmpty glyph={<CalendarDays size={22} strokeWidth={1.25} />} title="Dein Tag, an einem Ort."
+              text="Verbinde deinen Kalender. Termine erscheinen dann hier und fließen in Heute, LAGE und die Planeten ein."
+              action={{ label: 'Kalender verbinden', onClick: openIntegrations }} />
+          </div>
+        ) : showSetupState ? (
           <div className="flex-1 overflow-y-auto p-5">
             <div className="mx-auto flex max-w-3xl flex-col gap-4">
               <div className="rounded-[26px] border border-white/[0.08] bg-white/[0.025] p-5">
@@ -106,7 +113,8 @@ export default function CalendarApp({ paneId }: AppProps) {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-2.5">
+            {uv2 && !isLoading ? <CalendarHero events={events} onAdd={() => setSelectedDate(new Date())} /> : null}
+            <div className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-2.5" data-uv2-cal-status>
               <div className="flex min-w-0 items-center gap-2">
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${available === true ? 'bg-emerald-300/70' : available === false ? 'bg-amber-300/70' : 'bg-white/20'}`} />
                 <span className="truncate text-[9px] uppercase tracking-[0.18em] text-white/28">
@@ -226,10 +234,9 @@ function UpcomingAgenda({ events, onSelect }: { events: { id: string; title: str
   };
   if (upcoming.length === 0) {
     return (
-      <div className="pt-8">
-        <p className="text-sm text-white/75">Die nächsten zwei Wochen sind frei.</p>
-        <p className="mt-2 text-xs leading-relaxed text-white/45">Wähle links einen Tag, um einen Termin anzulegen.</p>
-      </div>
+      <AppEmpty compact glyph={<CalendarDays size={18} strokeWidth={1.25} />} title="Zwei freie Wochen."
+        text="Raum für das, was zählt. Wähle links einen Tag, um etwas einzuplanen."
+        action={{ label: 'Heute etwas einplanen', onClick: () => onSelect(new Date()) }} />
     );
   }
   return (
@@ -250,5 +257,26 @@ function UpcomingAgenda({ events, onSelect }: { events: { id: string; title: str
         </section>
       ))}
     </div>
+  );
+}
+
+/** v2-Hero: der heutige Tag als große Ziffer, ein Satz aus echten Terminen, eine Handlung. */
+function CalendarHero({ events, onAdd }: { events: { id: string; title: string; date: string; time?: string }[]; onAdd: () => void }) {
+  const now = new Date();
+  const todayKey = now.toDateString();
+  const today = events.filter((e) => new Date(e.date).toDateString() === todayKey)
+    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+  const hhmm = now.toTimeString().slice(0, 5);
+  const next = today.find((e) => !e.time || e.time >= hhmm);
+  const title = today.length === 0 ? 'Heute ist frei.'
+    : today.length === 1 ? 'Heute ein Termin.' : `Heute ${today.length} Termine.`;
+  const sub = next ? `Als Nächstes: ${next.title}${next.time ? ' um ' + next.time : ''}.`
+    : today.length > 0 ? 'Alle Termine für heute liegen hinter dir.' : 'Kein Termin bis heute Abend.';
+  return (
+    <AppHero app="calendar"
+      eyebrow={now.toLocaleDateString('de-DE', { weekday: 'long' }) + ' · ' + now.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}
+      title={title} sub={sub}
+      figure={now.getDate()} figureLabel={now.toLocaleDateString('de-DE', { month: 'short' }).replace('.', '')}
+      action={{ label: 'Termin anlegen', onClick: onAdd }} />
   );
 }

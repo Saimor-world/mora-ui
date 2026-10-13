@@ -33,7 +33,7 @@ export default function CanvasApp({ paneId }: AppProps) {
     const lastPos = useRef<{ x: number; y: number } | null>(null);
 
     const [tool, setTool] = useState<Tool>('pen');
-    const [color, setColor] = useState('#ffffff');
+    const [color, setColor] = useState(isUniverseV2Enabled() ? '#F7F4E9' : '#ffffff');
     const [size, setSize] = useState(3);
 
     // ── Drawing helpers ────────────────────────────────────────────────────────

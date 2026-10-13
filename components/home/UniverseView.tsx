@@ -67,6 +67,13 @@ export default function UniverseView() {
     } = useNavStore();
     const user = useSessionStore((state) => state.user);
     const openPane = usePaneStore((state) => state.openPane);
+    // Ein offenes Fenster ist der Fokus: die Instrumente treten zurück statt unter dem Fenster durchzuscheinen.
+    const visiblePanes = usePaneStore((state) => state.panes.filter((p) => !(p as { minimized?: boolean }).minimized).length);
+    useEffect(() => {
+        const root = document.documentElement;
+        if (visiblePanes > 0) root.setAttribute('data-uv2-panes', String(visiblePanes)); else root.removeAttribute('data-uv2-panes');
+        return () => root.removeAttribute('data-uv2-panes');
+    }, [visiblePanes]);
     const queryClient = useQueryClient();
 
     const { data: companiesData = [] } = useCompanies();

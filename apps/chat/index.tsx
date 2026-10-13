@@ -1159,7 +1159,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             )}
 
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
+            <div data-uv2-chat-stream className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
                 {/* Empty state — shown when no messages yet */}
                 {messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
@@ -1208,6 +1208,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
+                            data-uv2-msg={msg.id === 'welcome' ? 'welcome' : msg.role}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode

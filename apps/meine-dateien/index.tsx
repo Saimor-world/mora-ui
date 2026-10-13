@@ -1,5 +1,6 @@
 'use client';
 
+import { AppEmpty } from '@/components/universe/app/AppStage';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -719,7 +720,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                         ) : filteredFiles.length === 0 ? (
-                            <div className="px-3 py-10 text-center">
+                            <div className="px-3 py-10 text-center" data-uv2-files-sideempty={v2 && files.length === 0 ? 'hidden' : undefined}>
                                 <FileText size={24} className="mx-auto text-white/25" />
                                 <p className="mt-3 text-sm text-white/58">{sourceFilter === 'all' ? 'Noch keine Dateien' : 'Keine Dateien in dieser Ansicht'}</p>
                                 <p className="mt-1 text-xs text-white/32">{sourceFilter === 'cloud' ? 'Cloud-Connectoren kommen als nächster Schritt.' : 'Importiere PDFs, Texte oder Bilder.'}</p>
@@ -744,7 +745,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                 </aside>
 
                 <section className="flex min-w-0 flex-1 flex-col">
-                    <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                    <div data-uv2-files-bar={v2 && !selectedFile ? 'hidden' : undefined} className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewählt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
@@ -797,7 +798,29 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto">
-                        {!selectedFile ? (
+                        {!selectedFile && v2 ? (
+                            files.length === 0 ? (
+                                <div className="flex h-full items-center justify-center">
+                                    <AppEmpty glyph={<FolderOpen size={22} strokeWidth={1.25} />} title="Dein Schreibtisch ist leer."
+                                        text={activeCompanyId ? 'Lege hier ab, was dir gehört. Es bleibt privat, bis du es teilst.' : 'Lege hier ab, was dir gehört. Es bleibt auf diesem Gerät.'}
+                                        action={{ label: 'Datei hinzufügen', onClick: () => fileInputRef.current?.click() }} />
+                                </div>
+                            ) : (
+                                <div className="uv2-desk" data-uv2-desk>
+                                    <p className="uv2-hero__eyebrow">Zuletzt auf deinem Schreibtisch</p>
+                                    <h2 className="uv2-hero__title">{files.length === 1 ? 'Eine Datei.' : `${files.length} Dateien.`} Wähle eine, um sie anzusehen.</h2>
+                                    <div className="uv2-desk__grid">
+                                        {files.slice(0, 6).map((file) => (
+                                            <button key={file.id} type="button" onClick={() => setSelectedId(file.id)} className="uv2-desk__tile">
+                                                <span className="uv2-desk__kind"><FileKindIcon file={file} /></span>
+                                                <span className="uv2-desk__name">{file.name.replace(/\.[a-z0-9]+$/i, '')}</span>
+                                                <span className="uv2-desk__meta">{getFileLocationLabel(file)} · {formatBytes(file.size)}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        ) : !selectedFile ? (
                             <EmptyPreview />
                         ) : canEditSelected ? (
                             <div className="flex h-full flex-col">

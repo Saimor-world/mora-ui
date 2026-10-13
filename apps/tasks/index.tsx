@@ -16,6 +16,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 
 type TaskStatus = 'backlog' | 'in_progress' | 'done';
 
@@ -256,9 +257,32 @@ export default function TasksApp({ paneId }: AppProps) {
                             </button>
                         </div>
                     </div>
+                    {!uv2() && <>
                     <h2 className="mt-3 text-[20px] font-medium tracking-[-0.03em] text-white/78">Alle Aufgaben</h2>
                     <p className="mt-1 text-[10px] leading-relaxed text-white/28">Der vollständige Aufgabenstand hinter deinem Work-Bereich.</p>
+                    </>}
                 </header>
+                {uv2() && !isLoading && available !== false && (() => {
+                    const open = tasks.filter((t) => t.status !== 'done');
+                    const today = new Date().toISOString().slice(0, 10);
+                    const rank = (t: Task) => (t.status === 'in_progress' ? 0 : 1) * 10 + (t.priority === 'high' ? 0 : t.priority === 'medium' ? 1 : 2);
+                    const next = [...open].sort((a, b) => {
+                        const ao = a.due_date && a.due_date < today ? 0 : 1; const bo = b.due_date && b.due_date < today ? 0 : 1;
+                        return ao - bo || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || rank(a) - rank(b);
+                    })[0];
+                    if (!next) return null;
+                    const overdue = next.due_date && next.due_date < today;
+                    const due = next.due_date ? new Date(next.due_date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : null;
+                    const inWork = tasks.filter((t) => t.status === 'in_progress').length;
+                    return <AppHero app="tasks"
+                        eyebrow={'Als Nächstes' + (due ? (overdue ? ' · seit ' + due + ' fällig' : ' · fällig ' + due) : '')}
+                        title={next.title}
+                        sub={`${open.length} offen · ${inWork} in Arbeit · ${tasks.length - open.length} erledigt`}
+                        figure={open.length} figureLabel="offen"
+                        action={busyTaskId ? null : next.status === 'backlog'
+                            ? { label: 'Jetzt beginnen', onClick: () => void handleMoveTask(next.id, 'in_progress') }
+                            : { label: 'Als erledigt markieren', onClick: () => void handleMoveTask(next.id, 'done') }} />;
+                })()}
 
                 {error && (
                     <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/[0.04] px-3 py-2.5 text-[10px] leading-relaxed text-amber-100/55">
@@ -271,6 +295,12 @@ export default function TasksApp({ paneId }: AppProps) {
                     <div className="flex flex-1 items-center justify-center">
                         <Loader2 size={20} className="animate-spin text-white/30" />
                     </div>
+                ) : available === false && tasks.length === 0 && uv2() ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <AppEmpty glyph={<AlertTriangle size={20} strokeWidth={1.25} />} title="Gerade keine Verbindung."
+                            text="Saimôr zeigt keine leere Liste, solange der echte Stand nicht sicher gelesen werden kann."
+                            action={{ label: 'Erneut laden', onClick: () => void load(true) }} />
+                    </div>
                 ) : available === false && tasks.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
                         <AlertTriangle size={24} className="text-amber-100/30" />
@@ -279,8 +309,14 @@ export default function TasksApp({ paneId }: AppProps) {
                             Saimôr zeigt keinen leeren Aufgabenstand an, solange die aktuelle Liste nicht sicher gelesen werden kann.
                         </p>
                     </div>
+                ) : uv2() && tasks.length === 0 && addingColumn === null ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <AppEmpty glyph={<CheckSquare size={22} strokeWidth={1.25} />} title="Nichts offen."
+                            text="Ein klarer Kopf. Wenn etwas ansteht, beginnt es hier – MÔRA legt auch Aufgaben aus Mails und Terminen an, sobald du zustimmst."
+                            action={{ label: 'Erste Aufgabe anlegen', onClick: () => { setAddingColumn('backlog'); setNewTitle(''); setNewDue(''); } }} />
+                    </div>
                 ) : (
-                    <div className="flex flex-1 gap-3 overflow-x-auto p-4">
+                    <div className="flex flex-1 gap-3 overflow-x-auto p-4" data-uv2-board>
                         {STATUS_COLUMNS.map((column) => {
                             const columnTasks = tasks.filter((task) => task.status === column.key);
                             return (
@@ -351,8 +387,8 @@ export default function TasksApp({ paneId }: AppProps) {
 
                                     <div className="flex-1 space-y-2 overflow-y-auto">
                                         {columnTasks.length === 0 && addingColumn !== column.key && (
-                                            <div className="rounded-xl border border-dashed border-white/[0.06] py-4 text-center text-[11px] text-white/20">
-                                                Leer
+                                            <div className="rounded-xl border border-dashed border-white/[0.06] py-4 text-center text-[11px] text-white/20" data-uv2-col-empty>
+                                                {uv2() ? (column.key === 'done' ? 'Noch nichts erledigt' : column.key === 'in_progress' ? 'Nichts in Arbeit' : 'Nichts offen') : 'Leer'}
                                             </div>
                                         )}
                                         {columnTasks.map((task) => (

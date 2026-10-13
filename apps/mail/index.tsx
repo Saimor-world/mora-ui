@@ -7,6 +7,7 @@
  * into Mycelium; triage actions mutate the connected mailbox only after a user action.
  */
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -426,7 +427,17 @@ export default function MailApp({ paneId }: AppProps) {
                     </div>
                 )}
 
-                {!viewingMail && !composing && (
+                {uv2() && !viewingMail && !composing && !loading && !error && mails.length > 0 && (() => {
+                    const unread = mails.filter((m) => m.read === false).length;
+                    const first = mails[0];
+                    const sender = first.from_addr.split('<')[0].trim().replace(/"/g, '');
+                    return <AppHero app="mail" eyebrow={'Post · ' + mails.length + ' im Posteingang'}
+                        title={unread === 0 ? 'Alles gelesen.' : unread === 1 ? 'Eine neue Nachricht.' : unread + ' neue Nachrichten.'}
+                        sub={<>Zuletzt von <span style={{ color: 'rgb(247,244,233)' }}>{sender}</span>: {first.subject || '(Kein Betreff)'}</>}
+                        figure={unread} figureLabel="ungelesen"
+                        action={{ label: 'Neueste lesen', onClick: () => void openMail(first) }} />;
+                })()}
+                {!viewingMail && !composing && !(uv2() && ((summary.mailConfigured && mails.length > 0) || (!loading && !error && mails.length === 0))) && (
                     <div className="border-b border-white/6 px-4 py-3">
                         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                             <div className="flex items-start justify-between gap-3">
@@ -537,7 +548,18 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
                     )}
 
-                    {!loading && !error && mails.length === 0 && !viewingMail && (
+                    {uv2() && !loading && !error && mails.length === 0 && !viewingMail && (
+                        <div className="flex h-full items-center justify-center">
+                            {summary.mailConfigured
+                                ? <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Der Posteingang ist leer."
+                                    text="Nichts wartet auf dich. MÔRA sortiert neue Post, sobald sie ankommt."
+                                    action={{ label: 'Nachricht schreiben', onClick: () => setComposing(true) }} />
+                                : <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Deine Post, ruhig sortiert."
+                                    text="Verbinde dein Postfach. MÔRA hebt hervor, was eine Antwort braucht, und lässt den Rest leise."
+                                    action={{ label: 'Postfach verbinden', onClick: openIntegrations }} />}
+                        </div>
+                    )}
+                    {!uv2() && !loading && !error && mails.length === 0 && !viewingMail && (
                         <div className="p-8 text-center text-white/40">
                             <Inbox className="w-12 h-12 mx-auto mb-4 opacity-20" />
                             <p className="text-sm">
@@ -558,6 +580,7 @@ export default function MailApp({ paneId }: AppProps) {
                             <div
                                 key={mail.id}
                                 onClick={() => selectionMode ? toggleSelection(mail) : openMail(mail)}
+                                data-uv2-mail-row={mail.read === false ? 'unread' : 'read'}
                                 className={`p-4 border-b border-white/5 transition-colors cursor-pointer group flex items-start gap-4 ${selected ? 'bg-emerald-400/[0.055]' : 'hover:bg-white/5'}`}
                             >
                                 {selectionMode && (

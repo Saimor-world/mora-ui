@@ -78,7 +78,7 @@ export function SubstanceWidget({ bars, onSelect }: {
                                         // Mindestbreite fuer alles, was nicht null
                                         // ist: ein Bereich mit einem Dokument darf
                                         // nicht wie einer mit keinem aussehen.
-                                        width: (bar.ratio === 0 ? 0 : Math.max(4, bar.ratio * 100)) + '%',
+                                        width: (bar.ratio === 0 || (isUniverseV2Enabled() && bar.documents === 0) ? 0 : Math.max(4, bar.ratio * 100)) + '%',
                                         background: isUniverseV2Enabled() ? 'linear-gradient(90deg,'+planetMaterial(bar.name).mid+','+planetMaterial(bar.name).day+')' : bar.color,
                                         boxShadow: isUniverseV2Enabled() ? 'none' : '0 0 8px ' + bar.color + '77',
                                     }}

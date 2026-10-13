@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Activity, AlertTriangle, Box, Clock, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -360,7 +361,17 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     }}
                 />
 
-                <div className="relative flex flex-wrap items-center justify-between gap-3">
+                {uv2() && !loading ? (
+                    <AppHero app="nightwatch"
+                        eyebrow={'Wache' + (lastRefresh ? ' · Stand ' + lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '')}
+                        title={available === false ? 'Die Wache sieht gerade nichts.' : incidents.length === 0 ? 'Alles ruhig.' : criticalCount > 0 ? (criticalCount === 1 ? 'Ein kritischer Vorfall braucht dich.' : criticalCount + ' kritische Vorfälle brauchen dich.') : incidents.length === 1 ? 'Ein Vorfall wartet auf dich.' : incidents.length + ' Vorfälle warten auf dich.'}
+                        sub={available === false ? 'Die Verbindung zur Überwachung fehlt. Sobald sie steht, meldet MÔRA nur, was Aufmerksamkeit braucht.' : sortedIncidents[0] ? sortedIncidents[0].title : 'MÔRA wacht weiter und meldet sich nur, wenn etwas Aufmerksamkeit braucht.'}
+                        figure={available === false ? undefined : incidents.length}
+                        figureLabel={available === false ? undefined : 'offen'}
+                        action={sortedIncidents[0] ? { label: 'Vorfall ansehen', onClick: () => openIncident(sortedIncidents[0].id, sortedIncidents[0].title) } : { label: 'Jetzt prüfen', onClick: () => void load(true) }}
+                    />
+                ) : null}
+                <div className="relative flex flex-wrap items-center justify-between gap-3" data-uv2-legacy-head>
                     <div className="flex min-w-0 items-center gap-2.5">
                         {loading ? (
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white/25" />
@@ -484,6 +495,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <div key={index} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
                             ))}
                         </div>
+                    ) : incidents.length === 0 && available === true && uv2() ? (
+                        <AppEmpty compact glyph={<ShieldCheck size={20} strokeWidth={1.25} />} title="Keine offenen Vorfälle." text="Die Wache läuft weiter. Gelöste Vorfälle bleiben im Verlauf." />
                     ) : incidents.length === 0 && available === true ? (
                         <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
                             <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />
