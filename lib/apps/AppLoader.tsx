@@ -1,5 +1,7 @@
 'use client';
 
+import { PaneWindow } from '@/components/layers/PaneWindow';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { ShieldAlert, Sparkles } from 'lucide-react';
@@ -89,7 +91,7 @@ export function AppLoader({ appId, paneId, initialData, onClose, onNavigate }: A
   }
 
   if (manifest?.requiresRole && (!role || !manifest.requiresRole.includes(role))) {
-    return (
+    const denied = (
       <div className="app-state app-state--denied" role="alert" data-testid={`app-access-denied-${appId}`}>
         <div className="app-state__icon"><ShieldAlert size={24} /></div>
         <p className="app-state__eyebrow">Geschützter Systembereich</p>
@@ -97,6 +99,7 @@ export function AppLoader({ appId, paneId, initialData, onClose, onNavigate }: A
         <p>Diese App ist für deine aktuelle Rolle nicht freigegeben.</p>
       </div>
     );
+    return isUniverseV2Enabled() && paneId ? <PaneWindow paneId={paneId} title={manifest.name}>{denied}</PaneWindow> : denied;
   }
 
   return <App paneId={paneId} initialData={initialData} onClose={onClose} onNavigate={onNavigate} />;

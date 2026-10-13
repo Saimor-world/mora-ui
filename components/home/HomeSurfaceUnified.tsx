@@ -200,7 +200,7 @@ export const HomeSurfaceUnified: React.FC = () => {
     });
 
   if (isUniverseV2Enabled()) {
-    return <HomeV2 greeting={greeting} firstName={firstName} now={now} onOpen={open} />;
+    return <HomeV2 greeting={greeting} firstName={firstName} now={now} onOpen={open} onSearch={openSearch} onSettings={openSettings} onMora={() => openMoraWorkspace({ source: 'home', label: 'Heute' })} onUniverse={() => setCoreMode('explore')} />;
   }
 
   return (
@@ -345,7 +345,7 @@ const V2_GLASS: React.CSSProperties = {
  * ein Eingabefeld. Darunter „Heute“ (ehrlicher Nebel statt vier Fehlerkarten) und alle Orte
  * in einem ruhigen Raster. Keine Versalien-Eyebrows, keine doppelte Suche/Uhr.
  */
-function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstName: string; now: Date | null; onOpen: (t: OpenTarget) => void }) {
+function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora, onUniverse }: { greeting: string; firstName: string; now: Date | null; onOpen: (t: OpenTarget) => void; onSearch: () => void; onSettings: () => void; onMora: () => void; onUniverse: () => void }) {
   const [ask, setAsk] = useState('');
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
@@ -359,8 +359,16 @@ function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstN
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
-          <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
-          <h1 className="mt-6" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 64, lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
+            <nav className="flex flex-wrap items-center gap-x-5 gap-y-2" data-testid="uv2-home-actions" aria-label="Schnellzugriff">
+              <PresenceOrb />
+              {([['MÔRA', onMora], ['Suche', onSearch], ['Universe', onUniverse], ['Einstellungen', onSettings]] as const).map(([l, fn]) => (
+                <button key={l} type="button" onClick={fn} className="transition-colors hover:text-[#D6A848]" style={{ ...M, fontSize: 10, color: 'rgba(247,244,233,.5)' }}>{l}</button>
+              ))}
+            </nav>
+          </div>
+          <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
             {greeting}{firstName ? `, ${firstName}.` : '.'}
           </h1>
           <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>

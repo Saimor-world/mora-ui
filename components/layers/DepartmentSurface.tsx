@@ -123,7 +123,43 @@ export const DepartmentSurface: React.FC = () => {
   if (!activeDepartmentId) return null;
 
   // Universe v2: der Kosmos bleibt im Planeten – Horizont, Monde, eine Glasfläche.
-  if (isUniverseV2Enabled()) return <PlanetInterior incidentPanels={departmentIncidentPanels} />;
+  if (isUniverseV2Enabled()) return <PlanetInterior incidentPanels={departmentIncidentPanels} instrumentContext={{
+              surface: 'department',
+              departmentId: activeDepartmentId,
+              data: {
+                mailPreview,
+                calendarPreview,
+                feedPreview,
+                mailState: integrationStates.mail,
+                calendarState: integrationStates.calendar,
+                cloudState: integrationStates.cloud,
+                rssState: integrationStates.rss,
+              },
+              openMail: openMailPane,
+              openCalendar: openCalendarPane,
+              openFeed: () => openPane(feedsPaneRequest()),
+              openMora: () => openPane({ id: 'mora-dept', type: 'mora-hub', title: 'MÔRA', size: GLASS_SHEET_SIZE }),
+              openFinder: () => openPane({
+                id: 'finder-dept',
+                type: 'finder',
+                title: 'Finder',
+                size: GLASS_SHEET_SIZE,
+                data: { departmentId: activeDepartmentId },
+              }),
+              openTeam: () => openPane({ id: 'team-main', type: 'team', title: 'Team', size: GLASS_SHEET_SIZE }),
+              openIntegrations: () => openPane({ id: 'integrations-main', type: 'integrations', title: 'Integrationen', size: GLASS_SHEET_SIZE }),
+              openApps: () => openPane({ id: 'apps-main', type: 'apps', title: 'Apps', size: { width: 900, height: 680 } }),
+              openNightwatch: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: GLASS_SHEET_SIZE }),
+              openDashboard: () => window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'),
+              openLarryNode: (nodeId, title) => openPane({
+                id: `document-${nodeId}`,
+                type: 'document',
+                title: title || 'Workspace',
+                size: GLASS_SHEET_SIZE,
+                data: { nodeId },
+              }),
+              goExplore: () => useNavStore.getState().navigateToExplore(),
+            }} />;
 
   const widgetOpacity = universeWidgetOpacity(focusMode, false);
 

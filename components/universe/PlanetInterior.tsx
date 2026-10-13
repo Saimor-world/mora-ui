@@ -8,7 +8,9 @@
  * Keine Türkis-Welt, keine Randkacheln, keine Null-Zähler. Leeres ist ehrlicher Nebel.
  */
 import { UV, TYPE } from '@/lib/universe/tokens';
-import React, { useMemo } from 'react';
+import { WIDGET_REGISTRY } from '@/components/widgets/registry';
+import type { WidgetContext } from '@/lib/widgets/types';
+import React, { useState, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, FileText } from 'lucide-react';
@@ -51,7 +53,35 @@ export function interiorSentence(spaces: number, docs: number, incidents: number
   return `Ruhig. ${parts.join(' und ').replace(/^./, (c) => c.toUpperCase())}.`;
 }
 
-export function PlanetInterior({ incidentPanels = [] }: { incidentPanels?: IncidentStatusPanelData[] }) {
+/** Instrumente: die Abteilungs-Widgets des alten OS, im Planeten als ruhige Messreihe (echte Daten aus den Widgets selbst). */
+export const INSTRUMENTS = ['deptStats', 'nightwatch', 'signals', 'team', 'clock', 'quickActions', 'mora'] as const;
+
+function Instruments({ context }: { context: WidgetContext }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <aside className="pointer-events-auto absolute right-6 top-32 hidden w-[320px] md:block lg:right-16" style={{ bottom: 'calc(26vh + 150px)' }} data-testid="uv2-instruments">
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between" style={{ ...TYPE.meta, color: UV.gold }}>
+        <span>Instrumente</span><span style={{ color: UV.c(0.4) }}>{open ? 'Einklappen' : `${INSTRUMENTS.length} zeigen`}</span>
+      </button>
+      {open && (
+        <div className="mt-4 h-full space-y-3 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+          {INSTRUMENTS.map((t) => {
+            const def = WIDGET_REGISTRY[t];
+            if (!def) return null;
+            return (
+              <section key={t} data-widget-id={t} data-uv2-scope="" className="overflow-hidden" style={{ height: t === 'clock' ? 96 : 168, borderRadius: 12, border: `0.5px solid ${UV.c(0.1)}`, background: 'rgba(5,7,6,0.58)' }}>
+                <p className="px-3 pt-2.5" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.45) }}>{def.label}</p>
+                <div className="h-[calc(100%-26px)] overflow-hidden px-2.5 pb-2.5">{def.render({ context: { ...context, compact: true, gridSize: { w: 3, h: t === 'clock' ? 2 : 4 } } })}</div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </aside>
+  );
+}
+
+export function PlanetInterior({ incidentPanels = [], instrumentContext }: { incidentPanels?: IncidentStatusPanelData[]; instrumentContext?: WidgetContext }) {
   const { activeDepartmentId, activeCompanyId, navigateToSpace } = useNavStore();
   const openPane = usePaneStore((s) => s.openPane);
   const reduced = !!useReducedMotion();
@@ -161,6 +191,7 @@ export function PlanetInterior({ incidentPanels = [] }: { incidentPanels?: Incid
           </button>
         </div>
       </motion.section>
+      {instrumentContext && <Instruments context={instrumentContext} />}
       <style>{`[data-testid=uv2-planet-interior]{--uv2-ease:${ease}}`}</style>
     </div>
   );

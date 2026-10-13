@@ -86,3 +86,27 @@ html[data-uv2="on"] [data-testid="planet-detail"] :is(.uppercase) { font-family:
 html[data-uv2="on"] [data-testid="planet-detail"] [data-uv2-open] { background: linear-gradient(180deg,#E3BC63,#C9973A) !important; color: #050706 !important; border-radius: 999px !important; }
 
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is([class*="text-[8px]"],[class*="text-[9px]"]) { font-size: 10px !important; }
+
+/* Eigene App-Verläufe (Lagefeld, Team) → Systemgrund */
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-system-bg] { background: transparent !important; background-image: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-hide] { display: none !important; }
+
+/* Dock: Abzeichen und Akzente in Gold statt Violett/Blau – nur mit Flag */
+html[data-uv2="on"] [data-testid="mora-dock"] .bg-violet-500 { background: #D6A848 !important; color: #050706 !important; font-weight: 500 !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] :is(.bg-violet-400,.bg-blue-500) { background: #D6A848 !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] :is(.text-violet-400,.text-violet-300,.text-blue-300,.text-blue-700) { color: #D6A848 !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] :is([class*="hover:text-violet"],[class*="hover:text-\[\#0078D4\]"]):hover { color: #E3BC63 !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] :is([class*="bg-violet-500\/"],[class*="hover:bg-violet"]:hover,[class*="border-violet-"],.bg-blue-50,.border-blue-200) { background-color: rgba(214,168,72,.1) !important; border-color: rgba(214,168,72,.25) !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] [class*="text-violet-200"] { color: rgba(247,244,233,.8) !important; }
+html[data-uv2="on"] [data-testid="mora-dock"] [class*="#0078D4"] { color: #A97F2A !important; border-color: rgba(169,127,42,.3) !important; }
+
+/* Lage: alles aus dem alten Universe (Post, Kalender, Feed, Wache, Geschäft, Puls, Systemwerte, Hinweise, Zeiger) – auf Abruf */
+html[data-uv2="on"] .uv2-lage-only { display: none; }
+html[data-uv2="on"][data-uv2-lage="open"] .uv2-lage-only { display: contents; }
+html[data-uv2="on"][data-uv2-lage="open"] [data-testid="uv2-greeting"] { opacity: 0 !important; pointer-events: none; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is(h2,h3) { font-family: var(--uv-serif) !important; font-weight: 400 !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="rounded-[2"],.rounded-2xl,.rounded-3xl) { border-radius: 12px !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] [class*="uppercase"] { font-family: var(--uv-mono) !important; font-size: 10px !important; letter-spacing: .2em !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] :is([class*="text-cyan-"],[class*="text-sky-"],[class*="text-violet-"],[class*="text-blue-"]) { color: rgba(214,168,72,.85) !important; }
+html[data-uv2="on"] .uv2-util { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 999px; color: rgba(247,244,233,.55); box-shadow: inset 0 0 0 .5px rgba(247,244,233,.16); transition: color .3s, box-shadow .3s; }
+html[data-uv2="on"] .uv2-util:hover { color: #D6A848; box-shadow: inset 0 0 0 .5px rgba(214,168,72,.5); }

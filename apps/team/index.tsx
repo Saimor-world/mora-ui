@@ -386,6 +386,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                             {/* Orb canvas — takes most of the height */}
                             <div
                                 className="relative flex-1 overflow-hidden"
+                                data-uv2-system-bg=""
                                 style={{
                                     background:
                                         'radial-gradient(ellipse at 50% 40%, rgba(15,118,110,0.22) 0%, transparent 55%), radial-gradient(ellipse at 20% 15%, rgba(52,211,153,0.10) 0%, transparent 45%), radial-gradient(ellipse at 80% 10%, rgba(56,189,248,0.09) 0%, transparent 45%), linear-gradient(180deg, #000c0c 0%, #000405 100%)',
@@ -394,6 +395,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                 {/* Ambient dots */}
                                 <div
                                     className="pointer-events-none absolute inset-0 opacity-30"
+                                    data-uv2-hide=""
                                     style={{
                                         backgroundImage: `radial-gradient(circle at 14% 26%, rgba(255,255,255,0.22) 0 1px, transparent 2px), radial-gradient(circle at 72% 18%, rgba(52,211,153,0.20) 0 1px, transparent 2px), radial-gradient(circle at 48% 76%, rgba(125,211,252,0.18) 0 1px, transparent 2px)`,
                                         backgroundSize: '120px 120px, 180px 180px, 150px 150px',

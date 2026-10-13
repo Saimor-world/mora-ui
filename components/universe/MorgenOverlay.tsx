@@ -271,17 +271,17 @@ export function MorgenOverlay() {
       </div>
 
       {!answering && (
-        <header key={returned} style={{ opacity: paneOpen ? 0 : 1, visibility: paneOpen ? "hidden" : "visible", transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-20'} data-testid="uv2-greeting">
+        <header key={returned} style={{ opacity: paneOpen ? 0 : 1, visibility: paneOpen ? "hidden" : "visible", transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-16 max-w-[560px] sm:left-12'} data-testid="uv2-greeting">
           <p style={{ ...TYPE.meta, color: UV.gold, animation: `uv2in .6s ${ease} ${delay}s both` }} data-testid="uv2-eyebrow">{eyebrow}</p>
-          <h1 data-testid="uv2-greeting-title" className="mt-6 whitespace-pre-line"
-            style={{ ...TYPE.display, fontSize: wide ? 64 : 44, color: night ? UV.c(0.75) : UV.cream, animation: `uv2in .6s ${ease} ${delay + 0.08}s both` }}>{greet}</h1>
-          <p className="mt-6" style={{ ...TYPE.text, color: UV.c(0.6), animation: `uv2in .6s ${ease} ${delay + 0.16}s both` }}>{SUB[phase]}</p>
+          <h1 data-testid="uv2-greeting-title" className={`${wide ? 'mt-6' : 'mt-3'} whitespace-pre-line`}
+            style={{ ...TYPE.display, fontSize: wide ? 64 : 40, color: night ? UV.c(0.75) : UV.cream, animation: `uv2in .6s ${ease} ${delay + 0.08}s both` }}>{greet}</h1>
+          <p className={wide ? 'mt-6' : 'mt-3'} style={{ ...TYPE.text, color: UV.c(0.6), animation: `uv2in .6s ${ease} ${delay + 0.16}s both` }}>{SUB[phase]}</p>
 
           {list.length > 0 && (
-            <ol className="pointer-events-auto mt-7" style={{ borderTop: `0.5px solid ${UV.hair}` }} data-testid="uv2-today">
+            <ol className={`pointer-events-auto ${wide ? 'mt-7' : 'mt-4'}`} style={{ borderTop: `0.5px solid ${UV.hair}` }} data-testid="uv2-today">
               {list.map((it, i) => (
                 <li key={i} data-testid="uv2-constellation" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
-                  className="flex cursor-default items-baseline gap-4 py-4" style={{ borderBottom: `0.5px solid ${UV.hair}`, animation: `uv2in .6s ${ease} ${delay + 0.3 + i * 0.08}s both` }}>
+                  className={`flex cursor-default items-baseline gap-4 ${wide ? 'py-4' : 'py-2.5'}`} style={{ borderBottom: `0.5px solid ${UV.hair}`, animation: `uv2in .6s ${ease} ${delay + 0.3 + i * 0.08}s both` }}>
                   <span style={{ ...TYPE.meta, color: hover === i ? UV.gold : UV.c(0.35), transition: 'color .3s' }}>{String(i + 1).padStart(2, '0')}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block" style={{ ...TYPE.text, fontWeight: 400, color: UV.c(hover === null || hover === i ? 0.92 : 0.6), transition: 'color .3s' }}>{it.title}</span>
@@ -293,22 +293,23 @@ export function MorgenOverlay() {
           )}
 
           {proposal && (
-            <div className="pointer-events-auto mt-8" data-testid="uv2-proposal" style={{ animation: `uv2in .6s ${ease} ${delay + 0.6}s both` }}>
-              <p style={{ ...TYPE.meta, color: UV.c(0.35) }}>Wartet auf dich</p>
+            <div className={`pointer-events-auto ${wide ? 'mt-8' : 'mt-4'}`} data-testid="uv2-proposal" style={{ animation: `uv2in .6s ${ease} ${delay + 0.6}s both` }}>
+              {wide && <p style={{ ...TYPE.meta, color: UV.c(0.35) }}>Wartet auf dich</p>}
               <p className="mt-2" style={{ ...TYPE.text, fontWeight: 400, color: UV.cream }}>{proposal.label}</p>
-              <div className="mt-5 flex items-center gap-6">
+              {proposal.reason && wide && <p className="mt-1 truncate" title={proposal.reason} data-testid="uv2-proposal-reason" style={{ ...TYPE.text, color: UV.c(0.45) }}>{proposal.reason}</p>}
+              <div className={`${wide ? 'mt-5' : 'mt-3'} flex items-center gap-6`}>
                 <button type="button" data-testid="uv2-approve" disabled={demo || !canApprove(proposal) || morningOutcome !== null}
                   onClick={async () => { setMorningOutcome('running'); setMorningOutcome(await approve(proposal)); }}
                   className="h-10 rounded-full px-6 transition-transform active:scale-[0.97] disabled:opacity-45"
                   style={{ background: UV.goldGrad, color: UV.ink, fontFamily: UV.sans, fontSize: 15, fontWeight: 500 }}>{morningOutcome === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}</button>
                 <button type="button" onClick={() => setDismissed(true)} style={{ ...TYPE.text, color: UV.c(0.6) }} className="hover:text-white">Später</button>
               </div>
-              <p className="mt-3" data-testid="uv2-approve-state" style={{ ...TYPE.meta, color: UV.c(0.35), letterSpacing: '0.12em' }}>
+              {wide && <p className="mt-3" data-testid="uv2-approve-state" style={{ ...TYPE.meta, color: UV.c(0.35), letterSpacing: '0.12em' }}>
                 {demo ? 'Entwurf · ohne Wirkung'
                   : morningOutcome && morningOutcome !== 'running' ? approveLabel(morningOutcome)
                   : canApprove(proposal) ? 'Erst nach Freigabe · danach geprüft'
                   : 'Noch nicht ausführbar · kein geprüfter Weg'}
-              </p>
+              </p>}
             </div>
           )}
         </header>
@@ -320,20 +321,21 @@ export function MorgenOverlay() {
       )}
 
       {/* MÔRA ohne Fenster: der Raum wird still (B), die Antwort ist eine Editorial-Seite (C) */}
-      {answering && <style>{`[data-testid^="territory-"]{opacity:.26!important;filter:saturate(.5)}${space.state.status === 'answer' ? linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).map((nm) => `${sel(nm)}{opacity:1!important;filter:none}`).join('') : ''}`}</style>}
+      {answering && <style>{`[data-testid=mobile-territories]{opacity:0;pointer-events:none}[data-testid^="territory-"]{opacity:.26!important;filter:saturate(.5)}${space.state.status === 'answer' ? linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).map((nm) => `${sel(nm)}{opacity:1!important;filter:none}`).join('') : ''}`}</style>}
       {answering && <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.8), rgba(5,7,6,0.45) 55%, rgba(5,7,6,0.2))', animation: `uv2fade .6s ${ease} both` }} />}
       <MoraSpaceAnswer state={space.state} anchors={anchors} cx={cx} cy={typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441} demo={demo} onClose={space.close} onWindow={openWindow} onApprove={(p) => approve(p)} />
 
       {/* Frag MÔRA – eine Haarlinie, keine zweite Kapsel über dem Dock */}
       {!night && !detailOpen && !paneOpen && (
         <div className="absolute bottom-[112px] -translate-x-1/2" style={{ left: cx + shift, width: wide ? 'min(420px,40vw)' : 'min(520px,86vw)', transition: `left 1.1s ${UV.easeInOut}` }}>
-        <form data-testid="uv2-ask" className="pointer-events-auto" style={{ animation: `uv2in .6s ${ease} ${delay + 0.8}s both` }}
+        <form data-testid="uv2-ask" className="group relative pointer-events-auto" style={{ animation: `uv2in .6s ${ease} ${delay + 0.8}s both` }}
           onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return; space.ask(q, mode); setAsk(''); }}>
-          <label className="group flex h-11 items-center gap-3" style={{ borderBottom: `0.5px solid ${askFocus ? 'rgba(214,168,72,0.6)' : UV.c(0.16)}`, transition: 'border-color .4s' }}>
+          <label className="flex h-11 items-center gap-3" style={{ borderBottom: `0.5px solid ${askFocus ? 'rgba(214,168,72,0.6)' : UV.c(0.16)}`, transition: 'border-color .4s' }}>
             <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setTimeout(() => setAskFocus(false), 200)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
               className="min-w-0 flex-1 bg-transparent text-center placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ ...TYPE.text, color: UV.cream }} />
-            <span className={`transition-opacity duration-500 ${(askFocus || answering || !!ask.trim()) ? 'opacity-100' : 'pointer-events-none opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100'}`}><ModePicker mode={mode} onChange={setMode} compact /></span>
+            
           </label>
+            <div className="absolute inset-x-0 top-full mt-2 flex justify-center"><span className={`transition-opacity duration-500 ${(askFocus || answering || !!ask.trim()) ? 'opacity-100' : 'pointer-events-none opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100'}`}><ModePicker mode={mode} onChange={setMode} /></span></div>
         </form>
         </div>
       )}

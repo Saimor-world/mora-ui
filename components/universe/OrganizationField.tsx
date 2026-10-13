@@ -297,8 +297,8 @@ export function OrganizationField({
                 </div>
             )}
 
-            <div className="absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-9">
+            <div className={isUniverseV2Enabled() ? 'absolute inset-x-0 bottom-[168px] z-20 overflow-x-auto px-4 lg:hidden' : 'absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden'} data-testid="mobile-territories" style={isUniverseV2Enabled() ? { scrollbarWidth: 'none' } : undefined}>
+                <div className={isUniverseV2Enabled() ? 'mx-auto flex w-max gap-1' : 'grid grid-cols-2 gap-x-4 gap-y-9'}>
                     {territories.map((territory) => (
                         <MobileTerritory
                             key={territory.id}
@@ -577,18 +577,20 @@ function MobileTerritory({
         <button
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
-            className={'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
+            data-mora-label={territory.name}
+            data-testid={isUniverseV2Enabled() ? 'territory-' + territory.id : undefined}
+            className={(isUniverseV2Enabled() ? 'w-[96px] shrink-0 ' : '') + 'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
                 (selected ? 'bg-white/[0.08]' : 'bg-transparent')}
         >
             <span
-                className="relative flex h-24 w-24 items-center justify-center rounded-full border border-white/10"
+                className={'saimor-territory-body relative flex items-center justify-center rounded-full border border-white/10 ' + (isUniverseV2Enabled() ? 'h-16 w-16' : 'h-24 w-24')}
                 style={{
                     color: accent,
                     background: 'radial-gradient(circle at 38% 30%, ' + accent + '30, transparent 38%), rgba(3,13,24,0.75)',
                     boxShadow: '0 0 36px ' + accent + '22',
                 }}
             >
-                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : <Building2 size={23} strokeWidth={1.2} />}
+                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : (() => { const G = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <G size={isUniverseV2Enabled() ? 18 : 23} strokeWidth={1.2} />; })()}
                 {signals.length > 0 && (
                     <span className="absolute -right-1 top-2 flex h-6 min-w-6 items-center justify-center rounded-full border border-amber-100/25 bg-slate-950 px-1.5 text-[9px] text-amber-200">
                         {signals.length}
@@ -596,9 +598,9 @@ function MobileTerritory({
                 )}
             </span>
             <span className="saimor-territory-name mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
-            <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
+            {!isUniverseV2Enabled() && <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
                 {territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'} · {territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}
-            </span>
+            </span>}
         </button>
     );
 }

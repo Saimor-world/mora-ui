@@ -89,7 +89,7 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
     >
       <section
         data-testid="lagefeld-app"
-        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
+        data-uv2-system-bg="" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
       >
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">
           <div className="min-w-0">

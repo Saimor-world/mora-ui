@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -42,6 +42,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     contextLabelOverride,
     contextSubtitleOverride,
 }) => {
+    const [lageOpen, setLageOpen] = useState(false);
     const user = useSessionStore((state) => state.user);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
@@ -149,7 +150,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     // Kein Instanz-Badge, kein Firmenname (steht in MÔRAs Satz), kein zweiter Control-Center-Knopf.
     if (isUniverseV2Enabled()) {
         return (
-            <div className="fixed right-16 top-6 z-50 flex items-center gap-4 text-white" data-testid="uv2-header">
+            <div className="fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-5 text-white" data-testid="uv2-header">
                 {showDeptBack && (
                     <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
                         className="flex h-8 items-center gap-1 transition-colors hover:text-white"
@@ -173,6 +174,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         })}
                     </div>
                 )}
+                <button type="button" data-testid="uv2-lage-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Lage = r.dataset.uv2Lage === 'open' ? '' : 'open'; setLageOpen(r.dataset.uv2Lage === 'open'); }}
+                    className="h-8 transition-colors" title="Lage: Post, Kalender, Feed, Wache, Puls, Systemwerte"
+                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    Lage
+                </button>
                 {showCompanySwitcher && (
                     <button type="button" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}
                         className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/70 hover:text-white" style={V2_GLASS}>

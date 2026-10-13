@@ -748,15 +748,15 @@ export const MoraShell: React.FC = () => {
             <ModeIndicatorBanner activeMode={activeMode} />
             <AmbientAudioController />
             <InteractionAudioController />
-            {!isUniverseV2Enabled() && <MoraPulsePanel />}
+            {!isUniverseV2Enabled() ? <MoraPulsePanel /> : <div className="uv2-lage-only"><MoraPulsePanel /></div>}
             {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
             {/* v2: keine Tipp-Karten über dem Raum – ⌘K steht im Fächer und im Frag-MÔRA-Feld. */}
-            {!isUniverseV2Enabled() && <QuickTips />}
+            {!isUniverseV2Enabled() ? <QuickTips /> : <div className="uv2-lage-only"><QuickTips /></div>}
             {activeMode !== 'public_playground' && <MoraGreeting />}
-            {!isUniverseV2Enabled() && <SystemStats />}
+            {!isUniverseV2Enabled() ? <SystemStats /> : <div className="uv2-lage-only"><SystemStats /></div>}
 
             {/* ================================================================
                 LAYER 1: BACKGROUND (progressive island)
@@ -828,6 +828,12 @@ export const MoraShell: React.FC = () => {
                     contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
 
+                {!hasFullscreenPane && isUniverseV2Enabled() && (
+                    <div className="pointer-events-auto absolute right-8 top-20 z-[48] hidden items-center gap-2 lg:flex" data-testid="uv2-utility">
+                        <button type="button" onClick={() => setIsSpotlightOpen(true)} className="uv2-util" title={`Suche (${spotlightShortcutLabel})`} aria-label={`Spotlight öffnen (${spotlightShortcutLabel})`}><Search size={15} strokeWidth={1.25} /></button>
+                        <button type="button" onClick={() => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 }, data: { section: 'audio' } })} className="uv2-util" title="Audio" aria-label="Audio öffnen"><Music2 size={15} strokeWidth={1.25} /></button>
+                    </div>
+                )}
                 {!hasFullscreenPane && !isUniverseV2Enabled() && (
                     <div className="pointer-events-auto absolute right-8 top-32 z-[48] hidden items-center gap-2 lg:flex">
                         <button

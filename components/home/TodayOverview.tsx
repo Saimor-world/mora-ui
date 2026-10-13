@@ -230,10 +230,11 @@ export function TodayOverview() {
             return (
               <li key={x.key} style={{ borderBottom: '0.5px solid rgba(247,244,233,.09)' }}>
                 <button type="button" onClick={off ? openIntegrations : x.open} data-testid={`uv2-today-${x.key}`}
-                  className="group grid w-full grid-cols-[48px_140px_1fr_auto] items-baseline gap-4 py-4 text-left">
+                  className="group grid w-full grid-cols-[28px_1fr_auto] items-baseline gap-3 py-4 text-left sm:grid-cols-[48px_140px_1fr_auto] sm:gap-4">
                   <span style={{ ...M, color: 'rgba(247,244,233,.35)' }}>{String(i + 1).padStart(2, '0')}</span>
-                  <span style={{ ...M, color: 'rgba(247,244,233,.6)' }}>{x.label}</span>
+                  <span className="hidden sm:inline" style={{ ...M, color: 'rgba(247,244,233,.6)' }}>{x.label}</span>
                   <span className="min-w-0">
+                    <span className="block sm:hidden" style={{ ...M, color: 'rgba(247,244,233,.6)' }}>{x.label}</span>
                     <span className="block truncate text-[15px] font-light" style={{ color: off ? 'rgba(247,244,233,.45)' : x.copy.attention ? '#D6A848' : 'rgba(247,244,233,.92)' }}>
                       {isLoading ? 'Wird gelesen …' : off ? 'Nicht verbunden' : x.copy.value}
                     </span>

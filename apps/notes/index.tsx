@@ -7,6 +7,8 @@ import { saveLocalPrivateTextFile } from '@/lib/files/localPrivateFiles';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from '@/lib/toast';
 import { useNotesSync } from './hooks/useNotesSync';
+import { PaneWindow } from '@/components/layers/PaneWindow';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 function toNoteFilename(text: string) {
   const firstLine = text
@@ -24,7 +26,13 @@ function toNoteFilename(text: string) {
   return /\.md$/i.test(safe) ? safe : `${safe}.md`;
 }
 
-export default function NotesApp({ paneId: _paneId }: AppProps) {
+export default function NotesApp(props: AppProps) {
+  // Universe v2: Notizen öffnen in einem echten Fenster statt flächig über dem Raum.
+  if (isUniverseV2Enabled()) return <PaneWindow paneId={props.paneId} title="Notizen"><NotesBody {...props} /></PaneWindow>;
+  return <NotesBody {...props} />;
+}
+
+function NotesBody({ paneId: _paneId }: AppProps) {
   const { content, setContent, loadState, saveState, handleBlur } = useNotesSync();
   const openPane = usePaneStore((state) => state.openPane);
   const [localSaveState, setLocalSaveState] = useState<'idle' | 'saved'>('idle');

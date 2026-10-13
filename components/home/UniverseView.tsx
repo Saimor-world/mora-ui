@@ -498,18 +498,40 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && !isUniverseV2Enabled() && (
-                <CursorAgent
+            {attention && attentionPoint && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
                     active
                     action="point"
                     target={attentionPoint}
                     message={attention.message}
                     awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
-                />
-            )}
+                /></div> : <CursorAgent
+                    active
+                    action="point"
+                    target={attentionPoint}
+                    message={attention.message}
+                    awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
+                />)}
 
             {/* Universe v2: die vier Seitenkarten weichen – MÔRA bündelt sie in einem Satz und einem Vorschlag. */}
-            {!isUniverseV2Enabled() && <UniverseObservatory
+            {isUniverseV2Enabled() ? <div className="uv2-lage-only" data-testid="uv2-lage"><UniverseObservatory
+                mail={mailPreview}
+                calendar={calendarPreview}
+                feed={feedPreview}
+                mailStatus={mailStatus}
+                calendarStatus={calendarStatus}
+                onOpenIntegrations={() => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } })}
+                incidents={nightwatchIncidents}
+                business={business}
+                substanceBars={substanceBars}
+                onSelectTerritory={setSelectedTerritoryId}
+                territoryCount={territories.length}
+                documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
+                selected={Boolean(selectedTerritoryId)}
+                onOpenMail={() => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 980, height: 700 } })}
+                onOpenCalendar={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 980, height: 700 } })}
+                onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
+                onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
+            /></div> : <UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}

@@ -1,5 +1,6 @@
 'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -241,7 +242,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                             <div className="app-library__grid grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {group.apps.map(app => {
                                     const IconComp = ICON_MAP[app.icon] ?? Grid;
-                                    const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
+                                    const colors = isUniverseV2Enabled() ? COLOR_CLASS.slate : (COLOR_CLASS[app.color] ?? COLOR_CLASS.slate);
                                     return (
                                         <button
                                             key={app.id}

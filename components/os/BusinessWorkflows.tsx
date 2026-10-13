@@ -1,5 +1,6 @@
 'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useMemo } from 'react';
 import {
   Activity,
@@ -235,7 +236,10 @@ export function BusinessWorkflows({
     <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-3" aria-label="Unternehmerische Aufgaben" data-testid="business-workflows">
       {workflows.map(workflow => {
         const Icon = workflow.icon;
-        const tone = TONES[workflow.tone];
+        // Universe v2: keine Kategorie-Tönungen – eine neutrale Fläche, Gold nur beim Hover.
+        const tone = isUniverseV2Enabled()
+          ? { shell: 'border-[rgba(247,244,233,0.1)] bg-[rgba(247,244,233,0.025)] hover:border-[rgba(214,168,72,0.35)]', icon: 'text-[rgba(247,244,233,0.55)]', eyebrow: 'text-[rgba(247,244,233,0.4)]' }
+          : TONES[workflow.tone];
         return (
           <button
             key={workflow.id}
