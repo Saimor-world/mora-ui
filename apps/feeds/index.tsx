@@ -10,6 +10,7 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { feedCadenceHint, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import { useNavStore } from '@/lib/store/navStore';
 import { GLASS_SHEET_PRESENTATION_FEED } from '@/lib/os/glassSheet';
 
@@ -78,6 +79,46 @@ export default function FeedsApp({ paneId }: AppProps) {
             zIndex={pane.zIndex}
             {...GLASS_SHEET_PRESENTATION_FEED}
         >
+            {uv2() ? (
+            <div className="flex h-full min-h-0 flex-col" data-uv2-app="feeds">
+                {!isLoading && rssConfigured && items.length > 0 && (
+                    <AppHero app="feeds" eyebrow={'Horizont · ' + items[0].sourceTitle + (lastUpdated ? ' · ' + lastUpdated : '')}
+                        title={items[0].title} sub={items[0].summary ? items[0].summary.slice(0, 180) + (items[0].summary.length > 180 ? ' …' : '') : cadenceHint}
+                        figure={items.length} figureLabel="Einträge"
+                        action={items[0].link ? { label: 'Neuesten lesen', onClick: () => window.open(items[0].link, '_blank', 'noopener,noreferrer') } : { label: 'Neu abrufen', onClick: () => void handleRefresh() }} />
+                )}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {isLoading ? (
+                        <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Horizont wird gelesen …</p>
+                    ) : !rssConfigured ? (
+                        <div className="flex h-full items-center justify-center">
+                            <AppEmpty glyph={<Rss size={22} strokeWidth={1.25} />} title="Dein Horizont, ausgewählt."
+                                text="Verbinde die Quellen, denen du vertraust. MÔRA zeigt das Neueste und hebt hervor, was deine Bereiche berührt."
+                                action={{ label: 'Quellen verbinden', onClick: openIntegrations }} />
+                        </div>
+                    ) : items.length === 0 ? (
+                        <div className="flex h-full items-center justify-center">
+                            <AppEmpty glyph={<Rss size={22} strokeWidth={1.25} />} title={error ? 'Die Quellen antworten nicht.' : 'Gerade nichts Neues.'}
+                                text={error ? 'Prüfe die Feed-Adressen unter Quellen.' : 'Deine Quellen sind verbunden. Neue Einträge erscheinen hier, sobald sie veröffentlicht werden.'}
+                                action={{ label: 'Neu abrufen', onClick: () => void handleRefresh() }} />
+                        </div>
+                    ) : (
+                        <ol className="uv2-register">
+                            {items.slice(1).map((item) => (
+                                <li key={item.id}>
+                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="uv2-register__row">
+                                        <span className="uv2-register__meta">{item.sourceTitle}</span>
+                                        <span className="uv2-register__title">{item.title}</span>
+                                        {item.summary ? <span className="uv2-register__text">{item.summary.slice(0, 160)}</span> : null}
+                                    </a>
+                                </li>
+                            ))}
+                        </ol>
+                    )}
+                </div>
+                <div className="uv2-foot"><span>{items.length} Einträge · neueste zuerst</span><button type="button" onClick={openIntegrations}>Quellen</button></div>
+            </div>
+            ) : (
             <div className="flex h-full min-h-0 flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="max-w-xl space-y-1">
@@ -161,6 +202,7 @@ export default function FeedsApp({ paneId }: AppProps) {
                     </div>
                 )}
             </div>
+            )}
         </GlassPanel>
     );
 }

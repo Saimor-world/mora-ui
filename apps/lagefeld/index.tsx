@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useMemo } from 'react';
 import { Activity, MessageSquare, Mic2, RotateCcw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
@@ -91,6 +92,23 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
         data-testid="lagefeld-app"
         data-uv2-system-bg="" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
       >
+        {uv2() ? (
+          <>
+            <AppHero app="lagefeld" eyebrow={'Lagefeld · ' + (deutungActions ? 'MÔRAs Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard')}
+              title={!hasSignals ? 'Die Lage ist ruhig.' : state.cards.length === 1 ? 'Ein Signal liegt auf dem Tisch.' : `${state.cards.length} Signale liegen auf dem Tisch.`}
+              sub={deutungActions ? 'MÔRA hat die Signale geordnet. „Übersicht“ zeigt wieder alles.' : 'Aus Mail, Kalender, Aufgaben und MÔRAs Beobachtungen – nichts erfunden.'}
+              figure={hasSignals ? state.cards.length : undefined} figureLabel="Signale"
+              action={hasSignals ? { label: deuting ? 'MÔRA deutet …' : deutungActions ? 'Neu deuten' : 'Mit MÔRA deuten', onClick: () => { if (!deuting) requestDeutung(); } } : null} />
+            <div className="uv2-foot" style={{ borderTop: 0, borderBottom: '.5px solid var(--uv-hair)' }}>
+              <span>{prompt ? 'Ausgangspunkt: ' + prompt : 'Quelle: echte Signale'}</span>
+              <span className="flex gap-5">
+                {deutungActions ? <button type="button" onClick={reset} data-testid="lagefeld-deuten-reset">Übersicht</button> : null}
+                <button type="button" onClick={openChat} data-testid="lagefeld-open-chat">Schreiben</button>
+                <button type="button" onClick={openVoiceOverlay} data-testid="lagefeld-open-voice">Sprechen</button>
+              </span>
+            </div>
+          </>
+        ) : (
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100/45">
@@ -152,8 +170,9 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
             </div>
           </div>
         </header>
+        )}
 
-        {prompt ? (
+        {prompt && !uv2() ? (
           <div className="mx-6 mt-4 shrink-0 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white/62">
             <span className="mr-2 text-[10px] uppercase tracking-[0.22em] text-white/34">Ausgangspunkt</span>
             {prompt}
@@ -171,6 +190,12 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
           ) : null}
           {hasSignals ? (
             <LagefeldCanvas state={state} />
+          ) : uv2() ? (
+            <div className="flex h-full items-center justify-center">
+              <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Nichts drängt gerade."
+                text="Sobald Mail, Kalender oder Aufgaben etwas melden, legt MÔRA es hier aus. Du kannst sie jederzeit selbst fragen."
+                action={{ label: 'MÔRA fragen', onClick: openChat }} />
+            </div>
           ) : (
             <LagefeldEmptyState onOpenChat={openChat} onOpenVoice={openVoiceOverlay} />
           )}

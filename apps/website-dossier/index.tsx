@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useEffect, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
@@ -84,9 +85,16 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex flex-col h-full overflow-y-auto p-5 space-y-4">
+            <div className="flex flex-col h-full overflow-y-auto p-5 space-y-4" data-uv2-app="dossier">
+                {uv2() && targetUrl && !isLoading && (
+                    <AppHero app="dossier" eyebrow={'Website-Dossier · ' + domain}
+                        title={sslOk === false ? 'Das Zertifikat braucht Aufmerksamkeit.' : sslOk ? `${domain} ist sicher erreichbar.` : `${domain} im Blick.`}
+                        sub={dossier?.checked_at ? 'Zuletzt geprüft ' + new Date(dossier.checked_at).toLocaleString('de-DE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '.' : 'Die vollständige Analyse folgt nach dem ersten Security-Check.'}
+                        figure={dossier?.performance?.score !== undefined ? Math.round(dossier.performance.score * 100) : undefined} figureLabel="Performance"
+                        action={{ label: 'Website öffnen', onClick: () => window.open(targetUrl, '_blank', 'noopener,noreferrer') }} />
+                )}
                 {/* Header (nur mit Ziel-URL – kein leerer Strich) */}
-                {targetUrl && <div className="flex items-start gap-3">
+                {targetUrl && !uv2() && <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-300/20 bg-teal-500/10">
                         <Globe size={18} className="text-teal-300/80" />
                     </div>
@@ -113,7 +121,14 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
-                {!isLoading && !targetUrl && (
+                {!isLoading && !targetUrl && uv2() && (
+                    <div className="flex flex-1 items-center justify-center">
+                        <AppEmpty glyph={<Globe size={22} strokeWidth={1.25} />} title="Noch keine Website im Blick."
+                            text="Ein Dossier entsteht aus dem Security-Check: Zertifikat, Sicherheit, Tempo und Auffindbarkeit auf einen Blick."
+                            action={{ label: 'Security-Check öffnen', onClick: () => window.open('https://saimor.world', '_blank', 'noopener,noreferrer') }} />
+                    </div>
+                )}
+                {!isLoading && !targetUrl && !uv2() && (
                     <div className="flex flex-1 items-center justify-center">
                         <div className="text-center space-y-2">
                             <ShieldQuestion size={32} className="mx-auto text-white/20" />
@@ -182,7 +197,7 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
 
 function Section({ title, icon, children }: { title: string; icon?: React.ReactNode; children: React.ReactNode }) {
     return (
-        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 space-y-2" data-uv2-sec>
             <div className="flex items-center gap-1.5 text-xs font-medium text-white/60 mb-1">
                 {icon}
                 {title}
@@ -194,7 +209,7 @@ function Section({ title, icon, children }: { title: string; icon?: React.ReactN
 
 function Row({ label, value, ok }: { label: string; value: string; ok?: boolean }) {
     return (
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4" data-uv2-row={ok === false ? 'warn' : ok === true ? 'ok' : ''}>
             <span className="text-[11px] text-white/40 shrink-0">{label}</span>
             <span className={`text-[11px] font-mono text-right truncate ${ok === true ? 'text-emerald-400' : ok === false ? 'text-red-400/80' : 'text-white/60'}`}>
                 {value}
