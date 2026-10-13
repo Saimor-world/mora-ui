@@ -2,7 +2,7 @@
 
 import { PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     AlertCircle,
     Bell,
@@ -30,7 +30,8 @@ import { CalendarIntegration } from '@/components/integrations/CalendarIntegrati
 import { RssIntegration } from '@/components/integrations/RssIntegration';
 import { CloudStorageIntegration } from '@/components/integrations/CloudStorageIntegration';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { corePost } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
+import { CaldavConnect, GithubConnect, MonitorConnect, TelegramStatus } from '@/components/integrations/ConnectorForms';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
@@ -184,6 +185,15 @@ export default function IntegrationsApp({ paneId }: AppProps) {
     const [lane, setLane] = useState<Lane>('overview');
     const [uv2Details, setUv2Details] = useState(false);
     const [intSel, setIntSel] = useState('mail');
+    // Echter Zustand der neuen Quellen aus CORE (/v3/connectors/catalog); fehlt er, bleibt alles „nicht verbunden“.
+    const [connCatalog, setConnCatalog] = useState<Record<string, string>>({});
+    useEffect(() => {
+        let alive = true;
+        coreGet('/v3/connectors/catalog', { isOptional: true })
+            .then((r: any) => { if (alive) setConnCatalog(Object.fromEntries((r?.sources ?? []).map((x: any) => [x.id, x.state]))); })
+            .catch(() => undefined);
+        return () => { alive = false; };
+    }, []);
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -370,15 +380,18 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                         { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: overview?.cloud_storage?.status === 'reauth_required' ? 'Drive neu verbinden' : 'Drive verbinden', setup: <CloudStorageIntegration /> },
                         { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), status: overview?.assistant?.status, text: buildAssistantText(overview) },
                         { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', status: browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'blocked' : 'not_configured', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' || browserBridge.permission === 'granted' ? undefined : () => void requestBrowserNotifications(), connectLabel: isRequestingNotifications ? 'Frage …' : 'Erlauben', open: browserBridge.permission === 'granted' ? sendBrowserTestNotification : undefined, openLabel: 'Testsignal' },
+                        { id: 'caldav', kind: 'Zeit', name: 'CalDAV-Kalender', ok: false, status: 'not_configured', text: 'iCloud, Fastmail, Nextcloud oder mailbox.org mit App-Passwort.', setup: <CaldavConnect /> },
                         { id: 'finance', kind: 'Kapital', name: 'Konten & XRPL', ok: false, status: 'not_configured', text: 'Konten und XRPL-Adressen nur lesend beobachten. MÔRA bewegt nie Geld.', open: () => openPane({ id: 'finance-main', type: 'finance', title: 'Kapital', size: { width: 1100, height: 760 } }), openLabel: 'Kapital öffnen', connect: () => openPane({ id: 'finance-main', type: 'finance', title: 'Kapital', size: { width: 1100, height: 760 } }), connectLabel: 'Quelle wählen' },
-                        { id: 'watch', kind: 'Wache', name: 'Nightwatch', ok: false, status: 'partial', text: 'Wache meldet Störungen deiner Dienste. Monitore sind noch nicht eingerichtet.', connect: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Wache', size: { width: 1100, height: 760 } }), connectLabel: 'Wache öffnen' },
+                        { id: 'watch', kind: 'Wache', name: 'Nightwatch', ok: false, status: 'partial', text: 'Wache beobachtet deine Dienste und meldet Störungen.', setup: <MonitorConnect />, connect: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Wache', size: { width: 1100, height: 760 } }), connectLabel: 'Wache öffnen' },
                         { id: 'companion', kind: 'Gerät', name: 'Handy-Begleiter', ok: false, status: 'unavailable', text: 'Freigaben und Mitteilungen auf dem Handy. Kommt mit dem Livegang des Begleiters.', connect: () => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 }, data: { section: 'begleiter' } }), connectLabel: 'Handy verbinden' },
-                        { id: 'telegram', kind: 'Kanal', name: 'Telegram', ok: false, status: 'unavailable', text: 'MÔRA über Telegram erreichen. Braucht noch einen Bot-Zugang auf dem Server.' },
-                        { id: 'github', kind: 'Werkstatt', name: 'GitHub', ok: false, status: 'unavailable', text: 'Repos und Freigaben lesend für die Werkstatt. Noch nicht angebunden.' },
-                    ].map((x) => (['mail', 'calendar', 'rss', 'cloud'].includes(x.id) && fetchFailed(x.id === 'cloud' ? 'cloud_storage' : x.id) && x.ok
+                        { id: 'telegram', kind: 'Kanal', name: 'Telegram', ok: false, status: 'unavailable', text: 'MÔRA über Telegram erreichen.', setup: <TelegramStatus /> },
+                        { id: 'github', kind: 'Werkstatt', name: 'GitHub', ok: false, text: 'Repos und Freigaben nur lesend für die Werkstatt.', status: 'not_configured', setup: <GithubConnect /> },
+                    ].map((x) => (['caldav', 'github', 'telegram', 'watch', 'companion'].includes(x.id)
+                        ? (() => { const st = connCatalog[x.id === 'watch' ? 'nightwatch' : x.id === 'companion' ? 'begleiter_push' : x.id]; return st ? { ...x, ok: st === 'connected', status: st === 'connected' ? 'connected' : st === 'server_setup_required' ? 'unavailable' : st === 'reauth_required' ? 'reauth_required' : 'not_configured' } : x; })()
+                        : x)).map((x) => (['mail', 'calendar', 'rss', 'cloud'].includes(x.id) && fetchFailed(x.id === 'cloud' ? 'cloud_storage' : x.id) && x.ok
                         ? { ...x, ok: false, status: 'degraded', text: `Letzter Abruf fehlgeschlagen. ${x.text}` }
                         : x));
-                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell />, finance: <Landmark />, watch: <Radar />, companion: <Smartphone />, telegram: <Send />, github: <GitBranch /> };
+                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell />, finance: <Landmark />, caldav: <Calendar />, watch: <Radar />, companion: <Smartphone />, telegram: <Send />, github: <GitBranch /> };
                     const sel = srcs.find((x) => x.id === intSel) ?? srcs[0];
                     return (
                         <div className="uv2-conn" data-testid="int-v2-register">
