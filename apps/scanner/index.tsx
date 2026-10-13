@@ -1226,7 +1226,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                                 <Upload size={28} className="text-emerald-200/80" />
                             </div>
                             <div>
-                                <p className="text-sm text-emerald-50/85">Bereit fuer den ersten Intake</p>
+                                <p className="text-sm text-emerald-50/85">Bereit für den ersten Intake</p>
                                 <p className="mt-2 text-xs leading-relaxed text-white/42">
                                     Ziehe Dateien in den Scanner oder wähle Upload. Mora prüft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
                                 </p>

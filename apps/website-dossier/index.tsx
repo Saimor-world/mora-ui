@@ -85,8 +85,8 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
             {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex flex-col h-full overflow-y-auto p-5 space-y-4">
-                {/* Header */}
-                <div className="flex items-start gap-3">
+                {/* Header (nur mit Ziel-URL – kein leerer Strich) */}
+                {targetUrl && <div className="flex items-start gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-teal-300/20 bg-teal-500/10">
                         <Globe size={18} className="text-teal-300/80" />
                     </div>
@@ -104,7 +104,7 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
                             </a>
                         )}
                     </div>
-                </div>
+                </div>}
 
                 {isLoading && (
                     <div className="flex flex-1 items-center justify-center gap-2 text-white/30 text-sm">
@@ -117,8 +117,8 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
                     <div className="flex flex-1 items-center justify-center">
                         <div className="text-center space-y-2">
                             <ShieldQuestion size={32} className="mx-auto text-white/20" />
-                            <p className="text-sm text-white/30">Keine URL angegeben.</p>
-                            <p className="text-xs text-white/20">Öffne das Dossier über den Security-Check auf saimor.world.</p>
+                            <p className="text-sm text-white/75">Noch keine Website im Blick.</p>
+                            <p className="text-xs text-white/45 max-w-[280px] mx-auto leading-relaxed">Öffne das Dossier über den Security-Check auf saimor.world.</p>
                         </div>
                     </div>
                 )}

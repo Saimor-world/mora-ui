@@ -141,7 +141,11 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
 
     // ─── Load members ──────────────────────────────────────────────────────
 
+    // Stabile Referenz: verhindert Endlos-Neuladen (Spinner), wenn das User-Objekt pro Render neu entsteht.
+    const currentUserRef = useRef(currentUser);
+    currentUserRef.current = currentUser;
     const fetchMembers = useCallback(async () => {
+        const currentUser = currentUserRef.current;
         setIsLoading(true);
         try {
             const res = await coreGet('/v3/team/members?include_inactive=false', {
@@ -200,7 +204,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentUserId, currentUserEmail, currentUserName, currentUser]);
+    }, [currentUserId, currentUserEmail, currentUserName, currentUser?.role]);
 
     // ─── Load room messages ─────────────────────────────────────────────────
 
@@ -214,7 +218,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
     // ─── Initial load ───────────────────────────────────────────────────────
 
     useEffect(() => {
-        if (!isOperational) return;
+        if (!isOperational) { setIsLoading(false); return; }
         fetchMembers();
         fetchMessages();
     }, [fetchMembers, fetchMessages, isOperational]);
@@ -404,8 +408,9 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
 
                                 {/* Empty state */}
                                 {!isLoading && members.length === 0 && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-sm text-white/30">
-                                        Noch niemand hier.
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+                                        <span className="text-sm text-white/75">{isOperational ? 'Noch niemand hier.' : 'Der Teamraum ist gerade nicht erreichbar.'}</span>
+                                        <span className="max-w-[280px] text-xs leading-relaxed text-white/45">{isOperational ? 'Lade Menschen ein – sie erscheinen hier, sobald sie da sind.' : 'Sobald die Verbindung steht, siehst du hier, wer im Raum ist.'}</span>
                                     </div>
                                 )}
 

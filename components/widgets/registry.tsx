@@ -66,8 +66,8 @@ const GlanceShell: React.FC<{
             } : undefined}
         >
             <div
-                className="pointer-events-none absolute inset-y-0 left-0 w-[3px] rounded-l-xl"
-                style={{ background: color }}
+                className={`pointer-events-none absolute inset-y-0 left-0 ${isUniverseV2Enabled() ? 'w-px' : 'w-[3px] rounded-l-xl'}`}
+                style={{ background: isUniverseV2Enabled() && !alert ? 'rgba(214,168,72,0.45)' : color }}
             />
             <div className="flex min-h-0 flex-1 flex-col justify-center gap-1.5 py-1 pl-2.5 pr-1">{children}</div>
         </div>

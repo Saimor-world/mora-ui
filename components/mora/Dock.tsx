@@ -205,9 +205,9 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
                 </span>
             )}
 
-            {/* Tooltip */}
-            <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />
-            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 delay-150 ease-out pointer-events-none z-[9999]">
+            {/* Tooltip (bei geöffnetem Fächer stumm) */}
+            {!active && <div className="absolute -top-3 left-0 w-full h-3 bg-transparent z-50 pointer-events-auto opacity-0 hidden group-hover:block" />}
+            <div className={`absolute bottom-full mb-3 left-1/2 -translate-x-1/2 opacity-0 ${active ? 'hidden' : ''} group-hover:opacity-100 group-hover:-translate-y-1 transition-all duration-75 delay-150 ease-out pointer-events-none z-[9999]`}>
                 <div className={`rounded-lg px-3 py-2 min-w-[140px] text-center shadow-2xl ${
                     isStandardMode
                         ? 'bg-gray-800 border border-gray-700'
@@ -1615,7 +1615,7 @@ export const Dock = () => {
                                                         exit={{ opacity: 0, y: 8, scale: 0.98 }}
                                                         transition={{ type: 'spring', stiffness: 420, damping: 34 }}
                                                         className="rounded-[22px] p-2"
-                                                        style={{ background: v2 ? 'rgba(5,7,6,0.9)' : 'rgba(14,18,26,0.62)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.5)' }}
+                                                        style={{ background: v2 ? 'rgba(8,10,9,0.97)' : 'rgba(14,18,26,0.62)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 24px 60px rgba(0,0,0,0.5)' }}
                                                     >
                                                         <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${Math.min(4, moreDockItems.length + 1)}, 84px)` }}>
                                                             {[...moreDockItems.map((i) => ({ key: i.action, icon: i.icon, label: i.label, run: () => handleDockClick(i.action) })),

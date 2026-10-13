@@ -64,7 +64,7 @@ function Instruments({ context }: { context: WidgetContext }) {
         <span>Instrumente</span><span style={{ color: UV.c(0.4) }}>{open ? 'Einklappen' : `${INSTRUMENTS.length} zeigen`}</span>
       </button>
       {open && (
-        <div className="mt-4 h-full space-y-3 overflow-y-auto pr-1" style={{ scrollbarWidth: 'thin' }}>
+        <div className="mt-4 h-full space-y-3 overflow-y-auto pr-1 pb-8" style={{ scrollbarWidth: 'none', maskImage: 'linear-gradient(180deg,#000 calc(100% - 48px),transparent)', WebkitMaskImage: 'linear-gradient(180deg,#000 calc(100% - 48px),transparent)' }}>
           {INSTRUMENTS.map((t) => {
             const def = WIDGET_REGISTRY[t];
             if (!def) return null;

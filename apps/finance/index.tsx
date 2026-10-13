@@ -247,7 +247,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
     return (
       <div className="rounded-[20px] border border-white/[0.07] bg-white/[0.02] p-4">
         <div className="text-[11px] font-medium text-white/52">{title}</div>
-        <div className="mt-3 text-[10px] text-amber-200/60">Not available</div>
+        <div className="mt-3 text-[10px] text-amber-200/60">Nicht verfügbar</div>
       </div>
     );
   }
@@ -284,11 +284,11 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
 
           <div className="mt-3 grid grid-cols-2 gap-2 text-[9px]">
             <div className="rounded-lg border border-emerald-300/[0.06] bg-emerald-400/[0.02] p-2">
-              <div className="text-emerald-100/36">Available</div>
+              <div className="text-emerald-100/36">Verfügbar</div>
               <div className="mt-0.5 font-medium text-white/68">{formatNumber(availableXrp)} XRP</div>
             </div>
             <div className="rounded-lg border border-white/[0.05] bg-white/[0.015] p-2">
-              <div className="text-white/28">Reserved</div>
+              <div className="text-white/28">Reserviert</div>
               <div className="mt-0.5 font-medium text-white/52">{formatNumber(account.reserve.requiredXrp)} XRP</div>
             </div>
           </div>
@@ -297,12 +297,12 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
             <div className="mt-3 rounded-lg border border-white/[0.05] bg-black/20 p-2.5 space-y-1 text-[8px] text-white/36">
               {breakdown.targetAllocationXrp !== null && (
                 <div className="flex justify-between">
-                  <span>Allocation target</span>
+                  <span>Zielverteilung</span>
                   <span className="font-mono text-white/64">{formatNumber(breakdown.targetAllocationXrp)} XRP</span>
                 </div>
               )}
               <div className="flex justify-between">
-                <span>Founder funding (not revenue)</span>
+                <span>Gründer-Einlage (kein Umsatz)</span>
                 <span className="font-mono text-white/64">
                   {formatNumber(breakdown.founderFundingXrp)} XRP
                   {breakdown.initialAllocationFundingXrp !== null && breakdown.topUpFundingXrp
@@ -311,17 +311,17 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
                 </span>
               </div>
               <div className="flex justify-between">
-                <span>External dust (excluded)</span>
+                <span>Fremd-Kleinstbeträge (ausgenommen)</span>
                 <span className="font-mono text-white/48">{formatNumber(breakdown.externalDustXrp)} XRP</span>
               </div>
               {breakdown.totalFeesXrp > 0 && (
                 <div className="flex justify-between">
-                  <span>Network fees</span>
+                  <span>Netzwerkgebühren</span>
                   <span className="font-mono text-white/48">-{formatNumber(breakdown.totalFeesXrp)} XRP</span>
                 </div>
               )}
               <div className="flex justify-between border-t border-white/[0.05] pt-1">
-                <span>Current ledger balance</span>
+                <span>Aktueller Ledger-Stand</span>
                 <span className="font-mono font-medium text-white/76">{formatNumber(breakdown.ledgerBalanceXrp)} XRP</span>
               </div>
             </div>
@@ -329,7 +329,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
 
           <div className="mt-3 space-y-1.5 text-[8px] text-white/28">
             <div className="flex justify-between">
-              <span>Owner count</span>
+              <span>Objekte im Besitz</span>
               <span className="text-white/48">{account.ownerCount}</span>
             </div>
             <div className="flex justify-between">
@@ -337,12 +337,12 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
               <span className="font-mono text-white/48">{account.evidence.ledgerIndex ?? '—'}</span>
             </div>
             <div className="flex justify-between">
-              <span>Last sync</span>
+              <span>Letzter Abgleich</span>
               <span className="text-white/48">{formatTime(account.evidence.fetchedAt)}</span>
             </div>
             {lastTx && (
               <div className="flex justify-between">
-                <span>Last tx</span>
+                <span>Letzte Transaktion</span>
                 <span className="font-mono text-white/36">{lastTx.hash.slice(0, 8)}…</span>
               </div>
             )}
@@ -434,9 +434,9 @@ function opportunityStatusLabel(status: 'open' | 'available' | 'verify') {
 }
 
 function opportunityRiskLabel(risk: 'low' | 'medium' | 'high') {
-  if (risk === 'low') return 'Low capital risk';
-  if (risk === 'medium') return 'Medium risk';
-  return 'Capital at risk';
+  if (risk === 'low') return 'Geringes Kapitalrisiko';
+  if (risk === 'medium') return 'Mittleres Risiko';
+  return 'Kapital im Risiko';
 }
 
 export default function FinanceApp({ paneId, initialData }: AppProps) {
@@ -520,11 +520,11 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </div>
               <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Finance</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
-                Live company financial state from XRPL mainnet. Read-only — MÔRA may explain changes but never signs.
+                Echte Finanzlage aus dem XRPL-Mainnet. Nur lesend – MÔRA erklärt Veränderungen, signiert aber nie.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <StatePill tone="safe">Read only</StatePill>
-                <StatePill>Company owned</StatePill>
+                <StatePill tone="safe">Nur lesend</StatePill>
+                <StatePill>Firmeneigen</StatePill>
                 {companySnapshot && <StatePill tone="info">Ledger {companySnapshot.reserve.validatedLedger}</StatePill>}
               </div>
             </div>
@@ -541,7 +541,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
         </section>
 
         {error && (
-          <div className="rounded-xl border border-red-300/16 bg-red-500/[0.06] px-4 py-3 text-xs text-red-200/75">{error}</div>
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/60">{/login|auth|401|403/i.test(error) ? 'Anmeldung nötig – die Finanzlage erscheint, sobald du in Saimôr angemeldet bist.' : error}</div>
         )}
 
         {companySnapshot && (
@@ -562,15 +562,15 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               {aggregates && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <div className="rounded-xl border border-emerald-300/[0.08] bg-emerald-400/[0.02] p-3">
-                    <div className="text-[8px] uppercase tracking-[0.16em] text-emerald-100/36">Cash Total</div>
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-emerald-100/36">Kasse gesamt</div>
                     <div className="mt-1 text-[18px] font-medium text-white/82">{formatNumber(aggregates.cashTotalXrp)} XRP</div>
                   </div>
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
-                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Available</div>
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Verfügbar</div>
                     <div className="mt-1 text-[18px] font-medium text-white/68">{formatNumber(aggregates.availableTotalXrp)} XRP</div>
                   </div>
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] p-3">
-                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Reserved</div>
+                    <div className="text-[8px] uppercase tracking-[0.16em] text-white/28">Reserviert</div>
                     <div className="mt-1 text-[18px] font-medium text-white/52">{formatNumber(aggregates.reservedTotalXrp)} XRP</div>
                   </div>
                 </div>
@@ -583,7 +583,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                   <Tag size={14} className="text-amber-200/60" /> Open Listings
                 </div>
                 <p className="mt-1 text-[9px] text-amber-200/48">
-                  Asking prices are NOT counted as assets. Only realized sales count.
+                  Angebotspreise zählen NICHT als Vermögen – nur realisierte Verkäufe.
                 </p>
 
                 <div className="mt-3 space-y-2">
@@ -610,7 +610,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
 
                 {aggregates && (
                   <div className="mt-3 flex items-center justify-between rounded-lg border border-amber-300/[0.06] bg-amber-400/[0.015] p-2 text-[9px]">
-                    <span className="text-amber-100/40">Aggregate asking price (NOT an asset)</span>
+                    <span className="text-amber-100/40">Summe Angebotspreise (kein Vermögen)</span>
                     <span className="font-medium text-amber-100/60">{formatNumber(aggregates.aggregateAskingPriceXrp)} XRP</span>
                   </div>
                 )}
@@ -632,7 +632,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     <StatePill tone={originNft.status === 'LIVE_GENESIS_MAINNET_PROOF' ? 'safe' : 'warn'}>
                       {originNft.status.replace(/_/g, ' ')}
                     </StatePill>
-                    {originNft.verified && <StatePill tone="safe">Verified</StatePill>}
+                    {originNft.verified && <StatePill tone="safe">Verifiziert</StatePill>}
                   </div>
                 </div>
 
@@ -646,12 +646,12 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                     <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Flags (XLS-20)</div>
                     <div className="mt-0.5 flex flex-wrap gap-1">
                       {originNft.flagsDescription.onlyXrp && <StatePill>OnlyXRP</StatePill>}
-                      {originNft.flagsDescription.transferable && <StatePill>Transferable</StatePill>}
-                      {originNft.flagsDescription.mutable && <StatePill>Mutable</StatePill>}
+                      {originNft.flagsDescription.transferable && <StatePill>Übertragbar</StatePill>}
+                      {originNft.flagsDescription.mutable && <StatePill>Änderbar</StatePill>}
                     </div>
                   </div>
                   <div>
-                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Transfer Fee</div>
+                    <div className="text-[8px] uppercase tracking-[0.12em] text-white/24">Transfergebühr</div>
                     <div className="mt-0.5 text-white/52">{originNft.transferFeePercent}%</div>
                   </div>
                   <div>
@@ -706,7 +706,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 Keine Airdrop-Lotterie. Nur offizielle Quellen, ein Verifizierungsdatum und eine klare Trennung zwischen Förderung, Builder-Umsatz und Kapitalrisiko.
               </p>
             </div>
-            <StatePill tone="safe">No auto-execution</StatePill>
+            <StatePill tone="safe">Keine Auto-Ausführung</StatePill>
           </div>
 
           <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -733,7 +733,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <StatePill tone={statusTone}>{opportunityStatusLabel(opportunity.status)}</StatePill>
                     <StatePill tone={riskTone}>{opportunityRiskLabel(opportunity.risk)}</StatePill>
-                    {opportunity.requiresSigning && <StatePill tone="warn">External signing</StatePill>}
+                    {opportunity.requiresSigning && <StatePill tone="warn">Externe Signatur</StatePill>}
                   </div>
 
                   <p className="mt-3 text-[10px] leading-relaxed text-white/34">{opportunity.summary}</p>
