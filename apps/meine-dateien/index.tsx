@@ -583,26 +583,23 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             <div className="flex h-full min-h-0 bg-black/10">
                 <aside className={`flex shrink-0 flex-col border-r border-white/[0.07] ${v2 ? 'w-[300px] bg-transparent' : 'w-[310px] bg-black/20'}`}>
                     {v2 ? (
-                    <div className="border-b border-white/[0.07] px-5 pb-5 pt-5" data-testid="uv2-files-head">
-                        <p style={{ ...{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase' as const }, color: '#D6A848' }}>Mein Universum</p>
-                        <p className="mt-3 text-[15px] font-light leading-[1.6] text-[rgba(247,244,233,0.6)]">Gerät, Privat, Workspace – du entscheidest, wer etwas sieht.</p>
-                        <p className="mt-3" data-testid="uv2-files-counts" style={{ ...{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase' as const }, color: 'rgba(247,244,233,0.4)' }}>
-                            {[['Gerät', localFiles.length], ['Privat', privateCoreCount], ['Workspace', workspaceCoreCount], ['Cloud', cloudCount]].filter(([, n]) => Number(n) > 0).map(([l, n]) => `${n} ${l}`).join(' · ') || 'Noch leer'}
+                    <div className="px-6 pb-4 pt-6" data-testid="uv2-files-head"
+                        onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+                        onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
+                        onDragLeave={() => setDragActive(false)}
+                        onDrop={(event) => { event.preventDefault(); setDragActive(false); void importFiles(event.dataTransfer.files); }}
+                        style={{ background: dragActive ? 'rgba(214,168,72,0.06)' : undefined, transition: 'background .2s' }}>
+                        <p className="uv2-hero__eyebrow">Mein Universum</p>
+                        <p className="mt-2 font-serif text-[26px] leading-[1.1] text-[#F7F4E9]" data-testid="uv2-files-counts">
+                            {files.length === 0 ? 'Noch leer.' : files.length === 1 ? 'Eine Datei.' : `${files.length} Dateien.`}
                         </p>
-                        <div
-                            onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
-                            onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
-                            onDragLeave={() => setDragActive(false)}
-                            onDrop={(event) => { event.preventDefault(); setDragActive(false); void importFiles(event.dataTransfer.files); }}
-                            onClick={() => fileInputRef.current?.click()}
-                            role="button" tabIndex={0}
-                            className="mt-5 cursor-pointer border border-dashed px-4 py-5 text-center transition-colors"
-                            style={{ borderRadius: 10, borderColor: dragActive ? 'rgba(214,168,72,0.6)' : 'rgba(247,244,233,0.14)', background: dragActive ? 'rgba(214,168,72,0.06)' : 'transparent' }}
-                        >
-                            <p className="text-[15px] font-light text-[rgba(247,244,233,0.85)]">Hierher ziehen oder auswählen</p>
-                            <p className="mt-1 text-[13px] font-light text-[rgba(247,244,233,0.45)]">{activeCompanyId ? 'Bleibt privat, bis du teilst.' : 'Bleibt auf diesem Gerät.'}</p>
+                        <p className="mt-1 text-[12px] text-[rgba(247,244,233,0.5)]">
+                            {[['Gerät', localFiles.length], ['Privat', privateCoreCount], ['Workspace', workspaceCoreCount], ['Cloud', cloudCount]].filter(([, n]) => Number(n) > 0).map(([l, n]) => `${n} ${l}`).join(' · ') || (activeCompanyId ? 'Privat, bis du teilst.' : 'Bleibt auf diesem Gerät.')}
+                        </p>
+                        <div className="mt-4 flex gap-5">
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="uv2-files-link">+ Datei</button>
+                            <button type="button" onClick={createLocalNote} className="uv2-files-link">+ Notiz</button>
                         </div>
-                        <button type="button" onClick={createLocalNote} className="mt-4 text-[15px] font-light text-[rgba(247,244,233,0.6)] transition-colors hover:text-[#D6A848]">+ Neue Notiz</button>
                     </div>
                     ) : (
                     <div className="space-y-3 border-b border-white/[0.07] p-4">
@@ -676,8 +673,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         />
                     </div>
 
-                    <div className="border-b border-white/[0.06] px-4 py-3">
-                        <div className="flex items-center justify-between">
+                    <div className={v2 ? 'border-y border-white/[0.06] px-6 py-2' : 'border-b border-white/[0.06] px-4 py-3'} data-uv2-files-filter={v2 ? '' : undefined}>
+                        <div className={v2 ? 'hidden' : 'flex items-center justify-between'}>
                             <span className="text-[10px] uppercase tracking-[0.2em] text-white/35">Arbeitsdateien</span>
                             <button
                                 type="button"
@@ -688,7 +685,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
                             </button>
                         </div>
-                        <div className={v2 ? 'mt-3 flex flex-wrap gap-x-4 gap-y-1' : 'mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1'}>
+                        <div className={v2 ? 'flex flex-wrap gap-x-4 gap-y-1' : 'mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1'}>
                             {([
                                 ['all', 'Alle'],
                                 ['local', 'Gerät'],

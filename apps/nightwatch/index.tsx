@@ -425,15 +425,15 @@ export default function NightwatchApp({ paneId }: AppProps) {
                             <strong>{incidents.length}</strong>
                             <small>{criticalCount} kritisch · {warningCount} Warnung</small>
                         </div>
-                        <div className="nightwatch-trend">
+                        {!(uv2() && sevenDayTrend.every((d) => d.count === sevenDayTrend[0].count)) && <div className="nightwatch-trend">
                             <span><Activity size={13} />7 Tage</span>
                             <div className="nightwatch-trend__bars" aria-label={`${history.length} Vorfälle im Verlauf`}>
                                 {sevenDayTrend.map((day) => (
                                     <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(8, (day.count / trendMax) * 100)}%` }} />
                                 ))}
                             </div>
-                            <small>{history.length} erfasste Vorfälle</small>
-                        </div>
+                            <small>{uv2() ? `${sevenDayTrend.reduce((n, d) => n + d.count, 0)} in 7 Tagen` : `${history.length} erfasste Vorfälle`}</small>
+                        </div>}
                     </section>
                 )}
 

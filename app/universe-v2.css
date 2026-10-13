@@ -553,3 +553,53 @@ html[data-uv2="on"] [data-uv2-app="search"] .uv2-search-hints { margin-top: 0 !i
 html[data-uv2="on"] .uv2-hero__num { font-variant-numeric: lining-nums tabular-nums; letter-spacing: -.02em; }
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [data-uv2-app="search"] > div:first-child input,
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [data-uv2-app="search"] > div:first-child input:focus { background-color: transparent !important; border-color: transparent !important; }
+
+/* hd14 · Wache-Kacheln als Register: Haarlinien statt Kästen, Zahlen in Cormorant */
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important; gap: 0 !important; border-top: .5px solid var(--uv-hair); border-bottom: .5px solid var(--uv-hair); }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div { background: none !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; padding: 18px 20px !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div + div { border-left: .5px solid var(--uv-hair) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div > span { font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .2em !important; color: rgba(var(--uv-cream), .55) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div > span svg { display: none; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview strong { font-family: var(--uv-serif) !important; font-weight: 400 !important; font-size: 40px !important; line-height: 1.1; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div[data-tone="warning"] strong, html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview > div[data-tone="critical"] strong { color: var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .nightwatch-overview small { color: rgba(var(--uv-cream), .5) !important; font-size: 11px !important; }
+
+/* hd14 · Kapital: Chancen als Leseliste statt Kartenraster */
+html[data-uv2="on"] [data-uv2-app="finance"] .grid.lg\:grid-cols-2 { grid-template-columns: 1fr !important; gap: 0 !important; border-top: .5px solid var(--uv-hair); }
+html[data-uv2="on"] [data-uv2-app="finance"] .grid.lg\:grid-cols-2 > * { border-radius: 0 !important; border-width: 0 0 .5px !important; border-color: var(--uv-hair) !important; background: none !important; padding: 18px 0 !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] .grid.lg\:grid-cols-2 > *:hover { background: rgba(var(--uv-cream), .02) !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] .grid.lg\:grid-cols-2 .text-\[13px\] { font-family: var(--uv-serif); font-size: 21px !important; color: rgb(var(--uv-cream)) !important; font-weight: 400 !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] section h3 { font-family: var(--uv-serif); font-weight: 400 !important; font-size: 24px !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] [class*="text-violet-"], html[data-uv2="on"] [data-uv2-app="finance"] [class*="text-cyan-"] { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] .text-white\/30, html[data-uv2="on"] [data-uv2-app="finance"] .text-white\/34, html[data-uv2="on"] [data-uv2-app="finance"] .text-white\/25, html[data-uv2="on"] [data-uv2-app="finance"] .text-white\/20 { color: rgba(var(--uv-cream), .55) !important; }
+html[data-uv2="on"] [data-uv2-app="finance"] .text-\[10px\] { font-size: 12px !important; }
+
+/* hd14 · MÔRA-Kopf, Reiter und Modus-Wahl in der Saimôr-Sprache */
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] { padding: 20px 32px !important; border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div:first-child { width: 28px !important; height: 28px !important; background: radial-gradient(circle at 35% 30%, #f3dc9c, var(--uv-gold) 45%, #4a3510 100%) !important; box-shadow: 0 0 18px rgba(var(--uv-gold-rgb), .35); }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div:first-child svg { display: none; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] h3 { font-family: var(--uv-serif); font-weight: 400 !important; font-size: 22px; letter-spacing: .02em; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] h3 + p { font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .2em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-testid="chat-engineering-toggle"] { border-color: var(--uv-hair) !important; background: none !important; font-family: var(--uv-mono); letter-spacing: .18em !important; color: rgba(var(--uv-cream), .55) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-testid="chat-engineering-toggle"]:hover { color: var(--uv-gold) !important; border-color: rgba(var(--uv-gold-rgb), .4) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] { padding: 0 32px; gap: 24px !important; border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] > button { padding: 12px 0 !important; font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .2em; text-transform: uppercase; font-weight: 400 !important; color: rgba(var(--uv-cream), .5) !important; border-bottom-width: 1px !important; border-color: transparent !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] > button:hover { color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] > button[class*="border-violet"], html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] > button[class*="text-violet"], html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] > button[class*="text-white "] { color: rgb(var(--uv-cream)) !important; border-color: var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-testid="main-chat-mode-switch"] > span:first-child { font-family: var(--uv-mono); letter-spacing: .2em !important; color: var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-testid="main-chat-mode-switch"] > div { border: 0 !important; background: none !important; gap: 14px; padding: 0 !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-testid="main-chat-mode-switch"] [role="radio"] { padding: 4px 0 !important; border-radius: 0 !important; background: none !important; box-shadow: none !important; font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .18em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; border-bottom: 1px solid transparent; }
+html[data-uv2="on"] body:not(.standard-mode) [data-testid="main-chat-mode-switch"] [role="radio"][aria-checked="true"] { color: rgb(var(--uv-cream)) !important; border-bottom-color: var(--uv-gold); }
+html[data-uv2="on"] body:not(.standard-mode) [data-testid="main-chat-mode-switch"] > span:last-child { color: rgba(var(--uv-cream), .45) !important; font-size: 11px !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-app-id="chat"] [data-uv2-chat-stream] ~ div button.rounded-full:not([role]) { border-color: var(--uv-hair) !important; background: none !important; color: rgba(var(--uv-cream), .6) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-app-id="chat"] [data-uv2-chat-stream] ~ div button.rounded-full:not([role]):hover { border-color: rgba(var(--uv-gold-rgb), .5) !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] .uv2-files-link { font-family: var(--uv-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; color: rgba(var(--uv-cream), .6); transition: color .2s var(--uv-ease); }
+html[data-uv2="on"] .uv2-files-link:hover { color: var(--uv-gold); }
+/* hd14 · Kalender: Hero trägt den Status – die Leiste behält nur Werkzeuge, ohne Doppelung */
+html[data-uv2="on"] [data-uv2-cal-status] { border: 0 !important; padding: 0 32px !important; margin-top: -44px; justify-content: flex-end !important; position: relative; z-index: 1; pointer-events: none; }
+html[data-uv2="on"] [data-uv2-cal-status] > div:first-child { display: none !important; }
+html[data-uv2="on"] [data-uv2-cal-status] button { pointer-events: auto; border: 0 !important; background: none !important; font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .18em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-uv2-cal-status] button:hover { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-uv2-hero="calendar"] { padding-bottom: 28px; }
+/* hd14 · Home: Suche und Audio leben im Dock – keine zweite Ecke mit Werkzeugen */
+html[data-uv2="on"] body:has([data-testid="uv2-home"]) .uv2-utility { display: none !important; }
