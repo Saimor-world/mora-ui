@@ -129,7 +129,7 @@ export default function CanvasApp({ paneId }: AppProps) {
                     <AppHero app="canvas" eyebrow="Canvas"
                         title={strokes === 0 ? 'Leer' : 'Skizze'}
                         sub={strokes === 0 ? 'Zeichne, wo Worte noch fehlen. Nichts wird gespeichert, bis du es willst.' : 'Bleibt in diesem Fenster, bis du sie als Bild sicherst.'}
-                        figure={strokes} figureLabel="Striche"
+                        figure={strokes || undefined} figureLabel="Striche"
                         action={strokes > 0 ? { label: 'Als Bild sichern', onClick: () => { const c = canvasRef.current; if (!c) return; const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'Skizze.png'; a.click(); } } : null} />
                 )}
                 {/* Toolbar */}
@@ -210,6 +210,13 @@ export default function CanvasApp({ paneId }: AppProps) {
 
                 {/* Drawing surface */}
                 <div className="flex-1 relative overflow-hidden">
+                    {isUniverseV2Enabled() && strokes === 0 && (
+                        <div className="uv2-canvas-hint" aria-hidden="true">
+                            <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><path d="M8 30c6-10 10 4 16-6s8 2 12-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+                            <span>Hier zeichnen</span>
+                            <small>Stift oder Finger · Radierer oben</small>
+                        </div>
+                    )}
                     <canvas
                         ref={canvasRef}
                         className="absolute inset-0 w-full h-full"

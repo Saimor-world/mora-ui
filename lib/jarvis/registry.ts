@@ -146,8 +146,9 @@ export const ACTIONS: OsAction<any>[] = [
         parse: (raw) => { const id = str(obj(raw).targetId); return id ? { targetId: id } : null; },
         run: ({ targetId }: { targetId: string }) => {
             dispatchMoraPresence({ action: 'highlight', targetId, source: 'ai' });
-            const el = typeof document !== 'undefined' ? document.querySelector<HTMLElement>(`[data-testid="territory-${targetId.replace(/["\\]/g, "")}"]`) : null;
-            const name = (el?.getAttribute('data-planet-name') || el?.getAttribute('aria-label') || '').trim().slice(0, 40);
+            const els = typeof document !== 'undefined' ? Array.from(document.querySelectorAll<HTMLElement>(`[data-testid="territory-${targetId.replace(/["\\]/g, '')}"]`)) : [];
+            const raw = els.map((e) => e.getAttribute('data-planet-name') || e.getAttribute('aria-label') || '').find(Boolean) || '';
+            const name = raw.replace(/\s+auswählen$/, '').trim().slice(0, 40);
             return { summary: name ? `${name} hervorgehoben` : 'Hervorgehoben', target: `[data-testid="territory-${targetId}"]` };
         },
     },

@@ -126,7 +126,7 @@ export function JarvisLayer() {
                     }}><Check />Freigeben</button>
                 </div>
             )}
-            {(chip || notice || open) && (
+            {!pending && (chip || notice || open) && (
                 <div className="uv2-jv__chip" data-testid="jarvis-chip">
                     <span className="uv2-jv__orb" data-src={chip?.source ?? 'mora'} />
                     <span className="uv2-jv__txt">{notice ?? (chip ? `${SRC[chip.source]} · ${chip.summary}` : 'Verlauf')}</span>
