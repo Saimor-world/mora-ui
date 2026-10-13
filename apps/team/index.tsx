@@ -84,10 +84,10 @@ function memberPosition(
     const col = index % cols;
     const row = Math.floor(index / cols);
     const rows = Math.ceil(total / cols);
-    const jitterX = (((hash >>> 8) & 0xff) / 255) * 20 - 10;
-    const jitterY = (((hash >>> 16) & 0xff) / 255) * 20 - 10;
+    const jitterX = (((hash >>> 8) & 0xff) / 255) * 8 - 4;
+    const jitterY = (((hash >>> 16) & 0xff) / 255) * 8 - 4;
     const x = 15 + (cols > 1 ? (col / (cols - 1)) * 70 : 35) + jitterX;
-    const y = 20 + (rows > 1 ? (row / (rows - 1)) * 50 : 25) + jitterY;
+    const y = 26 + (rows > 1 ? (row / (rows - 1)) * 44 : 22) + jitterY;
     return {
         x: Math.max(10, Math.min(90, x)),
         y: Math.max(10, Math.min(72, y)),
@@ -96,7 +96,7 @@ function memberPosition(
 
 function formatTime(iso: string): string {
     try {
-        return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     } catch {
         return '';
     }
@@ -404,7 +404,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                         <div className="flex h-full flex-col">
                             {/* Orb canvas — takes most of the height */}
                             <div
-                                className="relative flex-1 overflow-hidden"
+                                className="relative min-h-[320px] flex-1 overflow-hidden"
                                 data-uv2-system-bg=""
                                 style={{
                                     background:
