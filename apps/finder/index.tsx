@@ -1974,7 +1974,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
-                    <div hidden={uv2On() || undefined} className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div data-uv2-oldtool={uv2On() ? "" : undefined} className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
                         {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
