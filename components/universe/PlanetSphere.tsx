@@ -85,8 +85,12 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
         {/* Bereichszeichen: in die Oberfläche geprägt – unter Terminator & Randverdunkelung, darum gleich beleuchtet */}
         {Glyph && (
           <span data-testid="uv2-planet-glyph" className="uv2-planet-glyph absolute inset-0 flex items-center justify-center">
-            <Glyph size={Math.round(size * 0.34)} strokeWidth={1.4} absoluteStrokeWidth
-              style={{ color: "rgba(255,250,236,0.8)", mixBlendMode: "soft-light", filter: 'drop-shadow(0 -0.8px 0 rgba(0,0,0,0.7)) drop-shadow(0 0.8px 0 rgba(255,248,230,0.6))' }} />
+            {/* Gravur in zwei Lagen: dunkle Rille (versetzt, multipliziert) + Lichtkante oben links.
+                Liest sich auf hellen (Gold, Eis) wie dunklen (Indigo, Kupfer) Materialien. */}
+            <Glyph size={Math.round(size * 0.36)} strokeWidth={1.7} absoluteStrokeWidth className="absolute"
+              style={{ color: 'rgba(24,14,4,0.55)', mixBlendMode: 'multiply', transform: 'translate(0.6px,0.9px)' }} />
+            <Glyph size={Math.round(size * 0.36)} strokeWidth={1.2} absoluteStrokeWidth className="absolute"
+              style={{ color: 'rgba(255,251,240,0.78)', mixBlendMode: 'screen', transform: 'translate(-0.4px,-0.5px)' }} />
           </span>
         )}
         {/* Terminator: Licht oben links, Nacht unten rechts – weicher Übergang */}

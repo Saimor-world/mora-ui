@@ -263,7 +263,7 @@ export function MorgenOverlay() {
       <div className="uv2-grain" aria-hidden />
       <div className="absolute inset-0 transition-[background] duration-[3000ms]" style={{ background: TINT[phase] }} />
       {/* Ruhe hinter der Spalte: ein Schleier statt einer Karte */}
-      {wide && <div className="absolute inset-y-0 left-0 w-[46%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.72), rgba(5,7,6,0.35) 60%, transparent)' }} />}
+      {wide && <div data-uv2-scrim className="absolute inset-y-0 left-0 w-[46%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.72), rgba(5,7,6,0.35) 60%, transparent)' }} />}
       <style>{`[data-testid^="territory-"]{transition:translate 1.1s ${UV.easeInOut},opacity .9s ${ease},filter .9s ${ease};translate:${shift}px 0}`
         + (hot ? `[data-testid^="territory-"]{opacity:.28!important}${sel(hot)}{opacity:1!important}` : '')}</style>
 

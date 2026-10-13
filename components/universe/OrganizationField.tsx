@@ -1,5 +1,6 @@
 "use client";
 
+import { attentionScores, attentionDiameter, attentionLevel } from '@/lib/universe/autonomy';
 import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
@@ -126,6 +127,11 @@ export function OrganizationField({
     // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
+    // Autonomie: Môra ordnet nach Aufmerksamkeit (echte Signale), nicht nach Menge.
+    const attention = useMemo(() => {
+        const scores = attentionScores(territories.map((t) => t.id), signals);
+        return { scores, any: Object.values(scores).some((v) => v > 0) };
+    }, [territories, signals]);
     const publishedRef = useRef('');
 
     useLayoutEffect(() => {
@@ -290,6 +296,8 @@ export function OrganizationField({
                 {territories.map((territory) => (
                     <Territory
                         key={territory.id}
+                        attention={attention.scores[territory.id] || 0}
+                        anySignal={attention.any}
                         territory={territory}
                         signals={signals.filter((signal) => signal.targetId === territory.id)}
                         lens={lens}
@@ -406,7 +414,11 @@ function Territory({
     emphasis,
     onSelect,
     onOpenMoon,
+    attention = 0,
+    anySignal = false,
 }: {
+    attention?: number;
+    anySignal?: boolean;
     territory: OrganizationTerritory;
     signals: UniverseSignal[];
     lens: UniverseLens;
@@ -417,7 +429,9 @@ function Territory({
     onOpenMoon: (folderId: string, folderName: string) => void;
 }) {
     const accent = territory.color || '#67e8f9';
-    const size = Math.round(territoryDiameter(territory) * fieldScale);
+    const v2 = isUniverseV2Enabled();
+    const size = Math.round((v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
     const orbitals = useMemo(
@@ -447,6 +461,7 @@ function Territory({
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
             data-uv2-planet={territory.id}
+            data-uv2-attn={v2 ? attnLevel : undefined}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
                 (selected ? 'z-30' : 'hover:z-20')}
             style={{

@@ -352,3 +352,33 @@ html[data-uv2=on] [data-uv2-field] [class*="text-emerald"], html[data-uv2=on] [d
 /* Wache-Spur: feine Striche statt Blöcke */
 html[data-uv2=on] .uv2-timeline { gap: 0; justify-content: space-between; }
 html[data-uv2=on] .uv2-tick { flex: 0 0 2px; }
+
+/* ═══ hd10 ═══ */
+/* LAGE: eigenes linkes Drittel – Signale & Deutung, gleiche Oberkante/Grundlinie */
+html[data-uv2=on] .uv2-col-lage { display: none; }
+@media (min-width: 1280px) {
+  html[data-uv2=on][data-uv2-lage=open] .uv2-col-lage { display: block; position: absolute; left: var(--g-m); top: var(--g-top); bottom: var(--g-base); width: var(--g-3); }
+  html[data-uv2=on][data-uv2-lage=open] .uv2-col-lage > .uv2-instruments { height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; }
+  /* Still: Planeten ruhig über Spalten 4–12 */
+  html[data-uv2=on][data-uv2-still=on]:not([data-uv2-lage=open]) [data-uv2-field] { left: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; right: var(--g-m) !important; }
+  html[data-uv2=on][data-uv2-still=on]:not([data-uv2-lage=open]) [data-uv2-field] [data-uv2-plane] { left: 120px !important; right: 120px !important; }
+}
+html[data-uv2=on] .uv2-col-lage .uv2-instruments > section { background: none !important; border: 0 !important; border-top: 1px solid rgba(247,244,233,.14) !important; padding: 12px 0 0 !important; }
+html[data-uv2=on] .uv2-lage-deutung { margin-top: 8px; font-family: "Cormorant Garamond", serif; font-size: 22px; line-height: 30px; color: #F7F4E9; }
+html[data-uv2=on][data-uv2-lage=open] .uv2-col-lage section:first-child { animation: uv2-slide 0.9s cubic-bezier(.22,1,.36,1) both; }
+/* Wache: ruhige Grundlinie mit Tagespunkten */
+html[data-uv2=on] .uv2-timeline { position: relative; align-items: flex-end; height: 26px; }
+html[data-uv2=on] .uv2-timeline::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: rgba(247,244,233,.12); }
+html[data-uv2=on] .uv2-tick { flex: 0 0 3px; width: 3px; height: 3px; border-radius: 50%; background: rgba(247,244,233,.28); margin-bottom: -1px; box-shadow: none !important; }
+html[data-uv2=on] .uv2-tick.has-n { border-radius: 1.5px; background: rgba(247,244,233,.55); margin-bottom: 0; }
+html[data-uv2=on] .uv2-tick.is-open { background: #E0876A; }
+html[data-uv2=on] .uv2-tick.is-today:not(.has-n) { background: #D6A848; }
+html[data-uv2=on] .uv2-col-lage .uv2-instruments section > p.uv2-lage-deutung { font-family: "Cormorant Garamond", serif !important; font-size: 22px !important; line-height: 30px; letter-spacing: 0 !important; text-transform: none !important; color: #F7F4E9 !important; }
+@media (min-width: 1280px) { html[data-uv2=on][data-uv2-lage=open] .uv2-col-lage { z-index: 60; } html[data-uv2=on] .uv2-col-lage .uv2-instruments > section > header .uv2-inst-label { color: #D6A848 !important; } }
+html[data-uv2=on][data-uv2-lage=open] [data-uv2-scrim] { opacity: 0; }
+@media (min-width: 1280px) { html[data-uv2=on][data-uv2-lage=open] .uv2-col-lage::before { content: ""; position: absolute; z-index: -1; left: calc(-1 * var(--g-m)); top: calc(-1 * var(--g-top)); bottom: calc(-1 * var(--g-base)); width: 560px; background: linear-gradient(90deg, rgba(5,7,6,.72), rgba(5,7,6,.3) 70%, transparent); pointer-events: none; } }
+/* Autonomie: Aufmerksamkeit ordnet das Feld – vorn hell, ruhig tritt zurück */
+html[data-uv2=on] [data-uv2-attn] .uv2-planet { transition: filter 1.6s cubic-bezier(.22,1,.36,1), opacity 1.6s cubic-bezier(.22,1,.36,1); }
+html[data-uv2=on] [data-uv2-attn="vorn"] { z-index: 15; }
+html[data-uv2=on] [data-uv2-attn="vorn"] .uv2-planet { filter: brightness(1.1) drop-shadow(0 0 22px rgba(214,168,72,.18)); }
+html[data-uv2=on] [data-uv2-attn="ruhig"] .uv2-planet { filter: brightness(.8) saturate(.82); }

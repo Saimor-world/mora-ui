@@ -9,7 +9,7 @@ import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/uni
 import type { BusinessSummary } from '@/lib/business/mrr';
 import type { SubstanceBar } from '@/lib/universe/substanceChart';
 import { SubstanceWidget } from '@/components/universe/SubstanceWidget';
-import { UniverseInstruments } from '@/components/universe/UniverseInstruments';
+import { UniverseInstruments, LageSignals } from '@/components/universe/UniverseInstruments';
 
 interface Props {
     mail: MailPreviewItem[];
@@ -192,6 +192,11 @@ export function UniverseObservatory(props: Props) {
                     </button>
                 </Instrument></>)}
             </div>
+            {v2 && (
+                <div data-uv2-col="lage" className={'uv2-col-lage ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                    <LageSignals {...props} openIncidents={openIncidents} />
+                </div>
+            )}
         </div>
     );
 }

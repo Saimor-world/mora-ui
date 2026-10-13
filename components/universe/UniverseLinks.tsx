@@ -68,8 +68,13 @@ export function UniverseLinks() {
             if (from && from.hasAttribute('data-uv2-link') && planet) {
                 const a = from.getBoundingClientRect();
                 const b = planet.getBoundingClientRect();
-                const toLeft = b.left + b.width / 2 < a.left;
-                setLine({ x1: toLeft ? a.left - 6 : a.right + 6, y1: a.top + a.height / 2, x2: b.left + b.width / 2, y2: b.top + b.height / 2 });
+                // Start im Steg links neben der Instrumentenspalte – so kreuzt die Linie
+                // nie Zahlen oder Text der Spalte; Ende am Planetenrand statt in der Mitte.
+                const col = from.closest('[data-uv2-col]')?.getBoundingClientRect();
+                const x1 = (col ? col.left : a.left) - 12; const y1 = a.top + a.height / 2;
+                const cx = b.left + b.width / 2; const cy = b.top + b.height / 2; const r = b.width / 2 + 6;
+                const ang = Math.atan2(y1 - cy, x1 - cx);
+                setLine({ x1, y1, x2: cx + Math.cos(ang) * r, y2: cy + Math.sin(ang) * r });
             }
         };
         const over = (e: MouseEvent) => {
@@ -119,13 +124,14 @@ export function UniverseLinks() {
         <svg className="pointer-events-none fixed inset-0 z-[31] h-full w-full" aria-hidden data-testid="uv2-link-line">
             <defs>
                 <linearGradient id="uv2-link-grad" gradientUnits="userSpaceOnUse" x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2}>
-                    <stop offset="0" stopColor="#D6A848" stopOpacity="0.9" />
-                    <stop offset="1" stopColor="#D6A848" stopOpacity="0" />
+                    <stop offset="0" stopColor="#D6A848" stopOpacity="0.85" />
+                    <stop offset="1" stopColor="#D6A848" stopOpacity="0.15" />
                 </linearGradient>
             </defs>
             <line x1={line.x1} y1={line.y1} x2={line.x2} y2={line.y2} stroke="url(#uv2-link-grad)" strokeWidth="1"
                 strokeDasharray={len} strokeDashoffset={len} className="uv2-link-draw" style={{ ['--uv2-len' as string]: len }} />
             <circle cx={line.x1} cy={line.y1} r="1.6" fill="#D6A848" />
+            <circle cx={line.x2} cy={line.y2} r="1.2" fill="#D6A848" opacity="0.5" />
         </svg>
     );
 }

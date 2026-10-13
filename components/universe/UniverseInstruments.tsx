@@ -12,6 +12,38 @@ import type { BusinessSummary } from '@/lib/business/mrr';
 import type { SubstanceBar } from '@/lib/universe/substanceChart';
 import { SubstanceWidget } from './SubstanceWidget';
 import { CountUp } from './UniverseLinks';
+import { useActionEvents, type ActionEvent } from '@/lib/hooks/useActionEvents';
+
+/** Nur wirklich ausgeführte Handlungen von Môra/System – keine Navigation des Nutzers, keine Vorschläge. */
+export function doneForYou(events: ActionEvent[]): ActionEvent[] {
+    return events
+        .filter((e) => e.status === 'done' && e.actor_role !== 'owner' && e.actor_role !== 'user' && e.intent !== 'navigate' && e.intent !== 'navigation' && Boolean(e.message))
+        .sort((a, b) => Date.parse(b.timestamp || '') - Date.parse(a.timestamp || ''));
+}
+
+function DoneTrace() {
+    const { events } = useActionEvents(true);
+    const done = doneForYou(events || []).slice(0, 3);
+    return (
+        <section data-uv2-instrument="getan" className="uv2-inst" data-testid="uv2-getan">
+            <header className="flex items-baseline justify-between gap-3">
+                <p className="uv2-inst-label">Was ich für dich getan habe</p>
+                <span className="uv2-inst-aside">{done.length || '–'}</span>
+            </header>
+            {done.length === 0
+                ? <p className="uv2-inst-text mt-2 uv2-getan-leer">Noch nichts selbstständig erledigt. Ich handle erst, wenn du freigibst.</p>
+                : done.map((e) => (
+                    <div key={e.action_id} className="uv2-inst-row">
+                        <span className="flex items-baseline justify-between gap-2">
+                            <span className="uv2-inst-label">Erledigt</span>
+                            <span className="uv2-inst-aside">{relativeTime(e.timestamp)}</span>
+                        </span>
+                        <span className="uv2-inst-text truncate">{e.message}</span>
+                    </div>
+                ))}
+        </section>
+    );
+}
 
 /** "vor 3 Std", "in 2 Std", "morgen", "vor 4 T" – ruhig und kurz. */
 export function relativeTime(iso?: string, now = Date.now()): string {
@@ -115,24 +147,73 @@ export function UniverseInstruments(props: {
 
             <Block id="wache" label="Wache · 14 Tage" aside={open ? <><CountUp value={open} /> offen</> : 'ruhig'}>
                 <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="block w-full text-left" data-testid="uv2-wache-timeline">
-                    <span className="uv2-timeline" aria-label={`${total14} Vorfälle in 14 Tagen, ${open} offen`}>
+                    {/* Wenige echte Daten sind der Normalfall: eine ruhige Grundlinie mit
+                        Tagespunkten; nur Tage mit Vorfällen bekommen einen Strich. */}
+                    <span className={'uv2-timeline' + (total14 <= 2 ? ' is-sparse' : '')} aria-label={`${total14} Vorfälle in 14 Tagen, ${open} offen`}>
                         {days.map((d, i) => {
                             const n = d.open + d.closed;
                             return (
-                                <span key={i} className={'uv2-tick' + (i === 13 ? ' is-today' : '') + (d.open ? ' is-open' : '')}
-                                    style={{ height: n ? 6 + (n / peak) * 18 : 2, animationDelay: (0.6 + i * 0.03) + 's' }}
+                                <span key={i} className={'uv2-tick' + (n ? ' has-n' : '') + (i === 13 ? ' is-today' : '') + (d.open ? ' is-open' : '')}
+                                    style={{ height: n ? 8 + (n / peak) * 16 : undefined, animationDelay: (0.6 + i * 0.03) + 's' }}
                                     title={d.day.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }) + ': ' + n} />
                             );
                         })}
                     </span>
-                    <span className="mt-2 flex justify-between uv2-inst-aside"><span>vor 14 T</span><span>heute</span></span>
-                    <span className="uv2-inst-text mt-2 block truncate">{props.openIncidents[0]?.title || 'Keine offenen Vorfälle.'}</span>
+                    <span className="mt-2 flex justify-between uv2-inst-aside">
+                        <span>{total14 === 0 ? 'keine Vorfälle' : `${total14} ${total14 === 1 ? 'Vorfall' : 'Vorfälle'}`}</span><span>heute</span>
+                    </span>
+                    {props.openIncidents[0] && <span className="uv2-inst-text mt-2 block truncate">{props.openIncidents[0].title}</span>}
                 </button>
             </Block>
 
             <Block id="wirtschaft" label="Wirtschaft" aside={amount ? `${b.activeCount} Abo${b.activeCount === 1 ? '' : 's'}` : 'Paddle bereit'}>
                 <p className="uv2-inst-text">{amount ? <>Monatlich <span className="uv2-inst-figure">{amount}</span></> : 'Noch kein Umsatz – das erste Abo erscheint hier.'}</p>
             </Block>
+        </div>
+    );
+}
+
+
+/**
+ * LAGE: linkes Drittel (Spalten 1–3). Signale = was hereinkam, Deutung = was es
+ * heißt – nur aus echten Zählungen abgeleitet, nichts erfunden.
+ */
+export function LageSignals(props: {
+    mail: MailPreviewItem[]; calendar: CalendarPreviewItem[]; feed: FeedPreviewItem[];
+    openIncidents: NightwatchIncidentItem[]; substanceBars: SubstanceBar[];
+    onOpenMail: () => void; onOpenCalendar: () => void; onOpenFeed: () => void; onOpenNightwatch: () => void;
+}) {
+    type Sig = { kind: string; title: string; when?: string; t: number; open: () => void };
+    const sigs: Sig[] = [];
+    props.openIncidents.slice(0, 2).forEach((i) => sigs.push({ kind: 'Wache', title: i.title || 'Vorfall', when: relativeTime(i.detected_at || (i as { created_at?: string }).created_at), t: Date.parse(i.detected_at || (i as { created_at?: string }).created_at || '') || 0, open: props.onOpenNightwatch }));
+    props.calendar.slice(0, 2).forEach((c) => { const iso = calendarIso(c); sigs.push({ kind: 'Kalender', title: c.title, when: relativeTime(iso), t: Date.parse(iso || '') || 0, open: props.onOpenCalendar }); });
+    props.mail.slice(0, 2).forEach((m) => sigs.push({ kind: 'Mail', title: m.subject, when: relativeTime(m.date), t: Date.parse(m.date || '') || 0, open: props.onOpenMail }));
+    props.feed.slice(0, 1).forEach((f) => sigs.push({ kind: 'Feed', title: f.title, t: 0, open: props.onOpenFeed }));
+    const list = sigs.slice(0, 4);
+    const busiest = [...props.substanceBars].sort((a, b) => b.documents - a.documents)[0];
+    const deutung: string[] = [];
+    const nOpen = props.openIncidents.length;
+    if (nOpen) deutung.push(nOpen === 1 ? 'Ein offener Vorfall braucht einen Blick.' : `${nOpen} offene Vorfälle brauchen einen Blick.`);
+    if (props.calendar.length) deutung.push(`${props.calendar.length === 1 ? 'Ein Termin' : props.calendar.length + ' Termine'} im Horizont.`);
+    if (props.mail.length) deutung.push(`${props.mail.length === 1 ? 'Eine Nachricht' : props.mail.length + ' Nachrichten'} im Eingang.`);
+    if (busiest && busiest.documents > 0) deutung.push(`Die meiste Arbeit liegt in ${busiest.name}.`);
+
+    return (
+        <div className="uv2-instruments uv2-lage-left" data-testid="uv2-lage-signale">
+            <section data-uv2-instrument="signale" className="uv2-inst">
+                <header className="flex items-baseline justify-between gap-3">
+                    <p className="uv2-inst-label">Signale</p><span className="uv2-inst-aside">{list.length}</span>
+                </header>
+                {list.length === 0 && <p className="uv2-inst-text mt-2">Gerade kommt nichts herein.</p>}
+                {list.map((x, i) => (
+                    <Row key={i} label={x.kind} when={x.when} value={x.title} onClick={x.open} />
+                ))}
+            </section>
+            <DoneTrace />
+            <section data-uv2-instrument="deutung" className="uv2-inst">
+                <header><p className="uv2-inst-label">Deutung</p></header>
+                <p className="uv2-lage-deutung">{deutung.length ? deutung.join(' ') : 'Ruhige Lage – nichts verlangt gerade Aufmerksamkeit.'}</p>
+            </section>
         </div>
     );
 }

@@ -11,6 +11,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
+import { capPlanets, OVERFLOW_ID } from '@/lib/universe/autonomy';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { UniverseLinks } from '@/components/universe/UniverseLinks';
@@ -308,8 +309,23 @@ export default function UniverseView() {
     }, [effectiveCompanyId, spaceListByDepartment]);
 
     const structureKey = accessibleDepartments.map((d) => `${d.id}:${d.name}:${d.universeAccess}`).join('|');
+    // Autonomie (v2): höchstens 7 Planeten. Überzählige Bereiche werden Monde
+    // des Sammelplaneten "Weitere" – Mitgliedschaft nach Substanz, damit Orte ruhig bleiben.
+    const substanceKey = accessibleDepartments.map((d) => d.id + ':' + (metrics[d.id]?.nodes || 0)).join('|');
+    const capped = useMemo(() => {
+        if (!isUniverseV2Enabled()) return { planets: accessibleDepartments, overflow: [] as typeof accessibleDepartments };
+        const substance = Object.fromEntries(accessibleDepartments.map((d) => [d.id, (metrics[d.id]?.nodes || 0) + (metrics[d.id]?.spaces || 0)]));
+        const r = capPlanets(accessibleDepartments.map((d) => ({ ...d, id: String(d.id), name: String(d.name || '') })), substance);
+        if (!r.overflow.length) return { planets: accessibleDepartments, overflow: [] as typeof accessibleDepartments };
+        const keep = new Set(r.planets.map((d) => d.id));
+        const overflow = accessibleDepartments.filter((d) => !keep.has(String(d.id)));
+        const sammel = { ...overflow[0], id: OVERFLOW_ID, name: 'Weitere', description: overflow.map((d) => d.name).join(', '), universeAccess: 'open' } as (typeof accessibleDepartments)[number];
+        return { planets: [...accessibleDepartments.filter((d) => keep.has(String(d.id))), sammel], overflow };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accessibleDepartments, substanceKey]);
+
     const positionedDepartments = useMemo(() => {
-        const sorted = [...accessibleDepartments].sort((left, right) => {
+        const sorted = [...capped.planets].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
             const b = String(right.id || '') + ':' + String(right.name || '');
             return a.localeCompare(b);
@@ -320,7 +336,7 @@ export default function UniverseView() {
         // dann alle 45 s ein Neuladen bzw. jede Ablage – jedes Mal sprangen alle
         // Planeten, und das Overlay maß sie neu. Größe darf wachsen, der Ort nicht.
         return buildOrganicUniverseLayout(sorted, isUniverseV2Enabled() ? {} : metrics);
-    }, [accessibleDepartments, isUniverseV2Enabled() ? structureKey : metrics]);
+    }, [capped, isUniverseV2Enabled() ? structureKey : metrics]);
 
     // v2: Planeten füllen die Mittelzone (Spalten 4–9) gleichmäßig – Lage
     // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
@@ -328,14 +344,28 @@ export default function UniverseView() {
         if (!isUniverseV2Enabled() || positionedDepartments.length < 2) return positionedDepartments;
         const xs = positionedDepartments.map((d) => d.x); const ys = positionedDepartments.map((d) => d.y);
         const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-        const nx = (v: number) => (x1 - x0 < 1 ? 50 : 12 + ((v - x0) / (x1 - x0)) * 76);
-        const ny = (v: number) => (y1 - y0 < 1 ? 50 : 8 + ((v - y0) / (y1 - y0)) * 84);
+        // Wenige Planeten rücken zusammen (ein Bild statt drei Ecken), viele nutzen die Zone.
+        const n = positionedDepartments.length;
+        const spanX = n <= 3 ? 44 : n <= 5 ? 66 : 76; const spanY = n <= 3 ? 56 : n <= 5 ? 76 : 84;
+        const nx = (v: number) => (x1 - x0 < 1 ? 50 : 50 - spanX / 2 + ((v - x0) / (x1 - x0)) * spanX);
+        const ny = (v: number) => (y1 - y0 < 1 ? 50 : 50 - spanY / 2 + ((v - y0) / (y1 - y0)) * spanY);
         return positionedDepartments.map((d) => ({ ...d, x: nx(d.x), y: ny(d.y) }));
     }, [positionedDepartments]);
 
     const territories = useMemo<OrganizationTerritory[]>(
         () => normalizedDepartments.map((department) => {
             const value = metrics[department.id];
+            if (department.id === OVERFLOW_ID) {
+                const docs = capped.overflow.reduce((n, d) => n + (metrics[d.id]?.nodes || 0), 0);
+                return {
+                    id: OVERFLOW_ID, name: 'Weitere', description: department.description, color: department.color,
+                    x: department.x, y: department.y,
+                    spaces: capped.overflow.length, folders: 0, documents: docs,
+                    // Jeder überzählige Bereich ist ein Mond mit eigenem Namen.
+                    spaceList: capped.overflow.map((d) => ({ id: String(d.id), name: String(d.name || '') })),
+                    metricSource: 'live', access: 'open',
+                } as OrganizationTerritory;
+            }
             return {
                 id: department.id,
                 name: department.name,
@@ -357,7 +387,7 @@ export default function UniverseView() {
                 access: department.universeAccess,
             };
         }),
-        [metrics, normalizedDepartments, spaceListByDepartment, folderMoons],
+        [metrics, normalizedDepartments, spaceListByDepartment, folderMoons, capped],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
