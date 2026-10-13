@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, {
     useCallback,
     useEffect,
@@ -359,9 +360,16 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             paneId={paneId}
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full flex-col">
+            <div className="flex h-full flex-col" data-uv2-app="team">
+                {uv2() && !isLoading && (
+                    <AppHero app="team" eyebrow={'Teamraum · ' + (isOperational ? 'verbunden' : 'nicht erreichbar')}
+                        title={members.length === 0 ? (isOperational ? 'Noch niemand hier.' : 'Der Raum ist gerade still.') : members.length === 1 ? 'Du bist im Raum.' : `${members.length} Menschen im Raum.`}
+                        sub={!isOperational ? 'Sobald die Verbindung steht, siehst du hier, wer da ist – und was ihr euch schreibt.' : messages.length > 0 ? `Zuletzt: „${messages[messages.length - 1].content.slice(0, 90)}“` : 'Ein gemeinsamer Ort für kurze Worte – ohne Postfach.'}
+                        figure={isOperational ? messages.length : undefined} figureLabel="Nachrichten"
+                        action={{ label: 'Jemanden einladen', onClick: () => setActiveTab('invite') }} />
+                )}
                 {/* ── Tab bar ── */}
-                <div className="flex items-center gap-1 border-b border-white/5 p-2">
+                <div className="flex items-center gap-1 border-b border-white/5 p-2" data-uv2-tabs>
                     <button
                         onClick={() => setActiveTab('room')}
                         className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs transition-colors ${activeTab === 'room' ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5'}`}
@@ -407,7 +415,14 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                 />
 
                                 {/* Empty state */}
-                                {!isLoading && members.length === 0 && (
+                                {!isLoading && members.length === 0 && uv2() && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <AppEmpty compact glyph={<Users size={20} strokeWidth={1.25} />} title={isOperational ? 'Der Raum wartet.' : 'Gerade keine Verbindung.'}
+                                            text={isOperational ? 'Wer eingeladen ist, erscheint hier als Licht, sobald er da ist.' : 'Saimôr zeigt keinen leeren Raum, solange der echte Stand unbekannt ist.'}
+                                            action={isOperational ? { label: 'Einladen', onClick: () => setActiveTab('invite') } : { label: 'Erneut verbinden', onClick: () => void fetchMembers() }} />
+                                    </div>
+                                )}
+                                {!isLoading && members.length === 0 && !uv2() && (
                                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
                                         <span className="text-sm text-white/75">{isOperational ? 'Noch niemand hier.' : 'Der Teamraum ist gerade nicht erreichbar.'}</span>
                                         <span className="max-w-[280px] text-xs leading-relaxed text-white/45">{isOperational ? 'Lade Menschen ein – sie erscheinen hier, sobald sie da sind.' : 'Sobald die Verbindung steht, siehst du hier, wer im Raum ist.'}</span>

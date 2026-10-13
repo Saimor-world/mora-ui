@@ -689,3 +689,9 @@ html[data-uv2="on"] [data-uv2-person] .text-sm.font-medium { font-family: var(--
 html[data-uv2="on"] [data-uv2-person="invited"] .text-sm.font-medium { color: rgba(var(--uv-cream), .6) !important; font-style: italic; }
 html[data-uv2="on"] [data-uv2-person] select { background: none !important; border: .5px solid var(--uv-hair) !important; border-radius: 999px !important; }
 html[data-uv2="on"] [data-uv2-switch="on"] { background: rgba(var(--uv-gold-rgb), .6) !important; }
+/* hd14 · Gemeinsame Reiterleiste (Teamraum u. a.) */
+html[data-uv2="on"] [data-uv2-tabs] { gap: 24px !important; padding: 0 32px !important; border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] [data-uv2-tabs] > button { background: none !important; border-radius: 0 !important; padding: 12px 0 !important; font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .2em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; border-bottom: 1px solid transparent; }
+html[data-uv2="on"] [data-uv2-tabs] > button svg { display: none; }
+html[data-uv2="on"] [data-uv2-tabs] > button[class*="bg-white/10"] { color: rgb(var(--uv-cream)) !important; border-bottom-color: var(--uv-gold); }
+html[data-uv2="on"] [data-uv2-tabs] > button:hover { color: rgb(var(--uv-cream)) !important; }
