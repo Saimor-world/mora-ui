@@ -1,5 +1,6 @@
 "use client";
 
+import { PlanetSphere } from './PlanetSphere';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
@@ -473,6 +474,9 @@ function Territory({
                 className="saimor-territory-body relative mx-auto block"
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
+                {isUniverseV2Enabled() && territory.access !== 'locked' ? (
+                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} />
+                ) : (
                 <span
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
                     style={{
@@ -493,6 +497,7 @@ function Territory({
                         ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
                         : (() => { const Glyph = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <Glyph size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />; })()}
                 </span>
+                )}
 
                 <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} />
             </span>

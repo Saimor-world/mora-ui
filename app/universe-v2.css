@@ -167,3 +167,11 @@ html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [class*="borde
 /* hd6 – Display-Größen in Apps: nur Serif, max. 28px, nie fett */
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.text-3xl,.text-4xl,.text-5xl) { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: 28px !important; font-weight: 400 !important; letter-spacing: 0 !important; line-height: 1.15 !important; }
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.font-bold,.font-semibold):not(button):not(button *) { font-weight: 500 !important; }
+
+/* hd6 – Planeten: sanfte Rotation der Oberfläche (Material wandert nach links) */
+@keyframes uv2-planet-rot { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+html[data-uv2="on"] .uv2-planet-surface { animation: uv2-planet-rot var(--uv2-rot, 80s) linear infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { html[data-uv2="on"] .uv2-planet-surface { animation: none; } }
+/* Planeten-Signalmarke: Tinte + Creme statt Blau-Pille */
+html[data-uv2="on"] [data-testid^="territory-"] > span.pointer-events-none[class*="bg-[#08121e]"] { background: rgba(5,7,6,.86) !important; border-color: rgba(247,244,233,.14) !important; box-shadow: none !important; }
+html[data-uv2="on"] [data-testid^="territory-"] > span.pointer-events-none[class*="bg-[#08121e]"] > span:not(:last-child) { color: #D6A848 !important; }
