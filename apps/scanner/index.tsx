@@ -960,7 +960,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
-                {pendingActions.length > 0 && (
+                {!uv2 && pendingActions.length > 0 && (
                     <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
                         <div className="flex items-start gap-3">
                             <Activity size={16} className="text-amber-300 mt-0.5 shrink-0" />
