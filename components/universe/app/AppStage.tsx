@@ -25,7 +25,7 @@ export function AppHero({ app, eyebrow, title, sub, figure, figureLabel, action,
     <header className="uv2-ftool uv2-bar" data-uv2-hero={app} title={subText}>
       <span className="uv2-bar__eyebrow">{eyebrow}</span>
       <h2 className="uv2-bar__title">{title}</h2>
-      {figure !== undefined && figure !== null && figure !== '' ? (
+      {figure !== undefined && figure !== null && figure !== '' && !(typeof title === 'string' && /^\s*\d/.test(title)) ? (
         <span className="uv2-bar__count" aria-label={figureLabel ? `${figure} ${figureLabel}` : undefined}><b>{figure}</b>{figureLabel ? ` ${figureLabel}` : ''}</span>
       ) : null}
       <span style={{ flex: 1 }} />

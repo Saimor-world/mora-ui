@@ -120,7 +120,7 @@ export default function GridApp({ paneId }: AppProps) {
                         <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Filtern …" aria-label="Inhalte filtern" className="uv2-inline-input" />
                         <div className="flex gap-4">
                             {[null, ...nodeTypes].map((t) => (
-                                <button key={t ?? 'alle'} type="button" onClick={() => setFilterType(t)} className="uv2-files-link" style={{ color: filterType === t ? '#D6A848' : undefined }}>{t ?? 'Alle'}</button>
+                                <button key={t ?? 'alle'} type="button" onClick={() => setFilterType(t)} className="uv2-files-link" style={{ color: filterType === t ? '#D6A848' : undefined }}>{t ? (({ document: 'Dokumente', note: 'Notizen', image: 'Bilder', sheet: 'Tabellen', folder: 'Ordner', file: 'Dateien', link: 'Links' } as Record<string, string>)[String(t).toLowerCase()] ?? t) : 'Alle'}</button>
                             ))}
                         </div>
                         <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-[rgba(247,244,233,.45)]">{filteredNodes.length} von {nodes.length}</span>
@@ -146,7 +146,7 @@ export default function GridApp({ paneId }: AppProps) {
                                         <button key={node.id} type="button" className="uv2-desk__tile" onClick={() => openPane({ id: `doc-${node.id}`, type: 'document', title: node.title || 'Ohne Titel', size: { width: 800, height: 600 }, data: { nodeId: node.id, content: node.content, name: node.title, type: node.type, metadata: node.metadata } })}>
                                             <span className="uv2-desk__kind"><Icon size={18} strokeWidth={1.25} /></span>
                                             <span className="uv2-desk__name">{node.title || 'Ohne Titel'}</span>
-                                            <span className="uv2-desk__meta">{node.type}</span>
+                                            <span className="uv2-desk__meta">{({ document: 'Dokument', note: 'Notiz', image: 'Bild', sheet: 'Tabelle', folder: 'Ordner', file: 'Datei', link: 'Link' } as Record<string, string>)[String(node.type).toLowerCase()] ?? node.type}</span>
                                         </button>
                                     );
                                 })}

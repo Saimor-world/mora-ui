@@ -535,6 +535,11 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
             onMinimize={() => minimizePane(paneId)}
             onFocus={() => focusPane(paneId)}
             isActive={isActive}
+            zIndex={pane.zIndex}
+            showCloseButton
+            showMinimizeButton
+            draggable
+            resizable
         >
             <div className="flex flex-col h-full bg-black/60 rounded-b-2xl overflow-hidden" data-uv2-app="work-session">
                 {isLoading && <div className="flex-1 flex items-center justify-center"><Loader2 size={22} className="animate-spin text-white/25" /></div>}
