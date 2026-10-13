@@ -28,11 +28,11 @@ interface TeamMember {
 }
 
 const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
-    system_owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'System Owner' },
-    owner:        { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Owner' },
+    system_owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Systeminhaber' },
+    owner:        { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Inhaber' },
     admin:        { icon: Shield, color: 'text-purple-400', bg: 'bg-purple-500/20', label: 'Admin' },
     manager:      { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Manager' },
-    member:       { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Member' },
+    member:       { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Mitglied' },
     demo:         { icon: User, color: 'text-cyan-400', bg: 'bg-cyan-500/20', label: 'Demo' },
 };
 
@@ -406,7 +406,7 @@ export default function UsersApp({ paneId }: AppProps) {
                 {/* Footer */}
                 <div className="p-3 border-t border-white/10 flex items-center justify-between">
                     <div className="text-xs text-white/30">
-                        {viewMode === 'demo' ? 'Demo-Modus: Integrationen sind begrenzt' : 'Einladungen gelten nur fuer diese Instanz'}
+                        {viewMode === 'demo' ? 'Demo-Modus: Integrationen sind begrenzt' : 'Einladungen gelten nur für diese Instanz'}
                     </div>
                     <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
                         <Settings size={12} />

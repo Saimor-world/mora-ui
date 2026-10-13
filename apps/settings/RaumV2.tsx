@@ -146,7 +146,7 @@ export function RaumV2(p: Props) {
               onKeyDown={(e) => {
                 if (e.key === 'ArrowRight') moveSun((hour + 1) % 24); if (e.key === 'ArrowLeft') moveSun((hour + 23) % 24);
               }} />
-            <span className="uv2-raum__suncap" style={{ transform: `translateX(${sunX > 0.72 ? -100 : sunX < 0.28 ? 0 : -50}%)`, left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78 + 9}%` }}>{hhmm(hour)} · {SCENE_TIME[p.scene]} · {SCENE_KELVIN[p.scene]} K</span>
+            <span className="uv2-raum__suncap" style={{ transform: `translateX(${sunX > 0.72 ? -100 : sunX < 0.28 ? 0 : -50}%)`, left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78 - 6}%` }}>{hhmm(hour)} · {SCENE_TIME[p.scene]} · {SCENE_KELVIN[p.scene]} K</span>
             <span className="uv2-raum__live">Live-Vorschau</span>
             <button type="button" className="uv2-raum__auto" data-on={p.autoTime ? '' : undefined} onClick={p.onToggleAuto}>{p.autoTime ? 'Folgt der Uhr' : 'Fest'}</button>
           </div>
