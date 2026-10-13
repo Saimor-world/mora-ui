@@ -27,6 +27,7 @@ const PUBLIC_PATHS = [
     "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
     "/home",           // Website entry preview — needs to render so localStorage bridge works
     "/reset-password", // Token-based password reset — unauthenticated by design
+    "/begleiter",      // Handy-Begleiter: zeigt nichts ohne gekoppeltes Gerät + Face-ID-Signatur (CORE prüft)
 ];
 
 /** Dev-only UI museum — see app/tunnel/page.tsx */
@@ -47,6 +48,9 @@ const PUBLIC_FILES = [
     "/favicon.ico",
     "/robots.txt",
     "/sitemap.xml",
+    "/begleiter.webmanifest",
+    "/begleiter-sw.js",
+    "/begleiter-icon.svg",
 ];
 
 function isPublicPath(pathname: string): boolean {

@@ -1,0 +1,36 @@
+/* Saimôr Begleiter – Sprache von saimor.world: Gold, Creme, Grünschwarz, Serifen, viel Leere. */
+.bgl-root{position:fixed;inset:0;overflow-y:auto;background:#050706;color:#F7F4E9;font-family:Inter,system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;padding:calc(env(safe-area-inset-top) + 44px) 28px calc(env(safe-area-inset-bottom) + 28px)}
+.bgl-root:before{content:"";position:fixed;inset:0;pointer-events:none;
+  background:radial-gradient(600px 400px at 70% -10%,rgba(214,168,72,.16),transparent 60%),radial-gradient(500px 500px at 0% 110%,rgba(40,70,55,.35),transparent 60%)}
+.bgl-col{position:relative;max-width:440px;margin:0 auto;min-height:100%;display:flex;flex-direction:column}
+.bgl-k{font:11px 'Space Mono',ui-monospace,monospace;letter-spacing:.18em;color:#D6A848;text-transform:uppercase}
+.bgl-k.dim{color:rgba(247,244,233,.5)}
+.bgl-s{font-family:'Cormorant Garamond',Georgia,serif;font-weight:400}
+.bgl-h1{font-size:44px;line-height:1.02;margin-top:26px}
+.bgl-h1 i{color:#D6A848}
+.bgl-hr{height:1px;background:rgba(214,168,72,.22);margin:22px 0}
+.bgl-title{font-size:27px;line-height:1.15;margin-top:10px}
+.bgl-m{color:rgba(247,244,233,.6);font-size:14px;line-height:1.5}
+.bgl-src{margin-top:18px;font:11px 'Space Mono',monospace;color:rgba(247,244,233,.45);word-break:break-word}
+.bgl-foot{margin-top:auto;padding-top:32px}
+.bgl-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border-radius:30px;padding:17px;font:600 15px Inter,sans-serif;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.bgl-gold{position:relative;overflow:hidden;background:#D6A848;color:#050706;touch-action:none;user-select:none;-webkit-user-select:none}
+.bgl-gold .fill{position:absolute;inset:0;background:#F7F4E9;opacity:.35;transform-origin:left;transform:scaleX(var(--p,0))}
+.bgl-gold span{position:relative}
+.bgl-gold:disabled{opacity:.5}
+.bgl-ghost{background:transparent;color:#F7F4E9;border:1px solid rgba(247,244,233,.25)}
+.bgl-row{display:flex;gap:12px;margin-top:12px}
+.bgl-sig{text-align:center;margin-top:16px;font:10px 'Space Mono',monospace;letter-spacing:.15em;color:rgba(247,244,233,.4);text-transform:uppercase}
+.bgl-input{width:100%;margin-top:12px;background:rgba(247,244,233,.04);border:1px solid rgba(247,244,233,.18);border-radius:16px;padding:16px;color:#F7F4E9;font:16px Inter,sans-serif;outline:none}
+.bgl-input:focus{border-color:#D6A848}
+.bgl-orb{width:120px;height:120px;border-radius:50%;margin:56px auto 0;background:radial-gradient(circle at 35% 30%,#F7E2A6,#D6A848 45%,#5A3F10);box-shadow:0 0 80px rgba(214,168,72,.4)}
+.bgl-ring{position:relative;display:flex;align-items:center;justify-content:center;height:260px;margin-top:20px}
+.bgl-ring:before,.bgl-ring:after{content:"";position:absolute;border-radius:50%;border:1px solid rgba(214,168,72,.14);width:240px;height:240px}
+.bgl-ring:after{width:180px;height:180px;border-color:rgba(214,168,72,.28)}
+.bgl-ring .bgl-orb{margin:0}
+.bgl-err{margin-top:16px;color:#E8A08A;font-size:14px}
+.bgl-check{width:120px;height:120px;border-radius:50%;margin:48px auto 0;display:flex;align-items:center;justify-content:center;border:1px solid rgba(214,168,72,.5);color:#D6A848;font-size:52px}
+.bgl-steps{margin-top:28px;display:grid;gap:16px}
+.bgl-steps div{display:flex;gap:14px;font-size:15px;line-height:1.4}
+.bgl-steps b{font:12px 'Space Mono',monospace;color:#D6A848;font-weight:400;padding-top:2px}

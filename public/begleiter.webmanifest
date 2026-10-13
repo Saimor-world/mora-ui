@@ -1,0 +1,15 @@
+{
+  "name": "Saimôr Begleiter",
+  "short_name": "Begleiter",
+  "description": "Dein Schlüssel zum Saimôr Universe – Freigaben, Brief und Wache unterwegs.",
+  "start_url": "/begleiter",
+  "scope": "/begleiter",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#050706",
+  "theme_color": "#050706",
+  "lang": "de",
+  "icons": [
+    { "src": "/begleiter-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

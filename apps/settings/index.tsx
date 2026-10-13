@@ -11,7 +11,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Moon, Sun, Zap, Monitor, Volume1, Sparkles, Send } from 'lucide-react';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge, Smartphone } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
@@ -51,6 +51,7 @@ import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
+import { PairPanel } from '@/components/begleiter/PairPanel';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -58,6 +59,7 @@ const UV2_SETTINGS_LINES: Record<string, string> = {
     appearance: 'Wie Saimôr für dich aussieht.',
     audio: 'Klang, Stille und die Musik im Hintergrund.',
     notifications: 'Wann dich etwas erreichen darf.',
+    begleiter: 'Dein Handy als Schlüssel – Freigaben unterwegs mit Face ID.',
     workspace: 'Bereiche und Räume deiner Organisation.',
     team: 'Wer mitarbeitet, und mit welchen Rechten.',
     system: 'Wie es dem System gerade geht.',
@@ -183,6 +185,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
+        ...(uv2On() ? [{ id: 'begleiter', label: 'Handy verbinden', icon: Smartphone }] : []),
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
@@ -511,7 +514,7 @@ useEffect(() => {
                         figure={tabs.length} figureLabel="Bereiche"
                         action={null} />
                     {([
-                        ['Du', ['profile', 'appearance', 'audio', 'notifications']],
+                        ['Du', ['profile', 'appearance', 'audio', 'notifications', 'begleiter']],
                         ['Arbeitsraum', ['workspace-control', 'workspace', 'team']],
                         ['System', ['system', 'about']],
                     ] as const).map(([group, ids]) => {
@@ -1863,6 +1866,8 @@ SMTP_TLS=true`}</pre>
                             )}
                         </div>
                     )}
+
+                    {activeTab === 'begleiter' && uv2On() && <PairPanel />}
 
                     {activeTab === 'about' && (
                         <div className="space-y-6">

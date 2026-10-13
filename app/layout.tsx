@@ -37,6 +37,7 @@ export default function RootLayout({
     pathname === "/login" ||
     pathname === "/entry" ||
     pathname === "/reset-password" ||
+    pathname.startsWith("/begleiter") ||
     pathname.startsWith("/join") ||
     pathname.startsWith("/oauth");
 
