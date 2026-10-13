@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -487,7 +488,7 @@ useEffect(() => {
 
     return (
         <GlassPanel
-            title={null}
+            title={isUniverseV2Enabled() ? 'Einstellungen' : null}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}

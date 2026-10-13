@@ -166,8 +166,8 @@ function StepIcon({ status }: { status: WorkSessionStepStatus }) {
         case 'failed': return <XCircle size={13} className="text-red-400 shrink-0" />;
         case 'running': return <PlayCircle size={13} className="text-blue-400 animate-pulse shrink-0" />;
         case 'pending_confirmation': return <AlertTriangle size={13} className="text-amber-400 shrink-0" />;
-        case 'skipped': return <SkipForward size={13} className="text-white/20 shrink-0" />;
-        default: return <Clock3 size={13} className="text-white/25 shrink-0" />;
+        case 'skipped': return <SkipForward size={13} className="text-white/45 shrink-0" />;
+        default: return <Clock3 size={13} className="text-white/45 shrink-0" />;
     }
 }
 
@@ -189,12 +189,12 @@ function SegmentDivider({ summary }: { summary: WorkSessionSegmentSummary | null
         <div className="my-3">
             <div className="flex items-center gap-2">
                 <div className="h-px flex-1 bg-white/[0.06]" />
-                <span className="text-[9px] uppercase tracking-[0.22em] text-white/28">
+                <span className="text-[9px] uppercase tracking-[0.22em] text-white/45">
                     {label}{isActive && total ? ` ${completed ?? 0}/${total}` : ''}
                 </span>
                 <div className="h-px flex-1 bg-white/[0.06]" />
             </div>
-            {subtitle && <p className="mt-1.5 text-[10px] text-white/28 leading-relaxed text-center">{subtitle}</p>}
+            {subtitle && <p className="mt-1.5 text-[10px] text-white/45 leading-relaxed text-center">{subtitle}</p>}
         </div>
     );
 }
@@ -207,16 +207,16 @@ function renderContentDiff(step: WorkSessionStep) {
     if (!before && !after && !summary) return null;
     return (
         <div className="rounded bg-white/[0.03] border border-white/[0.06] px-2.5 py-2 space-y-1.5">
-            <div className="text-[9px] uppercase tracking-wider text-white/22">Inhaltsänderung</div>
+            <div className="text-[9px] uppercase tracking-wider text-white/45">Inhaltsänderung</div>
             {summary && <p className="text-[11px] text-white/58 leading-relaxed">{summary}</p>}
             {(before || after) && (
                 <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
                     <div className="rounded bg-black/20 px-2 py-1.5">
-                        <div className="text-[9px] uppercase tracking-wider text-white/20 mb-1">Vorher</div>
+                        <div className="text-[9px] uppercase tracking-wider text-white/45 mb-1">Vorher</div>
                         <p className="text-[11px] text-white/45 leading-relaxed">{compactText(before) || 'Leer'}</p>
                     </div>
                     <div className="rounded bg-black/20 px-2 py-1.5">
-                        <div className="text-[9px] uppercase tracking-wider text-white/20 mb-1">Nachher</div>
+                        <div className="text-[9px] uppercase tracking-wider text-white/45 mb-1">Nachher</div>
                         <p className="text-[11px] text-white/65 leading-relaxed">{compactText(after) || 'Leer'}</p>
                     </div>
                 </div>
@@ -280,9 +280,9 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                 : isSkipped ? 'border-white/[0.06] bg-white/[0.025]'
                     : 'border-white/[0.06] bg-white/[0.02]';
 
-    const titleCls = isDone ? 'text-white/32'
+    const titleCls = isDone ? 'text-white/60'
         : isFailed ? 'text-red-300/70'
-            : isSkipped ? 'text-white/42'
+            : isSkipped ? 'text-white/65'
                 : isRunning ? 'text-white/90 font-medium'
                     : write ? 'text-amber-100/78' : 'text-white/58';
 
@@ -297,8 +297,8 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                         <div className="min-w-0">
                             <span className={`text-xs leading-snug break-words ${titleCls}`}>{step.title}</span>
                             <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                <span className="text-[9px] uppercase tracking-wider text-white/24">{stepStatusLabels[step.status]}</span>
-                                {step.navigation?.label && <span className="text-[10px] text-white/28">{compactText(step.navigation.label, 80)}</span>}
+                                <span className="text-[9px] uppercase tracking-wider text-white/45">{stepStatusLabels[step.status]}</span>
+                                {step.navigation?.label && <span className="text-[10px] text-white/45">{compactText(step.navigation.label, 80)}</span>}
                             </div>
                         </div>
                         <div className="flex items-center gap-1.5 shrink-0">
@@ -307,7 +307,7 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                                     <KindIcon kind={step.kind} size={8} />{kindLabel}
                                 </span>
                             )}
-                            {!write && <KindIcon kind={step.kind} size={10} className="text-white/18" />}
+                            {!write && <KindIcon kind={step.kind} size={10} className="text-white/45" />}
                             {hasNavigation && (isDone || isRunning) && (
                                 <button type="button" onClick={() => onOpen(step)}
                                     className="inline-flex items-center gap-1 rounded-full border border-cyan-400/15 bg-cyan-500/[0.06] px-2 py-0.5 text-[10px] text-cyan-200/65 hover:border-cyan-400/30 hover:bg-cyan-500/[0.12] hover:text-cyan-200 transition-colors">
@@ -316,7 +316,7 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                             )}
                             {hasDetail && (
                                 <button type="button" onClick={() => setExpanded((v) => !v)}
-                                    className="text-white/20 hover:text-white/45 transition-colors" aria-label="Details anzeigen">
+                                    className="text-white/45 hover:text-white/45 transition-colors" aria-label="Details anzeigen">
                                     {expanded ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                                 </button>
                             )}
@@ -326,14 +326,14 @@ function StepRow({ step, onOpen }: { step: WorkSessionStep; onOpen: (step: WorkS
                         {expanded && hasDetail && (
                             <motion.div key="detail" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.15 }} className="overflow-hidden">
                                 <div className="mt-2 space-y-1.5">
-                                    {step.why && <p className="text-[11px] text-white/38 leading-relaxed">{step.why}</p>}
+                                    {step.why && <p className="text-[11px] text-white/60 leading-relaxed">{step.why}</p>}
                                     {resultSummary && (
                                         <div className="rounded bg-white/[0.04] border border-white/[0.06] px-2.5 py-1.5">
-                                            <div className="text-[9px] uppercase tracking-wider text-white/22 mb-0.5">Ergebnis</div>
+                                            <div className="text-[9px] uppercase tracking-wider text-white/45 mb-0.5">Ergebnis</div>
                                             <p className="text-[11px] text-white/65 leading-relaxed">{resultSummary}</p>
                                         </div>
                                     )}
-                                    {step.summary && !resultSummary && <p className="text-[11px] text-white/32 leading-relaxed">{step.summary}</p>}
+                                    {step.summary && !resultSummary && <p className="text-[11px] text-white/60 leading-relaxed">{step.summary}</p>}
                                     {contentDiff}
                                 </div>
                             </motion.div>
@@ -367,13 +367,13 @@ function ConfirmStepCard({ step, onConfirm, onReject }: { step: WorkSessionStep;
                         </span>
                     </div>
                     <div className="text-xs font-medium text-amber-100/90 leading-snug mt-0.5">{step.title}</div>
-                    {step.why && <p className="text-[11px] text-white/42 mt-1.5 leading-relaxed">{step.why}</p>}
+                    {step.why && <p className="text-[11px] text-white/65 mt-1.5 leading-relaxed">{step.why}</p>}
                     {primaryResult && (
                         <div className="mt-2 rounded border border-white/[0.06] bg-white/[0.04] px-2.5 py-1.5">
                             <p className="text-[11px] text-white/62 leading-relaxed">{primaryResult}</p>
                         </div>
                     )}
-                    {step.navigation?.label && <p className="mt-2 text-[10px] text-white/32">Ziel: {step.navigation.label}</p>}
+                    {step.navigation?.label && <p className="mt-2 text-[10px] text-white/60">Ziel: {step.navigation.label}</p>}
                     {contentDiff && <div className="mt-2">{contentDiff}</div>}
                     {step.tool_name && <span className="text-[9px] text-amber-200/30 mt-1 inline-block font-mono">{step.tool_name}</span>}
                 </div>
@@ -402,7 +402,7 @@ function TransitionGhostCard({ stepTitle, transitionType, message, segmentContex
     const footer = segmentContext ? `Weiter in ${segmentContext}.` : undefined;
     return (
         <CommandReceipt tone={tone} icon={Icon} label={label}
-            title={<span className="text-xs text-white/38">{stepTitle}</span>}
+            title={<span className="text-xs text-white/60">{stepTitle}</span>}
             body={<span className="text-[11px] leading-relaxed text-blue-200/55">{body}</span>}
             footer={footer}
             className="rounded-xl border-white/[0.06] bg-white/[0.02] shadow-none"
@@ -542,7 +542,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
             resizable
         >
             <div className="flex flex-col h-full bg-black/60 rounded-b-2xl overflow-hidden" data-uv2-app="work-session">
-                {isLoading && <div className="flex-1 flex items-center justify-center"><Loader2 size={22} className="animate-spin text-white/25" /></div>}
+                {isLoading && <div className="flex-1 flex items-center justify-center"><Loader2 size={22} className="animate-spin text-white/45" /></div>}
 
                 {!isLoading && error && uv2() && (
                     <div className="flex-1 flex items-center justify-center">
@@ -619,7 +619,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                             const groups = groupStepsBySegment(timelineSteps, plan.segment_summaries);
                             return (
                                 <div className="px-4 py-4">
-                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-white/25 mb-3">Schritte</div>}
+                                    {pendingSteps.length > 0 && <div className="text-[10px] uppercase tracking-[0.2em] text-white/45 mb-3">Schritte</div>}
                                     {groups.map((group, groupIdx) => {
                                         const isActiveGroup = plan?.state === 'running' && (() => {
                                             if (plan?.execution?.current_segment_index !== undefined) {
@@ -649,7 +649,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
 
                         {plan.transparency_note && (
                             <div className="px-5 pb-5">
-                                <p className="text-[11px] text-white/25 italic leading-relaxed">{plan.transparency_note}</p>
+                                <p className="text-[11px] text-white/45 italic leading-relaxed">{plan.transparency_note}</p>
                             </div>
                         )}
                     </div>
