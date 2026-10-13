@@ -64,3 +64,8 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-conn__name { white-space: norm
 /* Aufgaben: das Spaltenende ist eine leise Ablage statt leerer Fläche */
 html[data-uv2="on"] .uv2-task-slot { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 96px; margin-top: 4px; border-radius: 14px; border: 1px dashed rgba(247,244,233,.12); background: rgba(247,244,233,.015); color: rgba(247,244,233,.42); font: 500 13px var(--uv-sans); transition: border-color .2s, color .2s, background .2s; }
 html[data-uv2="on"] .uv2-task-slot:hover, html[data-uv2="on"] [data-drop] .uv2-task-slot { border-color: rgba(214,168,72,.5); color: #e8d9a8; background: rgba(214,168,72,.06); }
+/* Kalender: Wochenende schmaler, Werktage bekommen Platz für Titel */
+html[data-uv2="on"] body:not(.standard-mode) .uv2-week[data-testid] { grid-template-columns: repeat(5, minmax(0, 1fr)) repeat(2, minmax(0, .62fr)); }
+@container (min-width: 80px) {
+  html[data-uv2="on"] body:not(.standard-mode) .uv2-week[data-testid] .uv2-week__t { display: -webkit-box !important; white-space: normal !important; -webkit-line-clamp: 2; }
+}

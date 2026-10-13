@@ -318,9 +318,12 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
         });
         const total = sorted.length;
         return sorted.map((member, index) => {
+            // live-polish: bis 6 Menschen in einer ruhigen Reihe – nichts überlappt, auch bei wenig Höhe
             const pos = total === 1
-                ? { x: 50, y: 40 }
-                : memberPosition(member.id, total, index);
+                ? { x: 50, y: 32 }
+                : total <= 6
+                    ? { x: 10 + (index + 0.5) * (80 / total), y: index % 2 === 0 ? 30 : 37 }
+                    : memberPosition(member.id, total, index);
             const delay = index * 0.3;
             const size = member.is_self ? 110 : isOwnerRole(member.role) ? 96 : 80;
             return { member, pos, delay, size };
@@ -472,6 +475,8 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                     style={{
                                                         left: `${pos.x}%`,
                                                         top: `${pos.y}%`,
+                                                        // framer-motion ersetzt transform-Klassen: Zentrierung hier, sonst sitzt die Reihe schief
+                                                        x: '-50%',
                                                     }}
                                                 >
                                                     <div className="relative flex items-center justify-center">
