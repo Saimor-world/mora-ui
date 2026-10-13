@@ -805,7 +805,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
-        <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <span className="pointer-events-none absolute inset-0" aria-hidden="true" data-uv2-orbitals>
             {/* 64 Sterne in DREI gemalten Ebenen statt 64 Elementen.
                 Frueher war jeder Stern ein eigenes animiertes div mit
                 box-shadow - die Kosten kamen von der Bauweise, nicht von der

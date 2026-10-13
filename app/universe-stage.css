@@ -8,13 +8,13 @@
     left: calc(var(--g-m) + var(--g-3)) !important; right: calc(var(--g-m) + var(--g-3)) !important;
   }
   html[data-uv2=on] [data-uv2-field] [data-uv2-plane][data-uv2-stage=model] {
-    left: 0 !important; right: 0 !important; top: 96px !important; bottom: 132px !important;
+    left: 0 !important; right: 0 !important; top: 116px !important; bottom: 150px !important;
   }
 }
 .uv2-stage__orbits { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
 .uv2-stage__orbits ellipse { fill: none; stroke: rgba(247,244,233,.13); stroke-width: 1; vector-effect: non-scaling-stroke; }
-.uv2-stage__orbits ellipse[data-ring="1"] { stroke: rgba(214,168,72,.24); }
-.uv2-stage__orbits ellipse[data-ring="2"] { stroke: rgba(247,244,233,.1); stroke-dasharray: 1 5; stroke-linecap: round; stroke-width: 1.5; }
+.uv2-stage__orbits ellipse[data-ring="1"] { stroke: rgba(214,168,72,.32); }
+.uv2-stage__orbits ellipse[data-ring="2"] { stroke: rgba(247,244,233,.2); stroke-dasharray: 1 5; stroke-linecap: round; stroke-width: 1.5; }
 
 /* Namen: 14px, klarer Kontrast; Meta 12px; Keime und Schlafende leiser, aber lesbar (≥ .7) */
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .saimor-territory-name {
@@ -32,3 +32,9 @@ html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="sleeping"] .saimo
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { white-space: normal !important; max-width: 150px; margin-left: auto; margin-right: auto; text-align: center; line-height: 1.35; }
 /* Bildunterschrift „2 Bereiche · 12 Dokumente“: groß genug zum Lesen ohne Hover */
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { font-size: 13px !important; font-weight: 450; letter-spacing: 0 !important; text-transform: none !important; color: rgba(247,244,233,.8) !important; max-width: 170px; margin-top: 3px !important; }
+/* hd28: Monde kreisen flach um den Äquator (wie die Umgebungsmonde) – nie unter dem Namen */
+html[data-uv2="on"] [data-uv2-stage=model] [data-uv2-orbitals] { transform: rotate(-10deg) scaleY(.36); }
+html[data-uv2="on"] [data-uv2-stage=model] [data-uv2-orbitals] .saimor-moon-orbit > span { transform: scaleY(2.78); }
+/* Außen-Unterschriften: breiter, damit zwei Zeilen reichen */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="domain"] .uv2-planet-meta,
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="cluster"] .uv2-planet-meta { max-width: 200px; }
