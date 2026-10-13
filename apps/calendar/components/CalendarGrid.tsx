@@ -54,7 +54,7 @@ export function CalendarGrid({ currentDate, selectedDate, events, onNavigate, on
           </button>
           <button
             onClick={() => onNavigate(new Date())}
-            className="px-2 py-1 text-[10px] bg-emerald-500/10 text-emerald-400 rounded-md hover:bg-emerald-500/20 transition-colors"
+            type="button" className="px-2 py-1 text-[11px] rounded-md transition-colors" style={{ color: "#e8d9a8", background: "rgba(232,217,168,0.10)" }}
           >
             Heute
           </button>

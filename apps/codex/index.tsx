@@ -163,21 +163,17 @@ export default function CodexApp({ paneId, initialData }: AppProps) {
             <div className="flex h-full min-h-0 flex-col" data-testid="codex-app">
                 {uv2() && (() => {
                     const lastAsk = [...transcript].reverse().find((m) => m.role === 'user');
-                    return <AppHero app="codex" eyebrow="Engineering · Sitzung bleibt in diesem Tab"
-                        title={lastAsk ? lastAsk.content.split('\n')[0].slice(0, 90) : 'Was bauen wir?'}
+                    return <AppHero app="codex" eyebrow="Codex"
+                        title={lastAsk ? lastAsk.content.split('\n')[0].slice(0, 90) : 'Neue Sitzung'}
                         sub={lastAsk ? (isStreaming ? 'Codex arbeitet daran …' : 'Codex schlägt Terminal oder Arbeitssitzung als nächsten Schritt vor, wenn es passt.') : 'Bugfix, Refactor, Deploy-Hilfe oder Architektur – fokussiert auf Engineering.'}
-                        figure={transcript.filter((m) => m.role === 'user').length} figureLabel="Aufgaben"
-                        action={{ label: 'Terminal öffnen', onClick: openTerminal }} />;
-                })()}
-                {uv2() && (
-                    <div className="uv2-foot" style={{ borderTop: 0, borderBottom: '.5px solid var(--uv-hair)', margin: '-12px -16px 12px' }}>
-                        <span>Codex · Engineering-Agent</span>
-                        <span className="flex gap-5">
-                            <button type="button" onClick={openWorkSession}>Arbeitssitzung</button>
-                            <button type="button" onClick={handleClear} aria-label="Codex-Verlauf leeren">Verlauf leeren</button>
+                        figure={transcript.filter((m) => m.role === 'user').length || undefined} figureLabel="Aufgaben"
+                        action={{ label: 'Terminal öffnen', onClick: openTerminal }}>
+                        <span className="uv2-bar__links">
+                            <button type="button" className="uv2-files-link" onClick={openWorkSession}>Arbeitssitzung</button>
+                            {transcript.length > 0 && <button type="button" className="uv2-files-link" onClick={handleClear} aria-label="Codex-Verlauf leeren">Verlauf leeren</button>}
                         </span>
-                    </div>
-                )}
+                    </AppHero>;
+                })()}
                 <header data-uv2-legacy-head className="mb-3 flex items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-indigo-200/55">

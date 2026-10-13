@@ -874,7 +874,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                             title={!activeCompanyName ? 'Keine Organisation' : files.length === 0 ? 'Bereit' : open === 0 ? 'Alles abgelegt' : `${open} offen`}
                             sub={files.length ? `${done} von ${files.length} erledigt. Du entscheidest, wohin jede Datei gehört.` : 'PDFs, Bilder und Office-Dateien landen zuerst als Datei – Inhalte entstehen nur, wenn du es willst.'}
                             figure={files.length ? open : undefined} figureLabel="offen"
-                            action={activeCompanyName ? { label: 'Dateien wählen', onClick: () => scanInputRef.current?.click() } : null} />
+                            action={null} />
                     );
                 })()}
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5" data-uv2-legacy-head={uv2 ? '' : undefined}>
@@ -960,7 +960,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
-                {pendingActions.length > 0 && (
+                {!uv2 && pendingActions.length > 0 && (
                     <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
                         <div className="flex items-start gap-3">
                             <Activity size={16} className="text-amber-300 mt-0.5 shrink-0" />

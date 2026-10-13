@@ -503,6 +503,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 className={`fixed flex flex-col glass-card glass-panel-runtime ${className} ${isDragging ? 'cursor-grabbing' : draggable ? 'cursor-grab' : ''}`}
                 data-active={effectiveIsActive ? 'true' : 'false'}
                 data-app-id={appManifest?.id}
+                data-pane-id={paneId}
                 data-app-tone={appManifest?.color ?? 'slate'}
                 data-app-category={appManifest?.category}
                 data-pane-stack={hasPaneStack ? 'true' : 'false'}

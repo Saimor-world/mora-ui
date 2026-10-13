@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -51,6 +52,7 @@ import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
+import { RaumV2 } from '@/apps/settings/RaumV2';
 import { PairPanel } from '@/components/begleiter/PairPanel';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
@@ -487,7 +489,7 @@ useEffect(() => {
 
     return (
         <GlassPanel
-            title={null}
+            title={isUniverseV2Enabled() ? 'Einstellungen' : null}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -507,29 +509,19 @@ useEffect(() => {
             {...GLASS_SHEET_PRESENTATION}
         >
             {uv2On() && !isStandardMode && uv2Index ? (
-                <div className="flex h-full flex-col overflow-y-auto" data-testid="settings-v2-index">
-                    <AppHero app="settings" eyebrow={user?.email ?? 'Konto'}
-                        title="Einstellungen"
-                        sub={`${tabs.length} Bereiche. Alles gilt nur für dich – außer wo ausdrücklich Team steht.`}
-                        figure={tabs.length} figureLabel="Bereiche"
-                        action={null} />
-                    {([
-                        ['Du', ['profile', 'appearance', 'audio', 'notifications', 'begleiter']],
-                        ['Arbeitsraum', ['workspace-control', 'workspace', 'team']],
-                        ['System', ['system', 'about']],
-                    ] as const).map(([group, ids]) => {
-                        const items = tabs.filter((t) => (ids as readonly string[]).includes(t.id));
-                        if (!items.length) return null;
-                        return (
-                            <TileGrid key={group} label={group}>
-                                {items.map((t) => (
-                                    <Tile key={t.id} testId={`settings-v2-${t.id}`} icon={<t.icon />} label={t.label}
-                                        onClick={() => { setActiveTab(t.id); setUv2Index(false); }} />
-                                ))}
-                            </TileGrid>
-                        );
-                    })}
-                </div>
+                <RaumV2
+                    sections={tabs.map((t) => ({ id: t.id, label: t.label }))}
+                    onOpen={(id) => { setActiveTab(id); setUv2Index(false); }}
+                    scene={ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId}
+                    autoTime={ritualAutoTime}
+                    onScene={handleSelectRitualScene}
+                    onToggleAuto={handleToggleRitualAutoTime}
+                    ambientOn={ambientAudioEnabled}
+                    volume={ambientAudioVolume}
+                    onToggleAmbient={handleAmbientAudioToggle}
+                    onVolume={handleAmbientVolumeChange}
+                    saveSetting={saveSetting}
+                />
             ) : (
             <div className="flex h-full overflow-hidden" data-uv2-settings-detail={uv2On() && !isStandardMode ? '' : undefined}>
                 {/* ── Sidebar ─────────────────────────────────────────── */}
@@ -585,7 +577,7 @@ useEffect(() => {
                     {/* Section header */}
                     {uv2On() && !isStandardMode && (
                         <div className="uv2-settings-bar">
-                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)}>‹ Alle</button>
+                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)} data-testid="settings-back-raum">‹ Raum</button>
                             <span className="uv2-settings-bar__title">{tabs.find((t) => t.id === activeTab)?.label}</span>
                         </div>
                     )}
@@ -606,6 +598,33 @@ useEffect(() => {
                     </div>
 
                     <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
+                    {uv2On() && activeTab === 'begleiter' && <PairPanel />}
+                    {uv2On() && !isStandardMode && activeTab === 'about' && (
+                        <div className="uv2-osform" data-testid="settings-v2-about">
+                            <div className="uv2-idcard"><span className="uv2-idcard__logo">S</span><span className="uv2-idcard__name">Saimôr OS</span><span className="uv2-dot" data-on="">v2.0.0-beta</span></div>
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Info /></span><span className="uv2-group__label">Version</span><span className="uv2-group__val">2.0.0-beta</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Activity /></span><span className="uv2-group__label">Umgebung</span><span className="uv2-group__val">{process.env.NODE_ENV}</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Sparkles /></span><span className="uv2-group__label">Kern</span><span className="uv2-group__val">MÔRA Core + Gateway</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Compass /></span><span className="uv2-group__label">Rundgang</span><button type="button" className="uv2-pill" onClick={handleRestartProductTour}>Starten</button></div>
+                            </div>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'team' && (
+                        <div className="uv2-osform" data-testid="settings-v2-team">
+                            <TileGrid label="Team" size="l">
+                                <Tile icon={<Users />} label="Team öffnen" onClick={() => usePaneStore.getState().openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } })} />
+                                <Tile icon={<User />} label="Benutzer" onClick={() => usePaneStore.getState().openPane({ id: 'users-main', type: 'users', title: 'Benutzer', size: { width: 840, height: 640 } })} />
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'profile' && (
+                        <div className="uv2-idcard" data-testid="settings-v2-profile">
+                            <span className="uv2-idcard__logo">{(user?.email ?? '?').slice(0, 2).toUpperCase()}</span>
+                            <span className="uv2-idcard__name">{user?.email}</span>
+                            <span className="uv2-dot" data-on="">{roleLabel(user?.role)}</span>
+                        </div>
+                    )}
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
                     )}
@@ -1640,7 +1659,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'team' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'team' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Team Management</h3>
                             <div className="p-8 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center">
@@ -1867,9 +1886,7 @@ SMTP_TLS=true`}</pre>
                         </div>
                     )}
 
-                    {activeTab === 'begleiter' && uv2On() && <PairPanel />}
-
-                    {activeTab === 'about' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'about' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Über SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">

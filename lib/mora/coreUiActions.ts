@@ -3,6 +3,7 @@
 import { dispatchMoraPresence } from '@/lib/mora/presenceEvents';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { announceAction } from '@/lib/jarvis/registry';
 
 /**
  * Structured UI actions returned by CORE (/v3/cognition/agent → ui_actions).
@@ -20,6 +21,13 @@ export interface CoreUiAction {
 }
 
 const MAX_ACTIONS = 5;
+const CORE_SUMMARY: Record<string, string> = {
+    navigate_department: 'Planet betreten',
+    navigate_space: 'Raum geöffnet',
+    navigate_folder: 'Ordner geöffnet',
+    highlight: 'Hervorgehoben',
+    open_pane: 'Fenster geöffnet',
+};
 const MAX_ID_LENGTH = 200;
 
 function asId(value: unknown): string | null {
@@ -90,6 +98,7 @@ export function executeCoreUiActions(actions: unknown): number {
                 continue;
         }
         executed += 1;
+        announceAction(`core.${action.type}`, CORE_SUMMARY[action.type] ?? action.type, targetId ? `[data-testid="territory-${targetId}"]` : undefined, 'core');
     }
     return executed;
 }

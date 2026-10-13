@@ -2,7 +2,7 @@
 
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState } from 'react';
-import { AlertTriangle, CalendarDays, Link2, Loader2, RefreshCw, Sparkles } from 'lucide-react';
+import { AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, Link2, List, Loader2, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -13,6 +13,7 @@ import { useCalendarEvents } from './hooks/useCalendarEvents';
 import { CalendarGrid } from './components/CalendarGrid';
 import { CalendarEventPanel } from './components/CalendarEventPanel';
 import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 
 export default function CalendarApp({ paneId }: AppProps) {
   const {
@@ -26,6 +27,7 @@ export default function CalendarApp({ paneId }: AppProps) {
   } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [uvView, setUvView] = useState<'week' | 'agenda'>('week');
   const uv2 = isUniverseV2Enabled();
   const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
   const isActive = usePaneStore((state) => state.activePaneId === paneId);
@@ -113,8 +115,25 @@ export default function CalendarApp({ paneId }: AppProps) {
           </div>
         ) : (
           <>
-            {uv2 && !isLoading ? <CalendarHero events={events} onAdd={() => setSelectedDate(new Date())} /> : null}
-            <div className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-2.5" data-uv2-cal-status>
+            {uv2 && !isLoading ? (
+              <div className="uv2-ftool" data-uv2-keep="" data-testid="cal-v2-bar" style={{ margin: '10px 16px 0' }}>
+                <button type="button" className="uv2-pill" aria-label="Woche zurück" onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() - 7); setCurrentDate(d); }}><ChevronLeft /></button>
+                <button type="button" className="uv2-pill" onClick={() => { setCurrentDate(new Date()); setSelectedDate(null); }}>Heute</button>
+                <button type="button" className="uv2-pill" aria-label="Woche vor" onClick={() => { const d = new Date(currentDate); d.setDate(d.getDate() + 7); setCurrentDate(d); }}><ChevronRight /></button>
+                <span className="uv2-ftool__crumb" style={{ marginLeft: 8 }}>{currentDate.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</span>
+                <span style={{ flex: 1 }} />
+                <Segmented value={uvView} onChange={(v) => { setUvView(v); setSelectedDate(null); }} label="Ansicht" options={[
+                  { id: 'week', label: 'Woche', icon: <CalendarDays /> },
+                  { id: 'agenda', label: '14 Tage', icon: <List /> },
+                ]} />
+                <button type="button" className="uv2-pill" aria-label="Verbindungen" title="Verbindungen" onClick={openIntegrations}><Link2 /></button>
+                <button type="button" className="uv2-pill" aria-label="Kalender aktualisieren" title={available === true ? 'Aktuell' : 'Aktualisieren'} onClick={() => void refresh()} disabled={isRefreshing}>
+                  <span className="uv2-dot" data-on={available === true ? '' : undefined} data-warn={available === false ? '' : undefined} /><RefreshCw className={isRefreshing ? 'animate-spin' : ''} />
+                </button>
+                <button type="button" className="uv2-pill uv2-pill--gold" data-testid="cal-v2-add" onClick={() => setSelectedDate(new Date())}><Plus />Termin</button>
+              </div>
+            ) : null}
+            <div className="flex items-center justify-between gap-3 border-b border-white/[0.05] px-4 py-2.5" data-uv2-cal-status hidden={uv2 || undefined} style={uv2 ? { display: 'none' } : undefined}>
               <div className="flex min-w-0 items-center gap-2">
                 <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${available === true ? 'bg-emerald-300/70' : available === false ? 'bg-amber-300/70' : 'bg-white/20'}`} />
                 <span className="truncate text-[9px] uppercase tracking-[0.18em] text-white/28">
@@ -163,7 +182,7 @@ export default function CalendarApp({ paneId }: AppProps) {
             ) : (
               uv2 ? (
                 <div className="flex min-h-0 flex-1 gap-8 overflow-hidden px-8 py-6" data-testid="uv2-calendar">
-                  <div className="w-[320px] shrink-0">
+                  <div className={uvView === 'week' && !selectedDate ? "w-[250px] shrink-0" : "w-[320px] shrink-0"}>
                     <CalendarGrid
                       currentDate={currentDate}
                       selectedDate={selectedDate}
@@ -172,12 +191,14 @@ export default function CalendarApp({ paneId }: AppProps) {
                       onSelectDate={setSelectedDate}
                     />
                   </div>
-                  <div className="min-w-0 flex-1 overflow-y-auto border-l border-white/[0.07] pl-8">
+                  <div className="min-w-0 flex-1 overflow-y-auto border-l border-white/[0.07] pl-6">
                     {selectedDate ? (
                       <>
                         <button type="button" onClick={() => setSelectedDate(null)} className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45 transition-colors hover:text-[#D6A848]">← Nächste Termine</button>
                         <CalendarEventPanel selectedDate={selectedDate} events={events} onAddEvent={(title) => { void addEvent(title, selectedDate.toISOString().split('T')[0]).catch(() => undefined); }} />
                       </>
+                    ) : uvView === 'week' ? (
+                      <WeekBoard anchor={currentDate} events={events} onSelect={setSelectedDate} />
                     ) : (
                       <UpcomingAgenda events={events} onSelect={setSelectedDate} />
                     )}
@@ -210,12 +231,34 @@ export default function CalendarApp({ paneId }: AppProps) {
           </>
         )}
 
-        <div className="flex items-center gap-2 border-t border-white/5 px-4 pb-3 pt-2 text-[10px] text-white/20">
+        <div className="flex items-center gap-2 border-t border-white/5 px-4 pb-3 pt-2 text-[10px] text-white/20" hidden={uv2 || undefined} style={uv2 ? { display: 'none' } : undefined}>
           <Sparkles size={10} className="text-emerald-300/35" />
           <span>{summary.calendarConfigured ? 'Termine verbinden sich automatisch mit Heute und Arbeit.' : 'Verbinde deinen Kalender, damit Termine in Saimôr Teil deines Tages werden.'}</span>
         </div>
       </div>
     </GlassPanel>
+  );
+}
+
+/** v2: Wochenbrett – sieben Tagessäulen, Termine als Kacheln. */
+function WeekBoard({ anchor, events, onSelect }: { anchor: Date; events: { id: string; title: string; date: string; time?: string; duration?: number }[]; onSelect: (d: Date) => void }) {
+  const monday = new Date(anchor); monday.setHours(0, 0, 0, 0); monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  const todayKey = new Date().toDateString();
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(d.getDate() + i); return d; });
+  return (
+    <div className="uv2-week" data-testid="cal-v2-week">
+      {days.map((d) => {
+        const list = events.filter((e) => new Date(e.date).toDateString() === d.toDateString()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+        return (
+          <button type="button" key={d.toISOString()} className="uv2-week__day" data-today={d.toDateString() === todayKey ? '' : undefined} onClick={() => onSelect(d)}>
+            <span className="uv2-week__head"><span>{d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}</span><b>{d.getDate()}</b></span>
+            {list.map((e) => (
+              <span key={e.id} className="uv2-week__ev" title={e.title} lang="de"><i>{e.time ?? '—'}</i><span className="uv2-week__t">{e.title}</span></span>
+            ))}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 

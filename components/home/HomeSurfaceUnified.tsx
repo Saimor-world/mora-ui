@@ -91,7 +91,7 @@ const SECONDARY_AREAS: Area[] = [
   {
     id: 'nightwatch-main',
     type: 'nightwatch',
-    title: 'Nightwatch',
+    title: 'Wache',
     kicker: 'System',
     description: 'Störungen, Hinweise und Dinge, die Aufmerksamkeit brauchen.',
     icon: Radar,
@@ -354,7 +354,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[12vh] antialiased sm:px-10 lg:px-24"
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
       style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(5,7,6,.7), rgba(5,7,6,.35))' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
@@ -370,7 +370,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>
             Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
           </p>
-          <form className="mt-8 max-w-[520px]" data-testid="uv2-home-ask"
+          <form className="mt-6 max-w-[520px]" data-testid="uv2-home-ask"
             onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
               // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
               useNavStore.getState().setCoreMode('explore');
@@ -389,21 +389,19 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           <TodayOverview />
         </motion.div>
 
-        {/* Orte als Register: zwei Spalten, Haarlinien, keine Kacheln */}
-        <motion.section className="mt-16" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
+        {/* hd21: Orte als App-Symbole wie ein Home-Bildschirm – Symbol + Name, Beschreibung als Tooltip */}
+        <motion.section className="mt-8" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
           <p style={{ ...M, color: '#D6A848' }}>Orte</p>
-          <div className="mt-4 grid gap-x-12 sm:grid-cols-2" style={{ borderTop: '0.5px solid rgba(247,244,233,.09)' }}>
-            {areas.map((area, i) => (
-              <button key={area.id} type="button" onClick={() => onOpen(area)}
-                className="group grid grid-cols-[48px_1fr_auto] items-baseline gap-4 py-4 text-left" style={{ borderBottom: '0.5px solid rgba(247,244,233,.09)' }}>
-                <span style={{ ...M, fontSize: 10, color: 'rgba(247,244,233,.35)' }}>{String(i + 1).padStart(2, '0')}</span>
-                <span className="min-w-0">
-                  <span className="block text-[15px] font-normal transition-colors group-hover:text-white" style={{ color: 'rgba(247,244,233,.92)' }}>{area.title}</span>
-                  <span className="mt-1 block truncate text-[15px] font-light" style={{ color: 'rgba(247,244,233,.45)' }}>{area.description}</span>
-                </span>
-                <ArrowRight size={14} strokeWidth={1.25} className="transition-all group-hover:translate-x-0.5 group-hover:text-[#D6A848]" style={{ color: 'rgba(247,244,233,.3)' }} />
-              </button>
-            ))}
+          <div className="uv2-places mt-4" data-testid="uv2-places">
+            {areas.map((area) => {
+              const Icon = area.icon;
+              return (
+                <button key={area.id} type="button" onClick={() => onOpen(area)} className="uv2-place" title={area.description} data-testid={`uv2-place-${area.id}`}>
+                  <span className="uv2-place__ico"><Icon /></span>
+                  <span className="uv2-place__name">{area.title}</span>
+                </button>
+              );
+            })}
           </div>
         </motion.section>
       </main>

@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -155,7 +156,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
         >
             <div className="app-library flex min-h-full flex-col gap-6 px-1 pb-4" data-testid="app-library">
                 {isUniverseV2Enabled() && (
-                    <AppHero app="apps" eyebrow="Werkzeuge · nach Aufgabe geordnet" title="Was musst du erledigen?"
+                    <AppHero app="apps" eyebrow="Werkzeuge" title="Apps"
                         sub={`${visibleCount} Werkzeuge${normalizedQuery ? ` für „${query.trim()}“` : ''}. Technische Bereiche erscheinen nur mit passender Rolle.`}
                         figure={visibleCount} figureLabel="Werkzeuge"
                         action={{ label: 'MÔRA fragen', onClick: () => handleAppClick('chat', 'MÔRA', { width: 960, height: 720 }) }}>
@@ -197,7 +198,13 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     />
                 )}
 
-                {universeGroups.length > 1 && (
+                {isUniverseV2Enabled() && universeGroups.length > 1 && (
+                    <div className="uv2-ftool" data-testid="app-library-filters-v2" style={{ borderRadius: 14 }}>
+                        <Segmented value={activeGroupId} onChange={setActiveGroupId} label="Kategorien filtern"
+                            options={[{ id: 'all', label: 'Alle' }, ...universeGroups.map((g) => ({ id: g.id, label: `${g.label} ${g.apps.length}` }))]} />
+                    </div>
+                )}
+                {!isUniverseV2Enabled() && universeGroups.length > 1 && (
                     <div
                         className="flex flex-wrap gap-2 px-1"
                         role="tablist"
@@ -237,7 +244,20 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     </div>
                 )}
 
-                <div className="app-library__groups grid gap-7 px-1">
+                {isUniverseV2Enabled() && (
+                    <div data-testid="app-library-v2-tiles">
+                        {filteredGroups.map((group) => (
+                            <TileGrid key={group.id} label={group.label}>
+                                {group.apps.map((app) => {
+                                    const IconComp = ICON_MAP[app.icon] ?? Grid;
+                                    return <Tile key={app.id} testId={`app-library-tile-${app.id}`} icon={<IconComp />} label={app.name} badge={app.isNew ? '•' : undefined}
+                                        onClick={() => handleAppClick(app.id, app.name, app.defaultSize)} />;
+                                })}
+                            </TileGrid>
+                        ))}
+                    </div>
+                )}
+                <div className="app-library__groups grid gap-7 px-1" hidden={isUniverseV2Enabled() || undefined} style={isUniverseV2Enabled() ? { display: 'none' } : undefined}>
                     {filteredGroups.map(group => (
                         <section key={group.id} className="app-library__group grid gap-3" data-testid={`app-library-group-${group.id}`}>
                             <div className="app-library__group-head flex items-end justify-between gap-4">

@@ -16,7 +16,8 @@
  *   unauthenticated — no user in store; input locked
  */
 
-import { AppHero, uv2 } from "@/components/universe/app/AppStage";
+import { uv2 } from "@/components/universe/app/AppStage";
+import { Server, Folder, Shield, Hash } from "lucide-react";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -585,11 +586,15 @@ export default function TerminalApp({ paneId }: AppProps) {
                 onClick={focusInput}
             >
                 {uv2() && (
-                    <AppHero app="terminal" eyebrow={"Terminal · " + (session ? (session.host_label ?? "Remote") + " · " + (session.cwd ?? "/") : "Rolle " + (user?.role ?? "?"))}
-                        title={connectionState === "ready" ? `Verbunden mit ${session?.host_label ?? "Core"}.` : connectionState === "unauthenticated" ? "Erst anmelden." : connectionState === "checking" ? "Verbindung wird geprüft …" : connectionState === "disconnected" ? "Die Session ist getrennt." : "Core ist gerade nicht erreichbar."}
-                        sub={connectionState === "ready" ? "Jeder Befehl läuft mit deiner Rolle und wird protokolliert." : connectionState === "offline" ? "MÔRA-Befehle bleiben verfügbar. Tippe help für eine Übersicht." : "Tippe reconnect, sobald die Verbindung wieder steht."}
-                        figure={commandHistory.length} figureLabel="Befehle"
-                        action={connectionState === "disconnected" ? { label: "Neu verbinden", onClick: () => void executeCommand("reconnect") } : { label: "Befehle zeigen", onClick: () => void executeCommand("help") }} />
+                    <div className="uv2-tbar" data-testid="term-v2-status" data-state={connectionState}>
+                        <span className="uv2-dot" data-on={connectionState === "ready" ? "" : undefined}>{connectionState === "ready" ? "Online" : connectionState === "checking" ? "Prüft" : connectionState === "offline" ? "Offline" : connectionState === "disconnected" ? "Getrennt" : "Abgemeldet"}</span>
+                        <span className="uv2-tbar__item"><Server size={13} />{session?.host_label ?? "Core"}</span>
+                        <span className="uv2-tbar__item"><Folder size={13} />{session?.cwd ?? "/"}</span>
+                        <span className="uv2-tbar__item"><Shield size={13} />{session?.role ?? user?.role ?? "?"}</span>
+                        <span className="uv2-tbar__item"><Hash size={13} />{commandHistory.length}</span>
+                        <span className="flex-1" />
+                        {connectionState === "disconnected" && <button type="button" className="uv2-pill" data-primary="" onClick={() => void executeCommand("reconnect")}>Neu verbinden</button>}
+                    </div>
                 )}
                 <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/50" data-uv2-legacy-head>
                     <div className="flex gap-1.5">
@@ -621,9 +626,6 @@ export default function TerminalApp({ paneId }: AppProps) {
                         const quick = ["help", "status", "pwd", "ls"];
                         return (
                             <div className="uv2-cmds" data-testid="term-v2-register">
-                                {pre.length > 0 && (
-                                    <div className="uv2-cmds__session">{pre.filter((l) => l.content.trim() && !/^─+$/.test(l.content.trim())).map((l) => <div key={l.id}>{l.content}</div>)}</div>
-                                )}
                                 {blocks.length === 0 ? (
                                     <div className="uv2-cmds__chips">
                                         {quick.map((q) => (

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ExternalLink, Plug, RefreshCw, Rss, Settings } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { FeedItemCard } from '@/components/feeds/FeedItemCard';
@@ -10,7 +10,8 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { feedCadenceHint, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import type { AppProps } from '@/lib/apps/types';
-import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 import { useNavStore } from '@/lib/store/navStore';
 import { GLASS_SHEET_PRESENTATION_FEED } from '@/lib/os/glassSheet';
 
@@ -38,6 +39,9 @@ export default function FeedsApp({ paneId }: AppProps) {
         });
     }, [openPane]);
 
+    const [source, setSource] = useState<string>('all');
+    const sources = useMemo(() => { const m = new Map<string, number>(); items.forEach((it) => m.set(it.sourceTitle, (m.get(it.sourceTitle) ?? 0) + 1)); return [...m.entries()].slice(0, 6); }, [items]);
+    const shown = source === 'all' ? items : items.filter((it) => it.sourceTitle === source);
     const handleRefresh = useCallback(async () => {
         broadcastCommunicationSync('rss-refresh');
         await refetch();
@@ -81,11 +85,17 @@ export default function FeedsApp({ paneId }: AppProps) {
         >
             {uv2() ? (
             <div className="flex h-full min-h-0 flex-col" data-uv2-app="feeds">
-                {!isLoading && rssConfigured && items.length > 0 && (
-                    <AppHero app="feeds" eyebrow={'Horizont · ' + items[0].sourceTitle + (lastUpdated ? ' · ' + lastUpdated : '')}
-                        title={items[0].title} sub={items[0].summary ? items[0].summary.slice(0, 180) + (items[0].summary.length > 180 ? ' …' : '') : cadenceHint}
-                        figure={items.length} figureLabel="Einträge"
-                        action={items[0].link ? { label: 'Neuesten lesen', onClick: () => window.open(items[0].link, '_blank', 'noopener,noreferrer') } : { label: 'Neu abrufen', onClick: () => void handleRefresh() }} />
+                {rssConfigured && (
+                    <div className="uv2-ftool" data-testid="feeds-v2-bar">
+                        <Segmented value={source} onChange={setSource} label="Quelle" options={[
+                            { id: 'all', label: `Alle ${items.length}`, icon: <Rss /> },
+                            ...sources.map(([name, n]) => ({ id: name, label: `${name} ${n}` })),
+                        ]} />
+                        <span style={{ flex: 1 }} />
+                        {lastUpdated ? <span className="uv2-notes__count">{lastUpdated}</span> : null}
+                        <button type="button" className="uv2-pill" onClick={() => void handleRefresh()} disabled={isFetching} aria-label="Neu abrufen" title="Neu abrufen"><RefreshCw className={isFetching ? 'animate-spin' : ''} /></button>
+                        <button type="button" className="uv2-pill" onClick={openIntegrations} aria-label="Quellen" title="Quellen"><Settings /></button>
+                    </div>
                 )}
                 <div className="min-h-0 flex-1 overflow-y-auto">
                     {isLoading ? (
@@ -103,20 +113,17 @@ export default function FeedsApp({ paneId }: AppProps) {
                                 action={{ label: 'Neu abrufen', onClick: () => void handleRefresh() }} />
                         </div>
                     ) : (
-                        <ol className="uv2-register">
-                            {items.slice(1).map((item) => (
-                                <li key={item.id}>
-                                    <a href={item.link} target="_blank" rel="noopener noreferrer" className="uv2-register__row">
-                                        <span className="uv2-register__meta">{item.sourceTitle}</span>
-                                        <span className="uv2-register__title">{item.title}</span>
-                                        {item.summary ? <span className="uv2-register__text">{item.summary.slice(0, 160)}</span> : null}
-                                    </a>
-                                </li>
+                        <div className="uv2-news" data-testid="feeds-v2-grid">
+                            {shown.map((item, k) => (
+                                <a key={item.id} href={item.link} target="_blank" rel="noopener noreferrer" className="uv2-news__card" data-lead={k === 0 ? '' : undefined}>
+                                    {item.imageUrl ? <span className="uv2-news__img" style={{ backgroundImage: `url(${JSON.stringify(item.imageUrl)})` }} /> : <span className="uv2-news__img uv2-news__img--none"><Rss /></span>}
+                                    <span className="uv2-news__src">{item.sourceTitle}{item.published ? ' · ' + new Date(item.published).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : ''}</span>
+                                    <span className="uv2-news__title">{item.title}</span>
+                                </a>
                             ))}
-                        </ol>
+                        </div>
                     )}
                 </div>
-                <div className="uv2-foot"><span>{items.length} Einträge · neueste zuerst</span><button type="button" onClick={openIntegrations}>Quellen</button></div>
             </div>
             ) : (
             <div className="flex h-full min-h-0 flex-col gap-4">

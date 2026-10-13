@@ -523,3 +523,19 @@ export const buildOrganicUniverseLayout = (
 };
 
 
+
+/**
+ * v2: Planeten füllen die Mittelzone gleichmäßig – Lage relativ zueinander bleibt,
+ * nur normiert. Wenige Planeten rücken zusammen, viele nutzen die Zone.
+ * Geteilt von UniverseView und der Raum-Vorschau in den Einstellungen.
+ */
+export function normalizeUniverseLayout<T extends { x: number; y: number }>(items: T[]): T[] {
+    if (items.length < 2) return items;
+    const xs = items.map((d) => d.x); const ys = items.map((d) => d.y);
+    const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+    const n = items.length;
+    const spanX = n <= 3 ? 44 : n <= 5 ? 66 : 76; const spanY = n <= 3 ? 56 : n <= 5 ? 76 : 84;
+    const nx = (v: number) => (x1 - x0 < 1 ? 50 : 50 - spanX / 2 + ((v - x0) / (x1 - x0)) * spanX);
+    const ny = (v: number) => (y1 - y0 < 1 ? 50 : 50 - spanY / 2 + ((v - y0) / (y1 - y0)) * spanY);
+    return items.map((d) => ({ ...d, x: nx(d.x), y: ny(d.y) }));
+}

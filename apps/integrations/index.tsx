@@ -1,7 +1,6 @@
 'use client';
 
-import { AppHero } from '@/components/universe/app/AppStage';
-import { TileGrid, Tile, PillButton, Segmented } from '@/components/universe/app/Tiles';
+import { PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -180,6 +179,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
 
     const [lane, setLane] = useState<Lane>('overview');
     const [uv2Details, setUv2Details] = useState(false);
+    const [intSel, setIntSel] = useState('mail');
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -343,54 +343,84 @@ export default function IntegrationsApp({ paneId }: AppProps) {
         >
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 {uv2 && (
-                    <AppHero app="integrations" eyebrow="Verbindungen"
-                        title={`${readiness.ready} von ${readiness.total} aktiv`}
-                        sub="Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann sieht MÔRA echte Arbeit – nie mehr, als du freigibst."
-                        figure={readiness.ready} figureLabel={'von ' + readiness.total}
-                        action={null} />
+                    <div className="uv2-ftool" data-testid="int-v2-bar">
+                        {uv2Details ? <PillButton onClick={() => setUv2Details(false)}>‹ Quellen</PillButton> : <span className="uv2-dot" data-on={readiness.ready === readiness.total ? '' : undefined} data-warn={readiness.ready < readiness.total ? '' : undefined} />}
+                        <span className="uv2-ftool__crumb">{readiness.ready} von {readiness.total} verbunden</span>
+                        <span style={{ flex: 1 }} />
+                        <button type="button" className="uv2-pill" aria-label="Aktualisieren" title="Aktualisieren" onClick={() => void refreshAll()}><RefreshCw className={isLoading ? 'animate-spin' : ''} /></button>
+                        {!isReady(overview?.mail?.status, overview?.mail?.configured) && (
+                            <button type="button" className="uv2-pill uv2-pill--gold" disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}><Globe />{isConnectingGoogle ? 'Verbinde …' : 'Google verbinden'}</button>
+                        )}
+                    </div>
                 )}
                 {uv2 && !uv2Details && (() => {
-                    type Src = { id: string; kind: string; name: string; ok: boolean; text: string; open?: () => void; connect?: () => void; connectLabel?: string };
+                    type Src = { id: string; kind: string; name: string; ok: boolean; status?: string | null; account?: string | null; text: string; preview?: { k: string; v: string } | null; open?: () => void; openLabel?: string; connect?: () => void; connectLabel?: string; setup?: React.ReactNode };
                     const srcs: Src[] = [
-                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), text: mailPreview[0] ? `Zuletzt: ${mailPreview[0].from} – ${mailPreview[0].subject}` : buildMailText(overview), open: openMailPane, connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden' },
-                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), text: calendarPreview[0] ? `Als Nächstes: ${calendarPreview[0].title}` : buildCalendarText(overview), open: openCalendarPane, connect: () => void connectGoogleCalendar(), connectLabel: 'Kalender verbinden' },
-                        { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), text: feedPreview[0] ? `Neu: ${feedPreview[0].title}` : 'Quellen, die MÔRA für dich liest.' },
-                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), text: cloudPreview[0] ? `Zuletzt: ${cloudPreview[0].itemName}` : buildCloudText(overview), connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden' },
-                        { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), text: buildAssistantText(overview) },
-                        { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' ? undefined : () => void requestBrowserNotifications(), connectLabel: 'Erlauben' },
+                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
+                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
+                        { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), status: overview?.rss?.status, text: 'Quellen, die MÔRA für dich liest.', preview: feedPreview[0] ? { k: 'Neu', v: feedPreview[0].title } : null, setup: <RssIntegration /> },
+                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden', setup: <CloudStorageIntegration /> },
+                        { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), status: overview?.assistant?.status, text: buildAssistantText(overview) },
+                        { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', status: browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'blocked' : 'not_configured', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' || browserBridge.permission === 'granted' ? undefined : () => void requestBrowserNotifications(), connectLabel: isRequestingNotifications ? 'Frage …' : 'Erlauben', open: browserBridge.permission === 'granted' ? sendBrowserTestNotification : undefined, openLabel: 'Testsignal' },
                     ];
                     const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell /> };
-                    const off = srcs.filter((x) => !x.ok);
+                    const sel = srcs.find((x) => x.id === intSel) ?? srcs[0];
                     return (
-                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="int-v2-register">
-                            {off.some((x) => x.id === 'mail' || x.id === 'cloud') && (
-                                <div className="uv2-asks">
-                                    <div className="uv2-ask" data-testid="int-v2-google">
-                                        <span className="uv2-group__ico uv2-ask__ico"><Globe /></span>
-                                        <div className="uv2-ask__text"><span className="uv2-ask__kind">Google</span><span className="uv2-ask__msg">Mail · Kalender · Drive</span></div>
-                                        <PillButton primary disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}>{isConnectingGoogle ? '…' : 'Verbinden'}</PillButton>
-                                    </div>
-                                </div>
-                            )}
-                            <TileGrid label="Quellen" size="l">
+                        <div className="uv2-conn" data-testid="int-v2-register">
+                            <nav className="uv2-conn__side" aria-label="Quellen">
+                                <span className="uv2-conn__group">Quellen</span>
                                 {srcs.map((x) => (
-                                    <Tile key={x.id} testId={`int-v2-${x.id}`} icon={icons[x.id]} label={x.name} state={x.ok ? 'on' : 'off'}
-                                        onClick={x.ok ? x.open : x.connect}>
-                                        {x.ok ? <span className="uv2-dot" data-on="">Verbunden</span>
-                                            : x.connect ? <PillButton onClick={x.connect}>Verbinden</PillButton> : <span className="uv2-dot">Aus</span>}
-                                    </Tile>
+                                    <button key={x.id} type="button" className="uv2-conn__item" data-testid={`int-v2-${x.id}`} aria-current={x.id === sel.id ? 'true' : undefined} onClick={() => setIntSel(x.id)}>
+                                        <span className="uv2-conn__ico" data-ok={x.ok ? '' : undefined}>{icons[x.id]}</span>
+                                        <span className="uv2-conn__name">{x.name}</span>
+                                        <span className="uv2-dot" data-on={x.ok ? '' : undefined} />
+                                    </button>
                                 ))}
-                            </TileGrid>
-                            <TileGrid label="System" size="l">
-                                <Tile icon={<Server />} label="Details" onClick={() => setUv2Details(true)} />
-                                <Tile icon={<RefreshCw />} label="Aktualisieren" state={isLoading ? 'busy' : undefined} onClick={() => void refreshAll()} />
-                            </TileGrid>
+                                <span className="uv2-conn__group">System</span>
+                                <button type="button" className="uv2-conn__item" data-testid="int-v2-desktop" onClick={() => { setLane('desktop'); setUv2Details(true); }}><span className="uv2-conn__ico"><Cpu /></span><span className="uv2-conn__name">Desktop & Laufzeit</span></button>
+                                <button type="button" className="uv2-conn__item" data-testid="int-v2-advanced" onClick={() => { setLane('overview'); setUv2Details(true); }}><span className="uv2-conn__ico"><Server /></span><span className="uv2-conn__name">Erweitert</span></button>
+                            </nav>
+                            <section className="uv2-conn__detail" data-testid={`int-v2-detail-${sel.id}`}>
+                                <header className="uv2-conn__head">
+                                    <span className="uv2-conn__big" data-ok={sel.ok ? '' : undefined}>{icons[sel.id]}</span>
+                                    <div className="uv2-conn__title">
+                                        <span className="uv2-conn__kind">{sel.kind}</span>
+                                        <b>{sel.name}</b>
+                                        <span className="uv2-conn__state" data-ok={sel.ok ? '' : undefined}><i />{sel.ok ? 'Verbunden' : sel.status === 'blocked' ? 'Blockiert' : statusLabel(sel.status) === 'Offen' ? 'Nicht verbunden' : statusLabel(sel.status)}{sel.account ? ` · ${sel.account}` : ''}</span>
+                                    </div>
+                                    <div className="uv2-conn__actions">
+                                        {sel.open && sel.ok && <button type="button" className="uv2-pill" onClick={sel.open}><ExternalLink />{sel.openLabel ?? 'Öffnen'}</button>}
+                                        {sel.connect && !sel.ok && <button type="button" className="uv2-pill uv2-pill--gold" onClick={sel.connect}><PlugZap />{sel.connectLabel ?? 'Verbinden'}</button>}
+                                    </div>
+                                </header>
+                                <p className="uv2-conn__text">{sel.text}</p>
+                                {sel.preview && (
+                                    <div className="uv2-conn__preview"><span className="uv2-conn__kind">Gerade sichtbar</span><div><b>{sel.preview.v}</b><small>{sel.preview.k}</small></div></div>
+                                )}
+                                {sel.id === 'assistant' && (
+                                    <div className="uv2-conn__providers">
+                                        {assistantProviders.length ? assistantProviders.map(([provider, meta]) => (
+                                            <div key={provider} className="uv2-conn__prov"><span className="uv2-dot" data-on={meta.healthy ? '' : undefined} data-warn={!meta.healthy && meta.available ? '' : undefined} /><b>{provider}</b><small>Priorität {meta.priority ?? '–'}</small></div>
+                                        )) : <p className="uv2-conn__text">Keine Anbieter-Daten sichtbar.</p>}
+                                    </div>
+                                )}
+                                {sel.id === 'browser' && (
+                                    <div className="uv2-conn__rows">
+                                        <div><span>Freigabe</span><b>{browserBridge.permission === 'granted' ? 'erlaubt' : browserBridge.permission === 'denied' ? 'blockiert' : 'nicht gefragt'}</b></div>
+                                    </div>
+                                )}
+                                {sel.setup && (
+                                    <details className="uv2-conn__setup" open={!sel.ok}>
+                                        <summary><KeyRound />Einrichtung</summary>
+                                        <div className="uv2-conn__setupBody">{sel.setup}</div>
+                                    </details>
+                                )}
+                            </section>
                         </div>
                     );
                 })()}
                 {uv2 && uv2Details && (
                     <div className="uv2-settings-bar" data-testid="int-v2-details-bar">
-                        <PillButton onClick={() => setUv2Details(false)}>‹ Quellen</PillButton>
                         <Segmented label="Bereich" value={lane} onChange={(v) => setLane(v)} options={laneItems.map((l) => ({ id: l.id, label: l.label, icon: <l.icon /> }))} />
                     </div>
                 )}
