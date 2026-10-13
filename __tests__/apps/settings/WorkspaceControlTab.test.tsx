@@ -21,7 +21,7 @@ describe('WorkspaceControlTab', () => {
   beforeEach(() => {
     mockAccess.mockReturnValue({
       data: {
-        access: { products: [{ key: 'os', label: 'Saim?r OS', access: 'direct' }], capabilities: [], entitlements: [], tenant_id: 't1' },
+        access: { products: [{ key: 'os', label: 'Saimôr OS', access: 'direct' }], capabilities: [], entitlements: [], tenant_id: 't1' },
         onboarding: { state: 'complete', completed_steps: ['company'], tenant_id: 't1', product_intent: 'os', started_at: null, completed_at: null },
         billing: { subscriptions: [{ id: 's1', product: 'os', plan_key: 'os_workspace_monthly', status: 'active', seats: 5 }] },
       },
@@ -29,7 +29,7 @@ describe('WorkspaceControlTab', () => {
       isFetching: false,
       refetch: jest.fn(),
     });
-    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'os_workspace_monthly', product: 'os', label: 'Saim?r OS Workspace', interval: 'month', price: { amount_minor: 19900, currency: 'EUR' }, included_seats: 5, trial_days: 14, checkout_ready: true }] } });
+    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'os_workspace_monthly', product: 'os', label: 'Saimôr OS Workspace', interval: 'month', price: { amount_minor: 19900, currency: 'EUR' }, included_seats: 5, trial_days: 14, checkout_ready: true }] } });
     mockCheckoutConfigured.mockReturnValue(true);
     mockCreateCheckout.mockResolvedValue({ id: 'checkout-1', product: 'desk', plan_key: 'desk_control_monthly', seats: 3, expires_at: 'later', paddle_checkout: { items: [{ priceId: 'pri_1', quantity: 1 }], custom_data: { saimor_tenant_id: 't1' } } });
     mockOpenCheckout.mockResolvedValue(true);
@@ -42,9 +42,9 @@ describe('WorkspaceControlTab', () => {
   it('renders CORE workspace truth and opens integrations', () => {
     const openIntegrations = jest.fn();
     render(<WorkspaceControlTab onOpenIntegrations={openIntegrations} />);
-    expect(screen.getAllByText('Saim?r OS')).toHaveLength(2);
+    expect(screen.getAllByText('Saimôr OS')).toHaveLength(2);
     expect(screen.getByText('Bereit')).toBeInTheDocument();
-    expect(screen.getByText('5 Pl?tze')).toBeInTheDocument();
+    expect(screen.getByText('5 Plätze')).toBeInTheDocument();
     expect(screen.getByText('3/5 verbunden')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Kalender einrichten/i })).toBeInTheDocument();
     expect(screen.getByText('3 von 4 Ebenen bereit')).toBeInTheDocument();
@@ -76,11 +76,11 @@ describe('WorkspaceControlTab', () => {
       data: { access: { products: [], capabilities: [], entitlements: [], tenant_id: 't1' }, onboarding: { state: 'complete', completed_steps: [], tenant_id: 't1' }, billing: { subscriptions: [] } },
       isLoading: false, isFetching: false, refetch: jest.fn(),
     });
-    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'desk_control_monthly', product: 'desk', label: 'Saim?r Desk Control', interval: 'month', price: { amount_minor: 7900, currency: 'EUR' }, included_seats: 3, trial_days: 14, checkout_ready: true }] } });
+    mockCatalog.mockReturnValue({ data: { plans: [{ key: 'desk_control_monthly', product: 'desk', label: 'Saimôr Desk Control', interval: 'month', price: { amount_minor: 7900, currency: 'EUR' }, included_seats: 3, trial_days: 14, checkout_ready: true }] } });
     render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Ausw?hlen' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Auswählen' }));
     expect(mockCreateCheckout).toHaveBeenCalledWith({ plan_key: 'desk_control_monthly', seats: 3 });
-    await screen.findByRole('button', { name: 'Ausw?hlen' });
+    await screen.findByRole('button', { name: 'Auswählen' });
     expect(mockOpenCheckout).toHaveBeenCalledWith(expect.objectContaining({ id: 'checkout-1' }));
   });
 });
