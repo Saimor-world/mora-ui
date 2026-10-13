@@ -52,6 +52,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
         'saimor hq': '/images/saimor_logo.png',
         'saimor': '/images/saimor_logo.png',
         'saim?r': '/images/saimor_logo.png',
+        'saimôr': '/images/saimor_logo.png',
         'aimô': '/images/saimor_logo.png',
         'simple coffee group': '/images/simple_coffee_logo.png',
         'simple coffee': '/images/simple_coffee_logo.png'
