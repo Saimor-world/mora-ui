@@ -21,6 +21,22 @@ export function UniverseLinks() {
     const [line, setLine] = useState<Line>(null);
     const current = useRef<string | null>(null);
 
+    // Parallaxe: das Feld folgt dem Zeiger um wenige Pixel – Tiefe, kein Effekt.
+    useEffect(() => {
+        if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+        let raf = 0;
+        const move = (e: MouseEvent) => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(() => {
+                const x = (e.clientX / window.innerWidth - 0.5) * 2; const y = (e.clientY / window.innerHeight - 0.5) * 2;
+                const r = document.documentElement.style;
+                r.setProperty('--uv2-px', x.toFixed(3)); r.setProperty('--uv2-py', y.toFixed(3));
+            });
+        };
+        window.addEventListener('mousemove', move, { passive: true });
+        return () => { window.removeEventListener('mousemove', move); cancelAnimationFrame(raf); };
+    }, []);
+
     // Licht nach Tageszeit: Sonnenstand dreht den Terminator, Tönung folgt dem Tag.
     useEffect(() => {
         const apply = () => {
@@ -74,9 +90,27 @@ export function UniverseLinks() {
                 window.setTimeout(() => el.classList.remove('uv2-pulse'), Math.max(1200, Number(d.duration) || 2000));
             }));
         };
+        // MÔRA hat geantwortet: Thema erkennen, passende Instrumente und Bereiche pulsieren.
+        const answered = (e: Event) => {
+            const text = String((e as CustomEvent).detail?.text || '').toLowerCase();
+            const hits = new Set<string>();
+            if (/mail|post|nachricht/.test(text)) hits.add('horizont');
+            if (/termin|kalender|meeting|gespräch/.test(text)) hits.add('horizont');
+            if (/vorfall|zertifikat|wache|nightwatch|ausfall/.test(text)) hits.add('wache');
+            if (/umsatz|abo|paddle|einnahme/.test(text)) hits.add('wirtschaft');
+            document.querySelectorAll('[data-uv2-link][data-mora-label]').forEach((el) => {
+                const name = (el.getAttribute('data-mora-label') || '').toLowerCase().split(/[ &]+/)[0];
+                if (name && name.length > 3 && text.includes(name)) hits.add(el.getAttribute('data-uv2-link')!);
+            });
+            if (/rechnung|zahlung|bank|liquidit/.test(text)) {
+                document.querySelectorAll('[data-uv2-link][data-mora-label^="Finanz"]').forEach((el) => hits.add(el.getAttribute('data-uv2-link')!));
+            }
+            hits.forEach((k) => pulse(new CustomEvent('mora:highlight', { detail: { targetId: k, duration: 2400 } })));
+        };
+        window.addEventListener('uv2:mora-answer', answered);
         document.addEventListener('mouseover', over);
         window.addEventListener('mora:highlight', pulse);
-        return () => { document.removeEventListener('mouseover', over); window.removeEventListener('mora:highlight', pulse); clear(); };
+        return () => { window.removeEventListener('uv2:mora-answer', answered); document.removeEventListener('mouseover', over); window.removeEventListener('mora:highlight', pulse); clear(); };
     }, []);
 
     if (!line) return null;

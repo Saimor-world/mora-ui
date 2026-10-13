@@ -137,7 +137,7 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? 1000 : 1350), box.height / 770));
+                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? 780 : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -281,6 +281,7 @@ export function OrganizationField({
                 570px zu belegen - bei 1024 blieben davon nur 454px Feld. */}
             <div
                 ref={fieldRef}
+                data-uv2-plane
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
                 className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"

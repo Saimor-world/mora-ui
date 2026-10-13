@@ -185,11 +185,11 @@ html[data-uv2="on"] .uv2-widgets { display: contents; }
 html[data-uv2="on"][data-uv2-still="on"]:not([data-uv2-lage="open"]) .uv2-widgets { display: none; }
 @media (min-width: 1024px) {
   html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-greeting"] { top: 9vh !important; width: 340px !important; }
-  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-greeting-title"] { font-size: 48px !important; margin-top: 16px !important; }
-  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-today"] { margin-top: 20px !important; }
-  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-today"] li { padding-top: 10px !important; padding-bottom: 10px !important; }
-  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-proposal"] { margin-top: 20px !important; }
-  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-approve-state"] { display: none; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-greeting-title"] { font-size: 48px !important; margin-top: 16px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-today"] { margin-top: 20px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-today"] li { padding-top: 10px !important; padding-bottom: 10px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-proposal"] { margin-top: 20px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-approve-state"] { display: none; }
 }
 /* Widgets im Universe: Tinte, Haarlinie, gleiche Typo wie LAGE */
 html[data-uv2="on"] [data-testid="uv2-lage"] [data-uv2-col] > .flex { background: none !important; border: 0 !important; backdrop-filter: none; }
@@ -263,3 +263,92 @@ html[data-uv2=on] [data-uv2-switch] { background: rgba(247,244,233,.1) !importan
 html[data-uv2=on] [data-uv2-switch=on] { background: rgba(214,168,72,.55) !important; }
 html[data-uv2=on] [data-uv2-switch] > span { background: #F7F4E9 !important; box-shadow: 0 1px 2px rgba(0,0,0,.4); }
 html[data-uv2=on] [data-uv2-switch=off] > span { background: rgba(247,244,233,.45) !important; }
+
+/* ═══ hd9: Raster 12 Spalten @1440×900 ═══════════════════════════════════════
+   Rand 64 · Steg 24 · Spalte ≈ 87. Zonen: 1–3 Begrüßung+Tag · 4–9 Planeten · 10–12 Instrumente.
+   Oberkante 88 (Datumszeile) · Grundlinie 122 über dem Rand (über dem Dock). */
+html[data-uv2=on] {
+  --g-m: 64px; --g-g: 24px;
+  --g-col: calc((100vw - 2 * var(--g-m) - 11 * var(--g-g)) / 12);
+  --g-3: calc(3 * var(--g-col) + 2 * var(--g-g));
+  --g-top: 88px; --g-base: 122px;
+}
+@media (min-width: 1280px) {
+  html[data-uv2=on] [data-testid="uv2-greeting"] { left: var(--g-m) !important; top: var(--g-top) !important; width: var(--g-3) !important; }
+  html[data-uv2=on]:not([data-uv2-lage=open]) [data-uv2-field],
+  html[data-uv2=on]:not([data-uv2-lage=open]):not([data-uv2-still=on]) [data-uv2-field] { left: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; right: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; }
+  html[data-uv2=on] [data-uv2-col="right"].uv2-col-right { position: absolute; top: var(--g-top); bottom: var(--g-base); right: var(--g-m); width: var(--g-3); }
+}
+html[data-uv2=on] [data-uv2-col="left"] { display: none !important; }
+html[data-uv2=on] [data-testid="uv2-lage"] [data-uv2-col] > .uv2-instruments { background: none !important; border: 0 !important; padding: 0 !important; backdrop-filter: none !important; animation: none !important;
+  height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 20px; }
+/* Instrument: kein Kasten – Haarlinie oben, Rhythmus 8 */
+html[data-uv2=on] .uv2-instruments > section { all: unset; display: block; box-sizing: border-box; padding-top: 12px !important; border-top: 1px solid rgba(247,244,233,.14) !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; border-left: 0 !important; }
+html[data-uv2=on] .uv2-instruments > section > .absolute { display: none !important; }
+html[data-uv2=on] .uv2-inst-label, html[data-uv2=on] .uv2-instruments section > p:first-of-type { font-family: "Space Mono", ui-monospace, monospace !important; font-size: 10px !important; letter-spacing: .2em !important; text-transform: uppercase; color: #D6A848 !important; font-weight: 400 !important; }
+html[data-uv2=on] .uv2-inst-aside { font-family: "Space Mono", ui-monospace, monospace; font-size: 10px; letter-spacing: .08em; color: rgba(247,244,233,.62); }
+html[data-uv2=on] .uv2-inst-text { display: block; font-size: 13px; line-height: 20px; color: rgba(247,244,233,.86); }
+html[data-uv2=on] .uv2-inst-figure { font-family: "Cormorant Garamond", serif; font-size: 20px; color: #F7F4E9; }
+html[data-uv2=on] .uv2-instruments h2 { font-family: "Cormorant Garamond", serif !important; font-size: 20px !important; line-height: 24px; color: #F7F4E9 !important; margin-top: 4px; }
+html[data-uv2=on] .uv2-instruments h2 svg { display: none; }
+html[data-uv2=on] .uv2-inst-row { position: relative; display: block; width: 100%; text-align: left; padding: 8px 0; }
+html[data-uv2=on] .uv2-inst-row + .uv2-inst-row { border-top: 1px solid rgba(247,244,233,.06); }
+html[data-uv2=on] .uv2-inst-row .uv2-inst-label { color: rgba(247,244,233,.62) !important; letter-spacing: .16em !important; }
+html[data-uv2=on] .uv2-inst-row:hover .uv2-inst-text { color: #F7F4E9; }
+/* Verteilung im gleichen Ton */
+html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] span.text-\[11px\] { font-size: 13px !important; color: rgba(247,244,233,.86) !important; }
+html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] span.text-\[9px\] { font-family: "Space Mono", monospace; font-size: 10px !important; color: rgba(247,244,233,.62) !important; }
+html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] .space-y-2\.5 > * + * { margin-top: 8px !important; }
+html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] [data-testid="uv2-verteilung-summe"] p { color: rgba(247,244,233,.62) !important; }
+/* Zufluss: ein Punkt wandert beim Zeigen nach links, Richtung Planeten */
+html[data-uv2=on] .uv2-flow-dot { position: absolute; left: -10px; top: 15px; width: 3px; height: 3px; border-radius: 50%; background: #D6A848; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-uv2=on] .uv2-inst-row:hover .uv2-flow-dot { animation: uv2-flow 1.6s cubic-bezier(.22,1,.36,1) infinite; }
+}
+@keyframes uv2-flow { 0% { opacity: 0; transform: translateX(0); } 20% { opacity: .9; } 100% { opacity: 0; transform: translateX(-56px); } }
+/* Wache: 14-Tage-Spur */
+html[data-uv2=on] .uv2-timeline { display: flex; align-items: flex-end; gap: 6px; height: 26px; margin-top: 12px; }
+html[data-uv2=on] .uv2-tick { flex: 1; border-radius: 1px; background: rgba(247,244,233,.22); transform-origin: bottom; }
+html[data-uv2=on] .uv2-tick.is-open { background: #E0876A; }
+html[data-uv2=on] .uv2-tick.is-today { box-shadow: 0 0 0 1px rgba(214,168,72,.6); }
+@media (prefers-reduced-motion: no-preference) { html[data-uv2=on] .uv2-tick { animation: uv2-tick .8s cubic-bezier(.22,1,.36,1) both; } }
+@keyframes uv2-tick { from { transform: scaleY(0); } }
+@media (min-width: 1280px) {
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane] { left: 0 !important; right: 0 !important; top: 150px !important; bottom: 170px !important; }
+  html[data-uv2=on] [data-uv2-col="right"].uv2-col-right { top: 128px; }
+}
+/* Wirtschaft-Text ist Text, kein Label */
+html[data-uv2=on] .uv2-instruments section > p.uv2-inst-text { font-family: Inter, system-ui, sans-serif !important; font-size: 13px !important; letter-spacing: 0 !important; text-transform: none !important; color: rgba(247,244,233,.86) !important; margin-top: 4px; }
+html[data-uv2=on] .uv2-instruments > section, html[data-uv2=on] [data-testid="uv2-lage"] .uv2-instruments > section { animation: uv2-slide 1s cubic-bezier(.22,1,.36,1) both; }
+@media (min-width: 1280px) {
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane] { left: 64px !important; right: 64px !important; top: 150px !important; bottom: 220px !important; }
+}
+html[data-uv2=on] .uv2-col-right, html[data-uv2=on] [data-testid="uv2-lage"] .uv2-col-right > .uv2-instruments { background: none !important; border: 0 !important; backdrop-filter: none !important; box-shadow: none !important; }
+html[data-uv2=on] [data-uv2-field] { overflow: visible !important; }
+html[data-uv2=on] [data-uv2-col] .uv2-instruments > section { background: none !important; border: 0 !important; border-top: 1px solid rgba(247,244,233,.14) !important; border-radius: 0 !important; box-shadow: none !important; backdrop-filter: none !important; padding: 12px 0 0 !important; transform: none; }
+html[data-uv2=on] [data-uv2-col] .uv2-instruments > section:hover { transform: none; }
+@media (min-width: 1280px) {
+  html[data-uv2=on] [data-uv2-col="right"].uv2-col-right { top: var(--g-top) !important; }
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane] { top: 170px !important; }
+  html[data-uv2=on] [data-testid="uv2-greeting"] { bottom: var(--g-base) !important; display: flex; flex-direction: column; }
+  html[data-uv2=on] [data-testid="uv2-greeting"] [data-testid="uv2-proposal"] { margin-top: auto !important; }
+}
+/* hd9: Parallaxe – Planeten 6px, Monde/Bahnen folgen mit; Spalten bleiben fest (Ruhe) */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-uv2=on] [data-uv2-plane] { translate: calc(var(--uv2-px, 0) * -6px) calc(var(--uv2-py, 0) * -4px); transition: translate 1.2s cubic-bezier(.22,1,.36,1); }
+}
+/* Kontrast: nichts unter 0.6 Creme */
+html[data-uv2=on] .uv2-planet-meta { color: rgba(247,244,233,.62) !important; }
+html[data-uv2=on] [data-testid="uv2-proposal-reason"] { color: rgba(247,244,233,.62) !important; }
+/* hd9: LAGE – Systemfarben statt Grün, Feld bleibt im Raster */
+html[data-uv2=on] [data-mora-playground-root] [class*="bg-emerald"] { background: #D6A848 !important; }
+html[data-uv2=on] [data-mora-playground-root] .animate-ping { display: none; }
+html[data-uv2=on] [data-mora-playground-root] button { background: rgba(5,7,6,.6) !important; border-color: rgba(247,244,233,.12) !important; }
+@media (min-width: 1280px) { html[data-uv2=on] [data-mora-playground-root] { right: var(--g-m) !important; top: 20px !important; } }
+html[data-uv2=on] [data-uv2-field] [class*="text-emerald"], html[data-uv2=on] [data-uv2-field] [class*="text-green"] { color: rgba(247,244,233,.62) !important; }
+@media (min-width: 1280px) {
+  html[data-uv2=on][data-uv2-lage=open] [data-uv2-field] { left: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; right: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; }
+}
+/* Wache-Spur: feine Striche statt Blöcke */
+html[data-uv2=on] .uv2-timeline { gap: 0; justify-content: space-between; }
+html[data-uv2=on] .uv2-tick { flex: 0 0 2px; }

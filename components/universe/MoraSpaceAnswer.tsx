@@ -39,6 +39,8 @@ export function useMoraSpace(demo: boolean) {
       }
       if (!answer.text) throw new Error('leer');
       setHistory((h) => [...h, { role: 'user' as const, content: question }, { role: 'assistant' as const, content: answer.text }].slice(-20));
+      // v2: Instrumente zum Thema der Antwort pulsieren kurz (UniverseLinks).
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('uv2:mora-answer', { detail: { text: question + ' ' + answer.text } }));
       setState({ status: 'answer', answer });
     } catch {
       setState({ status: 'error', question, mode });

@@ -247,7 +247,9 @@ export function MorgenOverlay() {
   const ease = UV.easeOut;
   const wide = vw >= 1100;
   // Editorial: links die Spalte, rechts der Kosmos. Der Kranz rückt dafür nach rechts.
-  const shift = wide ? Math.round(vw * 0.16) : 0;
+  // Ab 1280 trägt das 12er-Raster (universe-v2.css) die Zonen: das Feld sitzt
+  // bereits in den Spalten 4–9, darum keine zusätzliche Verschiebung mehr.
+  const shift = vw >= 1280 ? 0 : wide ? Math.round(vw * 0.16) : 0;
   const list = items.slice(0, 3);
   const hot = hover !== null ? usable[slots[hover] ?? -1]?.name : null;
   const sel = (nm: string) => `[data-mora-label="${nm.replace(/"/g, '')}"]`;

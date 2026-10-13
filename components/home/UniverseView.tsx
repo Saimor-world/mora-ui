@@ -322,8 +322,19 @@ export default function UniverseView() {
         return buildOrganicUniverseLayout(sorted, isUniverseV2Enabled() ? {} : metrics);
     }, [accessibleDepartments, isUniverseV2Enabled() ? structureKey : metrics]);
 
+    // v2: Planeten füllen die Mittelzone (Spalten 4–9) gleichmäßig – Lage
+    // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
+    const normalizedDepartments = useMemo(() => {
+        if (!isUniverseV2Enabled() || positionedDepartments.length < 2) return positionedDepartments;
+        const xs = positionedDepartments.map((d) => d.x); const ys = positionedDepartments.map((d) => d.y);
+        const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+        const nx = (v: number) => (x1 - x0 < 1 ? 50 : 12 + ((v - x0) / (x1 - x0)) * 76);
+        const ny = (v: number) => (y1 - y0 < 1 ? 50 : 8 + ((v - y0) / (y1 - y0)) * 84);
+        return positionedDepartments.map((d) => ({ ...d, x: nx(d.x), y: ny(d.y) }));
+    }, [positionedDepartments]);
+
     const territories = useMemo<OrganizationTerritory[]>(
-        () => positionedDepartments.map((department) => {
+        () => normalizedDepartments.map((department) => {
             const value = metrics[department.id];
             return {
                 id: department.id,
@@ -346,7 +357,7 @@ export default function UniverseView() {
                 access: department.universeAccess,
             };
         }),
-        [metrics, positionedDepartments, spaceListByDepartment, folderMoons],
+        [metrics, normalizedDepartments, spaceListByDepartment, folderMoons],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
