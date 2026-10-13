@@ -9,8 +9,9 @@
  * Every section of the classic settings stays reachable through the rail and the Gefüge.
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { RITUAL_SCENES, type RitualSceneId } from '@/lib/os/ritualMode';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { RITUAL_SCENES, getAutoRitualScene, type RitualSceneId } from '@/lib/os/ritualMode';
+import { RaumPreview } from '@/components/universe/RaumPreview';
 import { PRESENCE_KEYS, readQuietHours, readVoiceWarmth, voiceLabel } from '@/lib/os/presence';
 
 export interface RaumSection { id: string; label: string }
@@ -29,10 +30,14 @@ interface Props {
   saveSetting: (u: Record<string, unknown>) => void;
 }
 
-const SUN_X: Record<RitualSceneId, number> = { flow: 0.16, build: 0.4, lounge: 0.66, night: 0.88 };
+const SCENE_HOUR: Record<RitualSceneId, number> = { flow: 8, build: 14, lounge: 19.5, night: 23 };
+const H0 = 5, H1 = 24.5; // Sonnenbogen: 05:00 links … 00:30 rechts
+const xFromHour = (h: number) => Math.min(0.97, Math.max(0.03, ((h < H0 ? h + 24 : h) - H0) / (H1 - H0)));
+const hourFromX = (x: number) => (H0 + x * (H1 - H0)) % 24;
+const sceneAt = (h: number): RitualSceneId => { const d = new Date(); d.setHours(Math.floor(h), Math.round((h % 1) * 60), 0, 0); return getAutoRitualScene(d) as RitualSceneId; };
+const hhmm = (h: number) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h % 1) * 60) % 60).padStart(2, '0')}`;
 const SCENE_TIME: Record<RitualSceneId, string> = { flow: 'morgen', build: 'tag', lounge: 'abend', night: 'nacht' };
 const SCENE_KELVIN: Record<RitualSceneId, number> = { flow: 5200, build: 5600, lounge: 3200, night: 2400 };
-const sceneFromX = (x: number): RitualSceneId => (x < 0.28 ? 'flow' : x < 0.53 ? 'build' : x < 0.78 ? 'lounge' : 'night');
 const arcY = (x: number) => 1 - 4 * x * (1 - x); // 0 at top, 1 at ends
 
 type Snap = { scene: RitualSceneId; volume: number; ambientOn: boolean; warmth: number; quiet: number | null };
@@ -59,15 +64,19 @@ export function RaumV2(p: Props) {
     p.saveSetting({ quietHoursFrom: h });
   }, [p]);
 
-  const sunX = SUN_X[p.scene];
+  const nowHour = () => { const d = new Date(); return d.getHours() + d.getMinutes() / 60; };
+  const [hour, setHour] = useState<number>(() => (p.autoTime ? nowHour() : SCENE_HOUR[p.scene]));
+  // Szene von außen geändert (MÔRA-Zeile, Zurück, Uhr): Sonne springt in deren Tageszeit.
+  useEffect(() => { if (!dragging.current && sceneAt(hour) !== p.scene) setHour(p.autoTime ? nowHour() : SCENE_HOUR[p.scene]); }, [p.scene, p.autoTime]); // eslint-disable-line react-hooks/exhaustive-deps
+  const sunX = xFromHour(hour);
+  const moveSun = (h: number) => { setHour(h); const sc = sceneAt(h); if (sc !== p.scene) p.onScene(sc); };
   const accent = RITUAL_SCENES[p.scene].accentHex;
 
   const onSunPointer = (e: React.PointerEvent) => {
     const el = stageRef.current; if (!el) return;
     const r = el.getBoundingClientRect();
-    const x = Math.min(0.95, Math.max(0.05, (e.clientX - r.left) / r.width));
-    const next = sceneFromX(x);
-    if (next !== p.scene) p.onScene(next);
+    const x = Math.min(0.97, Math.max(0.03, (e.clientX - r.left) / r.width));
+    moveSun(Math.round(hourFromX(x) * 4) / 4);
   };
 
   // ── B: MÔRA line ─────────────────────────────────────────────
@@ -131,23 +140,17 @@ export function RaumV2(p: Props) {
           <div className="uv2-raum__stage" ref={stageRef} data-scene={p.scene}
             onPointerMove={(e) => { if (dragging.current) onSunPointer(e); }}
             onPointerUp={() => { dragging.current = false; }} onPointerLeave={() => { dragging.current = false; }}>
-            <div className="uv2-raum__sky" />
-            <div className="uv2-raum__tint" />
-            <span className="uv2-raum__planet" style={{ left: '40%', top: '38%', width: 120, height: 120, background: `radial-gradient(circle at 35% 30%, #F4D48C, #B07A2A 55%, #2a1a08)` }} />
-            <span className="uv2-raum__planet" style={{ left: '20%', top: '22%', width: 46, height: 46, background: 'radial-gradient(circle at 35% 30%, #9fd0d8, #1f4a5a 60%, #05141a)' }} />
-            <span className="uv2-raum__planet" style={{ left: '70%', top: '62%', width: 60, height: 60, background: 'radial-gradient(circle at 35% 30%, #e0a07a, #7a3a1e 60%, #1a0a04)' }} />
-            <span className="uv2-raum__planet" style={{ left: '28%', top: '70%', width: 32, height: 32, background: 'radial-gradient(circle at 35% 30%, #b9b4f0, #3a3a7a 60%, #0a0a1a)' }} />
+            <RaumPreview scene={p.scene} hour={hour} />
             <svg className="uv2-raum__arc" viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M5 56 Q50 -50 95 56" /></svg>
-            <button type="button" className="uv2-raum__sun" aria-label={`Licht: ${SCENE_TIME[p.scene]}. Ziehen zum Ändern`} data-testid="raum-sun"
+            <button type="button" className="uv2-raum__sun" aria-label={`Licht: ${hhmm(hour)}, ${SCENE_TIME[p.scene]}. Ziehen zum Ändern`} data-testid="raum-sun"
               style={{ left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78}%` }}
               onPointerDown={(e) => { dragging.current = true; (e.target as HTMLElement).setPointerCapture?.(e.pointerId); }}
               onPointerMove={(e) => { if (dragging.current) onSunPointer(e); }}
               onPointerUp={() => { dragging.current = false; }}
               onKeyDown={(e) => {
-                const order: RitualSceneId[] = ['flow', 'build', 'lounge', 'night']; const i = order.indexOf(p.scene);
-                if (e.key === 'ArrowRight' && i < 3) p.onScene(order[i + 1]); if (e.key === 'ArrowLeft' && i > 0) p.onScene(order[i - 1]);
+                if (e.key === 'ArrowRight') moveSun((hour + 1) % 24); if (e.key === 'ArrowLeft') moveSun((hour + 23) % 24);
               }} />
-            <span className="uv2-raum__suncap" style={{ left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78 + 9}%` }}>{SCENE_TIME[p.scene]} · {SCENE_KELVIN[p.scene]} K</span>
+            <span className="uv2-raum__suncap" style={{ transform: `translateX(${sunX > 0.72 ? -100 : sunX < 0.28 ? 0 : -50}%)`, left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78 + 9}%` }}>{hhmm(hour)} · {SCENE_TIME[p.scene]} · {SCENE_KELVIN[p.scene]} K</span>
             <span className="uv2-raum__live">Live-Vorschau</span>
             <button type="button" className="uv2-raum__auto" data-on={p.autoTime ? '' : undefined} onClick={p.onToggleAuto}>{p.autoTime ? 'Folgt der Uhr' : 'Fest'}</button>
           </div>

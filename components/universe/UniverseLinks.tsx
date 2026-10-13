@@ -1,5 +1,6 @@
 'use client';
 
+import { sunLightVars } from '@/lib/universe/sunLight';
 import { useEffect, useRef, useState } from 'react';
 
 /**
@@ -40,12 +41,9 @@ export function UniverseLinks() {
     // Licht nach Tageszeit: Sonnenstand dreht den Terminator, Tönung folgt dem Tag.
     useEffect(() => {
         const apply = () => {
-            const d = new Date(); const h = d.getHours() + d.getMinutes() / 60;
-            const rot = Math.max(-70, Math.min(70, (h - 13) * 10));
-            const tint = h < 6 || h >= 21 ? 'rgba(110,130,190,0.16)' : h < 10 ? 'rgba(255,214,150,0.10)' : h < 17 ? 'rgba(255,250,235,0)' : 'rgba(240,150,100,0.13)';
-            const night = h < 6 || h >= 21 ? '0.18' : '0';
+            const d = new Date();
             const r = document.documentElement.style;
-            r.setProperty('--uv2-sun-rot', rot.toFixed(1) + 'deg'); r.setProperty('--uv2-sun-tint', tint); r.setProperty('--uv2-sun-night', night);
+            Object.entries(sunLightVars(d.getHours() + d.getMinutes() / 60)).forEach(([k, v]) => r.setProperty(k, v));
         };
         apply(); const t = window.setInterval(apply, 5 * 60_000);
         return () => window.clearInterval(t);

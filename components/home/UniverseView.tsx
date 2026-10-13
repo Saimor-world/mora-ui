@@ -28,7 +28,7 @@ import { summarizeSubscriptions, type BusinessSummary } from '@/lib/business/mrr
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
-import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
+import { buildOrganicUniverseLayout, normalizeUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
@@ -348,15 +348,8 @@ export default function UniverseView() {
     // v2: Planeten füllen die Mittelzone (Spalten 4–9) gleichmäßig – Lage
     // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
     const normalizedDepartments = useMemo(() => {
-        if (!isUniverseV2Enabled() || positionedDepartments.length < 2) return positionedDepartments;
-        const xs = positionedDepartments.map((d) => d.x); const ys = positionedDepartments.map((d) => d.y);
-        const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
-        // Wenige Planeten rücken zusammen (ein Bild statt drei Ecken), viele nutzen die Zone.
-        const n = positionedDepartments.length;
-        const spanX = n <= 3 ? 44 : n <= 5 ? 66 : 76; const spanY = n <= 3 ? 56 : n <= 5 ? 76 : 84;
-        const nx = (v: number) => (x1 - x0 < 1 ? 50 : 50 - spanX / 2 + ((v - x0) / (x1 - x0)) * spanX);
-        const ny = (v: number) => (y1 - y0 < 1 ? 50 : 50 - spanY / 2 + ((v - y0) / (y1 - y0)) * spanY);
-        return positionedDepartments.map((d) => ({ ...d, x: nx(d.x), y: ny(d.y) }));
+        if (!isUniverseV2Enabled()) return positionedDepartments;
+        return normalizeUniverseLayout(positionedDepartments);
     }, [positionedDepartments]);
 
     const territories = useMemo<OrganizationTerritory[]>(
