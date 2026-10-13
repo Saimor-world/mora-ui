@@ -163,8 +163,8 @@ export default function CodexApp({ paneId, initialData }: AppProps) {
             <div className="flex h-full min-h-0 flex-col" data-testid="codex-app">
                 {uv2() && (() => {
                     const lastAsk = [...transcript].reverse().find((m) => m.role === 'user');
-                    return <AppHero app="codex" eyebrow="Engineering · Sitzung bleibt in diesem Tab"
-                        title={lastAsk ? lastAsk.content.split('\n')[0].slice(0, 90) : 'Was bauen wir?'}
+                    return <AppHero app="codex" eyebrow="Codex"
+                        title={lastAsk ? lastAsk.content.split('\n')[0].slice(0, 90) : 'Neue Sitzung'}
                         sub={lastAsk ? (isStreaming ? 'Codex arbeitet daran …' : 'Codex schlägt Terminal oder Arbeitssitzung als nächsten Schritt vor, wenn es passt.') : 'Bugfix, Refactor, Deploy-Hilfe oder Architektur – fokussiert auf Engineering.'}
                         figure={transcript.filter((m) => m.role === 'user').length} figureLabel="Aufgaben"
                         action={{ label: 'Terminal öffnen', onClick: openTerminal }} />;

@@ -227,7 +227,7 @@ export default function WorkApp({ paneId }: AppProps) {
       <div className="flex h-full min-h-0 flex-col overflow-y-auto pr-1 text-white" data-uv2-app="work" data-uv2-focus={readable && focusTask ? 'hero' : undefined}>
         {uv2() && !loading && (
           <AppHero app="work" eyebrow={'Arbeit · ' + availabilityLabel(snapshot) + (readable && typeof overdueCount === 'number' && overdueCount > 0 ? ` · ${overdueCount} überfällig` : '')}
-            title={readable && focusTask ? focusTask.title : readable ? 'Nichts drängt.' : 'Was jetzt zählt.'}
+            title={readable && focusTask ? focusTask.title : readable ? 'Nichts offen' : 'Arbeit'}
             sub={readable && focusTask ? [taskStatusLabel(focusTask.status), dueLabel(focusTask.due_date), focusTask.priority ? 'Priorität ' + focusTask.priority : null].filter(Boolean).join(' · ') : readable ? 'Keine offene Aufgabe in dieser Organisation. Leg die nächste an oder frag MÔRA.' : (readError ?? 'Der heutige Stand wird gelesen.')}
             figure={readable && typeof openCount === 'number' ? openCount : undefined} figureLabel="offen"
             action={{ label: focusTask ? (activePlanId ? 'Arbeitsplan öffnen' : 'Mit MÔRA planen') : 'Alle Aufgaben', onClick: focusTask ? openPlan : openTasks }} />

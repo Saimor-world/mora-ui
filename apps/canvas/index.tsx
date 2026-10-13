@@ -126,8 +126,8 @@ export default function CanvasApp({ paneId }: AppProps) {
         >
             <div className="flex flex-col h-full" data-uv2-app="canvas">
                 {isUniverseV2Enabled() && (
-                    <AppHero app="canvas" eyebrow="Canvas · freie Fläche"
-                        title={strokes === 0 ? 'Eine leere Fläche.' : 'Deine Skizze.'}
+                    <AppHero app="canvas" eyebrow="Canvas"
+                        title={strokes === 0 ? 'Leer' : 'Skizze'}
                         sub={strokes === 0 ? 'Zeichne, wo Worte noch fehlen. Nichts wird gespeichert, bis du es willst.' : 'Bleibt in diesem Fenster, bis du sie als Bild sicherst.'}
                         figure={strokes} figureLabel="Striche"
                         action={strokes > 0 ? { label: 'Als Bild sichern', onClick: () => { const c = canvasRef.current; if (!c) return; const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'Skizze.png'; a.click(); } } : null} />

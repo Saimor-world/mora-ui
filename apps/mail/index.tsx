@@ -432,7 +432,7 @@ export default function MailApp({ paneId }: AppProps) {
                     const first = mails[0];
                     const sender = first.from_addr.split('<')[0].trim().replace(/"/g, '');
                     return <AppHero app="mail" eyebrow={'Post · ' + mails.length + ' im Posteingang'}
-                        title={unread === 0 ? 'Alles gelesen.' : unread === 1 ? 'Eine neue Nachricht.' : unread + ' neue Nachrichten.'}
+                        title={unread === 0 ? 'Alles gelesen' : unread + ' ungelesen'}
                         sub={<>Zuletzt von <span style={{ color: 'rgb(247,244,233)' }}>{sender}</span>: {first.subject || '(Kein Betreff)'}</>}
                         figure={unread} figureLabel="ungelesen"
                         action={{ label: 'Neueste lesen', onClick: () => void openMail(first) }} />;

@@ -364,7 +364,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                 {uv2() && !loading ? (
                     <AppHero app="nightwatch"
                         eyebrow={'Wache' + (lastRefresh ? ' · Stand ' + lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '')}
-                        title={available === false ? 'Die Wache sieht gerade nichts.' : incidents.length === 0 ? 'Alles ruhig.' : criticalCount > 0 ? (criticalCount === 1 ? 'Ein kritischer Vorfall braucht dich.' : criticalCount + ' kritische Vorfälle brauchen dich.') : incidents.length === 1 ? 'Ein Vorfall wartet auf dich.' : incidents.length + ' Vorfälle warten auf dich.'}
+                        title={available === false ? 'Keine Daten' : incidents.length === 0 ? 'Alles ruhig' : criticalCount > 0 ? `${criticalCount} kritisch` : `${incidents.length} offen`}
                         sub={available === false ? 'Die Verbindung zur Überwachung fehlt. Sobald sie steht, meldet MÔRA nur, was Aufmerksamkeit braucht.' : sortedIncidents[0] ? sortedIncidents[0].title : 'MÔRA wacht weiter und meldet sich nur, wenn etwas Aufmerksamkeit braucht.'}
                         figure={available === false ? undefined : incidents.length}
                         figureLabel={available === false ? undefined : 'offen'}

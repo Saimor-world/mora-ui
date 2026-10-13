@@ -95,7 +95,7 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
         {uv2() ? (
           <>
             <AppHero app="lagefeld" eyebrow={'Lagefeld · ' + (deutungActions ? 'MÔRAs Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard')}
-              title={!hasSignals ? 'Die Lage ist ruhig.' : state.cards.length === 1 ? 'Ein Signal liegt auf dem Tisch.' : `${state.cards.length} Signale liegen auf dem Tisch.`}
+              title={!hasSignals ? 'Ruhig' : `${state.cards.length} Signale`}
               sub={deutungActions ? 'MÔRA hat die Signale geordnet. „Übersicht“ zeigt wieder alles.' : 'Aus Mail, Kalender, Aufgaben und MÔRAs Beobachtungen – nichts erfunden.'}
               figure={hasSignals ? state.cards.length : undefined} figureLabel="Signale"
               action={hasSignals ? { label: deuting ? 'MÔRA deutet …' : deutungActions ? 'Neu deuten' : 'Mit MÔRA deuten', onClick: () => { if (!deuting) requestDeutung(); } } : null} />

@@ -363,7 +363,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             <div className="flex h-full flex-col" data-uv2-app="team">
                 {uv2() && !isLoading && (
                     <AppHero app="team" eyebrow={'Teamraum · ' + (isOperational ? 'verbunden' : 'nicht erreichbar')}
-                        title={members.length === 0 ? (isOperational ? 'Noch niemand hier.' : 'Der Raum ist gerade still.') : members.length === 1 ? 'Du bist im Raum.' : `${members.length} Menschen im Raum.`}
+                        title={members.length === 0 ? (isOperational ? 'Leer' : 'Offline') : `${members.length} im Raum`}
                         sub={!isOperational ? 'Sobald die Verbindung steht, siehst du hier, wer da ist – und was ihr euch schreibt.' : messages.length > 0 ? `Zuletzt: „${messages[messages.length - 1].content.slice(0, 90)}“` : 'Ein gemeinsamer Ort für kurze Worte – ohne Postfach.'}
                         figure={isOperational ? messages.length : undefined} figureLabel="Nachrichten"
                         action={{ label: 'Jemanden einladen', onClick: () => setActiveTab('invite') }} />

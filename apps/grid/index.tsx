@@ -109,8 +109,8 @@ export default function GridApp({ paneId }: AppProps) {
             <div className="flex h-full min-h-0 flex-col" data-uv2-app="grid">
                 {!isLoading && nodes.length > 0 && (() => {
                     const latest = [...nodes].sort((a, b) => String((b as any).updated_at ?? '').localeCompare(String((a as any).updated_at ?? '')))[0];
-                    return <AppHero app="grid" eyebrow="Alle Inhalte · dieser Raum"
-                        title={nodes.length === 1 ? 'Ein Inhalt in diesem Raum.' : `${nodes.length} Inhalte in diesem Raum.`}
+                    return <AppHero app="grid" eyebrow="Alle Inhalte"
+                        title={`${nodes.length} Inhalte`}
                         sub={latest ? <>Zuletzt bewegt: <span style={{ color: 'rgb(247,244,233)' }}>{latest.title || 'Ohne Titel'}</span></> : undefined}
                         figure={nodes.length} figureLabel="Inhalte"
                         action={latest ? { label: 'Zuletzt bewegtes öffnen', onClick: () => openPane({ id: `doc-${latest.id}`, type: 'document', title: latest.title || 'Ohne Titel', size: { width: 800, height: 600 }, data: { nodeId: latest.id, content: latest.content, name: latest.title, type: latest.type, metadata: latest.metadata } }) } : null} />;

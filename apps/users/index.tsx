@@ -225,8 +225,8 @@ export default function UsersApp({ paneId }: AppProps) {
                 {uv2() && !isLoading && (() => {
                     const active = combinedMembers.filter((m) => m.status === 'active').length;
                     const invited = combinedMembers.filter((m) => m.status === 'invited').length;
-                    return <AppHero app="users" eyebrow="Menschen · dieser Workspace"
-                        title={active === 1 ? 'Eine Person arbeitet hier.' : `${active} Menschen arbeiten hier.`}
+                    return <AppHero app="users" eyebrow="Menschen"
+                        title={`${active} aktiv`}
                         sub={invited > 0 ? `${invited} Einladung${invited === 1 ? '' : 'en'} warten auf Antwort. Rollen legen fest, wer was sieht.` : 'Rollen legen fest, wer was sieht. Geschützte Bereiche öffnen sich nur mit passender Rolle.'}
                         figure={combinedMembers.length} figureLabel="Mitglieder"
                         action={isAdmin ? { label: 'Jemanden einladen', onClick: () => setShowInviteModal(true) } : null} />;

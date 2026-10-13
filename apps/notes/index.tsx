@@ -74,7 +74,7 @@ function NotesBody({ paneId: _paneId }: AppProps) {
     return (
       <div className="flex h-full flex-col" data-uv2-app="notes">
         <AppHero app="notes" eyebrow={'Notiz · ' + status}
-          title={firstLine ? firstLine.slice(0, 80) : 'Ein leeres Blatt.'}
+          title={firstLine ? firstLine.slice(0, 80) : 'Leer'}
           sub={firstLine ? 'Dein schneller Schreibblock. Wenn daraus etwas Bleibendes wird, lege es in Meine Dateien ab.' : 'Gedanken, Aufgaben, Gesprächsnotizen – einfach anfangen. MÔRA liest mit, wenn du sie fragst.'}
           figure={wordCount} figureLabel="Wörter"
           action={canSaveAsFile ? { label: localSaveState === 'saved' ? 'In Meine Dateien' : 'Als Datei sichern', onClick: saveIntoPrivateFiles } : null} />
