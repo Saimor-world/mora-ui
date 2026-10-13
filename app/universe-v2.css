@@ -1046,3 +1046,11 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-raum[data-testid] .uv2-raum__t
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] [data-uv2-confirm-body] { display: none !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] button[data-uv2-primary][data-uv2-primary] { background: var(--uv-gold) !important; color: #050706 !important; border-color: transparent !important; padding: 7px 18px !important; font-weight: 600 !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] button[data-uv2-primary]:hover { filter: brightness(1.08); }
+/* hd19d: Post als OS – Filter-Segment, Absender-Kacheln, kompakte Zeilen */
+html[data-uv2="on"] .uv2-mono-glyph { font: 400 17px var(--uv-serif); color: rgb(var(--uv-cream)); line-height: 1; }
+html[data-uv2="on"] [data-testid="mail-v2-bar"] { padding: 10px 16px 0; }
+html[data-uv2="on"] [data-testid="mail-v2-bar"] .uv2-ftool { margin-bottom: 8px; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-row] { padding: 9px 20px !important; align-items: center !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-row] p[class*="line-clamp"] { display: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row][data-uv2-mail-row] [data-uv2-mail-avatar] { display: flex !important; width: 30px !important; height: 30px !important; font: 400 14px var(--uv-serif) !important; color: rgba(var(--uv-cream), .7) !important; border: 1px solid rgba(247,244,233,.12); }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-mail-row="unread"][data-uv2-mail-row] [data-uv2-mail-avatar] { border-color: rgba(214,168,72,.6); color: var(--uv-gold) !important; background: rgba(214,168,72,.1) !important; }
