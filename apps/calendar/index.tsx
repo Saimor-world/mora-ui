@@ -1,5 +1,6 @@
 'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState } from 'react';
 import { AlertTriangle, CalendarDays, Link2, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
@@ -24,6 +25,7 @@ export default function CalendarApp({ paneId }: AppProps) {
   } = useCalendarEvents();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const uv2 = isUniverseV2Enabled();
   const { openPane, removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
   const isActive = usePaneStore((state) => state.activePaneId === paneId);
   const pane = getPane(paneId);
@@ -151,6 +153,29 @@ export default function CalendarApp({ paneId }: AppProps) {
                 </p>
               </div>
             ) : (
+              uv2 ? (
+                <div className="flex min-h-0 flex-1 gap-8 overflow-hidden px-8 py-6" data-testid="uv2-calendar">
+                  <div className="w-[320px] shrink-0">
+                    <CalendarGrid
+                      currentDate={currentDate}
+                      selectedDate={selectedDate}
+                      events={events}
+                      onNavigate={setCurrentDate}
+                      onSelectDate={setSelectedDate}
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1 overflow-y-auto border-l border-white/[0.07] pl-8">
+                    {selectedDate ? (
+                      <>
+                        <button type="button" onClick={() => setSelectedDate(null)} className="mb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/45 transition-colors hover:text-[#D6A848]">← Nächste Termine</button>
+                        <CalendarEventPanel selectedDate={selectedDate} events={events} onAddEvent={(title) => { void addEvent(title, selectedDate.toISOString().split('T')[0]).catch(() => undefined); }} />
+                      </>
+                    ) : (
+                      <UpcomingAgenda events={events} onSelect={setSelectedDate} />
+                    )}
+                  </div>
+                </div>
+              ) : (
               <>
                 <div className="flex-1 overflow-hidden p-4">
                   <CalendarGrid
@@ -172,6 +197,7 @@ export default function CalendarApp({ paneId }: AppProps) {
                   />
                 )}
               </>
+              )
             )}
           </>
         )}
@@ -182,5 +208,47 @@ export default function CalendarApp({ paneId }: AppProps) {
         </div>
       </div>
     </GlassPanel>
+  );
+}
+
+/** v2: Agenda der nächsten 14 Tage – nach Tag gruppiert, ruhig, echte Termine. */
+function UpcomingAgenda({ events, onSelect }: { events: { id: string; title: string; date: string; time?: string; duration?: number }[]; onSelect: (d: Date) => void }) {
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const end = new Date(start); end.setDate(end.getDate() + 14);
+  const upcoming = events
+    .filter((e) => { const d = new Date(e.date); return d >= start && d < end; })
+    .sort((a, b) => (a.date + (a.time ?? '')).localeCompare(b.date + (b.time ?? '')));
+  const groups = new Map<string, typeof upcoming>();
+  upcoming.forEach((e) => { const k = new Date(e.date).toDateString(); groups.set(k, [...(groups.get(k) ?? []), e]); });
+  const label = (d: Date) => {
+    const diff = Math.round((d.getTime() - start.getTime()) / 86400000);
+    return diff === 0 ? 'Heute' : diff === 1 ? 'Morgen' : d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  };
+  if (upcoming.length === 0) {
+    return (
+      <div className="pt-8">
+        <p className="text-sm text-white/75">Die nächsten zwei Wochen sind frei.</p>
+        <p className="mt-2 text-xs leading-relaxed text-white/45">Wähle links einen Tag, um einen Termin anzulegen.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="space-y-6">
+      <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-[#D6A848]">Nächste 14 Tage · {upcoming.length} Termine</p>
+      {[...groups.entries()].map(([k, list]) => (
+        <section key={k}>
+          <button type="button" onClick={() => onSelect(new Date(k))} className="mb-2 text-xs text-white/55 transition-colors hover:text-[#F7F4E9]">{label(new Date(k))}</button>
+          <ul className="divide-y divide-white/[0.06] border-y border-white/[0.06]">
+            {list.map((e) => (
+              <li key={e.id} className="flex items-baseline gap-4 py-2.5">
+                <span className="w-12 shrink-0 font-mono text-[11px] tabular-nums text-white/55">{e.time ?? 'ganztags'}</span>
+                <span className="min-w-0 flex-1 truncate text-sm text-[#F7F4E9]/90">{e.title}</span>
+                {e.duration ? <span className="shrink-0 font-mono text-[10px] text-white/40">{e.duration} min</span> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
   );
 }

@@ -2,6 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import type { CalendarEvent } from '../hooks/useCalendarEvents';
 
 const MONTH_NAMES = [
@@ -31,6 +32,7 @@ function generateDays(date: Date): (Date | null)[] {
 }
 
 export function CalendarGrid({ currentDate, selectedDate, events, onNavigate, onSelectDate }: Props) {
+  const v2 = isUniverseV2Enabled();
   const isToday = (d: Date) => d.toDateString() === new Date().toDateString();
   const isSelected = (d: Date) => selectedDate?.toDateString() === d.toDateString();
   const getEventsForDate = (d: Date) =>
@@ -77,10 +79,10 @@ export function CalendarGrid({ currentDate, selectedDate, events, onNavigate, on
         {generateDays(currentDate).map((date, i) => (
           <motion.div
             key={i}
-            whileHover={{ scale: date ? 1.05 : 1 }}
+            whileHover={{ scale: date && !v2 ? 1.05 : 1 }}
             onClick={() => date && onSelectDate(date)}
             className={[
-              'aspect-square rounded-lg flex flex-col items-center justify-start p-1 cursor-pointer transition-all',
+              v2 ? 'h-10 rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors duration-300' : 'aspect-square rounded-lg flex flex-col items-center justify-start p-1 cursor-pointer transition-all',
               !date ? 'opacity-0 pointer-events-none' : '',
               date && isToday(date) ? 'bg-emerald-500/20 border border-emerald-500/30' : '',
               date && isSelected(date) ? 'bg-amber-500/20 border border-amber-500/30' : '',
@@ -89,12 +91,12 @@ export function CalendarGrid({ currentDate, selectedDate, events, onNavigate, on
           >
             {date && (
               <>
-                <span className={`text-xs ${isToday(date) ? 'text-emerald-400 font-semibold' : 'text-emerald-100'}`}>
+                <span className={v2 ? `text-xs tabular-nums ${isToday(date) ? 'text-[#D6A848]' : 'text-[#F7F4E9]/75'}` : `text-xs ${isToday(date) ? 'text-emerald-400 font-semibold' : 'text-emerald-100'}`}>
                   {date.getDate()}
                 </span>
                 <div className="flex gap-0.5 mt-0.5 flex-wrap justify-center">
                   {getEventsForDate(date).slice(0, 3).map(ev => (
-                    <div key={ev.id} className={`w-1 h-1 rounded-full ${ev.color || 'bg-emerald-500'}`} />
+                    <div key={ev.id} className={v2 ? 'uv2-dot h-1 w-1 rounded-full' : `w-1 h-1 rounded-full ${ev.color || 'bg-emerald-500'}`} style={v2 ? { background: '#D6A848' } : undefined} />
                   ))}
                 </div>
               </>

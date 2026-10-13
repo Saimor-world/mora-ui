@@ -28,12 +28,25 @@ export const intentLabelMap: Record<string, string> = {
     create_node_from_file: 'Inhalt aus Datei erzeugen',
     work_session_plan: 'Arbeitsplan',
     navigation_open: 'Navigation',
+    navigate: 'Navigation',
+    send_mail: 'Mail senden',
+    send_email: 'Mail senden',
+    sync_calendar: 'Kalender abgleichen',
+    create_task: 'Aufgabe anlegen',
+    update_task: 'Aufgabe ändern',
+    create_event: 'Termin anlegen',
+    system_action: 'Systemaktion',
+};
+/** Unbekannte Intents lesbar machen (snake_case → „Wort wort“), nie roh. */
+const humanizeIntent = (intent: string) => {
+    const t = intent.replace(/[_.-]+/g, ' ').trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : 'Aktion';
 };
 
 export function formatActionTitle(evt: ActionEvent): string {
     const toolName = typeof evt.payload?.tool_name === 'string' ? evt.payload.tool_name : undefined;
     const intent = toolName || evt.intent || 'system_action';
-    return intentLabelMap[intent] || intent.replace(/_/g, ' ');
+    return intentLabelMap[intent] || humanizeIntent(intent);
 }
 
 export function formatActionMessage(evt: ActionEvent): string | null {

@@ -1,5 +1,6 @@
 "use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -467,6 +468,8 @@ export default function ActionCenterApp({ paneId }: AppProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<ActionFilter>('all');
+    const uv2 = isUniverseV2Enabled();
+    const [moreFilters, setMoreFilters] = useState(false);
     const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
     const [intentFilter, setIntentFilter] = useState<IntentFilter>('all');
     const [sessionFilter, setSessionFilter] = useState('');
@@ -646,7 +649,22 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                 {/* Aktionen tab content (hidden when verlauf active) */}
                 {tab === 'aktionen' && <>
 
-                {/* Summary tiles */}
+                {/* Summary: v2 = eine ruhige Zeile, nur Werte > 0; alt = Kacheln */}
+                {uv2 ? (
+                    summary.total > 0 && (
+                        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55" data-testid="ac-summary-line">
+                            {[
+                                { label: summary.total === 1 ? 'Aktion' : 'Aktionen', value: summary.total },
+                                { label: 'aktiv', value: summary.active },
+                                { label: 'erledigt', value: summary.done },
+                                { label: 'verworfen', value: summary.rejected },
+                                { label: 'Fehler', value: summary.failed },
+                            ].filter((i) => i.value > 0).map((i) => (
+                                <span key={i.label}><span className="text-white/90">{i.value}</span> {i.label}</span>
+                            ))}
+                        </div>
+                    )
+                ) : (
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
                     {[
                         { label: 'Gesamt', value: summary.total },
@@ -661,6 +679,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                         </div>
                     ))}
                 </div>
+                )}
 
                 {/* Filter bar */}
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -697,6 +716,12 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                                 {item.label}
                             </button>
                         ))}
+                        {uv2 && (
+                            <button type="button" onClick={() => setMoreFilters((v) => !v)} aria-expanded={moreFilters} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55 transition-colors hover:border-white/20 hover:text-white/80">
+                                {moreFilters ? 'Weniger' : 'Filter'}{(roleFilter !== 'all' || intentFilter !== 'all' || sessionFilter) ? ' ·' : ''}
+                            </button>
+                        )}
+                        {(!uv2 || moreFilters) && <>
                         {!showIntakeView && (
                             <div className="relative">
                                 <UserRound size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
@@ -734,6 +759,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                                 className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
                             />
                         )}
+                        </>}
                     </div>
                 </div>
 

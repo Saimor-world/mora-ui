@@ -369,15 +369,15 @@ export function CursorAgent({
 
                     {message && action !== 'return' && (
                         <motion.div
-                            className={isUniverseV2Enabled() ? 'absolute left-7 top-1/2 -translate-y-1/2 w-max max-w-[240px]' : 'absolute left-1/2 top-[-56px] -translate-x-1/2 max-w-[220px]'}
+                            className={isUniverseV2Enabled() ? 'absolute left-8 -top-10 w-max max-w-[240px]' : 'absolute left-1/2 top-[-56px] -translate-x-1/2 max-w-[220px]'}
                             initial={{ opacity: 0, y: 8, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 4, scale: 0.98 }}
                             transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                         >
                             <div
-                                className={isUniverseV2Enabled() ? 'border-l pl-3 py-1 text-[12px] leading-snug text-[#F7F4E9]/80' : 'rounded-xl px-3 py-2 text-[11px] leading-snug text-white/90 backdrop-blur-xl border shadow-2xl'}
-                                style={isUniverseV2Enabled() ? { borderColor: 'rgba(214,168,72,0.5)' } : {
+                                className={isUniverseV2Enabled() ? 'border-l rounded-r-md pl-3 pr-3 py-1.5 text-[12px] leading-snug text-[#F7F4E9]/85 backdrop-blur-md' : 'rounded-xl px-3 py-2 text-[11px] leading-snug text-white/90 backdrop-blur-xl border shadow-2xl'}
+                                style={isUniverseV2Enabled() ? { borderColor: 'rgba(214,168,72,0.55)', background: 'rgba(5,7,6,0.78)' } : {
                                     background: 'linear-gradient(180deg, rgba(4,10,8,0.90) 0%, rgba(2,6,5,0.96) 100%)',
                                     borderColor: `${visuals.color}40`,
                                     boxShadow: `0 0 24px ${visuals.glow}30`

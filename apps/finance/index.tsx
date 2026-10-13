@@ -349,7 +349,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
           </div>
 
           <div className="mt-2 text-[7px] text-white/16">
-            Source: {account.evidence.source}
+            Quelle: {account.evidence.source}
           </div>
         </>
       )}
@@ -417,7 +417,7 @@ function ProviderCard({ name, icon: Icon, status }: { name: string; icon: React.
       <div className="mt-1 flex items-center gap-1.5">
         <div className={`h-1.5 w-1.5 rounded-full ${isConnected ? 'bg-emerald-400/60' : isError ? 'bg-red-400/60' : 'bg-white/16'}`} />
         <span className={`text-[8px] uppercase tracking-[0.1em] ${isConnected ? 'text-emerald-100/48' : isError ? 'text-red-100/48' : 'text-white/20'}`}>
-          {status.status.replace('_', ' ')}
+          {({ connected: 'verbunden', not_connected: 'nicht verbunden', error: 'Fehler' } as Record<string, string>)[status.status] ?? status.status.replace('_', ' ')}
         </span>
       </div>
       {status.lastSync && (
@@ -428,9 +428,9 @@ function ProviderCard({ name, icon: Icon, status }: { name: string; icon: React.
 }
 
 function opportunityStatusLabel(status: 'open' | 'available' | 'verify') {
-  if (status === 'open') return 'Open now';
-  if (status === 'available') return 'Available';
-  return 'Re-verify';
+  if (status === 'open') return 'Jetzt offen';
+  if (status === 'available') return 'Verfügbar';
+  return 'Neu prüfen';
 }
 
 function opportunityRiskLabel(risk: 'low' | 'medium' | 'high') {
@@ -516,7 +516,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.24em] text-emerald-200/48">
-                <Eye size={11} /> XRPL Mainnet · Saimôr company capital
+                <Eye size={11} /> XRPL-Mainnet · Saimôr Firmenkapital
               </div>
               <h2 className="mt-3 text-[26px] font-medium tracking-[-0.04em] text-white/90">Saimôr Finance</h2>
               <p className="mt-1 max-w-2xl text-[11px] leading-relaxed text-white/36">
@@ -603,7 +603,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                         <span>Seller: {shortAddress(listing.seller)}</span>
                         {listing.expiration && <span>· Expires: {formatDate(listing.expiration)}</span>}
                       </div>
-                      <div className="mt-1 text-[7px] text-white/16">Source: {listing.evidence.source}</div>
+                      <div className="mt-1 text-[7px] text-white/16">Quelle: {listing.evidence.source}</div>
                     </div>
                   ))}
                 </div>
@@ -699,7 +699,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="flex items-center gap-2 text-[9px] uppercase tracking-[0.22em] text-violet-200/42">
-                <BadgeCheck size={11} /> Verified opportunity radar
+                <BadgeCheck size={11} /> Geprüfter Chancen-Radar
               </div>
               <h3 className="mt-2 text-[18px] font-medium tracking-[-0.03em] text-white/82">Möglichkeiten, die einen echten Grund haben.</h3>
               <p className="mt-1 max-w-2xl text-[10px] leading-relaxed text-white/30">
@@ -724,7 +724,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="text-[9px] uppercase tracking-[0.16em] text-white/25">{opportunity.provider} · {opportunity.kind}</div>
+                      <div className="text-[9px] uppercase tracking-[0.16em] text-white/25">{opportunity.provider} · {({ grant: 'Förderung', 'builder-revenue': 'Builder-Umsatz', yield: 'Rendite' } as Record<string, string>)[opportunity.kind] ?? opportunity.kind}</div>
                       <div className="mt-1 text-[13px] font-medium text-white/72">{opportunity.title}</div>
                     </div>
                     <ExternalLink size={12} className="shrink-0 text-white/18 transition-colors group-hover:text-white/50" />

@@ -7,7 +7,7 @@ describe('formatActionTitle', () => {
     expect(formatActionTitle(evt({ tool_name: 'create_folder' }))).toBe('Ordner erstellen');
   });
   it('humanizes an unknown intent by replacing underscores', () => {
-    expect(formatActionTitle(evt({}, { intent: 'some_weird_intent' }))).toBe('some weird intent');
+    expect(formatActionTitle(evt({}, { intent: 'some_weird_intent' }))).toBe('Some weird intent');
   });
 });
 

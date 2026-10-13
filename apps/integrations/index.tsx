@@ -1,5 +1,6 @@
 'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
     AlertCircle,
@@ -171,6 +172,8 @@ export default function IntegrationsApp({ paneId }: AppProps) {
         summary,
     } = useCommunicationSurface();
     const { mailPreview, calendarPreview, feedPreview, cloudPreview, refresh: refreshLiveData } = useCommunicationLiveData();
+    const uv2 = isUniverseV2Enabled();
+    const hasLivePreview = Boolean(mailPreview[0] || calendarPreview[0] || feedPreview[0] || cloudPreview[0]);
 
     const [lane, setLane] = useState<Lane>('overview');
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
@@ -344,6 +347,14 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                 Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann kann Môra echte Arbeit sehen.
                             </p>
                         </div>
+                        {uv2 ? (
+                            <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55" data-testid="int-readiness-line">
+                                <span><span className="text-white/90">{readiness.ready}</span> von {readiness.total} verbunden</span>
+                                <button onClick={() => void refreshAll()} disabled={isLoading} className="inline-flex items-center gap-1.5 text-white/55 transition-colors hover:text-[#D6A848] disabled:opacity-50">
+                                    <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />Aktualisieren
+                                </button>
+                            </div>
+                        ) : (
                         <div className="flex items-center gap-3">
                             <div className="rounded-2xl border border-emerald-300/14 bg-emerald-400/[0.07] px-4 py-3 text-right">
                                 <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-100/45">Bereits nutzbar</div>
@@ -358,6 +369,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                 Aktualisieren
                             </button>
                         </div>
+                        )}
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2">
                         {laneItems.map((item) => (
@@ -385,6 +397,15 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                         <ErrorState error={error} onRetry={() => void refreshAll()} />
                     ) : (
                         <div className="space-y-5">
+                            {uv2 ? (hasLivePreview && (
+                                <section className="space-y-2 border-b border-white/[0.07] pb-4" data-testid="int-live-preview">
+                                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">Gerade sichtbar</p>
+                                    {mailPreview[0] && <SignalLine icon={Mail} label="Mail" text={`${mailPreview[0].from}: ${mailPreview[0].subject}`} />}
+                                    {calendarPreview[0] && <SignalLine icon={Calendar} label="Kalender" text={calendarPreview[0].title} />}
+                                    {feedPreview[0] && <SignalLine icon={Rss} label="Feeds" text={feedPreview[0].title} />}
+                                    {cloudPreview[0] && <SignalLine icon={Cloud} label="Cloud" text={cloudPreview[0].itemName} />}
+                                </section>
+                            )) : (
                             <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                                 <div className="rounded-[28px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(13,43,39,0.28),rgba(3,8,9,0.30))] p-5">
                                     <div className="flex items-start justify-between gap-4">
@@ -393,7 +414,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                             <h3 className="mt-2 text-lg font-medium text-white/90">{readiness.percent}% Integrationsbereit</h3>
                                             <p className="mt-2 text-sm leading-relaxed text-white/55">
                                                 {readiness.ready >= 4
-                                                    ? 'Die Instanz hat genug echte Quellen fuer sinnvolle Môra-Signale.'
+                                                    ? 'Die Instanz hat genug echte Quellen für sinnvolle Môra-Signale.'
                                                     : 'Noch wenige echte Quellen. Verbinde zuerst Browser, Kalender oder Datenquellen.'}
                                             </p>
                                         </div>
@@ -415,6 +436,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                     </div>
                                 </div>
                             </section>
+                            )}
 
                             {lane === 'overview' && (
                                 <section className="space-y-4">
@@ -441,7 +463,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                     <ConnectionCard
                                         icon={Mail}
                                         title="Mail"
-                                        subtitle="Postfach fuer Môra"
+                                        subtitle="Postfach für Môra"
                                         status={overview?.mail?.status}
                                         body={buildMailText(overview)}
                                         actions={[{ label: 'Mail öffnen', onClick: openMailPane }]}

@@ -155,3 +155,15 @@ html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is([class*="r
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [class*="border-emerald-300\/55"] { border-color: rgba(214,168,72,.45) !important; }
 /* Display-Titel in Apps: eine Serif-Größe (22px), keine 2xl-Sans */
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(h1,h2):is(.text-2xl,.text-3xl,.text-xl) { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: 24px !important; font-weight: 400 !important; letter-spacing: 0 !important; line-height: 1.15 !important; }
+/* hd6 – LAGE: alle Karten gleich satt (links = rechts) */
+html[data-uv2="on"] [data-testid="uv2-lage"] section { background: rgba(5,7,6,.84) !important; border-color: rgba(247,244,233,.1) !important; box-shadow: none !important; backdrop-filter: blur(16px); }
+html[data-uv2="on"] [data-testid="uv2-lage"] section :is(.text-white\/30,.text-white\/38,.text-white\/40,.text-white\/45) { color: rgba(247,244,233,.62) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] section :is(.text-white\/72,.text-white\/82) { color: rgba(247,244,233,.9) !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] section > .bg-violet-300\/50 { background: rgba(214,168,72,.5) !important; }
+/* hd6 – kleine Status-/Termin-Punkte bleiben sichtbar (Gold statt neutralisiert) */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime .rounded-full:is(.h-1,.h-1\.5,.h-2,.w-1,.w-1\.5,.w-2):is([class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-teal-"],[class*="bg-cyan-"],[class*="bg-blue-"],[class*="bg-violet-"]) { background-color: rgba(214,168,72,.85) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is([class*="rgba(4,22,18"],[class*="rgba(13,43,39"]) { background-image: none !important; background-color: rgba(247,244,233,.03) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [class*="border-emerald-400\/18"] { border-color: rgba(247,244,233,.1) !important; }
+/* hd6 – Display-Größen in Apps: nur Serif, max. 28px, nie fett */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.text-3xl,.text-4xl,.text-5xl) { font-family: "Cormorant Garamond", Georgia, serif !important; font-size: 28px !important; font-weight: 400 !important; letter-spacing: 0 !important; line-height: 1.15 !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.font-bold,.font-semibold):not(button):not(button *) { font-weight: 500 !important; }
