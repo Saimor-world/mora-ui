@@ -1,6 +1,7 @@
 'use client';
 
 import { AppHero } from '@/components/universe/app/AppStage';
+import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -177,6 +178,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
     const hasLivePreview = Boolean(mailPreview[0] || calendarPreview[0] || feedPreview[0] || cloudPreview[0]);
 
     const [lane, setLane] = useState<Lane>('overview');
+    const [uv2Details, setUv2Details] = useState(false);
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -346,7 +348,44 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                         figure={readiness.ready} figureLabel={'von ' + readiness.total}
                         action={readiness.ready < readiness.total ? { label: 'Google verbinden', onClick: () => void connectGoogleAll() } : { label: 'Aktualisieren', onClick: () => void refreshAll() }} />
                 )}
-                <header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
+                {uv2 && !uv2Details && (() => {
+                    type Src = { id: string; kind: string; name: string; ok: boolean; text: string; open?: () => void; connect?: () => void; connectLabel?: string };
+                    const srcs: Src[] = [
+                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), text: mailPreview[0] ? `Zuletzt: ${mailPreview[0].from} – ${mailPreview[0].subject}` : buildMailText(overview), open: openMailPane, connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden' },
+                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), text: calendarPreview[0] ? `Als Nächstes: ${calendarPreview[0].title}` : buildCalendarText(overview), open: openCalendarPane, connect: () => void connectGoogleCalendar(), connectLabel: 'Kalender verbinden' },
+                        { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), text: feedPreview[0] ? `Neu: ${feedPreview[0].title}` : 'Quellen, die MÔRA für dich liest.' },
+                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), text: cloudPreview[0] ? `Zuletzt: ${cloudPreview[0].itemName}` : buildCloudText(overview), connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden' },
+                        { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), text: buildAssistantText(overview) },
+                        { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' ? undefined : () => void requestBrowserNotifications(), connectLabel: 'Erlauben' },
+                    ];
+                    const on = srcs.filter((x) => x.ok), off = srcs.filter((x) => !x.ok);
+                    const row = (x: Src) => (
+                        <RegisterRow key={x.id} testId={`int-v2-${x.id}`} tone={x.ok ? undefined : 'quiet'}
+                            meta={x.kind} title={x.name} text={x.text} side={x.ok ? 'verbunden' : 'fehlt'}
+                            actions={x.ok ? (x.open ? <RegAction onClick={x.open}>Öffnen</RegAction> : undefined)
+                                : (x.connect ? <RegAction primary onClick={x.connect}>{x.connectLabel}</RegAction> : undefined)} />
+                    );
+                    return (
+                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="int-v2-register">
+                            {off.some((x) => x.id === 'mail' || x.id === 'cloud') && (
+                                <RegisterSection label="Ein Schritt">
+                                    <RegisterRow testId="int-v2-google" meta="Google · Mail, Kalender, Drive" title="Alles mit einer Anmeldung verbinden."
+                                        text="MÔRA sieht danach echte Termine, Nachrichten und Dateien – lesend, bis du mehr erlaubst."
+                                        actions={<RegAction primary disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}>{isConnectingGoogle ? 'Verbinde …' : 'Mit Google verbinden'}</RegAction>} />
+                                </RegisterSection>
+                            )}
+                            {off.length > 0 && <RegisterSection label="Noch nicht verbunden" count={off.length}>{off.map(row)}</RegisterSection>}
+                            {on.length > 0 && <RegisterSection label="Verbunden" count={on.length}>{on.map(row)}</RegisterSection>}
+                            <RegisterSection label="Für Fortgeschrittene" aside={<button type="button" onClick={() => setUv2Details(true)}>Alle Details →</button>}>
+                                <RegisterRow meta="Desktop-Bridge · Laufzeit · Freigaben" title="Technische Verbindungen" text="Laufzeitdienste, Browser-Bridge und Desktop-Freigaben im Detail." onClick={() => setUv2Details(true)} side="ansehen" />
+                            </RegisterSection>
+                        </div>
+                    );
+                })()}
+                {uv2 && uv2Details && (
+                    <div className="px-8 pt-3"><RegAction onClick={() => setUv2Details(false)}>← Zurück zur Übersicht</RegAction></div>
+                )}
+                {(!uv2 || uv2Details) && (<header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
                     <div className="flex flex-wrap items-start justify-between gap-5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                         <div className="min-w-0">
                             <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/50">Verbindungszentrale</p>
@@ -396,9 +435,9 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                             </button>
                         ))}
                     </div>
-                </header>
+                </header>)}
 
-                <main className="min-h-0 flex-1 overflow-y-auto px-6 py-6" data-uv2-flat={uv2 ? '' : undefined}>
+                {(!uv2 || uv2Details) && (<main className="min-h-0 flex-1 overflow-y-auto px-6 py-6" data-uv2-flat={uv2 ? '' : undefined}>
                     {isLoading ? (
                         <LoadingState />
                     ) : error ? (
@@ -593,7 +632,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                             )}
                         </div>
                     )}
-                </main>
+                </main>)}
             </div>
         </GlassPanel>
     );
