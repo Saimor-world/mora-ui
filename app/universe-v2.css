@@ -1040,3 +1040,5 @@ html[data-uv2="on"] .uv2-gefuege__node:hover .uv2-gefuege__label { fill: #D6A848
 html[data-uv2="on"] .uv2-gefuege__core { cursor: pointer; }
 html[data-uv2="on"] .uv2-gefuege__core circle { fill: rgba(214,168,72,.10); stroke: #D6A848; stroke-opacity: .7; }
 html[data-uv2="on"] .uv2-gefuege__core text { font-family: var(--uv-serif); font-style: italic; font-size: 38px; fill: #F7F4E9; }
+html[data-uv2="on"] body:not(.standard-mode) .uv2-raum[data-testid] .uv2-raum__ask input[data-testid] { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0; }
+html[data-uv2="on"] body:not(.standard-mode) .uv2-raum[data-testid] .uv2-raum__title { font-size: 34px; line-height: 1.02; font-family: var(--uv-serif); }

@@ -136,7 +136,7 @@ export function RaumV2(p: Props) {
             <span className="uv2-raum__planet" style={{ left: '40%', top: '38%', width: 120, height: 120, background: `radial-gradient(circle at 35% 30%, #F4D48C, #B07A2A 55%, #2a1a08)` }} />
             <span className="uv2-raum__planet" style={{ left: '20%', top: '22%', width: 46, height: 46, background: 'radial-gradient(circle at 35% 30%, #9fd0d8, #1f4a5a 60%, #05141a)' }} />
             <span className="uv2-raum__planet" style={{ left: '70%', top: '62%', width: 60, height: 60, background: 'radial-gradient(circle at 35% 30%, #e0a07a, #7a3a1e 60%, #1a0a04)' }} />
-            <span className="uv2-raum__planet" style={{ left: '62%', top: '16%', width: 32, height: 32, background: 'radial-gradient(circle at 35% 30%, #b9b4f0, #3a3a7a 60%, #0a0a1a)' }} />
+            <span className="uv2-raum__planet" style={{ left: '28%', top: '70%', width: 32, height: 32, background: 'radial-gradient(circle at 35% 30%, #b9b4f0, #3a3a7a 60%, #0a0a1a)' }} />
             <svg className="uv2-raum__arc" viewBox="0 0 100 60" preserveAspectRatio="none"><path d="M5 56 Q50 -50 95 56" /></svg>
             <button type="button" className="uv2-raum__sun" aria-label={`Licht: ${SCENE_TIME[p.scene]}. Ziehen zum Ändern`} data-testid="raum-sun"
               style={{ left: `${sunX * 100}%`, top: `${8 + arcY(sunX) * 78}%` }}
