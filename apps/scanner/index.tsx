@@ -10,7 +10,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import type { NodeVisibility } from '@/lib/types/core';
 import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
-import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
+import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity, Folder } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
@@ -34,7 +34,7 @@ import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
-import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
+import { TileGrid, Tile, PillButton } from '@/components/universe/app/Tiles';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -870,8 +870,8 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     const open = files.filter(f => f.status !== 'done').length;
                     const done = files.length - open;
                     return (
-                        <AppHero app="scanner" eyebrow={activeCompanyName ? `Eingang · für ${activeCompanyName}` : 'Eingang · keine Organisation'}
-                            title={!activeCompanyName ? 'Wähle zuerst eine Organisation.' : files.length === 0 ? 'Leg ab, was eingeordnet werden soll.' : open === 0 ? 'Alles ist eingeordnet.' : `${open} ${open === 1 ? 'Datei wartet' : 'Dateien warten'} auf Einordnung.`}
+                        <AppHero app="scanner" eyebrow={activeCompanyName ? `Eingang · ${activeCompanyName}` : 'Eingang'}
+                            title={!activeCompanyName ? 'Keine Organisation' : files.length === 0 ? 'Bereit' : open === 0 ? 'Alles abgelegt' : `${open} offen`}
                             sub={files.length ? `${done} von ${files.length} erledigt. Du entscheidest, wohin jede Datei gehört.` : 'PDFs, Bilder und Office-Dateien landen zuerst als Datei – Inhalte entstehen nur, wenn du es willst.'}
                             figure={files.length ? open : undefined} figureLabel="offen"
                             action={activeCompanyName ? { label: 'Dateien wählen', onClick: () => scanInputRef.current?.click() } : null} />
@@ -1150,30 +1150,26 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
-                {uv2 && files.length > 0 && (() => {
-                    const g = (st: ScannedFile['status'][]) => files.filter((f) => st.includes(f.status));
-                    const meta = (f: ScannedFile) => `${f.type.split('/').pop()?.toUpperCase() || 'DATEI'} · ${formatSize(f.size)}`;
-                    const todo = g(['pending']), busy = g(['uploading', 'review']), bad = g(['error']), done = g(['done']);
-                    return (
-                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="scan-v2-register">
-                            {todo.length > 0 && <RegisterSection label="Bereit zum Hochladen" count={todo.length}>{todo.map((f) => (
-                                <RegisterRow key={f.id} meta={meta(f)} title={f.name} side="bereit"
-                                    actions={<><RegAction primary onClick={() => processFile(f.id, f.nativeFile)}>Hochladen</RegAction><RegAction onClick={() => removeFile(f.id)}>Entfernen</RegAction></>} />
-                            ))}</RegisterSection>}
-                            {busy.length > 0 && <RegisterSection label="In Prüfung" count={busy.length}>{busy.map((f) => (
-                                <RegisterRow key={f.id} meta={meta(f)} title={f.name} text={f.status === 'uploading' ? 'Wird hochgeladen …' : 'MÔRA schlägt einen Ort vor – du bestätigst unten.'} side={f.status === 'uploading' ? 'lädt' : 'prüfen'} tone="gold" />
-                            ))}</RegisterSection>}
-                            {bad.length > 0 && <RegisterSection label="Hat nicht geklappt" count={bad.length}>{bad.map((f) => (
-                                <RegisterRow key={f.id} tone="alert" meta={meta(f)} title={f.name} text={f.result || 'Upload fehlgeschlagen.'} side="Fehler"
-                                    actions={<><RegAction primary onClick={() => processFile(f.id, f.nativeFile)}>Nochmal</RegAction><RegAction onClick={() => removeFile(f.id)}>Entfernen</RegAction></>} />
-                            ))}</RegisterSection>}
-                            {done.length > 0 && <RegisterSection label="Eingeordnet" count={done.length}>{done.map((f) => (
-                                <RegisterRow key={f.id} tone="quiet" meta={meta(f)} title={f.name} text={f.result} side="erledigt"
-                                    actions={f.confirmedNodeId ? <RegAction onClick={() => openConfirmedDocument(f.confirmedNodeId!, f.name, f.confirmedFolderId)}>Öffnen</RegAction> : undefined} />
-                            ))}</RegisterSection>}
-                        </div>
-                    );
-                })()}
+                {uv2 && files.length > 0 && (
+                    <div className="min-h-0 flex-1 overflow-y-auto" data-testid="scan-v2-register">
+                        <TileGrid label={`Dateien · ${files.length}`}>
+                            {files.map((f) => {
+                                const Icon = getFileIcon(f.type);
+                                const st = f.status === 'done' ? 'on' : f.status === 'error' ? 'warn' : f.status === 'pending' ? 'off' : 'busy';
+                                return (
+                                    <Tile key={f.id} testId={`scan-v2-file-${f.status}`} icon={<Icon />} label={f.name} state={st}
+                                        badge={f.status === 'done' ? '✓' : f.status === 'error' ? '!' : undefined}
+                                        onClick={f.status === 'done' && f.confirmedNodeId ? () => openConfirmedDocument(f.confirmedNodeId!, f.name, f.confirmedFolderId) : undefined}>
+                                        {f.status === 'pending' && <PillButton primary onClick={() => processFile(f.id, f.nativeFile)}>Hochladen</PillButton>}
+                                        {f.status === 'error' && <PillButton onClick={() => processFile(f.id, f.nativeFile)}>Nochmal</PillButton>}
+                                        {(f.status === 'uploading' || f.status === 'review') && <span className="uv2-dot">{f.status === 'uploading' ? 'Lädt' : 'Prüfen'}</span>}
+                                        {(f.status === 'pending' || f.status === 'error') && <button type="button" className="uv2-tile__x" aria-label="Entfernen" onClick={() => removeFile(f.id)}><X /></button>}
+                                    </Tile>
+                                );
+                            })}
+                        </TileGrid>
+                    </div>
+                )}
                 {/* File List */}
                 <div className="flex-1 overflow-y-auto space-y-2" hidden={uv2 || undefined}>
                     <AnimatePresence>
@@ -1277,7 +1273,30 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     )}
                 </div>
                 {activePendingAction && (
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-uv2-scan-approval={uv2 ? '' : undefined}>
+                        {uv2 && (
+                            <div data-uv2-keep="" data-testid="scan-v2-approval">
+                                <div className="uv2-ask">
+                                    <span className="uv2-group__ico uv2-ask__ico"><FileText /></span>
+                                    <div className="uv2-ask__text">
+                                        <span className="uv2-ask__kind">Ablegen{pendingActions.length > 1 ? ` · 1 / ${pendingActions.length}` : ''}</span>
+                                        <span className="uv2-ask__msg">{activePendingAction.file_name} → {activePendingAction.route_summary || buildRoutePath(activePendingAction.intake_context)}</span>
+                                    </div>
+                                    {activePendingAction.intake_context?.route_confidence_label && <span className="uv2-dot" data-on="">{activePendingAction.intake_context.route_confidence_label}</span>}
+                                </div>
+                                {(activeChoiceResults.length > 0 || routeOptions.length > 0) && (
+                                    <TileGrid label="Ziel" size="s">
+                                        {(activeChoiceResults.length > 0
+                                            ? activeChoiceResults.filter((r) => r.folderId).map((r) => ({ folderId: r.folderId as string, label: (r as { title?: string }).title ?? String(r.folderId) }))
+                                            : routeOptions.map((o) => ({ folderId: o.folderId, label: o.folderName || o.spaceName || o.label }))
+                                        ).slice(0, 12).map((o) => (
+                                            <Tile key={o.folderId} icon={<Folder />} label={o.label} active={activePendingAction.folder_id === o.folderId}
+                                                onClick={() => applyRouteOverride(activePendingAction.action_id, o.folderId)} />
+                                        ))}
+                                    </TileGrid>
+                                )}
+                            </div>
+                        )}
                         <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/35 px-1">
                                 <span>Freigabe {pendingActions.length > 1 ? `1 / ${pendingActions.length}` : 'bereit'}</span>
                             {activePendingAction.file_name && (
