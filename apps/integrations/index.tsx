@@ -87,6 +87,8 @@ const statusLabel = (status?: string | null) => {
             return 'Bereit';
         case 'blocked':
             return 'Getrennt';
+        case 'reauth_required':
+            return 'Neu verbinden';
         default:
             return 'Unklar';
     }
@@ -102,6 +104,7 @@ const statusClass = (status?: string | null) => {
         case 'local':
         case 'degraded':
         case 'partial':
+        case 'reauth_required':
             return 'border-amber-300/20 bg-amber-400/[0.10] text-amber-100';
         case 'unavailable':
         case 'offline':
@@ -356,8 +359,8 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                 {uv2 && !uv2Details && (() => {
                     type Src = { id: string; kind: string; name: string; ok: boolean; status?: string | null; account?: string | null; text: string; preview?: { k: string; v: string } | null; open?: () => void; openLabel?: string; connect?: () => void; connectLabel?: string; setup?: React.ReactNode };
                     const srcs: Src[] = [
-                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
-                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
+                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: overview?.mail?.status === 'reauth_required' ? 'Google neu verbinden' : 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
+                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : overview?.calendar?.status === 'reauth_required' ? 'Kalender neu verbinden' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
                         { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), status: overview?.rss?.status, text: 'Quellen, die MÔRA für dich liest.', preview: feedPreview[0] ? { k: 'Neu', v: feedPreview[0].title } : null, setup: <RssIntegration /> },
                         { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden', setup: <CloudStorageIntegration /> },
                         { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), status: overview?.assistant?.status, text: buildAssistantText(overview) },
