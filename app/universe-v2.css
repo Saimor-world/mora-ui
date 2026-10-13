@@ -638,3 +638,28 @@ html[data-uv2="on"] [data-uv2-hero="canvas"] .uv2-hero__title { font-size: 26px;
 html[data-uv2="on"] [data-uv2-hero="canvas"] .uv2-hero__num { font-size: 44px; }
 html[data-uv2="on"] [data-uv2-app="canvas"] > div:nth-child(2) { padding: 10px 24px !important; border-color: var(--uv-hair) !important; }
 html[data-uv2="on"] [data-uv2-app="canvas"] > div:nth-child(2) button { font-family: var(--uv-mono); letter-spacing: .14em; }
+/* hd14 · Werkzeuge: Bühne mit Suchzeile, Karten als Register */
+html[data-uv2="on"] [data-testid="app-library"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] .uv2-hero__search { position: absolute; right: 32px; top: 24px; display: flex; align-items: center; gap: 8px; width: 240px; border-bottom: .5px solid var(--uv-hair); color: rgba(var(--uv-cream), .5); }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime .uv2-hero__search input { background: transparent !important; border: 0 !important; padding: 6px 0 !important; font-size: 13px; color: rgb(var(--uv-cream)) !important; width: 100%; outline: none; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__card { background: none !important; border: 0 !important; border-bottom: .5px solid var(--uv-hair) !important; border-radius: 0 !important; box-shadow: none !important; padding: 12px 4px !important; transition: background .2s var(--uv-ease), padding .2s var(--uv-ease) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__card:hover { background: rgba(var(--uv-cream), .025) !important; padding-left: 10px !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__icon { background: none !important; border: .5px solid rgba(var(--uv-gold-rgb), .35) !important; border-radius: 999px !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__icon svg { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__card-copy strong { font-family: var(--uv-serif); font-weight: 400 !important; font-size: 18px !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__card-copy span { font-size: 12px !important; color: rgba(var(--uv-cream), .55) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__open { background: none !important; font-family: var(--uv-mono); letter-spacing: .16em; text-transform: uppercase; color: rgba(var(--uv-cream), .4) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__card:hover .app-library__open { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-testid="app-library-filters"] button { border: 0 !important; background: none !important; padding: 4px 0 !important; margin-right: 12px; font-family: var(--uv-mono); letter-spacing: .18em !important; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-testid="app-library-filters"] button[aria-selected="true"] { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__group-head p { font-family: var(--uv-mono); font-weight: 400 !important; letter-spacing: .22em !important; color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-testid="app-library"] .app-library__group-head span { font-size: 12px !important; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-testid="app-library"] { padding: 0 !important; }
+html[data-uv2="on"] [data-testid="app-library"] > :not(.uv2-hero) { margin-left: 32px; margin-right: 32px; }
+html[data-uv2="on"] [data-uv2-hero="apps"] { margin: -16px -16px 0; }
+html[data-uv2="on"] [data-testid="codex-app"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-hero="codex"] { margin: -16px -16px 12px; }
+html[data-uv2="on"] [data-uv2-cx] { border: 0 !important; background: none !important; border-radius: 0 !important; padding: 4px 0 4px 20px !important; box-shadow: inset 1px 0 0 var(--uv-hair); color: rgba(var(--uv-cream), .86) !important; }
+html[data-uv2="on"] [data-uv2-cx="assistant"] { box-shadow: inset 1px 0 0 rgba(var(--uv-gold-rgb), .45); }
+html[data-uv2="on"] [data-uv2-cx] > div:first-child { font-family: var(--uv-mono); letter-spacing: .22em !important; color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-uv2-cx="user"] > div:first-child { color: rgba(var(--uv-cream), .5) !important; }

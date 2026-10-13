@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -153,7 +154,18 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             resizable
         >
             <div className="app-library flex min-h-full flex-col gap-6 px-1 pb-4" data-testid="app-library">
-                <header className="app-library__hero flex flex-col gap-4 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                {isUniverseV2Enabled() && (
+                    <AppHero app="apps" eyebrow="Werkzeuge · nach Aufgabe geordnet" title="Was musst du erledigen?"
+                        sub={`${visibleCount} Werkzeuge${normalizedQuery ? ` für „${query.trim()}“` : ''}. Technische Bereiche erscheinen nur mit passender Rolle.`}
+                        figure={visibleCount} figureLabel="Werkzeuge"
+                        action={{ label: 'MÔRA fragen', onClick: () => handleAppClick('chat', 'MÔRA', { width: 960, height: 720 }) }}>
+                        <label className="uv2-hero__search">
+                            <Search size={14} aria-hidden="true" />
+                            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Werkzeug finden …" aria-label="Apps durchsuchen" />
+                        </label>
+                    </AppHero>
+                )}
+                <header data-uv2-legacy-head className="app-library__hero flex flex-col gap-4 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="min-w-0">
                         <p className="app-library__eyebrow mb-2 text-[9px] uppercase tracking-[0.22em] text-emerald-100/45">
                             Unternehmer-Cockpit
@@ -278,7 +290,12 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                         </section>
                     ))}
 
-                    {filteredGroups.length === 0 && (
+                    {filteredGroups.length === 0 && isUniverseV2Enabled() && (
+                        <AppEmpty compact glyph={<Search size={18} strokeWidth={1.25} />} title={normalizedQuery ? `Nichts passt zu „${query.trim()}“.` : 'Hier ist noch nichts.'}
+                            text="Frag MÔRA – sie kennt auch Wege, für die es kein eigenes Werkzeug gibt."
+                            action={normalizedQuery ? { label: 'Suche leeren', onClick: () => setQuery('') } : null} />
+                    )}
+                    {filteredGroups.length === 0 && !isUniverseV2Enabled() && (
                         <div
                             className="app-library__none rounded-2xl border border-dashed border-white/10 px-5 py-14 text-center text-sm text-white/40"
                             data-testid="app-library-empty"
