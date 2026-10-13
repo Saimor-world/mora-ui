@@ -1,5 +1,6 @@
 "use client";
 
+import { AppHero } from '@/components/universe/app/AppStage';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
@@ -625,8 +626,15 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full flex-col gap-4">
+                {uv2 && (
+                    <AppHero app="action-center" eyebrow={`Aktionen · ${summary.total} insgesamt`}
+                        title={summary.active === 0 ? 'Nichts wartet auf dich.' : summary.active === 1 ? 'Eine Aktion wartet auf dein Ja.' : `${summary.active} Aktionen warten auf dein Ja.`}
+                        sub={`${summary.done} erledigt · ${summary.rejected} verworfen${summary.failed ? ` · ${summary.failed} fehlgeschlagen` : ''}. MÔRA handelt nur, wenn du bestätigst.`}
+                        figure={summary.active} figureLabel="offen"
+                        action={{ label: tab === 'aktionen' ? 'Verlauf ansehen' : 'Zurück zu Aktionen', onClick: () => setTab(tab === 'aktionen' ? 'verlauf' : 'aktionen') }} />
+                )}
                 {/* Tab bar */}
-                <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+                <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1" data-uv2-tabs={uv2 ? '' : undefined}>
                     {([['aktionen', 'Aktionen'], ['verlauf', 'Verlauf']] as const).map(([key, label]) => (
                         <button
                             key={key}
