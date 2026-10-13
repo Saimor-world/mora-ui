@@ -73,6 +73,7 @@ import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { AppHero, AppEmpty, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { FinderGraphV2 } from '@/components/finder/FinderGraphV2';
 import { RegisterSection, RegisterRow } from '@/components/universe/app/Register';
 import { TileGrid, Tile, PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
@@ -2609,6 +2610,24 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             </div>
 
                                         </div>
+                                    ) : viewMode === 'graph' && uv2On() ? (
+                                        <FinderGraphV2
+                                            center={folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Start'}
+                                            inFolder={Boolean(currentFolderId)}
+                                            folders={filteredFolders.map((f) => ({ id: f.id, name: f.name, type: f.type }))}
+                                            files={filteredFiles.map((f) => ({ id: f.id, name: getContentDisplayName(f), type: f.type }))}
+                                            selectedId={selectedNodeId}
+                                            highlightIds={[...resonanceIds, ...connections.flatMap((c) => filteredFiles.filter((f) => c.id.includes(f.id)).map((f) => f.id))]}
+                                            zoom={graphZoom}
+                                            pan={graphPan}
+                                            onZoom={setGraphZoom}
+                                            onPan={setGraphPan}
+                                            onFolder={(e, id) => handleFolderClick(e, id)}
+                                            onFolderMenu={(e, n) => { const f = filteredFolders.find((x) => x.id === n.id); if (f) handleContextMenu(e, f, 'folder'); }}
+                                            onFile={(n) => { const f = filteredFiles.find((x) => x.id === n.id); if (f) { checkResonance(f.id); openFinderNode(f); } }}
+                                            onFileMenu={(e, n) => { const f = filteredFiles.find((x) => x.id === n.id); if (f) handleContextMenu(e, f, 'file'); }}
+                                            onFileHover={(n) => { if (n) fetchConstellation(n.id, new Map()); else clearConstellation(); }}
+                                        />
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
                                         <div
