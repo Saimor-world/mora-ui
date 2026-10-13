@@ -1,9 +1,10 @@
 "use client";
 
 import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
-import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
+import { TileGrid, Tile, PillButton } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Mail, CalendarDays, Compass, FileText, X, Check } from 'lucide-react';
 import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -628,8 +629,8 @@ export default function ActionCenterApp({ paneId }: AppProps) {
         >
             <div className="flex h-full flex-col gap-4" data-uv2-flat={uv2 ? '' : undefined}>
                 {uv2 && (
-                    <AppHero app="action-center" eyebrow={`Aktionen · ${summary.total} insgesamt`}
-                        title={(() => { const w = events.filter((e) => canActOnPendingEvent(e)).length; const r = summary.active - w; if (w === 1) return 'Eine Aktion wartet auf dein Ja.'; if (w > 1) return `${w} Aktionen warten auf dein Ja.`; if (r === 1) return 'Eine Aktion läuft gerade.'; if (r > 1) return `${r} Aktionen laufen gerade.`; return 'Nichts wartet auf dich.'; })()}
+                    <AppHero app="action-center" eyebrow="Aktionen"
+                        title={(() => { const w = events.filter((e) => canActOnPendingEvent(e)).length; const r = summary.active - w; const parts = [w ? `${w} ${w === 1 ? 'wartet' : 'warten'}` : '', r ? `${r} ${r === 1 ? 'läuft' : 'laufen'}` : ''].filter(Boolean); return parts.length ? parts.join(' · ') : 'Alles erledigt'; })()}
                         sub={`${summary.done} erledigt · ${summary.rejected} verworfen${summary.failed ? ` · ${summary.failed} fehlgeschlagen` : ''}. MÔRA handelt nur, wenn du bestätigst.`}
                         figure={summary.active} figureLabel="offen"
                         action={{ label: tab === 'aktionen' ? 'Verlauf ansehen' : 'Zurück zu Aktionen', onClick: () => setTab(tab === 'aktionen' ? 'verlauf' : 'aktionen') }} />
@@ -659,35 +660,36 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                 {tab === 'aktionen' && uv2 && (() => {
                     const waiting = events.filter((e) => canActOnPendingEvent(e));
                     const running = events.filter((e) => !canActOnPendingEvent(e) && groupStatusMap.active.includes(e.status));
-                    const settled = events.filter((e) => !groupStatusMap.active.includes(e.status)).slice(0, 12);
+                    const settled = events.filter((e) => !groupStatusMap.active.includes(e.status)).slice(0, 18);
+                    const ico = (evt: ActionEvent) => { const k = evt.intent ?? ''; return /mail/.test(k) ? <Mail /> : /calendar|termin/.test(k) ? <CalendarDays /> : /file|node|intake/.test(k) ? <FileText /> : /navigat/.test(k) ? <Compass /> : <Activity />; };
+                    const short = (evt: ActionEvent) => intentLabelMap[evt.intent ?? ''] || formatActionTitle(evt);
                     if (events.length === 0) return (
                         <div className="flex flex-1 items-center justify-center" data-testid="ac-v2-empty">
-                            <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Noch hat MÔRA nichts für dich getan."
-                                text="Sobald du MÔRA um etwas bittest – eine Mail, eine Ablage, einen Termin –, steht es hier. Nichts geschieht ohne dein Ja."
-                                action={null} />
+                            <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Keine Aktionen" action={null} />
                         </div>
                     );
-                    const row = (evt: ActionEvent, tone?: 'gold' | 'quiet' | 'alert') => {
-                        const st = pendingActionState[evt.action_id];
-                        return (
-                            <RegisterRow key={evt.action_id} tone={tone} testId={`ac-v2-row-${evt.action_id}`}
-                                meta={`${formatTime(evt.timestamp)} · ${intentLabelMap[evt.intent ?? ''] || statusLabelMap[evt.status] || evt.status}`}
-                                title={formatActionTitle(evt)}
-                                text={formatActionMessage(evt) ?? evt.error ?? undefined}
-                                side={tone === 'gold' ? 'wartet' : statusLabelMap[evt.status]}
-                                actions={tone === 'gold' ? (
-                                    <>
-                                        <RegAction primary disabled={!!st} onClick={() => void handlePendingAction(evt, 'confirm')}>{st === 'confirming' ? 'Wird bestätigt …' : 'Ja, ausführen'}</RegAction>
-                                        <RegAction disabled={!!st} onClick={() => void handlePendingAction(evt, 'reject')}>{st === 'rejecting' ? 'Wird verworfen …' : 'Verwerfen'}</RegAction>
-                                    </>
-                                ) : undefined} />
-                        );
-                    };
                     return (
                         <div className="min-h-0 flex-1 overflow-y-auto" data-testid="ac-v2-register">
-                            {waiting.length > 0 && <RegisterSection label="Wartet auf dein Ja" count={waiting.length}>{waiting.map((e) => row(e, 'gold'))}</RegisterSection>}
-                            {running.length > 0 && <RegisterSection label="Läuft gerade" count={running.length}>{running.map((e) => row(e))}</RegisterSection>}
-                            {settled.length > 0 && <RegisterSection label="Zuletzt" count={settled.length} aside={<button type="button" onClick={() => setTab('verlauf')}>Ganzer Verlauf →</button>}>{settled.map((e) => row(e, e.status === 'failed' ? 'alert' : 'quiet'))}</RegisterSection>}
+                            {waiting.length > 0 && (
+                                <section className="uv2-asks">
+                                    {waiting.map((evt) => {
+                                        const st = pendingActionState[evt.action_id];
+                                        return (
+                                            <div key={evt.action_id} className="uv2-ask" data-testid={`ac-v2-ask-${evt.action_id}`}>
+                                                <span className="uv2-group__ico uv2-ask__ico">{ico(evt)}</span>
+                                                <div className="uv2-ask__text"><span className="uv2-ask__kind">{short(evt)} · {formatTime(evt.timestamp)}</span><span className="uv2-ask__msg">{formatActionMessage(evt) ?? formatActionTitle(evt)}</span></div>
+                                                <PillButton disabled={!!st} onClick={() => void handlePendingAction(evt, 'reject')} icon={<X />}>{st === 'rejecting' ? '…' : 'Nein'}</PillButton>
+                                                <PillButton primary disabled={!!st} onClick={() => void handlePendingAction(evt, 'confirm')} icon={<Check />}>{st === 'confirming' ? '…' : 'Ja, ausführen'}</PillButton>
+                                            </div>
+                                        );
+                                    })}
+                                </section>
+                            )}
+                            {running.length > 0 && <TileGrid label="Läuft">{running.map((evt) => <Tile key={evt.action_id} state="busy" icon={ico(evt)} label={short(evt)} />)}</TileGrid>}
+                            {settled.length > 0 && <TileGrid label="Zuletzt">{settled.map((evt) => (
+                                <Tile key={evt.action_id} icon={ico(evt)} label={short(evt)} state={evt.status === 'failed' ? 'warn' : evt.status === 'done' ? 'on' : 'off'}
+                                    badge={evt.status === 'failed' ? '!' : undefined} onClick={() => setTab('verlauf')} />
+                            ))}</TileGrid>}
                         </div>
                     );
                 })()}

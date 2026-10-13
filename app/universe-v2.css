@@ -864,3 +864,11 @@ html[data-uv2="on"] body:not(.standard-mode) [data-uv2-settings-nav][data-uv2-se
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-settings-nav][data-uv2-settings-nav] nav button[class*="bg-white/[0.08]"] { background: rgba(214,168,72,.14) !important; color: rgb(var(--uv-cream)) !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-settings-nav][data-uv2-settings-nav] nav button span { font-family: var(--uv-sans) !important; letter-spacing: 0 !important; text-transform: none !important; font-size: 12.5px !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-settings-nav][data-uv2-settings-nav] > div:first-child div { font-family: var(--uv-sans) !important; letter-spacing: .04em !important; }
+/* hd17 aktionen: iOS-like ask cards */
+html[data-uv2="on"] .uv2-asks { display: flex; flex-direction: column; gap: 8px; padding: 14px 24px 4px; }
+html[data-uv2="on"] .uv2-ask { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: linear-gradient(160deg, rgba(214,168,72,.10), rgba(247,244,233,.03)); border: 1px solid rgba(214,168,72,.32); }
+html[data-uv2="on"] .uv2-ask__ico { width: 36px !important; height: 36px !important; border-radius: 10px !important; }
+html[data-uv2="on"] .uv2-ask__ico svg { width: 18px !important; height: 18px !important; }
+html[data-uv2="on"] .uv2-ask__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+html[data-uv2="on"] .uv2-ask__kind { font: 500 10px var(--uv-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--uv-gold); }
+html[data-uv2="on"] .uv2-ask__msg { font: 500 13px var(--uv-sans); color: rgb(var(--uv-cream)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
