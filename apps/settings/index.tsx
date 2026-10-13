@@ -48,6 +48,18 @@ import { useUserSettings } from '@/lib/queries/useUserSettings';
 import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
+import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+
+const UV2_SETTINGS_LINES: Record<string, string> = {
+    profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
+    'workspace-control': 'Was dein Arbeitsraum zeigt, und was er für sich behält.',
+    appearance: 'Wie Saimôr für dich aussieht.',
+    audio: 'Klang, Stille und die Musik im Hintergrund.',
+    notifications: 'Wann dich etwas erreichen darf.',
+    team: 'Wer mitarbeitet, und mit welchen Rechten.',
+    system: 'Wie es dem System gerade geht.',
+    about: 'Was Saimôr ist, und in welcher Version es läuft.',
+};
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -489,7 +501,7 @@ useEffect(() => {
         >
             <div className="flex h-full overflow-hidden">
                 {/* ── Sidebar ─────────────────────────────────────────── */}
-                <div className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
+                <div data-uv2-settings-nav={uv2On() && !isStandardMode ? '' : undefined} className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
                     {/* Logo / header */}
                     <div className={`px-4 pt-5 pb-3 border-b ${isStandardMode ? 'border-gray-200' : 'border-white/[0.06]'}`}>
                         <div className={`text-[10px] uppercase tracking-[0.28em] font-medium ${isStandardMode ? 'text-gray-400' : 'text-white/35'}`}>
@@ -537,9 +549,20 @@ useEffect(() => {
                 </div>
 
                 {/* ── Content area ──────────────────────────────────────── */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto" data-uv2-settings-content>
                     {/* Section header */}
-                    <div className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
+                    {uv2On() && !isStandardMode && (() => {
+                        const idx = tabs.findIndex(t => t.id === activeTab);
+                        const t = tabs[idx];
+                        return (
+                            <AppHero app="settings" eyebrow={`Einstellungen · ${t?.label ?? ''}`}
+                                title={UV2_SETTINGS_LINES[activeTab] ?? (t?.label ?? 'Einstellungen')}
+                                sub="Änderungen gelten sofort und nur für dein Konto, außer wo ausdrücklich Team steht."
+                                figure={idx + 1} figureLabel={`von ${tabs.length}`}
+                                action={idx >= 0 && idx < tabs.length - 1 ? { label: `Weiter: ${tabs[idx + 1].label}`, onClick: () => setActiveTab(tabs[idx + 1].id) } : null} />
+                        );
+                    })()}
+                    <div data-uv2-legacy-head={uv2On() && !isStandardMode ? '' : undefined} className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
                         {(() => {
                             const t = tabs.find(t => t.id === activeTab);
                             return t ? (

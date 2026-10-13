@@ -726,3 +726,8 @@ html[data-uv2="on"] [data-uv2-drop]:hover { border-color: rgba(214,168,72,.55) !
 html[data-uv2="on"] [data-uv2-drop] > div > div:first-child { display: none !important; }
 html[data-uv2="on"] [data-uv2-drop] p:first-child { font-family: var(--uv-serif); font-size: 20px !important; font-weight: 400 !important; color: rgba(var(--uv-cream), .8) !important; }
 html[data-uv2="on"] [data-uv2-drop] p + p { font-family: var(--uv-mono); font-size: 10px !important; letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--uv-cream), .4) !important; }
+html[data-uv2="on"] [data-uv2-settings-content] > [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-settings-nav] { background: transparent !important; border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] [data-uv2-settings-nav] nav button { border-radius: 0 !important; background: transparent !important; border-left: 1px solid transparent; font-family: var(--uv-mono); font-size: 10.5px !important; letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-uv2-settings-nav] nav button[class*="bg-white/[0.08]"] { color: rgb(var(--uv-cream)) !important; border-left-color: var(--uv-gold); }
+html[data-uv2="on"] [data-uv2-settings-nav] nav button svg, html[data-uv2="on"] [data-uv2-settings-nav] nav button span.ml-auto { display: none; }
