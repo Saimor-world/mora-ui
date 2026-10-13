@@ -253,7 +253,7 @@ function WeekBoard({ anchor, events, onSelect }: { anchor: Date; events: { id: s
           <button type="button" key={d.toISOString()} className="uv2-week__day" data-today={d.toDateString() === todayKey ? '' : undefined} onClick={() => onSelect(d)}>
             <span className="uv2-week__head"><span>{d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '')}</span><b>{d.getDate()}</b></span>
             {list.map((e) => (
-              <span key={e.id} className="uv2-week__ev" title={e.title} lang="de"><i>{e.time ?? '—'}</i>{e.title}</span>
+              <span key={e.id} className="uv2-week__ev" title={e.title} lang="de"><i>{e.time ?? '—'}</i><span className="uv2-week__t">{e.title}</span></span>
             ))}
           </button>
         );
