@@ -78,7 +78,15 @@ export interface PlacedBody {
   cluster: ModelCluster | null;
 }
 
-const RINGS = { 1: { rx: 29, ry: 28 }, 2: { rx: 48, ry: 46 } } as const;
+/** Bahnen in % der Bühne. Bühne = gesamter Raum zwischen Begrüßung und Instrumenten (siehe universe-stage.css).
+ *  Innen die Systemplaneten, außen die Bereiche; Abstand so, dass Namen (≤ 130px) nie in die Spalten laufen. */
+export const RINGS = { 1: { rx: 26, ry: 27 }, 2: { rx: 42, ry: 45 } } as const;
+
+/** Planetengröße folgt der Bühne: 1.0 bei ~700×640 (1440×900), kleiner auf Laptops, größer auf großen Displays. */
+export function stageScale(width: number, height: number): number {
+  if (!(width > 0 && height > 0)) return 1;
+  return Math.max(0.72, Math.min(1.3, width / 700, height / 640));
+}
 
 /** Systeme innen (gleichmäßig nach Katalogwinkel), Domänen/Cluster außen, halb versetzt. Stabil nach Schlüssel. */
 export function placeUniverse(model: UniverseModel): PlacedBody[] {

@@ -1,0 +1,32 @@
+/* ═══ hd27: Sonnensystem nutzt die ganze Bühne ═══════════════════════════════
+   Nur wenn das Planeten-Modell rendert ([data-uv2-stage=model]). Eigene Datei, damit
+   sie nicht mit live-polish (Navigation/Schrift in universe-v2.css) kollidiert.
+   1440×900: Bühne = Spalten 4–9 bis an die Kanten von Begrüßung/Instrumenten (~692px)
+   und volle Höhe zwischen Datumszeile und Dock (~674px) – statt 516×510. */
+@media (min-width: 1280px) {
+  html[data-uv2=on]:not([data-uv2-lage=open]):not([data-uv2-still=on]) [data-uv2-field]:has([data-uv2-stage=model]) {
+    left: calc(var(--g-m) + var(--g-3)) !important; right: calc(var(--g-m) + var(--g-3)) !important;
+  }
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane][data-uv2-stage=model] {
+    left: 0 !important; right: 0 !important; top: 96px !important; bottom: 132px !important;
+  }
+}
+.uv2-stage__orbits { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.uv2-stage__orbits ellipse { fill: none; stroke: rgba(247,244,233,.13); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.uv2-stage__orbits ellipse[data-ring="1"] { stroke: rgba(214,168,72,.24); }
+.uv2-stage__orbits ellipse[data-ring="2"] { stroke: rgba(247,244,233,.1); stroke-dasharray: 1 5; stroke-linecap: round; stroke-width: 1.5; }
+
+/* Namen: 14px, klarer Kontrast; Meta 12px; Keime und Schlafende leiser, aber lesbar (≥ .7) */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .saimor-territory-name {
+  font-size: 14px !important; font-weight: 500 !important; color: rgba(247,244,233,.96) !important; max-width: 140px;
+  overflow: hidden; text-overflow: ellipsis;
+  text-shadow: 0 0 2px rgba(5,7,6,.9), 0 1px 12px rgba(5,7,6,.95) !important;
+}
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta {
+  font-size: 12px !important; color: rgba(247,244,233,.72) !important; text-shadow: 0 0 2px rgba(5,7,6,.9), 0 1px 10px rgba(5,7,6,.95) !important;
+}
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="system"] .saimor-territory-name { color: #F3DFAE !important; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="seed"] .saimor-territory-name { font-size: 13px !important; color: rgba(247,244,233,.72) !important; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="sleeping"] .saimor-territory-name { color: rgba(247,244,233,.8) !important; }
+/* Meta bricht um statt in die Instrumentenspalte zu laufen */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { white-space: normal !important; max-width: 150px; margin-left: auto; margin-right: auto; text-align: center; line-height: 1.35; }
