@@ -370,7 +370,6 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                         <Segmented value={activeTab} onChange={(v) => setActiveTab(v)} label="Ansicht" options={[
                             { id: 'room' as Tab, label: 'Raum', icon: <Users /> },
                             { id: 'members' as Tab, label: `Mitglieder ${members.length}`, icon: <User /> },
-                            { id: 'invite' as Tab, label: 'Einladen', icon: <Plus /> },
                         ]} />
                         <span style={{ flex: 1 }} />
                         <span className="uv2-dot" data-on={isOperational ? '' : undefined} data-warn={!isOperational && !isLoading ? '' : undefined} title={isOperational ? 'verbunden' : 'nicht erreichbar'} />
