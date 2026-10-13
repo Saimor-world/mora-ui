@@ -50,7 +50,7 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'finance',
-    name: 'Capital',
+    name: 'Kapital',
     description: 'Wallets, Vermögen und On-chain-Kapital — zuerst read-only',
     icon: 'Activity',
     color: 'green',

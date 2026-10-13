@@ -69,3 +69,8 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-week[data-testid] { grid-templ
 @container (min-width: 80px) {
   html[data-uv2="on"] body:not(.standard-mode) .uv2-week[data-testid] .uv2-week__t { display: -webkit-box !important; white-space: normal !important; -webkit-line-clamp: 2; }
 }
+/* Scanner: Ablage zeigt Symbol und was hineinpasst */
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] > div > div:first-child { display: grid !important; place-items: center; width: 56px; height: 56px; padding: 0 !important; border-radius: 16px; background: rgba(214,168,72,.12) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] > div > div:first-child svg { color: #D6A848 !important; width: 26px; height: 26px; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] p + p { display: block !important; text-transform: none !important; letter-spacing: 0 !important; font-family: Inter, sans-serif !important; max-width: 460px; margin: 6px auto 0; font-size: 13px !important; color: rgba(247,244,233,.5) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] p:first-child { font-size: 15px !important; color: rgba(247,244,233,.88) !important; }
