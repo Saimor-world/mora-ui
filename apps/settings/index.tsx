@@ -559,7 +559,13 @@ useEffect(() => {
                                 title={UV2_SETTINGS_LINES[activeTab] ?? (t?.label ?? 'Einstellungen')}
                                 sub="Änderungen gelten sofort und nur für dein Konto, außer wo ausdrücklich Team steht."
                                 figure={idx + 1} figureLabel={`von ${tabs.length}`}
-                                action={idx >= 0 && idx < tabs.length - 1 ? { label: `Weiter: ${tabs[idx + 1].label}`, onClick: () => setActiveTab(tabs[idx + 1].id) } : null} />
+                                action={activeTab === 'about'
+                                    ? { label: 'Rundgang neu starten', onClick: handleRestartProductTour }
+                                    : { label: activeTab === 'system' ? 'Daten neu laden' : 'Jetzt anpassen', onClick: () => {
+                                        if (activeTab === 'system') { void loadCompanies(); void loadTree(); return; }
+                                        const el = document.querySelector<HTMLElement>('[data-uv2-settings-body] input:not([type=hidden]), [data-uv2-settings-body] select, [data-uv2-settings-body] textarea, [data-uv2-settings-body] button');
+                                        el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); el?.focus();
+                                    } }} />
                         );
                     })()}
                     <div data-uv2-legacy-head={uv2On() && !isStandardMode ? '' : undefined} className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
@@ -578,7 +584,7 @@ useEffect(() => {
                         })()}
                     </div>
 
-                    <div className="px-6 py-5 space-y-6">
+                    <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
                     )}
