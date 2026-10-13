@@ -10,6 +10,7 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
+import { Moon, Sun, Zap, Monitor, Volume1, Sparkles, Send } from 'lucide-react';
 import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
@@ -49,7 +50,7 @@ import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
-import { RegisterSection, RegisterRow } from '@/components/universe/app/Register';
+import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -504,11 +505,11 @@ useEffect(() => {
         >
             {uv2On() && !isStandardMode && uv2Index ? (
                 <div className="flex h-full flex-col overflow-y-auto" data-testid="settings-v2-index">
-                    <AppHero app="settings" eyebrow={`Einstellungen · ${user?.email ?? 'dein Konto'}`}
-                        title="Wie Saimôr für dich arbeitet."
+                    <AppHero app="settings" eyebrow={user?.email ?? 'Konto'}
+                        title="Einstellungen"
                         sub={`${tabs.length} Bereiche. Alles gilt nur für dich – außer wo ausdrücklich Team steht.`}
                         figure={tabs.length} figureLabel="Bereiche"
-                        action={{ label: 'Profil öffnen', onClick: () => { setActiveTab('profile'); setUv2Index(false); } }} />
+                        action={null} />
                     {([
                         ['Du', ['profile', 'appearance', 'audio', 'notifications']],
                         ['Arbeitsraum', ['workspace-control', 'workspace', 'team']],
@@ -517,12 +518,12 @@ useEffect(() => {
                         const items = tabs.filter((t) => (ids as readonly string[]).includes(t.id));
                         if (!items.length) return null;
                         return (
-                            <RegisterSection key={group} label={group} count={items.length}>
+                            <TileGrid key={group} label={group}>
                                 {items.map((t) => (
-                                    <RegisterRow key={t.id} testId={`settings-v2-${t.id}`} meta={t.label} title={UV2_SETTINGS_LINES[t.id] ?? t.label} side="öffnen"
+                                    <Tile key={t.id} testId={`settings-v2-${t.id}`} icon={<t.icon />} label={t.label}
                                         onClick={() => { setActiveTab(t.id); setUv2Index(false); }} />
                                 ))}
-                            </RegisterSection>
+                            </TileGrid>
                         );
                     })}
                 </div>
@@ -579,24 +580,12 @@ useEffect(() => {
                 {/* ── Content area ──────────────────────────────────────── */}
                 <div className="flex-1 overflow-y-auto" data-uv2-settings-content>
                     {/* Section header */}
-                    {uv2On() && !isStandardMode && (() => {
-                        const idx = tabs.findIndex(t => t.id === activeTab);
-                        const t = tabs[idx];
-                        return (
-                            <><div className="px-8 pt-4"><button type="button" className="uv2-regaction" onClick={() => setUv2Index(true)}>← Alle Einstellungen</button></div>
-                            <AppHero app="settings" eyebrow={`Einstellungen · ${t?.label ?? ''}`}
-                                title={UV2_SETTINGS_LINES[activeTab] ?? (t?.label ?? 'Einstellungen')}
-                                sub="Änderungen gelten sofort und nur für dein Konto, außer wo ausdrücklich Team steht."
-                                figure={idx + 1} figureLabel={`von ${tabs.length}`}
-                                action={activeTab === 'about'
-                                    ? { label: 'Rundgang neu starten', onClick: handleRestartProductTour }
-                                    : { label: activeTab === 'system' ? 'Daten neu laden' : 'Jetzt anpassen', onClick: () => {
-                                        if (activeTab === 'system') { void loadCompanies(); void loadTree(); return; }
-                                        const el = document.querySelector<HTMLElement>('[data-uv2-settings-body] input:not([type=hidden]), [data-uv2-settings-body] select, [data-uv2-settings-body] textarea, [data-uv2-settings-body] button');
-                                        el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); el?.focus();
-                                    } }} /></>
-                        );
-                    })()}
+                    {uv2On() && !isStandardMode && (
+                        <div className="uv2-settings-bar">
+                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)}>‹ Alle</button>
+                            <span className="uv2-settings-bar__title">{tabs.find((t) => t.id === activeTab)?.label}</span>
+                        </div>
+                    )}
                     <div data-uv2-legacy-head={uv2On() && !isStandardMode ? '' : undefined} className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
                         {(() => {
                             const t = tabs.find(t => t.id === activeTab);
@@ -627,7 +616,66 @@ useEffect(() => {
                         })} />
                     )}
 
-                    {activeTab === 'appearance' && (
+                    {uv2On() && !isStandardMode && activeTab === 'appearance' && (
+                        <div className="uv2-osform" data-testid="settings-v2-appearance">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Monitor /></span><span className="uv2-group__label">Darstellung</span>
+                                    <Segmented label="Darstellung" value={isStandardMode ? 'standard' : 'immersive'} options={[{ id: 'immersive', label: 'Saimôr', icon: <Moon /> }, { id: 'standard', label: 'Standard', icon: <Sun /> }]}
+                                        onChange={(v) => { const std = v === 'standard'; setTheme(std ? 'standard' : 'deep-space'); setIsStandardMode(std); saveSetting({ theme: std ? 'standard' : 'deep-space' }); }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Sparkles /></span><span className="uv2-group__label">Automatisch</span>
+                                    <Switch label="Atmosphäre automatisch" on={ritualAutoTime} onChange={() => handleToggleRitualAutoTime()} />
+                                </div>
+                            </div>
+                            <TileGrid label="Atmosphäre" size="s">
+                                {RITUAL_SCENE_ORDER.map((sid) => {
+                                    const scene = RITUAL_SCENES[sid];
+                                    const effectiveId = ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId;
+                                    return <Tile key={sid} active={sid === effectiveId} label={scene.label} onClick={() => handleSelectRitualScene(sid)}
+                                        icon={<span className="uv2-swatch" style={{ background: scene.accentHex }} />} />;
+                                })}
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'audio' && (
+                        <div className="uv2-osform" data-testid="settings-v2-audio">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Music /></span><span className="uv2-group__label">Klangraum</span>
+                                    <Switch label="Klangraum" on={ambientAudioEnabled} onChange={() => handleAmbientAudioToggle()} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Volume2 /></span><span className="uv2-group__label">Lautstärke</span>
+                                    <input type="range" min={0} max={100} className="uv2-slider" aria-label="Lautstärke" value={Math.round(ambientAudioVolume * 100)} onChange={(e) => handleAmbientVolumeChange(Number(e.target.value) / 100)} />
+                                </div>
+                            </div>
+                            <TileGrid label="Klänge" size="s">
+                                {ambientTracks.map((track) => (
+                                    <Tile key={track.id} active={track.id === ambientAudioTrackId} label={track.name} icon={<Music />} onClick={() => handleAmbientTrackSelect(track.id)} />
+                                ))}
+                                <Tile label="Hinzufügen" icon={<Upload />} state="off" onClick={promptAmbientAudioUpload} />
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'notifications' && (
+                        <div className="uv2-osform" data-testid="settings-v2-notifications">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Zap /></span><span className="uv2-group__label">Direkt ausführen</span>
+                                    <Switch label="Aktionen direkt ausführen" on={(user?.settings?.autoExecuteActions ?? true) !== false} onChange={(next) => { saveSetting({ autoExecuteActions: next }); toast.info(next ? 'MÔRA führt Aktionen direkt aus' : 'MÔRA fragt vor Aktionen'); }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Bell /></span><span className="uv2-group__label">Desktop</span>
+                                    <Switch label="Desktop-Mitteilungen" on={!!user?.settings?.desktopNotifications} onChange={async (next) => {
+                                        if (!next) { saveSetting({ desktopNotifications: false }); return; }
+                                        if (typeof Notification === 'undefined') return;
+                                        const perm = await Notification.requestPermission();
+                                        if (perm === 'granted') saveSetting({ desktopNotifications: true }); else toast.error('Im Browser blockiert');
+                                    }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Volume1 /></span><span className="uv2-group__label">Töne</span>
+                                    <Switch label="Töne" on={!!user?.settings?.soundEffects} onChange={(next) => saveSetting({ soundEffects: next })} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {!(uv2On() && !isStandardMode) && activeTab === 'appearance' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Design</h3>
                             <div className="space-y-3">
@@ -844,7 +892,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'audio' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'audio' && (
                         <div className="space-y-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
@@ -1074,7 +1122,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'notifications' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'notifications' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Mitteilungen & MORA</h3>
 
