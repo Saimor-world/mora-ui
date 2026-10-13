@@ -27,7 +27,7 @@ export function CalendarOAuthCallbackClient({
         } finally {
             window.setTimeout(() => {
                 window.close();
-            }, 250);
+            }, status === 'error' ? 6000 : 250);
         }
     }, [provider, status]);
 
@@ -38,10 +38,12 @@ export function CalendarOAuthCallbackClient({
                     SAIMÔR OS
                 </div>
                 <h1 className="mt-3 text-xl font-medium">
-                    Kalender wird verbunden
+                    {status === 'error' ? 'Kalender-Verbindung abgebrochen' : 'Kalender wird verbunden'}
                 </h1>
                 <p className="mt-2 text-sm text-emerald-50/60">
-                    Das Fenster schliesst sich automatisch.
+                    {status === 'error'
+                        ? 'Google hat keine Freigabe geschickt. Versuch es in Verbindungen noch einmal.'
+                        : 'Das Fenster schliesst sich automatisch.'}
                 </p>
             </div>
         </main>
