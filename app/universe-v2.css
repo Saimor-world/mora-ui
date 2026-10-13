@@ -872,3 +872,7 @@ html[data-uv2="on"] .uv2-ask__ico svg { width: 18px !important; height: 18px !im
 html[data-uv2="on"] .uv2-ask__text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 html[data-uv2="on"] .uv2-ask__kind { font: 500 10px var(--uv-sans); letter-spacing: .06em; text-transform: uppercase; color: var(--uv-gold); }
 html[data-uv2="on"] .uv2-ask__msg { font: 500 13px var(--uv-sans); color: rgb(var(--uv-cream)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-uv2="on"] .uv2-dot { display: inline-flex; align-items: center; gap: 5px; font: 500 10.5px var(--uv-sans); color: rgba(var(--uv-cream), .45); }
+html[data-uv2="on"] .uv2-dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: rgba(247,244,233,.25); }
+html[data-uv2="on"] .uv2-dot[data-on] { color: rgba(var(--uv-cream), .75); }
+html[data-uv2="on"] .uv2-dot[data-on]::before { background: #7FD1A8; box-shadow: 0 0 8px #7FD1A8; }

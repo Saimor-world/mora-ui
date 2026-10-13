@@ -1,7 +1,7 @@
 'use client';
 
 import { AppHero } from '@/components/universe/app/AppStage';
-import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
+import { TileGrid, Tile, PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
@@ -23,6 +23,7 @@ import {
     ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
+import { Sparkles, Globe, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
@@ -342,8 +343,8 @@ export default function IntegrationsApp({ paneId }: AppProps) {
         >
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
                 {uv2 && (
-                    <AppHero app="integrations" eyebrow="Verbindungen · was MÔRA nutzen darf"
-                        title={readiness.ready === readiness.total ? 'Alles ist verbunden.' : readiness.ready === 0 ? 'Noch ist nichts verbunden.' : `${readiness.ready} von ${readiness.total} Quellen verbunden.`}
+                    <AppHero app="integrations" eyebrow="Verbindungen"
+                        title={`${readiness.ready} von ${readiness.total} aktiv`}
                         sub="Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann sieht MÔRA echte Arbeit – nie mehr, als du freigibst."
                         figure={readiness.ready} figureLabel={'von ' + readiness.total}
                         action={readiness.ready < readiness.total ? { label: 'Google verbinden', onClick: () => void connectGoogleAll() } : { label: 'Aktualisieren', onClick: () => void refreshAll() }} />
@@ -358,34 +359,42 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                         { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), text: buildAssistantText(overview) },
                         { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' ? undefined : () => void requestBrowserNotifications(), connectLabel: 'Erlauben' },
                     ];
-                    const on = srcs.filter((x) => x.ok), off = srcs.filter((x) => !x.ok);
-                    const row = (x: Src) => (
-                        <RegisterRow key={x.id} testId={`int-v2-${x.id}`} tone={x.ok ? undefined : 'quiet'}
-                            meta={x.kind} title={x.name} text={x.text} side={x.ok ? 'verbunden' : 'fehlt'}
-                            actions={x.ok ? (x.open ? <RegAction onClick={x.open}>Öffnen</RegAction> : undefined)
-                                : (x.connect ? <RegAction primary onClick={x.connect}>{x.connectLabel}</RegAction> : undefined)} />
-                    );
+                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell /> };
+                    const off = srcs.filter((x) => !x.ok);
                     return (
                         <div className="min-h-0 flex-1 overflow-y-auto" data-testid="int-v2-register">
                             {off.some((x) => x.id === 'mail' || x.id === 'cloud') && (
-                                <RegisterSection label="Ein Schritt">
-                                    <RegisterRow testId="int-v2-google" meta="Google · Mail, Kalender, Drive" title="Alles mit einer Anmeldung verbinden."
-                                        text="MÔRA sieht danach echte Termine, Nachrichten und Dateien – lesend, bis du mehr erlaubst."
-                                        actions={<RegAction primary disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}>{isConnectingGoogle ? 'Verbinde …' : 'Mit Google verbinden'}</RegAction>} />
-                                </RegisterSection>
+                                <div className="uv2-asks">
+                                    <div className="uv2-ask" data-testid="int-v2-google">
+                                        <span className="uv2-group__ico uv2-ask__ico"><Globe /></span>
+                                        <div className="uv2-ask__text"><span className="uv2-ask__kind">Google</span><span className="uv2-ask__msg">Mail · Kalender · Drive</span></div>
+                                        <PillButton primary disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}>{isConnectingGoogle ? '…' : 'Verbinden'}</PillButton>
+                                    </div>
+                                </div>
                             )}
-                            {off.length > 0 && <RegisterSection label="Noch nicht verbunden" count={off.length}>{off.map(row)}</RegisterSection>}
-                            {on.length > 0 && <RegisterSection label="Verbunden" count={on.length}>{on.map(row)}</RegisterSection>}
-                            <RegisterSection label="Für Fortgeschrittene" aside={<button type="button" onClick={() => setUv2Details(true)}>Alle Details →</button>}>
-                                <RegisterRow meta="Desktop-Bridge · Laufzeit · Freigaben" title="Technische Verbindungen" text="Laufzeitdienste, Browser-Bridge und Desktop-Freigaben im Detail." onClick={() => setUv2Details(true)} side="ansehen" />
-                            </RegisterSection>
+                            <TileGrid label="Quellen" size="l">
+                                {srcs.map((x) => (
+                                    <Tile key={x.id} testId={`int-v2-${x.id}`} icon={icons[x.id]} label={x.name} state={x.ok ? 'on' : 'off'}
+                                        onClick={x.ok ? x.open : x.connect}>
+                                        {x.ok ? <span className="uv2-dot" data-on="">Verbunden</span>
+                                            : x.connect ? <PillButton onClick={x.connect}>Verbinden</PillButton> : <span className="uv2-dot">Aus</span>}
+                                    </Tile>
+                                ))}
+                            </TileGrid>
+                            <TileGrid label="System" size="l">
+                                <Tile icon={<Server />} label="Details" onClick={() => setUv2Details(true)} />
+                                <Tile icon={<RefreshCw />} label="Aktualisieren" state={isLoading ? 'busy' : undefined} onClick={() => void refreshAll()} />
+                            </TileGrid>
                         </div>
                     );
                 })()}
                 {uv2 && uv2Details && (
-                    <div className="px-8 pt-3"><RegAction onClick={() => setUv2Details(false)}>← Zurück zur Übersicht</RegAction></div>
+                    <div className="uv2-settings-bar" data-testid="int-v2-details-bar">
+                        <PillButton onClick={() => setUv2Details(false)}>‹ Quellen</PillButton>
+                        <Segmented label="Bereich" value={lane} onChange={(v) => setLane(v)} options={laneItems.map((l) => ({ id: l.id, label: l.label, icon: <l.icon /> }))} />
+                    </div>
                 )}
-                {(!uv2 || uv2Details) && (<header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
+                {!uv2 && (<header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
                     <div className="flex flex-wrap items-start justify-between gap-5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                         <div className="min-w-0">
                             <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/50">Verbindungszentrale</p>
