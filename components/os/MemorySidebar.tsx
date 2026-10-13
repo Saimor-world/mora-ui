@@ -371,7 +371,7 @@ const DiagnosticsPanel: React.FC<{
                     {([
                         { key: 'mem_episodic', label: 'Episodic', color: 'text-cyan-300' },
                         { key: 'mem_facts', label: 'Facts', color: 'text-amber-300' },
-                        { key: 'mem_review_queue', label: 'Pending', color: 'text-orange-300' },
+                        { key: 'mem_review_queue', label: 'Offen', color: 'text-orange-300' },
                         { key: 'memories', label: 'Total v3', color: 'text-emerald-300' },
                     ] as const).map(({ key, label, color }) => (
                         <div key={key} className="rounded-md border border-white/8 bg-white/[0.025] px-2 py-1.5">

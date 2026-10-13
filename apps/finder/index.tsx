@@ -1328,7 +1328,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
             await queryClient.invalidateQueries({ queryKey: queryKeys.tree(resolvedCompanyId ?? '') });
             await loadContent();
             toast.success(scope === 'company'
-                ? 'Datei ist jetzt im Workspace sichtbar'
+                ? 'Datei ist jetzt fürs Team sichtbar'
                 : 'Datei ist wieder nur fuer dich sichtbar');
         } catch (error: any) {
             toast.error(error?.message || 'Sichtbarkeit konnte nicht geändert werden');
@@ -2193,7 +2193,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     className={`flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold shadow-lg transition-all ${currentLevelType === 'folder' ? 'bg-emerald-500 text-black shadow-emerald-500/20 hover:bg-emerald-400' : 'cursor-not-allowed bg-emerald-500/20 text-emerald-500/40 opacity-50'}`}
                                 >
                                     <Upload size={14} />
-                                    <span className="hidden sm:inline">Upload</span>
+                                    <span className="hidden sm:inline">Hochladen</span>
                                 </button>
                             </div>
                         </div>
@@ -3060,7 +3060,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             }}
                                             className="w-full text-left px-3 py-1.5 hover:bg-cyan-500/20 hover:text-cyan-300 flex items-center gap-2 transition-colors"
                                         >
-                                            <Share2 size={14} /> {isWorkspaceVisibilityScope(getFinderItemVisibilityScope(contextMenu.item)) ? 'Nur ich' : 'Workspace sichtbar'}
+                                            <Share2 size={14} /> {isWorkspaceVisibilityScope(getFinderItemVisibilityScope(contextMenu.item)) ? 'Nur ich' : 'Fürs Team sichtbar'}
                                         </button>
                                     )}
                                     {contextMenu.type === 'file' && (

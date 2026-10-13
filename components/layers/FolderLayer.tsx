@@ -394,7 +394,7 @@ export const FolderLayer: React.FC = () => {
                                         <button
                                             onClick={() => activeFolderId && queryClient.invalidateQueries({ queryKey: ['nodes', activeFolderId] })}
                                             className="p-2 rounded-lg hover:bg-white/10 text-white/40 hover:text-white transition-colors"
-                                            title="Refresh Folder"
+                                            title="Ordner aktualisieren"
                                         >
                                             <RotateCcw size={18} />
                                         </button>

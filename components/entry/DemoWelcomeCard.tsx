@@ -12,7 +12,7 @@ const STEPS = [
     {
         icon: <FileText size={14} />,
         label: 'Dokumente & Ordner',
-        detail: 'Inhalte direkt im Workspace bearbeiten',
+        detail: 'Inhalte direkt im Arbeitsbereich bearbeiten',
     },
     {
         icon: <Mic size={14} />,

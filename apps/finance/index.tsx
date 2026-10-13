@@ -269,7 +269,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
           <div className="mt-0.5 font-mono text-[9px] text-white/28">{shortAddress(account.address)}</div>
         </div>
         {hasError ? (
-          <StatePill tone="warn">Error</StatePill>
+          <StatePill tone="warn">Fehler</StatePill>
         ) : account.evidence.confidence === 'live' ? (
           <StatePill tone="safe">Live</StatePill>
         ) : (

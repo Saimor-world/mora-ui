@@ -526,7 +526,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                     : file
             )));
             toast.success(scope === 'company'
-                ? 'Datei ist jetzt im Workspace sichtbar'
+                ? 'Datei ist jetzt fürs Team sichtbar'
                 : 'Datei ist wieder nur fuer dich sichtbar');
             await loadContent();
         } catch (error: any) {
@@ -594,7 +594,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                             {files.length === 0 ? 'Noch leer.' : files.length === 1 ? 'Eine Datei.' : `${files.length} Dateien.`}
                         </p>
                         <p className="mt-1 text-[12px] text-[rgba(247,244,233,0.5)]">
-                            {[['Gerät', localFiles.length], ['Privat', privateCoreCount], ['Workspace', workspaceCoreCount], ['Cloud', cloudCount]].filter(([, n]) => Number(n) > 0).map(([l, n]) => `${n} ${l}`).join(' · ') || (activeCompanyId ? 'Privat, bis du teilst.' : 'Bleibt auf diesem Gerät.')}
+                            {[['Gerät', localFiles.length], ['Privat', privateCoreCount], ['Team', workspaceCoreCount], ['Cloud', cloudCount]].filter(([, n]) => Number(n) > 0).map(([l, n]) => `${n} ${l}`).join(' · ') || (activeCompanyId ? 'Privat, bis du teilst.' : 'Bleibt auf diesem Gerät.')}
                         </p>
                         <div className="mt-4 flex gap-5">
                             <button type="button" onClick={() => fileInputRef.current?.click()} className="uv2-files-link">+ Datei</button>
@@ -618,7 +618,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         <div className="grid grid-cols-4 gap-2">
                             <Metric icon={HardDrive} label="Gerät" value={localFiles.length} />
                             <Metric icon={Lock} label="Privat" value={privateCoreCount} />
-                            <Metric icon={Users} label="Workspace" value={workspaceCoreCount} />
+                            <Metric icon={Users} label="Team" value={workspaceCoreCount} />
                             <Metric icon={Cloud} label="Cloud" value={cloudCount} />
                         </div>
                         <div
@@ -690,7 +690,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 ['all', 'Alle'],
                                 ['local', 'Gerät'],
                                 ['private', 'Privat'],
-                                ['workspace', 'Workspace'],
+                                ['workspace', 'Team'],
                                 ['cloud', 'Cloud'],
                             ] as const).map(([value, label]) => (
                                 <button
@@ -760,9 +760,9 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <>
                                     <button type="button" onClick={() => void setSelectedCoreVisibility(selectedIsWorkspaceVisible ? 'personal' : 'company')} disabled={isSharing}
                                         className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-medium disabled:opacity-50 ${selectedIsWorkspaceVisible ? 'border-white/10 bg-white/[0.05] text-white/70 hover:bg-white/[0.08]' : 'border-amber-300/20 bg-amber-500/12 text-amber-50 hover:bg-amber-500/18'}`}
-                                        title={selectedIsWorkspaceVisible ? 'Zurück auf privat setzen' : 'Im Workspace sichtbar machen'}>
+                                        title={selectedIsWorkspaceVisible ? 'Zurück auf privat setzen' : 'Fürs Team sichtbar machen'}>
                                         {isSharing ? <Loader2 size={14} className="animate-spin" /> : selectedIsWorkspaceVisible ? <Lock size={14} /> : <Users size={14} />}
-                                        {selectedIsWorkspaceVisible ? 'Nur ich' : 'Workspace'}
+                                        {selectedIsWorkspaceVisible ? 'Nur ich' : 'Team'}
                                     </button>
                                     <button type="button" onClick={() => void openSelected()}
                                         className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/18 bg-cyan-500/10 px-3 py-2 text-xs font-medium text-cyan-50 hover:bg-cyan-500/16">

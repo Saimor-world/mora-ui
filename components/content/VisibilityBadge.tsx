@@ -13,7 +13,7 @@ const CONFIG: Record<NodeVisibility, {
 }> = {
     private: { icon: Lock, label: 'Nur ich', color: 'text-amber-300/75' },
     department: { icon: Users, label: 'Bereich sichtbar', color: 'text-blue-300/70' },
-    company: { icon: Building2, label: 'Workspace sichtbar', color: 'text-cyan-200/70' },
+    company: { icon: Building2, label: 'Fürs Team sichtbar', color: 'text-cyan-200/70' },
     public: { icon: Link, label: 'Freigabelink', color: 'text-emerald-300/75' },
 };
 

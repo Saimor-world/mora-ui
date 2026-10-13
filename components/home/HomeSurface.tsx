@@ -1296,7 +1296,7 @@ export const HomeSurface: React.FC = () => {
                             {activeMode !== 'public_playground' && (
                                 <HomeCommandButton dataTestId="qa-mora" label="Mora" detail="Fragen" onClick={openMora} tone="amber" />
                             )}
-                            <HomeCommandButton dataTestId="qa-upload" label="Upload" detail="Datei ablegen" onClick={openUpload} tone="violet" />
+                            <HomeCommandButton dataTestId="qa-upload" label="Hochladen" detail="Datei ablegen" onClick={openUpload} tone="violet" />
                         </div>
 
                         {featuredDeptTiles.length > 0 && (

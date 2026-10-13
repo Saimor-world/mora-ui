@@ -659,7 +659,7 @@ export const NotificationCenter: React.FC = () => {
                         ? radarUnread > 0 ? 'bg-amber-500/20 text-amber-300' : 'bg-emerald-500/20 text-emerald-400'
                         : radarUnread > 0 ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-500/10' : 'text-white/50 hover:text-white/80 hover:bg-white/5'}
                 `}
-                title="Notifications (Strg+Shift+N)"
+                title="Mitteilungen (Strg+Shift+N)"
             >
                 {focusModeEnabled ? <BellOff size={18} /> : <Bell size={18} />}
 

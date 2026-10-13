@@ -154,7 +154,7 @@ export const DepartmentSurface: React.FC = () => {
               openLarryNode: (nodeId, title) => openPane({
                 id: `document-${nodeId}`,
                 type: 'document',
-                title: title || 'Workspace',
+                title: title || 'Arbeitsbereich',
                 size: GLASS_SHEET_SIZE,
                 data: { nodeId },
               }),
@@ -223,7 +223,7 @@ export const DepartmentSurface: React.FC = () => {
               openLarryNode: (nodeId, title) => openPane({
                 id: `document-${nodeId}`,
                 type: 'document',
-                title: title || 'Workspace',
+                title: title || 'Arbeitsbereich',
                 size: GLASS_SHEET_SIZE,
                 data: { nodeId },
               }),

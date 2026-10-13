@@ -707,7 +707,7 @@ export function HomeCockpit(props: HomeCockpitProps) {
 
             type: 'document',
 
-            title: title || 'Workspace',
+            title: title || 'Arbeitsbereich',
 
             size: GLASS_SHEET_SIZE,
 
