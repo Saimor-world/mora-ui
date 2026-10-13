@@ -629,7 +629,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             <div className="flex h-full flex-col gap-4" data-uv2-flat={uv2 ? '' : undefined}>
                 {uv2 && (
                     <AppHero app="action-center" eyebrow={`Aktionen · ${summary.total} insgesamt`}
-                        title={summary.active === 0 ? 'Nichts wartet auf dich.' : summary.active === 1 ? 'Eine Aktion wartet auf dein Ja.' : `${summary.active} Aktionen warten auf dein Ja.`}
+                        title={(() => { const w = events.filter((e) => canActOnPendingEvent(e)).length; const r = summary.active - w; if (w === 1) return 'Eine Aktion wartet auf dein Ja.'; if (w > 1) return `${w} Aktionen warten auf dein Ja.`; if (r === 1) return 'Eine Aktion läuft gerade.'; if (r > 1) return `${r} Aktionen laufen gerade.`; return 'Nichts wartet auf dich.'; })()}
                         sub={`${summary.done} erledigt · ${summary.rejected} verworfen${summary.failed ? ` · ${summary.failed} fehlgeschlagen` : ''}. MÔRA handelt nur, wenn du bestätigst.`}
                         figure={summary.active} figureLabel="offen"
                         action={{ label: tab === 'aktionen' ? 'Verlauf ansehen' : 'Zurück zu Aktionen', onClick: () => setTab(tab === 'aktionen' ? 'verlauf' : 'aktionen') }} />
