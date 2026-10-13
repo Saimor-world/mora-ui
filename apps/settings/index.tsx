@@ -603,6 +603,32 @@ useEffect(() => {
                     </div>
 
                     <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
+                    {uv2On() && !isStandardMode && activeTab === 'about' && (
+                        <div className="uv2-osform" data-testid="settings-v2-about">
+                            <div className="uv2-idcard"><span className="uv2-idcard__logo">S</span><span className="uv2-idcard__name">Saimôr OS</span><span className="uv2-dot" data-on="">v2.0.0-beta</span></div>
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Info /></span><span className="uv2-group__label">Version</span><span className="uv2-group__val">2.0.0-beta</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Activity /></span><span className="uv2-group__label">Umgebung</span><span className="uv2-group__val">{process.env.NODE_ENV}</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Sparkles /></span><span className="uv2-group__label">Kern</span><span className="uv2-group__val">MÔRA Core + Gateway</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Compass /></span><span className="uv2-group__label">Rundgang</span><button type="button" className="uv2-pill" onClick={handleRestartProductTour}>Starten</button></div>
+                            </div>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'team' && (
+                        <div className="uv2-osform" data-testid="settings-v2-team">
+                            <TileGrid label="Team" size="l">
+                                <Tile icon={<Users />} label="Team öffnen" onClick={() => usePaneStore.getState().openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } })} />
+                                <Tile icon={<User />} label="Benutzer" onClick={() => usePaneStore.getState().openPane({ id: 'users-main', type: 'users', title: 'Benutzer', size: { width: 840, height: 640 } })} />
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'profile' && (
+                        <div className="uv2-idcard" data-testid="settings-v2-profile">
+                            <span className="uv2-idcard__logo">{(user?.email ?? '?').slice(0, 2).toUpperCase()}</span>
+                            <span className="uv2-idcard__name">{user?.email}</span>
+                            <span className="uv2-dot" data-on="">{roleLabel(user?.role)}</span>
+                        </div>
+                    )}
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
                     )}
@@ -1637,7 +1663,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'team' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'team' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Team Management</h3>
                             <div className="p-8 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center">
@@ -1864,7 +1890,7 @@ SMTP_TLS=true`}</pre>
                         </div>
                     )}
 
-                    {activeTab === 'about' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'about' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Über SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">
