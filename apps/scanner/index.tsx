@@ -1150,7 +1150,8 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                 )}
 
                 {/* File List */}
-                <div className="flex-1 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2" data-uv2-scan-list={uv2 ? '' : undefined}>
+                    {uv2 && files.length > 0 && <div className="uv2-section">Diese Sitzung · {files.length}</div>}
                     <AnimatePresence>
                         {files.map(file => {
                             const Icon = getFileIcon(file.type);
@@ -1162,6 +1163,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="bg-black/20 border border-white/5 rounded-xl p-4"
+                                    data-uv2-row={uv2 ? file.status : undefined}
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className="p-2 rounded-lg bg-purple-500/10">
@@ -1236,7 +1238,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         })}
                     </AnimatePresence>
 
-                    {files.length === 0 && (
+                    {files.length === 0 && !uv2 && (
                         <div className="mx-auto mt-2 flex h-56 max-w-md flex-col items-center justify-center gap-3 rounded-3xl border border-emerald-300/10 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.12),transparent_55%)] px-8 text-center">
                             <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
                                 <Upload size={28} className="text-emerald-200/80" />

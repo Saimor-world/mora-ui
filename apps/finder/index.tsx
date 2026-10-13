@@ -72,7 +72,7 @@ import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
-import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { AppHero, AppEmpty, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
@@ -1842,6 +1842,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
                 <div
                     data-file-drop-zone="local"
+                    data-uv2-app={uv2On() ? 'finder' : undefined}
                     className="flex flex-col h-full relative"
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
@@ -1869,7 +1870,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         return (
                             <AppHero app="finder" eyebrow={`Finder · ${breadcrumbs.length > 0 ? breadcrumbs.map(b => b.name).join(' / ') : 'Eingang'}`}
                                 title={nF + nD === 0 ? `${here} ist noch leer.` : `${here}: ${nD} ${nD === 1 ? 'Datei' : 'Dateien'}${nF ? `, ${nF} ${nF === 1 ? 'Ordner' : 'Ordner'}` : ''}.`}
-                                sub="Alles, was hier liegt, kann MÔRA lesen – aber nur, wenn du sie fragst."
+                                sub={`Alles, was hier liegt, kann MÔRA lesen – aber nur, wenn du fragst.${surfaceProfile.isLocalTruthSurface && unavailableCompanyFiles.length > 0 ? ` ${unavailableCompanyFiles.length} ältere Dateien sind ausgeblendet.` : ''}`}
                                 figure={nD} figureLabel="Dateien"
                                 action={{ label: 'Datei hochladen', onClick: () => fileInputRef.current?.click() }} />
                         );
@@ -2271,6 +2272,18 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         className="w-full max-w-xl"
                                     />
                                 </motion.div>
+                            ) : uv2On() && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
+                                <motion.div key="empty-v2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full items-center justify-center">
+                                    {searchQuery.trim() ? (
+                                        <AppEmpty glyph={<Search size={22} strokeWidth={1.25} />} title={`Nichts zu „${searchQuery.trim()}“.`}
+                                            text="Andere Worte versuchen – oder die Suche leeren und den ganzen Ordner sehen."
+                                            action={{ label: 'Suche leeren', onClick: () => setSearchQuery('') }} />
+                                    ) : (
+                                        <AppEmpty glyph={<FolderIcon size={22} strokeWidth={1.25} />} title="Dieser Ordner wartet auf seinen ersten Inhalt."
+                                            text="Zieh Dateien hierher oder lade sie hoch. Sie bleiben genau hier – MÔRA ordnet nichts ohne dich um."
+                                            action={{ label: 'Datei hochladen', onClick: () => fileInputRef.current?.click() }} />
+                                    )}
+                                </motion.div>
                             ) : filteredFiles.length === 0 && filteredFolders.length === 0 ? (
                                 <motion.div
                                     key="empty"
@@ -2304,11 +2317,11 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                 >
                                     {viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="space-y-6">
+                                        <div className="space-y-6" data-uv2-finder-grid={uv2On() ? '' : undefined}>
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
-                                                <div className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
+                                                <div data-uv2-finder-folders={uv2On() ? '' : undefined} className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Ordner und Bereiche</p>
