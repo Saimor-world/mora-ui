@@ -2,6 +2,7 @@
 
 import { attentionScores, attentionDiameter, attentionLevel } from '@/lib/universe/autonomy';
 import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
+import { glyphFor } from '@/lib/universe/planetModel';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
@@ -32,6 +33,19 @@ export interface OrganizationTerritory {
     spaceList?: { id: string; name: string }[];
     metricSource: 'live' | 'derived' | 'missing';
     access: 'open' | 'locked';
+    /** Planeten-Modell v1 (CORE /v3/universe): wenn gesetzt, bestimmt der Server Aussehen, Größe und Zustand. */
+    model?: {
+        kind: 'system' | 'domain' | 'cluster';
+        archetype: string;
+        glyph: string;
+        seed: number;
+        diameter: number;
+        state: 'seed' | 'active' | 'sleeping' | 'hidden';
+        brightness: number;
+        meta: string;
+        glow?: { level: string; reason: string } | null;
+        demo?: boolean;
+    };
 }
 
 interface Props {
@@ -453,7 +467,8 @@ function Territory({
 }) {
     const accent = territory.color || '#67e8f9';
     const v2 = isUniverseV2Enabled();
-    const size = Math.round((v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const model = territory.model;
+    const size = Math.round((model ? model.diameter : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
@@ -484,6 +499,8 @@ function Territory({
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
             data-uv2-planet={territory.id}
+            data-planet-kind={model?.kind}
+            data-planet-state={model?.state}
             data-uv2-attn={v2 ? attnLevel : undefined}
             data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
@@ -524,7 +541,9 @@ function Territory({
                 className="saimor-territory-body relative mx-auto block"
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
-                {isUniverseV2Enabled() && territory.access !== 'locked' ? (
+                {model && territory.access !== 'locked' ? (
+                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
+                ) : isUniverseV2Enabled() && territory.access !== 'locked' ? (
                     <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
                 <span
@@ -568,7 +587,13 @@ function Territory({
                 </span>
             )}
             <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
-            {isUniverseV2Enabled() ? (
+            {model ? (
+                model.meta ? (
+                    <span className={'uv2-planet-meta mt-1.5 block text-[12px] leading-[16px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>
+                        {model.meta}
+                    </span>
+                ) : null
+            ) : isUniverseV2Enabled() ? (
                 // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
                 (territory.spaces > 0 || territory.documents > 0) && (
                     <span className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">

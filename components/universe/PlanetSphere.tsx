@@ -39,6 +39,25 @@ const MATERIALS: Record<string, Material> = {
   default: { day: '#d9d3c2', mid: '#6b6656', night: '#0e0d0a', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '247,244,233' },
 };
 
+/** Planeten-Modell v1: Archetypen vom Server (CORE services/universe_model.py), 12 Körper, nie Grau. */
+const ARCHETYPE_MATERIALS: Record<string, Material> = {
+  'gas-gold': MATERIALS.finanzen,
+  ocean: MATERIALS.post,
+  'marble-indigo': MATERIALS.wissen,
+  ice: MATERIALS.wache,
+  'copper-rock': MATERIALS.werkstatt,
+  forest: { day: '#b9d6a2', mid: '#3f6b3a', night: '#08140a', fx: 2.8, fy: 2.2, oct: 5, relief: 0.55, atmo: '200,232,190' },
+  coral: { day: '#f2b6a0', mid: '#a44f3f', night: '#1e0a07', fx: 1.2, fy: 4.2, oct: 4, relief: 0.5, atmo: '250,205,190' },
+  'nebula-violet': { day: '#d6b8e8', mid: '#6a3f86', night: '#130a1c', fx: 0.9, fy: 2.6, oct: 4, relief: 0.5, atmo: '228,205,245' },
+  'sand-dune': { day: '#eedcb6', mid: '#9c7a4a', night: '#1c140a', fx: 0.5, fy: 7, oct: 3, relief: 0.45, atmo: '246,232,205' },
+  'crystal-teal': { day: '#a8e2e0', mid: '#2f7f86', night: '#041416', fx: 3.6, fy: 1.8, oct: 5, relief: 0.6, atmo: '180,238,236' },
+  ember: { day: '#f4c27e', mid: '#b2522a', night: '#200904', fx: 2.2, fy: 2.8, oct: 5, relief: 0.65, atmo: '252,210,160' },
+  pearl: { day: '#ece8de', mid: '#8f8a7d', night: '#141310', fx: 1.4, fy: 3.0, oct: 3, relief: 0.35, atmo: '247,244,233' },
+};
+export function archetypeMaterial(archetype?: string | null): Material | null {
+  return (archetype && ARCHETYPE_MATERIALS[archetype]) || null;
+}
+
 export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   const n = name.toLowerCase();
   if (/finanz|wirtschaft|finance|buchhalt/.test(n)) return 'finanzen';
@@ -49,13 +68,13 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   return 'default';
 }
 
-export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any> }) {
+export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping' }) {
   const uid = useId().replace(/:/g, '');
-  const m = planetMaterial(name);
+  const m = archetypeMaterial(archetype) || planetMaterial(name);
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
-    <span className="uv2-planet absolute inset-0 block" data-planet-material={planetMaterialKey(name)} aria-hidden>
+    <span className="uv2-planet absolute inset-0 block" data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} style={dim ? { filter: dim === 'sleeping' ? 'saturate(0.9) brightness(0.86)' : 'saturate(0.6) brightness(0.74)' } : undefined} aria-hidden>
       {/* Ring hinten (hinter dem Körper) */}
       {m.ring && (
         <svg className="pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>

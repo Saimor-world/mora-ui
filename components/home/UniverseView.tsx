@@ -43,6 +43,8 @@ import { anchorsToViewport } from '@/lib/universe/anchors';
 import { buildTickerItems } from '@/lib/universe/ticker';
 import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
+import { useUniverseModel } from '@/lib/queries/useUniverseModel';
+import { placeUniverse, planetDiameter, bodyMeta, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -390,6 +392,51 @@ export default function UniverseView() {
         [metrics, normalizedDepartments, spaceListByDepartment, folderMoons, capped],
     );
 
+    // Planeten-Modell v1: eine Wahrheit aus CORE /v3/universe. Systemplaneten (Finanzen, Post,
+    // Wissen, Wache, Werkstatt …) sind immer da – notfalls als Keim; Abteilungen außen, viele als Cluster.
+    const { data: universeModel } = useUniverseModel(effectiveCompanyId);
+    const fieldTerritories = useMemo<OrganizationTerritory[]>(() => {
+        if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return territories;
+        const byDept = new Map(territories.map((t) => [t.id, t]));
+        const demo = universeModel.company?.sector === 'demo';
+        return placeUniverse(universeModel).map((body) => {
+            const p = body.planet; const c = body.cluster;
+            const look = (p || c)!.look;
+            const deptId = p ? departmentIdOf(p.key) : null;
+            const base = deptId ? byDept.get(deptId) : undefined;
+            const state = p ? p.state : 'active';
+            const model = {
+                kind: body.kind, archetype: look.archetype, glyph: look.glyph, seed: look.seed,
+                diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
+                meta: bodyMeta(p, c), glow: p?.glow ?? null, demo,
+            } as OrganizationTerritory['model'];
+            if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
+            const moons = c
+                ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || universeModel.planets.find((x) => x.key === k)?.label || '' }))
+                : (p?.moons || []).map((m) => ({ id: m.department_id || m.key, name: m.label }));
+            return {
+                id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
+                spaces: c ? c.members.length : Number(p?.counts?.spaces ?? 0), folders: 0,
+                documents: Number(p?.counts?.docs ?? 0), spaceList: moons,
+                metricSource: 'live', access: 'open', model,
+            } as OrganizationTerritory;
+        });
+    }, [universeModel, territories]);
+    const openBody = (id: string) => {
+        if (id.startsWith('system:')) {
+            const pane = SYSTEM_PANES[id.slice(7)];
+            if (pane) openPane(pane as Parameters<typeof openPane>[0]);
+            return;
+        }
+        if (id.startsWith('cluster:')) {
+            const cl = universeModel?.clusters.find((c) => c.key === id);
+            const first = cl?.members.map(departmentIdOf).find(Boolean);
+            if (first) navigateToDepartment(first);
+            return;
+        }
+        navigateToDepartment(id);
+    };
+
     const signals = useMemo<UniverseSignal[]>(() => {
         const normalized = accessibleDepartments
             .map((department) => ({
@@ -614,19 +661,27 @@ export default function UniverseView() {
                 schlimmer als kein Schalter. Jetzt: ein Feld. Verbindungen
                 zeichnen sich selbst, wenn Belege da sind, und kosten nichts,
                 wenn keine da sind. */}
+            {universeModel?.company?.sector === 'demo' && (
+                <div data-testid="uv2-demo-sector" className="pointer-events-none absolute left-1/2 top-[68px] z-20 -translate-x-1/2 rounded-full border border-[#D6A848]/30 bg-[#070B0C]/70 px-3.5 py-1 text-[12px] text-[#F7F4E9]/80 backdrop-blur-md">
+                    <span className="mr-2 text-[#D6A848]">Demo</span>{universeModel.company.name} · {universeModel.company.template_label}
+                </div>
+            )}
             <OrganizationField
                 lens="relations"
                 organizationName={organizationName}
-                territories={territories}
+                territories={fieldTerritories}
                 signals={signals}
                 selectedId={selectedTerritoryId}
                 onSelect={setSelectedTerritoryId}
-                onOpen={navigateToDepartment}
+                onOpen={openBody}
                 attentionId={attention?.targetId ?? null}
                 onOpenMoon={(folderId, folderName) => {
                     // Mond des Sammelplaneten "Weitere" = ein ganzer Bereich: direkt dorthin.
                     const overflowDept = capped.overflow.find((d) => String(d.id) === folderId);
                     if (overflowDept) { navigateToDepartment(String(overflowDept.id)); return; }
+                    // Mond eines Clusters oder Systemplaneten = ganze Abteilung: direkt dorthin.
+                    if (departments.some((d: any) => String(d.id) === folderId)) { navigateToDepartment(folderId); return; }
+                    if (folderId.startsWith('source:') || folderId.startsWith('space:')) return;
                     // In den Ordner selbst, nicht in ein generisches Fenster:
                     // navigateToFolder setzt den Kontext, der Finder oeffnet
                     // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.
@@ -690,7 +745,7 @@ export default function UniverseView() {
             />
 
             <AnimatePresence>
-                {!loading && territories.length === 0 && (
+                {!loading && fieldTerritories.length === 0 && (
                     <motion.div
                         className="absolute inset-0 z-[50] flex items-center justify-center p-6"
                         initial={{ opacity: 0 }}
