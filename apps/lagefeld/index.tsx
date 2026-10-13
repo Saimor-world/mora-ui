@@ -1,6 +1,6 @@
 'use client';
 
-import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useMemo } from 'react';
 import { Activity, MessageSquare, Mic2, RotateCcw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
@@ -94,19 +94,17 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
       >
         {uv2() ? (
           <>
-            <AppHero app="lagefeld" eyebrow={'Lagefeld · ' + (deutungActions ? 'MÔRAs Deutung' : source === 'ambient-room' ? 'aus dem Voice-Raum' : 'Situationsboard')}
-              title={!hasSignals ? 'Ruhig' : `${state.cards.length} Signale`}
-              sub={deutungActions ? 'MÔRA hat die Signale geordnet. „Übersicht“ zeigt wieder alles.' : 'Aus Mail, Kalender, Aufgaben und MÔRAs Beobachtungen – nichts erfunden.'}
-              figure={hasSignals ? state.cards.length : undefined} figureLabel="Signale"
-              action={hasSignals ? { label: deuting ? 'MÔRA deutet …' : deutungActions ? 'Neu deuten' : 'Mit MÔRA deuten', onClick: () => { if (!deuting) requestDeutung(); } } : null} />
-            <div className="uv2-foot" style={{ borderTop: 0, borderBottom: '.5px solid var(--uv-hair)' }}>
-              <span>{prompt ? 'Ausgangspunkt: ' + prompt : 'Quelle: echte Signale'}</span>
-              <span className="flex gap-5">
-                {deutungActions ? <button type="button" onClick={reset} data-testid="lagefeld-deuten-reset">Übersicht</button> : null}
-                <button type="button" onClick={openChat} data-testid="lagefeld-open-chat">Schreiben</button>
-                <button type="button" onClick={openVoiceOverlay} data-testid="lagefeld-open-voice">Sprechen</button>
-              </span>
+            <div className="uv2-ftool" data-testid="lagefeld-v2-bar">
+              <span className="uv2-dot" data-on={hasSignals ? '' : undefined} />
+              <span className="uv2-ftool__crumb">{!hasSignals ? 'Ruhig' : `${state.cards.length} Signale`}</span>
+              <span className="uv2-notes__count">{deutungActions ? 'MÔRAs Deutung' : source === 'ambient-room' ? 'Voice-Raum' : 'echt'}</span>
+              <span style={{ flex: 1 }} />
+              {deutungActions ? <button type="button" className="uv2-pill" onClick={reset} data-testid="lagefeld-deuten-reset"><RotateCcw />Übersicht</button> : null}
+              <button type="button" className="uv2-pill" onClick={openChat} data-testid="lagefeld-open-chat" title="Schreiben" aria-label="Schreiben"><MessageSquare /></button>
+              <button type="button" className="uv2-pill" onClick={openVoiceOverlay} data-testid="lagefeld-open-voice" title="Sprechen" aria-label="Sprechen"><Mic2 /></button>
+              {hasSignals && <button type="button" className="uv2-pill uv2-pill--gold" onClick={() => { if (!deuting) requestDeutung(); }} data-testid="lagefeld-deuten"><Sparkles className={deuting ? 'animate-pulse' : ''} />{deuting ? 'Deutet …' : deutungActions ? 'Neu deuten' : 'Deuten'}</button>}
             </div>
+            {prompt ? <p className="uv2-notes__count" style={{ padding: '8px 24px 0' }}>{prompt}</p> : null}
           </>
         ) : (
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">

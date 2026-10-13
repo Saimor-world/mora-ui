@@ -1175,3 +1175,14 @@ html[data-uv2="on"] .uv2-news__img svg { width: 22px; height: 22px; }
 html[data-uv2="on"] .uv2-news__src { font: 9.5px var(--uv-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--uv-gold); }
 html[data-uv2="on"] .uv2-news__title { font: 400 17px/1.25 var(--uv-serif); color: rgb(var(--uv-cream)); }
 html[data-uv2="on"] .uv2-news__card[data-lead] .uv2-news__title { font-size: 22px; }
+/* hd20i: Lagefeld als Fluss aus Kacheln */
+html[data-uv2="on"] .uv2-lf__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+html[data-uv2="on"] .uv2-lf__card { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 14px; background: rgba(247,244,233,.03); border: 1px solid rgba(247,244,233,.07); }
+html[data-uv2="on"] .uv2-lf__card:hover { border-color: rgba(214,168,72,.35); }
+html[data-uv2="on"] .uv2-lf__card[data-alert] { border-color: rgba(224,135,106,.5); }
+html[data-uv2="on"] .uv2-lf__ico { width: 30px !important; height: 30px !important; flex-shrink: 0; }
+html[data-uv2="on"] .uv2-lf__title { flex: 1; min-width: 0; font: 500 12.5px/1.3 var(--uv-sans); color: rgb(var(--uv-cream)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-uv2="on"] .uv2-lf__links { display: inline-flex; align-items: center; gap: 3px; font: 10px var(--uv-mono); color: var(--uv-gold); }
+html[data-uv2="on"] .uv2-lf__links svg { width: 11px; height: 11px; }
+html[data-uv2="on"] [data-testid="lagefeld-v2-bar"] { margin: 0; }
+html[data-uv2="on"] .uv2-lf__title small { display: block; font: 10.5px var(--uv-sans); color: rgba(var(--uv-cream), .5); overflow: hidden; text-overflow: ellipsis; }
