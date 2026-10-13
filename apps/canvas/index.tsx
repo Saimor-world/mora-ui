@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero } from '@/components/universe/app/AppStage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -35,6 +36,8 @@ export default function CanvasApp({ paneId }: AppProps) {
     const [tool, setTool] = useState<Tool>('pen');
     const [color, setColor] = useState(isUniverseV2Enabled() ? '#F7F4E9' : '#ffffff');
     const [size, setSize] = useState(3);
+    const [strokes, setStrokes] = useState(0);
+    const drew = useRef(false);
 
     // ── Drawing helpers ────────────────────────────────────────────────────────
 
@@ -65,11 +68,14 @@ export default function CanvasApp({ paneId }: AppProps) {
         ctx.lineJoin = 'round';
         ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
         ctx.stroke();
+        drew.current = true;
 
         lastPos.current = pos;
     }, [tool, color, size]);
 
     const onMouseUp = useCallback(() => {
+        if (drawing.current && drew.current) setStrokes((n) => n + 1);
+        drew.current = false;
         drawing.current = false;
         lastPos.current = null;
         const ctx = getCtx();
@@ -80,7 +86,8 @@ export default function CanvasApp({ paneId }: AppProps) {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
         if (!canvas || !ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setStrokes(0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, []);
 
     // Resize canvas when pane size changes
@@ -117,7 +124,14 @@ export default function CanvasApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full" data-uv2-app="canvas">
+                {isUniverseV2Enabled() && (
+                    <AppHero app="canvas" eyebrow="Canvas · freie Fläche"
+                        title={strokes === 0 ? 'Eine leere Fläche.' : 'Deine Skizze.'}
+                        sub={strokes === 0 ? 'Zeichne, wo Worte noch fehlen. Nichts wird gespeichert, bis du es willst.' : 'Bleibt in diesem Fenster, bis du sie als Bild sicherst.'}
+                        figure={strokes} figureLabel="Striche"
+                        action={strokes > 0 ? { label: 'Als Bild sichern', onClick: () => { const c = canvasRef.current; if (!c) return; const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'Skizze.png'; a.click(); } } : null} />
+                )}
                 {/* Toolbar */}
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] flex-wrap shrink-0">
                     {/* Tool buttons */}

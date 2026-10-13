@@ -9,6 +9,7 @@ import { toast } from '@/lib/toast';
 import { useNotesSync } from './hooks/useNotesSync';
 import { PaneWindow } from '@/components/layers/PaneWindow';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { AppHero } from '@/components/universe/app/AppStage';
 
 function toNoteFilename(text: string) {
   const firstLine = text
@@ -67,6 +68,28 @@ function NotesBody({ paneId: _paneId }: AppProps) {
     openPrivateFiles(`local-${file.id}`);
   }, [content, openPrivateFiles]);
 
+  if (isUniverseV2Enabled()) {
+    const firstLine = content.split('\n').map((l) => l.replace(/^#+\s*/, '').trim()).find(Boolean);
+    const status = loadState === 'no-server' ? 'nur dieses Gerät' : saveState === 'saving' ? 'speichert …' : saveState === 'saved' ? 'gespeichert' : saveState === 'error' ? 'nicht gespeichert' : loadState === 'loading' ? 'lädt …' : 'in deinem Profil';
+    return (
+      <div className="flex h-full flex-col" data-uv2-app="notes">
+        <AppHero app="notes" eyebrow={'Notiz · ' + status}
+          title={firstLine ? firstLine.slice(0, 80) : 'Ein leeres Blatt.'}
+          sub={firstLine ? 'Dein schneller Schreibblock. Wenn daraus etwas Bleibendes wird, lege es in Meine Dateien ab.' : 'Gedanken, Aufgaben, Gesprächsnotizen – einfach anfangen. MÔRA liest mit, wenn du sie fragst.'}
+          figure={wordCount} figureLabel="Wörter"
+          action={canSaveAsFile ? { label: localSaveState === 'saved' ? 'In Meine Dateien' : 'Als Datei sichern', onClick: saveIntoPrivateFiles } : null} />
+        <div className="relative min-h-0 flex-1">
+          {loadState === 'loading' ? (
+            <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Notizen werden geladen …</p>
+          ) : (
+            <textarea value={content} onChange={(e) => setContent(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
+              placeholder="Schreib einfach los …" className="uv2-paper" spellCheck autoComplete="off" />
+          )}
+        </div>
+        <div className="uv2-foot"><span>{charCount} Zeichen · ⌘S speichert</span><button type="button" onClick={() => openPrivateFiles()}>Meine Dateien</button></div>
+      </div>
+    );
+  }
   return (
     <div className="flex h-full flex-col bg-[#040a07]/50">
       <div className="flex shrink-0 items-center justify-between border-b border-white/[0.06] px-4 py-2.5">
