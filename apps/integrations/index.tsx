@@ -2,7 +2,7 @@
 
 import { PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
     AlertCircle,
     Bell,
@@ -22,7 +22,7 @@ import {
     ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
-import { Sparkles, Globe, Server } from 'lucide-react';
+import { Sparkles, Globe, Server, Landmark, Radar, Smartphone, Send, GitBranch } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
@@ -30,7 +30,8 @@ import { CalendarIntegration } from '@/components/integrations/CalendarIntegrati
 import { RssIntegration } from '@/components/integrations/RssIntegration';
 import { CloudStorageIntegration } from '@/components/integrations/CloudStorageIntegration';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { corePost } from '@/lib/api/coreClient';
+import { coreGet, corePost } from '@/lib/api/coreClient';
+import { CaldavConnect, GithubConnect, MonitorConnect, TelegramStatus } from '@/components/integrations/ConnectorForms';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
@@ -81,12 +82,15 @@ const statusLabel = (status?: string | null) => {
         case 'forbidden_demo':
             return 'Gesperrt';
         case 'unavailable':
+            return 'Noch nicht verfügbar';
         case 'offline':
             return 'Offline';
         case 'ready':
             return 'Bereit';
         case 'blocked':
             return 'Getrennt';
+        case 'reauth_required':
+            return 'Neu verbinden';
         default:
             return 'Unklar';
     }
@@ -102,6 +106,7 @@ const statusClass = (status?: string | null) => {
         case 'local':
         case 'degraded':
         case 'partial':
+        case 'reauth_required':
             return 'border-amber-300/20 bg-amber-400/[0.10] text-amber-100';
         case 'unavailable':
         case 'offline':
@@ -180,6 +185,15 @@ export default function IntegrationsApp({ paneId }: AppProps) {
     const [lane, setLane] = useState<Lane>('overview');
     const [uv2Details, setUv2Details] = useState(false);
     const [intSel, setIntSel] = useState('mail');
+    // Echter Zustand der neuen Quellen aus CORE (/v3/connectors/catalog); fehlt er, bleibt alles „nicht verbunden“.
+    const [connCatalog, setConnCatalog] = useState<Record<string, string>>({});
+    useEffect(() => {
+        let alive = true;
+        coreGet('/v3/connectors/catalog', { isOptional: true })
+            .then((r: any) => { if (alive) setConnCatalog(Object.fromEntries((r?.sources ?? []).map((x: any) => [x.id, x.state]))); })
+            .catch(() => undefined);
+        return () => { alive = false; };
+    }, []);
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -355,19 +369,33 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                 )}
                 {uv2 && !uv2Details && (() => {
                     type Src = { id: string; kind: string; name: string; ok: boolean; status?: string | null; account?: string | null; text: string; preview?: { k: string; v: string } | null; open?: () => void; openLabel?: string; connect?: () => void; connectLabel?: string; setup?: React.ReactNode };
+                    // Abruf-Gesundheit aus CORE: Ein gespeicherter Zugang allein ist nicht „Verbunden“ –
+                    // schlug der letzte echte Abruf fehl, zeigt die Kachel das ehrlich.
+                    const health = ((overview as any)?.health ?? {}) as Record<string, { state?: string }>;
+                    const fetchFailed = (k: string) => health[k]?.state === 'failed';
                     const srcs: Src[] = [
-                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
-                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
+                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: overview?.mail?.status === 'reauth_required' ? 'Google neu verbinden' : 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
+                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : overview?.calendar?.status === 'reauth_required' ? 'Kalender neu verbinden' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
                         { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), status: overview?.rss?.status, text: 'Quellen, die MÔRA für dich liest.', preview: feedPreview[0] ? { k: 'Neu', v: feedPreview[0].title } : null, setup: <RssIntegration /> },
-                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden', setup: <CloudStorageIntegration /> },
+                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: overview?.cloud_storage?.status === 'reauth_required' ? 'Drive neu verbinden' : 'Drive verbinden', setup: <CloudStorageIntegration /> },
                         { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), status: overview?.assistant?.status, text: buildAssistantText(overview) },
                         { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', status: browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'blocked' : 'not_configured', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' || browserBridge.permission === 'granted' ? undefined : () => void requestBrowserNotifications(), connectLabel: isRequestingNotifications ? 'Frage …' : 'Erlauben', open: browserBridge.permission === 'granted' ? sendBrowserTestNotification : undefined, openLabel: 'Testsignal' },
-                    ];
-                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell /> };
+                        { id: 'caldav', kind: 'Zeit', name: 'CalDAV-Kalender', ok: false, status: 'not_configured', text: 'iCloud, Fastmail, Nextcloud oder mailbox.org mit App-Passwort.', setup: <CaldavConnect /> },
+                        { id: 'finance', kind: 'Kapital', name: 'Konten & XRPL', ok: false, status: 'not_configured', text: 'Konten und XRPL-Adressen nur lesend beobachten. MÔRA bewegt nie Geld.', open: () => openPane({ id: 'finance-main', type: 'finance', title: 'Kapital', size: { width: 1100, height: 760 } }), openLabel: 'Kapital öffnen', connect: () => openPane({ id: 'finance-main', type: 'finance', title: 'Kapital', size: { width: 1100, height: 760 } }), connectLabel: 'Quelle wählen' },
+                        { id: 'watch', kind: 'Wache', name: 'Nightwatch', ok: false, status: 'partial', text: 'Wache beobachtet deine Dienste und meldet Störungen.', setup: <MonitorConnect />, connect: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Wache', size: { width: 1100, height: 760 } }), connectLabel: 'Wache öffnen' },
+                        { id: 'companion', kind: 'Gerät', name: 'Handy-Begleiter', ok: false, status: 'unavailable', text: 'Freigaben und Mitteilungen auf dem Handy. Kommt mit dem Livegang des Begleiters.', connect: () => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 }, data: { section: 'begleiter' } }), connectLabel: 'Handy verbinden' },
+                        { id: 'telegram', kind: 'Kanal', name: 'Telegram', ok: false, status: 'unavailable', text: 'MÔRA über Telegram erreichen.', setup: <TelegramStatus /> },
+                        { id: 'github', kind: 'Werkstatt', name: 'GitHub', ok: false, text: 'Repos und Freigaben nur lesend für die Werkstatt.', status: 'not_configured', setup: <GithubConnect /> },
+                    ].map((x) => (['caldav', 'github', 'telegram', 'watch', 'companion'].includes(x.id)
+                        ? (() => { const st = connCatalog[x.id === 'watch' ? 'nightwatch' : x.id === 'companion' ? 'begleiter_push' : x.id]; return st ? { ...x, ok: st === 'connected', status: st === 'connected' ? 'connected' : st === 'server_setup_required' ? 'unavailable' : st === 'reauth_required' ? 'reauth_required' : 'not_configured' } : x; })()
+                        : x)).map((x) => (['mail', 'calendar', 'rss', 'cloud'].includes(x.id) && fetchFailed(x.id === 'cloud' ? 'cloud_storage' : x.id) && x.ok
+                        ? { ...x, ok: false, status: 'degraded', text: `Letzter Abruf fehlgeschlagen. ${x.text}` }
+                        : x));
+                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell />, finance: <Landmark />, caldav: <Calendar />, watch: <Radar />, companion: <Smartphone />, telegram: <Send />, github: <GitBranch /> };
                     const sel = srcs.find((x) => x.id === intSel) ?? srcs[0];
                     return (
                         <div className="uv2-conn" data-testid="int-v2-register">
-                            <nav className="uv2-conn__side" aria-label="Quellen">
+                            <nav className="uv2-conn__side uv2-conn__side--tiles" aria-label="Quellen">
                                 <span className="uv2-conn__group">Quellen</span>
                                 {srcs.map((x) => (
                                     <button key={x.id} type="button" className="uv2-conn__item" data-testid={`int-v2-${x.id}`} aria-current={x.id === sel.id ? 'true' : undefined} onClick={() => setIntSel(x.id)}>
