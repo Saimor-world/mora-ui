@@ -111,6 +111,7 @@ export const CoreLayer: React.FC = () => {
  */
 function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
     const t = cameraTransition(reduced);
+    const [settled, setSettled] = React.useState(shot === 'far');
     // Home bleibt nur während der Fahrt gemountet – im Weitbild fängt es keine Klicks ab.
     const [homeMounted, setHomeMounted] = React.useState(shot === 'near');
     React.useEffect(() => {
@@ -120,12 +121,19 @@ function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
     }, [shot, reduced]);
     return (
         <div className="absolute inset-0 overflow-hidden" data-testid="uv2-camera" data-shot={shot}>
+            <style>{'[data-testid="uv2-camera"] > [data-settled="true"]{filter:none!important;transform:none!important;will-change:auto!important}'}</style>
             <motion.div
                 className="absolute inset-0 z-10"
                 style={{ transformOrigin: `${CAMERA.origin.x}% ${CAMERA.origin.y}%`, pointerEvents: shot === 'far' ? 'auto' : 'none' }}
                 initial={false}
                 animate={universeLayerFor(shot, reduced)}
                 transition={t}
+                // Angekommen im Weitbild: Filter und Transform ganz entfernen. Ein stehengebliebenes
+                // blur(0px)/scale(1) hält eine Compositing-Ebene offen (weiche Kanten, Streifen) und
+                // macht position:fixed darin relativ zur Ebene.
+                onAnimationComplete={() => setSettled(shot === 'far')}
+                onAnimationStart={() => setSettled(false)}
+                data-settled={settled && shot === 'far' ? 'true' : 'false'}
                 aria-hidden={shot !== 'far'}
             >
                 <UniverseView />

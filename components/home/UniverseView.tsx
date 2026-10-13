@@ -306,14 +306,20 @@ export default function UniverseView() {
         return () => { cancelled = true; };
     }, [effectiveCompanyId, spaceListByDepartment]);
 
+    const structureKey = accessibleDepartments.map((d) => `${d.id}:${d.name}:${d.universeAccess}`).join('|');
     const positionedDepartments = useMemo(() => {
         const sorted = [...accessibleDepartments].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
             const b = String(right.id || '') + ':' + String(right.name || '');
             return a.localeCompare(b);
         });
-        return buildOrganicUniverseLayout(sorted, metrics);
-    }, [accessibleDepartments, metrics]);
+        // Universe v2: Positionen hängen nur an der Struktur (id + Name), nicht an Zahlen.
+        // Ursache der Unruhe: die Bahnradien kamen aus "vitality" (Anteil am größten
+        // Bereich). Erst zählte der Baum, dann kamen die Live-Stats (andere Zahlen),
+        // dann alle 45 s ein Neuladen bzw. jede Ablage – jedes Mal sprangen alle
+        // Planeten, und das Overlay maß sie neu. Größe darf wachsen, der Ort nicht.
+        return buildOrganicUniverseLayout(sorted, isUniverseV2Enabled() ? {} : metrics);
+    }, [accessibleDepartments, isUniverseV2Enabled() ? structureKey : metrics]);
 
     const territories = useMemo<OrganizationTerritory[]>(
         () => positionedDepartments.map((department) => {

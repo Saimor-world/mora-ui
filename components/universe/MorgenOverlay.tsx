@@ -13,6 +13,8 @@ import { CAMERA, MOTION, playZoomTone } from '@/lib/universe/motion';
 import { useNavStore } from '@/lib/store/navStore';
 import { shortcutLabel } from '@/lib/os/shortcut';
 import type { MoraMode } from '@/lib/mora/moraModes';
+import { approve, approveLabel, canApprove, type ApproveOutcome } from '@/lib/universe/approve';
+import { answerBox, easeApart } from '@/lib/universe/answerLayout';
 import { ModePicker, MoraSpaceAnswer, useMoraSpace } from '@/components/universe/MoraSpaceAnswer';
 import { planetForSource } from '@/lib/universe/spaceAnswer';
 
@@ -21,7 +23,7 @@ function linkedPlanets(sources: { title?: string; kind?: string }[], names: stri
 }
 
 type Item = { title: string; source: string; area?: string };
-type Proposal = { id: string; label: string; reason: string; sources: string[]; undo?: string };
+type Proposal = { id: string; label: string; reason: string; sources: string[]; undo?: string; confirm_token?: string; execution?: { verified?: boolean; endpoint?: string } };
 type Today = { text?: string; items: Item[]; proposal: Proposal | null; nebel?: string[] };
 export type DayPhase = 'morgen' | 'tag' | 'abend' | 'nacht';
 type Anchor = { name: string; x: number; y: number; r: number };
@@ -135,13 +137,17 @@ export function MorgenOverlay() {
   const [askFocus, setAskFocus] = useState(false);
   const [kbd, setKbd] = useState('⌘K');
   const space = useMoraSpace(demo);
+  const modeRef = React.useRef(mode); modeRef.current = mode;
+  // „Im Fenster weiter": das Gespräch aus dem Raum wandert mit – nichts wird neu gefragt.
   const openWindow = useCallback((q: string) => {
-    openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: q } });
+    const messages = space.history.length ? space.history.map((m) => ({ ...m, mode: modeRef.current }))
+      : [{ role: 'user' as const, content: q, mode: modeRef.current }];
+    openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { transcript: { id: `uv2-${Date.now()}`, messages } } });
     space.close();
   }, [openPane, space]);
+  const [morningOutcome, setMorningOutcome] = useState<ApproveOutcome | 'running' | null>(null);
   useEffect(() => { setKbd(shortcutLabel('K')); }, []);
   const askRef = React.useRef(space.ask); askRef.current = space.ask;
-  const modeRef = React.useRef(mode); modeRef.current = mode;
   useEffect(() => {
     const onAsk = (e: Event) => { const q = String((e as CustomEvent).detail || '').trim(); if (q) askRef.current(q, modeRef.current); };
     window.addEventListener('uv2:ask', onAsk);
@@ -185,8 +191,13 @@ export function MorgenOverlay() {
     else coreGet('/v3/mora/today').then((r) => setToday(unwrap(r))).catch(() => setToday('nebel'));
   }, []);
 
+  // Solange eine Antwort offen ist und Planeten ausweichen, wird nicht neu gemessen –
+  // sonst misst das Overlay die verschobenen Planeten und schaukelt sich auf.
+  const frozenRef = React.useRef(false);
+  frozenRef.current = space.state.status !== 'idle';
   const measure = useCallback(() => {
     setVw(window.innerWidth);
+    if (frozenRef.current) return;
     setDetailOpen(!!document.querySelector('[data-testid="planet-detail"]'));
     // Echte Planeten des Universe: Organisationsfeld (data-mora-label) oder PlanetLayer (data-planet-name)
     const els = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="territory-"], [data-testid^="locked-territory-"], [data-planet-name]'));
@@ -262,8 +273,15 @@ export function MorgenOverlay() {
 
       {/* MÔRA ohne Fenster: Raum wird leiser, die Antwort steigt aus dem Licht */}
       {answering && <style>{`[data-testid^="territory-"]{transition:opacity .9s ${ease},filter .9s ${ease};opacity:.32;filter:blur(1.5px) saturate(.6)}${space.state.status === 'answer' ? linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).map((n) => `[data-mora-label="${n.replace(/"/g, '')}"]`).join(',') : ''}${space.state.status === 'answer' && linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).length ? '{opacity:1;filter:none}' : ''}`}</style>}
+      {answering && (() => {
+        const box = answerBox(vw, cx, typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441);
+        const rules = anchors.map((a) => ({ a, dx: Math.abs(a.y - (box.top + 120)) < 260 ? easeApart(a.x, a.r, cx, box.width) : 0 }))
+          .filter((x) => x.dx !== 0 && x.a.name)
+          .map(({ a, dx }) => `[data-mora-label="${a.name.replace(/"/g, '')}"]{translate:${dx}px 0}`).join('');
+        return rules ? <style data-testid="uv2-ease-apart">{`[data-testid^="territory-"]{transition:translate .9s ${ease},opacity .9s ${ease},filter .9s ${ease}}${rules}`}</style> : null;
+      })()}
       {answering && <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 52% 46% at 50% 49%, rgba(4,6,12,0.55), rgba(4,6,12,0.12) 70%, transparent)', animation: `uv2fade 0.9s ${ease} both` }} />}
-      <MoraSpaceAnswer state={space.state} anchors={anchors} cx={cx} cy={typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441} demo={demo} onClose={space.close} onWindow={openWindow} />
+      <MoraSpaceAnswer state={space.state} anchors={anchors} cx={cx} cy={typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441} demo={demo} onClose={space.close} onWindow={openWindow} onApprove={(p) => approve(p)} />
 
       {/* Sternbilder an echten Planeten – zwei Textebenen, gleiche Abstände */}
       {!answering && items.map((it, i) => {
@@ -309,8 +327,17 @@ export function MorgenOverlay() {
             <p className="mt-2 font-semibold text-white" style={{ fontSize: 17, lineHeight: '22px', letterSpacing: '-0.015em' }}>{data.proposal.label}</p>
             <p className="mt-2 text-white/60" style={{ fontSize: 13, lineHeight: '18px' }}>{data.proposal.reason}</p>
             <p className="mt-3 text-white/40" style={{ fontSize: 11, lineHeight: '14px' }}>Quelle: {data.proposal.sources.join(', ')}</p>
+            <p className="mt-2 text-white/50" data-testid="uv2-approve-state" style={{ fontSize: 11, lineHeight: '14px' }}>
+              {demo ? 'Entwurf – Freigeben ist hier ohne Wirkung.'
+                : morningOutcome && morningOutcome !== 'running' ? approveLabel(morningOutcome)
+                : canApprove(data.proposal) ? 'Wird erst nach deiner Freigabe ausgeführt und danach geprüft.'
+                : 'Noch nicht ausführbar – CORE meldet keinen geprüften Weg. Nichts passiert von selbst.'}
+            </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <button type="button" disabled={demo} className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-80" style={{ fontSize: 13 }}>Freigeben</button>
+              <button type="button" data-testid="uv2-approve" disabled={demo || !canApprove(data.proposal) || morningOutcome !== null}
+                title={canApprove(data.proposal) ? 'Freigeben' : 'CORE meldet noch keinen geprüften Ausführungsweg'}
+                onClick={async () => { if (!data.proposal) return; setMorningOutcome('running'); setMorningOutcome(await approve(data.proposal)); }}
+                className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-40" style={{ fontSize: 13 }}>{morningOutcome === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}</button>
               <button type="button" onClick={() => setDismissed(true)} className="h-9 rounded-full font-medium text-white/80 transition-colors hover:bg-white/15" style={{ fontSize: 13, background: 'rgba(255,255,255,0.08)' }}>Später</button>
             </div>
           </aside>

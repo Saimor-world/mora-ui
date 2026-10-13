@@ -133,6 +133,13 @@ ${deptHint}
 Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`;
 }
 
+export function seedFromTranscript(list: Array<{ role: 'user' | 'assistant'; content: string; mode?: MoraMode }>, prefix = 'carried'): Message[] {
+    return list
+        .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+        .slice(-20)
+        .map((m, i) => ({ id: `${prefix}-${i}-${m.role}`, role: m.role, content: m.content, timestamp: new Date(), mode: m.mode }));
+}
+
 export default function ChatApp({ paneId, initialData }: AppProps) {
     const { removePane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize, openPane } = usePaneStore();
     const isActive = usePaneStore(s => s.activePaneId === paneId);
@@ -959,6 +966,19 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         frameError,
         liveFrames,
     ]);
+
+    // Universe v2: „Im Fenster weiter" übergibt das Gespräch aus dem Raum.
+    // Es wird nur übernommen – nichts wird erneut gefragt oder gesendet.
+    const transcript = initialData?.transcript as { id?: string; messages?: Array<{ role: 'user' | 'assistant'; content: string; mode?: MoraMode }> } | undefined;
+    const transcriptSeen = useRef<string | null>(null);
+    useEffect(() => {
+        if (!transcript?.id || !Array.isArray(transcript.messages) || transcriptSeen.current === transcript.id) return;
+        transcriptSeen.current = transcript.id;
+        const carried = seedFromTranscript(transcript.messages, transcript.id);
+        if (carried.length === 0) return;
+        setMessages((prev) => [...prev.filter((m) => m.id !== 'welcome'), ...carried]);
+        if (carried[carried.length - 1].mode) setMoraMode(carried[carried.length - 1].mode as MoraMode);
+    }, [transcript]);
 
     // Handle initial message from Dock/Spotlight chat input
     const initialMessage = initialData?.initialMessage as string | undefined;

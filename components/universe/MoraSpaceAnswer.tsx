@@ -13,6 +13,8 @@ import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { hasVerifiedExecutionPath, MORA_MODES, sendModeMessage, describeFlag, type MoraMode } from '@/lib/mora/moraModes';
 import { calmExcerpt, demoAnswer, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
 import { MOTION } from '@/lib/universe/motion';
+import { approveLabel, type ApproveOutcome } from '@/lib/universe/approve';
+import { answerBox } from '@/lib/universe/answerLayout';
 
 type Anchor = { name: string; x: number; y: number; r: number };
 export type SpaceState = { status: 'idle' } | { status: 'thinking'; question: string; mode: MoraMode } | { status: 'answer'; answer: SpaceAnswer } | { status: 'error'; question: string; mode: MoraMode };
@@ -42,7 +44,7 @@ export function useMoraSpace(demo: boolean) {
     }
   }, [demo, history]);
   const close = useCallback(() => setState({ status: 'idle' }), []);
-  return { state, ask, close };
+  return { state, ask, close, history };
 }
 
 export function ModePicker({ mode, onChange, compact = false }: { mode: MoraMode; onChange: (m: MoraMode) => void; compact?: boolean }) {
@@ -61,14 +63,16 @@ export function ModePicker({ mode, onChange, compact = false }: { mode: MoraMode
 
 const ease = MOTION.ease.out;
 
-export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindow }: {
+export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindow, onApprove }: {
   state: SpaceState; anchors: Anchor[]; cx: number; cy: number; demo: boolean;
-  onClose: () => void; onWindow: (question: string) => void;
+  onClose: () => void; onWindow: (question: string) => void; onApprove?: (p: SpaceAnswer['proposals'][number]) => Promise<ApproveOutcome>;
 }) {
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [outcome, setOutcome] = useState<Record<string, ApproveOutcome | 'running'>>({});
   if (state.status === 'idle') return null;
-  const W = 420;
-  const top = cy - 70;
+  const box = answerBox(typeof window !== 'undefined' ? window.innerWidth : 1440, cx, cy);
+  const W = box.width;
+  const top = box.top;
 
   if (state.status === 'thinking' || state.status === 'error') {
     return (
@@ -161,11 +165,13 @@ export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindo
             <p className="font-medium text-amber-100/70" style={{ fontSize: 12 }}>MÔRA schlägt vor</p>
             <p className="mt-2 font-semibold text-white" style={{ fontSize: 17, lineHeight: '22px', letterSpacing: '-0.015em' }}>{p.label}</p>
             <p className="mt-2 text-white/55" style={{ fontSize: 13, lineHeight: '18px' }}>
-              {ok ? 'Wird erst nach deiner Freigabe ausgeführt.' : 'Noch nicht ausführbar – es gibt keinen geprüften Weg dafür. Nichts passiert von selbst.'}
+              {outcome[p.id] && outcome[p.id] !== 'running' ? approveLabel(outcome[p.id] as ApproveOutcome) : ok ? 'Wird erst nach deiner Freigabe ausgeführt.' : 'Noch nicht ausführbar – es gibt keinen geprüften Weg dafür. Nichts passiert von selbst.'}
             </p>
             <div className="mt-5 grid grid-cols-2 gap-2">
-              <button type="button" disabled={!ok || demo} onClick={() => onWindow(a.question)} title={ok ? 'Freigeben' : 'Kein verifizierter Ausführungsweg'}
-                className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-40" style={{ fontSize: 13 }}>Freigeben</button>
+              <button type="button" disabled={!ok || demo || !onApprove || !!outcome[p.id]} data-testid="uv2-space-approve"
+                onClick={async () => { if (!onApprove) return; setOutcome((o) => ({ ...o, [p.id]: 'running' })); const r = await onApprove(p); setOutcome((o) => ({ ...o, [p.id]: r })); }}
+                title={ok ? 'Freigeben' : 'Kein verifizierter Ausführungsweg'}
+                className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-40" style={{ fontSize: 13 }}>{outcome[p.id] === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}</button>
               <button type="button" onClick={() => setDismissed((d) => [...d, p.id])} className="h-9 rounded-full font-medium text-white/80 transition-colors hover:bg-white/15" style={{ fontSize: 13, background: 'rgba(255,255,255,0.08)' }}>Später</button>
             </div>
           </aside>

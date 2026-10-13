@@ -71,7 +71,8 @@ export function homeLayerFor(shot: CameraShot, reduced: boolean) {
   if (reduced) return { scale: 1, opacity: shot === 'near' ? 1 : 0, filter: 'blur(0px)' };
   return shot === 'near'
     ? { scale: 1, opacity: 1, filter: 'blur(0px)' }
-    : { scale: 0.86, opacity: 0, filter: 'blur(8px)' };
+    // Zurück ins Weitbild: reiner Crossfade – kein Weichzeichner, der nachhängt.
+    : { scale: 0.94, opacity: 0, filter: 'blur(0px)' };
 }
 
 export function cameraTransition(reduced: boolean) {
