@@ -1431,3 +1431,5 @@ html[data-uv2="on"] [data-uv2-app="work"][data-uv2-focus="hero"] > section.grid 
 html[data-uv2="on"] body:not(.standard-mode) .uv2-bar .uv2-hero__search { position: static; width: 220px; margin-right: 12px; }
 /* hd22: Scanner-Ablage als echte Fläche */
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop] { min-height: 220px; display: flex; align-items: center; justify-content: center; }
+/* hd22: Verlauf sitzt über dem Chip, mittig – gehört sichtbar zu ihm */
+html[data-uv2="on"] .uv2-jv__log { right: auto; left: 50%; transform: translateX(-50%); bottom: 132px; width: 360px; }
