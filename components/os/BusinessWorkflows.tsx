@@ -1,6 +1,7 @@
 'use client';
 
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { TileGrid, Tile } from '@/components/universe/app/Tiles';
 import React, { useMemo } from 'react';
 import {
   Activity,
@@ -84,6 +85,8 @@ function providerLabel(provider: string | null | undefined): string {
   if (provider === 'finapi') return 'finAPI';
   return 'Bankkonto verbinden';
 }
+
+const SHORT: Record<string, string> = { lagefeld: 'Tag', 'action-center': 'Freigaben', mail: 'Kunden', tasks: 'Arbeit', search: 'Wissen', nightwatch: 'Risiken', finance: 'Finanzen' };
 
 export function BusinessWorkflows({
   onOpen,
@@ -231,6 +234,27 @@ export function BusinessWorkflows({
     treeQuery.data,
     treeQuery.isLoading,
   ]);
+
+  const run = (workflow: Workflow) => {
+    if (workflow.action.kind === 'desk') { onOpenDesk?.(); return; }
+    onOpen(workflow.action.id, workflow.action.id === 'action-center' ? 'Entscheidungen' : workflow.title, workflow.action.size);
+  };
+
+  // Universe v2: Aufgaben als Kacheln – Symbol, ein Wort, Zähler. Keine Erklärtexte.
+  if (isUniverseV2Enabled()) {
+    return (
+      <div data-testid="business-workflows" aria-label="Unternehmerische Aufgaben">
+        <TileGrid label="Heute" size="l">
+          {workflows.map((workflow) => {
+            const Icon = workflow.icon;
+            return <Tile key={workflow.id} testId={`workflow-${workflow.id}`} icon={<Icon />} label={SHORT[workflow.id] ?? workflow.verb}
+              badge={workflow.count != null ? workflow.count : undefined} state={workflow.id === 'nightwatch' && workflow.count ? 'warn' : undefined}
+              onClick={() => run(workflow)} />;
+          })}
+        </TileGrid>
+      </div>
+    );
+  }
 
   return (
     <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-3" aria-label="Unternehmerische Aufgaben" data-testid="business-workflows">
