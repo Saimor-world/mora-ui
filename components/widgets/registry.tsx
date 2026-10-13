@@ -6,6 +6,7 @@ import {
     BarChart2, Compass, FolderOpen, Plug, Clock, TrendingUp, Building2,
     ArrowRight, Activity, Cpu, ExternalLink, Radio, PenLine, Layout, LayoutGrid, Target, Inbox, FileText,
 } from 'lucide-react';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { useHomeView } from '@/lib/queries/useHomeView';
 import { usePresence } from '@/lib/hooks/usePresence';
 import { useSpaces } from '@/lib/queries/useSpaces';
@@ -28,6 +29,16 @@ import { sortFeedItemsByDateDesc } from '@/lib/rss/feedDates';
 type StatusTone = 'ok' | 'warn' | 'alert' | 'info' | 'neutral';
 
 function statusToneColor(tone: StatusTone): string {
+    // Saimôr Universe v2: Gold für Aufmerksamkeit, Salbei für ruhig, Creme für neutral – kein Cyan/Türkis.
+    if (isUniverseV2Enabled()) {
+        switch (tone) {
+            case 'ok': return 'rgb(160,205,190)';
+            case 'warn': return 'rgb(214,168,72)';
+            case 'alert': return 'rgb(229,140,120)';
+            case 'info': return 'rgba(247,244,233,0.45)';
+            default: return 'rgba(247,244,233,0.14)';
+        }
+    }
     switch (tone) {
         case 'ok': return 'rgb(52,211,153)';
         case 'warn': return 'rgb(251,191,36)';

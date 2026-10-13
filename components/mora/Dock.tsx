@@ -91,9 +91,9 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     ? 'text-gray-300 cursor-not-allowed'
                     : 'text-white/20 cursor-not-allowed'
                 : item.action === 'memory'
-                    ? 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/15 hover:scale-110 active:scale-95'
+                    ? 'text-[#D6A848] hover:text-[#E3BC63] hover:bg-[#D6A848]/10 hover:scale-110 active:scale-95'
                     : isStandardMode
-                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
+                        ? 'text-gray-600 hover:text-[#A97F2A] hover:bg-gray-100 hover:scale-110 active:scale-95'
                         : 'text-cyan-50/64 hover:text-cyan-100 hover:bg-cyan-200/[0.075] hover:shadow-[0_0_24px_rgba(34,211,238,0.12)] hover:scale-110 active:scale-95'
                 }`}
             onClick={() => !item.disabled && onAction(item.action)}
@@ -104,7 +104,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             {/* Badge */}
             {item.badge && item.badge > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-[#D6A848] text-[10px] text-[#050706] font-medium items-center justify-center">
                         {item.badge > 9 ? '!' : item.badge}
                     </span>
                 </span>
@@ -121,7 +121,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
                     <div className="text-white text-xs font-medium">{item.label}</div>
                     <div className="text-white/50 text-[10px] mt-0.5">{item.description}</div>
                     {item.shortcut && (
-                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
+                        <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${isStandardMode ? 'bg-gray-700 text-amber-200' : 'bg-white/10 text-emerald-400'
                             }`}>
                             {item.shortcut}
                         </kbd>
@@ -136,7 +136,7 @@ const MagneticDockIcon: React.FC<MagneticDockIconProps> = ({ item, isStandardMod
             {/* Active dot */}
             {!item.disabled && (
                 <div className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full transition-colors ${isStandardMode
-                    ? 'bg-transparent group-hover:bg-[#0078D4]'
+                    ? 'bg-transparent group-hover:bg-[#A97F2A]'
                     : 'bg-emerald-400/0 group-hover:bg-emerald-400'
                     }`} />
             )}
@@ -183,10 +183,10 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
             className={`w-12 h-12 flex items-center justify-center rounded-full transition-all relative group duration-75 ease-out will-change-transform ${
                 active
                     ? isStandardMode
-                        ? 'bg-[#0078D4]/10 text-[#0078D4]'
+                        ? 'bg-[#A97F2A]/10 text-[#A97F2A]'
                         : 'bg-cyan-400/16 text-cyan-50 shadow-[0_0_24px_rgba(34,211,238,0.15)] border border-cyan-300/30'
                     : isStandardMode
-                        ? 'text-gray-600 hover:text-[#0078D4] hover:bg-gray-100 hover:scale-110 active:scale-95'
+                        ? 'text-gray-600 hover:text-[#A97F2A] hover:bg-gray-100 hover:scale-110 active:scale-95'
                         : 'text-cyan-50/64 hover:text-cyan-100 hover:bg-cyan-200/[0.075] hover:shadow-[0_0_24px_rgba(34,211,238,0.12)] hover:scale-110 active:scale-95'
             }`}
             onClick={onClick}
@@ -199,7 +199,7 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
             {/* Badge */}
             {badge && badge > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
-                    <span className="relative inline-flex rounded-full h-5 w-5 bg-violet-500 text-[10px] text-white font-bold items-center justify-center">
+                    <span className="relative inline-flex rounded-full h-5 w-5 bg-[#D6A848] text-[10px] text-[#050706] font-medium items-center justify-center">
                         {badge > 9 ? '!' : badge}
                     </span>
                 </span>
@@ -217,7 +217,7 @@ const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
                     <div className="text-white/50 text-[10px] mt-0.5">{description}</div>
                     {shortcut && (
                         <kbd className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-mono ${
-                            isStandardMode ? 'bg-gray-700 text-blue-300' : 'bg-white/10 text-emerald-400'
+                            isStandardMode ? 'bg-gray-700 text-amber-200' : 'bg-white/10 text-emerald-400'
                         }`}>
                             {shortcut}
                         </kbd>
@@ -264,13 +264,13 @@ export const SessionChip: React.FC<SessionChipProps> = ({ planId, openPane, isSt
             data-testid="session-chip"
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] transition-all ${
                 isStandardMode
-                    ? 'bg-blue-50 border border-blue-200 text-blue-700 hover:border-blue-400 hover:bg-blue-100'
-                    : 'bg-violet-500/10 border border-violet-400/20 text-violet-200/80 hover:border-violet-300/35 hover:bg-violet-500/20'
+                    ? 'bg-amber-50 border border-amber-200 text-amber-900 hover:border-amber-400 hover:bg-amber-100'
+                    : 'bg-[#D6A848]/[0.08] border border-[#D6A848]/20 text-[#F7F4E9]/80 hover:border-[#D6A848]/35 hover:bg-[#D6A848]/15'
             }`}
         >
             <span
                 className={`w-2 h-2 rounded-full animate-pulse shrink-0 ${
-                    isStandardMode ? 'bg-blue-500' : 'bg-violet-400'
+                    isStandardMode ? 'bg-[#A97F2A]' : 'bg-[#D6A848]'
                 }`}
             />
             Plan aktiv
@@ -317,7 +317,7 @@ export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 onClick={onOpen}
                 aria-label={'Audio-Einstellungen \u00f6ffnen'}
                 className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-colors ${isStandardMode
-                    ? 'border-[#0078D4]/15 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                    ? 'border-[#A97F2A]/15 bg-white text-[#A97F2A] hover:border-[#A97F2A]/40'
                     : 'border-emerald-400/20 bg-emerald-500/12 text-emerald-200 hover:bg-emerald-500/18'
                     }`}
                 title="Audio-Einstellungen öffnen"
@@ -346,7 +346,7 @@ export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                 {[10, 18, 12, 20, 14].map((baseH, index) => (
                     <motion.span
                         key={`bar-${index}`}
-                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#0078D4]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'}`}
+                        className={`w-1 rounded-full ${isStandardMode ? 'bg-[#A97F2A]/50' : 'bg-gradient-to-t from-emerald-400/35 to-cyan-300/70'}`}
                         animate={isPlaying ? {
                             height: [baseH * 0.35, baseH * 1.5, baseH * 0.55, baseH * 1.3, baseH * 0.35],
                             opacity: [0.6, 1, 0.75, 1, 0.6],
@@ -372,7 +372,7 @@ export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     aria-label={isPlaying ? 'Musik pausieren' : 'Musik abspielen'}
                     aria-pressed={isPlaying}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
-                        ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                        ? 'border-gray-200 bg-white text-[#A97F2A] hover:border-[#A97F2A]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
                         }`}
                     title={isPlaying ? 'Musik pausieren' : 'Musik abspielen'}
@@ -384,7 +384,7 @@ export const DockNowPlaying: React.FC<DockNowPlayingProps> = ({
                     type="button"
                     aria-label={'N\u00e4chsten Audiotrack w\u00e4hlen'}
                     className={`flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${isStandardMode
-                        ? 'border-gray-200 bg-white text-[#0078D4] hover:border-[#0078D4]/40'
+                        ? 'border-gray-200 bg-white text-[#A97F2A] hover:border-[#A97F2A]/40'
                         : 'border-white/10 bg-white/5 text-white/75 hover:border-white/20 hover:bg-white/10 hover:text-white'
                         }`}
                     title="Nächsten Track wählen"
@@ -413,12 +413,12 @@ const DockSearchLauncher: React.FC<DockSearchLauncherProps> = ({
         type="button"
         onClick={onOpen}
         className={`hidden xl:flex min-w-[154px] max-w-[182px] items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all ${isStandardMode
-            ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#0078D4]/35 hover:text-[#0078D4]'
+            ? 'border-gray-200 bg-gray-100 text-gray-700 hover:border-[#A97F2A]/35 hover:text-[#A97F2A]'
             : `border-white/10 ${isActive ? 'bg-emerald-500/[0.1] text-emerald-200' : 'bg-white/[0.04] text-white/72 hover:border-emerald-400/22 hover:bg-emerald-500/[0.08] hover:text-emerald-200'}`
             }`}
     >
         <div className={`flex h-10 w-10 items-center justify-center rounded-xl border ${isStandardMode
-            ? 'border-[#0078D4]/15 bg-white text-[#0078D4]'
+            ? 'border-[#A97F2A]/15 bg-white text-[#A97F2A]'
             : 'border-white/10 bg-white/[0.05] text-white/68'
             }`}>
             <Search size={15} />
@@ -493,10 +493,10 @@ const RunningWindowsBar: React.FC<RunningWindowsBarProps> = ({
                             key={pane.id}
                             className={`group flex min-w-[150px] max-w-[230px] items-center gap-2 rounded-2xl border px-2 py-1.5 transition-all ${isStandardMode
                                 ? isActive
-                                    ? 'border-[#0078D4]/40 bg-[#0078D4]/10 text-[#005A9E]'
+                                    ? 'border-[#A97F2A]/40 bg-[#A97F2A]/10 text-[#7E5E1F]'
                                     : pane.minimized
-                                        ? 'border-gray-200 bg-gray-50 text-gray-500 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
-                                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#0078D4]/25 hover:text-[#0078D4]'
+                                        ? 'border-gray-200 bg-gray-50 text-gray-500 hover:border-[#A97F2A]/25 hover:text-[#A97F2A]'
+                                        : 'border-gray-200 bg-white text-gray-700 hover:border-[#A97F2A]/25 hover:text-[#A97F2A]'
                                 : isActive
                                     ? 'border-emerald-400/35 bg-emerald-500/14 text-emerald-100 shadow-[0_0_20px_rgba(124,58,237,0.12)]'
                                     : pane.minimized
@@ -1771,7 +1771,7 @@ export const Dock = () => {
                                                         <div className="absolute inset-[2px] rounded-full border border-white/10 pointer-events-none" />
                                                     </>
                                                 )}
-                                                <div className={`absolute inset-0 rounded-full border ${isStandardMode ? 'border-[#0078D4]/30' : 'border-emerald-400/25'}`} />
+                                                <div className={`absolute inset-0 rounded-full border ${isStandardMode ? 'border-[#A97F2A]/30' : 'border-emerald-400/25'}`} />
                                                 {!isStandardMode && (
                                                     <div
                                                         className="absolute inset-[3px] rounded-full pointer-events-none"

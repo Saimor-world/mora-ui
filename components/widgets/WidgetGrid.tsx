@@ -214,6 +214,8 @@ export function WidgetGrid({
                     return (
                         <div
                             key={w.i}
+                            data-widget-id={w.type}
+                            data-uv2-scope=""
                             className={`relative flex h-full flex-col overflow-hidden ${
                                 allowPointer ? 'pointer-events-auto' : 'pointer-events-none'
                             } ${
@@ -245,7 +247,7 @@ export function WidgetGrid({
                                 <div
                                     className={`relative z-[1] flex items-center justify-between ${chromeless ? 'px-1 py-1' : 'px-3 py-2'} ${editMode ? 'widget-drag-handle cursor-grab active:cursor-grabbing' : ''}`}
                                 >
-                                    <span className={`flex items-center gap-1.5 uppercase tracking-[0.16em] text-white/40 ${chromeless ? 'text-[8px]' : 'text-[10px]'}`}>
+                                    <span className={`uv2-widget-label flex items-center gap-1.5 uppercase tracking-[0.16em] text-white/40 ${chromeless ? 'text-[8px]' : 'text-[10px]'}`}>
                                         {editMode && <GripVertical size={12} className="text-white/30" />}
                                         {!chromeless && def.label}
                                     </span>

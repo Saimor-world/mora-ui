@@ -350,60 +350,56 @@ function HomeV2({ greeting, firstName, now, onOpen }: { greeting: string; firstN
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
+  const M: React.CSSProperties = { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' };
+  const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-24 text-white antialiased sm:px-10 lg:px-16"
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
-      <main className="relative mx-auto w-full max-w-[1120px]">
-        <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease }}>
-          <p className="text-[15px] font-medium text-white/50">{dateLabel}</p>
-          <div className="mt-2 flex items-center gap-4">
-            <h1 className="text-[64px] font-semibold leading-[1.02] tracking-[-0.035em] text-white" style={{ textShadow: '0 2px 30px rgba(0,0,0,0.35)' }}>
-              {greeting}{firstName ? `, ${firstName}.` : '.'}
-            </h1>
-          </div>
-          <p className="mt-3 max-w-[620px] text-[19px] leading-[26px] tracking-[-0.012em] text-white/60">
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[12vh] antialiased sm:px-10 lg:px-24"
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(5,7,6,.7), rgba(5,7,6,.35))' }}>
+      <div className="uv2-grain" aria-hidden />
+      <main className="relative w-full max-w-[1120px]">
+        <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
+          <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
+          <h1 className="mt-6" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 64, lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
+            {greeting}{firstName ? `, ${firstName}.` : '.'}
+          </h1>
+          <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>
             Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
           </p>
-          <form className="mt-7 max-w-[560px]" data-testid="uv2-home-ask"
+          <form className="mt-8 max-w-[520px]" data-testid="uv2-home-ask"
             onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
               // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
               useNavStore.getState().setCoreMode('explore');
               window.setTimeout(() => window.dispatchEvent(new CustomEvent('uv2:ask', { detail: q })), 700); setAsk(''); }}>
-            <label className="flex h-12 items-center gap-3 rounded-full pl-4 pr-2" style={V2_GLASS}>
-              <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: 'radial-gradient(circle, #ffe9c4, #f4b86a)', boxShadow: '0 0 12px rgba(255,214,150,0.8)' }} aria-hidden />
-              <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA …"
-                className="min-w-0 flex-1 bg-transparent text-[16px] tracking-[-0.01em] text-white placeholder:text-white/40 focus:outline-none" />
-              <button type="submit" aria-label="Senden" className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black transition-transform active:scale-95">
-                <ArrowRight size={15} strokeWidth={2} />
+            <label className="flex h-11 items-center gap-3" style={{ borderBottom: '0.5px solid rgba(247,244,233,.18)' }}>
+              <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-light placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ color: '#F7F4E9' }} />
+              <button type="submit" aria-label="Senden" className="transition-colors hover:text-[#D6A848]" style={{ color: 'rgba(247,244,233,.45)' }}>
+                <ArrowRight size={16} strokeWidth={1.25} />
               </button>
             </label>
           </form>
         </motion.section>
 
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease, delay: 0.25 }}>
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.4 }}>
           <TodayOverview />
         </motion.div>
 
-        <motion.section className="mt-14" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1.1, ease, delay: 0.45 }}>
-          <h2 className="text-[22px] font-semibold tracking-[-0.02em] text-white/90">Orte</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {areas.map((area) => {
-              const Icon = area.icon;
-              return (
-                <button key={area.id} type="button" onClick={() => onOpen(area)}
-                  className="group flex items-center gap-3.5 rounded-[20px] p-4 text-left transition-transform duration-300 active:scale-[0.98]" style={V2_GLASS}>
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-white/[0.08] text-white/85">
-                    <Icon size={18} strokeWidth={1.5} />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[15px] font-semibold tracking-[-0.012em] text-white/90">{area.title}</span>
-                    <span className="mt-0.5 block truncate text-[13px] text-white/50">{area.description}</span>
-                  </span>
-                  <ArrowRight size={14} className="text-white/25 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
-                </button>
-              );
-            })}
+        {/* Orte als Register: zwei Spalten, Haarlinien, keine Kacheln */}
+        <motion.section className="mt-16" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
+          <p style={{ ...M, color: '#D6A848' }}>Orte</p>
+          <div className="mt-4 grid gap-x-12 sm:grid-cols-2" style={{ borderTop: '0.5px solid rgba(247,244,233,.09)' }}>
+            {areas.map((area, i) => (
+              <button key={area.id} type="button" onClick={() => onOpen(area)}
+                className="group grid grid-cols-[48px_1fr_auto] items-baseline gap-4 py-4 text-left" style={{ borderBottom: '0.5px solid rgba(247,244,233,.09)' }}>
+                <span style={{ ...M, fontSize: 10, color: 'rgba(247,244,233,.35)' }}>{String(i + 1).padStart(2, '0')}</span>
+                <span className="min-w-0">
+                  <span className="block text-[15px] font-normal transition-colors group-hover:text-white" style={{ color: 'rgba(247,244,233,.92)' }}>{area.title}</span>
+                  <span className="mt-1 block truncate text-[15px] font-light" style={{ color: 'rgba(247,244,233,.45)' }}>{area.description}</span>
+                </span>
+                <ArrowRight size={14} strokeWidth={1.25} className="transition-all group-hover:translate-x-0.5 group-hover:text-[#D6A848]" style={{ color: 'rgba(247,244,233,.3)' }} />
+              </button>
+            ))}
           </div>
         </motion.section>
       </main>

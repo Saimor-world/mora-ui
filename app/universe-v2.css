@@ -1,0 +1,88 @@
+/* Saimôr Universe v2 – Designsprache von saimor.world über das ganze OS.
+   Gilt nur mit NEXT_PUBLIC_UNIVERSE_V2 (html[data-uv2=on]) und nicht im hellen Standardmodus. */
+html[data-uv2="on"] {
+  --uv-ink: #050706; --uv-ink2: #070B0C; --uv-cream: 247,244,233; --uv-gold: #D6A848; --uv-gold-rgb: 214,168,72;
+  --uv-hair: rgba(247,244,233,.09); --uv-border: rgba(164,190,182,.22);
+  --uv-serif: "Cormorant Garamond", Georgia, serif; --uv-sans: Inter, -apple-system, system-ui, sans-serif; --uv-mono: "Space Mono", ui-monospace, monospace;
+  --uv-ease: cubic-bezier(0,0,0.2,1);
+  --pane-accent: 214 168 72; --pane-accent-rgb: 214,168,72;
+}
+html[data-uv2="on"] body:not(.standard-mode) { font-family: var(--uv-sans); }
+
+/* ---------- Fenster: ein Material, Haarlinien, Serif-Titel ---------- */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime {
+  background-color: rgba(7,11,12,.82) !important; background-image: none !important;
+  border-radius: 14px !important;
+  box-shadow: 0 0 0 .5px rgba(247,244,233,.14), 0 30px 80px rgba(0,0,0,.55) !important;
+}
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime > .absolute.inset-0.border,
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime > .bg-noise { display: none; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-chrome { background: transparent !important; border-bottom: .5px solid var(--uv-hair) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-chrome::before { display: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-app-mark { background: transparent !important; border: .5px solid var(--uv-border) !important; color: var(--uv-gold) !important; box-shadow: none !important; border-radius: 999px !important; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-title-copy h2 {
+  font-family: var(--uv-serif) !important; font-weight: 400 !important; font-size: 22px !important; letter-spacing: -.01em !important; color: rgb(var(--uv-cream)) !important;
+}
+html[data-uv2="on"] body:not(.standard-mode) .pane-context-line,
+html[data-uv2="on"] body:not(.standard-mode) .pane-category {
+  font-family: var(--uv-mono) !important; font-size: 10px !important; letter-spacing: .2em !important; text-transform: uppercase; color: rgba(247,244,233,.35) !important; background: none !important; border: 0 !important;
+}
+html[data-uv2="on"] body:not(.standard-mode) .pane-control { background: transparent !important; border-color: transparent !important; color: rgba(247,244,233,.45) !important; border-radius: 999px !important; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-control:hover { color: rgb(var(--uv-cream)) !important; background: rgba(247,244,233,.06) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .pane-tabs button[aria-selected="true"],
+html[data-uv2="on"] body:not(.standard-mode) .pane-tabs [data-active="true"] { color: rgb(var(--uv-cream)) !important; box-shadow: inset 0 -1px 0 var(--uv-gold) !important; background: none !important; }
+
+/* ---------- App-Inhalt: Farben auf die Marke falten ---------- */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(h1,h2,h3) { font-family: var(--uv-serif); font-weight: 400 !important; letter-spacing: -.01em; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime h1 { font-size: clamp(26px, 2.4vw, 34px) !important; line-height: 1.1 !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime h2 { font-size: 22px !important; line-height: 1.2 !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime h3 { font-size: 18px !important; line-height: 1.25 !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.uppercase.tracking-wider,.uppercase.tracking-widest,.uppercase.tracking-wide,[class*="tracking-[0."]) {
+  font-family: var(--uv-mono) !important; font-weight: 400 !important; font-size: 10px !important; letter-spacing: .2em !important;
+}
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.font-bold,.font-semibold,.font-extrabold) { font-weight: 500 !important; }
+/* Akzentfamilien (blau/violett/indigo/cyan/sky/teal/purple/fuchsia/pink) → Gold bzw. Creme */
+html[data-uv2="on"] body:not(.standard-mode) :is(.glass-panel-runtime, [data-uv2-scope]) :is([class*="text-blue-"],[class*="text-violet-"],[class*="text-indigo-"],[class*="text-purple-"],[class*="text-fuchsia-"],[class*="text-sky-"],[class*="text-cyan-"],[class*="text-pink-"],[class*="text-teal-"]) { color: rgba(var(--uv-gold-rgb),.9) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is(.glass-panel-runtime, [data-uv2-scope]) :is([class*="bg-blue-"],[class*="bg-violet-"],[class*="bg-indigo-"],[class*="bg-purple-"],[class*="bg-fuchsia-"],[class*="bg-sky-"],[class*="bg-cyan-"],[class*="bg-pink-"],[class*="bg-teal-"],[class*="from-blue-"],[class*="from-violet-"],[class*="from-indigo-"],[class*="from-purple-"],[class*="from-cyan-"]) { background-color: rgba(247,244,233,.035) !important; background-image: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is(.glass-panel-runtime, [data-uv2-scope]) :is([class*="border-blue-"],[class*="border-violet-"],[class*="border-indigo-"],[class*="border-purple-"],[class*="border-cyan-"],[class*="border-sky-"],[class*="border-teal-"]) { border-color: rgba(247,244,233,.12) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is(.glass-panel-runtime, [data-uv2-scope]) :is([class*="text-emerald-"],[class*="text-green-"]) { color: rgba(160,205,190,.85) !important; }
+/* Primärknopf: weiß/blau → der eine goldene Knopf */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime button:is(.bg-white,.bg-blue-500,.bg-blue-600,.bg-violet-500,.bg-violet-600,.bg-indigo-500,.bg-indigo-600,.bg-cyan-500,.bg-emerald-500):not(:disabled):not(:has(p,h2,h3,h4,div)) {
+  background: linear-gradient(180deg,#E3BC63,#C9973A) !important; color: #050706 !important; border-radius: 999px !important; font-weight: 500 !important;
+}
+/* Radien: Karten flach, Pills rund */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.rounded-xl,.rounded-2xl,.rounded-3xl,[class*="rounded-[1"],[class*="rounded-[2"]):not(button) { border-radius: 10px !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.shadow-lg,.shadow-xl,.shadow-2xl,[class*="shadow-[0_0"]) { box-shadow: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.border-white\/10,.border-white\/5,.border-white\/\[0\.08\],.border-white\/\[0\.06\]) { border-color: var(--uv-hair) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(.animate-pulse,.animate-ping) { animation: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(input,textarea,select) { font-family: var(--uv-sans); }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is(input,textarea):focus { outline: none; box-shadow: inset 0 -1px 0 var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime ::selection { background: rgba(var(--uv-gold-rgb),.35); }
+html[data-uv2="on"] body:not(.standard-mode) .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(247,244,233,.12) !important; }
+
+/* ---------- Widgets (Home-Raster) ---------- */
+html[data-uv2="on"] body:not(.standard-mode) .react-grid-item > * { border-radius: 12px !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id]:not([data-widget-id="clock"]) { background-color: rgba(5,7,6,.58) !important; border-color: rgba(247,244,233,.1) !important; border-radius: 12px !important; box-shadow: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id] > .pointer-events-none.absolute { display: none; }
+html[data-uv2="on"] body:not(.standard-mode) .uv2-widget-label { font-family: var(--uv-mono) !important; font-size: 10px !important; letter-spacing: .22em !important; color: rgba(var(--uv-gold-rgb),.85) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id] :is(.font-bold,.font-semibold) { font-weight: 500 !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id] :is(.text-2xl,.text-3xl,.text-4xl,.text-xl) { font-family: var(--uv-serif) !important; font-weight: 400 !important; font-variant-numeric: lining-nums; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id] :is([class*="text-[8px]"],[class*="text-[9px]"]) { font-size: 10px !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-widget-id] :is(h2,h3,[data-widget-title]) { font-family: var(--uv-serif) !important; font-weight: 400 !important; font-size: 19px !important; }
+
+/* ---------- Korn gegen Streifen im Hintergrund ---------- */
+html[data-uv2="on"] .uv2-grain { position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: .07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"); }
+
+@media (prefers-reduced-motion: reduce) { html[data-uv2="on"] * { transition-duration: 0ms !important; } }
+
+/* Planeten: nur der Name, als leise Meta-Zeile */
+html[data-uv2="on"] .saimor-territory-name { font-family: var(--uv-mono) !important; font-weight: 400 !important; font-size: 10px !important; letter-spacing: .22em !important; text-transform: uppercase; color: rgba(247,244,233,.62) !important; margin-top: 16px !important; }
+html[data-uv2="on"] [aria-pressed="true"] .saimor-territory-name { color: var(--uv-gold) !important; }
+/* Planeten-Detail (erster Klick): Editorial statt Glaskarte */
+html[data-uv2="on"] [data-testid="planet-detail"] { background: rgba(5,7,6,.86) !important; border-radius: 12px !important; box-shadow: 0 0 0 .5px rgba(247,244,233,.12), 0 30px 80px rgba(0,0,0,.5) !important; }
+html[data-uv2="on"] [data-testid="planet-detail"] :is(h2,h3) { font-family: var(--uv-serif) !important; font-weight: 400 !important; font-size: 30px !important; letter-spacing: -.01em; }
+html[data-uv2="on"] [data-testid="planet-detail"] :is(.uppercase) { font-family: var(--uv-mono) !important; font-size: 10px !important; letter-spacing: .2em !important; }
+html[data-uv2="on"] [data-testid="planet-detail"] [data-uv2-open] { background: linear-gradient(180deg,#E3BC63,#C9973A) !important; color: #050706 !important; border-radius: 999px !important; }
+
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is([class*="text-[8px]"],[class*="text-[9px]"]) { font-size: 10px !important; }

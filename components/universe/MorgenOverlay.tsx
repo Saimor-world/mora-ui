@@ -11,12 +11,11 @@ import { coreGet } from '@/lib/api/http';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { CAMERA, MOTION, playZoomTone } from '@/lib/universe/motion';
 import { useNavStore } from '@/lib/store/navStore';
-import { shortcutLabel } from '@/lib/os/shortcut';
 import type { MoraMode } from '@/lib/mora/moraModes';
 import { approve, approveLabel, canApprove, type ApproveOutcome } from '@/lib/universe/approve';
-import { answerBox, easeApart } from '@/lib/universe/answerLayout';
 import { ModePicker, MoraSpaceAnswer, useMoraSpace } from '@/components/universe/MoraSpaceAnswer';
 import { planetForSource } from '@/lib/universe/spaceAnswer';
+import { UV, TYPE, dateEyebrow } from '@/lib/universe/tokens';
 
 function linkedPlanets(sources: { title?: string; kind?: string }[], names: string[]): string[] {
   return Array.from(new Set(sources.slice(0, 3).map((x) => planetForSource(x, names)).filter((i): i is number => i !== null).map((i) => names[i])));
@@ -101,25 +100,6 @@ export function assignToPlanets<T extends { title: string; source: string; area?
   return res.map((r) => (r !== null ? r : pick(() => true)));
 }
 
-/** Kleines Sternbild: 3–4 Punkte, feine Linien, deterministisch je Index. */
-function Constellation({ seed, dim }: { seed: number; dim?: boolean }) {
-  const shapes = [
-    [[0, 10], [12, 0], [26, 6], [34, 18]],
-    [[0, 4], [10, 16], [24, 12], [30, 0]],
-    [[0, 14], [14, 8], [22, 18], [34, 6]],
-    [[0, 0], [8, 12], [22, 14], [32, 4]],
-  ];
-  const pts = shapes[seed % shapes.length];
-  return (
-    <svg width="38" height="22" viewBox="-2 -2 38 22" className="shrink-0" aria-hidden>
-      <polyline points={pts.map((p) => p.join(',')).join(' ')} fill="none" stroke="rgba(255,236,200,0.35)" strokeWidth="0.6" />
-      {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r={i === 1 ? 1.6 : 1.1} fill={dim ? 'rgba(255,255,255,0.4)' : 'rgba(255,240,210,0.95)'} />
-      ))}
-    </svg>
-  );
-}
-
 export function MorgenOverlay() {
   const [phase, setPhase] = useState<DayPhase>('morgen');
   const [demo, setDemo] = useState(false);
@@ -131,11 +111,17 @@ export function MorgenOverlay() {
   const [ask, setAsk] = useState('');
   const [detailOpen, setDetailOpen] = useState(false);
   const openPane = usePaneStore((st) => st.openPane);
+  const paneOpen = usePaneStore((st) => st.panes.some((x: any) => !x.minimized));
   const coreMode = useNavStore((st) => st.coreMode);
   const viewLevel = useNavStore((st) => st.viewLevel);
   const [mode, setMode] = useState<MoraMode>('denken');
   const [askFocus, setAskFocus] = useState(false);
-  const [kbd, setKbd] = useState('⌘K');
+  const [hover, setHover] = useState<number | null>(null);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const t = window.setInterval(() => setNow(new Date()), 30000); return () => window.clearInterval(t); }, []);
+  // Rückweg aus Home: Home-Begrüßung blendet erst aus, dann erscheint diese (gestaffelt, nie beide zugleich).
+  const [returned, setReturned] = useState(0);
+  const wasNear = React.useRef(false);
   const space = useMoraSpace(demo);
   const modeRef = React.useRef(mode); modeRef.current = mode;
   // „Im Fenster weiter": das Gespräch aus dem Raum wandert mit – nichts wird neu gefragt.
@@ -146,7 +132,6 @@ export function MorgenOverlay() {
     space.close();
   }, [openPane, space]);
   const [morningOutcome, setMorningOutcome] = useState<ApproveOutcome | 'running' | null>(null);
-  useEffect(() => { setKbd(shortcutLabel('K')); }, []);
   const askRef = React.useRef(space.ask); askRef.current = space.ask;
   useEffect(() => {
     const onAsk = (e: Event) => { const q = String((e as CustomEvent).detail || '').trim(); if (q) askRef.current(q, modeRef.current); };
@@ -187,6 +172,8 @@ export function MorgenOverlay() {
   useEffect(() => {
     setPhase(readPhase());
     const d = isDemo(); setDemo(d);
+    // Nur lokal im Demo-Modus: Fenster für Screenshot-Durchläufe öffnen/schließen.
+    if (d) Object.assign(window as any, { __uv2panes: usePaneStore });
     if (d) setToday(DEMO);
     else coreGet('/v3/mora/today').then((r) => setToday(unwrap(r))).catch(() => setToday('nebel'));
   }, []);
@@ -214,6 +201,11 @@ export function MorgenOverlay() {
     window.addEventListener('resize', measure);
     return () => { window.clearInterval(t); window.removeEventListener('resize', measure); };
   }, [measure]);
+
+  useEffect(() => {
+    if (coreMode === 'home' && viewLevel === 'core') wasNear.current = true;
+    else if (wasNear.current) { wasNear.current = false; setReturned((r) => r + 1); }
+  }, [coreMode, viewLevel]);
 
   const data = today && today !== 'nebel' ? today : null;
   const night = phase === 'nacht';
@@ -245,131 +237,102 @@ export function MorgenOverlay() {
   const answering = space.state.status !== 'idle';
 
   const n = items.length;
+  const proposal = showComet ? data?.proposal ?? null : null;
   const SUB: Record<DayPhase, string> = {
-    morgen: n ? `${n === 1 ? 'Eine Sache ist' : `${['', '', 'Zwei', 'Drei', 'Vier'][n]} Dinge sind`} heute wichtig${data?.proposal ? ' – eine wartet auf dich.' : '.'}` : 'Nichts drängt heute.',
+    morgen: n ? `${n === 1 ? 'Eine Sache ist' : `${['', '', 'Zwei', 'Drei', 'Drei'][n]} Dinge sind`} heute wichtig.${proposal ? ' Eine wartet auf dich.' : ''}` : 'Nichts drängt heute.',
     tag: n ? 'Nur was sich bewegt, leuchtet.' : 'Alles ruhig.',
-    abend: 'Heute: 3 Vorschläge, 2 freigegeben, 1 offen bis morgen. Die Wache war still.',
+    abend: 'Der Tag legt sich. Was offen ist, wartet bis morgen.',
     nacht: 'Alles ruht. Nur die Wache bleibt wach.',
   };
-  const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
+  const ease = UV.easeOut;
+  const wide = vw >= 1100;
+  // Editorial: links die Spalte, rechts der Kosmos. Der Kranz rückt dafür nach rechts.
+  const shift = wide ? Math.round(vw * 0.16) : 0;
+  const list = items.slice(0, 3);
+  const hot = hover !== null ? usable[slots[hover] ?? -1]?.name : null;
+  const sel = (nm: string) => `[data-mora-label="${nm.replace(/"/g, '')}"]`;
+  const eyebrow = `${dateEyebrow(now)} · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
+  const greet = GREETING[phase].replace(/, /, ',\n');
+  const delay = returned ? 0.7 : 0;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[40] antialiased" data-testid="universe-v2-overlay" data-phase={phase}
-      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
-      {/* Tagesphase: leiser Schleier über dem bestehenden Hintergrund */}
+      style={{ fontFamily: UV.sans, color: UV.cream }}>
+      <div className="uv2-grain" aria-hidden />
       <div className="absolute inset-0 transition-[background] duration-[3000ms]" style={{ background: TINT[phase] }} />
+      {/* Ruhe hinter der Spalte: ein Schleier statt einer Karte */}
+      {wide && <div className="absolute inset-y-0 left-0 w-[46%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.72), rgba(5,7,6,0.35) 60%, transparent)' }} />}
+      <style>{`[data-testid^="territory-"]{transition:translate 1.1s ${UV.easeInOut},opacity .9s ${ease},filter .9s ${ease};translate:${shift}px 0}`
+        + (hot ? `[data-testid^="territory-"]{opacity:.28!important}${sel(hot)}{opacity:1!important}` : '')}</style>
 
-      {/* MÔRAs Licht – kein Ring, kein Text darin, nur Atem */}
-      <div className="absolute left-1/2 top-[49%] -translate-x-1/2 -translate-y-1/2">
-        <div className="h-56 w-56 rounded-full" style={{ background: `radial-gradient(circle, rgba(255,222,170,${night ? 0.08 : 0.16}) 0%, rgba(255,200,140,0.04) 42%, transparent 70%)`, animation: `uv2breath 9s ${ease} infinite` }} />
+      {/* MÔRAs Licht – im Zentrum des Kranzes, nur Atem */}
+      <div className="absolute top-[49%] -translate-x-1/2 -translate-y-1/2" style={{ left: cx + shift }}>
+        <div className="h-56 w-56 rounded-full" style={{ background: `radial-gradient(circle, rgba(214,168,72,${night ? 0.06 : 0.12}) 0%, rgba(214,168,72,0.03) 42%, transparent 70%)`, animation: `uv2breath 9s ${ease} infinite` }} />
       </div>
 
-      {/* Eine Überschrift: MÔRAs Begrüßung + ein Satz. Ersetzt „Woraus … besteht“. */}
-      {!answering && <header className="absolute left-1/2 top-[104px] w-[min(640px,90vw)] -translate-x-1/2 text-center" data-testid="uv2-greeting"><div style={{ animation: `uv2in 1.2s ${ease} both` }}>
-        <h1 className={night ? 'font-normal text-white/70' : 'font-semibold text-white'} data-testid="uv2-greeting-title"
-          style={night ? { fontSize: 28, lineHeight: '34px', letterSpacing: '-0.018em', textShadow: '0 2px 18px rgba(0,0,0,0.5)' } : { fontSize: 34, lineHeight: '40px', letterSpacing: '-0.022em', textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>{GREETING[phase]}</h1>
-        <p className={night ? 'mt-2 text-white/45' : 'mt-2 text-white/60'} style={{ fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>{SUB[phase]}</p>
-      </div></header>}
+      {!answering && (
+        <header key={returned} style={{ opacity: paneOpen ? 0 : 1, visibility: paneOpen ? "hidden" : "visible", transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-20'} data-testid="uv2-greeting">
+          <p style={{ ...TYPE.meta, color: UV.gold, animation: `uv2in .6s ${ease} ${delay}s both` }} data-testid="uv2-eyebrow">{eyebrow}</p>
+          <h1 data-testid="uv2-greeting-title" className="mt-6 whitespace-pre-line"
+            style={{ ...TYPE.display, fontSize: wide ? 64 : 44, color: night ? UV.c(0.75) : UV.cream, animation: `uv2in .6s ${ease} ${delay + 0.08}s both` }}>{greet}</h1>
+          <p className="mt-6" style={{ ...TYPE.text, color: UV.c(0.6), animation: `uv2in .6s ${ease} ${delay + 0.16}s both` }}>{SUB[phase]}</p>
 
-      {/* MÔRA ohne Fenster: Raum wird leiser, die Antwort steigt aus dem Licht */}
-      {answering && <style>{`[data-testid^="territory-"]{transition:opacity .9s ${ease},filter .9s ${ease};opacity:.32;filter:blur(1.5px) saturate(.6)}${space.state.status === 'answer' ? linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).map((n) => `[data-mora-label="${n.replace(/"/g, '')}"]`).join(',') : ''}${space.state.status === 'answer' && linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).length ? '{opacity:1;filter:none}' : ''}`}</style>}
-      {answering && (() => {
-        const box = answerBox(vw, cx, typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441);
-        const rules = anchors.map((a) => ({ a, dx: Math.abs(a.y - (box.top + 120)) < 260 ? easeApart(a.x, a.r, cx, box.width) : 0 }))
-          .filter((x) => x.dx !== 0 && x.a.name)
-          .map(({ a, dx }) => `[data-mora-label="${a.name.replace(/"/g, '')}"]{translate:${dx}px 0}`).join('');
-        return rules ? <style data-testid="uv2-ease-apart">{`[data-testid^="territory-"]{transition:translate .9s ${ease},opacity .9s ${ease},filter .9s ${ease}}${rules}`}</style> : null;
-      })()}
-      {answering && <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse 52% 46% at 50% 49%, rgba(4,6,12,0.55), rgba(4,6,12,0.12) 70%, transparent)', animation: `uv2fade 0.9s ${ease} both` }} />}
-      <MoraSpaceAnswer state={space.state} anchors={anchors} cx={cx} cy={typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441} demo={demo} onClose={space.close} onWindow={openWindow} onApprove={(p) => approve(p)} />
+          {list.length > 0 && (
+            <ol className="pointer-events-auto mt-7" style={{ borderTop: `0.5px solid ${UV.hair}` }} data-testid="uv2-today">
+              {list.map((it, i) => (
+                <li key={i} data-testid="uv2-constellation" onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}
+                  className="flex cursor-default items-baseline gap-4 py-4" style={{ borderBottom: `0.5px solid ${UV.hair}`, animation: `uv2in .6s ${ease} ${delay + 0.3 + i * 0.08}s both` }}>
+                  <span style={{ ...TYPE.meta, color: hover === i ? UV.gold : UV.c(0.35), transition: 'color .3s' }}>{String(i + 1).padStart(2, '0')}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block" style={{ ...TYPE.text, fontWeight: 400, color: UV.c(hover === null || hover === i ? 0.92 : 0.6), transition: 'color .3s' }}>{it.title}</span>
+                    <span className="mt-1 block" style={{ ...TYPE.meta, color: UV.c(0.35) }}>{it.area || it.source.split('·')[0].trim()}</span>
+                  </span>
+                </li>
+              ))}
+            </ol>
+          )}
 
-      {/* Sternbilder an echten Planeten – zwei Textebenen, gleiche Abstände */}
-      {!answering && items.map((it, i) => {
-        const slot = slots[i];
-        if (slot === null) return null;
-        const a = usable[slot];
-        // Rechts nie unter das Vorschlagsfeld laufen (rechter Rand 24 + Breite 296 + Luft 24).
-        const limit = detailOpen ? vw - 32 - 370 - 24 : showComet ? vw - 24 - 296 - 24 : vw - 24;
-        const rightRoom = limit - (a.x + a.r + 16);
-        // Reicht der Platz rechts nicht für eine ruhige Zeilenbreite, wandert das Sternbild nach links
-        // (vorher brach „Website-Update wartet auf Freigabe“ bei Werkstatt in vier Zeilen um).
-        const toLeft = a.x < cx - 40 || rightRoom < 168;
-        const W = toLeft ? 176 : Math.min(196, rightRoom);
-        const left = toLeft ? a.x - a.r - 16 - W : a.x + a.r + 16;
-        return (
-          <div key={i} className="absolute flex items-start gap-2.5" data-testid="uv2-constellation"
-            style={{ left: Math.max(24, left), top: a.y - a.r - 4, width: W, flexDirection: toLeft ? 'row-reverse' : 'row', textAlign: toLeft ? 'right' : 'left', animation: `uv2in 1.4s ${ease} ${0.6 + i * 0.25}s both` }}>
-            <Constellation seed={i} dim={phase === 'abend'} />
-            <div className="min-w-0" style={{ textShadow: '0 1px 10px rgba(0,0,0,0.75)' }}>
-              <p className="font-medium text-white/90" style={{ fontSize: 13, lineHeight: '17px', letterSpacing: '-0.005em' }}>{it.title}</p>
-              <p className="mt-1 text-white/45" style={{ fontSize: 11, lineHeight: '14px' }}>{it.source}</p>
+          {proposal && (
+            <div className="pointer-events-auto mt-8" data-testid="uv2-proposal" style={{ animation: `uv2in .6s ${ease} ${delay + 0.6}s both` }}>
+              <p style={{ ...TYPE.meta, color: UV.c(0.35) }}>Wartet auf dich</p>
+              <p className="mt-2" style={{ ...TYPE.text, fontWeight: 400, color: UV.cream }}>{proposal.label}</p>
+              <div className="mt-5 flex items-center gap-6">
+                <button type="button" data-testid="uv2-approve" disabled={demo || !canApprove(proposal) || morningOutcome !== null}
+                  onClick={async () => { setMorningOutcome('running'); setMorningOutcome(await approve(proposal)); }}
+                  className="h-10 rounded-full px-6 transition-transform active:scale-[0.97] disabled:opacity-45"
+                  style={{ background: UV.goldGrad, color: UV.ink, fontFamily: UV.sans, fontSize: 15, fontWeight: 500 }}>{morningOutcome === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}</button>
+                <button type="button" onClick={() => setDismissed(true)} style={{ ...TYPE.text, color: UV.c(0.6) }} className="hover:text-white">Später</button>
+              </div>
+              <p className="mt-3" data-testid="uv2-approve-state" style={{ ...TYPE.meta, color: UV.c(0.35), letterSpacing: '0.12em' }}>
+                {demo ? 'Entwurf · ohne Wirkung'
+                  : morningOutcome && morningOutcome !== 'running' ? approveLabel(morningOutcome)
+                  : canApprove(proposal) ? 'Erst nach Freigabe · danach geprüft'
+                  : 'Noch nicht ausführbar · kein geprüfter Weg'}
+              </p>
             </div>
-          </div>
-        );
-      })}
+          )}
+        </header>
+      )}
 
       {night && watch && (
         <div className="absolute rounded-full" data-testid="uv2-watch-glow"
-          style={{ left: watch.x - watch.r * 2.2, top: watch.y - watch.r * 2.2, width: watch.r * 4.4, height: watch.r * 4.4, background: 'radial-gradient(circle, rgba(229,115,115,0.18), transparent 65%)', animation: `uv2breath 8s ${ease} infinite` }} />
+          style={{ left: watch.x - watch.r * 2.2, top: watch.y - watch.r * 2.2, width: watch.r * 4.4, height: watch.r * 4.4, background: 'radial-gradient(circle, rgba(229,115,115,0.14), transparent 65%)', animation: `uv2breath 8s ${ease} infinite` }} />
       )}
 
-      {today === 'nebel' && (
-        <p className="absolute left-1/2 top-[160px] -translate-x-1/2 text-[13px] text-white/45">MÔRAs Tagesbild liegt noch im Nebel – Quelle nicht erreichbar.</p>
-      )}
+      {/* MÔRA ohne Fenster: der Raum wird still (B), die Antwort ist eine Editorial-Seite (C) */}
+      {answering && <style>{`[data-testid^="territory-"]{opacity:.26!important;filter:saturate(.5)}${space.state.status === 'answer' ? linkedPlanets(space.state.answer.sources, anchors.map((x) => x.name)).map((nm) => `${sel(nm)}{opacity:1!important;filter:none}`).join('') : ''}`}</style>}
+      {answering && <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.8), rgba(5,7,6,0.45) 55%, rgba(5,7,6,0.2))', animation: `uv2fade .6s ${ease} both` }} />}
+      <MoraSpaceAnswer state={space.state} anchors={anchors} cx={cx} cy={typeof window !== 'undefined' ? window.innerHeight * 0.49 : 441} demo={demo} onClose={space.close} onWindow={openWindow} onApprove={(p) => approve(p)} />
 
-      {/* Komet: eine feine Spur, die im Vorschlag endet */}
-      {showComet && data?.proposal && (
-        <>
-          <div className="absolute" data-testid="uv2-comet" style={{ right: 24 + 296 - 8, top: 212, width: 96, height: 1, transform: 'rotate(-24deg)', transformOrigin: 'right center', background: 'linear-gradient(to left, rgba(255,240,215,0.9), transparent)', animation: `uv2fade 1.6s ${ease} 1.4s both` }} />
-          <aside className="pointer-events-auto absolute right-6 top-[200px] w-[296px] rounded-[20px] p-5" data-testid="uv2-proposal"
-            style={{ background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 50px rgba(0,0,0,0.45)', animation: `uv2in 1.2s ${ease} 1.8s both` }}>
-            <p className="font-medium text-amber-100/70" style={{ fontSize: 12, lineHeight: '16px' }}>MÔRA schlägt vor</p>
-            <p className="mt-2 font-semibold text-white" style={{ fontSize: 17, lineHeight: '22px', letterSpacing: '-0.015em' }}>{data.proposal.label}</p>
-            <p className="mt-2 text-white/60" style={{ fontSize: 13, lineHeight: '18px' }}>{data.proposal.reason}</p>
-            <p className="mt-3 text-white/40" style={{ fontSize: 11, lineHeight: '14px' }}>Quelle: {data.proposal.sources.join(', ')}</p>
-            <p className="mt-2 text-white/50" data-testid="uv2-approve-state" style={{ fontSize: 11, lineHeight: '14px' }}>
-              {demo ? 'Entwurf – Freigeben ist hier ohne Wirkung.'
-                : morningOutcome && morningOutcome !== 'running' ? approveLabel(morningOutcome)
-                : canApprove(data.proposal) ? 'Wird erst nach deiner Freigabe ausgeführt und danach geprüft.'
-                : 'Noch nicht ausführbar – CORE meldet keinen geprüften Weg. Nichts passiert von selbst.'}
-            </p>
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <button type="button" data-testid="uv2-approve" disabled={demo || !canApprove(data.proposal) || morningOutcome !== null}
-                title={canApprove(data.proposal) ? 'Freigeben' : 'CORE meldet noch keinen geprüften Ausführungsweg'}
-                onClick={async () => { if (!data.proposal) return; setMorningOutcome('running'); setMorningOutcome(await approve(data.proposal)); }}
-                className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-40" style={{ fontSize: 13 }}>{morningOutcome === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}</button>
-              <button type="button" onClick={() => setDismissed(true)} className="h-9 rounded-full font-medium text-white/80 transition-colors hover:bg-white/15" style={{ fontSize: 13, background: 'rgba(255,255,255,0.08)' }}>Später</button>
-            </div>
-          </aside>
-        </>
-      )}
-
-      {/* Ehrlicher Nebel – eine leise Zeile, kein Kasten */}
-      {!!data?.nebel?.length && !night && !answering && (
-        <p className="absolute bottom-[166px] left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40" data-testid="nebel" style={{ fontSize: 12, textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
-          Noch im Nebel: {data.nebel.join(', ')}
-        </p>
-      )}
-
-      {demo && (
-        <div className="absolute left-6 top-6 rounded-full px-2.5 py-1 font-medium text-amber-100/75" style={{ fontSize: 11, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 0 0.5px rgba(255,220,160,0.3)' }}>Entwurf · Beispieldaten</div>
-      )}
-      {/* Frag MÔRA – das Gespräch beginnt im Raum, nicht in einem Fenster. */}
-      {!night && (
-        <div className="pointer-events-auto absolute bottom-[112px] left-1/2 -translate-x-1/2 transition-[width] duration-500" style={{ width: (askFocus || answering || !!ask.trim()) ? 'min(600px,90vw)' : 'min(440px,80vw)', transitionTimingFunction: ease }}>
-        <form data-testid="uv2-ask"
-          style={{ animation: `uv2in 1.2s ${ease} 2.2s both` }}
-          onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
-            space.ask(q, mode); setAsk(''); }}>
-
-          <label className="flex h-10 items-center gap-2.5 rounded-full pl-3.5 pr-1.5"
-            style={{ background: 'rgba(18,22,30,0.46)', backdropFilter: 'blur(30px) saturate(160%)', WebkitBackdropFilter: 'blur(30px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 10px 30px rgba(0,0,0,0.35)' }}>
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: 'radial-gradient(circle, #ffe9c4, #f4b86a)', boxShadow: '0 0 10px rgba(255,214,150,0.8)' }} aria-hidden />
-            <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setTimeout(() => setAskFocus(false), 200)} aria-label="MÔRA fragen" placeholder="Frag MÔRA – oder sag, wohin du willst"
-              className="min-w-0 flex-1 bg-transparent text-white placeholder:text-white/40 focus:outline-none" style={{ fontSize: 14, letterSpacing: '-0.01em' }} />
-            {(askFocus || answering || !!ask.trim())
-              ? <span style={{ animation: `uv2fade 0.4s ${ease} both` }}><ModePicker mode={mode} onChange={setMode} compact /></span>
-              : <kbd className="shrink-0 rounded-md px-1.5 py-0.5 text-white/40" style={{ fontSize: 11, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.18)' }}>{kbd}</kbd>}
+      {/* Frag MÔRA – eine Haarlinie, keine zweite Kapsel über dem Dock */}
+      {!night && !detailOpen && !paneOpen && (
+        <div className="absolute bottom-[112px] -translate-x-1/2" style={{ left: cx + shift, width: wide ? 'min(420px,40vw)' : 'min(520px,86vw)', transition: `left 1.1s ${UV.easeInOut}` }}>
+        <form data-testid="uv2-ask" className="pointer-events-auto" style={{ animation: `uv2in .6s ${ease} ${delay + 0.8}s both` }}
+          onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return; space.ask(q, mode); setAsk(''); }}>
+          <label className="group flex h-11 items-center gap-3" style={{ borderBottom: `0.5px solid ${askFocus ? 'rgba(214,168,72,0.6)' : UV.c(0.16)}`, transition: 'border-color .4s' }}>
+            <input value={ask} onChange={(e) => setAsk(e.target.value)} onFocus={() => setAskFocus(true)} onBlur={() => setTimeout(() => setAskFocus(false), 200)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
+              className="min-w-0 flex-1 bg-transparent text-center placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ ...TYPE.text, color: UV.cream }} />
+            <span className={`transition-opacity duration-500 ${(askFocus || answering || !!ask.trim()) ? 'opacity-100' : 'pointer-events-none opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100'}`}><ModePicker mode={mode} onChange={setMode} compact /></span>
           </label>
         </form>
         </div>
@@ -377,7 +340,7 @@ export function MorgenOverlay() {
 
       {iris}
 
-      <style>{`@keyframes uv2breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}@keyframes uv2fade{from{opacity:0}to{opacity:1}}@keyframes uv2rise{from{opacity:0;transform:translateY(34px) scale(.96);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}@keyframes uv2pulse{0%,100%{opacity:.45}50%{opacity:.9}}@keyframes uv2in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){[data-testid=universe-v2-overlay] *{animation:none!important}}`}</style>
+      <style>{`@keyframes uv2breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}@keyframes uv2fade{from{opacity:0}to{opacity:1}}@keyframes uv2rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@keyframes uv2in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){[data-testid=universe-v2-overlay] *{animation:none!important}}`}</style>
     </div>
   );
 }

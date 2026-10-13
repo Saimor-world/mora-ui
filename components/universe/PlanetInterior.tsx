@@ -7,6 +7,7 @@
  * darüber auf, und die Arbeit liegt auf einer einzigen Glasfläche.
  * Keine Türkis-Welt, keine Randkacheln, keine Null-Zähler. Leeres ist ehrlicher Nebel.
  */
+import { UV, TYPE } from '@/lib/universe/tokens';
 import React, { useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -99,67 +100,67 @@ export function PlanetInterior({ incidentPanels = [] }: { incidentPanels?: Incid
             {...(reduced ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.6, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 + i * 0.12 } })}>
             <span className="block rounded-full transition-transform duration-300 group-hover:scale-110"
               style={{ width: s.size, height: s.size, background: 'radial-gradient(circle at 35% 30%, #f3ead9 0%, #b9ad98 38%, #4a4237 78%, #1d1a16 100%)', boxShadow: '0 0 18px rgba(255,226,184,0.18)' }} />
-            <span className="mt-2 max-w-[140px] truncate text-white/75 group-hover:text-white" style={{ fontSize: 12, textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
+            <span className="mt-3 max-w-[140px] truncate group-hover:text-white" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.6), textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
           </motion.button>
         );
       })}
       {!isLoading && spaces.length === 0 && (
         <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 text-center" style={{ top: 'calc(74vh - 92px)' }} data-testid="uv2-moon-nebel">
           <span className="mx-auto block h-7 w-7 rounded-full" style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.10), transparent 70%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.18)', filter: 'blur(0.5px)' }} />
-          <span className="mt-2 block text-white/45" style={{ fontSize: 12 }}>Noch kein Mond – noch keine Bereiche</span>
+          <span className="mt-3 block" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.4) }}>Noch keine Bereiche</span>
         </div>
       )}
 
-      {/* Eine Glasfläche für die Arbeit */}
-      <div className="absolute inset-x-0 top-[112px] flex justify-center px-6">
-      <motion.section className="w-full max-w-[560px] rounded-[24px] p-7" style={GLASS} data-testid="uv2-planet-panel" {...appear(0.15)}>
-        <h1 className="font-semibold text-white" style={{ fontSize: 34, lineHeight: '40px', letterSpacing: '-0.022em' }}>{name}</h1>
-        <p className="mt-2 text-white/60" style={{ fontSize: 15, lineHeight: '20px' }}>{isLoading ? 'Einen Moment …' : interiorSentence(spaces.length, docs.length, incidents.length)}</p>
+      {/* Editorial-Spalte statt Glasfläche: der Planet spricht links, der Horizont trägt rechts */}
+      <div className="absolute inset-y-0 left-0 w-[52%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.78), rgba(5,7,6,0.3) 70%, transparent)' }} />
+      <motion.section className="absolute left-6 right-6 top-20 md:left-24 md:right-auto md:top-[15vh] md:w-[480px]" data-testid="uv2-planet-panel" {...appear(0.15)}>
+        <p style={{ ...TYPE.meta, color: UV.gold }}>Planet · {spaces.length} {spaces.length === 1 ? 'Bereich' : 'Bereiche'}</p>
+        <h1 className="mt-6" style={{ ...TYPE.display, color: UV.cream }}>{name}</h1>
+        <p className="mt-6" style={{ ...TYPE.text, color: UV.c(0.6) }}>{isLoading ? 'Einen Moment …' : interiorSentence(spaces.length, docs.length, incidents.length)}</p>
 
         {incidents.length > 0 && (
-          <div className="mt-6">
-            <h2 className="font-semibold text-white/90" style={{ fontSize: 13 }}>Wache</h2>
+          <div className="mt-8">
+            <p style={{ ...TYPE.meta, color: 'rgba(229,140,120,0.85)' }}>Wache</p>
             {incidents.slice(0, 2).map((p: any, i) => (
-              <p key={i} className="mt-2 text-white/70" style={{ fontSize: 13, lineHeight: '18px' }}>{p.title || p.headline || 'Hinweis der Wache'}</p>
+              <p key={i} className="mt-2" style={{ ...TYPE.text, color: UV.c(0.75) }}>{p.title || p.headline || 'Hinweis der Wache'}</p>
             ))}
           </div>
         )}
 
         {docs.length > 0 ? (
-          <div className="mt-6">
-            <h2 className="font-semibold text-white/90" style={{ fontSize: 13 }}>Zuletzt</h2>
-            <ul className="mt-2 divide-y divide-white/[0.06]">
-              {docs.slice(0, 4).map((d: any) => (
-                <li key={d.id}>
-                  <button type="button" className="group flex w-full items-center gap-3 py-2.5 text-left"
+          <div className="mt-8">
+            <p style={{ ...TYPE.meta, color: UV.c(0.35) }}>Zuletzt bewegt</p>
+            <ol className="mt-3" style={{ borderTop: `0.5px solid ${UV.hair}` }}>
+              {docs.slice(0, 4).map((d: any, i: number) => (
+                <li key={d.id} style={{ borderBottom: `0.5px solid ${UV.hair}` }}>
+                  <button type="button" className="group flex w-full items-baseline gap-4 py-3 text-left"
                     onClick={() => openPane({ id: `document-${d.id}`, type: 'document', title: d.name || d.title || 'Dokument', size: GLASS_SHEET_SIZE, data: { nodeId: d.id } } as any)}>
-                    <FileText size={15} strokeWidth={1.5} className="shrink-0 text-white/50" />
-                    <span className="min-w-0 flex-1 truncate text-white/85" style={{ fontSize: 14 }}>{d.name || d.title || 'Ohne Titel'}</span>
-                    <ArrowRight size={13} className="text-white/25 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+                    <span style={{ ...TYPE.meta, color: UV.c(0.35) }}>{String(i + 1).padStart(2, '0')}</span>
+                    <span className="min-w-0 flex-1 truncate transition-colors group-hover:text-white" style={{ ...TYPE.text, color: UV.c(0.85) }}>{d.name || d.title || 'Ohne Titel'}</span>
+                    {d.updated_at && <span style={{ ...TYPE.meta, color: UV.c(0.35), letterSpacing: '0.1em' }}>{new Date(d.updated_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>}
                   </button>
                 </li>
               ))}
-            </ul>
+            </ol>
           </div>
         ) : !isLoading && (
-          <p className="mt-6 text-white/45" style={{ fontSize: 13, lineHeight: '18px' }} data-testid="uv2-planet-nebel">
-            Noch im Nebel: Dokumente und Signale. Sobald hier etwas entsteht, liegt es auf dieser Fläche – nichts wird erfunden.
+          <p className="mt-8" style={{ ...TYPE.text, color: UV.c(0.45) }} data-testid="uv2-planet-nebel">
+            Hier ist noch nichts entstanden. Sobald es Dokumente gibt, liegen sie hier.
           </p>
         )}
 
-        <div className="mt-6 flex gap-2">
+        <div className="mt-10 flex items-center gap-6">
           <button type="button" onClick={() => openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: `Was ist in ${name} gerade wichtig?` } } as any)}
-            className="h-9 flex-1 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97]" style={{ fontSize: 13 }}>
-            MÔRA zu {name} fragen
+            className="h-10 rounded-full px-6 transition-transform active:scale-[0.97]" style={{ background: UV.goldGrad, color: UV.ink, fontSize: 15, fontWeight: 500 }}>
+            MÔRA fragen
           </button>
           <button type="button" disabled={add.isPending || !activeDepartmentId}
             onClick={() => activeDepartmentId && add.mutate({ department_id: activeDepartmentId, name: 'Neuer Bereich', description: 'Im Planeten angelegt' } as any)}
-            className="h-9 flex-1 rounded-full font-medium text-white/85 transition-colors hover:bg-white/15 disabled:opacity-50" style={{ fontSize: 13, background: 'rgba(255,255,255,0.08)' }}>
+            className="transition-colors hover:text-white disabled:opacity-50" style={{ ...TYPE.text, color: UV.c(0.6) }}>
             Bereich anlegen
           </button>
         </div>
       </motion.section>
-      </div>
       <style>{`[data-testid=uv2-planet-interior]{--uv2-ease:${ease}}`}</style>
     </div>
   );

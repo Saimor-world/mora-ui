@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import "./globals.css";
 import "./saimor-next.css";
+import "./universe-v2.css";
+import { isUniverseV2Enabled } from "@/lib/universe/morgen";
+import { UV2_FONTS_HREF } from "@/lib/universe/tokens";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import { useNavStore } from "@/lib/store/navStore";
@@ -42,6 +45,17 @@ export default function RootLayout({
     const body = document.body;
     if (body?.classList?.contains("antigravity-scroll-lock")) {
       body.classList.remove("antigravity-scroll-lock");
+    }
+  }, []);
+
+  // Saimôr Universe v2: Designsprache nur hinter dem Flag (html[data-uv2=on]).
+  useEffect(() => {
+    if (!isUniverseV2Enabled()) return;
+    document.documentElement.dataset.uv2 = "on";
+    if (!document.getElementById("uv2-fonts")) {
+      const l = document.createElement("link");
+      l.id = "uv2-fonts"; l.rel = "stylesheet"; l.href = UV2_FONTS_HREF;
+      document.head.appendChild(l);
     }
   }, []);
 

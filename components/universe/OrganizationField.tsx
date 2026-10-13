@@ -291,7 +291,7 @@ export function OrganizationField({
                 ))}
             </div>
 
-            {lens === 'relations' && (
+            {lens === 'relations' && !(isUniverseV2Enabled() && selectedSignals.length === 0) && (
                 <div className="pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block">
                     <RelationLegend strands={strands} />
                 </div>
@@ -328,11 +328,19 @@ export function OrganizationField({
                     <p className="mt-2 text-sm leading-relaxed text-white/48">
                         {selected.description || 'Noch keine Beschreibung hinterlegt.'}
                     </p>
+                    {isUniverseV2Enabled() ? (
+                        <p className="mt-5 border-y border-white/[0.09] py-3 text-[10px] uppercase tracking-[0.2em] text-white/45" data-testid="planet-detail-facts" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>
+                            {[selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
+                              selected.documents ? `${selected.documents} Dokumente` : null,
+                              selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Noch leer'}
+                        </p>
+                    ) : (
                     <div className="mt-5 grid grid-cols-3 gap-2">
                         <TruthValue icon={<Building2 size={13} />} value={selected.spaces} label="Bereiche" />
                         <TruthValue icon={<FileText size={13} />} value={selected.documents} label="Dokumente" />
                         <TruthValue icon={<Radio size={13} />} value={selectedSignals.length} label="Signale" />
                     </div>
+                    )}
                     {lens === 'relations' && (
                         <div className="mt-5 space-y-2">
                             {selectedSignals.length === 0 ? (
@@ -503,7 +511,7 @@ function Territory({
                     <span className="text-[9px] font-semibold tabular-nums text-white/62">{signals.length}</span>
                 </span>
             )}
-            <span className="mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
             {isUniverseV2Enabled() ? (
                 // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
                 (territory.spaces > 0 || territory.documents > 0) && (
@@ -587,7 +595,7 @@ function MobileTerritory({
                     </span>
                 )}
             </span>
-            <span className="mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
+            <span className="saimor-territory-name mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
             <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
                 {territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'} · {territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}
             </span>

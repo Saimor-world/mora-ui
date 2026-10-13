@@ -149,24 +149,24 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     // Kein Instanz-Badge, kein Firmenname (steht in MÔRAs Satz), kein zweiter Control-Center-Knopf.
     if (isUniverseV2Enabled()) {
         return (
-            <div className="fixed left-1/2 top-4 z-50 flex -translate-x-1/2 items-center gap-2 text-white" data-testid="uv2-header">
+            <div className="fixed right-16 top-6 z-50 flex items-center gap-4 text-white" data-testid="uv2-header">
                 {showDeptBack && (
                     <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
-                        className="flex h-8 items-center gap-1 rounded-full pl-2 pr-3 text-[13px] text-white/75 transition-colors hover:text-white"
-                        style={V2_GLASS}>
+                        className="flex h-8 items-center gap-1 transition-colors hover:text-white"
+                        style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,233,0.6)' }}>
                         <ChevronLeft size={15} strokeWidth={1.5} /> Universum
                     </button>
                 )}
                 {showCoreSurfaceSwitch && (
-                    <div role="tablist" aria-label="Ansicht" className="relative flex h-8 items-center rounded-full p-[3px]" style={V2_GLASS}>
+                    <div role="tablist" aria-label="Ansicht" className="relative flex h-8 items-center gap-5">
                         {(['home', 'explore'] as const).map((m) => {
                             const active = m === 'home' ? coreMode === 'home' : coreMode !== 'home';
                             return (
                                 <button key={m} type="button" role="tab" aria-selected={active}
                                     data-testid={m === 'explore' ? 'universe-toggle' : 'home-toggle'}
                                     onClick={() => setCoreMode(m)}
-                                    className={`relative h-[26px] min-w-[84px] rounded-full px-3 text-[13px] font-medium tracking-[-0.01em] transition-all duration-300 ${active ? 'bg-white/[0.16] text-white shadow-[inset_0_0.5px_0_rgba(255,255,255,0.25)]' : 'text-white/55 hover:text-white/85'}`}
-                                    style={{ transitionTimingFunction: 'cubic-bezier(0.22,1,0.36,1)' }}>
+                                    className="relative h-8 transition-colors duration-300"
+                                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: active ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
                                     {m === 'home' ? 'Home' : 'Universe'}
                                 </button>
                             );
