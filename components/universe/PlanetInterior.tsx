@@ -7,6 +7,7 @@
  * darüber auf, und die Arbeit liegt auf einer einzigen Glasfläche.
  * Keine Türkis-Welt, keine Randkacheln, keine Null-Zähler. Leeres ist ehrlicher Nebel.
  */
+import { planetMaterial, moonBackground } from './PlanetSphere';
 import { UV, TYPE } from '@/lib/universe/tokens';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
@@ -101,6 +102,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
   }, [tree, activeDepartmentId]);
   const name = dept?.name || 'Planet';
   const glow = getDeptStyle(name, dept?.color).glow;
+  const mat = planetMaterial(name);
   const slots = moonSlots(Math.min(spaces.length, 7));
   const incidents = incidentPanels.filter((p: any) => p && p.state !== 'resolved');
   const ease = MOTION.ease.out;
@@ -115,8 +117,13 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       {/* Der Horizont: die Oberfläche dieses Planeten */}
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)',
-          background: 'radial-gradient(circle at 50% 0%, #1a1712 0%, #0d0c0a 18%, #060606 40%)',
-          boxShadow: `0 -1px 0 rgba(255,226,184,0.55), 0 -8px 30px ${glow}33, 0 -40px 120px rgba(255,196,128,0.10), inset 0 18px 40px rgba(255,214,160,0.06)` }} />
+          background: `radial-gradient(circle at 50% 0%, ${mat.mid}66 0%, ${mat.night} 9%, #060606 34%)`,
+          boxShadow: `0 -1px 0 rgba(${mat.atmo},0.6), 0 -6px 24px rgba(${mat.atmo},0.16), 0 -40px 120px rgba(${mat.atmo},0.08), inset 0 22px 60px rgba(${mat.atmo},0.10)` }} />
+      {/* Oberflächenstruktur des Materials, nur am Horizont sichtbar */}
+      <div className="pointer-events-none absolute left-1/2 overflow-hidden rounded-full" aria-hidden
+        style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)', maskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', WebkitMaskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', opacity: 0.55, mixBlendMode: 'overlay' }}>
+        <svg width="100%" height="100%" preserveAspectRatio="none"><filter id="uv2-hz-noise"><feTurbulence type="fractalNoise" baseFrequency={`${mat.fx / 900} ${mat.fy / 900}`} numOctaves={mat.oct} seed={7} /><feColorMatrix type="saturate" values="0" /></filter><rect width="100%" height="100%" filter="url(#uv2-hz-noise)" /></svg>
+      </div>
       <div className="pointer-events-none absolute inset-x-0" style={{ top: 'calc(74vh - 140px)', height: 160, background: 'radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,210,150,0.10), transparent 70%)' }} />
 
       {/* Bereiche als Monde über dem Horizont */}
@@ -128,7 +135,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
             style={{ left: `${s.x * 100}%`, top: `calc(74vh - ${70 + s.lift * 70}px)` }}
             {...(reduced ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.6, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 + i * 0.12 } })}>
             <span className="block rounded-full transition-transform duration-300 group-hover:scale-110"
-              style={{ width: s.size, height: s.size, background: 'radial-gradient(circle at 35% 30%, #f3ead9 0%, #b9ad98 38%, #4a4237 78%, #1d1a16 100%)', boxShadow: '0 0 18px rgba(255,226,184,0.18)' }} />
+              style={{ width: s.size, height: s.size, background: moonBackground(name, 0.7), boxShadow: 'none' }} />
             <span className="mt-3 max-w-[140px] truncate group-hover:text-white" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.6), textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
           </motion.button>
         );

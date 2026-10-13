@@ -1,5 +1,6 @@
 "use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import type { CalendarPreviewItem, FeedPreviewItem, LiveSourceStatus, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
@@ -117,6 +118,7 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
 }
 
 export function UniverseObservatory(props: Props) {
+    const v2 = isUniverseV2Enabled();
     const openIncidents = props.incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
     // Zwei Fehler steckten in der Wurzelzeile darunter:
     //  1. `xl:block` liess die Kacheln zwischen 1024 und 1279px ersatzlos
@@ -131,8 +133,9 @@ export function UniverseObservatory(props: Props) {
     //     Eine zurueckgetretene Kachel darf keine Klicks mehr fangen.
     return (
         <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 lg:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
-            <div className={'absolute bottom-28 left-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
-                <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
+            <div data-uv2-col="left" className={(v2 ? 'absolute bottom-28 left-24 w-[340px] space-y-3 ' : 'absolute bottom-28 left-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                {!v2 && <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />}
+                {/* v2: Horizont links unter der Begrüßung, Verteilung rechts */}
                 <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
@@ -167,8 +170,9 @@ export function UniverseObservatory(props: Props) {
                     <span>{props.documentCount} Dokumente</span>
                 </div>
             </div>
-            <div className={'absolute bottom-28 right-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
-                <BusinessInstrument business={props.business} />
+            <div data-uv2-col="right" className={(v2 ? 'absolute top-28 right-4 w-[236px] space-y-3 ' : 'absolute bottom-28 right-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                {v2 && <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />}
+                {!v2 && <BusinessInstrument business={props.business} />}
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">

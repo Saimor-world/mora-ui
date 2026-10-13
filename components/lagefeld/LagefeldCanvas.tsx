@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import type { Card, Connection, FieldState } from '@/lib/lagefeld/types';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 const CARD_W = 190;
 const CARD_H_ESTIMATE = 190;
@@ -37,6 +38,7 @@ function center(card: Card) {
 }
 
 export function LagefeldCanvas({ state }: { state: FieldState }) {
+  if (isUniverseV2Enabled()) return <LagefeldColumns state={state} />;
   const cardsById = new Map(state.cards.map((card) => [card.id, card]));
   const bounds = useMemo(() => {
     const width = Math.max(
@@ -223,6 +225,60 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * v2: Lage als drei ruhige Spalten (Signale → Deutung → Handlung) statt frei
+ * positionierter Karten – nichts überlappt, Lesefluss von links nach rechts.
+ * Verbindungen bleiben als „hängt an“-Zeile an der Karte sichtbar.
+ */
+function LagefeldColumns({ state }: { state: FieldState }) {
+  const byId = new Map(state.cards.map((c) => [c.id, c]));
+  const links = new Map<string, string[]>();
+  state.connections.forEach((c) => {
+    const to = byId.get(c.to);
+    if (to) links.set(c.from, [...(links.get(c.from) ?? []), to.title]);
+  });
+  const cols: { key: string; label: string; kinds: Card['kind'][] }[] = [
+    { key: 'sig', label: 'Signale', kinds: ['signal', 'object'] },
+    { key: 'deu', label: 'Deutung', kinds: ['interpretation', 'uncertainty'] },
+    { key: 'act', label: 'Handlung', kinds: ['action'] },
+  ];
+  return (
+    <div aria-label="Lagefeld" data-testid="uv2-lagefeld-columns" className="grid h-full min-h-0 grid-cols-3 gap-8 overflow-y-auto">
+      {cols.map((col) => {
+        const cards = state.cards.filter((c) => col.kinds.includes(c.kind));
+        return (
+          <section key={col.key} className="min-w-0">
+            <p className="mb-3 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-[#D6A848]">
+              <span>{col.label}</span><span className="text-white/40">{cards.length}</span>
+            </p>
+            {cards.length === 0 ? (
+              <p className="border-t border-white/[0.07] pt-3 text-xs text-white/40">Noch nichts.</p>
+            ) : (
+              <ul className="divide-y divide-white/[0.07] border-y border-white/[0.07]">
+                {cards.map((card, i) => (
+                  <motion.li key={card.id} data-testid={`lagefeld-card-${card.kind}`} className="py-3"
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}>
+                    <div className="flex items-baseline gap-2">
+                      {card.status === 'alert' && <span className="h-1.5 w-1.5 shrink-0 translate-y-[-1px] rounded-full" style={{ background: '#E0876A' }} />}
+                      <span className="min-w-0 flex-1 text-sm leading-snug text-[#F7F4E9]/90">{card.title}</span>
+                      {card.kind === 'uncertainty' && <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-white/45">unklar</span>}
+                    </div>
+                    {card.body ? <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-white/50">{card.body}</p> : null}
+                    {links.get(card.id)?.length ? <p className="mt-1.5 truncate font-mono text-[10px] text-white/40">→ {links.get(card.id)!.join(' · ')}</p> : null}
+                    {card.action?.locked ? (
+                      <button type="button" className="mt-2 rounded-full border border-[#D6A848]/40 px-3 py-1 text-xs text-[#D6A848] transition-colors duration-300 hover:bg-[#D6A848]/10">Freigeben</button>
+                    ) : null}
+                  </motion.li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

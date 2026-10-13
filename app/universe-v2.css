@@ -175,3 +175,41 @@ html[data-uv2="on"] .uv2-planet-surface { animation: uv2-planet-rot var(--uv2-ro
 /* Planeten-Signalmarke: Tinte + Creme statt Blau-Pille */
 html[data-uv2="on"] [data-testid^="territory-"] > span.pointer-events-none[class*="bg-[#08121e]"] { background: rgba(5,7,6,.86) !important; border-color: rgba(247,244,233,.14) !important; box-shadow: none !important; }
 html[data-uv2="on"] [data-testid^="territory-"] > span.pointer-events-none[class*="bg-[#08121e]"] > span:not(:last-child) { color: #D6A848 !important; }
+/* hd7 – Display-Zeilen in Apps: Serif, ruhig */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime .uv2-display { font-family: "Cormorant Garamond", Georgia, serif !important; font-weight: 400 !important; letter-spacing: 0 !important; font-size: 28px !important; line-height: 1.15 !important; }
+/* Kopfzeilen-Pillen (violett/cyan Altfarben) → ruhige Creme-Pillen */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime button.rounded-full:is([class*="bg-violet-500"],[class*="bg-cyan-500"]) { background: transparent !important; border-color: rgba(247,244,233,.14) !important; color: rgba(247,244,233,.8) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime button.rounded-full:is([class*="bg-violet-500"],[class*="bg-cyan-500"]):hover { border-color: rgba(214,168,72,.45) !important; color: #F7F4E9 !important; }
+
+/* hd7 – Seitenwidgets sind Standard im Universe; „Still“ blendet sie aus. */
+html[data-uv2="on"] .uv2-widgets { display: contents; }
+html[data-uv2="on"][data-uv2-still="on"]:not([data-uv2-lage="open"]) .uv2-widgets { display: none; }
+@media (min-width: 1024px) {
+  html[data-uv2="on"]:not([data-uv2-lage="open"]) [data-testid="uv2-greeting"] { top: 9vh !important; width: 340px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-greeting-title"] { font-size: 48px !important; margin-top: 16px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-today"] { margin-top: 20px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-today"] li { padding-top: 10px !important; padding-bottom: 10px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-proposal"] { margin-top: 20px !important; }
+  html[data-uv2="on"]:not([data-uv2-lage="open"]):not([data-uv2-still="on"]) [data-testid="uv2-approve-state"] { display: none; }
+}
+/* Widgets im Universe: Tinte, Haarlinie, gleiche Typo wie LAGE */
+html[data-uv2="on"] [data-testid="uv2-lage"] [data-uv2-col] > * { background: rgba(5,7,6,.72) !important; border: .5px solid rgba(247,244,233,.1) !important; border-radius: 12px !important; backdrop-filter: blur(18px); box-shadow: none !important; }
+html[data-uv2="on"] [data-testid="uv2-lage"] [data-uv2-col] > .flex { background: none !important; border: 0 !important; backdrop-filter: none; }
+/* hd7: Widget-Spalten balanciert – Horizont nur bei genug Höhe, Balken in Gold, kompakte Karten */
+html[data-uv2=on] [data-uv2-col="right"] { transform: scale(0.9); transform-origin: top right; }
+html[data-uv2=on] [data-uv2-col="right"] [style*="background"][class*="h-1"],
+html[data-uv2=on] [data-uv2-col="right"] .bg-sky-400, html[data-uv2=on] [data-uv2-col="right"] [class*="bg-cyan"], html[data-uv2=on] [data-uv2-col="right"] [class*="bg-blue"] { background: #D6A848 !important; opacity: .75; }
+@media (max-height: 940px) { html[data-uv2=on] [data-uv2-col="left"] { display: none; } }
+/* hd7b: Instrumente statt Kästen – offen, Haarlinie, Mikrobewegung */
+html[data-uv2=on] [data-uv2-col] section, html[data-uv2=on] [data-uv2-col] > div > section {
+  background: linear-gradient(90deg, rgba(5,7,6,0.55), rgba(5,7,6,0)) !important; border: 0 !important; border-left: 1px solid rgba(214,168,72,0.35) !important;
+  border-radius: 0 !important; box-shadow: none !important; backdrop-filter: blur(6px); transition: border-color .4s, transform .4s; }
+html[data-uv2=on] [data-uv2-col] section:hover { border-left-color: #D6A848 !important; transform: translateX(-3px); }
+html[data-uv2=on] [data-uv2-col] section > .absolute.w-px { display: none; }
+html[data-uv2=on] [data-uv2-col] [class*="bg-black/25"] { background: transparent !important; border: 0 !important; padding-left: 0 !important; }
+/* Bereichszeichen: lebt mit der Kugel */
+.uv2-planet-glyph { transition: opacity .6s, filter .6s, transform .8s cubic-bezier(.2,.7,.2,1); opacity: .8; }
+button:hover .uv2-planet-glyph, [data-selected=true] .uv2-planet-glyph { opacity: 1; transform: scale(1.06); filter: brightness(1.35); }
+@media (prefers-reduced-motion: no-preference) { .uv2-planet-glyph { animation: uv2-glyph-breathe 7s ease-in-out infinite; } }
+@keyframes uv2-glyph-breathe { 50% { opacity: .95; } }
+html[data-uv2=on] [data-uv2-col] > *, html[data-uv2=on] [data-uv2-col] > * > section { background: linear-gradient(90deg, rgba(5,7,6,0.6), rgba(5,7,6,0)) !important; border: 0 !important; border-left: 1px solid rgba(214,168,72,0.35) !important; border-radius: 0 !important; box-shadow: none !important; }

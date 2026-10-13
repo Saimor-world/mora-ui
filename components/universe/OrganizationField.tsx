@@ -1,6 +1,6 @@
 "use client";
 
-import { PlanetSphere } from './PlanetSphere';
+import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
@@ -59,12 +59,21 @@ const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
     missing: 'noch ohne Quelle',
 };
 
-const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = {
+const signalToneLegacy: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = {
     mail: { stroke: '#7dd3fc', icon: <Mail size={11} />, label: 'Mail' },
     calendar: { stroke: '#6ee7b7', icon: <CalendarDays size={11} />, label: 'Kalender' },
     rss: { stroke: '#c4b5fd', icon: <Rss size={11} />, label: 'Feed' },
     nightwatch: { stroke: '#fcd34d', icon: <Radio size={11} />, label: 'Nightwatch' },
 };
+/** v2: Signalfäden in Systemfarben – Gold = Termin/Aktion, Creme = Post/Feed, Warnton nur für die Wache. */
+const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = isUniverseV2Enabled()
+    ? {
+        mail: { ...signalToneLegacy.mail, stroke: '#F7F4E9' },
+        calendar: { ...signalToneLegacy.calendar, stroke: '#D6A848' },
+        rss: { ...signalToneLegacy.rss, stroke: '#CFC8B4' },
+        nightwatch: { ...signalToneLegacy.nightwatch, stroke: '#E0876A' },
+    }
+    : signalToneLegacy;
 
 export function OrganizationField({
     lens,
@@ -475,7 +484,7 @@ function Territory({
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
                 {isUniverseV2Enabled() && territory.access !== 'locked' ? (
-                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} />
+                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
                 <span
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
@@ -499,7 +508,8 @@ function Territory({
                 </span>
                 )}
 
-                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} />
+                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} planetName={territory.name} />
+                {isUniverseV2Enabled() && territory.access !== 'locked' && orbitals.moons.length === 0 && <AmbientMoons name={territory.name} size={size} seed={drift} />}
             </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
@@ -520,7 +530,7 @@ function Territory({
             {isUniverseV2Enabled() ? (
                 // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
                 (territory.spaces > 0 || territory.documents > 0) && (
-                    <span className="mt-1 block text-[11px] leading-[14px] text-white/45">
+                    <span className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">
                         {[territory.spaces > 0 && `${territory.spaces} ${territory.spaces === 1 ? 'Bereich' : 'Bereiche'}`,
                           territory.documents > 0 && `${territory.documents} ${territory.documents === 1 ? 'Dokument' : 'Dokumente'}`].filter(Boolean).join(' · ')}
                     </span>
@@ -711,7 +721,8 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
  * Klick gehoert dem Planeten darunter, sonst waeren die Monde
  * Klickfallen vor dem eigentlichen Bedienelement.
  */
-function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void }) {
+function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void; planetName?: string }) {
+    const v2 = isUniverseV2Enabled() && Boolean(planetName);
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
@@ -779,11 +790,11 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                                 // Abzeichen. Die Deckkraft kommt aus der
                                 // Frische - ein heute angefasster Ordner
                                 // leuchtet, ein lange ruhender glimmt nur.
-                                background:
+                                background: v2 ? moonBackground(planetName!, moon.freshness) :
                                     'radial-gradient(circle at 36% 30%, rgba(255,255,255,' + (0.55 * moon.freshness + 0.2).toFixed(2) + '), ' +
                                     accent + ' 62%, ' + accent + '44 100%)',
-                                opacity: 0.45 + moon.freshness * 0.55,
-                                boxShadow: '0 0 ' + (6 + moon.freshness * 14).toFixed(0) + 'px ' + accent +
+                                opacity: v2 ? 0.7 + moon.freshness * 0.3 : 0.45 + moon.freshness * 0.55,
+                                boxShadow: v2 ? 'none' : '0 0 ' + (6 + moon.freshness * 14).toFixed(0) + 'px ' + accent +
                                     Math.round(60 + moon.freshness * 120).toString(16).padStart(2, '0'),
                             }}
                         />

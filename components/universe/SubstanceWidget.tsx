@@ -1,4 +1,6 @@
 "use client";
+import { planetMaterial } from './PlanetSphere';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 import React from 'react';
 import { Layers } from 'lucide-react';
@@ -61,8 +63,8 @@ export function SubstanceWidget({ bars, onSelect }: {
                                         // ist: ein Bereich mit einem Dokument darf
                                         // nicht wie einer mit keinem aussehen.
                                         width: (bar.ratio === 0 ? 0 : Math.max(4, bar.ratio * 100)) + '%',
-                                        background: bar.color,
-                                        boxShadow: '0 0 8px ' + bar.color + '77',
+                                        background: isUniverseV2Enabled() ? 'linear-gradient(90deg,'+planetMaterial(bar.name).mid+','+planetMaterial(bar.name).day+')' : bar.color,
+                                        boxShadow: isUniverseV2Enabled() ? 'none' : '0 0 8px ' + bar.color + '77',
                                     }}
                                 />
                             </span>

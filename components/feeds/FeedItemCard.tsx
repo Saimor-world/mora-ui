@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { ExternalLink, Rss } from 'lucide-react';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import type { RssFeedItem } from '@/lib/rss/parseRssItem';
 import { formatFeedDateLabel, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import { FeedImageLightbox } from '@/components/feeds/FeedImageLightbox';
@@ -57,6 +58,8 @@ const FeedImage: React.FC<{
         );
     }
 
+    // v2: ohne Bild kein leerer Platzhalter-Kasten – der Text trägt den Eintrag.
+    if (isUniverseV2Enabled()) return null;
     return (
         <div
             className={`flex shrink-0 items-center justify-center rounded-xl border border-emerald-300/12 bg-emerald-500/[0.06] ${sizeClass}`}

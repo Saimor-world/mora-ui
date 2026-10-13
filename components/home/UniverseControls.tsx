@@ -43,6 +43,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     contextSubtitleOverride,
 }) => {
     const [lageOpen, setLageOpen] = useState(false);
+    const [still, setStill] = useState(false);
     const user = useSessionStore((state) => state.user);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
@@ -178,6 +179,11 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     className="h-8 transition-colors" title="Lage: Post, Kalender, Feed, Wache, Puls, Systemwerte"
                     style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
                     Lage
+                </button>
+                <button type="button" data-testid="uv2-still-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Still = r.dataset.uv2Still === 'on' ? '' : 'on'; setStill(r.dataset.uv2Still === 'on'); }}
+                    className="h-8 transition-colors" title="Still: Seitenwidgets ausblenden, nur Planeten und Begrüßung"
+                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: still ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    Still
                 </button>
                 {showCompanySwitcher && (
                     <button type="button" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}

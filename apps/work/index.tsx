@@ -244,7 +244,7 @@ export default function WorkApp({ paneId }: AppProps) {
           <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <div className="text-[9px] uppercase tracking-[0.22em] text-emerald-100/36">Arbeit</div>
-              <h2 className="mt-1 text-[30px] font-medium tracking-[-0.045em] text-white/90">Was jetzt zählt.</h2>
+              <h2 className="uv2-display mt-1 text-[30px] font-medium tracking-[-0.045em] text-white/90">Was jetzt zählt.</h2>
               <p className="mt-2 max-w-[620px] text-[11px] leading-relaxed text-white/35">
                 Der heutige Firmenkontext und die gemeinsamen Aufgaben dieser Organisation laufen hier zusammen. Der Firmenwechsel filtert die Aufgaben nicht.
               </p>
@@ -284,7 +284,7 @@ export default function WorkApp({ paneId }: AppProps) {
 
                 {readable && focusTask ? (
                   <div className="mt-6">
-                    <div className="text-[clamp(1.35rem,2.8vw,2.15rem)] font-medium leading-[1.08] tracking-[-0.045em] text-white/90">
+                    <div className="uv2-display text-[clamp(1.35rem,2.8vw,2.15rem)] font-medium leading-[1.08] tracking-[-0.045em] text-white/90">
                       {focusTask.title}
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-[9px] uppercase tracking-[0.14em] text-white/28">

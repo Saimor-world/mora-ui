@@ -49,7 +49,7 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   return 'default';
 }
 
-export function PlanetSphere({ name, size, selected = false, seed = 1 }: { name: string; size: number; selected?: boolean; seed?: number }) {
+export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any> }) {
   const uid = useId().replace(/:/g, '');
   const m = MATERIALS[planetMaterialKey(name)];
   const ringW = size * 1.9;
@@ -82,6 +82,13 @@ export function PlanetSphere({ name, size, selected = false, seed = 1 }: { name:
           <rect width="200" height="100" filter={`url(#n${uid})`} style={{ mixBlendMode: 'overlay' }} />
           <rect width="200" height="100" filter={`url(#n${uid})`} opacity={0.5} style={{ mixBlendMode: 'multiply' }} />
         </svg>
+        {/* Bereichszeichen: in die Oberfläche geprägt – unter Terminator & Randverdunkelung, darum gleich beleuchtet */}
+        {Glyph && (
+          <span data-testid="uv2-planet-glyph" className="uv2-planet-glyph absolute inset-0 flex items-center justify-center">
+            <Glyph size={Math.round(size * 0.34)} strokeWidth={1.1} absoluteStrokeWidth
+              style={{ color: 'rgba(255,250,236,0.62)', mixBlendMode: 'overlay', filter: 'drop-shadow(0 -0.6px 0 rgba(0,0,0,0.55)) drop-shadow(0 0.6px 0 rgba(255,248,230,0.45))' }} />
+          </span>
+        )}
         {/* Terminator: Licht oben links, Nacht unten rechts – weicher Übergang */}
         <span className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 30% 26%, rgba(255,250,235,0.20) 0%, rgba(255,250,235,0) 34%), linear-gradient(128deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 66%, ${m.night} 86%)` }} />
         {/* Randverdunkelung */}
@@ -106,3 +113,40 @@ export function PlanetSphere({ name, size, selected = false, seed = 1 }: { name:
     </span>
   );
 }
+
+/** Mondfarbe passend zum Material (Tageston, leicht entsättigt). */
+export function planetMoonTone(name: string): { day: string; atmo: string } {
+  const m = MATERIALS[planetMaterialKey(name)];
+  return { day: m.day, atmo: m.atmo };
+}
+
+/** Kleine Mondkugel mit eigener Beleuchtung (Licht oben links), kein Glow. */
+export function moonBackground(name: string, freshness = 0.6): string {
+  const { day } = planetMoonTone(name);
+  return `radial-gradient(circle at 34% 30%, rgba(255,252,240,${(0.5 + freshness * 0.4).toFixed(2)}) 0%, ${day} 38%, rgba(0,0,0,0.85) 100%)`;
+}
+
+/**
+ * Leise Begleitmonde, wenn ein Bereich noch keine Ordner hat: rein atmosphärisch,
+ * nicht klickbar, ohne Namen – echte Ordner bleiben die echten Monde.
+ */
+export function AmbientMoons({ name, size, seed = 1 }: { name: string; size: number; seed?: number }) {
+  const count = 1 + (seed % 2);
+  return (
+    <span className="pointer-events-none absolute inset-0" aria-hidden data-testid="uv2-ambient-moons" style={{ transform: `rotate(-12deg) scaleY(0.36)` }}>
+      <span className="absolute left-1/2 top-1/2 rounded-full" style={{ width: size * 1.56, height: size * 1.56, marginLeft: -size * 0.78, marginTop: -size * 0.78, border: '1px solid rgba(247,244,233,0.05)' }} />
+      {Array.from({ length: count }).map((_, i) => {
+        const d = size * (0.78 + i * 0.2);
+        const ms = Math.max(5, Math.round(size * (0.11 - i * 0.025)));
+        return (
+          <span key={i} className="saimor-moon-orbit absolute left-1/2 top-1/2" style={{ ['--moon-start' as any]: `${(seed * 37 + i * 140) % 360}deg`, ['--moon-distance' as any]: `${d.toFixed(1)}px`, ['--moon-duration' as any]: `${38 + (seed % 17) + i * 21}s` }}>
+            <span className="absolute block rounded-full" style={{ width: ms, height: ms, marginLeft: -ms / 2, marginTop: -ms / 2, background: moonBackground(name, 0.5 - i * 0.15), opacity: 0.95 - i * 0.2, transform: 'scaleY(2.78)' }} />
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+/** Material eines Planeten für Innenansichten (Horizont). */
+export function planetMaterial(name: string) { return MATERIALS[planetMaterialKey(name)]; }

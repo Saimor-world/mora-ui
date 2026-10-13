@@ -513,7 +513,7 @@ export default function UniverseView() {
                 />)}
 
             {/* Universe v2: die vier Seitenkarten weichen – MÔRA bündelt sie in einem Satz und einem Vorschlag. */}
-            {isUniverseV2Enabled() ? <div className="uv2-lage-only" data-testid="uv2-lage"><UniverseObservatory
+            {isUniverseV2Enabled() ? <div className="uv2-widgets" data-testid="uv2-lage"><UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}
