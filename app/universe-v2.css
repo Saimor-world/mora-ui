@@ -1190,7 +1190,7 @@ html[data-uv2="on"] .uv2-lf__title small { display: block; font: 10.5px var(--uv
 /* ── hd21 MÔRA-Jarvis: Goldfaden, Chip, Verlauf, Freigabe ── */
 .uv2-jv { position: fixed; inset: 0; pointer-events: none; z-index: 900; }
 .uv2-jv__thread { position: fixed; inset: 0; width: 100vw; height: 100vh; overflow: visible; }
-.uv2-jv__thread path { fill: none; stroke: #d8b56a; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(216,181,106,.7)); }
+.uv2-jv__thread path { fill: none; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 6px rgba(216,181,106,.7)); }
 .uv2-jv__thread circle { fill: #f3dfae; filter: drop-shadow(0 0 10px rgba(243,223,174,.9)); }
 @keyframes uv2-jv-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes uv2-jv-fade { 0% { opacity: 0; } 12%, 70% { opacity: 1; } 100% { opacity: 0; } }
@@ -1447,3 +1447,9 @@ html[data-uv2="on"] .uv2-canvas-hint span { font: 400 20px var(--uv-serif); colo
 html[data-uv2="on"] .uv2-canvas-hint small { font: 10px var(--uv-mono); letter-spacing: .16em; text-transform: uppercase; color: rgba(var(--uv-cream), .32); }
 /* hd23: Freigabe sitzt am Platz des Chips – unter den Fenstern, nicht auf ihnen */
 html[data-uv2="on"] .uv2-jv__card { bottom: 92px; z-index: 2; }
+/* hd24: Faden mit Verlauf (am Dock leise, am Ziel hell), Ziel-Planet leuchtet statt zu verblassen */
+.uv2-jv__thread path[stroke] { stroke-width: 1.4; filter: drop-shadow(0 0 5px rgba(216,181,106,.55)); }
+.uv2-jv__thread circle { fill: #fbeecb; filter: drop-shadow(0 0 8px rgba(243,223,174,.95)); }
+html[data-uv2="on"] [data-jv-target] { opacity: 1 !important; filter: brightness(1.32) saturate(1.1) drop-shadow(0 0 18px rgba(232,200,130,.55)) drop-shadow(0 0 44px rgba(216,181,106,.28)) !important; z-index: 5; transition: filter .5s cubic-bezier(.2,.8,.2,1); }
+html[data-uv2="on"] [data-jv-target] .saimor-territory-body { filter: brightness(1.28) saturate(1.12) !important; box-shadow: 0 0 0 1px rgba(243,223,174,.55), 0 0 36px 6px rgba(216,181,106,.38), 0 0 90px 18px rgba(216,181,106,.16) !important; border-radius: 50%; transition: filter .5s cubic-bezier(.2,.8,.2,1), box-shadow .5s cubic-bezier(.2,.8,.2,1); }
+html[data-uv2="on"] [data-jv-target] * { opacity: 1; }

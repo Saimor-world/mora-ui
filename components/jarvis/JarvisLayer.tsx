@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, History, RotateCcw, ShieldCheck, X } from 'lucide-react';
 import { JARVIS_ACTION_EVENT, grantApproval, runAction, type JarvisActionEventDetail, type RunResult } from '@/lib/jarvis/registry';
@@ -16,7 +16,7 @@ export function requestJarvisAction(detail: JarvisRequestDetail) {
     window.dispatchEvent(new CustomEvent<JarvisRequestDetail>(JARVIS_REQUEST_EVENT, { detail }));
 }
 
-interface Thread { key: number; d: string; end: { x: number; y: number } }
+interface Thread { key: number; d: string; end: { x: number; y: number }; start: { x: number; y: number }; el: HTMLElement | null }
 interface Pending { id: string; params: unknown; source: JarvisSource; description: string }
 
 function originPoint() {
@@ -25,16 +25,102 @@ function originPoint() {
     return { x: window.innerWidth / 2, y: window.innerHeight - 60 };
 }
 
+type Circle = { x: number; y: number; r: number };
+const PLANET = '[data-testid^="territory-"]';
+
+function circleOf(el: Element): Circle | null {
+    const body = (el.querySelector('.saimor-territory-body') as HTMLElement | null) || (el as HTMLElement);
+    const r = body.getBoundingClientRect();
+    if (!r.width) return null;
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2, r: Math.min(r.width, r.height) / 2 };
+}
+
+/** hd24: weiche Kurve, die anderen Planeten ausweicht; endet am Rand des Ziels statt mitten darin. */
 function threadTo(selector?: string): Thread | null {
     if (!selector) return null;
-    let el: Element | null = null;
-    try { el = document.querySelector(selector); } catch { return null; }
+    let el: HTMLElement | null = null;
+    try { el = document.querySelector<HTMLElement>(selector); } catch { return null; }
     const r = el?.getBoundingClientRect();
-    if (!r || !r.width || r.top < 0 || r.top > window.innerHeight - 80 || r.left > window.innerWidth - 20) return null;
+    if (!el || !r || !r.width || r.top < 0 || r.top > window.innerHeight - 80 || r.left > window.innerWidth - 20) return null;
     const a = originPoint();
-    const b = { x: r.left + Math.min(r.width / 2, 60), y: r.top + Math.min(r.height / 2, 28) };
-    const c = { x: (a.x + b.x) / 2 + (a.x > b.x ? 80 : -80), y: (a.y + b.y) / 2 - 90 };
-    return { key: Date.now(), d: `M${a.x},${a.y} Q${c.x},${c.y} ${b.x},${b.y}`, end: b };
+    const isPlanet = el.matches(PLANET);
+    const tc = isPlanet ? circleOf(el) : null;
+    let b = tc ? { x: tc.x, y: tc.y } : { x: r.left + Math.min(r.width / 2, 60), y: r.top + Math.min(r.height / 2, 28) };
+    const obstacles: Circle[] = [];
+    const seen = new Set<string>();
+    document.querySelectorAll(PLANET).forEach((p) => {
+        if (p === el || el!.contains(p) || p.contains(el!)) return;
+        if (p.getAttribute('data-testid') === el!.getAttribute('data-testid')) return;
+        const c = circleOf(p); if (!c || c.r < 4) return;
+        const k = `${Math.round(c.x)},${Math.round(c.y)}`; if (seen.has(k)) return; seen.add(k);
+        obstacles.push(c);
+    });
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len, ny = dx / len;
+    const at = (t: number, c1: { x: number; y: number }, c2: { x: number; y: number }, e: { x: number; y: number }) => {
+        const u = 1 - t;
+        return { x: u * u * u * a.x + 3 * u * u * t * c1.x + 3 * u * t * t * c2.x + t * t * t * e.x, y: u * u * u * a.y + 3 * u * u * t * c1.y + 3 * u * t * t * c2.y + t * t * t * e.y };
+    };
+    let best = { cost: Infinity, c1: a, c2: b };
+    for (let k = -1; k <= 1.0001; k += 0.1) {
+        const off = k * Math.min(420, len * 0.75);
+        const c1 = { x: a.x + dx * 0.25 + nx * off, y: a.y + dy * 0.25 + ny * off - 40 };
+        const c2 = { x: a.x + dx * 0.75 + nx * off, y: a.y + dy * 0.75 + ny * off };
+        let cost = Math.abs(k) * 30;
+        for (let i = 2; i <= 38; i++) {
+            const p = at(i / 40, c1, c2, b);
+            if (p.x < 8 || p.x > window.innerWidth - 8 || p.y < 8) cost += 400;
+            for (const o of obstacles) { const d = Math.hypot(p.x - o.x, p.y - o.y) - (o.r + 26); if (d < 0) cost += 60 + -d * 4; }
+        }
+        if (cost < best.cost) best = { cost, c1, c2 };
+    }
+    if (tc) {
+        // am Rand des Zielplaneten enden, aus Richtung der Kurve
+        const p = at(0.97, best.c1, best.c2, b);
+        const vx = p.x - tc.x, vy = p.y - tc.y, vl = Math.hypot(vx, vy) || 1;
+        b = { x: tc.x + (vx / vl) * (tc.r + 6), y: tc.y + (vy / vl) * (tc.r + 6) };
+    }
+    const f = (n: number) => n.toFixed(1);
+    return { key: Date.now(), d: `M${f(a.x)},${f(a.y)} C${f(best.c1.x)},${f(best.c1.y)} ${f(best.c2.x)},${f(best.c2.y)} ${f(b.x)},${f(b.y)}`, end: b, start: a, el: isPlanet ? el : null };
+}
+
+/** Zeichnet sich ein (0,7 s), hält, verblasst ab 2,0 s – per rAF, damit es überall gleich läuft. */
+function ThreadView({ t }: { t: Thread }) {
+    const ref = useRef<SVGSVGElement>(null);
+    useEffect(() => {
+        const svg = ref.current; if (!svg) return;
+        const path = svg.querySelector('path')!; const dot = svg.querySelector('circle')!;
+        const t0 = performance.now(); let raf = 0;
+        const ease = (x: number) => 1 - Math.pow(1 - x, 3);
+        const tick = (now: number) => {
+            const e = now - t0;
+            const draw = ease(Math.min(1, e / 700));
+            const fade = e < 2000 ? 1 : Math.max(0, 1 - (e - 2000) / 550);
+            path.style.strokeDashoffset = String(1 - draw);
+            dot.style.opacity = String(draw > 0.96 ? fade : 0);
+            svg.style.opacity = String(fade);
+            if (e < 2600) raf = requestAnimationFrame(tick);
+        };
+        raf = requestAnimationFrame(tick);
+        const el = t.el;
+        if (el) el.setAttribute('data-jv-target', '');
+        const clear = window.setTimeout(() => el?.removeAttribute('data-jv-target'), 2600);
+        return () => { cancelAnimationFrame(raf); window.clearTimeout(clear); el?.removeAttribute('data-jv-target'); };
+    }, [t]);
+    const gid = `jvg${t.key}`;
+    return (
+        <svg ref={ref} className="uv2-jv__thread" aria-hidden>
+            <defs>
+                <linearGradient id={gid} gradientUnits="userSpaceOnUse" x1={t.start.x} y1={t.start.y} x2={t.end.x} y2={t.end.y}>
+                    <stop offset="0" stopColor="#d8b56a" stopOpacity="0" />
+                    <stop offset="0.35" stopColor="#d8b56a" stopOpacity="0.55" />
+                    <stop offset="1" stopColor="#f3dfae" stopOpacity="1" />
+                </linearGradient>
+            </defs>
+            <path d={t.d} pathLength={1} stroke={`url(#${gid})`} style={{ strokeDasharray: 1, strokeDashoffset: 1 }} />
+            <circle cx={t.end.x} cy={t.end.y} r={3.5} style={{ opacity: 0 }} />
+        </svg>
+    );
 }
 
 const fmt = (ts: number) => new Date(ts).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
@@ -100,7 +186,7 @@ export function JarvisLayer() {
         };
     }, [handle]);
 
-    useEffect(() => { if (!thread) return; const t = setTimeout(() => setThread(null), 2600); return () => clearTimeout(t); }, [thread]);
+    useEffect(() => { if (!thread) return; const t = setTimeout(() => setThread(null), 2700); return () => clearTimeout(t); }, [thread]);
     useEffect(() => { if (!chip || open) return; const t = setTimeout(() => setChip(null), 7000); return () => clearTimeout(t); }, [chip, open]);
     useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(null), 5000); return () => clearTimeout(t); }, [notice]);
 
@@ -110,10 +196,7 @@ export function JarvisLayer() {
     return createPortal(
         <div className="uv2-jv" data-testid="jarvis-layer">
             {thread && (
-                <svg className="uv2-jv__thread" key={thread.key} aria-hidden>
-                    <path d={thread.d} pathLength={1} />
-                    <circle cx={thread.end.x} cy={thread.end.y} r={5} />
-                </svg>
+                <ThreadView key={thread.key} t={thread} />
             )}
             {pending && (
                 <div className="uv2-jv__card" role="dialog" aria-label="Freigabe" data-testid="jarvis-approval">
