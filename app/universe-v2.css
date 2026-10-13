@@ -1143,3 +1143,5 @@ html[data-uv2="on"] .uv2-pair__key[data-on] .uv2-pair__phone { animation: uv2-ra
 html[data-uv2="on"] .uv2-pair__count { font: 400 34px var(--uv-serif); color: rgb(var(--uv-cream)); }
 html[data-uv2="on"] .uv2-pair__key small { font: 9.5px var(--uv-mono); letter-spacing: .14em; text-transform: uppercase; color: rgba(var(--uv-cream), .45); }
 html[data-uv2="on"] .uv2-pair__key small.uv2-pair__err { color: #E8A08A; text-transform: none; letter-spacing: 0; font-size: 11px; text-align: center; }
+html[data-uv2="on"] .uv2-notes__count { font: 10px var(--uv-mono); color: rgba(var(--uv-cream), .5); letter-spacing: .1em; }
+html[data-uv2="on"] [data-uv2-app="notes"] .uv2-foot { display: flex; justify-content: space-between; }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Heading, List, ListChecks, Minus } from 'lucide-react';
 import { AlertCircle, Check, CloudOff, FileText, FolderOpen, Loader2, Save } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
 import { saveLocalPrivateTextFile } from '@/lib/files/localPrivateFiles';
@@ -9,7 +10,6 @@ import { toast } from '@/lib/toast';
 import { useNotesSync } from './hooks/useNotesSync';
 import { PaneWindow } from '@/components/layers/PaneWindow';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
-import { AppHero } from '@/components/universe/app/AppStage';
 
 function toNoteFilename(text: string) {
   const firstLine = text
@@ -37,6 +37,15 @@ function NotesBody({ paneId: _paneId }: AppProps) {
   const { content, setContent, loadState, saveState, handleBlur } = useNotesSync();
   const openPane = usePaneStore((state) => state.openPane);
   const [localSaveState, setLocalSaveState] = useState<'idle' | 'saved'>('idle');
+  const areaRef = useRef<HTMLTextAreaElement>(null);
+  // Format per Symbol: setzt das Zeichen an den Anfang der aktuellen Zeile.
+  const insertPrefix = useCallback((prefix: string) => {
+    const el = areaRef.current; const pos = el ? el.selectionStart : content.length;
+    const lineStart = content.lastIndexOf('\n', pos - 1) + 1;
+    const next = prefix.startsWith('\n') ? content.slice(0, pos) + prefix + content.slice(pos) : content.slice(0, lineStart) + prefix + content.slice(lineStart);
+    setContent(next);
+    requestAnimationFrame(() => { if (el) { el.focus(); const c = pos + prefix.length; el.setSelectionRange(c, c); } });
+  }, [content, setContent]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -73,20 +82,28 @@ function NotesBody({ paneId: _paneId }: AppProps) {
     const status = loadState === 'no-server' ? 'nur dieses Gerät' : saveState === 'saving' ? 'speichert …' : saveState === 'saved' ? 'gespeichert' : saveState === 'error' ? 'nicht gespeichert' : loadState === 'loading' ? 'lädt …' : 'in deinem Profil';
     return (
       <div className="flex h-full flex-col" data-uv2-app="notes">
-        <AppHero app="notes" eyebrow={'Notiz · ' + status}
-          title={firstLine ? firstLine.slice(0, 80) : 'Leer'}
-          sub={firstLine ? 'Dein schneller Schreibblock. Wenn daraus etwas Bleibendes wird, lege es in Meine Dateien ab.' : 'Gedanken, Aufgaben, Gesprächsnotizen – einfach anfangen. MÔRA liest mit, wenn du sie fragst.'}
-          figure={wordCount} figureLabel="Wörter"
-          action={canSaveAsFile ? { label: localSaveState === 'saved' ? 'In Meine Dateien' : 'Als Datei sichern', onClick: saveIntoPrivateFiles } : null} />
+        <div className="uv2-ftool" data-testid="notes-v2-bar">
+          <div className="uv2-ftool__nav" role="toolbar" aria-label="Format">
+            <button type="button" title="Überschrift" aria-label="Überschrift" onClick={() => insertPrefix('# ')}><Heading /></button>
+            <button type="button" title="Liste" aria-label="Liste" onClick={() => insertPrefix('- ')}><List /></button>
+            <button type="button" title="Checkliste" aria-label="Checkliste" onClick={() => insertPrefix('- [ ] ')}><ListChecks /></button>
+            <button type="button" title="Trennlinie" aria-label="Trennlinie" onClick={() => insertPrefix('\n---\n')}><Minus /></button>
+          </div>
+          <span className="uv2-ftool__crumb" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{firstLine ? firstLine.slice(0, 60) : 'Neue Notiz'}</span>
+          <span className="uv2-dot" data-on={saveState === 'saved' || loadState === 'ready' ? '' : undefined} data-warn={saveState === 'error' || loadState === 'no-server' ? '' : undefined} title={status} />
+          <span className="uv2-notes__count">{wordCount}</span>
+          <button type="button" className="uv2-pill" title="Meine Dateien" aria-label="Meine Dateien" onClick={() => openPrivateFiles()}><FolderOpen /></button>
+          <button type="button" className="uv2-pill uv2-pill--gold" disabled={!canSaveAsFile} onClick={saveIntoPrivateFiles} data-testid="notes-v2-save"><Save />{localSaveState === 'saved' ? 'Abgelegt' : 'Als Datei'}</button>
+        </div>
         <div className="relative min-h-0 flex-1">
           {loadState === 'loading' ? (
             <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Notizen werden geladen …</p>
           ) : (
-            <textarea value={content} onChange={(e) => setContent(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
+            <textarea ref={areaRef} value={content} onChange={(e) => setContent(e.target.value)} onBlur={handleBlur} onKeyDown={handleKeyDown}
               placeholder="Schreib einfach los …" className="uv2-paper" spellCheck autoComplete="off" />
           )}
         </div>
-        <div className="uv2-foot"><span>{charCount} Zeichen · ⌘S speichert</span><button type="button" onClick={() => openPrivateFiles()}>Meine Dateien</button></div>
+        <div className="uv2-foot"><span>{charCount} Zeichen · ⌘S</span><span>{status}</span></div>
       </div>
     );
   }
