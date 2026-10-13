@@ -11,7 +11,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import { Moon, Sun, Zap, Monitor, Volume1, Sparkles, Send } from 'lucide-react';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge, Smartphone } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
@@ -52,6 +52,7 @@ import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
 import { RaumV2 } from '@/apps/settings/RaumV2';
+import { PairPlaceholder } from '@/components/begleiter/PairPlaceholder';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -184,6 +185,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
+        ...(uv2On() ? [{ id: 'begleiter', label: 'Handy verbinden', icon: Smartphone }] : []),
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
@@ -594,6 +596,7 @@ useEffect(() => {
                     </div>
 
                     <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
+                    {uv2On() && activeTab === 'begleiter' && <PairPlaceholder />}
                     {uv2On() && !isStandardMode && activeTab === 'about' && (
                         <div className="uv2-osform" data-testid="settings-v2-about">
                             <div className="uv2-idcard"><span className="uv2-idcard__logo">S</span><span className="uv2-idcard__name">Saimôr OS</span><span className="uv2-dot" data-on="">v2.0.0-beta</span></div>
