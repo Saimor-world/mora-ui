@@ -548,7 +548,7 @@ export const MoraShell: React.FC = () => {
             openPane({ id: 'notes-main', type: 'notes', title: 'Notes', size: { width: 720, height: 560 } });
         }, [openPane]),
         onOpenSettings: useCallback(() => {
-            openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 860, height: 720 } });
+            openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 } });
         }, [openPane]),
         // 1.0 gated: Terminal, MoraHub, Memory shortcuts disabled (future-tier)
         onGoHome: useCallback(() => {

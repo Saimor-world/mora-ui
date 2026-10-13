@@ -328,7 +328,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
         result.push({
             id: "action-settings",
-            label: "Settings",
+            label: "Einstellungen",
             description: "Local system preferences",
             icon: <Settings size={16} className="text-white/60" />,
             category: "action",
@@ -340,7 +340,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
         result.push({
             id: "action-search",
-            label: "Search",
+            label: "Suche",
             description: "Local search",
             icon: <Search size={16} className="text-emerald-400" />,
             category: "action",
@@ -476,7 +476,7 @@ export const Spotlight: React.FC<Props> = ({ isOpen, onClose }) => {
 
         result.push({
             id: "action-users",
-            label: "Users",
+            label: "Benutzer",
             description: "Team members & invites",
             icon: <Users size={16} className="text-emerald-300" />,
             category: "action",

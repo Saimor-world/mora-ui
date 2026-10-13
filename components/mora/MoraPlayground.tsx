@@ -148,7 +148,7 @@ export const MoraPlayground: React.FC<MoraPlaygroundProps> = ({
     const actions = [
         { id: "chat",    label: "Chat",    icon: MessageCircle, onClick: openChat },
         { id: "finder",  label: "Finder",  icon: FolderOpen,    onClick: () => openFinder(false) },
-        { id: "upload",  label: "Upload",  icon: Upload,        onClick: () => openFinder(true) },
+        { id: "upload",  label: "Hochladen",  icon: Upload,        onClick: () => openFinder(true) },
         { id: "search",  label: "Suche",   icon: Search,        onClick: openSearch },
         { id: "team",    label: "Team",    icon: Users,         onClick: openTeam },
         { id: "notes",   label: "Notizen", icon: StickyNote,    onClick: openNotes },

@@ -83,15 +83,14 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
     return (
         <CommandReceipt
             tone={tone}
-            label={label || (isAmbiguous ? 'Mehrere passende Treffer' : 'Treffer')}
+            label={label || (isAmbiguous ? 'Mehrere Treffer' : 'Treffer')}
             title={body || (isAmbiguous
                 ? `Ich sehe mehrere plausible Ziele${firstLabel}. Wähle eins.`
                 : `Ich habe einen klaren Treffer${firstLabel}.`)}
             body={description}
             icon={isAmbiguous ? Search : undefined}
             chips={[
-                { label: `${shownResults.length} Auswahl${shownResults.length === 1 ? '' : 'en'}` },
-                { label: 'Titel + Pfad + Typ' },
+                { label: `${shownResults.length} Treffer` },
                 ...(chips || []),
             ]}
             actions={onReview ? (
@@ -100,7 +99,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                     onClick={onReview}
                     className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 transition-colors hover:bg-white/[0.08] hover:text-white"
                 >
-                    Suche prüfen
+                    In allen Inhalten suchen
                 </button>
             ) : undefined}
             footer={footer}
@@ -118,6 +117,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                     const whyReason = explanation?.reason || result.route_reason;
                     const signals = explanation?.signal_labels || result.route_signals || [];
                     const strengthLabel = formatConfidence(result.route_confidence_label, result.route_confidence_score);
+                    const hasRoute = Boolean(result.route_destination || whyHeadline || whyReason || signals.length);
 
                     return (
                         <button
@@ -140,7 +140,8 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                             <div className="min-w-0 flex-1">
                                 <div className="truncate text-sm font-medium text-white/88">{result.title}</div>
                                 <div className="mt-0.5 truncate text-xs text-white/48">{locationLabel}</div>
-                                <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-white/58">
+                                {hasRoute && (
+<div className="mt-2 space-y-1 text-[11px] leading-relaxed text-white/58">
                                     <div className="flex gap-2">
                                         <span className="shrink-0 uppercase tracking-[0.18em] text-white/36">Ziel</span>
                                         <span className="min-w-0 text-white/78">{destinationLabel}</span>
@@ -171,6 +172,7 @@ export const AmbiguityChoiceSurface: React.FC<AmbiguityChoiceSurfaceProps> = ({
                                         </div>
                                     )}
                                 </div>
+                                )}
                             </div>
                             <div className="flex shrink-0 items-center gap-2">
                                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/55">

@@ -15,7 +15,7 @@ const OPTIONS: Array<{
         value: 'private',
         icon: Lock,
         label: 'Nur ich',
-        description: 'Privat in deinem OS. Niemand im Workspace sieht diesen Inhalt.',
+        description: 'Privat in deinem OS. Niemand im Team sieht diesen Inhalt.',
     },
     {
         value: 'department',
@@ -26,7 +26,7 @@ const OPTIONS: Array<{
     {
         value: 'company',
         icon: Building2,
-        label: 'Workspace',
+        label: 'Team',
         description: 'Sichtbar fuer angemeldete Mitglieder dieses Workspaces.',
     },
     {

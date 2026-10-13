@@ -110,7 +110,7 @@ describe('MeineDateienApp', () => {
     expect((await screen.findAllByText('vertrag.pdf')).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Gerät').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Privat').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Workspace').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Team').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Cloud').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Privat \+ Dokument/i).length).toBeGreaterThan(0);
     expect(await screen.findByText(/PDF Vorschau/i)).toBeInTheDocument();
@@ -152,7 +152,7 @@ describe('MeineDateienApp', () => {
     render(<MeineDateienApp paneId="files-1" initialData={{}} />);
     await screen.findAllByText('vertrag.pdf');
 
-    fireEvent.click(screen.getByTitle('Im Workspace sichtbar machen'));
+    fireEvent.click(screen.getByTitle('Fürs Team sichtbar machen'));
 
     await waitFor(() => {
       expect(shareCompanyFile).toHaveBeenCalledWith('file-1', 'company');

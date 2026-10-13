@@ -47,6 +47,6 @@ export function getCoreFileVisibilityLabel(scope?: string | null, linkedNodeId?:
     const normalized = normalizeVisibilityScope(scope);
     if (normalized === 'public_link') return 'Freigabelink';
     if (normalized === 'department') return 'Bereich sichtbar';
-    if (normalized === 'company') return 'Workspace sichtbar';
+    if (normalized === 'company') return 'Fürs Team sichtbar';
     return linkedNodeId ? 'Privat + Dokument' : 'Privat';
 }

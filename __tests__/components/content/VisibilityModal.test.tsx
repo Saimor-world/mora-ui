@@ -23,7 +23,7 @@ describe('VisibilityModal', () => {
         render(<VisibilityModal fileName="doc.pdf" onConfirm={onConfirm} onCancel={onCancel} />);
         expect(screen.getByRole('radio', { name: /Nur ich/i })).toBeInTheDocument();
         expect(screen.getByRole('radio', { name: /Bereich/i })).toBeInTheDocument();
-        expect(screen.getByRole('radio', { name: /Workspace/i })).toBeInTheDocument();
+        expect(screen.getByRole('radio', { name: /Team/i })).toBeInTheDocument();
         expect(screen.getByRole('radio', { name: /Freigabelink/i })).toBeInTheDocument();
     });
 

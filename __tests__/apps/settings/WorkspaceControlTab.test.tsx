@@ -55,7 +55,7 @@ describe('WorkspaceControlTab', () => {
   it('does not present missing CORE data as healthy', () => {
     mockAccess.mockReturnValue({ data: null, isLoading: false, isFetching: false, refetch: jest.fn() });
     render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
-    expect(screen.getByText(/keine erfundenen Werte/i)).toBeInTheDocument();
+    expect(screen.getByText(/lieber nichts als falsche Werte/i)).toBeInTheDocument();
   });
 
   it('derives readiness from the shared integration truth', () => {
@@ -67,7 +67,7 @@ describe('WorkspaceControlTab', () => {
       { label: 'Kalender', ready: false },
       { label: 'Cloud', ready: true },
       { label: 'Feeds', ready: false },
-      { label: 'Assistant', ready: true },
+      { label: 'Assistent', ready: true },
     ]);
   });
 
