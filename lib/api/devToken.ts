@@ -3,7 +3,7 @@
  * Automatically fetches and manages JWT tokens for local development
  */
 
-const CORE_API_URL = process.env.NEXT_PUBLIC_CORE_API_URL || '/api/core';
+const CORE_API_URL = '/api/core'; // one API path: always the same-origin proxy
 const TOKEN_STORAGE_KEY = 'saimor_dev_token';
 const TOKEN_EXPIRY_KEY = 'saimor_dev_token_expiry';
 

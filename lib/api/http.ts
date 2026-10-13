@@ -9,24 +9,18 @@ export type { OperationalState };
 /**
  * Core API base URL resolution.
  *
- * - Production usually sets NEXT_PUBLIC_SAIMOR_CORE_URL=https://api.saimor.world
- * - Dev usually proxies through Next.js rewrites at /api/core
- * - Some envs mistakenly include /v1; normalize that away to avoid /v1/v1.
+ * ONE API path: the browser ALWAYS talks to the same-origin proxy `/api/core`
+ * (app/api/core/[...slug]/route.ts). That proxy forwards the HttpOnly session
+ * cookie as a Bearer token and reaches CORE over the internal Docker network.
+ * Direct browser calls to https://api.saimor.world are never made: they fail
+ * CORS on hq.saimor.world and cannot carry the HttpOnly session (401).
+ * Server-side code may still use an absolute URL from the environment.
  */
 export function getCoreBaseUrl(): string {
-    const raw = (process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || '').trim();
-    const absoluteBase = raw.replace(/\/+$/, '');
+    if (typeof window !== 'undefined') return '/api/core';
 
-    if (typeof window !== 'undefined') {
-        // Prefer absolute URL if provided (prevents rewrite issues in production)
-        if (absoluteBase && absoluteBase.startsWith('http')) {
-            return absoluteBase;
-        }
-        // Fallback to proxy
-        return '/api/core';
-    }
-    
-    let base = absoluteBase.length > 0 ? absoluteBase : '/api/core';
+    const raw = (process.env.SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_SAIMOR_CORE_URL || process.env.NEXT_PUBLIC_CORE_API_URL || '').trim();
+    let base = raw.replace(/\/+$/, '');
     if (base.toLowerCase().endsWith('/v1')) base = base.slice(0, -3);
     return base.length > 0 ? base : '/api/core';
 }
