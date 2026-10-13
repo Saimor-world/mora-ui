@@ -53,7 +53,7 @@ import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
 import { RaumV2 } from '@/apps/settings/RaumV2';
-import { PairPlaceholder } from '@/components/begleiter/PairPlaceholder';
+import { PairPanel } from '@/components/begleiter/PairPanel';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -61,6 +61,7 @@ const UV2_SETTINGS_LINES: Record<string, string> = {
     appearance: 'Wie Saimôr für dich aussieht.',
     audio: 'Klang, Stille und die Musik im Hintergrund.',
     notifications: 'Wann dich etwas erreichen darf.',
+    begleiter: 'Dein Handy als Schlüssel – Freigaben unterwegs mit Face ID.',
     workspace: 'Bereiche und Räume deiner Organisation.',
     team: 'Wer mitarbeitet, und mit welchen Rechten.',
     system: 'Wie es dem System gerade geht.',
@@ -597,7 +598,7 @@ useEffect(() => {
                     </div>
 
                     <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
-                    {uv2On() && activeTab === 'begleiter' && <PairPlaceholder />}
+                    {uv2On() && activeTab === 'begleiter' && <PairPanel />}
                     {uv2On() && !isStandardMode && activeTab === 'about' && (
                         <div className="uv2-osform" data-testid="settings-v2-about">
                             <div className="uv2-idcard"><span className="uv2-idcard__logo">S</span><span className="uv2-idcard__name">Saimôr OS</span><span className="uv2-dot" data-on="">v2.0.0-beta</span></div>
