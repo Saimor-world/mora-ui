@@ -625,7 +625,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             paneId={paneId}
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full flex-col gap-4">
+            <div className="flex h-full flex-col gap-4" data-uv2-flat={uv2 ? '' : undefined}>
                 {uv2 && (
                     <AppHero app="action-center" eyebrow={`Aktionen · ${summary.total} insgesamt`}
                         title={summary.active === 0 ? 'Nichts wartet auf dich.' : summary.active === 1 ? 'Eine Aktion wartet auf dein Ja.' : `${summary.active} Aktionen warten auf dein Ja.`}
@@ -659,7 +659,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
 
                 {/* Summary: v2 = eine ruhige Zeile, nur Werte > 0; alt = Kacheln */}
                 {uv2 ? (
-                    summary.total > 0 && (
+                    false && summary.total > 0 && (
                         <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55" data-testid="ac-summary-line">
                             {[
                                 { label: summary.total === 1 ? 'Aktion' : 'Aktionen', value: summary.total },

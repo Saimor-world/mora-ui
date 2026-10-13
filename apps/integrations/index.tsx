@@ -398,7 +398,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                     </div>
                 </header>
 
-                <main className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                <main className="min-h-0 flex-1 overflow-y-auto px-6 py-6" data-uv2-flat={uv2 ? '' : undefined}>
                     {isLoading ? (
                         <LoadingState />
                     ) : error ? (
