@@ -368,7 +368,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                             {isAdmin && member.status !== 'invited' && (
                                                 <button
                                                     onClick={() => handleActiveToggle(member.id, member.status === 'active')}
-                                                    className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
+                                                    data-uv2-switch={member.status === 'active' ? 'on' : 'off'} className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
                                                     title={member.status === 'active' ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
                                                 >
                                                     <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${member.status === 'active' ? 'left-4' : 'left-0.5'}`} />

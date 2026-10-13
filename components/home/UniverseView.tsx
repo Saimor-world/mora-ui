@@ -13,6 +13,7 @@ import type { UniverseSignal } from '@/lib/universe/types';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
+import { UniverseLinks } from '@/components/universe/UniverseLinks';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
@@ -513,7 +514,7 @@ export default function UniverseView() {
                 />)}
 
             {/* Universe v2: die vier Seitenkarten weichen – MÔRA bündelt sie in einem Satz und einem Vorschlag. */}
-            {isUniverseV2Enabled() ? <div className="uv2-widgets" data-testid="uv2-lage"><UniverseObservatory
+            {isUniverseV2Enabled() ? <div className="uv2-widgets" data-testid="uv2-lage"><UniverseLinks /><UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}

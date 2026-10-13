@@ -10,11 +10,16 @@ import type { AppProps } from '@/lib/apps/types';
 
 type Tool = 'pen' | 'eraser';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+
 const PALETTE = [
     '#ffffff', '#94a3b8', '#f87171', '#fb923c',
     '#fbbf24', '#4ade80', '#34d399', '#38bdf8',
     '#818cf8', '#c084fc',
 ];
+
+// v2: gedämpfte Systemfarben statt Regenbogen (Creme, Gold, Planetenmaterialien)
+const V2_PALETTE = ['#F7F4E9', '#D6A848', '#c9875a', '#7fa7c4', '#9c93c9', '#a9cfc7', '#8a8576', '#E0876A'];
 
 // ─── CanvasApp ────────────────────────────────────────────────────────────────
 
@@ -163,7 +168,7 @@ export default function CanvasApp({ paneId }: AppProps) {
 
                     {/* Color palette */}
                     <div className="flex items-center gap-1 flex-wrap">
-                        {PALETTE.map(c => (
+                        {(isUniverseV2Enabled() ? V2_PALETTE : PALETTE).map(c => (
                             <button
                                 key={c}
                                 onClick={() => { setColor(c); setTool('pen'); }}

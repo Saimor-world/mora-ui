@@ -38,7 +38,7 @@ function Instrument({ eyebrow, title, children, accent = 'cyan' }: {
     accent?: 'cyan' | 'amber';
 }) {
     return (
-        <section className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
+        <section data-uv2-instrument={eyebrow.replace(/^Dein /, '').toLowerCase()} className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
             <div className={'absolute inset-y-5 left-0 w-px ' + (accent === 'amber' ? 'bg-amber-300/55' : 'bg-cyan-300/50')} />
             <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">{eyebrow}</p>
             <h2 className="mt-1 text-sm font-medium tracking-[-0.01em] text-white/82">{title}</h2>
@@ -136,7 +136,7 @@ export function UniverseObservatory(props: Props) {
             <div data-uv2-col="left" className={(v2 ? 'absolute bottom-28 left-24 w-[340px] space-y-3 ' : 'absolute bottom-28 left-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
                 {!v2 && <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />}
                 {/* v2: Horizont links unter der Begrüßung, Verteilung rechts */}
-                <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
+                {!v2 && (<>                <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
                         value={props.calendarStatus === 'unavailable'
@@ -162,7 +162,7 @@ export function UniverseObservatory(props: Props) {
                         value={props.feed[0]?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed}
                         drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
                     />
-                </Instrument>
+                </Instrument></>)}
                 <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
                     <Sparkles size={11} className="text-cyan-200/44" />
                     <span>{props.territoryCount} Bereiche</span>
@@ -170,9 +170,57 @@ export function UniverseObservatory(props: Props) {
                     <span>{props.documentCount} Dokumente</span>
                 </div>
             </div>
-            <div data-uv2-col="right" className={(v2 ? 'absolute top-28 right-4 w-[236px] space-y-3 ' : 'absolute bottom-28 right-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+            <div data-uv2-col="right" className={(v2 ? 'absolute top-[84px] bottom-28 right-5 w-[248px] flex flex-col justify-center space-y-3 ' : 'absolute bottom-28 right-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                {v2 && (<><Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
+                    <SignalRow
+                        icon={<CalendarDays size={13} />} label="Kalender"
+                        value={props.calendarStatus === 'unavailable'
+                            ? 'Nicht erreichbar – Verbindung prüfen'
+                            : props.calendarStatus === 'loading' && !props.calendar[0]
+                                ? 'Wird geladen'
+                                : props.calendar[0]?.title || 'Keine Termine im Horizont'}
+                        onClick={props.calendarStatus === 'unavailable' && props.onOpenIntegrations ? props.onOpenIntegrations : props.onOpenCalendar}
+                        drag={props.calendar[0] ? { kind: 'calendar', text: props.calendar[0].location || '' } : null}
+                    />
+                    <SignalRow
+                        icon={<Mail size={13} />} label="Mail"
+                        value={props.mailStatus === 'unavailable'
+                            ? 'Nicht erreichbar – Verbindung prüfen'
+                            : props.mailStatus === 'loading' && !props.mail[0]
+                                ? 'Wird geladen'
+                                : props.mail[0]?.subject || 'Posteingang ruhig'}
+                        onClick={props.mailStatus === 'unavailable' && props.onOpenIntegrations ? props.onOpenIntegrations : props.onOpenMail}
+                        drag={props.mail[0] ? { kind: 'mail', text: props.mail[0].snippet || '' } : null}
+                    />
+                    <SignalRow
+                        icon={<Rss size={13} />} label="Feed"
+                        value={props.feed[0]?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed}
+                        drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
+                    />
+                </Instrument></>)}
                 {v2 && <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />}
-                {!v2 && <BusinessInstrument business={props.business} />}
+                {!v2 && (<><BusinessInstrument business={props.business} />
+                <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
+                    <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-xs text-white/70">
+                                {openIncidents.length ? <Activity size={14} className="text-amber-300/75" /> : <ShieldCheck size={14} className="text-emerald-300/70" />}
+                                {openIncidents.length ? `${openIncidents.length} offen` : 'Systeme ruhig'}
+                            </span>
+                            <span className="text-[8px] uppercase tracking-[0.16em] text-white/24 transition group-hover:text-white/55">Öffnen</span>
+                        </div>
+                        {/* Vorher feste 34px Hoehe: "Keine belegten Vorfaelle im
+                            aktuellen Lagebild." brach um und die zweite Zeile
+                            wurde abgeschnitten. */}
+                        <div className="mt-3 line-clamp-2 rounded-xl border border-white/[0.05] bg-black/25 px-3 py-2 text-[10px] leading-relaxed text-white/50">
+                            {openIncidents[0]?.title || 'Keine belegten Vorfälle im aktuellen Lagebild.'}
+                        </div>
+                    </button>
+                </Instrument></>)}
+            </div>
+            {v2 && (
+                <div data-uv2-col="unten" className={'absolute bottom-6 left-[68px] grid w-[420px] grid-cols-2 gap-4 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                    <BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">
@@ -190,7 +238,8 @@ export function UniverseObservatory(props: Props) {
                         </div>
                     </button>
                 </Instrument>
-            </div>
+                </div>
+            )}
         </div>
     );
 }

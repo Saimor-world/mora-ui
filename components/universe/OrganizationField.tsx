@@ -137,7 +137,7 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / 1350, box.height / 770));
+                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? 1000 : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -231,7 +231,7 @@ export function OrganizationField({
 
     return (
         <section
-            className="absolute inset-0 z-[18] overflow-hidden"
+            data-uv2-field className="absolute inset-0 z-[18] overflow-hidden"
             aria-label={lens === 'organization' ? 'Organisation' : 'Zusammenhänge'}
         >
             {/* Die Zeile "Organisationsfeld" stand direkt unter dem Umschalter,
@@ -445,6 +445,7 @@ function Territory({
         <button
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
+            data-uv2-planet={territory.id}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
                 (selected ? 'z-30' : 'hover:z-20')}
             style={{

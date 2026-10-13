@@ -85,12 +85,14 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
         {/* Bereichszeichen: in die Oberfläche geprägt – unter Terminator & Randverdunkelung, darum gleich beleuchtet */}
         {Glyph && (
           <span data-testid="uv2-planet-glyph" className="uv2-planet-glyph absolute inset-0 flex items-center justify-center">
-            <Glyph size={Math.round(size * 0.34)} strokeWidth={1.1} absoluteStrokeWidth
-              style={{ color: 'rgba(255,250,236,0.62)', mixBlendMode: 'overlay', filter: 'drop-shadow(0 -0.6px 0 rgba(0,0,0,0.55)) drop-shadow(0 0.6px 0 rgba(255,248,230,0.45))' }} />
+            <Glyph size={Math.round(size * 0.34)} strokeWidth={1.4} absoluteStrokeWidth
+              style={{ color: "rgba(255,250,236,0.8)", mixBlendMode: "soft-light", filter: 'drop-shadow(0 -0.8px 0 rgba(0,0,0,0.7)) drop-shadow(0 0.8px 0 rgba(255,248,230,0.6))' }} />
           </span>
         )}
         {/* Terminator: Licht oben links, Nacht unten rechts – weicher Übergang */}
-        <span className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 30% 26%, rgba(255,250,235,0.20) 0%, rgba(255,250,235,0) 34%), linear-gradient(128deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 66%, ${m.night} 86%)` }} />
+        <span className="uv2-sun absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 30% 26%, rgba(255,250,235,0.20) 0%, rgba(255,250,235,0) 34%), linear-gradient(128deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 66%, ${m.night} 86%)` }} />
+        {/* Tageszeit-Tönung: Morgen warm, Abend Amber, Nacht kühl (gesetzt über --uv2-sun-tint) */}
+        <span className="uv2-sun-tint absolute inset-0 rounded-full" />
         {/* Randverdunkelung */}
         <span className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle at 42% 40%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.8) 100%)' }} />
         {/* Atmosphäre: feiner Saum auf der Lichtseite */}
