@@ -1145,3 +1145,14 @@ html[data-uv2="on"] .uv2-pair__key small { font: 9.5px var(--uv-mono); letter-sp
 html[data-uv2="on"] .uv2-pair__key small.uv2-pair__err { color: #E8A08A; text-transform: none; letter-spacing: 0; font-size: 11px; text-align: center; }
 html[data-uv2="on"] .uv2-notes__count { font: 10px var(--uv-mono); color: rgba(var(--uv-cream), .5); letter-spacing: .1em; }
 html[data-uv2="on"] [data-uv2-app="notes"] .uv2-foot { display: flex; justify-content: space-between; }
+/* hd20f: Verlauf als Zeitleiste */
+html[data-uv2="on"] .uv2-tl { padding: 12px 24px 20px; }
+html[data-uv2="on"] .uv2-tl__day { display: grid; grid-template-columns: 90px minmax(0,1fr); gap: 12px; margin-bottom: 10px; }
+html[data-uv2="on"] .uv2-tl__label { font: 9.5px var(--uv-mono); letter-spacing: .18em; text-transform: uppercase; color: var(--uv-gold); padding-top: 12px; }
+html[data-uv2="on"] .uv2-tl__rail { position: relative; list-style: none; margin: 0; padding: 0 0 0 0; }
+html[data-uv2="on"] .uv2-tl__rail::before { content: ''; position: absolute; left: 63px; top: 6px; bottom: 6px; width: 1px; background: rgba(214,168,72,.25); }
+html[data-uv2="on"] .uv2-tl__ev { position: relative; display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+html[data-uv2="on"] .uv2-tl__ev time { width: 40px; flex-shrink: 0; font: 10.5px var(--uv-mono); color: rgba(var(--uv-cream), .5); text-align: right; }
+html[data-uv2="on"] .uv2-tl__ico { position: relative; z-index: 1; width: 30px !important; height: 30px !important; background: #0b0f0c !important; }
+html[data-uv2="on"] .uv2-tl__title { flex: 1; min-width: 0; font: 500 13px var(--uv-sans); color: rgb(var(--uv-cream)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-uv2="on"] .uv2-tl__who { font: 9.5px var(--uv-mono); letter-spacing: .12em; text-transform: uppercase; color: rgba(var(--uv-cream), .4); }

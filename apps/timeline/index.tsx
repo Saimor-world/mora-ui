@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
-import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 
 type ActivityType = 'document' | 'folder' | 'scan' | 'chat' | 'task' | 'team' | 'generic';
 
@@ -219,34 +220,45 @@ function TimelineV2({ items, isLoading, available, refresh }: { items: ActivityI
             </div>
         );
     }
+    return <TimelineBoard items={items} refresh={refresh} />;
+}
+
+function TimelineBoard({ items, refresh }: { items: ActivityItem[]; refresh: () => void }) {
+    const [filter, setFilter] = useState<ActivityType | 'all'>('all');
     const sorted = [...items].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-    const first = sorted[0];
     const start = new Date(); start.setHours(0, 0, 0, 0);
-    const today = sorted.filter((i) => new Date(i.timestamp) >= start).length;
     const dayLabel = (d: Date) => {
         const diff = Math.round((start.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000);
-        return diff <= 0 ? 'Heute' : diff === 1 ? 'Gestern' : d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+        return diff <= 0 ? 'Heute' : diff === 1 ? 'Gestern' : d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
     };
+    const counts = new Map<ActivityType, number>();
+    sorted.forEach((i) => counts.set(i.type, (counts.get(i.type) ?? 0) + 1));
+    const shown = filter === 'all' ? sorted : sorted.filter((i) => i.type === filter);
     const groups = new Map<string, ActivityItem[]>();
-    sorted.slice(1).forEach((i) => { const k = dayLabel(new Date(i.timestamp)); groups.set(k, [...(groups.get(k) ?? []), i]); });
+    shown.forEach((i) => { const k = dayLabel(new Date(i.timestamp)); groups.set(k, [...(groups.get(k) ?? []), i]); });
     return (
         <div className="flex h-full min-h-0 flex-col" data-uv2-app="timeline">
-            <AppHero app="timeline" eyebrow={'Verlauf · zuletzt ' + relativeTime(first.timestamp)}
-                title={first.title} sub={[(TYPE_META[first.type] ?? TYPE_META.generic).label, first.actor, first.description].filter(Boolean).join(' · ')}
-                figure={today} figureLabel="heute" action={{ label: 'Aktualisieren', onClick: refresh }} />
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="uv2-ftool" data-testid="timeline-v2-bar">
+                <Segmented value={filter} onChange={setFilter} label="Art" options={[
+                    { id: 'all' as const, label: `Alle ${sorted.length}`, icon: <Activity /> },
+                    ...[...counts.entries()].map(([t, n]) => { const M = (TYPE_META[t] ?? TYPE_META.generic); const I = M.icon; return { id: t, label: `${n}`, icon: <I aria-label={M.label} /> }; }),
+                ]} />
+                <span style={{ flex: 1 }} />
+                <button type="button" className="uv2-pill" onClick={refresh} aria-label="Aktualisieren" title="Aktualisieren"><RefreshCw /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto uv2-tl" data-testid="timeline-v2">
                 {[...groups.entries()].map(([label, list]) => (
-                    <section key={label}>
-                        <p className="uv2-section">{label}</p>
-                        <ol className="uv2-register">
-                            {list.map((i) => (
-                                <li key={i.id}><div className="uv2-register__row">
-                                    <span className="uv2-register__meta">{(TYPE_META[i.type] ?? TYPE_META.generic).label}{i.actor ? ' · ' + i.actor : ''}</span>
-                                    <span className="uv2-register__title">{i.title}</span>
-                                    {i.description ? <span className="uv2-register__text">{i.description}</span> : null}
-                                    <span className="uv2-register__side">{new Date(i.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
-                                </div></li>
-                            ))}
+                    <section key={label} className="uv2-tl__day">
+                        <p className="uv2-tl__label">{label}</p>
+                        <ol className="uv2-tl__rail">
+                            {list.map((i) => { const M = TYPE_META[i.type] ?? TYPE_META.generic; const I = M.icon; return (
+                                <li key={i.id} className="uv2-tl__ev" title={[M.label, i.actor, i.description].filter(Boolean).join(' · ')}>
+                                    <time>{new Date(i.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</time>
+                                    <span className="uv2-group__ico uv2-tl__ico"><I /></span>
+                                    <span className="uv2-tl__title">{i.title}</span>
+                                    {i.actor ? <span className="uv2-tl__who">{i.actor}</span> : null}
+                                </li>
+                            ); })}
                         </ol>
                     </section>
                 ))}
