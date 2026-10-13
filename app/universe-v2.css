@@ -898,3 +898,6 @@ html[data-uv2="on"] [data-uv2-scan-approval] .uv2-tiles { padding-left: 0; paddi
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop] { padding: 18px !important; border-radius: 16px !important; border: 1.5px dashed rgba(214,168,72,.35) !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop] p + p { display: none !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop] p:first-child { font-family: var(--uv-sans) !important; font-size: 13px !important; font-weight: 500 !important; }
+html[data-uv2="on"] .uv2-cmds__chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
+html[data-uv2="on"] .uv2-cmds__chips .uv2-pill { font-family: var(--uv-mono); }
+html[data-uv2="on"] .uv2-hero__figure { display: none !important; }

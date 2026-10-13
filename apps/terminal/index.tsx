@@ -625,12 +625,9 @@ export default function TerminalApp({ paneId }: AppProps) {
                                     <div className="uv2-cmds__session">{pre.filter((l) => l.content.trim() && !/^─+$/.test(l.content.trim())).map((l) => <div key={l.id}>{l.content}</div>)}</div>
                                 )}
                                 {blocks.length === 0 ? (
-                                    <div className="uv2-cmds__start">
-                                        <div className="uv2-regsec__head"><span>Erste Schritte</span></div>
+                                    <div className="uv2-cmds__chips">
                                         {quick.map((q) => (
-                                            <button key={q} type="button" className="uv2-cmds__quick" disabled={isProcessing || connectionState === "unauthenticated"} onClick={() => void executeCommand(q)}>
-                                                <span>$ {q}</span><span>{q === "help" ? "Was geht hier?" : q === "status" ? "Sitzung und Rolle" : q === "pwd" ? "Wo bin ich?" : "Was liegt hier?"}</span>
-                                            </button>
+                                            <button key={q} type="button" className="uv2-pill" disabled={isProcessing || connectionState === "unauthenticated"} onClick={() => void executeCommand(q)}>{q}</button>
                                         ))}
                                     </div>
                                 ) : blocks.map((b) => {
