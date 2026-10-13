@@ -1156,3 +1156,11 @@ html[data-uv2="on"] .uv2-tl__ev time { width: 40px; flex-shrink: 0; font: 10.5px
 html[data-uv2="on"] .uv2-tl__ico { position: relative; z-index: 1; width: 30px !important; height: 30px !important; background: #0b0f0c !important; }
 html[data-uv2="on"] .uv2-tl__title { flex: 1; min-width: 0; font: 500 13px var(--uv-sans); color: rgb(var(--uv-cream)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 html[data-uv2="on"] .uv2-tl__who { font: 9.5px var(--uv-mono); letter-spacing: .12em; text-transform: uppercase; color: rgba(var(--uv-cream), .4); }
+/* hd20g: Kapital als Instrumente */
+html[data-uv2="on"] .uv2-cap { display: flex; flex-direction: column; gap: 12px; padding: 6px 4px 0; }
+html[data-uv2="on"] .uv2-cap__gauges { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+html[data-uv2="on"] .uv2-cap__gauges .uv2-watch__stat { padding: 18px 8px; }
+html[data-uv2="on"] .uv2-cap__lock { display: inline-flex; align-items: center; gap: 6px; font: 9.5px var(--uv-mono); letter-spacing: .16em; text-transform: uppercase; color: #7FD3A4; }
+html[data-uv2="on"] .uv2-cap__lock svg { width: 12px; height: 12px; }
+html[data-uv2="on"] .uv2-cap__note { font: 10px var(--uv-mono); letter-spacing: .14em; text-transform: uppercase; color: #E0A04A; text-align: center; }
+html[data-uv2="on"] [data-uv2-app="finance"] [data-uv2-legacy-head] { display: none !important; }

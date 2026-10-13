@@ -1,6 +1,7 @@
 'use client';
 
-import { AppHero, uv2 } from '@/components/universe/app/AppStage';
+import { uv2 } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile } from '@/components/universe/app/Tiles';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ArrowDownLeft,
@@ -514,12 +515,34 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
     >
       <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto pr-1 text-white" data-uv2-app="finance">
         {uv2() && (
-          <AppHero app="finance"
-            eyebrow={'Kapital · XRPL-Mainnet · nur lesend' + (companySnapshot ? ' · Ledger ' + companySnapshot.reserve.validatedLedger : '')}
-            title={aggregates ? <>{formatNumber(aggregates.availableTotalXrp)} XRP frei verfügbar.</> : error ? (/login|auth|401|403/i.test(error) ? 'Erst anmelden, dann zählen.' : 'Das Ledger antwortet gerade nicht.') : 'Die Finanzlage wird gelesen …'}
-            sub={error && !aggregates ? (/login|auth|401|403/i.test(error) ? 'Die Finanzlage erscheint, sobald du in Saimôr angemeldet bist. Echte Zahlen aus dem Ledger, nichts geschätzt.' : 'Saimôr zeigt keine geschätzten Zahlen. Versuch es gleich noch einmal.') : aggregates ? `${formatNumber(aggregates.reservedTotalXrp)} XRP sind als Ledger-Reserve gebunden. Angebotspreise zählen nicht als Vermögen. MÔRA erklärt Veränderungen, signiert aber nie.` : 'Echte Zahlen aus dem Ledger, nichts geschätzt. MÔRA liest nur und signiert nie.'}
-            figure={aggregates ? formatNumber(aggregates.cashTotalXrp) : undefined} figureLabel={aggregates ? 'XRP Kasse gesamt' : undefined}
-            action={{ label: loading ? 'Wird gelesen …' : 'Neu lesen', onClick: () => { if (!loading) void loadCompanyData(); } }} />
+          <div data-testid="finance-v2" className="uv2-cap">
+            <div className="uv2-ftool" style={{ borderRadius: 14 }}>
+              <span className="uv2-dot" data-on={aggregates ? '' : undefined} data-warn={error ? '' : undefined} />
+              <span className="uv2-ftool__crumb">XRPL{companySnapshot ? ' · ' + companySnapshot.reserve.validatedLedger : ''}</span>
+              <span style={{ flex: 1 }} />
+              <span className="uv2-cap__lock" title="MÔRA liest nur und signiert nie"><LockKeyhole />Nur lesend</span>
+              <button type="button" className="uv2-pill" onClick={() => { if (!loading) void loadCompanyData(); }} aria-label="Neu lesen" title="Neu lesen"><RefreshCcw className={loading ? 'animate-spin' : ''} /></button>
+            </div>
+            <div className="uv2-watch uv2-cap__gauges">
+              <div className="uv2-watch__stat"><Coins /><b>{aggregates ? formatNumber(aggregates.cashTotalXrp, 2) : '–'}</b><span>Kasse XRP</span></div>
+              <div className="uv2-watch__stat"><WalletCards /><b>{aggregates ? formatNumber(aggregates.availableTotalXrp, 2) : '–'}</b><span>Verfügbar</span></div>
+              <div className="uv2-watch__stat"><LockKeyhole /><b>{aggregates ? formatNumber(aggregates.reservedTotalXrp, 2) : '–'}</b><span>Reserve</span></div>
+              <div className="uv2-watch__stat" data-tone={openListings.length ? 'warning' : undefined}><Tag /><b>{openListings.length}</b><span>Angebote</span></div>
+            </div>
+            {error && !aggregates && <p className="uv2-cap__note">{/login|auth|401|403/i.test(error) ? 'Anmeldung nötig' : 'Ledger antwortet nicht'}</p>}
+            <TileGrid label="Quellen" size="s">
+              {([['XRPL', Coins, providers?.xrpl], ['Bank', Building2, providers?.bank_psd2], ['Revolut', CreditCard, providers?.revolut_business], ['Bitvavo', TrendingUp, providers?.bitvavo], ['XTB', Banknote, providers?.xtb]] as const).map(([n, I, st]) => (
+                <Tile key={n} icon={<I />} label={n} state={st?.status === 'connected' ? 'on' : st?.status === 'error' ? 'warn' : 'off'} />
+              ))}
+            </TileGrid>
+            <TileGrid label="Chancen" size="m">
+              {CAPITAL_OPPORTUNITIES.map((o) => (
+                <Tile key={o.id} testId={`cap-opp-${o.id}`} icon={o.kind === 'grant' ? <BadgeCheck /> : o.kind === 'yield' ? <TrendingUp /> : <Sparkles />} label={o.title}
+                  badge={o.status === 'open' ? '•' : undefined} state={o.risk === 'high' || o.requiresSigning ? 'warn' : o.status === 'open' ? 'on' : undefined}
+                  onClick={() => window.open(o.sourceUrl, '_blank', 'noopener,noreferrer')} />
+              ))}
+            </TileGrid>
+          </div>
         )}
         <section data-uv2-legacy-head className="rounded-[24px] border border-emerald-300/12 bg-[radial-gradient(circle_at_8%_0%,rgba(16,185,129,0.09),transparent_34%),rgba(0,0,0,0.14)] p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -683,7 +706,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
               </section>
             )}
 
-            {providers && (
+            {providers && !uv2() && (
               <section className="rounded-[22px] border border-white/[0.07] bg-black/15 p-4">
                 <div className="flex items-center gap-2 text-[13px] font-medium text-white/76">
                   <Link2 size={14} className="text-white/40" /> Providers
@@ -704,6 +727,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
           </>
         )}
 
+        {!uv2() && <>
         <section className="rounded-[24px] border border-violet-300/[0.09] bg-[radial-gradient(circle_at_90%_0%,rgba(139,92,246,0.08),transparent_30%),rgba(0,0,0,0.14)] p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -767,6 +791,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
             MÔRA reads evidence-backed finance state and may explain changes. Asking prices are NOT assets. Only realized sales count.
           </p>
         </section>
+        </>}
       </div>
     </GlassPanel>
   );
