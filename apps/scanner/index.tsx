@@ -34,6 +34,7 @@ import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -1149,9 +1150,32 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
+                {uv2 && files.length > 0 && (() => {
+                    const g = (st: ScannedFile['status'][]) => files.filter((f) => st.includes(f.status));
+                    const meta = (f: ScannedFile) => `${f.type.split('/').pop()?.toUpperCase() || 'DATEI'} · ${formatSize(f.size)}`;
+                    const todo = g(['pending']), busy = g(['uploading', 'review']), bad = g(['error']), done = g(['done']);
+                    return (
+                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="scan-v2-register">
+                            {todo.length > 0 && <RegisterSection label="Bereit zum Hochladen" count={todo.length}>{todo.map((f) => (
+                                <RegisterRow key={f.id} meta={meta(f)} title={f.name} side="bereit"
+                                    actions={<><RegAction primary onClick={() => processFile(f.id, f.nativeFile)}>Hochladen</RegAction><RegAction onClick={() => removeFile(f.id)}>Entfernen</RegAction></>} />
+                            ))}</RegisterSection>}
+                            {busy.length > 0 && <RegisterSection label="In Prüfung" count={busy.length}>{busy.map((f) => (
+                                <RegisterRow key={f.id} meta={meta(f)} title={f.name} text={f.status === 'uploading' ? 'Wird hochgeladen …' : 'MÔRA schlägt einen Ort vor – du bestätigst unten.'} side={f.status === 'uploading' ? 'lädt' : 'prüfen'} tone="gold" />
+                            ))}</RegisterSection>}
+                            {bad.length > 0 && <RegisterSection label="Hat nicht geklappt" count={bad.length}>{bad.map((f) => (
+                                <RegisterRow key={f.id} tone="alert" meta={meta(f)} title={f.name} text={f.result || 'Upload fehlgeschlagen.'} side="Fehler"
+                                    actions={<><RegAction primary onClick={() => processFile(f.id, f.nativeFile)}>Nochmal</RegAction><RegAction onClick={() => removeFile(f.id)}>Entfernen</RegAction></>} />
+                            ))}</RegisterSection>}
+                            {done.length > 0 && <RegisterSection label="Eingeordnet" count={done.length}>{done.map((f) => (
+                                <RegisterRow key={f.id} tone="quiet" meta={meta(f)} title={f.name} text={f.result} side="erledigt"
+                                    actions={f.confirmedNodeId ? <RegAction onClick={() => openConfirmedDocument(f.confirmedNodeId!, f.name, f.confirmedFolderId)}>Öffnen</RegAction> : undefined} />
+                            ))}</RegisterSection>}
+                        </div>
+                    );
+                })()}
                 {/* File List */}
-                <div className="flex-1 overflow-y-auto space-y-2" data-uv2-scan-list={uv2 ? '' : undefined}>
-                    {uv2 && files.length > 0 && <div className="uv2-section">Diese Sitzung · {files.length}</div>}
+                <div className="flex-1 overflow-y-auto space-y-2" hidden={uv2 || undefined}>
                     <AnimatePresence>
                         {files.map(file => {
                             const Icon = getFileIcon(file.type);
