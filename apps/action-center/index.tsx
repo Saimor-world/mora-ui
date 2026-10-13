@@ -1,6 +1,7 @@
 "use client";
 
-import { AppHero } from '@/components/universe/app/AppStage';
+import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
+import { RegisterSection, RegisterRow, RegAction } from '@/components/universe/app/Register';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
@@ -655,24 +656,45 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                 {tab === 'verlauf' && <VerlaufTab />}
 
                 {/* Aktionen tab content (hidden when verlauf active) */}
-                {tab === 'aktionen' && <>
+                {tab === 'aktionen' && uv2 && (() => {
+                    const waiting = events.filter((e) => canActOnPendingEvent(e));
+                    const running = events.filter((e) => !canActOnPendingEvent(e) && groupStatusMap.active.includes(e.status));
+                    const settled = events.filter((e) => !groupStatusMap.active.includes(e.status)).slice(0, 12);
+                    if (events.length === 0) return (
+                        <div className="flex flex-1 items-center justify-center" data-testid="ac-v2-empty">
+                            <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Noch hat MÔRA nichts für dich getan."
+                                text="Sobald du MÔRA um etwas bittest – eine Mail, eine Ablage, einen Termin –, steht es hier. Nichts geschieht ohne dein Ja."
+                                action={null} />
+                        </div>
+                    );
+                    const row = (evt: ActionEvent, tone?: 'gold' | 'quiet' | 'alert') => {
+                        const st = pendingActionState[evt.action_id];
+                        return (
+                            <RegisterRow key={evt.action_id} tone={tone} testId={`ac-v2-row-${evt.action_id}`}
+                                meta={`${formatTime(evt.timestamp)} · ${intentLabelMap[evt.intent ?? ''] || statusLabelMap[evt.status] || evt.status}`}
+                                title={formatActionTitle(evt)}
+                                text={formatActionMessage(evt) ?? evt.error ?? undefined}
+                                side={tone === 'gold' ? 'wartet' : statusLabelMap[evt.status]}
+                                actions={tone === 'gold' ? (
+                                    <>
+                                        <RegAction primary disabled={!!st} onClick={() => void handlePendingAction(evt, 'confirm')}>{st === 'confirming' ? 'Wird bestätigt …' : 'Ja, ausführen'}</RegAction>
+                                        <RegAction disabled={!!st} onClick={() => void handlePendingAction(evt, 'reject')}>{st === 'rejecting' ? 'Wird verworfen …' : 'Verwerfen'}</RegAction>
+                                    </>
+                                ) : undefined} />
+                        );
+                    };
+                    return (
+                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="ac-v2-register">
+                            {waiting.length > 0 && <RegisterSection label="Wartet auf dein Ja" count={waiting.length}>{waiting.map((e) => row(e, 'gold'))}</RegisterSection>}
+                            {running.length > 0 && <RegisterSection label="Läuft gerade" count={running.length}>{running.map((e) => row(e))}</RegisterSection>}
+                            {settled.length > 0 && <RegisterSection label="Zuletzt" count={settled.length} aside={<button type="button" onClick={() => setTab('verlauf')}>Ganzer Verlauf →</button>}>{settled.map((e) => row(e, e.status === 'failed' ? 'alert' : 'quiet'))}</RegisterSection>}
+                        </div>
+                    );
+                })()}
+                {tab === 'aktionen' && !uv2 && <>
 
                 {/* Summary: v2 = eine ruhige Zeile, nur Werte > 0; alt = Kacheln */}
-                {uv2 ? (
-                    false && summary.total > 0 && (
-                        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55" data-testid="ac-summary-line">
-                            {[
-                                { label: summary.total === 1 ? 'Aktion' : 'Aktionen', value: summary.total },
-                                { label: 'aktiv', value: summary.active },
-                                { label: 'erledigt', value: summary.done },
-                                { label: 'verworfen', value: summary.rejected },
-                                { label: 'Fehler', value: summary.failed },
-                            ].filter((i) => i.value > 0).map((i) => (
-                                <span key={i.label}><span className="text-white/90">{i.value}</span> {i.label}</span>
-                            ))}
-                        </div>
-                    )
-                ) : (
+                {!uv2 && (
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
                     {[
                         { label: 'Gesamt', value: summary.total },
