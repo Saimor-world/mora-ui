@@ -439,6 +439,12 @@ export default function TasksApp({ paneId }: AppProps) {
                                                 onDelete={handleDeleteTask}
                                             />
                                         ))}
+                                        {uv2() && columnTasks.length > 0 && addingColumn !== column.key && (
+                                            <button type="button" className="uv2-task-slot" data-testid={`tasks-slot-${column.key}`}
+                                                onClick={() => { setAddingColumn(column.key); setNewTitle(''); setNewDue(''); }}>
+                                                <Plus size={13} /> {column.key === 'done' ? 'Hierher ziehen, wenn fertig' : 'Aufgabe hinzufügen'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             );

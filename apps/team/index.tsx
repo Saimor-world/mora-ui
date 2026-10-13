@@ -404,7 +404,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                         <div className="flex h-full flex-col">
                             {/* Orb canvas — takes most of the height */}
                             <div
-                                className="relative min-h-[320px] flex-1 overflow-hidden"
+                                className="relative min-h-[260px] flex-1 overflow-hidden"
                                 data-uv2-system-bg=""
                                 style={{
                                     background:
@@ -523,7 +523,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                             </div>
 
                             {/* ── Group chat strip ── */}
-                            <div className="flex h-48 flex-col border-t border-white/[0.06] bg-black/30">
+                            <div className="flex h-[42%] min-h-[220px] flex-col border-t border-white/[0.06] bg-black/30">
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
                                     {messages.length === 0 && (
@@ -556,7 +556,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                         </span>
                                                     </div>
                                                     <div
-                                                        className={`max-w-[220px] rounded-xl px-3 py-1.5 text-xs text-white/85 ${self ? 'bg-white/10' : 'bg-white/[0.05] border border-white/[0.06]'}`}
+                                                        className={`max-w-[min(520px,75%)] rounded-2xl px-3.5 py-2 text-sm leading-relaxed text-white/85 ${self ? 'bg-white/10' : 'bg-white/[0.05] border border-white/[0.06]'}`}
                                                     >
                                                         {msg.content}
                                                     </div>

@@ -728,7 +728,7 @@ export const Dock = () => {
             case 'cockpit':  openPane({ id: 'apps-main', type: 'apps', title: 'Arbeit', size: { width: 980, height: 760 } }); break;
             case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  toggleVoiceOverlay(); break;
-            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
+            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MÔRA',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'dateien':  openPane({ id: 'dateien-main',  type: 'meine-dateien', title: 'Dateien',   size: { width: 1180, height: 780 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
