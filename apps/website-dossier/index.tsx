@@ -87,7 +87,7 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
         >
             <div className="flex flex-col h-full overflow-y-auto p-5 space-y-4" data-uv2-app="dossier">
                 {uv2() && targetUrl && !isLoading && (
-                    <AppHero app="dossier" eyebrow={'Website-Dossier · ' + domain}
+                    <AppHero app="dossier" eyebrow="Website-Dossier"
                         title={domain}
                         sub={dossier?.checked_at ? 'Zuletzt geprüft ' + new Date(dossier.checked_at).toLocaleString('de-DE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) + '.' : 'Die vollständige Analyse folgt nach dem ersten Security-Check.'}
                         figure={dossier?.performance?.score !== undefined ? Math.round(dossier.performance.score * 100) : undefined} figureLabel="Performance"
