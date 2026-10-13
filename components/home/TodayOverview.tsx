@@ -223,29 +223,25 @@ export function TodayOverview() {
     return (
       <section className="mt-16" data-testid="uv2-today">
         <p style={{ ...M, color: '#D6A848' }}>Heute</p>
-        {/* Jede Quelle eine Zeile: Name · Stand · Detail. Was fehlt, steht ehrlich als „nicht verbunden“ da – keine Null-Kacheln. */}
-        <ol className="mt-4" style={{ borderTop: '0.5px solid rgba(247,244,233,.09)' }}>
-          {sources.map((x, i) => {
+        {/* hd21: Jede Quelle ein Widget – Symbol, Stand, Detail; Tippen öffnet die App. Was fehlt, sagt ehrlich „nicht verbunden“. */}
+        <div className="uv2-todayw mt-4">
+          {sources.map((x) => {
             const off = x.copy.unavailable;
+            const Icon = x.icon;
             return (
-              <li key={x.key} style={{ borderBottom: '0.5px solid rgba(247,244,233,.09)' }}>
-                <button type="button" onClick={off ? openIntegrations : x.open} data-testid={`uv2-today-${x.key}`}
-                  className="group grid w-full grid-cols-[28px_1fr_auto] items-baseline gap-3 py-4 text-left sm:grid-cols-[48px_140px_1fr_auto] sm:gap-4">
-                  <span style={{ ...M, color: 'rgba(247,244,233,.35)' }}>{String(i + 1).padStart(2, '0')}</span>
-                  <span className="hidden sm:inline" style={{ ...M, color: 'rgba(247,244,233,.6)' }}>{x.label}</span>
-                  <span className="min-w-0">
-                    <span className="block sm:hidden" style={{ ...M, color: 'rgba(247,244,233,.6)' }}>{x.label}</span>
-                    <span className="block truncate text-[15px] font-light" style={{ color: off ? 'rgba(247,244,233,.45)' : x.copy.attention ? '#D6A848' : 'rgba(247,244,233,.92)' }}>
-                      {isLoading ? 'Wird gelesen …' : off ? 'Nicht verbunden' : x.copy.value}
-                    </span>
-                    {!off && !isLoading && x.copy.detail && <span className="mt-1 block truncate text-[15px] font-light" style={{ color: 'rgba(247,244,233,.45)' }}>{x.copy.detail}</span>}
-                  </span>
-                  <span className="transition-colors group-hover:text-[#D6A848]" style={{ ...M, color: 'rgba(247,244,233,.35)' }}>{off ? 'Verbinden' : 'Öffnen'}</span>
-                </button>
-              </li>
+              <button key={x.key} type="button" onClick={off ? openIntegrations : x.open} data-testid={`uv2-today-${x.key}`}
+                className="uv2-widget" data-off={off ? '' : undefined} data-attn={!off && x.copy.attention ? '' : undefined}>
+                <span className="uv2-widget__top">
+                  <span className="uv2-widget__ico"><Icon /></span>
+                  <span className="uv2-widget__label">{x.label}</span>
+                  <span className="uv2-widget__go" aria-hidden>{off ? 'Verbinden' : '›'}</span>
+                </span>
+                <span className="uv2-widget__value">{isLoading ? 'Wird gelesen …' : off ? 'Nicht verbunden' : x.copy.value}</span>
+                {!off && !isLoading && x.copy.detail && <span className="uv2-widget__detail">{x.copy.detail}</span>}
+              </button>
             );
           })}
-        </ol>
+        </div>
         {fog.length > 0 && !isLoading && (
           <div className="mt-4 flex items-center gap-6" data-testid="uv2-today-fog">
             <button type="button" onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white" style={{ color: 'rgba(247,244,233,.6)' }}>
