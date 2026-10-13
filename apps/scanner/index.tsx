@@ -874,7 +874,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                             title={!activeCompanyName ? 'Keine Organisation' : files.length === 0 ? 'Bereit' : open === 0 ? 'Alles abgelegt' : `${open} offen`}
                             sub={files.length ? `${done} von ${files.length} erledigt. Du entscheidest, wohin jede Datei gehört.` : 'PDFs, Bilder und Office-Dateien landen zuerst als Datei – Inhalte entstehen nur, wenn du es willst.'}
                             figure={files.length ? open : undefined} figureLabel="offen"
-                            action={activeCompanyName ? { label: 'Dateien wählen', onClick: () => scanInputRef.current?.click() } : null} />
+                            action={null} />
                     );
                 })()}
                 <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5" data-uv2-legacy-head={uv2 ? '' : undefined}>

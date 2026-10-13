@@ -901,3 +901,6 @@ html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop] p:fi
 html[data-uv2="on"] .uv2-cmds__chips { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 0; }
 html[data-uv2="on"] .uv2-cmds__chips .uv2-pill { font-family: var(--uv-mono); }
 html[data-uv2="on"] .uv2-hero__figure { display: none !important; }
+/* hd18 terminal status bar */
+html[data-uv2="on"] .uv2-tbar { display: flex; align-items: center; gap: 16px; padding: 9px 16px; border-bottom: 1px solid rgba(247,244,233,.07); background: rgba(5,7,6,.4); font: 500 11.5px var(--uv-mono); color: rgba(var(--uv-cream), .7); }
+html[data-uv2="on"] .uv2-tbar__item { display: inline-flex; align-items: center; gap: 6px; } html[data-uv2="on"] .uv2-tbar__item svg { color: var(--uv-gold); }
