@@ -1,5 +1,6 @@
 "use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { Activity, CalendarDays, Mail, Rss, ShieldCheck, Sparkles, TrendingUp } from 'lucide-react';
 import type { CalendarPreviewItem, FeedPreviewItem, LiveSourceStatus, MailPreviewItem } from '@/lib/hooks/useCommunicationLiveData';
@@ -8,6 +9,7 @@ import { encodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/uni
 import type { BusinessSummary } from '@/lib/business/mrr';
 import type { SubstanceBar } from '@/lib/universe/substanceChart';
 import { SubstanceWidget } from '@/components/universe/SubstanceWidget';
+import { UniverseInstruments, LageSignals } from '@/components/universe/UniverseInstruments';
 
 interface Props {
     mail: MailPreviewItem[];
@@ -37,7 +39,7 @@ function Instrument({ eyebrow, title, children, accent = 'cyan' }: {
     accent?: 'cyan' | 'amber';
 }) {
     return (
-        <section className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
+        <section data-uv2-instrument={eyebrow.replace(/^Dein /, '').toLowerCase()} className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
             <div className={'absolute inset-y-5 left-0 w-px ' + (accent === 'amber' ? 'bg-amber-300/55' : 'bg-cyan-300/50')} />
             <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">{eyebrow}</p>
             <h2 className="mt-1 text-sm font-medium tracking-[-0.01em] text-white/82">{title}</h2>
@@ -117,6 +119,7 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
 }
 
 export function UniverseObservatory(props: Props) {
+    const v2 = isUniverseV2Enabled();
     const openIncidents = props.incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
     // Zwei Fehler steckten in der Wurzelzeile darunter:
     //  1. `xl:block` liess die Kacheln zwischen 1024 und 1279px ersatzlos
@@ -131,9 +134,10 @@ export function UniverseObservatory(props: Props) {
     //     Eine zurueckgetretene Kachel darf keine Klicks mehr fangen.
     return (
         <div className={'pointer-events-none absolute inset-0 z-[32] hidden transition-opacity duration-500 lg:block ' + (props.selected ? 'opacity-20' : 'opacity-100')}>
-            <div className={'absolute bottom-28 left-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
-                <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
-                <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
+            <div data-uv2-col="left" className={(v2 ? 'absolute bottom-28 left-24 w-[340px] space-y-3 ' : 'absolute bottom-28 left-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                {!v2 && <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />}
+                {/* v2: Horizont links unter der Begrüßung, Verteilung rechts */}
+                {!v2 && (<>                <Instrument eyebrow="Dein Horizont" title="Was gerade hereinragt">
                     <SignalRow
                         icon={<CalendarDays size={13} />} label="Kalender"
                         value={props.calendarStatus === 'unavailable'
@@ -159,7 +163,7 @@ export function UniverseObservatory(props: Props) {
                         value={props.feed[0]?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed}
                         drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
                     />
-                </Instrument>
+                </Instrument></>)}
                 <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
                     <Sparkles size={11} className="text-cyan-200/44" />
                     <span>{props.territoryCount} Bereiche</span>
@@ -167,8 +171,9 @@ export function UniverseObservatory(props: Props) {
                     <span>{props.documentCount} Dokumente</span>
                 </div>
             </div>
-            <div className={'absolute bottom-28 right-7 w-[255px] space-y-3 ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
-                <BusinessInstrument business={props.business} />
+            <div data-uv2-col="right" className={(v2 ? 'uv2-col-right ' : 'absolute bottom-28 right-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                {v2 && <UniverseInstruments {...props} openIncidents={openIncidents} />}
+                {!v2 && (<><BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">
@@ -185,8 +190,13 @@ export function UniverseObservatory(props: Props) {
                             {openIncidents[0]?.title || 'Keine belegten Vorfälle im aktuellen Lagebild.'}
                         </div>
                     </button>
-                </Instrument>
+                </Instrument></>)}
             </div>
+            {v2 && (
+                <div data-uv2-col="lage" className={'uv2-col-lage ' + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
+                    <LageSignals {...props} openIncidents={openIncidents} />
+                </div>
+            )}
         </div>
     );
 }

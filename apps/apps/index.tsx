@@ -1,5 +1,8 @@
 'use client';
 
+import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -152,7 +155,18 @@ export default function AppLibraryApp({ paneId }: AppProps) {
             resizable
         >
             <div className="app-library flex min-h-full flex-col gap-6 px-1 pb-4" data-testid="app-library">
-                <header className="app-library__hero flex flex-col gap-4 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-end sm:justify-between">
+                {isUniverseV2Enabled() && (
+                    <AppHero app="apps" eyebrow="Werkzeuge" title="Apps"
+                        sub={`${visibleCount} Werkzeuge${normalizedQuery ? ` für „${query.trim()}“` : ''}. Technische Bereiche erscheinen nur mit passender Rolle.`}
+                        figure={visibleCount} figureLabel="Werkzeuge"
+                        action={{ label: 'MÔRA fragen', onClick: () => handleAppClick('chat', 'MÔRA', { width: 960, height: 720 }) }}>
+                        <label className="uv2-hero__search">
+                            <Search size={14} aria-hidden="true" />
+                            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Werkzeug finden …" aria-label="Apps durchsuchen" />
+                        </label>
+                    </AppHero>
+                )}
+                <header data-uv2-legacy-head className="app-library__hero flex flex-col gap-4 border-b border-white/[0.06] pb-5 sm:flex-row sm:items-end sm:justify-between">
                     <div className="min-w-0">
                         <p className="app-library__eyebrow mb-2 text-[9px] uppercase tracking-[0.22em] text-emerald-100/45">
                             Unternehmer-Cockpit
@@ -184,7 +198,13 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     />
                 )}
 
-                {universeGroups.length > 1 && (
+                {isUniverseV2Enabled() && universeGroups.length > 1 && (
+                    <div className="uv2-ftool" data-testid="app-library-filters-v2" style={{ borderRadius: 14 }}>
+                        <Segmented value={activeGroupId} onChange={setActiveGroupId} label="Kategorien filtern"
+                            options={[{ id: 'all', label: 'Alle' }, ...universeGroups.map((g) => ({ id: g.id, label: `${g.label} ${g.apps.length}` }))]} />
+                    </div>
+                )}
+                {!isUniverseV2Enabled() && universeGroups.length > 1 && (
                     <div
                         className="flex flex-wrap gap-2 px-1"
                         role="tablist"
@@ -224,7 +244,20 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                     </div>
                 )}
 
-                <div className="app-library__groups grid gap-7 px-1">
+                {isUniverseV2Enabled() && (
+                    <div data-testid="app-library-v2-tiles">
+                        {filteredGroups.map((group) => (
+                            <TileGrid key={group.id} label={group.label}>
+                                {group.apps.map((app) => {
+                                    const IconComp = ICON_MAP[app.icon] ?? Grid;
+                                    return <Tile key={app.id} testId={`app-library-tile-${app.id}`} icon={<IconComp />} label={app.name} badge={app.isNew ? '•' : undefined}
+                                        onClick={() => handleAppClick(app.id, app.name, app.defaultSize)} />;
+                                })}
+                            </TileGrid>
+                        ))}
+                    </div>
+                )}
+                <div className="app-library__groups grid gap-7 px-1" hidden={isUniverseV2Enabled() || undefined} style={isUniverseV2Enabled() ? { display: 'none' } : undefined}>
                     {filteredGroups.map(group => (
                         <section key={group.id} className="app-library__group grid gap-3" data-testid={`app-library-group-${group.id}`}>
                             <div className="app-library__group-head flex items-end justify-between gap-4">
@@ -241,7 +274,7 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                             <div className="app-library__grid grid grid-cols-1 gap-2 md:grid-cols-2">
                                 {group.apps.map(app => {
                                     const IconComp = ICON_MAP[app.icon] ?? Grid;
-                                    const colors = COLOR_CLASS[app.color] ?? COLOR_CLASS.slate;
+                                    const colors = isUniverseV2Enabled() ? COLOR_CLASS.slate : (COLOR_CLASS[app.color] ?? COLOR_CLASS.slate);
                                     return (
                                         <button
                                             key={app.id}
@@ -277,7 +310,12 @@ export default function AppLibraryApp({ paneId }: AppProps) {
                         </section>
                     ))}
 
-                    {filteredGroups.length === 0 && (
+                    {filteredGroups.length === 0 && isUniverseV2Enabled() && (
+                        <AppEmpty compact glyph={<Search size={18} strokeWidth={1.25} />} title={normalizedQuery ? `Nichts passt zu „${query.trim()}“.` : 'Hier ist noch nichts.'}
+                            text="Frag MÔRA – sie kennt auch Wege, für die es kein eigenes Werkzeug gibt."
+                            action={normalizedQuery ? { label: 'Suche leeren', onClick: () => setQuery('') } : null} />
+                    )}
+                    {filteredGroups.length === 0 && !isUniverseV2Enabled() && (
                         <div
                             className="app-library__none rounded-2xl border border-dashed border-white/10 px-5 py-14 text-center text-sm text-white/40"
                             data-testid="app-library-empty"

@@ -14,6 +14,8 @@
  * - Show relevant memories for context
  */
 
+import { uv2 } from '@/components/universe/app/AppStage';
+const MN = () => (uv2() ? 'MÔRA' : 'Môra');
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -122,7 +124,7 @@ function buildWelcomeContent(departments: Array<{ name?: string | null }>) {
         : first
             ? `- **"Was läuft in ${first}?"** → ich suche in Inhalten und Aktivität`
             : `- **"Woran arbeiten wir?"** → ich lese den offenen Kontext`;
-    return `Hallo, ich bin Môra.
+    return `Hallo, ich bin ${MN()}.
 
 Ich bin dein Arbeitskontext im System, nicht nur ein Chat:
 ${showHint}
@@ -131,6 +133,13 @@ ${deptHint}
 - **"Merke dir ..."** → ich speichere belastbare Fakten für später
 
 Wenn etwas fehlt, sage ich es klar. Womit soll ich beginnen?`;
+}
+
+export function seedFromTranscript(list: Array<{ role: 'user' | 'assistant'; content: string; mode?: MoraMode }>, prefix = 'carried'): Message[] {
+    return list
+        .filter((m) => (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim())
+        .slice(-20)
+        .map((m, i) => ({ id: `${prefix}-${i}-${m.role}`, role: m.role, content: m.content, timestamp: new Date(), mode: m.mode }));
 }
 
 export default function ChatApp({ paneId, initialData }: AppProps) {
@@ -960,6 +969,19 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         liveFrames,
     ]);
 
+    // Universe v2: „Im Fenster weiter" übergibt das Gespräch aus dem Raum.
+    // Es wird nur übernommen – nichts wird erneut gefragt oder gesendet.
+    const transcript = initialData?.transcript as { id?: string; messages?: Array<{ role: 'user' | 'assistant'; content: string; mode?: MoraMode }> } | undefined;
+    const transcriptSeen = useRef<string | null>(null);
+    useEffect(() => {
+        if (!transcript?.id || !Array.isArray(transcript.messages) || transcriptSeen.current === transcript.id) return;
+        transcriptSeen.current = transcript.id;
+        const carried = seedFromTranscript(transcript.messages, transcript.id);
+        if (carried.length === 0) return;
+        setMessages((prev) => [...prev.filter((m) => m.id !== 'welcome'), ...carried]);
+        if (carried[carried.length - 1].mode) setMoraMode(carried[carried.length - 1].mode as MoraMode);
+    }, [transcript]);
+
     // Handle initial message from Dock/Spotlight chat input
     const initialMessage = initialData?.initialMessage as string | undefined;
     useEffect(() => {
@@ -1032,7 +1054,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     const chatInner = (
         <div className={`flex flex-col ${isFullscreen ? 'h-full' : 'h-full'}`}>
             {/* Header */}
-            <div className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
+            <div data-uv2-chat-head className={`flex items-center gap-3 p-4 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/10'
                 }`}>
                 <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isStandardMode
                     ? 'bg-[#0078D4]'
@@ -1042,7 +1064,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 </div>
                 <div>
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
-                        }`}>Môra</h3>
+                        }`}>{MN()}</h3>
                     <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
                         }`}>{agentMode === 'codex' ? 'Engineering-Modus · Code & Systemarbeit' : 'Deine KI-Begleiterin'}</p>
                 </div>
@@ -1052,7 +1074,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                         type="button"
                         onClick={() => setAgentMode((m) => (m === 'codex' ? 'mora' : 'codex'))}
                         aria-pressed={agentMode === 'codex'}
-                        title={agentMode === 'codex' ? 'Zurück zu Môra' : 'Engineering-Modus (Code, Refactors, Systemarbeit)'}
+                        title={agentMode === 'codex' ? 'Zurück zu ' + MN() : 'Engineering-Modus (Code, Refactors, Systemarbeit)'}
                         data-testid="chat-engineering-toggle"
                         className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.12em] transition-colors ${
                             agentMode === 'codex'
@@ -1077,7 +1099,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 </div>
             </div>
             {/* Sprint 3: Tab bar — Chat / Erinnerungen */}
-            <div className={`flex gap-0 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
+            <div data-uv2-chat-tabs className={`flex gap-0 border-b ${isStandardMode ? 'border-[#E1E1E1]' : 'border-white/[0.06]'}`}>
                 {(['chat', 'memories', 'signals'] as const).map((tab) => (
                     <button
                         key={tab}
@@ -1123,7 +1145,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <div className="flex items-center gap-2">
                         <BarChart3 className="h-4 w-4 text-emerald-400" />
-                        <span className="text-xs font-medium text-white/80">Mora-Signale</span>
+                        <span className="text-xs font-medium text-white/80">{MN()}-Signale</span>
                     </div>
                     <MemoryStats compact companyId={activeCompanyId} />
                     <div className="rounded-2xl border border-white/[0.06] bg-black/15 p-3">
@@ -1139,7 +1161,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             )}
 
             {/* Messages */}
-            <div className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
+            <div data-uv2-chat-stream className={`flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
                 {/* Empty state — shown when no messages yet */}
                 {messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
@@ -1152,7 +1174,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                         </div>
                         <div>
                             <p className={`text-sm font-medium mb-1 ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white/75'}`}>
-                                Hallo, ich bin Môra
+                                Hallo, ich bin {MN()}
                             </p>
                             <p className={`text-xs leading-relaxed max-w-[260px] ${isStandardMode ? 'text-[#605E5C]' : 'text-white/35'}`}>
                                 Frag mich etwas, oder lass mich dir beim Durchsuchen, Erstellen und Verstehen deiner Inhalte helfen.
@@ -1188,6 +1210,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
+                            data-uv2-msg={msg.id === 'welcome' ? 'welcome' : msg.role}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
                             <div className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode
@@ -1374,7 +1397,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                         />
                                     ))}
                                 </div>
-                                <span className="text-xs text-white/45">Môra denkt nach…</span>
+                                <span className="text-xs text-white/45">{MN()} denkt nach…</span>
                             </div>
                         </motion.div>
                     )}
@@ -1530,7 +1553,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                     >
                         <div className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 flex items-center gap-2">
                             <Loader2 className="w-4 h-4 text-violet-400 animate-spin" />
-                            <span className="text-sm text-white/60">Môra denkt nach...</span>
+                            <span className="text-sm text-white/60">{MN()} denkt nach …</span>
                         </div>
                     </motion.div>
                 )}
@@ -1646,7 +1669,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                     }
                                     if (e.key === 'Escape' && isFullscreen) setIsFullscreen(false);
                                 }}
-                                placeholder="Schreib Mora… (Shift+↵ für Zeilenumbruch)"
+                                placeholder={uv2() ? 'Schreib MÔRA …' : "Schreib Mora… (Shift+↵ für Zeilenumbruch)"}
                                 autoFocus={isFullscreen}
                                 disabled={isStreaming}
                                 style={{ resize: 'none', overflowY: 'hidden' }}
@@ -1696,7 +1719,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 
     return (
         <GlassPanel
-            title="Chat mit Môra"
+            title={uv2() ? 'MÔRA' : "Chat mit Môra"}
             width={pane.size.width}
             height={pane.size.height}
             minWidth={560}

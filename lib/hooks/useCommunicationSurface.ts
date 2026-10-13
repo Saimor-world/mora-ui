@@ -9,7 +9,9 @@ const REMOTE_LOCAL_UI_PLACEHOLDER = 'about:saimor-local-bridge';
 const DEFAULT_CONNECT_SURFACE = 'about:saimor-connect';
 const LOCAL_GOOGLE_CALLBACK = 'http://127.0.0.1:8081/v3/integrations/calendar/callback';
 
-const MAIL_SETUP_DETAIL = 'Setze im Core echte Mail-Zugangsdaten: EMAIL_IMAP_HOST / EMAIL_IMAP_USER / EMAIL_IMAP_PASSWORD sowie SMTP_HOST / SMTP_USER / SMTP_PASSWORD.';
+const MAIL_SETUP_DETAIL = 'Verbinde dein Postfach unter Integrationen – danach erscheinen hier echte Nachrichten, Entwürfe und Freigaben.';
+/** Technische Server-Hinweise (Env-Namen) nie roh im UI zeigen. */
+const humanizeMailDetail = (d?: string | null) => (d && /[A-Z]{3,}_[A-Z_]{3,}/.test(d) ? MAIL_SETUP_DETAIL : d);
 const CALENDAR_OAUTH_DETAIL = `Setze Google Calendar OAuth tenantweit in SAIMOR oder als Core-Fallback: GOOGLE_CALENDAR_CLIENT_ID / GOOGLE_CALENDAR_CLIENT_SECRET / GOOGLE_CALENDAR_REDIRECT_URL=${LOCAL_GOOGLE_CALLBACK}.`;
 
 const providerMailUrl = (provider?: string) => {
@@ -113,7 +115,7 @@ export function useCommunicationSurface(autoLoad: boolean = true) {
                     ? 'Das verbundene Postfach wird direkt im OS gelesen und von Mora mitverwendet.'
                     : mailLocalMode
                         ? 'Der Server läuft im lokalen Mailmodus. Externe IMAP-Synchronisation ist hier abgeschaltet.'
-                        : (mailSetupDetail || MAIL_SETUP_DETAIL),
+                        : (humanizeMailDetail(mailSetupDetail) || MAIL_SETUP_DETAIL),
             calendarStatusDetail:
                 calendarConfigured
                     ? 'Der verbundene Kalender wird im OS gelesen und für Home, Kalender und Mora genutzt.'

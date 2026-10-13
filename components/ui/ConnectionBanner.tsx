@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
@@ -50,6 +51,18 @@ export const ConnectionBanner: React.FC = () => {
         : surfaceProfile.isPublicDemoSurface
             ? 'Die Demo spiegelt nur den stabilen Stand. Lokale Regeln und Integrationen liegen ausserhalb dieser Instanz.'
             : 'Die Organisation ist erreichbar, aber der aktuelle Datenpfad ist gestört.';
+
+    // Universe v2: ein leiser Statuspunkt oben rechts statt eines Banners über der Kopfleiste.
+    if (isUniverseV2Enabled()) {
+        return (
+            <button type="button" onClick={retry} data-testid="uv2-connection" title={`${helperText} Letzte stabile Verbindung: ${formatLastConnected()}. Klicken zum erneuten Prüfen.`}
+                className="fixed right-6 top-4 z-[1000] flex h-8 items-center gap-2 rounded-full px-3 text-[12px] text-amber-100/85 transition-colors hover:text-white"
+                style={{ background: 'rgba(18,22,30,0.5)', backdropFilter: 'blur(30px) saturate(160%)', WebkitBackdropFilter: 'blur(30px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,210,150,0.25)' }}>
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.8)]" />
+                {status === 'offline' ? 'Offline' : 'Verbindung gestört'}
+            </button>
+        );
+    }
 
     return (
         <AnimatePresence>

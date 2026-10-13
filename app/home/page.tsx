@@ -2,6 +2,7 @@
 
 import React from 'react';
 import nextDynamic from 'next/dynamic';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,27 @@ const MoraShell = nextDynamic(
     },
 );
 
+const JarvisLayer = nextDynamic(
+    () => import('@/components/jarvis/JarvisLayer').then((m) => ({ default: m.JarvisLayer })),
+    { ssr: false },
+);
+
+const MorgenOverlay = nextDynamic(
+    () => import('@/components/universe/MorgenOverlay').then((m) => ({ default: m.MorgenOverlay })),
+    { ssr: false },
+);
+
 export default function HomePage() {
+    // Universe v2 „Der Morgen“ – nur mit NEXT_PUBLIC_UNIVERSE_V2=true (Standard: aus).
+    // Leise Ebene ÜBER dem echten Universe: Hintergrund, Planeten und Dock bleiben unverändert.
+    if (isUniverseV2Enabled()) {
+        return (
+            <>
+                <MoraShell />
+                <MorgenOverlay />
+                <JarvisLayer />
+            </>
+        );
+    }
     return <MoraShell />;
 }

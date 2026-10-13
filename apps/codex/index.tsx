@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Bot, Loader2, Send, Terminal, Timer, Trash2 } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -160,7 +161,20 @@ export default function CodexApp({ paneId, initialData }: AppProps) {
             resizable
         >
             <div className="flex h-full min-h-0 flex-col" data-testid="codex-app">
-                <header className="mb-3 flex items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
+                {uv2() && (() => {
+                    const lastAsk = [...transcript].reverse().find((m) => m.role === 'user');
+                    return <AppHero app="codex" eyebrow="Codex"
+                        title={lastAsk ? lastAsk.content.split('\n')[0].slice(0, 90) : 'Neue Sitzung'}
+                        sub={lastAsk ? (isStreaming ? 'Codex arbeitet daran …' : 'Codex schlägt Terminal oder Arbeitssitzung als nächsten Schritt vor, wenn es passt.') : 'Bugfix, Refactor, Deploy-Hilfe oder Architektur – fokussiert auf Engineering.'}
+                        figure={transcript.filter((m) => m.role === 'user').length || undefined} figureLabel="Aufgaben"
+                        action={{ label: 'Terminal öffnen', onClick: openTerminal }}>
+                        <span className="uv2-bar__links">
+                            <button type="button" className="uv2-files-link" onClick={openWorkSession}>Arbeitssitzung</button>
+                            {transcript.length > 0 && <button type="button" className="uv2-files-link" onClick={handleClear} aria-label="Codex-Verlauf leeren">Verlauf leeren</button>}
+                        </span>
+                    </AppHero>;
+                })()}
+                <header data-uv2-legacy-head className="mb-3 flex items-start justify-between gap-3 border-b border-white/[0.06] pb-3">
                     <div className="min-w-0">
                         <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.22em] text-indigo-200/55">
                             <Bot size={14} className="text-indigo-200/70" />
@@ -199,7 +213,12 @@ export default function CodexApp({ paneId, initialData }: AppProps) {
                 </header>
 
                 <div ref={scrollRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-                    {transcript.length === 0 && !isStreaming && (
+                    {transcript.length === 0 && !isStreaming && uv2() && (
+                        <AppEmpty compact glyph={<Bot size={20} strokeWidth={1.25} />} title="Eine Aufgabe genügt."
+                            text="Beschreib das Problem in einem Satz. Codex fragt nach, wenn etwas fehlt."
+                            action={{ label: 'Mit einem Bug beginnen', onClick: () => setInput('Bugfix: ') }} />
+                    )}
+                    {transcript.length === 0 && !isStreaming && !uv2() && (
                         <div className="rounded-2xl border border-indigo-300/12 bg-indigo-500/[0.06] px-4 py-5 text-sm leading-relaxed text-white/58">
                             Beschreibe die Aufgabe — Bugfix, Refactor, Deploy-Hilfe oder Architektur. Codex antwortet fokussiert
                             auf Engineering und kann Terminal oder Arbeitssitzung als nächsten Schritt vorschlagen.
@@ -209,6 +228,7 @@ export default function CodexApp({ paneId, initialData }: AppProps) {
                     {transcript.map((message, index) => (
                         <div
                             key={`${message.role}-${index}-${message.content.slice(0, 24)}`}
+                            data-uv2-cx={message.role}
                             className={`rounded-2xl border px-4 py-3 ${
                                 message.role === 'user'
                                     ? 'border-indigo-300/16 bg-indigo-500/[0.08] text-white/82'

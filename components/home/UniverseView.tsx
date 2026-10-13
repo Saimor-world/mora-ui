@@ -11,8 +11,11 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { DeptSpaceMap } from '@/components/mora/DeptSpaceMap';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
+import { capPlanets, OVERFLOW_ID } from '@/lib/universe/autonomy';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
+import { UniverseLinks } from '@/components/universe/UniverseLinks';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
@@ -25,7 +28,7 @@ import { summarizeSubscriptions, type BusinessSummary } from '@/lib/business/mrr
 import { useCommunicationLiveData } from '@/lib/hooks/useCommunicationLiveData';
 import { fetchNightwatchIncidents } from '@/lib/api/nightwatchClient';
 import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
-import { buildOrganicUniverseLayout } from '@/lib/universe/layout';
+import { buildOrganicUniverseLayout, normalizeUniverseLayout } from '@/lib/universe/layout';
 import { isAdmin } from '@/lib/auth/roles';
 import { resolveVisibleCompany } from '@/lib/auth/activeCompany';
 import { UNASSIGNED_DEPARTMENT_ID, UNASSIGNED_DEPARTMENT_NAME } from '@/lib/constants/tree';
@@ -64,6 +67,13 @@ export default function UniverseView() {
     } = useNavStore();
     const user = useSessionStore((state) => state.user);
     const openPane = usePaneStore((state) => state.openPane);
+    // Ein offenes Fenster ist der Fokus: die Instrumente treten zurück statt unter dem Fenster durchzuscheinen.
+    const visiblePanes = usePaneStore((state) => state.panes.filter((p) => !(p as { minimized?: boolean }).minimized).length);
+    useEffect(() => {
+        const root = document.documentElement;
+        if (visiblePanes > 0) root.setAttribute('data-uv2-panes', String(visiblePanes)); else root.removeAttribute('data-uv2-panes');
+        return () => root.removeAttribute('data-uv2-panes');
+    }, [visiblePanes]);
     const queryClient = useQueryClient();
 
     const { data: companiesData = [] } = useCompanies();
@@ -305,18 +315,57 @@ export default function UniverseView() {
         return () => { cancelled = true; };
     }, [effectiveCompanyId, spaceListByDepartment]);
 
+    const structureKey = accessibleDepartments.map((d) => `${d.id}:${d.name}:${d.universeAccess}`).join('|');
+    // Autonomie (v2): höchstens 7 Planeten. Überzählige Bereiche werden Monde
+    // des Sammelplaneten "Weitere" – Mitgliedschaft nach Substanz, damit Orte ruhig bleiben.
+    const substanceKey = accessibleDepartments.map((d) => d.id + ':' + (metrics[d.id]?.nodes || 0)).join('|');
+    const capped = useMemo(() => {
+        if (!isUniverseV2Enabled()) return { planets: accessibleDepartments, overflow: [] as typeof accessibleDepartments };
+        const substance = Object.fromEntries(accessibleDepartments.map((d) => [d.id, (metrics[d.id]?.nodes || 0) + (metrics[d.id]?.spaces || 0)]));
+        const r = capPlanets(accessibleDepartments.map((d) => ({ ...d, id: String(d.id), name: String(d.name || '') })), substance);
+        if (!r.overflow.length) return { planets: accessibleDepartments, overflow: [] as typeof accessibleDepartments };
+        const keep = new Set(r.planets.map((d) => d.id));
+        const overflow = accessibleDepartments.filter((d) => !keep.has(String(d.id)));
+        const sammel = { ...overflow[0], id: OVERFLOW_ID, name: 'Weitere', description: overflow.map((d) => d.name).join(', '), universeAccess: 'open' } as (typeof accessibleDepartments)[number];
+        return { planets: [...accessibleDepartments.filter((d) => keep.has(String(d.id))), sammel], overflow };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [accessibleDepartments, substanceKey]);
+
     const positionedDepartments = useMemo(() => {
-        const sorted = [...accessibleDepartments].sort((left, right) => {
+        const sorted = [...capped.planets].sort((left, right) => {
             const a = String(left.id || '') + ':' + String(left.name || '');
             const b = String(right.id || '') + ':' + String(right.name || '');
             return a.localeCompare(b);
         });
-        return buildOrganicUniverseLayout(sorted, metrics);
-    }, [accessibleDepartments, metrics]);
+        // Universe v2: Positionen hängen nur an der Struktur (id + Name), nicht an Zahlen.
+        // Ursache der Unruhe: die Bahnradien kamen aus "vitality" (Anteil am größten
+        // Bereich). Erst zählte der Baum, dann kamen die Live-Stats (andere Zahlen),
+        // dann alle 45 s ein Neuladen bzw. jede Ablage – jedes Mal sprangen alle
+        // Planeten, und das Overlay maß sie neu. Größe darf wachsen, der Ort nicht.
+        return buildOrganicUniverseLayout(sorted, isUniverseV2Enabled() ? {} : metrics);
+    }, [capped, isUniverseV2Enabled() ? structureKey : metrics]);
+
+    // v2: Planeten füllen die Mittelzone (Spalten 4–9) gleichmäßig – Lage
+    // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
+    const normalizedDepartments = useMemo(() => {
+        if (!isUniverseV2Enabled()) return positionedDepartments;
+        return normalizeUniverseLayout(positionedDepartments);
+    }, [positionedDepartments]);
 
     const territories = useMemo<OrganizationTerritory[]>(
-        () => positionedDepartments.map((department) => {
+        () => normalizedDepartments.map((department) => {
             const value = metrics[department.id];
+            if (department.id === OVERFLOW_ID) {
+                const docs = capped.overflow.reduce((n, d) => n + (metrics[d.id]?.nodes || 0), 0);
+                return {
+                    id: OVERFLOW_ID, name: 'Weitere', description: department.description, color: department.color,
+                    x: department.x, y: department.y,
+                    spaces: capped.overflow.length, folders: 0, documents: docs,
+                    // Jeder überzählige Bereich ist ein Mond mit eigenem Namen.
+                    spaceList: capped.overflow.map((d) => ({ id: String(d.id), name: String(d.name || '') })),
+                    metricSource: 'live', access: 'open',
+                } as OrganizationTerritory;
+            }
             return {
                 id: department.id,
                 name: department.name,
@@ -338,7 +387,7 @@ export default function UniverseView() {
                 access: department.universeAccess,
             };
         }),
-        [metrics, positionedDepartments, spaceListByDepartment, folderMoons],
+        [metrics, normalizedDepartments, spaceListByDepartment, folderMoons, capped],
     );
 
     const signals = useMemo<UniverseSignal[]>(() => {
@@ -356,8 +405,14 @@ export default function UniverseView() {
 
         nightwatchIncidents.slice(0, 4).forEach((incident) => {
             const assignedId = incident.department_id || incident.affected_department_id;
+            // Ohne Zuordnung und ohne Namenstreffer gehört ein Vorfall zur Wache
+            // (Betrieb/Sicherheit) – dort entsteht Aufmerksamkeit, nicht im Nirgendwo.
+            const wache = accessibleDepartments.find((d) => /wache|watch|sicherheit|betrieb/i.test(String(d.name || '')));
+            const status = String(incident.status || 'open').toLowerCase();
+            if (['resolved', 'closed', 'dismissed'].includes(status)) return;
             const targetId = assignedId
-                || match(String(incident.title || '') + ' ' + String(incident.summary || ''));
+                || match(String(incident.title || '') + ' ' + String(incident.summary || ''))
+                || (wache ? String(wache.id) : null);
             if (!targetId || !normalized.some((department) => department.id === targetId)) return;
             result.push({
                 id: incident.id,
@@ -394,6 +449,7 @@ export default function UniverseView() {
                     subtitle: 'Mail · ' + item.from,
                     targetId,
                     kind: 'mail',
+                    at: item.date,
                     evidence: 'inferred',
                 });
             }
@@ -407,6 +463,7 @@ export default function UniverseView() {
                     subtitle: 'Kalender',
                     targetId,
                     kind: 'calendar',
+                    at: item.date ? (item.date.includes('T') ? item.date : item.date + 'T' + (item.time || '09:00').slice(0, 5) + ':00') : undefined,
                     evidence: 'inferred',
                 });
             }
@@ -491,17 +548,22 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && (
-                <CursorAgent
+            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
                     active
                     action="point"
                     target={attentionPoint}
                     message={attention.message}
                     awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
-                />
-            )}
+                /></div> : <CursorAgent
+                    active
+                    action="point"
+                    target={attentionPoint}
+                    message={attention.message}
+                    awareness={attention.reason === 'incident' ? 'alert' : 'insight'}
+                />)}
 
-            <UniverseObservatory
+            {/* Universe v2: die vier Seitenkarten weichen – MÔRA bündelt sie in einem Satz und einem Vorschlag. */}
+            {isUniverseV2Enabled() ? <div className="uv2-widgets" data-testid="uv2-lage"><UniverseLinks /><UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}
@@ -519,7 +581,25 @@ export default function UniverseView() {
                 onOpenCalendar={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 980, height: 700 } })}
                 onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
                 onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
-            />
+            /></div> : <UniverseObservatory
+                mail={mailPreview}
+                calendar={calendarPreview}
+                feed={feedPreview}
+                mailStatus={mailStatus}
+                calendarStatus={calendarStatus}
+                onOpenIntegrations={() => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } })}
+                incidents={nightwatchIncidents}
+                business={business}
+                substanceBars={substanceBars}
+                onSelectTerritory={setSelectedTerritoryId}
+                territoryCount={territories.length}
+                documentCount={territories.reduce((sum, territory) => sum + territory.documents, 0)}
+                selected={Boolean(selectedTerritoryId)}
+                onOpenMail={() => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 980, height: 700 } })}
+                onOpenCalendar={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 980, height: 700 } })}
+                onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
+                onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
+            />}
 
 
             {/* Der Umschalter "Organisation | Zusammenhaenge" ist entfernt.
@@ -544,6 +624,9 @@ export default function UniverseView() {
                 onOpen={navigateToDepartment}
                 attentionId={attention?.targetId ?? null}
                 onOpenMoon={(folderId, folderName) => {
+                    // Mond des Sammelplaneten "Weitere" = ein ganzer Bereich: direkt dorthin.
+                    const overflowDept = capped.overflow.find((d) => String(d.id) === folderId);
+                    if (overflowDept) { navigateToDepartment(String(overflowDept.id)); return; }
                     // In den Ordner selbst, nicht in ein generisches Fenster:
                     // navigateToFolder setzt den Kontext, der Finder oeffnet
                     // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.

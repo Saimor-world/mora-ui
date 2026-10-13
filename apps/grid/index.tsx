@@ -12,6 +12,7 @@ import { toast } from '@/lib/toast';
 import { VisibilityBadge } from '@/components/content/VisibilityBadge';
 import type { NodeVisibility } from '@/lib/types/core';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import { visibilityFromScope } from '@/lib/utils/visibility';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
@@ -104,6 +105,57 @@ export default function GridApp({ paneId }: AppProps) {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
+            {uv2() ? (
+            <div className="flex h-full min-h-0 flex-col" data-uv2-app="grid">
+                {!isLoading && nodes.length > 0 && (() => {
+                    const latest = [...nodes].sort((a, b) => String((b as any).updated_at ?? '').localeCompare(String((a as any).updated_at ?? '')))[0];
+                    return <AppHero app="grid" eyebrow="Alle Inhalte"
+                        title={`${nodes.length} Inhalte`}
+                        sub={latest ? <>Zuletzt bewegt: <span style={{ color: 'rgb(247,244,233)' }}>{latest.title || 'Ohne Titel'}</span></> : undefined}
+                        figure={nodes.length} figureLabel="Inhalte"
+                        action={latest ? { label: 'Zuletzt bewegtes öffnen', onClick: () => openPane({ id: `doc-${latest.id}`, type: 'document', title: latest.title || 'Ohne Titel', size: { width: 800, height: 600 }, data: { nodeId: latest.id, content: latest.content, name: latest.title, type: latest.type, metadata: latest.metadata } }) } : null} />;
+                })()}
+                {nodes.length > 0 && (
+                    <div className="flex items-center gap-6 border-b border-white/[0.06] px-8 py-3">
+                        <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Filtern …" aria-label="Inhalte filtern" className="uv2-inline-input" />
+                        <div className="flex gap-4">
+                            {[null, ...nodeTypes].map((t) => (
+                                <button key={t ?? 'alle'} type="button" onClick={() => setFilterType(t)} className="uv2-files-link" style={{ color: filterType === t ? '#D6A848' : undefined }}>{t ? (({ document: 'Dokumente', note: 'Notizen', image: 'Bilder', sheet: 'Tabellen', folder: 'Ordner', file: 'Dateien', link: 'Links' } as Record<string, string>)[String(t).toLowerCase()] ?? t) : 'Alle'}</button>
+                            ))}
+                        </div>
+                        <span className="ml-auto font-mono text-[10px] uppercase tracking-[0.18em] text-[rgba(247,244,233,.45)]">{filteredNodes.length} von {nodes.length}</span>
+                    </div>
+                )}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {isLoading ? (
+                        <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Inhalte werden gelesen …</p>
+                    ) : nodes.length === 0 ? (
+                        <div className="flex h-full items-center justify-center">
+                            <AppEmpty glyph={<Grid size={22} strokeWidth={1.25} />} title={activeCompanyId ? 'Dieser Raum ist noch leer.' : 'Kein Raum gewählt.'}
+                                text={activeCompanyId ? 'Dokumente, Bilder und Ordner deiner Bereiche erscheinen hier, sobald sie entstehen.' : 'Wähle eine Organisation, dann zeigt sich hier alles, was in ihr liegt.'}
+                                action={{ label: 'Meine Dateien öffnen', onClick: () => openPane({ id: 'meine-dateien', type: 'meine-dateien', title: 'Meine Dateien', size: { width: 1120, height: 720 } }) }} />
+                        </div>
+                    ) : filteredNodes.length === 0 ? (
+                        <AppEmpty compact glyph={<Search size={18} strokeWidth={1.25} />} title="Nichts Passendes." action={{ label: 'Filter zurücksetzen', onClick: () => { setSearchQuery(''); setFilterType(null); } }} />
+                    ) : (
+                        <div className="uv2-desk" style={{ paddingTop: 24 }}>
+                            <div className="uv2-desk__grid" style={{ marginTop: 0 }}>
+                                {filteredNodes.map((node) => {
+                                    const Icon = getNodeIcon(node.type);
+                                    return (
+                                        <button key={node.id} type="button" className="uv2-desk__tile" onClick={() => openPane({ id: `doc-${node.id}`, type: 'document', title: node.title || 'Ohne Titel', size: { width: 800, height: 600 }, data: { nodeId: node.id, content: node.content, name: node.title, type: node.type, metadata: node.metadata } })}>
+                                            <span className="uv2-desk__kind"><Icon size={18} strokeWidth={1.25} /></span>
+                                            <span className="uv2-desk__name">{node.title || 'Ohne Titel'}</span>
+                                            <span className="uv2-desk__meta">{({ document: 'Dokument', note: 'Notiz', image: 'Bild', sheet: 'Tabelle', folder: 'Ordner', file: 'Datei', link: 'Link' } as Record<string, string>)[String(node.type).toLowerCase()] ?? node.type}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+            ) : (
             <div className="flex flex-col h-full">
                 {/* Toolbar */}
                 <div className="p-4 border-b border-white/5 flex items-center gap-4">
@@ -222,6 +274,7 @@ export default function GridApp({ paneId }: AppProps) {
                     )}
                 </div>
             </div>
+            )}
         </GlassPanel>
     );
 }

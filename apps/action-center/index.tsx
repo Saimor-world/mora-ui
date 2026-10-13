@@ -1,6 +1,10 @@
 "use client";
 
+import { AppHero, AppEmpty } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, PillButton } from '@/components/universe/app/Tiles';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Mail, CalendarDays, Compass, FileText, X, Check } from 'lucide-react';
 import { Activity, BookMarked, CheckCircle, CheckCircle2, ChevronDown, Clock3, History, Loader2, PlayCircle, Search, ShieldAlert, Sparkles, UserRound, XCircle } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -467,6 +471,8 @@ export default function ActionCenterApp({ paneId }: AppProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<ActionFilter>('all');
+    const uv2 = isUniverseV2Enabled();
+    const [moreFilters, setMoreFilters] = useState(false);
     const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
     const [intentFilter, setIntentFilter] = useState<IntentFilter>('all');
     const [sessionFilter, setSessionFilter] = useState('');
@@ -621,9 +627,16 @@ export default function ActionCenterApp({ paneId }: AppProps) {
             paneId={paneId}
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full flex-col gap-4">
+            <div className="flex h-full flex-col gap-4" data-uv2-flat={uv2 ? '' : undefined}>
+                {uv2 && (
+                    <AppHero app="action-center" eyebrow="Aktionen"
+                        title={(() => { const w = events.filter((e) => canActOnPendingEvent(e)).length; const r = summary.active - w; const parts = [w ? `${w} ${w === 1 ? 'wartet' : 'warten'}` : '', r ? `${r} ${r === 1 ? 'läuft' : 'laufen'}` : ''].filter(Boolean); return parts.length ? parts.join(' · ') : 'Alles erledigt'; })()}
+                        sub={`${summary.done} erledigt · ${summary.rejected} verworfen${summary.failed ? ` · ${summary.failed} fehlgeschlagen` : ''}. MÔRA handelt nur, wenn du bestätigst.`}
+                        figure={summary.active} figureLabel="offen"
+                        action={null} />
+                )}
                 {/* Tab bar */}
-                <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+                <div className="flex gap-1 rounded-xl border border-white/10 bg-white/[0.03] p-1" data-uv2-tabs={uv2 ? '' : undefined}>
                     {([['aktionen', 'Aktionen'], ['verlauf', 'Verlauf']] as const).map(([key, label]) => (
                         <button
                             key={key}
@@ -644,9 +657,46 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                 {tab === 'verlauf' && <VerlaufTab />}
 
                 {/* Aktionen tab content (hidden when verlauf active) */}
-                {tab === 'aktionen' && <>
+                {tab === 'aktionen' && uv2 && (() => {
+                    const waiting = events.filter((e) => canActOnPendingEvent(e));
+                    const running = events.filter((e) => !canActOnPendingEvent(e) && groupStatusMap.active.includes(e.status));
+                    const settled = events.filter((e) => !groupStatusMap.active.includes(e.status)).slice(0, 18);
+                    const ico = (evt: ActionEvent) => { const k = evt.intent ?? ''; return /mail/.test(k) ? <Mail /> : /calendar|termin/.test(k) ? <CalendarDays /> : /file|node|intake/.test(k) ? <FileText /> : /navigat/.test(k) ? <Compass /> : <Activity />; };
+                    const short = (evt: ActionEvent) => intentLabelMap[evt.intent ?? ''] || (/calendar/.test(evt.intent ?? '') ? 'Termin' : /mail/.test(evt.intent ?? '') ? 'Mail' : 'Aktion');
+                    if (events.length === 0) return (
+                        <div className="flex flex-1 items-center justify-center" data-testid="ac-v2-empty">
+                            <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Keine Aktionen" action={null} />
+                        </div>
+                    );
+                    return (
+                        <div className="min-h-0 flex-1 overflow-y-auto" data-testid="ac-v2-register">
+                            {waiting.length > 0 && (
+                                <section className="uv2-asks">
+                                    {waiting.map((evt) => {
+                                        const st = pendingActionState[evt.action_id];
+                                        return (
+                                            <div key={evt.action_id} className="uv2-ask" data-testid={`ac-v2-ask-${evt.action_id}`}>
+                                                <span className="uv2-group__ico uv2-ask__ico">{ico(evt)}</span>
+                                                <div className="uv2-ask__text"><span className="uv2-ask__kind">{short(evt)} · {formatTime(evt.timestamp)}</span><span className="uv2-ask__msg">{formatActionMessage(evt) ?? formatActionTitle(evt)}</span></div>
+                                                <PillButton disabled={!!st} onClick={() => void handlePendingAction(evt, 'reject')} icon={<X />}>{st === 'rejecting' ? '…' : 'Nein'}</PillButton>
+                                                <PillButton primary disabled={!!st} onClick={() => void handlePendingAction(evt, 'confirm')} icon={<Check />}>{st === 'confirming' ? '…' : 'Ja, ausführen'}</PillButton>
+                                            </div>
+                                        );
+                                    })}
+                                </section>
+                            )}
+                            {running.length > 0 && <TileGrid label="Läuft">{running.map((evt) => <Tile key={evt.action_id} state="busy" icon={ico(evt)} label={short(evt)} />)}</TileGrid>}
+                            {settled.length > 0 && <TileGrid label="Zuletzt">{settled.map((evt) => (
+                                <Tile key={evt.action_id} icon={ico(evt)} label={short(evt)} state={evt.status === 'failed' ? 'warn' : evt.status === 'done' ? 'on' : 'off'}
+                                    badge={evt.status === 'failed' ? '!' : undefined} onClick={() => setTab('verlauf')} />
+                            ))}</TileGrid>}
+                        </div>
+                    );
+                })()}
+                {tab === 'aktionen' && !uv2 && <>
 
-                {/* Summary tiles */}
+                {/* Summary: v2 = eine ruhige Zeile, nur Werte > 0; alt = Kacheln */}
+                {!uv2 && (
                 <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
                     {[
                         { label: 'Gesamt', value: summary.total },
@@ -661,6 +711,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                         </div>
                     ))}
                 </div>
+                )}
 
                 {/* Filter bar */}
                 <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
@@ -697,6 +748,12 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                                 {item.label}
                             </button>
                         ))}
+                        {uv2 && (
+                            <button type="button" onClick={() => setMoreFilters((v) => !v)} aria-expanded={moreFilters} className="rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-white/55 transition-colors hover:border-white/20 hover:text-white/80">
+                                {moreFilters ? 'Weniger' : 'Filter'}{(roleFilter !== 'all' || intentFilter !== 'all' || sessionFilter) ? ' ·' : ''}
+                            </button>
+                        )}
+                        {(!uv2 || moreFilters) && <>
                         {!showIntakeView && (
                             <div className="relative">
                                 <UserRound size={12} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/35" />
@@ -734,6 +791,7 @@ export default function ActionCenterApp({ paneId }: AppProps) {
                                 className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[11px] text-white/70 placeholder:text-white/30 focus:border-cyan-400/40 focus:outline-none"
                             />
                         )}
+                        </>}
                     </div>
                 </div>
 

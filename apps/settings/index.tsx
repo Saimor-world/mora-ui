@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -10,7 +11,8 @@ import { useDepartments } from '@/lib/queries/useDepartments';
 import { useTree } from '@/lib/queries/useTree';
 import { useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queries/queryKeys';
-import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge } from 'lucide-react';
+import { Moon, Sun, Zap, Monitor, Volume1, Sparkles, Send } from 'lucide-react';
+import { Check, User, Palette, Bell, Users, Activity, Info, FolderCog, Pencil, Trash2, Loader2, ChevronRight, Circle, Plus, Building2, Music, Upload, Play, Pause, Volume2, Compass, Gauge, Smartphone } from 'lucide-react';
 import { CompanyLogoUpload } from '@/components/ui/CompanyLogo';
 import { getCoreBaseUrl, updateCompany, updateDepartment, deleteDepartment, updateSpace, deleteSpace, createDepartment, createSpace, corePost, coreGet } from '@/lib/api/coreClient';
 import { toast } from '@/lib/toast';
@@ -48,6 +50,22 @@ import { useUserSettings } from '@/lib/queries/useUserSettings';
 import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
+import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
+import { RaumV2 } from '@/apps/settings/RaumV2';
+import { PairPlaceholder } from '@/components/begleiter/PairPlaceholder';
+
+const UV2_SETTINGS_LINES: Record<string, string> = {
+    profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
+    'workspace-control': 'Was dein Arbeitsraum zeigt, und was er für sich behält.',
+    appearance: 'Wie Saimôr für dich aussieht.',
+    audio: 'Klang, Stille und die Musik im Hintergrund.',
+    notifications: 'Wann dich etwas erreichen darf.',
+    workspace: 'Bereiche und Räume deiner Organisation.',
+    team: 'Wer mitarbeitet, und mit welchen Rechten.',
+    system: 'Wie es dem System gerade geht.',
+    about: 'Was Saimôr ist, und in welcher Version es läuft.',
+};
 
 const MAX_AMBIENT_AUDIO_TRACKS = 6;
 const MAX_AMBIENT_AUDIO_FILE_BYTES = 25 * 1024 * 1024;
@@ -84,6 +102,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
 
     const requestedSection = typeof initialData?.section === 'string' ? initialData.section : null;
     const [activeTab, setActiveTab] = useState(requestedSection || 'profile');
+    const [uv2Index, setUv2Index] = useState(!requestedSection);
     const [theme, setTheme] = useState('deep-space');
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
@@ -167,6 +186,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
+        ...(uv2On() ? [{ id: 'begleiter', label: 'Handy verbinden', icon: Smartphone }] : []),
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
@@ -468,7 +488,7 @@ useEffect(() => {
 
     return (
         <GlassPanel
-            title={null}
+            title={isUniverseV2Enabled() ? 'Einstellungen' : null}
             width={pane.size.width}
             height={pane.size.height}
             initialX={pane.position.x}
@@ -487,9 +507,24 @@ useEffect(() => {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full overflow-hidden">
+            {uv2On() && !isStandardMode && uv2Index ? (
+                <RaumV2
+                    sections={tabs.map((t) => ({ id: t.id, label: t.label }))}
+                    onOpen={(id) => { setActiveTab(id); setUv2Index(false); }}
+                    scene={ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId}
+                    autoTime={ritualAutoTime}
+                    onScene={handleSelectRitualScene}
+                    onToggleAuto={handleToggleRitualAutoTime}
+                    ambientOn={ambientAudioEnabled}
+                    volume={ambientAudioVolume}
+                    onToggleAmbient={handleAmbientAudioToggle}
+                    onVolume={handleAmbientVolumeChange}
+                    saveSetting={saveSetting}
+                />
+            ) : (
+            <div className="flex h-full overflow-hidden" data-uv2-settings-detail={uv2On() && !isStandardMode ? '' : undefined}>
                 {/* ── Sidebar ─────────────────────────────────────────── */}
-                <div className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
+                <div data-uv2-settings-nav={uv2On() && !isStandardMode ? '' : undefined} className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
                     {/* Logo / header */}
                     <div className={`px-4 pt-5 pb-3 border-b ${isStandardMode ? 'border-gray-200' : 'border-white/[0.06]'}`}>
                         <div className={`text-[10px] uppercase tracking-[0.28em] font-medium ${isStandardMode ? 'text-gray-400' : 'text-white/35'}`}>
@@ -537,9 +572,15 @@ useEffect(() => {
                 </div>
 
                 {/* ── Content area ──────────────────────────────────────── */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto" data-uv2-settings-content>
                     {/* Section header */}
-                    <div className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
+                    {uv2On() && !isStandardMode && (
+                        <div className="uv2-settings-bar">
+                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)} data-testid="settings-back-raum">‹ Raum</button>
+                            <span className="uv2-settings-bar__title">{tabs.find((t) => t.id === activeTab)?.label}</span>
+                        </div>
+                    )}
+                    <div data-uv2-legacy-head={uv2On() && !isStandardMode ? '' : undefined} className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
                         {(() => {
                             const t = tabs.find(t => t.id === activeTab);
                             return t ? (
@@ -555,7 +596,34 @@ useEffect(() => {
                         })()}
                     </div>
 
-                    <div className="px-6 py-5 space-y-6">
+                    <div className="px-6 py-5 space-y-6" data-uv2-settings-body>
+                    {uv2On() && activeTab === 'begleiter' && <PairPlaceholder />}
+                    {uv2On() && !isStandardMode && activeTab === 'about' && (
+                        <div className="uv2-osform" data-testid="settings-v2-about">
+                            <div className="uv2-idcard"><span className="uv2-idcard__logo">S</span><span className="uv2-idcard__name">Saimôr OS</span><span className="uv2-dot" data-on="">v2.0.0-beta</span></div>
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Info /></span><span className="uv2-group__label">Version</span><span className="uv2-group__val">2.0.0-beta</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Activity /></span><span className="uv2-group__label">Umgebung</span><span className="uv2-group__val">{process.env.NODE_ENV}</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Sparkles /></span><span className="uv2-group__label">Kern</span><span className="uv2-group__val">MÔRA Core + Gateway</span></div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Compass /></span><span className="uv2-group__label">Rundgang</span><button type="button" className="uv2-pill" onClick={handleRestartProductTour}>Starten</button></div>
+                            </div>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'team' && (
+                        <div className="uv2-osform" data-testid="settings-v2-team">
+                            <TileGrid label="Team" size="l">
+                                <Tile icon={<Users />} label="Team öffnen" onClick={() => usePaneStore.getState().openPane({ id: 'team-main', type: 'team', title: 'Team', size: { width: 840, height: 640 } })} />
+                                <Tile icon={<User />} label="Benutzer" onClick={() => usePaneStore.getState().openPane({ id: 'users-main', type: 'users', title: 'Benutzer', size: { width: 840, height: 640 } })} />
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'profile' && (
+                        <div className="uv2-idcard" data-testid="settings-v2-profile">
+                            <span className="uv2-idcard__logo">{(user?.email ?? '?').slice(0, 2).toUpperCase()}</span>
+                            <span className="uv2-idcard__name">{user?.email}</span>
+                            <span className="uv2-dot" data-on="">{roleLabel(user?.role)}</span>
+                        </div>
+                    )}
                     {activeTab === 'profile' && (
                         <ProfileTab user={user} />
                     )}
@@ -569,7 +637,66 @@ useEffect(() => {
                         })} />
                     )}
 
-                    {activeTab === 'appearance' && (
+                    {uv2On() && !isStandardMode && activeTab === 'appearance' && (
+                        <div className="uv2-osform" data-testid="settings-v2-appearance">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Monitor /></span><span className="uv2-group__label">Darstellung</span>
+                                    <Segmented label="Darstellung" value={isStandardMode ? 'standard' : 'immersive'} options={[{ id: 'immersive', label: 'Saimôr', icon: <Moon /> }, { id: 'standard', label: 'Standard', icon: <Sun /> }]}
+                                        onChange={(v) => { const std = v === 'standard'; setTheme(std ? 'standard' : 'deep-space'); setIsStandardMode(std); saveSetting({ theme: std ? 'standard' : 'deep-space' }); }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Sparkles /></span><span className="uv2-group__label">Automatisch</span>
+                                    <Switch label="Atmosphäre automatisch" on={ritualAutoTime} onChange={() => handleToggleRitualAutoTime()} />
+                                </div>
+                            </div>
+                            <TileGrid label="Atmosphäre" size="s">
+                                {RITUAL_SCENE_ORDER.map((sid) => {
+                                    const scene = RITUAL_SCENES[sid];
+                                    const effectiveId = ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId;
+                                    return <Tile key={sid} active={sid === effectiveId} label={scene.label} onClick={() => handleSelectRitualScene(sid)}
+                                        icon={<span className="uv2-swatch" style={{ background: scene.accentHex }} />} />;
+                                })}
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'audio' && (
+                        <div className="uv2-osform" data-testid="settings-v2-audio">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Music /></span><span className="uv2-group__label">Klangraum</span>
+                                    <Switch label="Klangraum" on={ambientAudioEnabled} onChange={() => handleAmbientAudioToggle()} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Volume2 /></span><span className="uv2-group__label">Lautstärke</span>
+                                    <input type="range" min={0} max={100} className="uv2-slider" aria-label="Lautstärke" value={Math.round(ambientAudioVolume * 100)} onChange={(e) => handleAmbientVolumeChange(Number(e.target.value) / 100)} />
+                                </div>
+                            </div>
+                            <TileGrid label="Klänge" size="s">
+                                {ambientTracks.map((track) => (
+                                    <Tile key={track.id} active={track.id === ambientAudioTrackId} label={track.name} icon={<Music />} onClick={() => handleAmbientTrackSelect(track.id)} />
+                                ))}
+                                <Tile label="Hinzufügen" icon={<Upload />} state="off" onClick={promptAmbientAudioUpload} />
+                            </TileGrid>
+                        </div>
+                    )}
+                    {uv2On() && !isStandardMode && activeTab === 'notifications' && (
+                        <div className="uv2-osform" data-testid="settings-v2-notifications">
+                            <div className="uv2-group">
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Zap /></span><span className="uv2-group__label">Direkt ausführen</span>
+                                    <Switch label="Aktionen direkt ausführen" on={(user?.settings?.autoExecuteActions ?? true) !== false} onChange={(next) => { saveSetting({ autoExecuteActions: next }); toast.info(next ? 'MÔRA führt Aktionen direkt aus' : 'MÔRA fragt vor Aktionen'); }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Bell /></span><span className="uv2-group__label">Desktop</span>
+                                    <Switch label="Desktop-Mitteilungen" on={!!user?.settings?.desktopNotifications} onChange={async (next) => {
+                                        if (!next) { saveSetting({ desktopNotifications: false }); return; }
+                                        if (typeof Notification === 'undefined') return;
+                                        const perm = await Notification.requestPermission();
+                                        if (perm === 'granted') saveSetting({ desktopNotifications: true }); else toast.error('Im Browser blockiert');
+                                    }} />
+                                </div>
+                                <div className="uv2-group__row"><span className="uv2-group__ico"><Volume1 /></span><span className="uv2-group__label">Töne</span>
+                                    <Switch label="Töne" on={!!user?.settings?.soundEffects} onChange={(next) => saveSetting({ soundEffects: next })} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {!(uv2On() && !isStandardMode) && activeTab === 'appearance' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Design</h3>
                             <div className="space-y-3">
@@ -786,7 +913,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'audio' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'audio' && (
                         <div className="space-y-6">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
@@ -1016,7 +1143,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'notifications' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'notifications' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Mitteilungen & MORA</h3>
 
@@ -1531,7 +1658,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {activeTab === 'team' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'team' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Team Management</h3>
                             <div className="p-8 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-center">
@@ -1758,7 +1885,7 @@ SMTP_TLS=true`}</pre>
                         </div>
                     )}
 
-                    {activeTab === 'about' && (
+                    {!(uv2On() && !isStandardMode) && activeTab === 'about' && (
                         <div className="space-y-6">
                             <h3 className="text-lg text-white font-light">Über SAIMOR</h3>
                             <div className="p-4 bg-white/5 rounded-xl border border-white/10 text-sm text-white/60 leading-relaxed">
@@ -1799,6 +1926,7 @@ SMTP_TLS=true`}</pre>
                     </div>
                 </div>
             </div>
+            )}
         </GlassPanel>
     );
 }

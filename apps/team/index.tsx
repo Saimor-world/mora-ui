@@ -1,5 +1,7 @@
 'use client';
 
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 import React, {
     useCallback,
     useEffect,
@@ -141,7 +143,11 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
 
     // ─── Load members ──────────────────────────────────────────────────────
 
+    // Stabile Referenz: verhindert Endlos-Neuladen (Spinner), wenn das User-Objekt pro Render neu entsteht.
+    const currentUserRef = useRef(currentUser);
+    currentUserRef.current = currentUser;
     const fetchMembers = useCallback(async () => {
+        const currentUser = currentUserRef.current;
         setIsLoading(true);
         try {
             const res = await coreGet('/v3/team/members?include_inactive=false', {
@@ -200,7 +206,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
         } finally {
             setIsLoading(false);
         }
-    }, [currentUserId, currentUserEmail, currentUserName, currentUser]);
+    }, [currentUserId, currentUserEmail, currentUserName, currentUser?.role]);
 
     // ─── Load room messages ─────────────────────────────────────────────────
 
@@ -214,7 +220,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
     // ─── Initial load ───────────────────────────────────────────────────────
 
     useEffect(() => {
-        if (!isOperational) return;
+        if (!isOperational) { setIsLoading(false); return; }
         fetchMembers();
         fetchMessages();
     }, [fetchMembers, fetchMessages, isOperational]);
@@ -355,9 +361,22 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
             paneId={paneId}
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full flex-col">
+            <div className="flex h-full flex-col" data-uv2-app="team">
+                {uv2() && (
+                    <div className="uv2-ftool" data-testid="team-v2-bar">
+                        <Segmented value={activeTab} onChange={(v) => setActiveTab(v)} label="Ansicht" options={[
+                            { id: 'room' as Tab, label: 'Raum', icon: <Users /> },
+                            { id: 'members' as Tab, label: `Mitglieder ${members.length}`, icon: <User /> },
+                            { id: 'invite' as Tab, label: 'Einladen', icon: <Plus /> },
+                        ]} />
+                        <span style={{ flex: 1 }} />
+                        <span className="uv2-dot" data-on={isOperational ? '' : undefined} data-warn={!isOperational && !isLoading ? '' : undefined} title={isOperational ? 'verbunden' : 'nicht erreichbar'} />
+                        <span className="uv2-notes__count">{isOperational ? `${members.filter((m) => m.status === 'online').length} online` : 'offline'}</span>
+                        <button type="button" className="uv2-pill uv2-pill--gold" onClick={() => setActiveTab('invite')}><Plus />Einladen</button>
+                    </div>
+                )}
                 {/* ── Tab bar ── */}
-                <div className="flex items-center gap-1 border-b border-white/5 p-2">
+                <div className="flex items-center gap-1 border-b border-white/5 p-2" data-uv2-tabs hidden={uv2() || undefined} style={uv2() ? { display: 'none' } : undefined}>
                     <button
                         onClick={() => setActiveTab('room')}
                         className={`flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs transition-colors ${activeTab === 'room' ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5'}`}
@@ -386,6 +405,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                             {/* Orb canvas — takes most of the height */}
                             <div
                                 className="relative flex-1 overflow-hidden"
+                                data-uv2-system-bg=""
                                 style={{
                                     background:
                                         'radial-gradient(ellipse at 50% 40%, rgba(15,118,110,0.22) 0%, transparent 55%), radial-gradient(ellipse at 20% 15%, rgba(52,211,153,0.10) 0%, transparent 45%), radial-gradient(ellipse at 80% 10%, rgba(56,189,248,0.09) 0%, transparent 45%), linear-gradient(180deg, #000c0c 0%, #000405 100%)',
@@ -394,6 +414,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                 {/* Ambient dots */}
                                 <div
                                     className="pointer-events-none absolute inset-0 opacity-30"
+                                    data-uv2-hide=""
                                     style={{
                                         backgroundImage: `radial-gradient(circle at 14% 26%, rgba(255,255,255,0.22) 0 1px, transparent 2px), radial-gradient(circle at 72% 18%, rgba(52,211,153,0.20) 0 1px, transparent 2px), radial-gradient(circle at 48% 76%, rgba(125,211,252,0.18) 0 1px, transparent 2px)`,
                                         backgroundSize: '120px 120px, 180px 180px, 150px 150px',
@@ -401,9 +422,17 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                 />
 
                                 {/* Empty state */}
-                                {!isLoading && members.length === 0 && (
-                                    <div className="absolute inset-0 flex items-center justify-center text-sm text-white/30">
-                                        Noch niemand hier.
+                                {!isLoading && members.length === 0 && uv2() && (
+                                    <div className="absolute inset-0 flex items-center justify-center">
+                                        <AppEmpty compact glyph={<Users size={20} strokeWidth={1.25} />} title={isOperational ? 'Der Raum wartet.' : 'Gerade keine Verbindung.'}
+                                            text={isOperational ? 'Wer eingeladen ist, erscheint hier als Licht, sobald er da ist.' : 'Saimôr zeigt keinen leeren Raum, solange der echte Stand unbekannt ist.'}
+                                            action={isOperational ? { label: 'Einladen', onClick: () => setActiveTab('invite') } : { label: 'Erneut verbinden', onClick: () => void fetchMembers() }} />
+                                    </div>
+                                )}
+                                {!isLoading && members.length === 0 && !uv2() && (
+                                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-center">
+                                        <span className="text-sm text-white/75">{isOperational ? 'Noch niemand hier.' : 'Der Teamraum ist gerade nicht erreichbar.'}</span>
+                                        <span className="max-w-[280px] text-xs leading-relaxed text-white/45">{isOperational ? 'Lade Menschen ein – sie erscheinen hier, sobald sie da sind.' : 'Sobald die Verbindung steht, siehst du hier, wer im Raum ist.'}</span>
                                     </div>
                                 )}
 
@@ -577,6 +606,31 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                             ) : members.length === 0 ? (
                                 <div className="flex h-full items-center justify-center text-xs text-white/30 italic">
                                     Noch keine Mitglieder.
+                                </div>
+                            ) : uv2() ? (
+                                <div className="uv2-members" data-testid="team-members-v2">
+                                    {(['online', 'offline'] as const).map((st) => {
+                                        const list = members.filter((m) => m.status === st);
+                                        if (!list.length) return null;
+                                        return (
+                                            <section key={st} className="uv2-members__group">
+                                                <div className="uv2-members__label"><span className="uv2-dot" data-on={st === 'online' ? '' : undefined} />{st === 'online' ? 'Jetzt da' : 'Abwesend'}<em>{list.length}</em></div>
+                                                <div className="uv2-members__grid">
+                                                    {list.map((member) => {
+                                                        const aura = getAura(member, currentUser?.role);
+                                                        const role = isOwnerRole(member.role) ? 'Inhaber' : member.role === 'admin' ? 'Admin' : 'Mitglied';
+                                                        return (
+                                                            <div key={member.id} className="uv2-member uv2-tip" data-tip={member.email || undefined} tabIndex={member.email ? 0 : undefined} data-testid={`team-member-${member.id}`} data-online={st === 'online' ? '' : undefined}>
+                                                                <span className="uv2-member__avatar" style={{ ['--aura' as any]: aura }}>{member.name.charAt(0).toUpperCase()}</span>
+                                                                <span className="uv2-member__name">{member.name}{member.is_self && <small>Du</small>}</span>
+                                                                <span className="uv2-member__role">{role}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </section>
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 members.map(member => {

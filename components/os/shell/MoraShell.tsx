@@ -45,6 +45,7 @@
  * ----------------------------------------------------------------
  */
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -394,6 +395,8 @@ export const MoraShell: React.FC = () => {
     const fullscreenPaneIdsRef = useRef<Set<string>>(new Set());
     const activeSnapZoneRef = useRef<SnapZone>(null);
     const isUniverseExploreSurface = viewLevel === 'core' && coreMode === 'explore';
+    /** Universe v2: Home, Universe und Planeten-Inneres teilen einen Kosmos – kein grüner Szenen-Schleier darüber. */
+    const v2SharedCosmos = isUniverseV2Enabled() && (viewLevel === 'core' || viewLevel === 'department');
     const isAmbientRoomOpen = useNavStore((s) => s.voiceOverlayOpen);
     const pauseHeavyBackground = viewLevel !== 'core' || hasFullscreenPane || isSpotlightOpen || isShortcutsOpen || visiblePaneCount > 1;
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
@@ -478,7 +481,8 @@ export const MoraShell: React.FC = () => {
         if (typeof window === 'undefined') return;
         const isDev = process.env.NODE_ENV === 'development';
         const hasParam = window.location.search.includes('diagnostics=1');
-        setDiagnosticsEnabled(isDev || hasParam);
+        // Universe v2: Entwicklerwerkzeuge nie im Endkundenbild – nur mit ?diagnostics=1.
+        setDiagnosticsEnabled(isUniverseV2Enabled() ? hasParam : isDev || hasParam);
     }, []);
 
     useEffect(() => {
@@ -744,14 +748,15 @@ export const MoraShell: React.FC = () => {
             <ModeIndicatorBanner activeMode={activeMode} />
             <AmbientAudioController />
             <InteractionAudioController />
-            <MoraPulsePanel />
+            {!isUniverseV2Enabled() ? <MoraPulsePanel /> : <div className="uv2-lage-only"><MoraPulsePanel /></div>}
             {/* MoraPulsePanel hidden — ambient context lives in HomeSurface now */}
 
             {/* V12: Connection Status, Quick Tips, Greeting & Stats */}
             <ConnectionBanner />
-            <QuickTips />
+            {/* v2: keine Tipp-Karten über dem Raum – ⌘K steht im Fächer und im Frag-MÔRA-Feld. */}
+            {!isUniverseV2Enabled() ? <QuickTips /> : <div className="uv2-lage-only"><QuickTips /></div>}
             {activeMode !== 'public_playground' && <MoraGreeting />}
-            <SystemStats />
+            {!isUniverseV2Enabled() ? <SystemStats /> : <div className="uv2-lage-only"><SystemStats /></div>}
 
             {/* ================================================================
                 LAYER 1: BACKGROUND (progressive island)
@@ -763,7 +768,7 @@ export const MoraShell: React.FC = () => {
                 z-11  RitualSceneStyler — scene colour overlay + CSS vars
             ================================================================= */}
 
-            <RitualSceneStyler muted={isUniverseExploreSurface} />
+            <RitualSceneStyler muted={isUniverseExploreSurface || v2SharedCosmos} />
             <ShellStaticBackdrop />
             <MoraLivingBackground />
             <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
@@ -773,7 +778,7 @@ export const MoraShell: React.FC = () => {
                     {/* ForestLightCanopy fades to 6% in Universe — shared atmospheric truth */}
                     <div
                         className="transition-opacity duration-[1400ms] ease-in-out"
-                        style={{ opacity: isUniverseExploreSurface ? 0.06 : 1 }}
+                        style={{ opacity: isUniverseExploreSurface || v2SharedCosmos ? 0.06 : 1 }}
                     >
                         <ForestLightCanopy orbState={finalOrbState} demoMode={viewMode === 'demo'} />
                     </div>
@@ -823,7 +828,13 @@ export const MoraShell: React.FC = () => {
                     contextSubtitleOverride={websiteEntryContext ? 'Website-Check im HQ' : undefined}
                 />
 
-                {!hasFullscreenPane && (
+                {!hasFullscreenPane && isUniverseV2Enabled() && (
+                    <div className="pointer-events-auto absolute right-8 top-20 z-[48] hidden items-center gap-2 lg:flex" data-testid="uv2-utility">
+                        <button type="button" onClick={() => setIsSpotlightOpen(true)} className="uv2-util" title={`Suche (${spotlightShortcutLabel})`} aria-label={`Spotlight öffnen (${spotlightShortcutLabel})`}><Search size={15} strokeWidth={1.25} /></button>
+                        <button type="button" onClick={() => openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 }, data: { section: 'audio' } })} className="uv2-util" title="Audio" aria-label="Audio öffnen"><Music2 size={15} strokeWidth={1.25} /></button>
+                    </div>
+                )}
+                {!hasFullscreenPane && !isUniverseV2Enabled() && (
                     <div className="pointer-events-auto absolute right-8 top-32 z-[48] hidden items-center gap-2 lg:flex">
                         <button
                             type="button"

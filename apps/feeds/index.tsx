@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ExternalLink, Plug, RefreshCw, Rss, Settings } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { FeedItemCard } from '@/components/feeds/FeedItemCard';
@@ -10,6 +10,8 @@ import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 import { broadcastCommunicationSync } from '@/lib/integrations/communicationEvents';
 import { feedCadenceHint, formatLastUpdatedLabel } from '@/lib/rss/feedDates';
 import type { AppProps } from '@/lib/apps/types';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 import { useNavStore } from '@/lib/store/navStore';
 import { GLASS_SHEET_PRESENTATION_FEED } from '@/lib/os/glassSheet';
 
@@ -37,6 +39,9 @@ export default function FeedsApp({ paneId }: AppProps) {
         });
     }, [openPane]);
 
+    const [source, setSource] = useState<string>('all');
+    const sources = useMemo(() => { const m = new Map<string, number>(); items.forEach((it) => m.set(it.sourceTitle, (m.get(it.sourceTitle) ?? 0) + 1)); return [...m.entries()].slice(0, 6); }, [items]);
+    const shown = source === 'all' ? items : items.filter((it) => it.sourceTitle === source);
     const handleRefresh = useCallback(async () => {
         broadcastCommunicationSync('rss-refresh');
         await refetch();
@@ -78,6 +83,49 @@ export default function FeedsApp({ paneId }: AppProps) {
             zIndex={pane.zIndex}
             {...GLASS_SHEET_PRESENTATION_FEED}
         >
+            {uv2() ? (
+            <div className="flex h-full min-h-0 flex-col" data-uv2-app="feeds">
+                {rssConfigured && (
+                    <div className="uv2-ftool" data-testid="feeds-v2-bar">
+                        <Segmented value={source} onChange={setSource} label="Quelle" options={[
+                            { id: 'all', label: `Alle ${items.length}`, icon: <Rss /> },
+                            ...sources.map(([name, n]) => ({ id: name, label: `${name} ${n}` })),
+                        ]} />
+                        <span style={{ flex: 1 }} />
+                        {lastUpdated ? <span className="uv2-notes__count">{lastUpdated}</span> : null}
+                        <button type="button" className="uv2-pill" onClick={() => void handleRefresh()} disabled={isFetching} aria-label="Neu abrufen" title="Neu abrufen"><RefreshCw className={isFetching ? 'animate-spin' : ''} /></button>
+                        <button type="button" className="uv2-pill" onClick={openIntegrations} aria-label="Quellen" title="Quellen"><Settings /></button>
+                    </div>
+                )}
+                <div className="min-h-0 flex-1 overflow-y-auto">
+                    {isLoading ? (
+                        <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Horizont wird gelesen …</p>
+                    ) : !rssConfigured ? (
+                        <div className="flex h-full items-center justify-center">
+                            <AppEmpty glyph={<Rss size={22} strokeWidth={1.25} />} title="Dein Horizont, ausgewählt."
+                                text="Verbinde die Quellen, denen du vertraust. MÔRA zeigt das Neueste und hebt hervor, was deine Bereiche berührt."
+                                action={{ label: 'Quellen verbinden', onClick: openIntegrations }} />
+                        </div>
+                    ) : items.length === 0 ? (
+                        <div className="flex h-full items-center justify-center">
+                            <AppEmpty glyph={<Rss size={22} strokeWidth={1.25} />} title={error ? 'Die Quellen antworten nicht.' : 'Gerade nichts Neues.'}
+                                text={error ? 'Prüfe die Feed-Adressen unter Quellen.' : 'Deine Quellen sind verbunden. Neue Einträge erscheinen hier, sobald sie veröffentlicht werden.'}
+                                action={{ label: 'Neu abrufen', onClick: () => void handleRefresh() }} />
+                        </div>
+                    ) : (
+                        <div className="uv2-news" data-testid="feeds-v2-grid">
+                            {shown.map((item, k) => (
+                                <a key={item.id} href={item.link} target="_blank" rel="noopener noreferrer" className="uv2-news__card" data-lead={k === 0 ? '' : undefined}>
+                                    {item.imageUrl ? <span className="uv2-news__img" style={{ backgroundImage: `url(${JSON.stringify(item.imageUrl)})` }} /> : <span className="uv2-news__img uv2-news__img--none"><Rss /></span>}
+                                    <span className="uv2-news__src">{item.sourceTitle}{item.published ? ' · ' + new Date(item.published).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : ''}</span>
+                                    <span className="uv2-news__title">{item.title}</span>
+                                </a>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+            ) : (
             <div className="flex h-full min-h-0 flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="max-w-xl space-y-1">
@@ -161,6 +209,7 @@ export default function FeedsApp({ paneId }: AppProps) {
                     </div>
                 )}
             </div>
+            )}
         </GlassPanel>
     );
 }

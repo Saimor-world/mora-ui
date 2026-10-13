@@ -7,6 +7,10 @@
  * into Mycelium; triage actions mutate the connected mailbox only after a user action.
  */
 
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, Segmented } from '@/components/universe/app/Tiles';
+
+const senderName = (m: { from_addr: string }) => m.from_addr.split('<')[0].trim().replace(/"/g, '') || m.from_addr;
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -97,6 +101,8 @@ export default function MailApp({ paneId }: AppProps) {
     const [trashing, setTrashing] = useState(false);
     const [confirmingTrash, setConfirmingTrash] = useState(false);
     const [labelingSuggestionId, setLabelingSuggestionId] = useState<string | null>(null);
+    const [uvFilter, setUvFilter] = useState<'all' | 'unread'>('all');
+    const [uvSender, setUvSender] = useState<string | null>(null);
 
     // For notification logic
     const prevCountRef = useRef<number>(0);
@@ -426,7 +432,30 @@ export default function MailApp({ paneId }: AppProps) {
                     </div>
                 )}
 
-                {!viewingMail && !composing && (
+                {uv2() && !viewingMail && !composing && !loading && !error && mails.length > 0 && (() => {
+                    const unread = mails.filter((m) => m.read === false).length;
+                    const senders = new Map<string, { n: number; unread: number }>();
+                    for (const m of mails) { const k = senderName(m); const e = senders.get(k) ?? { n: 0, unread: 0 }; e.n += 1; if (m.read === false) e.unread += 1; senders.set(k, e); }
+                    return (
+                        <div data-uv2-keep="" data-testid="mail-v2-bar">
+                            <div className="uv2-ftool">
+                                <Segmented value={uvFilter} onChange={(v) => setUvFilter(v)} label="Filter" options={[
+                                    { id: 'all', label: `Alle ${mails.length}`, icon: <Inbox /> },
+                                    { id: 'unread', label: `Ungelesen ${unread}`, icon: <Mail /> },
+                                ]} />
+                                <span style={{ flex: 1 }} />
+                                <button type="button" className="uv2-pill" data-testid="mail-v2-newest" onClick={() => void openMail(mails[0])}><Mail />Neueste</button>
+                            </div>
+                            <TileGrid label="Absender" size="s">
+                                {[...senders.entries()].slice(0, 10).map(([name, e]) => (
+                                    <Tile key={name} testId={`mail-sender-${name}`} icon={<span className="uv2-mono-glyph">{name.charAt(0).toUpperCase()}</span>} label={name}
+                                        badge={e.unread || undefined} active={uvSender === name} onClick={() => setUvSender(uvSender === name ? null : name)} />
+                                ))}
+                            </TileGrid>
+                        </div>
+                    );
+                })()}
+                {!viewingMail && !composing && !(uv2() && ((summary.mailConfigured && mails.length > 0) || (!loading && !error && mails.length === 0))) && (
                     <div className="border-b border-white/6 px-4 py-3">
                         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-3">
                             <div className="flex items-start justify-between gap-3">
@@ -537,7 +566,18 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
                     )}
 
-                    {!loading && !error && mails.length === 0 && !viewingMail && (
+                    {uv2() && !loading && !error && mails.length === 0 && !viewingMail && (
+                        <div className="flex h-full items-center justify-center">
+                            {summary.mailConfigured
+                                ? <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Der Posteingang ist leer."
+                                    text="Nichts wartet auf dich. MÔRA sortiert neue Post, sobald sie ankommt."
+                                    action={{ label: 'Nachricht schreiben', onClick: () => setComposing(true) }} />
+                                : <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Deine Post, ruhig sortiert."
+                                    text="Verbinde dein Postfach. MÔRA hebt hervor, was eine Antwort braucht, und lässt den Rest leise."
+                                    action={{ label: 'Postfach verbinden', onClick: openIntegrations }} />}
+                        </div>
+                    )}
+                    {!uv2() && !loading && !error && mails.length === 0 && !viewingMail && (
                         <div className="p-8 text-center text-white/40">
                             <Inbox className="w-12 h-12 mx-auto mb-4 opacity-20" />
                             <p className="text-sm">
@@ -551,13 +591,14 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
                     )}
 
-                    {!loading && !viewingMail && mails.map((mail) => {
+                    {!loading && !viewingMail && (uv2() ? mails.filter((m) => (uvFilter === 'all' || m.read === false) && (!uvSender || senderName(m) === uvSender)) : mails).map((mail) => {
                         const id = mailKey(mail);
                         const selected = selectedIds.has(id);
                         return (
                             <div
                                 key={mail.id}
                                 onClick={() => selectionMode ? toggleSelection(mail) : openMail(mail)}
+                                data-uv2-mail-row={mail.read === false ? 'unread' : 'read'}
                                 className={`p-4 border-b border-white/5 transition-colors cursor-pointer group flex items-start gap-4 ${selected ? 'bg-emerald-400/[0.055]' : 'hover:bg-white/5'}`}
                             >
                                 {selectionMode && (
@@ -573,7 +614,7 @@ export default function MailApp({ paneId }: AppProps) {
                                         {selected ? <CheckSquare size={17} className="text-emerald-300/80" /> : <Square size={17} />}
                                     </button>
                                 )}
-                                <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-xs font-bold shrink-0">
+                                <div data-uv2-mail-avatar="" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 text-xs font-bold shrink-0">
                                     {mail.from_addr.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">

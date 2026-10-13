@@ -1,5 +1,5 @@
 ﻿'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { VisibilityModal } from '@/components/content/VisibilityModal';
@@ -10,7 +10,7 @@ import { useCompanies } from '@/lib/queries/useCompanies';
 import { queryKeys } from '@/lib/queries/queryKeys';
 import type { NodeVisibility } from '@/lib/types/core';
 import { fetchFolderContext, fetchFoldersByCompany } from '@/lib/api/coreClient';
-import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity } from 'lucide-react';
+import { Zap, Upload, FileText, Image, File, X, Loader2, CheckCircle, AlertCircle, Sparkles, Activity, Folder } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ConfirmationCard } from '@/components/mora/ConfirmationCard';
 import { CommandReceipt } from '@/components/ui/CommandReceipt';
@@ -33,6 +33,8 @@ import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile, PillButton } from '@/components/universe/app/Tiles';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -130,6 +132,8 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
 
     const [files, setFiles] = useState<ScannedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const scanInputRef = useRef<HTMLInputElement>(null);
+    const uv2 = uv2On();
     const [stats, setStats] = useState<SystemStats | null>(null);
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
@@ -861,8 +865,19 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
+            <div className="flex flex-col h-full p-4 gap-4 overflow-hidden" data-uv2-app={uv2 ? 'scanner' : undefined}>
+                {uv2 && (() => {
+                    const open = files.filter(f => f.status !== 'done').length;
+                    const done = files.length - open;
+                    return (
+                        <AppHero app="scanner" eyebrow={activeCompanyName ? `Eingang · ${activeCompanyName}` : 'Eingang'}
+                            title={!activeCompanyName ? 'Keine Organisation' : files.length === 0 ? 'Bereit' : open === 0 ? 'Alles abgelegt' : `${open} offen`}
+                            sub={files.length ? `${done} von ${files.length} erledigt. Du entscheidest, wohin jede Datei gehört.` : 'PDFs, Bilder und Office-Dateien landen zuerst als Datei – Inhalte entstehen nur, wenn du es willst.'}
+                            figure={files.length ? open : undefined} figureLabel="offen"
+                            action={null} />
+                    );
+                })()}
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                     <span className={`rounded-full border px-2.5 py-1 text-[11px] ${activeCompanyName ? 'border-purple-400/15 bg-purple-500/10 text-purple-100/85' : 'border-amber-500/30 bg-amber-500/10 text-amber-200/90'}`}>
                         {activeCompanyName ? `Einordnung für ${activeCompanyName}` : 'Keine Organisation – Upload nicht möglich'}
                     </span>
@@ -874,6 +889,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                 {/* Drop Zone */}
                 <div
                     data-file-drop-zone="local"
+                    data-uv2-drop={uv2 ? '' : undefined}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
@@ -883,6 +899,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         }`}
                 >
                     <input
+                        ref={scanInputRef}
                         type="file"
                         multiple
                         onChange={handleFileInput}
@@ -943,7 +960,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
-                {pendingActions.length > 0 && (
+                {!uv2 && pendingActions.length > 0 && (
                     <div className="rounded-xl border border-amber-500/15 bg-amber-500/5 px-4 py-3">
                         <div className="flex items-start gap-3">
                             <Activity size={16} className="text-amber-300 mt-0.5 shrink-0" />
@@ -1133,8 +1150,28 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     </div>
                 )}
 
+                {uv2 && files.length > 0 && (
+                    <div className="min-h-0 flex-1 overflow-y-auto" data-testid="scan-v2-register">
+                        <TileGrid label={`Dateien · ${files.length}`}>
+                            {files.map((f) => {
+                                const Icon = getFileIcon(f.type);
+                                const st = f.status === 'done' ? 'on' : f.status === 'error' ? 'warn' : f.status === 'pending' ? 'off' : 'busy';
+                                return (
+                                    <Tile key={f.id} testId={`scan-v2-file-${f.status}`} icon={<Icon />} label={f.name} state={st}
+                                        badge={f.status === 'done' ? '✓' : f.status === 'error' ? '!' : undefined}
+                                        onClick={f.status === 'done' && f.confirmedNodeId ? () => openConfirmedDocument(f.confirmedNodeId!, f.name, f.confirmedFolderId) : undefined}>
+                                        {f.status === 'pending' && <PillButton primary onClick={() => processFile(f.id, f.nativeFile)}>Hochladen</PillButton>}
+                                        {f.status === 'error' && <PillButton onClick={() => processFile(f.id, f.nativeFile)}>Nochmal</PillButton>}
+                                        {(f.status === 'uploading' || f.status === 'review') && <span className="uv2-dot">{f.status === 'uploading' ? 'Lädt' : 'Prüfen'}</span>}
+                                        {(f.status === 'pending' || f.status === 'error') && <button type="button" className="uv2-tile__x" aria-label="Entfernen" onClick={() => removeFile(f.id)}><X /></button>}
+                                    </Tile>
+                                );
+                            })}
+                        </TileGrid>
+                    </div>
+                )}
                 {/* File List */}
-                <div className="flex-1 overflow-y-auto space-y-2">
+                <div className="flex-1 overflow-y-auto space-y-2" hidden={uv2 || undefined}>
                     <AnimatePresence>
                         {files.map(file => {
                             const Icon = getFileIcon(file.type);
@@ -1146,6 +1183,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     className="bg-black/20 border border-white/5 rounded-xl p-4"
+                                    data-uv2-row={uv2 ? file.status : undefined}
                                 >
                                     <div className="flex items-start gap-3">
                                         <div className="p-2 rounded-lg bg-purple-500/10">
@@ -1220,13 +1258,13 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         })}
                     </AnimatePresence>
 
-                    {files.length === 0 && (
+                    {files.length === 0 && !uv2 && (
                         <div className="mx-auto mt-2 flex h-56 max-w-md flex-col items-center justify-center gap-3 rounded-3xl border border-emerald-300/10 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.12),transparent_55%)] px-8 text-center">
                             <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 p-4">
                                 <Upload size={28} className="text-emerald-200/80" />
                             </div>
                             <div>
-                                <p className="text-sm text-emerald-50/85">Bereit fuer den ersten Intake</p>
+                                <p className="text-sm text-emerald-50/85">Bereit für den ersten Intake</p>
                                 <p className="mt-2 text-xs leading-relaxed text-white/42">
                                     Ziehe Dateien in den Scanner oder wähle Upload. Mora prüft Kontext, Zielordner und Sichtbarkeit vor der Freigabe.
                                 </p>
@@ -1235,7 +1273,30 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                     )}
                 </div>
                 {activePendingAction && (
-                    <div className="space-y-2">
+                    <div className="space-y-2" data-uv2-scan-approval={uv2 ? '' : undefined}>
+                        {uv2 && (
+                            <div data-uv2-keep="" data-testid="scan-v2-approval">
+                                <div className="uv2-ask">
+                                    <span className="uv2-group__ico uv2-ask__ico"><FileText /></span>
+                                    <div className="uv2-ask__text">
+                                        <span className="uv2-ask__kind">Ablegen{pendingActions.length > 1 ? ` · 1 / ${pendingActions.length}` : ''}</span>
+                                        <span className="uv2-ask__msg">{activePendingAction.file_name} → {activePendingAction.route_summary || buildRoutePath(activePendingAction.intake_context)}</span>
+                                    </div>
+                                    {activePendingAction.intake_context?.route_confidence_label && <span className="uv2-dot" data-on="">{activePendingAction.intake_context.route_confidence_label}</span>}
+                                </div>
+                                {(activeChoiceResults.length > 0 || routeOptions.length > 0) && (
+                                    <TileGrid label="Ziel" size="s">
+                                        {(activeChoiceResults.length > 0
+                                            ? activeChoiceResults.filter((r) => r.folderId).map((r) => ({ folderId: r.folderId as string, label: (r as { title?: string }).title ?? String(r.folderId) }))
+                                            : routeOptions.map((o) => ({ folderId: o.folderId, label: o.folderName || o.spaceName || o.label }))
+                                        ).slice(0, 12).map((o) => (
+                                            <Tile key={o.folderId} icon={<Folder />} label={o.label} active={activePendingAction.folder_id === o.folderId}
+                                                onClick={() => applyRouteOverride(activePendingAction.action_id, o.folderId)} />
+                                        ))}
+                                    </TileGrid>
+                                )}
+                            </div>
+                        )}
                         <div className="flex items-center justify-between text-[11px] uppercase tracking-[0.18em] text-white/35 px-1">
                                 <span>Freigabe {pendingActions.length > 1 ? `1 / ${pendingActions.length}` : 'bereit'}</span>
                             {activePendingAction.file_name && (

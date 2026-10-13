@@ -1,5 +1,6 @@
 'use client';
 
+import { AppHero } from '@/components/universe/app/AppStage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -10,11 +11,16 @@ import type { AppProps } from '@/lib/apps/types';
 
 type Tool = 'pen' | 'eraser';
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+
 const PALETTE = [
     '#ffffff', '#94a3b8', '#f87171', '#fb923c',
     '#fbbf24', '#4ade80', '#34d399', '#38bdf8',
     '#818cf8', '#c084fc',
 ];
+
+// v2: gedämpfte Systemfarben statt Regenbogen (Creme, Gold, Planetenmaterialien)
+const V2_PALETTE = ['#F7F4E9', '#D6A848', '#c9875a', '#7fa7c4', '#9c93c9', '#a9cfc7', '#8a8576', '#E0876A'];
 
 // ─── CanvasApp ────────────────────────────────────────────────────────────────
 
@@ -28,8 +34,10 @@ export default function CanvasApp({ paneId }: AppProps) {
     const lastPos = useRef<{ x: number; y: number } | null>(null);
 
     const [tool, setTool] = useState<Tool>('pen');
-    const [color, setColor] = useState('#ffffff');
+    const [color, setColor] = useState(isUniverseV2Enabled() ? '#F7F4E9' : '#ffffff');
     const [size, setSize] = useState(3);
+    const [strokes, setStrokes] = useState(0);
+    const drew = useRef(false);
 
     // ── Drawing helpers ────────────────────────────────────────────────────────
 
@@ -60,11 +68,14 @@ export default function CanvasApp({ paneId }: AppProps) {
         ctx.lineJoin = 'round';
         ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
         ctx.stroke();
+        drew.current = true;
 
         lastPos.current = pos;
     }, [tool, color, size]);
 
     const onMouseUp = useCallback(() => {
+        if (drawing.current && drew.current) setStrokes((n) => n + 1);
+        drew.current = false;
         drawing.current = false;
         lastPos.current = null;
         const ctx = getCtx();
@@ -75,7 +86,8 @@ export default function CanvasApp({ paneId }: AppProps) {
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext('2d');
         if (!canvas || !ctx) return;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setStrokes(0);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
     }, []);
 
     // Resize canvas when pane size changes
@@ -112,7 +124,14 @@ export default function CanvasApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full" data-uv2-app="canvas">
+                {isUniverseV2Enabled() && (
+                    <AppHero app="canvas" eyebrow="Canvas"
+                        title={strokes === 0 ? 'Leer' : 'Skizze'}
+                        sub={strokes === 0 ? 'Zeichne, wo Worte noch fehlen. Nichts wird gespeichert, bis du es willst.' : 'Bleibt in diesem Fenster, bis du sie als Bild sicherst.'}
+                        figure={strokes || undefined} figureLabel="Striche"
+                        action={strokes > 0 ? { label: 'Als Bild sichern', onClick: () => { const c = canvasRef.current; if (!c) return; const a = document.createElement('a'); a.href = c.toDataURL('image/png'); a.download = 'Skizze.png'; a.click(); } } : null} />
+                )}
                 {/* Toolbar */}
                 <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] flex-wrap shrink-0">
                     {/* Tool buttons */}
@@ -163,7 +182,7 @@ export default function CanvasApp({ paneId }: AppProps) {
 
                     {/* Color palette */}
                     <div className="flex items-center gap-1 flex-wrap">
-                        {PALETTE.map(c => (
+                        {(isUniverseV2Enabled() ? V2_PALETTE : PALETTE).map(c => (
                             <button
                                 key={c}
                                 onClick={() => { setColor(c); setTool('pen'); }}
@@ -191,6 +210,13 @@ export default function CanvasApp({ paneId }: AppProps) {
 
                 {/* Drawing surface */}
                 <div className="flex-1 relative overflow-hidden">
+                    {isUniverseV2Enabled() && strokes === 0 && (
+                        <div className="uv2-canvas-hint" aria-hidden="true">
+                            <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><path d="M8 30c6-10 10 4 16-6s8 2 12-4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" /></svg>
+                            <span>Hier zeichnen</span>
+                            <small>Stift oder Finger · Radierer oben</small>
+                        </div>
+                    )}
                     <canvas
                         ref={canvasRef}
                         className="absolute inset-0 w-full h-full"

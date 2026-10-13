@@ -1,5 +1,6 @@
 "use client";
 
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, useAnimation, useReducedMotion } from 'framer-motion';
 
@@ -183,6 +184,11 @@ export function CursorAgent({
             {showTether && (
                 <svg className="fixed inset-0 pointer-events-none z-[9997]" width="100%" height="100%">
                     <defs>
+                        <linearGradient id="uv2-tether" gradientUnits="userSpaceOnUse" x1={homePosition.x} y1={homePosition.y} x2={currentPosition.x} y2={currentPosition.y}>
+                            <stop offset="0" stopColor="#F7F4E9" stopOpacity="0" />
+                            <stop offset="0.7" stopColor="#D6A848" stopOpacity="0.18" />
+                            <stop offset="1" stopColor="#D6A848" stopOpacity="0.4" />
+                        </linearGradient>
                         <filter id="mora-tether-glow">
                             <feGaussianBlur stdDeviation="1.8" result="coloredBlur" />
                             <feMerge>
@@ -196,11 +202,12 @@ export function CursorAgent({
                         y1={homePosition.y}
                         x2={currentPosition.x}
                         y2={currentPosition.y}
-                        stroke={visuals.color}
-                        strokeOpacity="0.32"
-                        strokeWidth="1.5"
-                        strokeDasharray={action === 'navigate' ? '6 6' : '0'}
-                        filter="url(#mora-tether-glow)"
+                        stroke={isUniverseV2Enabled() ? 'url(#uv2-tether)' : visuals.color}
+                        strokeOpacity={isUniverseV2Enabled() ? 1 : 0.32}
+                        strokeWidth={isUniverseV2Enabled() ? 0.6 : 1.5}
+                        strokeDasharray={isUniverseV2Enabled() ? '1 5' : action === 'navigate' ? '6 6' : '0'}
+                        strokeLinecap="round"
+                        filter={isUniverseV2Enabled() ? undefined : 'url(#mora-tether-glow)'}
                     />
                 </svg>
             )}
@@ -362,15 +369,15 @@ export function CursorAgent({
 
                     {message && action !== 'return' && (
                         <motion.div
-                            className="absolute left-1/2 top-[-56px] -translate-x-1/2 max-w-[220px]"
+                            className={isUniverseV2Enabled() ? 'absolute left-8 -top-10 w-max max-w-[240px]' : 'absolute left-1/2 top-[-56px] -translate-x-1/2 max-w-[220px]'}
                             initial={{ opacity: 0, y: 8, scale: 0.96 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 4, scale: 0.98 }}
-                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                            transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                         >
                             <div
-                                className="rounded-xl px-3 py-2 text-[11px] leading-snug text-white/90 backdrop-blur-xl border shadow-2xl"
-                                style={{
+                                className={isUniverseV2Enabled() ? 'border-l rounded-r-md pl-3 pr-3 py-1.5 text-[12px] leading-snug text-[#F7F4E9]/85 backdrop-blur-md' : 'rounded-xl px-3 py-2 text-[11px] leading-snug text-white/90 backdrop-blur-xl border shadow-2xl'}
+                                style={isUniverseV2Enabled() ? { borderColor: 'rgba(214,168,72,0.55)', background: 'rgba(5,7,6,0.78)' } : {
                                     background: 'linear-gradient(180deg, rgba(4,10,8,0.90) 0%, rgba(2,6,5,0.96) 100%)',
                                     borderColor: `${visuals.color}40`,
                                     boxShadow: `0 0 24px ${visuals.glow}30`
@@ -381,7 +388,7 @@ export function CursorAgent({
                         </motion.div>
                     )}
 
-                    {action !== 'idle' && (
+                    {action !== 'idle' && !isUniverseV2Enabled() && (
                         <motion.div
                             className="absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap"
                             initial={{ opacity: 0, y: 5 }}

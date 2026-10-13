@@ -768,7 +768,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                 animate={{ opacity: 1, y: 0 }}
                 className="mt-3 bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden"
             >
-                <div className="px-4 py-3 flex items-start gap-3">
+                <div data-uv2-confirm-body="" className="px-4 py-3 flex items-start gap-3">
                     <FileCheck className="text-white/60 shrink-0 mt-0.5" size={18} />
                     <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-sm">{routeSummary}</p>
@@ -939,6 +939,7 @@ export const ConfirmationCard: React.FC<Props> = ({ action, onConfirmed, onRejec
                     </button>
                     <div className="flex-1" />
                     <button
+                        data-uv2-primary=""
                         onClick={handleConfirm}
                         disabled={isProcessing}
                         className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors flex items-center gap-2"

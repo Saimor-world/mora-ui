@@ -1,7 +1,9 @@
 'use client';
 
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { TileGrid, Tile } from '@/components/universe/app/Tiles';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Activity, AlertTriangle, Box, Clock, RefreshCw, Server, Shield, ShieldCheck } from 'lucide-react';
+import { Activity, AlertTriangle, Box, Check, Clock, ExternalLink, Eye, RefreshCw, Server, ServerOff, Shield, ShieldCheck } from 'lucide-react';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import type { AppProps } from '@/lib/apps/types';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -111,8 +113,24 @@ function IncidentRow({
     busy?: boolean;
 }) {
     const cfg = severityConfig(incident.severity);
+    if (uv2()) {
+        return (
+            <article className="uv2-incident" data-sev={incident.severity} data-testid={`nw-incident-${incident.id}`}>
+                <span className="uv2-group__ico"><AlertTriangle /></span>
+                <button type="button" className="uv2-incident__main" onClick={onOpen} title="Vorfall öffnen">
+                    <span className="uv2-incident__title">{incident.title || `Vorfall: ${incident.host || 'Infrastruktur'}`}</span>
+                    <span className="uv2-incident__meta">{cfg.label}{incident.host ? ' · ' + incident.host : ''}{incident.detected_at ? ' · ' + relativeTime(incident.detected_at) : ''}</span>
+                </button>
+                <span className="uv2-incident__acts">
+                    <button type="button" onClick={onOpen} title="Öffnen" aria-label="Vorfall öffnen"><ExternalLink /></button>
+                    {!incident.acked && <button type="button" onClick={onAck} disabled={busy} title="Gesehen" aria-label="Gesehen"><Eye /></button>}
+                    <button type="button" onClick={onResolve} disabled={busy} title="Schließen" aria-label="Schließen" data-primary=""><Check /></button>
+                </span>
+            </article>
+        );
+    }
     return (
-        <article className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
+        <article data-uv2-incident className={`rounded-xl border ${cfg.border} ${cfg.bg} px-4 py-3`}>
             <div className="flex items-start gap-3">
                 <PulseDot color={cfg.dot} animate={incident.severity === 'critical'} size="sm" />
                 <div className="min-w-0 flex-1">
@@ -141,7 +159,7 @@ function IncidentRow({
                         </div>
                     )}
                 </div>
-                <div className="flex shrink-0 flex-col gap-1.5">
+                <div className="flex shrink-0 flex-col gap-1.5" data-uv2-incident-actions>
                     <button
                         type="button"
                         onClick={onOpen}
@@ -211,7 +229,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
                 fetchAllNightwatchIncidents(),
             ]);
             if (!mountedRef.current) return;
-            setIncidents(inc);
+            // Nur wirklich offene Vorfälle – auch wenn die Quelle Erledigtes mitliefert.
+            setIncidents(inc.filter((i) => !['resolved', 'closed', 'dismissed'].includes(String(i.status || 'open').toLowerCase())));
             setHistory(allIncidents);
             setMonitors(mon);
             setAvailable(true);
@@ -359,7 +378,22 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     }}
                 />
 
-                <div className="relative flex flex-wrap items-center justify-between gap-3">
+                {uv2() && !loading ? (
+                    <section className="uv2-watch" data-testid="nw-v2-panel" data-state={available === false ? 'unknown' : criticalCount > 0 ? 'critical' : incidents.length > 0 ? 'warning' : 'ok'}>
+                        <button type="button" className="uv2-watch__orb" onClick={() => sortedIncidents[0] ? openIncident(sortedIncidents[0].id, sortedIncidents[0].title) : void load(true)}
+                            title={sortedIncidents[0] ? 'Vorfall ansehen' : 'Jetzt prüfen'}>
+                            <span className="uv2-watch__ring"><ShieldCheck /></span>
+                            <strong>{available === false ? 'Keine Daten' : incidents.length === 0 ? 'Ruhig' : criticalCount > 0 ? 'Kritisch' : 'Warnung'}</strong>
+                            <small>{lastRefresh ? 'Stand ' + lastRefresh.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'Wache'}</small>
+                        </button>
+                        <div className="uv2-watch__stat"><Server /><b>{onlineMonitorCount}</b><span>Online</span></div>
+                        <div className="uv2-watch__stat" data-tone={downMonitorCount > 0 ? 'critical' : undefined}><ServerOff /><b>{downMonitorCount}</b><span>Offline</span></div>
+                        <div className="uv2-watch__stat" data-tone={criticalCount > 0 ? 'critical' : warningCount > 0 ? 'warning' : undefined}><AlertTriangle /><b>{incidents.length}</b><span>Vorfälle</span></div>
+                        <div className="uv2-watch__stat uv2-watch__trend"><span className="uv2-watch__bars">{sevenDayTrend.map((day) => <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(8, (day.count / trendMax) * 100)}%` }} />)}</span><span>7 Tage</span></div>
+                        <button type="button" className="uv2-pill uv2-watch__refresh" onClick={() => void load(true)} disabled={refreshing} aria-label="Aktualisieren"><RefreshCw className={refreshing ? 'animate-spin' : ''} /></button>
+                    </section>
+                ) : null}
+                <div className="relative flex flex-wrap items-center justify-between gap-3" data-uv2-legacy-head>
                     <div className="flex min-w-0 items-center gap-2.5">
                         {loading ? (
                             <span className="h-2 w-2 animate-pulse rounded-full bg-white/25" />
@@ -396,7 +430,7 @@ export default function NightwatchApp({ paneId }: AppProps) {
                     </div>
                 </div>
 
-                {!loading && available === true && (
+                {!loading && available === true && !uv2() && (
                     <section className="nightwatch-overview" aria-label="Nightwatch Übersicht">
                         <div>
                             <span><ShieldCheck size={13} />Online</span>
@@ -413,15 +447,15 @@ export default function NightwatchApp({ paneId }: AppProps) {
                             <strong>{incidents.length}</strong>
                             <small>{criticalCount} kritisch · {warningCount} Warnung</small>
                         </div>
-                        <div className="nightwatch-trend">
+                        {!(uv2() && sevenDayTrend.every((d) => d.count === sevenDayTrend[0].count)) && <div className="nightwatch-trend">
                             <span><Activity size={13} />7 Tage</span>
                             <div className="nightwatch-trend__bars" aria-label={`${history.length} Vorfälle im Verlauf`}>
                                 {sevenDayTrend.map((day) => (
                                     <i key={day.key} title={`${day.label}: ${day.count}`} style={{ height: `${Math.max(8, (day.count / trendMax) * 100)}%` }} />
                                 ))}
                             </div>
-                            <small>{history.length} erfasste Vorfälle</small>
-                        </div>
+                            <small>{uv2() ? `${sevenDayTrend.reduce((n, d) => n + d.count, 0)} in 7 Tagen` : `${history.length} erfasste Vorfälle`}</small>
+                        </div>}
                     </section>
                 )}
 
@@ -450,6 +484,14 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <div key={index} className="h-8 w-28 animate-pulse rounded-full bg-white/[0.04]" />
                             ))}
                         </div>
+                    ) : uv2() ? (
+                        <TileGrid size="s">
+                            {sortedMonitors.map((monitor) => {
+                                const down = isMonitorDown(monitor, downHosts);
+                                return <Tile key={monitor.id} icon={monitor.target_type === 'container' ? <Box /> : <Server />} label={monitor.name || monitor.host || 'Monitor'} state={down ? 'warn' : 'on'} />;
+                            })}
+                            {sortedMonitors.length === 0 && <Tile icon={<ServerOff />} label="Keine" state="off" />}
+                        </TileGrid>
                     ) : monitors.length === 0 && available === true ? (
                         <p className="text-[11px] text-white/38">Noch keine Überwachung eingerichtet.</p>
                     ) : (
@@ -483,6 +525,8 @@ export default function NightwatchApp({ paneId }: AppProps) {
                                 <div key={index} className="h-16 animate-pulse rounded-xl bg-white/[0.03]" />
                             ))}
                         </div>
+                    ) : incidents.length === 0 && available === true && uv2() ? (
+                        <AppEmpty compact glyph={<ShieldCheck size={20} strokeWidth={1.25} />} title="Keine offenen Vorfälle." text="Die Wache läuft weiter. Gelöste Vorfälle bleiben im Verlauf." />
                     ) : incidents.length === 0 && available === true ? (
                         <div className="flex items-center gap-3 rounded-xl border border-emerald-400/14 bg-emerald-500/[0.05] px-4 py-3">
                             <ShieldCheck size={16} className="shrink-0 text-emerald-300/65" />

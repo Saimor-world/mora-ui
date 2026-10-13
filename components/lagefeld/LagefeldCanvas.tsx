@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useMemo } from 'react';
+import { ArrowRight, Box, HelpCircle, Radio, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Card, Connection, FieldState } from '@/lib/lagefeld/types';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 const CARD_W = 190;
 const CARD_H_ESTIMATE = 190;
@@ -37,6 +39,11 @@ function center(card: Card) {
 }
 
 export function LagefeldCanvas({ state }: { state: FieldState }) {
+  if (isUniverseV2Enabled()) return <LagefeldColumns state={state} />;
+  return <LagefeldFreeCanvas state={state} />;
+}
+
+function LagefeldFreeCanvas({ state }: { state: FieldState }) {
   const cardsById = new Map(state.cards.map((card) => [card.id, card]));
   const bounds = useMemo(() => {
     const width = Math.max(
@@ -223,6 +230,61 @@ export function LagefeldCanvas({ state }: { state: FieldState }) {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/**
+ * v2: Lage als drei ruhige Spalten (Signale → Deutung → Handlung) statt frei
+ * positionierter Karten – nichts überlappt, Lesefluss von links nach rechts.
+ * Verbindungen bleiben als „hängt an“-Zeile an der Karte sichtbar.
+ */
+const KIND_ICON: Partial<Record<Card['kind'], React.ReactNode>> = {
+  signal: <Radio />, object: <Box />, interpretation: <Sparkles />, uncertainty: <HelpCircle />, action: <ArrowRight />,
+};
+
+function LagefeldColumns({ state }: { state: FieldState }) {
+  const byId = new Map(state.cards.map((c) => [c.id, c]));
+  const links = new Map<string, string[]>();
+  state.connections.forEach((c) => {
+    const to = byId.get(c.to);
+    if (to) links.set(c.from, [...(links.get(c.from) ?? []), to.title]);
+  });
+  const cols: { key: string; label: string; kinds: Card['kind'][] }[] = [
+    { key: 'sig', label: 'Signale', kinds: ['signal', 'object'] },
+    { key: 'deu', label: 'Deutung', kinds: ['interpretation', 'uncertainty'] },
+    { key: 'act', label: 'Handlung', kinds: ['action'] },
+  ];
+  return (
+    <div aria-label="Lagefeld" data-testid="uv2-lagefeld-columns" className="grid h-full min-h-0 grid-cols-3 gap-8 overflow-y-auto">
+      {cols.map((col) => {
+        const cards = state.cards.filter((c) => col.kinds.includes(c.kind));
+        return (
+          <section key={col.key} className="min-w-0">
+            <p className="mb-3 flex items-baseline justify-between font-mono text-[10px] uppercase tracking-[0.2em] text-[#D6A848]">
+              <span>{col.label}</span><span className="text-white/40">{cards.length}</span>
+            </p>
+            {cards.length === 0 ? (
+              <p className="border-t border-white/[0.07] pt-3 text-xs text-white/40">Noch nichts.</p>
+            ) : (
+              <ul className="uv2-lf__list">
+                {cards.map((card, i) => (
+                  <motion.li key={card.id} data-testid={`lagefeld-card-${card.kind}`} className="uv2-lf__card" data-alert={card.status === 'alert' ? '' : undefined}
+                    title={[card.body, links.get(card.id)?.length ? '→ ' + links.get(card.id)!.join(' · ') : ''].filter(Boolean).join('\n')}
+                    initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] }}>
+                    <span className="uv2-group__ico uv2-lf__ico">{KIND_ICON[card.kind] ?? <Radio />}</span>
+                    <span className="uv2-lf__title">{card.title}{card.kind === 'action' && card.body ? <small>{card.body}</small> : null}</span>
+                    {links.get(card.id)?.length ? <span className="uv2-lf__links" aria-label={`${links.get(card.id)!.length} Verbindungen`}><ArrowRight />{links.get(card.id)!.length}</span> : null}
+                    {card.action?.locked ? (
+                      <button type="button" className="uv2-pill uv2-pill--gold">Freigeben</button>
+                    ) : null}
+                  </motion.li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      })}
     </div>
   );
 }

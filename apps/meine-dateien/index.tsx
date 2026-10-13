@@ -1,5 +1,7 @@
 'use client';
 
+import { AppEmpty } from '@/components/universe/app/AppStage';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Cloud,
@@ -556,6 +558,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
 
     if (!pane) return null;
 
+    const v2 = isUniverseV2Enabled();
     return (
         <GlassPanel
             title="Meine Dateien"
@@ -578,7 +581,27 @@ export default function MeineDateienApp({ paneId }: AppProps) {
             resizable
         >
             <div className="flex h-full min-h-0 bg-black/10">
-                <aside className="flex w-[310px] shrink-0 flex-col border-r border-white/[0.07] bg-black/20">
+                <aside className={`flex shrink-0 flex-col border-r border-white/[0.07] ${v2 ? 'w-[300px] bg-transparent' : 'w-[310px] bg-black/20'}`}>
+                    {v2 ? (
+                    <div className="px-6 pb-4 pt-6" data-testid="uv2-files-head"
+                        onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+                        onDragOver={(event) => { event.preventDefault(); setDragActive(true); }}
+                        onDragLeave={() => setDragActive(false)}
+                        onDrop={(event) => { event.preventDefault(); setDragActive(false); void importFiles(event.dataTransfer.files); }}
+                        style={{ background: dragActive ? 'rgba(214,168,72,0.06)' : undefined, transition: 'background .2s' }}>
+                        <p className="uv2-hero__eyebrow">Mein Universum</p>
+                        <p className="mt-2 font-serif text-[26px] leading-[1.1] text-[#F7F4E9]" data-testid="uv2-files-counts">
+                            {files.length === 0 ? 'Noch leer.' : files.length === 1 ? 'Eine Datei.' : `${files.length} Dateien.`}
+                        </p>
+                        <p className="mt-1 text-[12px] text-[rgba(247,244,233,0.5)]">
+                            {[['Gerät', localFiles.length], ['Privat', privateCoreCount], ['Workspace', workspaceCoreCount], ['Cloud', cloudCount]].filter(([, n]) => Number(n) > 0).map(([l, n]) => `${n} ${l}`).join(' · ') || (activeCompanyId ? 'Privat, bis du teilst.' : 'Bleibt auf diesem Gerät.')}
+                        </p>
+                        <div className="mt-4 flex gap-5">
+                            <button type="button" onClick={() => fileInputRef.current?.click()} className="uv2-files-link">+ Datei</button>
+                            <button type="button" onClick={createLocalNote} className="uv2-files-link">+ Notiz</button>
+                        </div>
+                    </div>
+                    ) : (
                     <div className="space-y-3 border-b border-white/[0.07] p-4">
                         <div className="rounded-2xl border border-emerald-300/12 bg-emerald-500/[0.055] p-3">
                             <div className="flex items-center justify-between gap-3">
@@ -635,6 +658,9 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <Plus size={14} /> Notiz
                             </button>
                         </div>
+                    </div>
+                    )}
+                    <div className="hidden">
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -647,8 +673,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                         />
                     </div>
 
-                    <div className="border-b border-white/[0.06] px-4 py-3">
-                        <div className="flex items-center justify-between">
+                    <div className={v2 ? 'border-y border-white/[0.06] px-6 py-2' : 'border-b border-white/[0.06] px-4 py-3'} data-uv2-files-filter={v2 ? '' : undefined}>
+                        <div className={v2 ? 'hidden' : 'flex items-center justify-between'}>
                             <span className="text-[10px] uppercase tracking-[0.2em] text-white/35">Arbeitsdateien</span>
                             <button
                                 type="button"
@@ -659,7 +685,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
                             </button>
                         </div>
-                        <div className="mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1">
+                        <div className={v2 ? 'flex flex-wrap gap-x-4 gap-y-1' : 'mt-3 grid grid-cols-5 gap-1 rounded-xl border border-white/[0.07] bg-black/22 p-1'}>
                             {([
                                 ['all', 'Alle'],
                                 ['local', 'Gerät'],
@@ -671,7 +697,8 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                     key={value}
                                     type="button"
                                     onClick={() => setSourceFilter(value)}
-                                    className={`rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${sourceFilter === value ? 'bg-white/12 text-white' : 'text-white/42 hover:bg-white/[0.06] hover:text-white/70'}`}
+                                    className={v2 ? 'py-1 transition-colors' : `rounded-lg px-2 py-1.5 text-[10px] font-medium transition-colors ${sourceFilter === value ? 'bg-white/12 text-white' : 'text-white/42 hover:bg-white/[0.06] hover:text-white/70'}`}
+                                    style={v2 ? { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase', color: sourceFilter === value ? '#D6A848' : 'rgba(247,244,233,0.45)' } : undefined}
                                 >
                                     {label}
                                 </button>
@@ -690,7 +717,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                                 <Loader2 size={18} className="animate-spin" />
                             </div>
                         ) : filteredFiles.length === 0 ? (
-                            <div className="px-3 py-10 text-center">
+                            <div className="px-3 py-10 text-center" data-uv2-files-sideempty={v2 && files.length === 0 ? 'hidden' : undefined}>
                                 <FileText size={24} className="mx-auto text-white/25" />
                                 <p className="mt-3 text-sm text-white/58">{sourceFilter === 'all' ? 'Noch keine Dateien' : 'Keine Dateien in dieser Ansicht'}</p>
                                 <p className="mt-1 text-xs text-white/32">{sourceFilter === 'cloud' ? 'Cloud-Connectoren kommen als nächster Schritt.' : 'Importiere PDFs, Texte oder Bilder.'}</p>
@@ -715,7 +742,7 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                 </aside>
 
                 <section className="flex min-w-0 flex-1 flex-col">
-                    <div className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
+                    <div data-uv2-files-bar={v2 && !selectedFile ? 'hidden' : undefined} className="flex items-center justify-between border-b border-white/[0.07] px-4 py-3">
                         <div className="min-w-0">
                             <p className="truncate text-sm font-medium text-white/82">{selectedFile?.name || 'Keine Datei ausgewählt'}</p>
                             <p className="mt-0.5 text-[11px] text-white/35">
@@ -768,7 +795,29 @@ export default function MeineDateienApp({ paneId }: AppProps) {
                     </div>
 
                     <div className="min-h-0 flex-1 overflow-auto">
-                        {!selectedFile ? (
+                        {!selectedFile && v2 ? (
+                            files.length === 0 ? (
+                                <div className="flex h-full items-center justify-center">
+                                    <AppEmpty glyph={<FolderOpen size={22} strokeWidth={1.25} />} title="Dein Schreibtisch ist leer."
+                                        text={activeCompanyId ? 'Lege hier ab, was dir gehört. Es bleibt privat, bis du es teilst.' : 'Lege hier ab, was dir gehört. Es bleibt auf diesem Gerät.'}
+                                        action={{ label: 'Datei hinzufügen', onClick: () => fileInputRef.current?.click() }} />
+                                </div>
+                            ) : (
+                                <div className="uv2-desk" data-uv2-desk>
+                                    <p className="uv2-hero__eyebrow">Zuletzt auf deinem Schreibtisch</p>
+                                    <h2 className="uv2-hero__title">{files.length === 1 ? 'Eine Datei.' : `${files.length} Dateien.`} Wähle eine, um sie anzusehen.</h2>
+                                    <div className="uv2-desk__grid">
+                                        {files.slice(0, 6).map((file) => (
+                                            <button key={file.id} type="button" onClick={() => setSelectedId(file.id)} className="uv2-desk__tile">
+                                                <span className="uv2-desk__kind"><FileKindIcon file={file} /></span>
+                                                <span className="uv2-desk__name">{file.name.replace(/\.[a-z0-9]+$/i, '')}</span>
+                                                <span className="uv2-desk__meta">{getFileLocationLabel(file)} · {formatBytes(file.size)}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )
+                        ) : !selectedFile ? (
                             <EmptyPreview />
                         ) : canEditSelected ? (
                             <div className="flex h-full flex-col">

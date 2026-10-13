@@ -72,6 +72,10 @@ import { deriveFinderMaps } from '@/lib/finder/deriveFinderMaps';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, AppEmpty, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { FinderGraphV2 } from '@/components/finder/FinderGraphV2';
+import { RegisterSection, RegisterRow } from '@/components/universe/app/Register';
+import { TileGrid, Tile, PillButton, Segmented } from '@/components/universe/app/Tiles';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
@@ -1841,6 +1845,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
 
                 <div
                     data-file-drop-zone="local"
+                    data-uv2-app={uv2On() ? 'finder' : undefined}
                     className="flex flex-col h-full relative"
                     onDragEnter={handleDragEnter}
                     onDragOver={handleDragOver}
@@ -1862,7 +1867,25 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                         </div>
                     )}
 
-                    <div className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
+                    {uv2On() && (
+                        <div className="uv2-ftool" data-testid="finder-v2-toolbar">
+                            <div className="uv2-ftool__nav">
+                                <button type="button" aria-label="Zurück" onClick={navigateBack} disabled={backStack.length === 0}><ChevronLeft /></button>
+                                <button type="button" aria-label="Vorwärts" onClick={navigateForward} disabled={forwardStack.length === 0}><ChevronRight /></button>
+                            </div>
+                            <div className="uv2-ftool__path">
+                                <button type="button" onClick={() => navigateToFolder(null)}><Home /></button>
+                                {breadcrumbs.map((bc, idx) => (
+                                    <React.Fragment key={bc.id ?? idx}><span>›</span><button type="button" onClick={() => bc.id && navigateToFolder(bc.id)} data-current={idx === breadcrumbs.length - 1 ? '' : undefined}>{bc.name}</button></React.Fragment>
+                                ))}
+                                {surfaceProfile.isLocalTruthSurface && unavailableCompanyFiles.length > 0 && <span className="uv2-dot" title="Ältere Dateien ausgeblendet">{unavailableCompanyFiles.length} alt</span>}
+                            </div>
+                            <label className="uv2-ftool__search"><Search /><input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Suchen" aria-label="Im Finder suchen" /></label>
+                            <Segmented label="Ansicht" value={viewMode} onChange={(v) => setViewMode(v)} options={[{ id: 'grid', label: '', icon: <LayoutGrid /> }, { id: 'list', label: '', icon: <List /> }, { id: 'graph', label: '', icon: <Network /> }]} />
+                            <PillButton primary icon={<Upload />} onClick={() => fileInputRef.current?.click()}>Hochladen</PillButton>
+                        </div>
+                    )}
+                    <div data-uv2-finder-banner={uv2On() ? '' : undefined} className="border-b border-emerald-300/10 bg-[linear-gradient(180deg,rgba(2,22,17,0.82),rgba(1,9,8,0.56))] px-3 py-2 backdrop-blur-md md:px-5">
                         <div className="relative flex flex-col gap-2 overflow-hidden rounded-[18px] border border-emerald-300/[0.10] bg-[radial-gradient(circle_at_14%_16%,rgba(16,185,129,0.14),transparent_34%),linear-gradient(135deg,rgba(5,28,23,0.86),rgba(1,13,12,0.72)_58%,rgba(0,5,5,0.84))] px-4 py-3 shadow-[0_12px_34px_rgba(0,0,0,0.22),inset_0_1px_0_rgba(255,255,255,0.04)] lg:flex-row lg:items-center lg:justify-between">
                             <div className="pointer-events-none absolute -left-20 -top-24 h-48 w-48 rounded-full bg-emerald-300/16 blur-3xl" />
                             <div className="pointer-events-none absolute right-12 top-1/2 h-px w-64 bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
@@ -1952,7 +1975,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                     )}
 
                     {/* UNIFIED TOOLBAR - RESPONSIVE */}
-                    <div className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div data-uv2-oldtool={uv2On() ? "" : undefined} className="flex flex-col gap-2 border-b border-emerald-300/[0.08] bg-black/18 px-3 py-2.5 backdrop-blur-xl md:px-6 lg:flex-row lg:items-center lg:justify-between">
                         {/* nav-group: exactly one Back/Forward/Up set -- do not duplicate */}
                         <div className="flex items-center gap-1.5 shrink-0" data-testid="finder-nav-group">
                             <button
@@ -2259,6 +2282,18 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                         className="w-full max-w-xl"
                                     />
                                 </motion.div>
+                            ) : uv2On() && filteredFiles.length === 0 && filteredFolders.length === 0 ? (
+                                <motion.div key="empty-v2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex h-full items-center justify-center">
+                                    {searchQuery.trim() ? (
+                                        <AppEmpty glyph={<Search size={22} strokeWidth={1.25} />} title={`Nichts zu „${searchQuery.trim()}“.`}
+                                            text="Andere Worte versuchen – oder die Suche leeren und den ganzen Ordner sehen."
+                                            action={{ label: 'Suche leeren', onClick: () => setSearchQuery('') }} />
+                                    ) : (
+                                        <AppEmpty glyph={<FolderIcon size={22} strokeWidth={1.25} />} title="Dieser Ordner wartet auf seinen ersten Inhalt."
+                                            text="Zieh Dateien hierher oder lade sie hoch. Sie bleiben genau hier – MÔRA ordnet nichts ohne dich um."
+                                            action={{ label: 'Datei hochladen', onClick: () => fileInputRef.current?.click() }} />
+                                    )}
+                                </motion.div>
                             ) : filteredFiles.length === 0 && filteredFolders.length === 0 ? (
                                 <motion.div
                                     key="empty"
@@ -2290,13 +2325,45 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     transition={{ duration: 0.2, ease: "easeOut" }}
                                     className="h-full"
                                 >
-                                    {viewMode === 'grid' ? (
+                                    {uv2On() && viewMode === 'grid' ? (
+                                        <div className="-mx-3 md:-mx-6" data-testid="finder-v2-icons" onClick={(e) => e.stopPropagation()}>
+                                            {filteredFolders.length > 0 && <TileGrid label="Ordner">{filteredFolders.map((folder) => (
+                                                <Tile key={folder.id} testId={`finder-v2-folder-${folder.id}`} icon={<FolderIcon />} label={folder.name} onClick={() => navigateToFolder(folder.id)} />
+                                            ))}</TileGrid>}
+                                            {displayFiles.length > 0 && <TileGrid label="Dateien">{displayFiles.map((file) => {
+                                                const Icon = TYPE_ICONS[file.type] || FileText;
+                                                return <Tile key={file.id} testId={`finder-v2-file-${file.id}`} icon={<Icon />} label={file.name} active={resonanceIds.includes(file.id) || selectedNodeId === file.id}
+                                                    onClick={() => { checkResonance(file.id); openFinderNode(file); }} />;
+                                            })}</TileGrid>}
+                                        </div>
+                                    ) : uv2On() && viewMode === 'list' ? (
+                                        <div className="-mx-3 md:-mx-6" data-testid="finder-v2-table" onClick={(e) => e.stopPropagation()}>
+                                            <div className="uv2-ftable" role="table">
+                                                <div className="uv2-ftable__head" role="row"><span>Name</span><span>Art</span><span /></div>
+                                                {filteredFolders.map((folder) => (
+                                                    <button type="button" role="row" key={folder.id} className="uv2-ftable__row" onClick={() => navigateToFolder(folder.id)}>
+                                                        <span><FolderIcon className="uv2-ftable__ico" />{folder.name}</span><span>Ordner</span><ChevronRight className="uv2-ftable__chev" />
+                                                    </button>
+                                                ))}
+                                                {displayFiles.map((file) => {
+                                                    const Icon = TYPE_ICONS[file.type] || FileText;
+                                                    return (
+                                                        <button type="button" role="row" key={file.id} className="uv2-ftable__row" data-active={resonanceIds.includes(file.id) || selectedNodeId === file.id ? '' : undefined}
+                                                            onClick={() => { checkResonance(file.id); openFinderNode(file); }}>
+                                                            <span><Icon className="uv2-ftable__ico" />{file.name}</span>
+                                                            <span>{file.type === 'file' ? getSourceFileSecondaryLabel(file) : getContentSecondaryLabel(file)}</span><span />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ) : viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
-                                        <div className="space-y-6">
+                                        <div className="space-y-6" data-uv2-finder-grid={uv2On() ? '' : undefined}>
                                             <div className="min-w-0 space-y-6">
 
                                             {filteredFolders.length > 0 && (
-                                                <div className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
+                                                <div data-uv2-finder-folders={uv2On() ? '' : undefined} className="mb-5 rounded-[30px] border border-emerald-300/[0.09] bg-[radial-gradient(circle_at_0%_0%,rgba(16,185,129,0.1),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.014))] px-4 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.24)] md:px-[18px]">
                                                     <div className="mb-4 flex items-end justify-between gap-4">
                                                         <div>
                                                             <p className="text-[10px] uppercase tracking-[0.16em] text-white/25">Ordner und Bereiche</p>
@@ -2311,6 +2378,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
+                                                        data-uv2-folder={uv2On() ? '' : undefined}
                                                         className={`${folderCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
                                                             ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.24),rgba(6,95,70,0.12)_52%,rgba(1,14,12,0.8))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.14)]'
                                                             : 'bg-[radial-gradient(circle_at_20%_0%,rgba(59,130,246,0.1),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.065),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.12))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.16),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.028))] hover:border-emerald-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
@@ -2542,6 +2610,24 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                             </div>
 
                                         </div>
+                                    ) : viewMode === 'graph' && uv2On() ? (
+                                        <FinderGraphV2
+                                            center={folderContext?.path?.breadcrumbs?.slice(-1)[0]?.name || folderContext?.path?.space?.name || folderContext?.path?.department?.name || 'Start'}
+                                            inFolder={Boolean(currentFolderId)}
+                                            folders={filteredFolders.map((f) => ({ id: f.id, name: f.name, type: f.type }))}
+                                            files={filteredFiles.map((f) => ({ id: f.id, name: getContentDisplayName(f), type: f.type }))}
+                                            selectedId={selectedNodeId}
+                                            highlightIds={[...resonanceIds, ...connections.flatMap((c) => filteredFiles.filter((f) => c.id.includes(f.id)).map((f) => f.id))]}
+                                            zoom={graphZoom}
+                                            pan={graphPan}
+                                            onZoom={setGraphZoom}
+                                            onPan={setGraphPan}
+                                            onFolder={(e, id) => handleFolderClick(e, id)}
+                                            onFolderMenu={(e, n) => { const f = filteredFolders.find((x) => x.id === n.id); if (f) handleContextMenu(e, f, 'folder'); }}
+                                            onFile={(n) => { const f = filteredFiles.find((x) => x.id === n.id); if (f) { checkResonance(f.id); openFinderNode(f); } }}
+                                            onFileMenu={(e, n) => { const f = filteredFiles.find((x) => x.id === n.id); if (f) handleContextMenu(e, f, 'file'); }}
+                                            onFileHover={(n) => { if (n) fetchConstellation(n.id, new Map()); else clearConstellation(); }}
+                                        />
                                     ) : viewMode === 'graph' ? (
                                         /* GRAPH VIEW - Semantic Network Mini-Universe */
                                         <div

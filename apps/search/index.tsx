@@ -11,6 +11,7 @@ import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { useSearchQuery } from './hooks/useSearchQuery';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 
 export default function SearchApp({ paneId, initialData }: AppProps) {
   const { removePane, openPane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
@@ -85,7 +86,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
       resizable
       {...GLASS_SHEET_PRESENTATION}
     >
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" data-uv2-app="search">
       {/* Search Input */}
       <div className="p-4 border-b border-white/10">
         <div className="relative">
@@ -96,7 +97,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Suche nach Elementen, Bereichen..."
+            placeholder={uv2() ? 'Wonach suchst du?' : "Suche nach Elementen, Bereichen..."}
             className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-3 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/50 transition-all"
           />
           {query && (
@@ -160,6 +161,17 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
                   <Clock size={14} className="text-white/30" />
                   <span className="text-sm text-white/70">{s}</span>
                 </button>
+              ))}
+            </div>
+          </div>
+        ) : uv2() ? (
+          <div className="flex h-full flex-col items-center justify-center">
+            <AppEmpty glyph={<Search size={22} strokeWidth={1.25} />} title="Alles an einem Ort."
+              text="Dokumente, Ordner und Bereiche. MÔRA versteht auch, was du nur ungefähr weißt."
+              action={null} />
+            <div className="uv2-search-hints -mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2">
+              {(['Bericht', 'Rechnung', 'Protokoll', 'Strategie'] as const).map((hint) => (
+                <button key={hint} type="button" onClick={() => setQuery(hint)}>{hint}</button>
               ))}
             </div>
           </div>

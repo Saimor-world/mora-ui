@@ -1,5 +1,6 @@
 "use client";
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, UserPlus, Shield, Crown, User, Mail, Search, RefreshCw, Settings, Copy, Check } from 'lucide-react';
@@ -27,11 +28,11 @@ interface TeamMember {
 }
 
 const ROLE_CONFIG: Record<string, { icon: any; color: string; bg: string; label: string }> = {
-    system_owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'System Owner' },
-    owner:        { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Owner' },
+    system_owner: { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Systeminhaber' },
+    owner:        { icon: Crown, color: 'text-mora-gold', bg: 'bg-mora-gold/20', label: 'Inhaber' },
     admin:        { icon: Shield, color: 'text-purple-400', bg: 'bg-purple-500/20', label: 'Admin' },
     manager:      { icon: Shield, color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Manager' },
-    member:       { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Member' },
+    member:       { icon: User, color: 'text-emerald-400', bg: 'bg-emerald-500/20', label: 'Mitglied' },
     demo:         { icon: User, color: 'text-cyan-400', bg: 'bg-cyan-500/20', label: 'Demo' },
 };
 
@@ -220,10 +221,19 @@ export default function UsersApp({ paneId }: AppProps) {
             draggable
             resizable
         >
-            <div className="h-full flex flex-col relative">
+            <div className="h-full flex flex-col relative" data-uv2-app="users">
+                {uv2() && !isLoading && (() => {
+                    const active = combinedMembers.filter((m) => m.status === 'active').length;
+                    const invited = combinedMembers.filter((m) => m.status === 'invited').length;
+                    return <AppHero app="users" eyebrow="Menschen"
+                        title={`${active} aktiv`}
+                        sub={invited > 0 ? `${invited} Einladung${invited === 1 ? '' : 'en'} warten auf Antwort. Rollen legen fest, wer was sieht.` : 'Rollen legen fest, wer was sieht. Geschützte Bereiche öffnen sich nur mit passender Rolle.'}
+                        figure={combinedMembers.length} figureLabel="Mitglieder"
+                        action={isAdmin ? { label: 'Jemanden einladen', onClick: () => setShowInviteModal(true) } : null} />;
+                })()}
                 {/* Header */}
-                <div className="p-4 border-b border-white/10">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="p-4 border-b border-white/10" data-uv2-users-tools>
+                    <div className="flex items-center justify-between mb-4" data-uv2-legacy-head>
                         <div className="flex items-center gap-2">
                             <Users className="text-emerald-400" size={20} />
                             <h2 className="text-lg font-medium">Benutzer und Team</h2>
@@ -276,6 +286,10 @@ export default function UsersApp({ paneId }: AppProps) {
                         <div className="flex items-center justify-center py-8">
                             <RefreshCw className="text-emerald-400 animate-spin" size={24} />
                         </div>
+                    ) : filteredMembers.length === 0 && uv2() ? (
+                        <AppEmpty compact glyph={<Users size={20} strokeWidth={1.25} />} title={combinedMembers.length === 0 ? 'Noch arbeitest du allein.' : 'Niemand passt zu diesem Filter.'}
+                            text={combinedMembers.length === 0 ? 'Lade Menschen ein. Sie sehen nur, was ihre Rolle erlaubt.' : 'Passe Suche oder Filter an.'}
+                            action={combinedMembers.length === 0 && isAdmin ? { label: 'Erste Einladung', onClick: () => setShowInviteModal(true) } : { label: 'Filter zurücksetzen', onClick: () => { setFilter('all'); setSearchQuery(''); } }} />
                     ) : filteredMembers.length === 0 ? (
                         <div className="mx-auto flex max-w-sm flex-col items-center rounded-2xl border border-emerald-300/10 bg-emerald-300/[0.03] px-6 py-8 text-center text-white/50">
                             <Users size={34} className="mb-3 text-emerald-300/45" />
@@ -306,6 +320,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
                                             transition={{ delay: index * 0.05 }}
+                                            data-uv2-person={member.status}
                                             className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition-all group"
                                         >
                                             <div className={`w-10 h-10 rounded-full ${roleConfig.bg} flex items-center justify-center`}>
@@ -368,7 +383,7 @@ export default function UsersApp({ paneId }: AppProps) {
                                             {isAdmin && member.status !== 'invited' && (
                                                 <button
                                                     onClick={() => handleActiveToggle(member.id, member.status === 'active')}
-                                                    className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
+                                                    data-uv2-switch={member.status === 'active' ? 'on' : 'off'} className={`w-8 h-4 rounded-full transition-all flex-shrink-0 relative ${member.status === 'active' ? 'bg-emerald-500/60' : 'bg-white/10'}`}
                                                     title={member.status === 'active' ? 'Benutzer deaktivieren' : 'Benutzer aktivieren'}
                                                 >
                                                     <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${member.status === 'active' ? 'left-4' : 'left-0.5'}`} />
@@ -391,7 +406,7 @@ export default function UsersApp({ paneId }: AppProps) {
                 {/* Footer */}
                 <div className="p-3 border-t border-white/10 flex items-center justify-between">
                     <div className="text-xs text-white/30">
-                        {viewMode === 'demo' ? 'Demo-Modus: Integrationen sind begrenzt' : 'Einladungen gelten nur fuer diese Instanz'}
+                        {viewMode === 'demo' ? 'Demo-Modus: Integrationen sind begrenzt' : 'Einladungen gelten nur für diese Instanz'}
                     </div>
                     <button className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
                         <Settings size={12} />

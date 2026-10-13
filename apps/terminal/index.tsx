@@ -16,6 +16,8 @@
  *   unauthenticated — no user in store; input locked
  */
 
+import { uv2 } from "@/components/universe/app/AppStage";
+import { Server, Folder, Shield, Hash } from "lucide-react";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -580,9 +582,21 @@ export default function TerminalApp({ paneId }: AppProps) {
         >
             <div
                 className="flex flex-col h-full bg-[#0a0a0a] font-mono text-sm cursor-text"
+                data-uv2-app="terminal"
                 onClick={focusInput}
             >
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/50">
+                {uv2() && (
+                    <div className="uv2-tbar" data-testid="term-v2-status" data-state={connectionState}>
+                        <span className="uv2-dot" data-on={connectionState === "ready" ? "" : undefined}>{connectionState === "ready" ? "Online" : connectionState === "checking" ? "Prüft" : connectionState === "offline" ? "Offline" : connectionState === "disconnected" ? "Getrennt" : "Abgemeldet"}</span>
+                        <span className="uv2-tbar__item"><Server size={13} />{session?.host_label ?? "Core"}</span>
+                        <span className="uv2-tbar__item"><Folder size={13} />{session?.cwd ?? "/"}</span>
+                        <span className="uv2-tbar__item"><Shield size={13} />{session?.role ?? user?.role ?? "?"}</span>
+                        <span className="uv2-tbar__item"><Hash size={13} />{commandHistory.length}</span>
+                        <span className="flex-1" />
+                        {connectionState === "disconnected" && <button type="button" className="uv2-pill" data-primary="" onClick={() => void executeCommand("reconnect")}>Neu verbinden</button>}
+                    </div>
+                )}
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/50" data-uv2-legacy-head>
                     <div className="flex gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                         <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
@@ -595,9 +609,52 @@ export default function TerminalApp({ paneId }: AppProps) {
                 </div>
 
                 <div ref={terminalRef} className="flex-1 overflow-y-auto p-4 space-y-1">
-                    {lines.map((line) => (
+                    {uv2() && (() => {
+                        type Block = { id: string; cmd: string; at: Date; out: TerminalLine[] };
+                        const pre: TerminalLine[] = []; const blocks: Block[] = [];
+                        for (const l of lines) {
+                            if (l.type === "input") blocks.push({ id: l.id, cmd: l.content.replace(/^\$\s?/, ""), at: l.timestamp, out: [] });
+                            else if (blocks.length) blocks[blocks.length - 1].out.push(l);
+                            else pre.push(l);
+                        }
+                        const status = (b: Block) => {
+                            const ex = b.out.find((o) => o.type === "system" && /^exit \d+/.test(o.content));
+                            if (b.out.some((o) => o.type === "error")) return { label: ex ? ex.content : "Fehler", tone: "alert" };
+                            if (ex) return { label: ex.content, tone: ex.content === "exit 0" ? "ok" : "alert" };
+                            return { label: b.out.length ? "ok" : (isProcessing ? "läuft" : "—"), tone: "ok" };
+                        };
+                        const quick = ["help", "status", "pwd", "ls"];
+                        return (
+                            <div className="uv2-cmds" data-testid="term-v2-register">
+                                {blocks.length === 0 ? (
+                                    <div className="uv2-cmds__chips">
+                                        {quick.map((q) => (
+                                            <button key={q} type="button" className="uv2-pill" disabled={isProcessing || connectionState === "unauthenticated"} onClick={() => void executeCommand(q)}>{q}</button>
+                                        ))}
+                                    </div>
+                                ) : blocks.map((b) => {
+                                    const st = status(b);
+                                    return (
+                                        <article key={b.id} className="uv2-cmd" data-tone={st.tone}>
+                                            <header className="uv2-cmd__head">
+                                                <span className="uv2-cmd__cmd">$ {b.cmd}</span>
+                                                <span className="uv2-cmd__meta">{b.at.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} · {st.label}</span>
+                                            </header>
+                                            {b.out.filter((o) => !(o.type === "system" && /^exit \d+/.test(o.content))).length > 0 && (
+                                                <pre className="uv2-cmd__out">{b.out.filter((o) => !(o.type === "system" && /^exit \d+/.test(o.content))).map((o) => (
+                                                    <span key={o.id} data-uv2-line={o.type}>{o.content}{"\n"}</span>
+                                                ))}</pre>
+                                            )}
+                                        </article>
+                                    );
+                                })}
+                            </div>
+                        );
+                    })()}
+                    {!uv2() && lines.map((line) => (
                         <div
                             key={line.id}
+                            data-uv2-line={line.type}
                             className={`whitespace-pre-wrap break-words ${getLineStyle(line.type)}`}
                         >
                             {line.content}

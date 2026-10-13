@@ -10,12 +10,15 @@ import {
     CheckSquare,
     Circle,
     Clock,
+    Flag,
     Loader2,
     Plus,
     RefreshCw,
     Trash2,
 } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 
 type TaskStatus = 'backlog' | 'in_progress' | 'done';
 
@@ -54,6 +57,29 @@ function TaskCard({
 }) {
     const nextStatus = (status: TaskStatus): TaskStatus => status === 'backlog' ? 'in_progress' : status === 'in_progress' ? 'done' : 'backlog';
     const prevStatus = (status: TaskStatus): TaskStatus => status === 'done' ? 'in_progress' : status === 'in_progress' ? 'backlog' : 'done';
+
+    if (uv2()) {
+        const today = new Date().toISOString().slice(0, 10);
+        const overdue = task.status !== 'done' && !!task.due_date && task.due_date < today;
+        const StatusIcon = task.status === 'done' ? CheckSquare : task.status === 'in_progress' ? Clock : Circle;
+        return (
+            <div className="uv2-task group" data-status={task.status} data-busy={busy ? '' : undefined} draggable={!busy}
+                onDragStart={(event) => { event.dataTransfer.setData('text/x-task', task.id); event.dataTransfer.effectAllowed = 'move'; }}
+                data-testid={`task-v2-${task.id}`}>
+                <button type="button" className="uv2-task__state" disabled={busy} onClick={() => onMove(task.id, nextStatus(task.status))}
+                    title={task.status === 'backlog' ? 'Beginnen' : task.status === 'in_progress' ? 'Erledigt' : 'Wieder öffnen'} aria-label={task.status === 'backlog' ? 'Beginnen' : task.status === 'in_progress' ? 'Erledigt' : 'Wieder öffnen'}>
+                    {busy ? <Loader2 className="animate-spin" /> : <StatusIcon />}
+                </button>
+                <span className="uv2-task__title">{task.title}</span>
+                {task.priority ? <span className="uv2-task__prio" data-p={task.priority} title={task.priority === 'high' ? 'Hoch' : task.priority === 'medium' ? 'Mittel' : 'Niedrig'} /> : null}
+                {task.due_date ? <span className="uv2-task__due" data-overdue={overdue ? '' : undefined}>{new Date(task.due_date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' })}</span> : null}
+                <span className="uv2-task__tools">
+                    <button type="button" onClick={() => onMove(task.id, prevStatus(task.status))} title="Zurück" aria-label="Zurück"><ArrowLeft /></button>
+                    <button type="button" onClick={() => onDelete(task.id)} title="Löschen" aria-label="Löschen"><Trash2 /></button>
+                </span>
+            </div>
+        );
+    }
 
     return (
         <div className={`group rounded-xl border border-white/[0.07] bg-white/[0.03] px-3 py-2.5 transition-all hover:border-white/15 hover:bg-white/[0.06] ${busy ? 'opacity-55' : ''}`}>
@@ -118,6 +144,8 @@ export default function TasksApp({ paneId }: AppProps) {
     const [newTitle, setNewTitle] = useState('');
     const [newDue, setNewDue] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [uvFilter, setUvFilter] = useState<'all' | 'high' | 'due'>('all');
+    const [dropCol, setDropCol] = useState<TaskStatus | null>(null);
 
     const load = useCallback(async (quiet = false) => {
         if (quiet) setIsRefreshing(true);
@@ -256,9 +284,39 @@ export default function TasksApp({ paneId }: AppProps) {
                             </button>
                         </div>
                     </div>
+                    {!uv2() && <>
                     <h2 className="mt-3 text-[20px] font-medium tracking-[-0.03em] text-white/78">Alle Aufgaben</h2>
                     <p className="mt-1 text-[10px] leading-relaxed text-white/28">Der vollständige Aufgabenstand hinter deinem Work-Bereich.</p>
+                    </>}
                 </header>
+                {uv2() && !isLoading && available !== false && (() => {
+                    const open = tasks.filter((t) => t.status !== 'done');
+                    const today = new Date().toISOString().slice(0, 10);
+                    const rank = (t: Task) => (t.status === 'in_progress' ? 0 : 1) * 10 + (t.priority === 'high' ? 0 : t.priority === 'medium' ? 1 : 2);
+                    const next = [...open].sort((a, b) => {
+                        const ao = a.due_date && a.due_date < today ? 0 : 1; const bo = b.due_date && b.due_date < today ? 0 : 1;
+                        return ao - bo || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999') || rank(a) - rank(b);
+                    })[0];
+                    if (!next) return null;
+                    const overdue = next.due_date && next.due_date < today;
+                    const due = next.due_date ? new Date(next.due_date).toLocaleDateString('de-DE', { day: 'numeric', month: 'short' }) : null;
+                    const inWork = tasks.filter((t) => t.status === 'in_progress').length;
+                    const todayKey = today;
+                    return (
+                        <div className="uv2-ftool" data-uv2-keep="" data-testid="tasks-v2-bar">
+                            <Segmented value={uvFilter} onChange={setUvFilter} label="Filter" options={[
+                                { id: 'all', label: `Alle ${open.length}`, icon: <Circle /> },
+                                { id: 'high', label: `Hoch ${open.filter((t) => t.priority === 'high').length}`, icon: <Flag /> },
+                                { id: 'due', label: `Fällig ${open.filter((t) => t.due_date && t.due_date <= todayKey).length}`, icon: <Clock /> },
+                            ]} />
+                            <span style={{ flex: 1 }} />
+                            <span className="uv2-ftool__next" title={next.title}>{overdue ? <span className="uv2-dot" data-warn="" /> : null}{next.title}{due ? <i>{due}</i> : null}</span>
+                            {!busyTaskId && <button type="button" className="uv2-pill" data-testid="tasks-v2-next" onClick={() => void handleMoveTask(next.id, next.status === 'backlog' ? 'in_progress' : 'done')}>
+                                {next.status === 'backlog' ? <><Clock />Beginnen</> : <><CheckSquare />Erledigt</>}</button>}
+                            <button type="button" className="uv2-pill uv2-pill--gold" data-testid="tasks-v2-add" onClick={() => { setAddingColumn('backlog'); setNewTitle(''); setNewDue(''); }}><Plus />Aufgabe</button>
+                        </div>
+                    );
+                })()}
 
                 {error && (
                     <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl border border-amber-300/10 bg-amber-300/[0.04] px-3 py-2.5 text-[10px] leading-relaxed text-amber-100/55">
@@ -271,6 +329,12 @@ export default function TasksApp({ paneId }: AppProps) {
                     <div className="flex flex-1 items-center justify-center">
                         <Loader2 size={20} className="animate-spin text-white/30" />
                     </div>
+                ) : available === false && tasks.length === 0 && uv2() ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <AppEmpty glyph={<AlertTriangle size={20} strokeWidth={1.25} />} title="Gerade keine Verbindung."
+                            text="Saimôr zeigt keine leere Liste, solange der echte Stand nicht sicher gelesen werden kann."
+                            action={{ label: 'Erneut laden', onClick: () => void load(true) }} />
+                    </div>
                 ) : available === false && tasks.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-3 px-8 text-center">
                         <AlertTriangle size={24} className="text-amber-100/30" />
@@ -279,12 +343,23 @@ export default function TasksApp({ paneId }: AppProps) {
                             Saimôr zeigt keinen leeren Aufgabenstand an, solange die aktuelle Liste nicht sicher gelesen werden kann.
                         </p>
                     </div>
+                ) : uv2() && tasks.length === 0 && addingColumn === null ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <AppEmpty glyph={<CheckSquare size={22} strokeWidth={1.25} />} title="Nichts offen."
+                            text="Ein klarer Kopf. Wenn etwas ansteht, beginnt es hier – MÔRA legt auch Aufgaben aus Mails und Terminen an, sobald du zustimmst."
+                            action={{ label: 'Erste Aufgabe anlegen', onClick: () => { setAddingColumn('backlog'); setNewTitle(''); setNewDue(''); } }} />
+                    </div>
                 ) : (
-                    <div className="flex flex-1 gap-3 overflow-x-auto p-4">
+                    <div className="flex flex-1 gap-3 overflow-x-auto p-4" data-uv2-board>
                         {STATUS_COLUMNS.map((column) => {
-                            const columnTasks = tasks.filter((task) => task.status === column.key);
+                            const todayKey = new Date().toISOString().slice(0, 10);
+                            const columnTasks = tasks.filter((task) => task.status === column.key)
+                                .filter((task) => !uv2() || uvFilter === 'all' || (uvFilter === 'high' ? task.priority === 'high' : !!task.due_date && task.due_date <= todayKey));
                             return (
-                                <div key={column.key} className="flex min-w-[220px] flex-1 flex-col">
+                                <div key={column.key} className="flex min-w-[220px] flex-1 flex-col" data-uv2-taskcol={column.key} data-drop={dropCol === column.key ? '' : undefined}
+                                    onDragOver={uv2() ? (event) => { if (event.dataTransfer.types.includes('text/x-task')) { event.preventDefault(); setDropCol(column.key); } } : undefined}
+                                    onDragLeave={uv2() ? () => setDropCol((c) => (c === column.key ? null : c)) : undefined}
+                                    onDrop={uv2() ? (event) => { event.preventDefault(); setDropCol(null); const id = event.dataTransfer.getData('text/x-task'); const t = tasks.find((x) => x.id === id); if (t && t.status !== column.key) void handleMoveTask(id, column.key); } : undefined}>
                                     <div className={`mb-3 flex items-center justify-between border-b pb-2 ${column.accent}`}>
                                         <div className="flex items-center gap-2">
                                             {column.key === 'done'
@@ -351,8 +426,8 @@ export default function TasksApp({ paneId }: AppProps) {
 
                                     <div className="flex-1 space-y-2 overflow-y-auto">
                                         {columnTasks.length === 0 && addingColumn !== column.key && (
-                                            <div className="rounded-xl border border-dashed border-white/[0.06] py-4 text-center text-[11px] text-white/20">
-                                                Leer
+                                            <div className="rounded-xl border border-dashed border-white/[0.06] py-4 text-center text-[11px] text-white/20" data-uv2-col-empty>
+                                                {uv2() ? (column.key === 'done' ? 'Noch nichts erledigt' : column.key === 'in_progress' ? 'Nichts in Arbeit' : 'Nichts offen') : 'Leer'}
                                             </div>
                                         )}
                                         {columnTasks.map((task) => (

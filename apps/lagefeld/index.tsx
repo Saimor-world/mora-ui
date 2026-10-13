@@ -1,5 +1,6 @@
 'use client';
 
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useCallback, useMemo } from 'react';
 import { Activity, MessageSquare, Mic2, RotateCcw, Sparkles } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
@@ -89,8 +90,23 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
     >
       <section
         data-testid="lagefeld-app"
-        className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
+        data-uv2-system-bg="" className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_20%_18%,rgba(34,211,238,0.16),transparent_32%),radial-gradient(circle_at_84%_16%,rgba(168,85,247,0.14),transparent_34%),linear-gradient(145deg,rgba(2,6,23,0.74),rgba(3,7,18,0.9))] text-slate-100"
       >
+        {uv2() ? (
+          <>
+            <div className="uv2-ftool" data-testid="lagefeld-v2-bar">
+              <span className="uv2-dot" data-on={hasSignals ? '' : undefined} />
+              <span className="uv2-ftool__crumb">{!hasSignals ? 'Ruhig' : `${state.cards.length} Signale`}</span>
+              <span className="uv2-notes__count">{deutungActions ? 'MÔRAs Deutung' : source === 'ambient-room' ? 'Voice-Raum' : 'echt'}</span>
+              <span style={{ flex: 1 }} />
+              {deutungActions ? <button type="button" className="uv2-pill" onClick={reset} data-testid="lagefeld-deuten-reset"><RotateCcw />Übersicht</button> : null}
+              <button type="button" className="uv2-pill" onClick={openChat} data-testid="lagefeld-open-chat" title="Schreiben" aria-label="Schreiben"><MessageSquare /></button>
+              <button type="button" className="uv2-pill" onClick={openVoiceOverlay} data-testid="lagefeld-open-voice" title="Sprechen" aria-label="Sprechen"><Mic2 /></button>
+              {hasSignals && <button type="button" className="uv2-pill uv2-pill--gold" onClick={() => { if (!deuting) requestDeutung(); }} data-testid="lagefeld-deuten"><Sparkles className={deuting ? 'animate-pulse' : ''} />{deuting ? 'Deutet …' : deutungActions ? 'Neu deuten' : 'Deuten'}</button>}
+            </div>
+            {prompt ? <p className="uv2-notes__count" style={{ padding: '8px 24px 0' }}>{prompt}</p> : null}
+          </>
+        ) : (
         <header className="flex shrink-0 items-start justify-between gap-4 border-b border-white/[0.07] px-6 py-5">
           <div className="min-w-0">
             <div className="flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.28em] text-cyan-100/45">
@@ -152,8 +168,9 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
             </div>
           </div>
         </header>
+        )}
 
-        {prompt ? (
+        {prompt && !uv2() ? (
           <div className="mx-6 mt-4 shrink-0 rounded-2xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-sm text-white/62">
             <span className="mr-2 text-[10px] uppercase tracking-[0.22em] text-white/34">Ausgangspunkt</span>
             {prompt}
@@ -171,6 +188,12 @@ export default function LagefeldApp({ paneId, initialData }: AppProps) {
           ) : null}
           {hasSignals ? (
             <LagefeldCanvas state={state} />
+          ) : uv2() ? (
+            <div className="flex h-full items-center justify-center">
+              <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Nichts drängt gerade."
+                text="Sobald Mail, Kalender oder Aufgaben etwas melden, legt MÔRA es hier aus. Du kannst sie jederzeit selbst fragen."
+                action={{ label: 'MÔRA fragen', onClick: openChat }} />
+            </div>
           ) : (
             <LagefeldEmptyState onOpenChat={openChat} onOpenVoice={openVoiceOverlay} />
           )}

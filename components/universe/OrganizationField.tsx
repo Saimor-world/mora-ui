@@ -1,7 +1,9 @@
 "use client";
 
+import { attentionScores, attentionDiameter, attentionLevel } from '@/lib/universe/autonomy';
+import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { ArrowUpRight, Building2, CalendarDays, FileText, Lock, Mail, Radio, Rss, Sparkles, X } from 'lucide-react';
+import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
 import type { UniverseSignal } from '@/lib/universe/types';
 import { buildRelationStrands, territoryDiameter, type RelationStrand } from '@/lib/universe/relations';
 import { stableUniverseHash } from '@/lib/universe/layout';
@@ -11,6 +13,7 @@ import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -57,12 +60,21 @@ const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
     missing: 'noch ohne Quelle',
 };
 
-const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = {
+const signalToneLegacy: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = {
     mail: { stroke: '#7dd3fc', icon: <Mail size={11} />, label: 'Mail' },
     calendar: { stroke: '#6ee7b7', icon: <CalendarDays size={11} />, label: 'Kalender' },
     rss: { stroke: '#c4b5fd', icon: <Rss size={11} />, label: 'Feed' },
     nightwatch: { stroke: '#fcd34d', icon: <Radio size={11} />, label: 'Nightwatch' },
 };
+/** v2: Signalfäden in Systemfarben – Gold = Termin/Aktion, Creme = Post/Feed, Warnton nur für die Wache. */
+const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.ReactNode; label: string }> = isUniverseV2Enabled()
+    ? {
+        mail: { ...signalToneLegacy.mail, stroke: '#F7F4E9' },
+        calendar: { ...signalToneLegacy.calendar, stroke: '#D6A848' },
+        rss: { ...signalToneLegacy.rss, stroke: '#CFC8B4' },
+        nightwatch: { ...signalToneLegacy.nightwatch, stroke: '#E0876A' },
+    }
+    : signalToneLegacy;
 
 export function OrganizationField({
     lens,
@@ -115,6 +127,35 @@ export function OrganizationField({
     // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
+    const [todayAreas, setTodayAreas] = useState<string[]>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2TodayAreas?: string[] }).__uv2TodayAreas) || []);
+    useEffect(() => {
+        const on = (e: Event) => setTodayAreas(((e as CustomEvent).detail as string[]) || []);
+        window.addEventListener('uv2:today-areas', on);
+        return () => window.removeEventListener('uv2:today-areas', on);
+    }, []);
+    // Abklingen über Stunden: alle 10 min neu bewerten (Übergang 1,6 s im CSS).
+    const [decayTick, setDecayTick] = useState(0);
+    useEffect(() => { const t = window.setInterval(() => setDecayTick((n) => n + 1), 600_000); return () => window.clearInterval(t); }, []);
+    // Autonomie: Môra ordnet nach Aufmerksamkeit (echte Signale), nicht nach Menge.
+    const attention = useMemo(() => {
+        const extra: Record<string, number> = {};
+        todayAreas.forEach((area, i) => {
+            const a = area.trim().toLowerCase();
+            const t = territories.find((x) => x.name.trim().toLowerCase() === a);
+            if (t) extra[t.id] = (extra[t.id] || 0) + (i === 0 ? 2.5 : 2);
+        });
+        const scores = attentionScores(territories.map((t) => t.id), signals, extra, Date.now() + decayTick * 0);
+        return { scores, any: Object.values(scores).some((v) => v > 0) };
+    }, [territories, signals, todayAreas, decayTick]);
+    // Dieselbe Rangfolge geht an die Deutung (LAGE), damit Text und Feld übereinstimmen.
+    useEffect(() => {
+        const ranked = territories.map((t) => ({ name: t.name, score: attention.scores[t.id] || 0 })).sort((a, b) => b.score - a.score);
+        const detail = { ohneQuelle: territories.filter((t) => t.metricSource === 'missing' && t.id !== '__weitere').map((t) => t.name), vorn: ranked.filter((r) => r.score >= 0.85).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score < 0.35).map((r) => r.name) : [] };
+        (window as unknown as { __uv2Attention?: typeof detail }).__uv2Attention = detail;
+        window.dispatchEvent(new CustomEvent('uv2:attention', { detail }));
+    }, [territories, attention]);
+    const publishedRef = useRef('');
+    const territoryCountRef = useRef(territories.length); territoryCountRef.current = territories.length;
 
     useLayoutEffect(() => {
         const publish = () => {
@@ -125,13 +166,19 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / 1350, box.height / 770));
+                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
             // nichts, und jede Schicht darueber zeichnet folgerichtig nichts -
             // statt auf einen Punkt zu kollabieren.
-            setField(anchors, { left: box.left, top: box.top, width: box.width, height: box.height });
+            // Nur veröffentlichen, wenn sich wirklich etwas geändert hat – sonst schaukeln
+            // sich Feld und Universe gegenseitig hoch (z. B. während einer Kamerafahrt).
+            const rect = { left: Math.round(box.left), top: Math.round(box.top), width: Math.round(box.width), height: Math.round(box.height) };
+            const key = JSON.stringify([anchors, rect]);
+            if (key === publishedRef.current) return;
+            publishedRef.current = key;
+            setField(anchors, rect);
         };
 
         publish();
@@ -139,7 +186,7 @@ export function OrganizationField({
         return () => window.removeEventListener('resize', publish);
     }, [anchors, clearField, setField]);
 
-    useEffect(() => () => clearField(), [clearField]);
+    useEffect(() => () => { publishedRef.current = ''; clearField(); }, [clearField]);
 
     // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
     // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte
@@ -213,7 +260,7 @@ export function OrganizationField({
 
     return (
         <section
-            className="absolute inset-0 z-[18] overflow-hidden"
+            data-uv2-field className="absolute inset-0 z-[18] overflow-hidden"
             aria-label={lens === 'organization' ? 'Organisation' : 'Zusammenhänge'}
         >
             {/* Die Zeile "Organisationsfeld" stand direkt unter dem Umschalter,
@@ -228,9 +275,12 @@ export function OrganizationField({
                     zusammenhaengt") - seit die beiden Linsen zu einem Feld
                     verschmolzen sind, gibt es nur noch eine Frage, die dieser
                     Ort beantwortet. */}
+                {/* Universe v2: MÔRAs Begrüßung ist die eine Überschrift – kein zweiter Titel. */}
+                {!isUniverseV2Enabled() && (
                 <h1 className="text-[clamp(1.45rem,2.2vw,2.25rem)] font-light tracking-[-0.035em] text-white/92">
                     Woraus {organizationName} besteht
                 </h1>
+                )}
                 {/* Die erklaerende Zeile darunter ("Echte Bereiche, ihr Umfang...")
                     ist raus. Sie erklaerte die Metapher - nuetzlich beim ersten
                     Mal, aber sie besetzte genau den Streifen, den das Datenband
@@ -260,6 +310,7 @@ export function OrganizationField({
                 570px zu belegen - bei 1024 blieben davon nur 454px Feld. */}
             <div
                 ref={fieldRef}
+                data-uv2-plane
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
                 className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
@@ -268,6 +319,8 @@ export function OrganizationField({
                 {territories.map((territory) => (
                     <Territory
                         key={territory.id}
+                        attention={attention.scores[territory.id] || 0}
+                        anySignal={attention.any}
                         territory={territory}
                         signals={signals.filter((signal) => signal.targetId === territory.id)}
                         lens={lens}
@@ -280,14 +333,14 @@ export function OrganizationField({
                 ))}
             </div>
 
-            {lens === 'relations' && (
+            {lens === 'relations' && !(isUniverseV2Enabled() && selectedSignals.length === 0) && (
                 <div className="pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block">
                     <RelationLegend strands={strands} />
                 </div>
             )}
 
-            <div className="absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden">
-                <div className="grid grid-cols-2 gap-x-4 gap-y-9">
+            <div className={isUniverseV2Enabled() ? 'absolute inset-x-0 bottom-[168px] z-20 overflow-x-auto px-4 lg:hidden' : 'absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden'} data-testid="mobile-territories" style={isUniverseV2Enabled() ? { scrollbarWidth: 'none' } : undefined}>
+                <div className={isUniverseV2Enabled() ? 'mx-auto flex w-max gap-1' : 'grid grid-cols-2 gap-x-4 gap-y-9'}>
                     {territories.map((territory) => (
                         <MobileTerritory
                             key={territory.id}
@@ -301,7 +354,7 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
+                <aside data-testid="planet-detail" style={isUniverseV2Enabled() ? { background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', borderColor: 'transparent', borderRadius: 20, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 20px 50px rgba(0,0,0,0.45)' } : undefined} className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
@@ -317,11 +370,19 @@ export function OrganizationField({
                     <p className="mt-2 text-sm leading-relaxed text-white/48">
                         {selected.description || 'Noch keine Beschreibung hinterlegt.'}
                     </p>
+                    {isUniverseV2Enabled() ? (
+                        <p className="mt-5 border-y border-white/[0.09] py-3 text-[10px] uppercase tracking-[0.2em] text-white/45" data-testid="planet-detail-facts" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>
+                            {[selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
+                              selected.documents ? `${selected.documents} Dokumente` : null,
+                              selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Noch leer'}
+                        </p>
+                    ) : (
                     <div className="mt-5 grid grid-cols-3 gap-2">
                         <TruthValue icon={<Building2 size={13} />} value={selected.spaces} label="Bereiche" />
                         <TruthValue icon={<FileText size={13} />} value={selected.documents} label="Dokumente" />
                         <TruthValue icon={<Radio size={13} />} value={selectedSignals.length} label="Signale" />
                     </div>
+                    )}
                     {lens === 'relations' && (
                         <div className="mt-5 space-y-2">
                             {selectedSignals.length === 0 ? (
@@ -343,6 +404,7 @@ export function OrganizationField({
                         <button
                             type="button"
                             disabled={selected.access === 'locked'}
+                            data-uv2-open="true"
                             onClick={() => onOpen(selected.id)}
                             className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/38"
                         >
@@ -375,7 +437,11 @@ function Territory({
     emphasis,
     onSelect,
     onOpenMoon,
+    attention = 0,
+    anySignal = false,
 }: {
+    attention?: number;
+    anySignal?: boolean;
     territory: OrganizationTerritory;
     signals: UniverseSignal[];
     lens: UniverseLens;
@@ -386,7 +452,9 @@ function Territory({
     onOpenMoon: (folderId: string, folderName: string) => void;
 }) {
     const accent = territory.color || '#67e8f9';
-    const size = Math.round(territoryDiameter(territory) * fieldScale);
+    const v2 = isUniverseV2Enabled();
+    const size = Math.round((v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
     const orbitals = useMemo(
@@ -415,6 +483,9 @@ function Territory({
         <button
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
+            data-uv2-planet={territory.id}
+            data-uv2-attn={v2 ? attnLevel : undefined}
+            data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
                 (selected ? 'z-30' : 'hover:z-20')}
             style={{
@@ -453,6 +524,9 @@ function Territory({
                 className="saimor-territory-body relative mx-auto block"
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
+                {isUniverseV2Enabled() && territory.access !== 'locked' ? (
+                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
+                ) : (
                 <span
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
                     style={{
@@ -471,10 +545,12 @@ function Territory({
                 >
                     {territory.access === 'locked'
                         ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
-                        : <Building2 size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />}
+                        : (() => { const Glyph = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <Glyph size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />; })()}
                 </span>
+                )}
 
-                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} />
+                <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} planetName={territory.name} />
+                {isUniverseV2Enabled() && territory.access !== 'locked' && orbitals.moons.length === 0 && <AmbientMoons name={territory.name} size={size} seed={drift} />}
             </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
@@ -491,12 +567,22 @@ function Territory({
                     <span className="text-[9px] font-semibold tabular-nums text-white/62">{signals.length}</span>
                 </span>
             )}
-            <span className="mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            {isUniverseV2Enabled() ? (
+                // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
+                (territory.spaces > 0 || territory.documents > 0) && (
+                    <span className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">
+                        {[territory.spaces > 0 && `${territory.spaces} ${territory.spaces === 1 ? 'Bereich' : 'Bereiche'}`,
+                          territory.documents > 0 && `${territory.documents} ${territory.documents === 1 ? 'Dokument' : 'Dokumente'}`].filter(Boolean).join(' · ')}
+                    </span>
+                )
+            ) : (
             <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
-                <span>{territory.spaces} Bereiche</span>
+                <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
                 <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
-                <span>{territory.documents} Docs</span>
+                <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
             </span>
+            )}
             {/* Was sich hier bewegt - an einer FESTEN Stelle unter dem
                 Planeten, nicht als schwebendes Etikett am kreisenden Mond.
                 Dort landete es je nach Bahnstellung mitten auf der
@@ -513,11 +599,22 @@ function Territory({
             )}
             {territory.access === 'locked' ? (
                 <span className="mt-1.5 block text-[9px] text-amber-200/62">Mitgliedschaft erforderlich</span>
-            ) : territory.metricSource === 'missing' && (
+            ) : territory.metricSource === 'missing' && !isUniverseV2Enabled() && (
                 <span className="mt-1.5 block text-[9px] text-amber-200/52">Quelle fehlt</span>
             )}
         </button>
     );
+}
+
+/** v2: Jeder Planet bekommt ein eigenes Zeichen in derselben Strichstärke statt fünfmal dasselbe Gebäude. */
+export function planetGlyph(name: string): React.ComponentType<any> {
+    const n = name.toLowerCase();
+    if (/finanz|wirtschaft|finance|buchhalt/.test(n)) return Wallet;
+    if (/post|termin|kalender|mail/.test(n)) return Mail;
+    if (/werkstatt|engineering|technik|product|produkt/.test(n)) return Hammer;
+    if (/wissen|knowledge|doku/.test(n)) return BookOpen;
+    if (/wache|watch|sicherheit/.test(n)) return ShieldCheck;
+    return Building2;
 }
 
 function MobileTerritory({
@@ -536,28 +633,30 @@ function MobileTerritory({
         <button
             type="button"
             onClick={() => onSelect(selected ? null : territory.id)}
-            className={'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
+            data-mora-label={territory.name}
+            data-testid={isUniverseV2Enabled() ? 'territory-' + territory.id : undefined}
+            className={(isUniverseV2Enabled() ? 'w-[112px] shrink-0 ' : '') + 'flex min-w-0 flex-col items-center rounded-[28px] px-2 py-4 text-center transition ' +
                 (selected ? 'bg-white/[0.08]' : 'bg-transparent')}
         >
             <span
-                className="relative flex h-24 w-24 items-center justify-center rounded-full border border-white/10"
+                className={'saimor-territory-body relative flex items-center justify-center rounded-full border border-white/10 ' + (isUniverseV2Enabled() ? 'h-16 w-16' : 'h-24 w-24')}
                 style={{
                     color: accent,
                     background: 'radial-gradient(circle at 38% 30%, ' + accent + '30, transparent 38%), rgba(3,13,24,0.75)',
                     boxShadow: '0 0 36px ' + accent + '22',
                 }}
             >
-                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : <Building2 size={23} strokeWidth={1.2} />}
+                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : (() => { const G = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <G size={isUniverseV2Enabled() ? 18 : 23} strokeWidth={1.2} />; })()}
                 {signals.length > 0 && (
                     <span className="absolute -right-1 top-2 flex h-6 min-w-6 items-center justify-center rounded-full border border-amber-100/25 bg-slate-950 px-1.5 text-[9px] text-amber-200">
                         {signals.length}
                     </span>
                 )}
             </span>
-            <span className="mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
-            <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
-                {territory.spaces} Bereiche · {territory.documents} Docs
-            </span>
+            <span className="saimor-territory-name mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
+            {!isUniverseV2Enabled() && <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
+                {territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'} · {territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}
+            </span>}
         </button>
     );
 }
@@ -663,7 +762,8 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
  * Klick gehoert dem Planeten darunter, sonst waeren die Monde
  * Klickfallen vor dem eigentlichen Bedienelement.
  */
-function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void }) {
+function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void; planetName?: string }) {
+    const v2 = isUniverseV2Enabled() && Boolean(planetName);
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
@@ -731,11 +831,11 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon }: { orbitals: O
                                 // Abzeichen. Die Deckkraft kommt aus der
                                 // Frische - ein heute angefasster Ordner
                                 // leuchtet, ein lange ruhender glimmt nur.
-                                background:
+                                background: v2 ? moonBackground(planetName!, moon.freshness) :
                                     'radial-gradient(circle at 36% 30%, rgba(255,255,255,' + (0.55 * moon.freshness + 0.2).toFixed(2) + '), ' +
                                     accent + ' 62%, ' + accent + '44 100%)',
-                                opacity: 0.45 + moon.freshness * 0.55,
-                                boxShadow: '0 0 ' + (6 + moon.freshness * 14).toFixed(0) + 'px ' + accent +
+                                opacity: v2 ? 0.7 + moon.freshness * 0.3 : 0.45 + moon.freshness * 0.55,
+                                boxShadow: v2 ? 'none' : '0 0 ' + (6 + moon.freshness * 14).toFixed(0) + 'px ' + accent +
                                     Math.round(60 + moon.freshness * 120).toString(16).padStart(2, '0'),
                             }}
                         />

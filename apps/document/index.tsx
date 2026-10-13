@@ -1,4 +1,5 @@
 ﻿'use client';
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Copy, Download, Edit3, File, FileImage, FileText, FileVideo, FolderOpen,
@@ -380,10 +381,19 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             );
         }
         if (isMarkdown && content) {
-            return <div className="p-6 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
+            return <div data-uv2-reading className="p-6 prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: renderMarkdown(content) }} />;
         }
         if (content) {
-            return <pre className="p-4 whitespace-pre-wrap text-white/80 font-mono text-sm leading-relaxed">{content}</pre>;
+            return <pre data-uv2-reading className="p-4 whitespace-pre-wrap text-white/80 font-mono text-sm leading-relaxed">{content}</pre>;
+        }
+        if (uv2()) {
+            return (
+                <div className="flex h-full items-center justify-center">
+                    <AppEmpty glyph={<FileText size={22} strokeWidth={1.25} />} title="Ein leeres Blatt."
+                        text="Dieser Eintrag hat noch keinen Text. MÔRA erfindet keinen Inhalt."
+                        action={canEditCoreDocument ? { label: 'Jetzt schreiben', onClick: handleStartEditing } : sourceFileId ? { label: 'Originaldatei öffnen', onClick: () => void handleOpenOriginal() } : null} />
+                </div>
+            );
         }
         return (
             <div className="flex items-center justify-center h-full p-6">
@@ -426,7 +436,14 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full" data-uv2-app="document">
+            {uv2() && !isLoading && !loadError && !metadata?.audit && !isEditing && (
+                <AppHero app="document" eyebrow={[isPDF ? 'PDF' : isImage ? 'Bild' : isVideo ? 'Video' : 'Dokument', (fileExtension || type || '').toUpperCase(), canEditCoreDocument ? 'bearbeitbar' : 'nur lesen'].filter(Boolean).join(' · ')}
+                    title={name}
+                    sub={relations.length > 0 ? `Verbunden mit ${relations.length} weiteren Inhalt${relations.length === 1 ? '' : 'en'}.` : sourceFileId ? `Originaldatei: ${sourceFileName}` : undefined}
+                    figure={content ? content.trim().split(/\s+/).filter(Boolean).length : undefined} figureLabel="Wörter"
+                    action={canEditCoreDocument ? { label: 'Bearbeiten', onClick: handleStartEditing } : sourceFileId ? { label: 'Originaldatei öffnen', onClick: () => void handleOpenOriginal() } : null} />
+            )}
             {navigationContext && (
                 <div className="px-3 py-3 border-b border-cyan-400/10 bg-cyan-500/[0.05]">
                     <CommandReceipt tone="cyan" icon={NavigationIcon} label={navigationSourceLabel}
@@ -451,8 +468,8 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 </div>
             )}
 
-            <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/5">
-                <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-between p-3 border-b border-white/5 bg-white/5" data-uv2-doc-bar>
+                <div className="flex items-center gap-3 min-w-0" data-uv2-doc-chips>
                     {isPDF ? <File size={18} className="text-red-400" />
                         : isImage ? <FileImage size={18} className="text-purple-400" />
                         : isVideo ? <FileVideo size={18} className="text-pink-400" />

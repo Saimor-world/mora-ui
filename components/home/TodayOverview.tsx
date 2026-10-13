@@ -6,6 +6,7 @@ import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type Luci
 import type { TodaySourceStatus } from '@/lib/api/todayClient';
 import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 type TodayCardProps = {
   eyebrow: string;
@@ -206,6 +207,52 @@ export function TodayOverview() {
               : snapshot.status === 'degraded'
                 ? 'teilweise'
                 : 'nicht verfügbar';
+
+  if (isUniverseV2Enabled()) {
+    type Copy = { value: string; detail: string; unavailable?: boolean; attention?: boolean };
+    const sources: { key: string; label: string; icon: LucideIcon; copy: Copy; open: () => void }[] = [
+      { key: 'calendar', label: 'Kalender', icon: CalendarDays, copy: calendarCopy, open: () => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } }) },
+      { key: 'mail', label: 'Post', icon: Mail, copy: mailCopy, open: () => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } }) },
+      { key: 'tasks', label: 'Aufgaben', icon: ListTodo, copy: taskCopy, open: () => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } }) },
+      { key: 'watch', label: 'Wache', icon: Radar, copy: nightwatchCopy, open: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }) },
+    ];
+    const live = sources.filter((x) => !x.copy.unavailable);
+    const fog = sources.filter((x) => x.copy.unavailable);
+    const isLoading = loading && !snapshot;
+    const M: React.CSSProperties = { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase' };
+    return (
+      <section className="mt-16" data-testid="uv2-today">
+        <p style={{ ...M, color: '#D6A848' }}>Heute</p>
+        {/* hd21: Jede Quelle ein Widget – Symbol, Stand, Detail; Tippen öffnet die App. Was fehlt, sagt ehrlich „nicht verbunden“. */}
+        <div className="uv2-todayw mt-4">
+          {sources.map((x) => {
+            const off = x.copy.unavailable;
+            const Icon = x.icon;
+            return (
+              <button key={x.key} type="button" onClick={off ? openIntegrations : x.open} data-testid={`uv2-today-${x.key}`}
+                className="uv2-widget" data-off={off ? '' : undefined} data-attn={!off && x.copy.attention ? '' : undefined}>
+                <span className="uv2-widget__top">
+                  <span className="uv2-widget__ico"><Icon /></span>
+                  <span className="uv2-widget__label">{x.label}</span>
+                  <span className="uv2-widget__go" aria-hidden>{off ? 'Verbinden' : '›'}</span>
+                </span>
+                <span className="uv2-widget__value">{isLoading ? 'Wird gelesen …' : off ? 'Nicht verbunden' : x.copy.value}</span>
+                {!off && !isLoading && x.copy.detail && <span className="uv2-widget__detail">{x.copy.detail}</span>}
+              </button>
+            );
+          })}
+        </div>
+        {fog.length > 0 && !isLoading && (
+          <div className="mt-4 flex items-center gap-6" data-testid="uv2-today-fog">
+            <button type="button" onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white" style={{ color: 'rgba(247,244,233,.6)' }}>
+              {refreshing ? 'Prüft …' : 'Erneut prüfen'}
+            </button>
+          </div>
+        )}
+        {!(calendarCopy as Copy).unavailable && <CalendarContinuity />}
+      </section>
+    );
+  }
 
   return (
     <section className="mt-10">

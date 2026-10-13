@@ -24,6 +24,7 @@ import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/s
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 type OpenTarget = {
   id: string;
@@ -90,7 +91,7 @@ const SECONDARY_AREAS: Area[] = [
   {
     id: 'nightwatch-main',
     type: 'nightwatch',
-    title: 'Nightwatch',
+    title: 'Wache',
     kicker: 'System',
     description: 'Störungen, Hinweise und Dinge, die Aufmerksamkeit brauchen.',
     icon: Radar,
@@ -197,6 +198,10 @@ export const HomeSurfaceUnified: React.FC = () => {
       title: 'Einstellungen',
       size: { width: 920, height: 700 },
     });
+
+  if (isUniverseV2Enabled()) {
+    return <HomeV2 greeting={greeting} firstName={firstName} now={now} onOpen={open} onSearch={openSearch} onSettings={openSettings} onMora={() => openMoraWorkspace({ source: 'home', label: 'Heute' })} onUniverse={() => setCoreMode('explore')} />;
+  }
 
   return (
     <div
@@ -327,3 +332,79 @@ export const HomeSurfaceUnified: React.FC = () => {
     </div>
   );
 };
+
+const V2_GLASS: React.CSSProperties = {
+  background: 'rgba(22,24,30,0.5)',
+  backdropFilter: 'blur(40px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(40px) saturate(160%)',
+  boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.12), 0 12px 32px rgba(0,0,0,0.3)',
+};
+
+/**
+ * Universe v2 – Home auf Apple-Niveau: ein Datum, eine Begrüßung, ein Satz von MÔRA,
+ * ein Eingabefeld. Darunter „Heute“ (ehrlicher Nebel statt vier Fehlerkarten) und alle Orte
+ * in einem ruhigen Raster. Keine Versalien-Eyebrows, keine doppelte Suche/Uhr.
+ */
+function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora, onUniverse }: { greeting: string; firstName: string; now: Date | null; onOpen: (t: OpenTarget) => void; onSearch: () => void; onSettings: () => void; onMora: () => void; onUniverse: () => void }) {
+  const [ask, setAsk] = useState('');
+  const ease = [0.22, 1, 0.36, 1] as const;
+  const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+  const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
+  const M: React.CSSProperties = { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase' };
+  const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
+  return (
+    <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(5,7,6,.7), rgba(5,7,6,.35))' }}>
+      <div className="uv2-grain" aria-hidden />
+      <main className="relative w-full max-w-[1120px]">
+        <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
+            {/* Eine Navigation: Orte oben, Werkzeuge im Dock. Hier nur MÔRAs Präsenz. */}
+            <div data-testid="uv2-home-actions" aria-hidden><PresenceOrb /></div>
+          </div>
+          <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
+            {greeting}{firstName ? `, ${firstName}.` : '.'}
+          </h1>
+          <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>
+            Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
+          </p>
+          <form className="mt-6 max-w-[520px]" data-testid="uv2-home-ask"
+            onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
+              // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
+              useNavStore.getState().setCoreMode('explore');
+              window.setTimeout(() => window.dispatchEvent(new CustomEvent('uv2:ask', { detail: q })), 700); setAsk(''); }}>
+            <label className="flex h-11 items-center gap-3" style={{ borderBottom: '0.5px solid rgba(247,244,233,.18)' }}>
+              <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-light placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ color: '#F7F4E9' }} />
+              <button type="submit" aria-label="Senden" className="transition-colors hover:text-[#D6A848]" style={{ color: 'rgba(247,244,233,.45)' }}>
+                <ArrowRight size={16} strokeWidth={1.25} />
+              </button>
+            </label>
+          </form>
+        </motion.section>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.4 }}>
+          <TodayOverview />
+        </motion.div>
+
+        {/* hd21: Orte als App-Symbole wie ein Home-Bildschirm – Symbol + Name, Beschreibung als Tooltip */}
+        <motion.section className="mt-8" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
+          <p style={{ ...M, color: '#D6A848' }}>Orte</p>
+          <div className="uv2-places mt-4" data-testid="uv2-places">
+            {areas.map((area) => {
+              const Icon = area.icon;
+              return (
+                <button key={area.id} type="button" onClick={() => onOpen(area)} className="uv2-place" title={area.description} data-testid={`uv2-place-${area.id}`}>
+                  <span className="uv2-place__ico"><Icon /></span>
+                  <span className="uv2-place__name">{area.title}</span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.section>
+      </main>
+    </div>
+  );
+}

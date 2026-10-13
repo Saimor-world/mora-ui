@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useOrbStore } from '@/lib/store/orbStore';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { useNavStore } from '@/lib/store/navStore';
 import {
     type RitualSceneId,
@@ -219,8 +220,8 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                 }}
             />
 
-            {/* Layer 3: Grid texture drift — unchanged, serves as structure */}
-            <motion.div
+            {/* Layer 3: Grid texture drift. Universe v2: aus – las sich nach der Kamerafahrt als Scanlines. */}
+            {!isUniverseV2Enabled() && <motion.div
                 className="absolute inset-0"
                 style={{
                     backgroundImage: `repeating-linear-gradient(${sceneProfile.lineAngle}deg, rgba(255,255,255,0.03) 0 1px, transparent 1px 42px)`,
@@ -239,7 +240,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
                     repeat: Infinity,
                     ease: 'easeInOut',
                 }}
-            />
+            />}
 
             {/* Layer 4: Deep scene orb glow — blooms wider with audio */}
             <motion.div

@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { AppProps } from '@/lib/apps/types';
+import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { Segmented } from '@/components/universe/app/Tiles';
 
 type ActivityType = 'document' | 'folder' | 'scan' | 'chat' | 'task' | 'team' | 'generic';
 
@@ -145,6 +147,7 @@ export default function TimelineApp({ paneId }: AppProps) {
             draggable
             resizable
         >
+            {uv2() ? <TimelineV2 items={items} isLoading={isLoading} available={available} refresh={() => void load(true)} /> : (
             <div className="flex h-full min-h-0 flex-col text-white">
                 <header className="border-b border-white/[0.05] px-4 pb-4 pt-2">
                     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -200,6 +203,66 @@ export default function TimelineApp({ paneId }: AppProps) {
                     </div>
                 )}
             </div>
+            )}
         </GlassPanel>
+    );
+}
+
+/** Universe v2: Verlauf als Tagesregister unter einer Bühne mit dem jüngsten Ereignis. */
+function TimelineV2({ items, isLoading, available, refresh }: { items: ActivityItem[]; isLoading: boolean; available: boolean | null; refresh: () => void }) {
+    if (isLoading) return <p className="px-8 py-10 font-mono text-[10px] uppercase tracking-[0.2em] text-[rgba(247,244,233,.5)]">Verlauf wird gelesen …</p>;
+    if (items.length === 0) {
+        return (
+            <div className="flex h-full items-center justify-center">
+                {available === false
+                    ? <AppEmpty glyph={<AlertTriangle size={20} strokeWidth={1.25} />} title="Gerade keine Verbindung." text="Saimôr zeigt keinen leeren Verlauf, solange der echte Stand nicht sicher gelesen werden kann." action={{ label: 'Erneut laden', onClick: refresh }} />
+                    : <AppEmpty glyph={<Activity size={22} strokeWidth={1.25} />} title="Noch ist nichts geschehen." text="Sobald sich Arbeit, Dateien oder Hinweise verändern, erzählt der Verlauf davon – ohne dass du etwas pflegen musst." action={{ label: 'Erneut prüfen', onClick: refresh }} />}
+            </div>
+        );
+    }
+    return <TimelineBoard items={items} refresh={refresh} />;
+}
+
+function TimelineBoard({ items, refresh }: { items: ActivityItem[]; refresh: () => void }) {
+    const [filter, setFilter] = useState<ActivityType | 'all'>('all');
+    const sorted = [...items].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    const dayLabel = (d: Date) => {
+        const diff = Math.round((start.getTime() - new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86400000);
+        return diff <= 0 ? 'Heute' : diff === 1 ? 'Gestern' : d.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+    };
+    const counts = new Map<ActivityType, number>();
+    sorted.forEach((i) => counts.set(i.type, (counts.get(i.type) ?? 0) + 1));
+    const shown = filter === 'all' ? sorted : sorted.filter((i) => i.type === filter);
+    const groups = new Map<string, ActivityItem[]>();
+    shown.forEach((i) => { const k = dayLabel(new Date(i.timestamp)); groups.set(k, [...(groups.get(k) ?? []), i]); });
+    return (
+        <div className="flex h-full min-h-0 flex-col" data-uv2-app="timeline">
+            <div className="uv2-ftool" data-testid="timeline-v2-bar">
+                <Segmented value={filter} onChange={setFilter} label="Art" options={[
+                    { id: 'all' as const, label: `Alle ${sorted.length}`, icon: <Activity /> },
+                    ...[...counts.entries()].map(([t, n]) => { const M = (TYPE_META[t] ?? TYPE_META.generic); const I = M.icon; return { id: t, label: `${n}`, icon: <I aria-label={M.label} /> }; }),
+                ]} />
+                <span style={{ flex: 1 }} />
+                <button type="button" className="uv2-pill" onClick={refresh} aria-label="Aktualisieren" title="Aktualisieren"><RefreshCw /></button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto uv2-tl" data-testid="timeline-v2">
+                {[...groups.entries()].map(([label, list]) => (
+                    <section key={label} className="uv2-tl__day">
+                        <p className="uv2-tl__label">{label}</p>
+                        <ol className="uv2-tl__rail">
+                            {list.map((i) => { const M = TYPE_META[i.type] ?? TYPE_META.generic; const I = M.icon; return (
+                                <li key={i.id} className="uv2-tl__ev" title={[M.label, i.actor, i.description].filter(Boolean).join(' · ')}>
+                                    <time>{new Date(i.timestamp).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</time>
+                                    <span className="uv2-group__ico uv2-tl__ico"><I /></span>
+                                    <span className="uv2-tl__title">{i.title}</span>
+                                    {i.actor ? <span className="uv2-tl__who">{i.actor}</span> : null}
+                                </li>
+                            ); })}
+                        </ol>
+                    </section>
+                ))}
+            </div>
+        </div>
     );
 }

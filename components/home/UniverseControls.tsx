@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -8,6 +8,7 @@ import { useFolders } from '@/lib/queries/useFolders';
 import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -41,6 +42,8 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     contextLabelOverride,
     contextSubtitleOverride,
 }) => {
+    const [lageOpen, setLageOpen] = useState(false);
+    const [still, setStill] = useState(false);
     const user = useSessionStore((state) => state.user);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
@@ -144,6 +147,54 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         (surfaceProfile.isHqSurface || !activeCompanyId)
     );
 
+    // Universe v2: die Kopfleiste ist nur noch ein Schalter „Home | Universe“.
+    // Kein Instanz-Badge, kein Firmenname (steht in MÔRAs Satz), kein zweiter Control-Center-Knopf.
+    if (isUniverseV2Enabled()) {
+        return (
+            <div className="fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-5 text-white" data-testid="uv2-header">
+                {showDeptBack && (
+                    <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
+                        className="flex h-8 items-center gap-1 transition-colors hover:text-white"
+                        style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,233,0.6)' }}>
+                        <ChevronLeft size={15} strokeWidth={1.5} /> Universum
+                    </button>
+                )}
+                {showCoreSurfaceSwitch && (
+                    <div role="tablist" aria-label="Ansicht" className="relative flex h-8 items-center gap-5">
+                        {(['home', 'explore'] as const).map((m) => {
+                            const active = m === 'home' ? coreMode === 'home' : coreMode !== 'home';
+                            return (
+                                <button key={m} type="button" role="tab" aria-selected={active}
+                                    data-testid={m === 'explore' ? 'universe-toggle' : 'home-toggle'}
+                                    onClick={() => setCoreMode(m)}
+                                    className="relative h-8 transition-colors duration-300"
+                                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: active ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                                    {m === 'home' ? 'Home' : 'Universe'}
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+                <button type="button" data-testid="uv2-lage-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Lage = r.dataset.uv2Lage === 'open' ? '' : 'open'; setLageOpen(r.dataset.uv2Lage === 'open'); }}
+                    className="h-8 transition-colors" title="Lage: Post, Kalender, Feed, Wache, Puls, Systemwerte"
+                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    Lage
+                </button>
+                <button type="button" data-testid="uv2-still-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Still = r.dataset.uv2Still === 'on' ? '' : 'on'; setStill(r.dataset.uv2Still === 'on'); }}
+                    className="h-8 transition-colors" title="Still: Seitenwidgets ausblenden, nur Planeten und Begrüßung"
+                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: still ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    Still
+                </button>
+                {showCompanySwitcher && (
+                    <button type="button" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}
+                        className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/70 hover:text-white" style={V2_GLASS}>
+                        <Globe size={13} strokeWidth={1.5} /> {activeCompany?.name}
+                    </button>
+                )}
+            </div>
+        );
+    }
+
     return (
         <div className="fixed left-3 right-3 top-3 z-50 flex min-w-0 items-center justify-between gap-1 rounded-2xl border border-white/[0.10] bg-slate-950/38 px-1.5 py-1.5 text-white shadow-[0_4px_24px_rgba(0,0,0,0.3)] backdrop-blur-xl sm:left-1/2 sm:right-auto sm:top-4 sm:max-w-[min(96vw,920px)] sm:-translate-x-1/2 sm:justify-center sm:gap-2 sm:px-2">
             {showDeptBack && (
@@ -230,6 +281,13 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             </button>
         </div>
     );
+};
+
+const V2_GLASS: React.CSSProperties = {
+    background: 'rgba(18,22,30,0.5)',
+    backdropFilter: 'blur(30px) saturate(160%)',
+    WebkitBackdropFilter: 'blur(30px) saturate(160%)',
+    boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 8px 24px rgba(0,0,0,0.3)',
 };
 
 const CoreSurfaceButton: React.FC<{

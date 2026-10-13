@@ -1,5 +1,7 @@
 'use client';
 
+import { PillButton, Segmented } from '@/components/universe/app/Tiles';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
     AlertCircle,
@@ -20,6 +22,7 @@ import {
     ShieldCheck,
     type LucideIcon,
 } from 'lucide-react';
+import { Sparkles, Globe, Server } from 'lucide-react';
 import { toast } from 'sonner';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { EmailIntegration } from '@/components/integrations/EmailIntegration';
@@ -171,8 +174,12 @@ export default function IntegrationsApp({ paneId }: AppProps) {
         summary,
     } = useCommunicationSurface();
     const { mailPreview, calendarPreview, feedPreview, cloudPreview, refresh: refreshLiveData } = useCommunicationLiveData();
+    const uv2 = isUniverseV2Enabled();
+    const hasLivePreview = Boolean(mailPreview[0] || calendarPreview[0] || feedPreview[0] || cloudPreview[0]);
 
     const [lane, setLane] = useState<Lane>('overview');
+    const [uv2Details, setUv2Details] = useState(false);
+    const [intSel, setIntSel] = useState('mail');
     const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
     const [isConnectingCalendar, setIsConnectingCalendar] = useState(false);
     const [isConnectingGoogle, setIsConnectingGoogle] = useState(false);
@@ -335,8 +342,90 @@ export default function IntegrationsApp({ paneId }: AppProps) {
             {...GLASS_SHEET_PRESENTATION}
         >
             <div className="flex h-full min-h-0 flex-col overflow-hidden">
-                <header className="border-b border-white/[0.07] px-6 py-5">
-                    <div className="flex flex-wrap items-start justify-between gap-5">
+                {uv2 && (
+                    <div className="uv2-ftool" data-testid="int-v2-bar">
+                        {uv2Details ? <PillButton onClick={() => setUv2Details(false)}>‹ Quellen</PillButton> : <span className="uv2-dot" data-on={readiness.ready === readiness.total ? '' : undefined} data-warn={readiness.ready < readiness.total ? '' : undefined} />}
+                        <span className="uv2-ftool__crumb">{readiness.ready} von {readiness.total} verbunden</span>
+                        <span style={{ flex: 1 }} />
+                        <button type="button" className="uv2-pill" aria-label="Aktualisieren" title="Aktualisieren" onClick={() => void refreshAll()}><RefreshCw className={isLoading ? 'animate-spin' : ''} /></button>
+                        {!isReady(overview?.mail?.status, overview?.mail?.configured) && (
+                            <button type="button" className="uv2-pill uv2-pill--gold" disabled={isConnectingGoogle} onClick={() => void connectGoogleAll()}><Globe />{isConnectingGoogle ? 'Verbinde …' : 'Google verbinden'}</button>
+                        )}
+                    </div>
+                )}
+                {uv2 && !uv2Details && (() => {
+                    type Src = { id: string; kind: string; name: string; ok: boolean; status?: string | null; account?: string | null; text: string; preview?: { k: string; v: string } | null; open?: () => void; openLabel?: string; connect?: () => void; connectLabel?: string; setup?: React.ReactNode };
+                    const srcs: Src[] = [
+                        { id: 'mail', kind: 'Post', name: 'Mail', ok: isReady(overview?.mail?.status, overview?.mail?.configured), status: overview?.mail?.status, account: (overview?.mail as any)?.email ?? null, text: buildMailText(overview), preview: mailPreview[0] ? { k: mailPreview[0].from, v: mailPreview[0].subject } : null, open: openMailPane, openLabel: 'Mail öffnen', connect: () => void connectGoogleAll(), connectLabel: 'Mit Google verbinden', setup: <EmailIntegration overviewSnapshot={overview} /> },
+                        { id: 'calendar', kind: 'Zeit', name: 'Kalender', ok: isReady(overview?.calendar?.status, overview?.calendar?.configured), status: overview?.calendar?.status, account: (overview?.calendar as any)?.email ?? null, text: buildCalendarText(overview), preview: calendarPreview[0] ? { k: 'Als Nächstes', v: calendarPreview[0].title } : null, open: openCalendarPane, openLabel: 'Kalender öffnen', connect: () => void connectGoogleCalendar(), connectLabel: isConnectingCalendar ? 'Verbinde …' : 'Google-Kalender verbinden', setup: <CalendarIntegration overviewSnapshot={overview} /> },
+                        { id: 'rss', kind: 'Horizont', name: 'Feeds', ok: isReady(overview?.rss?.status, overview?.rss?.configured), status: overview?.rss?.status, text: 'Quellen, die MÔRA für dich liest.', preview: feedPreview[0] ? { k: 'Neu', v: feedPreview[0].title } : null, setup: <RssIntegration /> },
+                        { id: 'cloud', kind: 'Ablage', name: 'Cloud-Speicher', ok: isReady(overview?.cloud_storage?.status, overview?.cloud_storage?.configured), status: overview?.cloud_storage?.status, text: buildCloudText(overview), preview: cloudPreview[0] ? { k: 'Zuletzt', v: cloudPreview[0].itemName } : null, connect: () => void connectGoogleAll(), connectLabel: 'Drive verbinden', setup: <CloudStorageIntegration /> },
+                        { id: 'assistant', kind: 'Denken', name: 'MÔRA-Assistenz', ok: isReady(overview?.assistant?.status, overview?.capabilities?.assistant_available), status: overview?.assistant?.status, text: buildAssistantText(overview) },
+                        { id: 'browser', kind: 'Gerät', name: 'Browser-Mitteilungen', ok: browserBridge.permission === 'granted', status: browserBridge.permission === 'granted' ? 'connected' : browserBridge.permission === 'denied' ? 'blocked' : 'not_configured', text: browserBridge.permission === 'denied' ? 'Im Browser blockiert – nur dort wieder erlaubbar.' : 'Damit MÔRA dich erreicht, auch wenn das Fenster zu ist.', connect: browserBridge.permission === 'denied' || browserBridge.permission === 'granted' ? undefined : () => void requestBrowserNotifications(), connectLabel: isRequestingNotifications ? 'Frage …' : 'Erlauben', open: browserBridge.permission === 'granted' ? sendBrowserTestNotification : undefined, openLabel: 'Testsignal' },
+                    ];
+                    const icons: Record<string, React.ReactNode> = { mail: <Mail />, calendar: <Calendar />, rss: <Rss />, cloud: <Cloud />, assistant: <Sparkles />, browser: <Bell /> };
+                    const sel = srcs.find((x) => x.id === intSel) ?? srcs[0];
+                    return (
+                        <div className="uv2-conn" data-testid="int-v2-register">
+                            <nav className="uv2-conn__side" aria-label="Quellen">
+                                <span className="uv2-conn__group">Quellen</span>
+                                {srcs.map((x) => (
+                                    <button key={x.id} type="button" className="uv2-conn__item" data-testid={`int-v2-${x.id}`} aria-current={x.id === sel.id ? 'true' : undefined} onClick={() => setIntSel(x.id)}>
+                                        <span className="uv2-conn__ico" data-ok={x.ok ? '' : undefined}>{icons[x.id]}</span>
+                                        <span className="uv2-conn__name">{x.name}</span>
+                                        <span className="uv2-dot" data-on={x.ok ? '' : undefined} />
+                                    </button>
+                                ))}
+                                <span className="uv2-conn__group">System</span>
+                                <button type="button" className="uv2-conn__item" data-testid="int-v2-desktop" onClick={() => { setLane('desktop'); setUv2Details(true); }}><span className="uv2-conn__ico"><Cpu /></span><span className="uv2-conn__name">Desktop & Laufzeit</span></button>
+                                <button type="button" className="uv2-conn__item" data-testid="int-v2-advanced" onClick={() => { setLane('overview'); setUv2Details(true); }}><span className="uv2-conn__ico"><Server /></span><span className="uv2-conn__name">Erweitert</span></button>
+                            </nav>
+                            <section className="uv2-conn__detail" data-testid={`int-v2-detail-${sel.id}`}>
+                                <header className="uv2-conn__head">
+                                    <span className="uv2-conn__big" data-ok={sel.ok ? '' : undefined}>{icons[sel.id]}</span>
+                                    <div className="uv2-conn__title">
+                                        <span className="uv2-conn__kind">{sel.kind}</span>
+                                        <b>{sel.name}</b>
+                                        <span className="uv2-conn__state" data-ok={sel.ok ? '' : undefined}><i />{sel.ok ? 'Verbunden' : sel.status === 'blocked' ? 'Blockiert' : statusLabel(sel.status) === 'Offen' ? 'Nicht verbunden' : statusLabel(sel.status)}{sel.account ? ` · ${sel.account}` : ''}</span>
+                                    </div>
+                                    <div className="uv2-conn__actions">
+                                        {sel.open && sel.ok && <button type="button" className="uv2-pill" onClick={sel.open}><ExternalLink />{sel.openLabel ?? 'Öffnen'}</button>}
+                                        {sel.connect && !sel.ok && <button type="button" className="uv2-pill uv2-pill--gold" onClick={sel.connect}><PlugZap />{sel.connectLabel ?? 'Verbinden'}</button>}
+                                    </div>
+                                </header>
+                                <p className="uv2-conn__text">{sel.text}</p>
+                                {sel.preview && (
+                                    <div className="uv2-conn__preview"><span className="uv2-conn__kind">Gerade sichtbar</span><div><b>{sel.preview.v}</b><small>{sel.preview.k}</small></div></div>
+                                )}
+                                {sel.id === 'assistant' && (
+                                    <div className="uv2-conn__providers">
+                                        {assistantProviders.length ? assistantProviders.map(([provider, meta]) => (
+                                            <div key={provider} className="uv2-conn__prov"><span className="uv2-dot" data-on={meta.healthy ? '' : undefined} data-warn={!meta.healthy && meta.available ? '' : undefined} /><b>{provider}</b><small>Priorität {meta.priority ?? '–'}</small></div>
+                                        )) : <p className="uv2-conn__text">Keine Anbieter-Daten sichtbar.</p>}
+                                    </div>
+                                )}
+                                {sel.id === 'browser' && (
+                                    <div className="uv2-conn__rows">
+                                        <div><span>Freigabe</span><b>{browserBridge.permission === 'granted' ? 'erlaubt' : browserBridge.permission === 'denied' ? 'blockiert' : 'nicht gefragt'}</b></div>
+                                    </div>
+                                )}
+                                {sel.setup && (
+                                    <details className="uv2-conn__setup" open={!sel.ok}>
+                                        <summary><KeyRound />Einrichtung</summary>
+                                        <div className="uv2-conn__setupBody">{sel.setup}</div>
+                                    </details>
+                                )}
+                            </section>
+                        </div>
+                    );
+                })()}
+                {uv2 && uv2Details && (
+                    <div className="uv2-settings-bar" data-testid="int-v2-details-bar">
+                        <Segmented label="Bereich" value={lane} onChange={(v) => setLane(v)} options={laneItems.map((l) => ({ id: l.id, label: l.label, icon: <l.icon /> }))} />
+                    </div>
+                )}
+                {!uv2 && (<header className="border-b border-white/[0.07] px-6 py-5" data-uv2-int-head={uv2 ? '' : undefined}>
+                    <div className="flex flex-wrap items-start justify-between gap-5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                         <div className="min-w-0">
                             <p className="text-[10px] uppercase tracking-[0.28em] text-emerald-200/50">Verbindungszentrale</p>
                             <h2 className="mt-2 text-2xl font-light tracking-[-0.03em] text-white/92">Was Môra wirklich nutzen darf</h2>
@@ -344,6 +433,14 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                 Konten, Datenquellen, Browser-Freigaben und Desktop-Bridge an einem Ort. Erst verbinden, dann kann Môra echte Arbeit sehen.
                             </p>
                         </div>
+                        {uv2 ? (
+                            <div className="flex items-center gap-4 font-mono text-[11px] uppercase tracking-[0.18em] text-white/55" data-testid="int-readiness-line">
+                                <span><span className="text-white/90">{readiness.ready}</span> von {readiness.total} verbunden</span>
+                                <button onClick={() => void refreshAll()} disabled={isLoading} className="inline-flex items-center gap-1.5 text-white/55 transition-colors hover:text-[#D6A848] disabled:opacity-50">
+                                    <RefreshCw size={12} className={isLoading ? 'animate-spin' : ''} />Aktualisieren
+                                </button>
+                            </div>
+                        ) : (
                         <div className="flex items-center gap-3">
                             <div className="rounded-2xl border border-emerald-300/14 bg-emerald-400/[0.07] px-4 py-3 text-right">
                                 <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-100/45">Bereits nutzbar</div>
@@ -358,6 +455,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                 Aktualisieren
                             </button>
                         </div>
+                        )}
                     </div>
                     <div className="mt-5 flex flex-wrap gap-2">
                         {laneItems.map((item) => (
@@ -376,15 +474,24 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                             </button>
                         ))}
                     </div>
-                </header>
+                </header>)}
 
-                <main className="min-h-0 flex-1 overflow-y-auto px-6 py-6">
+                {(!uv2 || uv2Details) && (<main className="min-h-0 flex-1 overflow-y-auto px-6 py-6" data-uv2-flat={uv2 ? '' : undefined}>
                     {isLoading ? (
                         <LoadingState />
                     ) : error ? (
                         <ErrorState error={error} onRetry={() => void refreshAll()} />
                     ) : (
                         <div className="space-y-5">
+                            {uv2 ? (hasLivePreview && (
+                                <section className="space-y-2 border-b border-white/[0.07] pb-4" data-testid="int-live-preview">
+                                    <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-white/40">Gerade sichtbar</p>
+                                    {mailPreview[0] && <SignalLine icon={Mail} label="Mail" text={`${mailPreview[0].from}: ${mailPreview[0].subject}`} />}
+                                    {calendarPreview[0] && <SignalLine icon={Calendar} label="Kalender" text={calendarPreview[0].title} />}
+                                    {feedPreview[0] && <SignalLine icon={Rss} label="Feeds" text={feedPreview[0].title} />}
+                                    {cloudPreview[0] && <SignalLine icon={Cloud} label="Cloud" text={cloudPreview[0].itemName} />}
+                                </section>
+                            )) : (
                             <section className="grid grid-cols-1 gap-4 xl:grid-cols-[1.2fr_0.8fr]">
                                 <div className="rounded-[28px] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(13,43,39,0.28),rgba(3,8,9,0.30))] p-5">
                                     <div className="flex items-start justify-between gap-4">
@@ -393,7 +500,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                             <h3 className="mt-2 text-lg font-medium text-white/90">{readiness.percent}% Integrationsbereit</h3>
                                             <p className="mt-2 text-sm leading-relaxed text-white/55">
                                                 {readiness.ready >= 4
-                                                    ? 'Die Instanz hat genug echte Quellen fuer sinnvolle Môra-Signale.'
+                                                    ? 'Die Instanz hat genug echte Quellen für sinnvolle Môra-Signale.'
                                                     : 'Noch wenige echte Quellen. Verbinde zuerst Browser, Kalender oder Datenquellen.'}
                                             </p>
                                         </div>
@@ -415,6 +522,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                     </div>
                                 </div>
                             </section>
+                            )}
 
                             {lane === 'overview' && (
                                 <section className="space-y-4">
@@ -441,7 +549,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                                     <ConnectionCard
                                         icon={Mail}
                                         title="Mail"
-                                        subtitle="Postfach fuer Môra"
+                                        subtitle="Postfach für Môra"
                                         status={overview?.mail?.status}
                                         body={buildMailText(overview)}
                                         actions={[{ label: 'Mail öffnen', onClick: openMailPane }]}
@@ -563,7 +671,7 @@ export default function IntegrationsApp({ paneId }: AppProps) {
                             )}
                         </div>
                     )}
-                </main>
+                </main>)}
             </div>
         </GlassPanel>
     );
