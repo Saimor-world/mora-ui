@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { isQuietNow, readVoiceWarmth, voiceParams } from '@/lib/os/presence';
 
 export interface UseSpeechSynthesisReturn {
     speak: (text: string, lang?: string) => void;
@@ -34,12 +35,17 @@ export function useSpeechSynthesis(): UseSpeechSynthesisReturn {
     const speak = useCallback(
         (text: string, lang = 'de-DE') => {
             if (!isSupported || !text.trim()) return;
+            // Quiet hours (Einstellungen · Raum): MÔRA stays silent.
+            if (isQuietNow()) return;
 
             // Cancel any currently playing utterance
             window.speechSynthesis.cancel();
 
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = lang;
+            const { pitch, rate } = voiceParams(readVoiceWarmth());
+            utterance.pitch = pitch;
+            utterance.rate = rate;
 
             utterance.onstart = () => setIsSpeaking(true);
             utterance.onend   = () => {

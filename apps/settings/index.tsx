@@ -51,6 +51,7 @@ import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 import { TileGrid, Tile, Switch, Segmented } from '@/components/universe/app/Tiles';
+import { RaumV2 } from '@/apps/settings/RaumV2';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -504,29 +505,19 @@ useEffect(() => {
             {...GLASS_SHEET_PRESENTATION}
         >
             {uv2On() && !isStandardMode && uv2Index ? (
-                <div className="flex h-full flex-col overflow-y-auto" data-testid="settings-v2-index">
-                    <AppHero app="settings" eyebrow={user?.email ?? 'Konto'}
-                        title="Einstellungen"
-                        sub={`${tabs.length} Bereiche. Alles gilt nur für dich – außer wo ausdrücklich Team steht.`}
-                        figure={tabs.length} figureLabel="Bereiche"
-                        action={null} />
-                    {([
-                        ['Du', ['profile', 'appearance', 'audio', 'notifications']],
-                        ['Arbeitsraum', ['workspace-control', 'workspace', 'team']],
-                        ['System', ['system', 'about']],
-                    ] as const).map(([group, ids]) => {
-                        const items = tabs.filter((t) => (ids as readonly string[]).includes(t.id));
-                        if (!items.length) return null;
-                        return (
-                            <TileGrid key={group} label={group}>
-                                {items.map((t) => (
-                                    <Tile key={t.id} testId={`settings-v2-${t.id}`} icon={<t.icon />} label={t.label}
-                                        onClick={() => { setActiveTab(t.id); setUv2Index(false); }} />
-                                ))}
-                            </TileGrid>
-                        );
-                    })}
-                </div>
+                <RaumV2
+                    sections={tabs.map((t) => ({ id: t.id, label: t.label }))}
+                    onOpen={(id) => { setActiveTab(id); setUv2Index(false); }}
+                    scene={ritualAutoTime ? getAutoRitualScene(new Date()) : ritualSceneId}
+                    autoTime={ritualAutoTime}
+                    onScene={handleSelectRitualScene}
+                    onToggleAuto={handleToggleRitualAutoTime}
+                    ambientOn={ambientAudioEnabled}
+                    volume={ambientAudioVolume}
+                    onToggleAmbient={handleAmbientAudioToggle}
+                    onVolume={handleAmbientVolumeChange}
+                    saveSetting={saveSetting}
+                />
             ) : (
             <div className="flex h-full overflow-hidden" data-uv2-settings-detail={uv2On() && !isStandardMode ? '' : undefined}>
                 {/* ── Sidebar ─────────────────────────────────────────── */}
@@ -582,7 +573,7 @@ useEffect(() => {
                     {/* Section header */}
                     {uv2On() && !isStandardMode && (
                         <div className="uv2-settings-bar">
-                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)}>‹ Alle</button>
+                            <button type="button" className="uv2-pill" onClick={() => setUv2Index(true)} data-testid="settings-back-raum">‹ Raum</button>
                             <span className="uv2-settings-bar__title">{tabs.find((t) => t.id === activeTab)?.label}</span>
                         </div>
                     )}
