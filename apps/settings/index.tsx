@@ -49,6 +49,7 @@ import { requestProductTourRestart } from '@/lib/onboarding/productTourStore';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { WorkspaceControlTab } from '@/apps/settings/WorkspaceControlTab';
 import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { RegisterSection, RegisterRow } from '@/components/universe/app/Register';
 
 const UV2_SETTINGS_LINES: Record<string, string> = {
     profile: 'Wer du bist – und wie MÔRA dich ansprechen soll.',
@@ -56,6 +57,7 @@ const UV2_SETTINGS_LINES: Record<string, string> = {
     appearance: 'Wie Saimôr für dich aussieht.',
     audio: 'Klang, Stille und die Musik im Hintergrund.',
     notifications: 'Wann dich etwas erreichen darf.',
+    workspace: 'Bereiche und Räume deiner Organisation.',
     team: 'Wer mitarbeitet, und mit welchen Rechten.',
     system: 'Wie es dem System gerade geht.',
     about: 'Was Saimôr ist, und in welcher Version es läuft.',
@@ -96,6 +98,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
 
     const requestedSection = typeof initialData?.section === 'string' ? initialData.section : null;
     const [activeTab, setActiveTab] = useState(requestedSection || 'profile');
+    const [uv2Index, setUv2Index] = useState(!requestedSection);
     const [theme, setTheme] = useState('deep-space');
     const [language, setLanguage] = useState('en');
     const [reducedMotion, setReducedMotion] = useState(false);
@@ -499,7 +502,32 @@ useEffect(() => {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex h-full overflow-hidden">
+            {uv2On() && !isStandardMode && uv2Index ? (
+                <div className="flex h-full flex-col overflow-y-auto" data-testid="settings-v2-index">
+                    <AppHero app="settings" eyebrow={`Einstellungen · ${user?.email ?? 'dein Konto'}`}
+                        title="Wie Saimôr für dich arbeitet."
+                        sub={`${tabs.length} Bereiche. Alles gilt nur für dich – außer wo ausdrücklich Team steht.`}
+                        figure={tabs.length} figureLabel="Bereiche"
+                        action={{ label: 'Profil öffnen', onClick: () => { setActiveTab('profile'); setUv2Index(false); } }} />
+                    {([
+                        ['Du', ['profile', 'appearance', 'audio', 'notifications']],
+                        ['Arbeitsraum', ['workspace-control', 'workspace', 'team']],
+                        ['System', ['system', 'about']],
+                    ] as const).map(([group, ids]) => {
+                        const items = tabs.filter((t) => (ids as readonly string[]).includes(t.id));
+                        if (!items.length) return null;
+                        return (
+                            <RegisterSection key={group} label={group} count={items.length}>
+                                {items.map((t) => (
+                                    <RegisterRow key={t.id} testId={`settings-v2-${t.id}`} meta={t.label} title={UV2_SETTINGS_LINES[t.id] ?? t.label} side="öffnen"
+                                        onClick={() => { setActiveTab(t.id); setUv2Index(false); }} />
+                                ))}
+                            </RegisterSection>
+                        );
+                    })}
+                </div>
+            ) : (
+            <div className="flex h-full overflow-hidden" data-uv2-settings-detail={uv2On() && !isStandardMode ? '' : undefined}>
                 {/* ── Sidebar ─────────────────────────────────────────── */}
                 <div data-uv2-settings-nav={uv2On() && !isStandardMode ? '' : undefined} className={`flex flex-col shrink-0 border-r ${isStandardMode ? 'w-52 border-gray-200 bg-gray-50' : 'w-52 border-white/[0.07] bg-black/20'}`}>
                     {/* Logo / header */}
@@ -555,6 +583,7 @@ useEffect(() => {
                         const idx = tabs.findIndex(t => t.id === activeTab);
                         const t = tabs[idx];
                         return (
+                            <><div className="px-8 pt-4"><button type="button" className="uv2-regaction" onClick={() => setUv2Index(true)}>← Alle Einstellungen</button></div>
                             <AppHero app="settings" eyebrow={`Einstellungen · ${t?.label ?? ''}`}
                                 title={UV2_SETTINGS_LINES[activeTab] ?? (t?.label ?? 'Einstellungen')}
                                 sub="Änderungen gelten sofort und nur für dein Konto, außer wo ausdrücklich Team steht."
@@ -565,7 +594,7 @@ useEffect(() => {
                                         if (activeTab === 'system') { void loadCompanies(); void loadTree(); return; }
                                         const el = document.querySelector<HTMLElement>('[data-uv2-settings-body] input:not([type=hidden]), [data-uv2-settings-body] select, [data-uv2-settings-body] textarea, [data-uv2-settings-body] button');
                                         el?.scrollIntoView({ block: 'center', behavior: 'smooth' }); el?.focus();
-                                    } }} />
+                                    } }} /></>
                         );
                     })()}
                     <div data-uv2-legacy-head={uv2On() && !isStandardMode ? '' : undefined} className={`sticky top-0 z-10 px-6 pt-5 pb-3 border-b ${isStandardMode ? 'bg-white border-gray-200' : 'bg-black/30 border-white/[0.06] backdrop-blur-sm'}`}>
@@ -1828,6 +1857,7 @@ SMTP_TLS=true`}</pre>
                     </div>
                 </div>
             </div>
+            )}
         </GlassPanel>
     );
 }
