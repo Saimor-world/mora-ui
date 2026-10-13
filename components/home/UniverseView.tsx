@@ -405,8 +405,14 @@ export default function UniverseView() {
 
         nightwatchIncidents.slice(0, 4).forEach((incident) => {
             const assignedId = incident.department_id || incident.affected_department_id;
+            // Ohne Zuordnung und ohne Namenstreffer gehört ein Vorfall zur Wache
+            // (Betrieb/Sicherheit) – dort entsteht Aufmerksamkeit, nicht im Nirgendwo.
+            const wache = accessibleDepartments.find((d) => /wache|watch|sicherheit|betrieb/i.test(String(d.name || '')));
+            const status = String(incident.status || 'open').toLowerCase();
+            if (['resolved', 'closed', 'dismissed'].includes(status)) return;
             const targetId = assignedId
-                || match(String(incident.title || '') + ' ' + String(incident.summary || ''));
+                || match(String(incident.title || '') + ' ' + String(incident.summary || ''))
+                || (wache ? String(wache.id) : null);
             if (!targetId || !normalized.some((department) => department.id === targetId)) return;
             result.push({
                 id: incident.id,
@@ -616,6 +622,9 @@ export default function UniverseView() {
                 onOpen={navigateToDepartment}
                 attentionId={attention?.targetId ?? null}
                 onOpenMoon={(folderId, folderName) => {
+                    // Mond des Sammelplaneten "Weitere" = ein ganzer Bereich: direkt dorthin.
+                    const overflowDept = capped.overflow.find((d) => String(d.id) === folderId);
+                    if (overflowDept) { navigateToDepartment(String(overflowDept.id)); return; }
                     // In den Ordner selbst, nicht in ein generisches Fenster:
                     // navigateToFolder setzt den Kontext, der Finder oeffnet
                     // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.

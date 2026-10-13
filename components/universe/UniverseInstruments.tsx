@@ -190,13 +190,22 @@ export function LageSignals(props: {
     props.mail.slice(0, 2).forEach((m) => sigs.push({ kind: 'Mail', title: m.subject, when: relativeTime(m.date), t: Date.parse(m.date || '') || 0, open: props.onOpenMail }));
     props.feed.slice(0, 1).forEach((f) => sigs.push({ kind: 'Feed', title: f.title, t: 0, open: props.onOpenFeed }));
     const list = sigs.slice(0, 4);
-    const busiest = [...props.substanceBars].sort((a, b) => b.documents - a.documents)[0];
+    const [focus, setFocus] = React.useState<{ vorn: string[]; ruhig: string[] }>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2Attention?: { vorn: string[]; ruhig: string[] } }).__uv2Attention) || { vorn: [], ruhig: [] });
+    React.useEffect(() => {
+        const on = (e: Event) => setFocus((e as CustomEvent).detail);
+        window.addEventListener('uv2:attention', on);
+        return () => window.removeEventListener('uv2:attention', on);
+    }, []);
     const deutung: string[] = [];
     const nOpen = props.openIncidents.length;
     if (nOpen) deutung.push(nOpen === 1 ? 'Ein offener Vorfall braucht einen Blick.' : `${nOpen} offene Vorfälle brauchen einen Blick.`);
-    if (props.calendar.length) deutung.push(`${props.calendar.length === 1 ? 'Ein Termin' : props.calendar.length + ' Termine'} im Horizont.`);
-    if (props.mail.length) deutung.push(`${props.mail.length === 1 ? 'Eine Nachricht' : props.mail.length + ' Nachrichten'} im Eingang.`);
-    if (busiest && busiest.documents > 0) deutung.push(`Die meiste Arbeit liegt in ${busiest.name}.`);
+    if (!focus.vorn.length && props.calendar.length) deutung.push(`${props.calendar.length === 1 ? 'Ein Termin' : props.calendar.length + ' Termine'} im Horizont.`);
+    if (!focus.vorn.length && props.mail.length) deutung.push(`${props.mail.length === 1 ? 'Eine Nachricht' : props.mail.length + ' Nachrichten'} im Eingang.`);
+    // Gleiche Logik wie das Feld: was vorn steht, wird benannt; Ruhiges auch.
+    const und = (xs: string[]) => xs.length < 2 ? xs.join('') : xs.slice(0, -1).join(', ') + ' und ' + xs[xs.length - 1];
+    if (focus.vorn.length) deutung.push(`Im Vordergrund: ${und(focus.vorn)}.`);
+    const ruhig = focus.ruhig.filter((n) => n !== 'Weitere');
+    if (ruhig.length) deutung.push(ruhig.length > 2 ? `${ruhig.length} Bereiche sind ruhig.` : `Ruhig: ${und(ruhig)}.`);
 
     return (
         <div className="uv2-instruments uv2-lage-left" data-testid="uv2-lage-signale">

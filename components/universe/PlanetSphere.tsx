@@ -51,7 +51,7 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
 
 export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any> }) {
   const uid = useId().replace(/:/g, '');
-  const m = MATERIALS[planetMaterialKey(name)];
+  const m = planetMaterial(name);
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
@@ -122,7 +122,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
 
 /** Mondfarbe passend zum Material (Tageston, leicht entsättigt). */
 export function planetMoonTone(name: string): { day: string; atmo: string } {
-  const m = MATERIALS[planetMaterialKey(name)];
+  const m = planetMaterial(name);
   return { day: m.day, atmo: m.atmo };
 }
 
@@ -155,4 +155,41 @@ export function AmbientMoons({ name, size, seed = 1 }: { name: string; size: num
 }
 
 /** Material eines Planeten für Innenansichten (Horizont). */
-export function planetMaterial(name: string) { return MATERIALS[planetMaterialKey(name)]; }
+/**
+ * Material je Bereich. Bekannte Bereiche haben ein kuratiertes Material; jeder
+ * andere bekommt ein erzeugtes, stabiles (aus dem Namen) – nie Grau. Der Farbton
+ * meidet die kuratierten Töne, damit kein Bereich wie ein anderer aussieht.
+ */
+const CURATED_HUES = [38, 200, 22, 248, 172];
+const PALETTE_HUES = [8, 62, 88, 120, 142, 218, 278, 302, 326, 350];
+const generatedCache = new Map<string, Material>();
+function hsl(h: number, s: number, l: number): string {
+  s /= 100; l /= 100;
+  const k = (n: number) => (n + h / 30) % 12;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n: number) => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+  const x = (v: number) => Math.round(v * 255).toString(16).padStart(2, '0');
+  return '#' + x(f(0)) + x(f(8)) + x(f(4));
+}
+export function generatedMaterial(name: string): Material {
+  const key = name.trim().toLowerCase();
+  const hit = generatedCache.get(key);
+  if (hit) return hit;
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  const hue = PALETTE_HUES[h % PALETTE_HUES.length] + ((h >>> 8) % 9) - 4;
+  const sat = 28 + ((h >>> 12) % 18);
+  const m: Material = {
+    day: hsl(hue, sat + 10, 76), mid: hsl(hue, sat, 38), night: hsl(hue, sat, 7),
+    fx: 0.6 + ((h >>> 4) % 30) / 10, fy: 1.5 + ((h >>> 9) % 70) / 10, oct: 3 + ((h >>> 3) % 3),
+    relief: 0.4 + ((h >>> 6) % 30) / 100,
+    atmo: (() => { const c = hsl(hue, sat + 20, 82); return [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)).join(','); })(),
+  };
+  generatedCache.set(key, m);
+  return m;
+}
+void CURATED_HUES;
+export function planetMaterial(name: string): Material {
+  const k = planetMaterialKey(name);
+  return k === 'default' ? generatedMaterial(name) : MATERIALS[k];
+}

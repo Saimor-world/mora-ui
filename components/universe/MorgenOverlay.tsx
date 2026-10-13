@@ -329,7 +329,7 @@ export function MorgenOverlay() {
 
       {/* Frag MÔRA – eine Haarlinie, keine zweite Kapsel über dem Dock */}
       {!night && !detailOpen && !paneOpen && (
-        <div className="absolute bottom-[112px] -translate-x-1/2" style={{ left: cx + shift, width: wide ? 'min(420px,40vw)' : 'min(520px,86vw)', transition: `left 1.1s ${UV.easeInOut}` }}>
+        <div data-uv2-askwrap className="absolute bottom-[112px] -translate-x-1/2" style={{ left: cx + shift, width: wide ? 'min(420px,40vw)' : 'min(520px,86vw)', transition: `left 1.1s ${UV.easeInOut}` }}>
         <form data-testid="uv2-ask" className="group relative pointer-events-auto" style={{ animation: `uv2in .6s ${ease} ${delay + 0.8}s both` }}
           onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return; space.ask(q, mode); setAsk(''); }}>
           <label className="flex h-11 items-center gap-3" style={{ borderBottom: `0.5px solid ${askFocus ? 'rgba(214,168,72,0.6)' : UV.c(0.16)}`, transition: 'border-color .4s' }}>

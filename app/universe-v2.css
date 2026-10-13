@@ -382,3 +382,10 @@ html[data-uv2=on] [data-uv2-attn] .uv2-planet { transition: filter 1.6s cubic-be
 html[data-uv2=on] [data-uv2-attn="vorn"] { z-index: 15; }
 html[data-uv2=on] [data-uv2-attn="vorn"] .uv2-planet { filter: brightness(1.1) drop-shadow(0 0 22px rgba(214,168,72,.18)); }
 html[data-uv2=on] [data-uv2-attn="ruhig"] .uv2-planet { filter: brightness(.8) saturate(.82); }
+/* hd11: Still – Fragezeile über Spalten 4–12 */
+@media (min-width: 1280px) {
+  html[data-uv2=on][data-uv2-still=on]:not([data-uv2-lage=open]) [data-uv2-askwrap] {
+    left: calc(var(--g-m) + var(--g-3) + var(--g-g) + (100vw - 2 * var(--g-m) - var(--g-3) - var(--g-g)) / 2) !important;
+    width: calc(100vw - 2 * var(--g-m) - var(--g-3) - var(--g-g)) !important;
+  }
+}

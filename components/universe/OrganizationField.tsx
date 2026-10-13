@@ -132,6 +132,13 @@ export function OrganizationField({
         const scores = attentionScores(territories.map((t) => t.id), signals);
         return { scores, any: Object.values(scores).some((v) => v > 0) };
     }, [territories, signals]);
+    // Dieselbe Rangfolge geht an die Deutung (LAGE), damit Text und Feld übereinstimmen.
+    useEffect(() => {
+        const ranked = territories.map((t) => ({ name: t.name, score: attention.scores[t.id] || 0 })).sort((a, b) => b.score - a.score);
+        const detail = { vorn: ranked.filter((r) => r.score >= 0.6).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score === 0).map((r) => r.name) : [] };
+        (window as unknown as { __uv2Attention?: typeof detail }).__uv2Attention = detail;
+        window.dispatchEvent(new CustomEvent('uv2:attention', { detail }));
+    }, [territories, attention]);
     const publishedRef = useRef('');
 
     useLayoutEffect(() => {
