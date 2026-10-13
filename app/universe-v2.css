@@ -703,3 +703,7 @@ html[data-uv2="on"] [data-uv2-app="work"] > section > div, html[data-uv2="on"] [
 html[data-uv2="on"] [data-uv2-app="work"] [class*="tracking-[0.22em]"] { font-family: var(--uv-mono); color: var(--uv-gold) !important; font-size: 10px !important; }
 html[data-uv2="on"] [data-uv2-app="work"] h3 { font-family: var(--uv-serif); font-weight: 400 !important; font-size: 20px !important; color: rgb(var(--uv-cream)) !important; }
 html[data-uv2="on"] [data-uv2-hero="work"] { margin: -4px -4px 0 -4px; }
+html[data-uv2="on"] [data-uv2-app="work-session"] { background: none !important; }
+html[data-uv2="on"] [data-uv2-app="work-session"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-app="work-session"] [class*="text-amber-300"] { color: var(--uv-gold) !important; font-family: var(--uv-mono); }
+html[data-uv2="on"] [data-uv2-app="work-session"] .border-blue-400\/25 { border-color: rgba(var(--uv-gold-rgb), .4) !important; }

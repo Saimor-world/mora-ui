@@ -1,5 +1,6 @@
 ﻿'use client';
 
+import { AppHero, AppEmpty, uv2 } from '@/components/universe/app/AppStage';
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
@@ -535,10 +536,23 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
             onFocus={() => focusPane(paneId)}
             isActive={isActive}
         >
-            <div className="flex flex-col h-full bg-black/60 rounded-b-2xl overflow-hidden">
+            <div className="flex flex-col h-full bg-black/60 rounded-b-2xl overflow-hidden" data-uv2-app="work-session">
                 {isLoading && <div className="flex-1 flex items-center justify-center"><Loader2 size={22} className="animate-spin text-white/25" /></div>}
 
-                {!isLoading && error && (
+                {!isLoading && error && uv2() && (
+                    <div className="flex-1 flex items-center justify-center">
+                        <AppEmpty glyph={<XCircle size={20} strokeWidth={1.25} />} title="Der Plan ist gerade nicht erreichbar."
+                            text="Es wurde nichts ausgeführt, der Stand bleibt erhalten. Öffne das Fenster gleich noch einmal." />
+                    </div>
+                )}
+                {!isLoading && !error && !plan && uv2() && (
+                    <div className="flex-1 flex items-center justify-center">
+                        <AppEmpty glyph={<Loader2 size={20} strokeWidth={1.25} />} title="Noch kein Plan."
+                            text="Wenn MÔRA eine Aufgabe in Schritte zerlegt, siehst du hier jeden Schritt – und bestätigst, bevor etwas geschrieben wird."
+                            action={{ label: 'MÔRA um einen Plan bitten', onClick: () => openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 960, height: 720 } }) }} />
+                    </div>
+                )}
+                {!isLoading && error && !uv2() && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="red" icon={XCircle} label="Arbeitsplan nicht erreichbar" title={error}
                             body="Der Plan konnte gerade nicht geladen werden. Bitte dieses Fenster schließen und erneut öffnen, wenn der Fehler bleibt."
@@ -546,7 +560,7 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
                     </div>
                 )}
 
-                {!isLoading && !error && !plan && (
+                {!isLoading && !error && !plan && !uv2() && (
                     <div className="flex-1 flex items-center justify-center p-8 text-center">
                         <CommandReceipt tone="slate" label="Arbeitsplan" title="Kein Plan geladen."
                             body="Mora zeigt hier nur einen vorhandenen Plan an. Sobald ein Plan angelegt oder geöffnet wurde, erscheint er in dieser Fläche."
@@ -556,7 +570,12 @@ export default function WorkSessionApp({ paneId, initialData = {} }: AppProps) {
 
                 {plan && (
                     <div className="flex-1 overflow-y-auto">
-                        <div className="px-5 pt-5 pb-4 border-b border-white/[0.05]">
+                        {uv2() && (
+                            <AppHero app="work-session" eyebrow={'Arbeitsplan · ' + (stateBadge?.label || 'geladen')}
+                                title={plan.title} sub={pendingSteps.length > 0 ? `${pendingSteps.length} Schritt${pendingSteps.length === 1 ? ' wartet' : 'e warten'} auf deine Bestätigung. Nichts wird geschrieben, bevor du zustimmst.` : (plan.summary || 'MÔRA zeigt nur den Zustand, den der Kern geliefert hat.')}
+                                figure={totalCount > 0 ? `${completedCount ?? timelineSteps.filter((s) => s.status === 'done').length}/${totalCount}` : undefined} figureLabel="Schritte fertig" />
+                        )}
+                        <div className="px-5 pt-5 pb-4 border-b border-white/[0.05]" data-uv2-legacy-head>
                             <CommandReceipt tone={receiptTone} label={stateBadge?.label || 'Arbeitsplan'} title={plan.title}
                                 body={plan.summary || 'Der Plan ist geladen und Mora zeigt hier die aktuelle Arbeit und ihre Statuslage.'}
                                 chips={[
