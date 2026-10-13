@@ -11,7 +11,7 @@ import type { AppCategory } from '@/lib/apps/types';
 
 const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
     core: 'Kern',
-    intelligence: 'Intelligence',
+    intelligence: 'Intelligenz',
     workspace: 'Arbeitsbereich',
     people: 'Menschen',
     system: 'System',

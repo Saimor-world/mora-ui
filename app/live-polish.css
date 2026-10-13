@@ -74,3 +74,5 @@ html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] > div > div:first-child svg { color: #D6A848 !important; width: 26px; height: 26px; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] p + p { display: block !important; text-transform: none !important; letter-spacing: 0 !important; font-family: Inter, sans-serif !important; max-width: 460px; margin: 6px auto 0; font-size: 13px !important; color: rgba(247,244,233,.5) !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-drop][data-uv2-drop][data-uv2-drop] p:first-child { font-size: 15px !important; color: rgba(247,244,233,.88) !important; }
+/* Wache: Zahlen in klaren Versalziffern (0/1 sahen in der Serif wie O/I aus) */
+html[data-uv2="on"] .uv2-watch__stat b { font-variant-numeric: lining-nums tabular-nums; font-family: Inter, system-ui, sans-serif; font-weight: 500; }
