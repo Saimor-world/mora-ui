@@ -73,6 +73,7 @@ import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
 import { AppHero, AppEmpty, uv2 as uv2On } from '@/components/universe/app/AppStage';
+import { RegisterSection, RegisterRow } from '@/components/universe/app/Register';
 import { useExecutionSubscription } from '@/lib/hooks/useExecutionSubscription';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 
@@ -2315,7 +2316,29 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                     transition={{ duration: 0.2, ease: "easeOut" }}
                                     className="h-full"
                                 >
-                                    {viewMode === 'grid' ? (
+                                    {uv2On() && viewMode !== 'graph' ? (
+                                        <div className="-mx-3 md:-mx-6" data-testid="finder-v2-register" onClick={(e) => e.stopPropagation()}>
+                                            {filteredFolders.length > 0 && (
+                                                <RegisterSection label="Ordner" count={filteredFolders.length}>
+                                                    {filteredFolders.map((folder) => (
+                                                        <RegisterRow key={folder.id} testId={`finder-v2-folder-${folder.id}`} meta="Ordner" title={folder.name}
+                                                            side="öffnen →" onClick={() => navigateToFolder(folder.id)} />
+                                                    ))}
+                                                </RegisterSection>
+                                            )}
+                                            {displayFiles.length > 0 && (
+                                                <RegisterSection label="Dateien" count={displayFiles.length}>
+                                                    {displayFiles.map((file) => (
+                                                        <RegisterRow key={file.id} testId={`finder-v2-file-${file.id}`}
+                                                            tone={resonanceIds.includes(file.id) ? 'gold' : undefined}
+                                                            meta={file.type === 'file' ? getSourceFileSecondaryLabel(file) : getContentSecondaryLabel(file)}
+                                                            title={file.name} side={getNodeOpenActionLabel(file)}
+                                                            onClick={() => { checkResonance(file.id); openFinderNode(file); }} />
+                                                    ))}
+                                                </RegisterSection>
+                                            )}
+                                        </div>
+                                    ) : viewMode === 'grid' ? (
                                         /* GRID VIEW - RESPONSIVE */
                                         <div className="space-y-6" data-uv2-finder-grid={uv2On() ? '' : undefined}>
                                             <div className="min-w-0 space-y-6">
