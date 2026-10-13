@@ -1,5 +1,5 @@
 ﻿'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { VisibilityModal } from '@/components/content/VisibilityModal';
@@ -33,6 +33,7 @@ import { surfaceNavigationOutcome } from '@/lib/utils/searchOpen';
 import { toIntakeChoiceResult } from '@/lib/finder/intakeChoice';
 import type { FileIntakeRouteDecision } from '@/lib/finder/intakeTypes';
 import type { AppProps } from '@/lib/apps/types';
+import { AppHero, uv2 as uv2On } from '@/components/universe/app/AppStage';
 
 interface IntakeContext {
     suggested_category?: string;
@@ -130,6 +131,8 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
 
     const [files, setFiles] = useState<ScannedFile[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const scanInputRef = useRef<HTMLInputElement>(null);
+    const uv2 = uv2On();
     const [stats, setStats] = useState<SystemStats | null>(null);
     const [pendingActions, setPendingActions] = useState<PendingAction[]>([]);
     const [isBatchProcessing, setIsBatchProcessing] = useState(false);
@@ -861,8 +864,19 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
             draggable
             resizable
         >
-            <div className="flex flex-col h-full p-4 gap-4 overflow-hidden">
-                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5">
+            <div className="flex flex-col h-full p-4 gap-4 overflow-hidden" data-uv2-app={uv2 ? 'scanner' : undefined}>
+                {uv2 && (() => {
+                    const open = files.filter(f => f.status !== 'done').length;
+                    const done = files.length - open;
+                    return (
+                        <AppHero app="scanner" eyebrow={activeCompanyName ? `Eingang · für ${activeCompanyName}` : 'Eingang · keine Organisation'}
+                            title={!activeCompanyName ? 'Wähle zuerst eine Organisation.' : files.length === 0 ? 'Leg ab, was eingeordnet werden soll.' : open === 0 ? 'Alles ist eingeordnet.' : `${open} ${open === 1 ? 'Datei wartet' : 'Dateien warten'} auf Einordnung.`}
+                            sub={files.length ? `${done} von ${files.length} erledigt. Du entscheidest, wohin jede Datei gehört.` : 'PDFs, Bilder und Office-Dateien landen zuerst als Datei – Inhalte entstehen nur, wenn du es willst.'}
+                            figure={files.length ? open : undefined} figureLabel="offen"
+                            action={activeCompanyName ? { label: 'Dateien wählen', onClick: () => scanInputRef.current?.click() } : null} />
+                    );
+                })()}
+                <div className="flex flex-wrap items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-4 py-2.5" data-uv2-legacy-head={uv2 ? '' : undefined}>
                     <span className={`rounded-full border px-2.5 py-1 text-[11px] ${activeCompanyName ? 'border-purple-400/15 bg-purple-500/10 text-purple-100/85' : 'border-amber-500/30 bg-amber-500/10 text-amber-200/90'}`}>
                         {activeCompanyName ? `Einordnung für ${activeCompanyName}` : 'Keine Organisation – Upload nicht möglich'}
                     </span>
@@ -874,6 +888,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                 {/* Drop Zone */}
                 <div
                     data-file-drop-zone="local"
+                    data-uv2-drop={uv2 ? '' : undefined}
                     onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
                     onDragLeave={() => setIsDragging(false)}
                     onDrop={handleDrop}
@@ -883,6 +898,7 @@ export default function ScannerApp({ paneId, initialData }: AppProps) {
                         }`}
                 >
                     <input
+                        ref={scanInputRef}
                         type="file"
                         multiple
                         onChange={handleFileInput}
