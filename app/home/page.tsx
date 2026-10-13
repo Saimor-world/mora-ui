@@ -29,6 +29,11 @@ const MoraShell = nextDynamic(
     },
 );
 
+const JarvisLayer = nextDynamic(
+    () => import('@/components/jarvis/JarvisLayer').then((m) => ({ default: m.JarvisLayer })),
+    { ssr: false },
+);
+
 const MorgenOverlay = nextDynamic(
     () => import('@/components/universe/MorgenOverlay').then((m) => ({ default: m.MorgenOverlay })),
     { ssr: false },
@@ -42,6 +47,7 @@ export default function HomePage() {
             <>
                 <MoraShell />
                 <MorgenOverlay />
+                <JarvisLayer />
             </>
         );
     }
