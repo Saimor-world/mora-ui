@@ -945,3 +945,25 @@ html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-s
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] > :last-child { background: transparent !important; border: 0 !important; padding: 4px 0 0 !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] > :last-child button { border-radius: 999px !important; font: 500 12px var(--uv-sans) !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] > :last-child button[class*="emerald"], html[data-uv2="on"] body:not(.standard-mode) [data-uv2-scan-approval][data-uv2-scan-approval] > :last-child button[class*="amber"] { background: var(--uv-gold) !important; color: #050706 !important; border-color: transparent !important; }
+/* ═══ hd18 global OS pass: registers become grouped OS lists, less prose ═══ */
+html[data-uv2="on"] .uv2-register { margin: 8px 24px 16px !important; padding: 0 !important; border-radius: 14px; overflow: hidden; background: rgba(247,244,233,.03); border: 1px solid rgba(247,244,233,.07); }
+html[data-uv2="on"] .uv2-register > li { border-bottom: 1px solid rgba(247,244,233,.06) !important; }
+html[data-uv2="on"] .uv2-register > li:last-child { border-bottom: 0 !important; }
+html[data-uv2="on"] .uv2-register__row { padding: 10px 14px !important; row-gap: 2px !important; }
+html[data-uv2="on"] .uv2-register__row:hover { padding-left: 14px !important; background: rgba(214,168,72,.07) !important; }
+html[data-uv2="on"] .uv2-register__title { font-family: var(--uv-sans) !important; font-size: 13.5px !important; font-weight: 500; line-height: 1.35 !important; }
+html[data-uv2="on"] .uv2-register__meta { font-family: var(--uv-sans) !important; font-size: 10.5px !important; letter-spacing: .04em !important; text-transform: none !important; color: rgba(var(--uv-cream), .45) !important; }
+html[data-uv2="on"] .uv2-register__text { -webkit-line-clamp: 1 !important; font-size: 12px !important; color: rgba(var(--uv-cream), .45) !important; }
+html[data-uv2="on"] .uv2-register__side { font-family: var(--uv-sans) !important; letter-spacing: 0 !important; text-transform: none !important; font-size: 11.5px !important; }
+html[data-uv2="on"] .uv2-regsec { padding: 4px 0 8px !important; }
+html[data-uv2="on"] .uv2-regsec__head { margin: 0 28px; border-bottom: 0 !important; font-family: var(--uv-sans) !important; font-weight: 600; letter-spacing: .06em !important; color: rgba(var(--uv-cream), .45) !important; padding-bottom: 0 !important; }
+html[data-uv2="on"] .uv2-regsec .uv2-register { margin-top: 6px !important; }
+html[data-uv2="on"] .uv2-regactions { padding: 0 14px 10px !important; gap: 8px !important; }
+html[data-uv2="on"] .uv2-regaction { font-family: var(--uv-sans) !important; letter-spacing: 0 !important; text-transform: none !important; font-size: 11.5px !important; padding: 4px 12px !important; border-radius: 999px; background: rgba(247,244,233,.07); border: 1px solid rgba(247,244,233,.1) !important; }
+html[data-uv2="on"] .uv2-regaction--primary { background: var(--uv-gold) !important; color: #050706 !important; border-color: transparent !important; }
+html[data-uv2="on"] .uv2-section { font-family: var(--uv-sans) !important; font-weight: 600; letter-spacing: .06em !important; color: rgba(var(--uv-cream), .45) !important; padding: 16px 28px 0 !important; }
+html[data-uv2="on"] .uv2-hero__eyebrow { font-family: var(--uv-sans) !important; font-weight: 600; letter-spacing: .08em !important; }
+html[data-uv2="on"] .uv2-hero__action { border-radius: 999px !important; font-family: var(--uv-sans) !important; letter-spacing: 0 !important; text-transform: none !important; }
+html[data-uv2="on"] .uv2-empty__text { display: none !important; }
+html[data-uv2="on"] .uv2-empty__title { font-family: var(--uv-sans) !important; font-size: 15px !important; font-weight: 500 !important; }
+html[data-uv2="on"] .uv2-empty__action { border-radius: 999px !important; font-family: var(--uv-sans) !important; letter-spacing: 0 !important; text-transform: none !important; }
