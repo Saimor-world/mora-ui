@@ -213,6 +213,13 @@ export function MorgenOverlay() {
   // Sternbilder hängen an echten Planeten, in fester Reihenfolge von oben nach unten.
   const usable = [...anchors].sort((a, b) => a.y - b.y || a.x - b.x);
   const items = night ? [] : (data?.items ?? []).slice(0, Math.min(4, usable.length));
+  // Autonomie: was heute wichtig ist, zählt auch im Feld (gleiche Quelle, gleiche Wahrheit).
+  const areasKey = items.map((it) => it.area || '').join('|');
+  useEffect(() => {
+    const areas = areasKey.split('|').filter(Boolean);
+    (window as unknown as { __uv2TodayAreas?: string[] }).__uv2TodayAreas = areas;
+    window.dispatchEvent(new CustomEvent('uv2:today-areas', { detail: areas }));
+  }, [areasKey]);
   const quiet = space.state.status !== 'idle';
   const slots = assignToPlanets(items, usable.map((a) => a.name));
   const watch = anchors.find((a) => /wache|watch/i.test(a.name));
@@ -287,7 +294,7 @@ export function MorgenOverlay() {
                   <span style={{ ...TYPE.meta, color: hover === i ? UV.gold : UV.c(0.35), transition: 'color .3s' }}>{String(i + 1).padStart(2, '0')}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block" style={{ ...TYPE.text, fontWeight: 400, color: UV.c(hover === null || hover === i ? 0.92 : 0.6), transition: 'color .3s' }}>{it.title}</span>
-                    <span className="mt-1 block" style={{ ...TYPE.meta, color: UV.c(0.35) }}>{it.area || it.source.split('·')[0].trim()}</span>
+                    <span className="mt-1 block" style={{ ...TYPE.meta, color: UV.c(0.62) }}>{it.area || it.source.split('·')[0].trim()}</span>
                   </span>
                 </li>
               ))}

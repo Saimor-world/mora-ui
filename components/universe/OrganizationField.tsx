@@ -127,15 +127,27 @@ export function OrganizationField({
     // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
+    const [todayAreas, setTodayAreas] = useState<string[]>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2TodayAreas?: string[] }).__uv2TodayAreas) || []);
+    useEffect(() => {
+        const on = (e: Event) => setTodayAreas(((e as CustomEvent).detail as string[]) || []);
+        window.addEventListener('uv2:today-areas', on);
+        return () => window.removeEventListener('uv2:today-areas', on);
+    }, []);
     // Autonomie: Môra ordnet nach Aufmerksamkeit (echte Signale), nicht nach Menge.
     const attention = useMemo(() => {
-        const scores = attentionScores(territories.map((t) => t.id), signals);
+        const extra: Record<string, number> = {};
+        todayAreas.forEach((area, i) => {
+            const a = area.trim().toLowerCase();
+            const t = territories.find((x) => x.name.trim().toLowerCase() === a);
+            if (t) extra[t.id] = (extra[t.id] || 0) + (i === 0 ? 2.5 : 2);
+        });
+        const scores = attentionScores(territories.map((t) => t.id), signals, extra);
         return { scores, any: Object.values(scores).some((v) => v > 0) };
-    }, [territories, signals]);
+    }, [territories, signals, todayAreas]);
     // Dieselbe Rangfolge geht an die Deutung (LAGE), damit Text und Feld übereinstimmen.
     useEffect(() => {
         const ranked = territories.map((t) => ({ name: t.name, score: attention.scores[t.id] || 0 })).sort((a, b) => b.score - a.score);
-        const detail = { vorn: ranked.filter((r) => r.score >= 0.6).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score === 0).map((r) => r.name) : [] };
+        const detail = { vorn: ranked.filter((r) => r.score >= 0.85).map((r) => r.name), ruhig: attention.any ? ranked.filter((r) => r.score < 0.35).map((r) => r.name) : [] };
         (window as unknown as { __uv2Attention?: typeof detail }).__uv2Attention = detail;
         window.dispatchEvent(new CustomEvent('uv2:attention', { detail }));
     }, [territories, attention]);

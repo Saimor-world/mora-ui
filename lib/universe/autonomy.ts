@@ -42,8 +42,8 @@ export type AttentionLevel = 'vorn' | 'mitte' | 'ruhig';
 
 export function attentionLevel(score: number, anySignal: boolean): AttentionLevel {
     if (!anySignal) return 'mitte';
-    if (score >= 0.6) return 'vorn';
-    if (score > 0) return 'mitte';
+    if (score >= 0.85) return 'vorn';
+    if (score >= 0.35) return 'mitte';
     return 'ruhig';
 }
 
