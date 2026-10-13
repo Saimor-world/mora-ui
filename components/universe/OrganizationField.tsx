@@ -11,6 +11,7 @@ import { useUniverseFieldStore } from '@/lib/store/universeFieldStore';
 import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -228,9 +229,12 @@ export function OrganizationField({
                     zusammenhaengt") - seit die beiden Linsen zu einem Feld
                     verschmolzen sind, gibt es nur noch eine Frage, die dieser
                     Ort beantwortet. */}
+                {/* Universe v2: MÔRAs Begrüßung ist die eine Überschrift – kein zweiter Titel. */}
+                {!isUniverseV2Enabled() && (
                 <h1 className="text-[clamp(1.45rem,2.2vw,2.25rem)] font-light tracking-[-0.035em] text-white/92">
                     Woraus {organizationName} besteht
                 </h1>
+                )}
                 {/* Die erklaerende Zeile darunter ("Echte Bereiche, ihr Umfang...")
                     ist raus. Sie erklaerte die Metapher - nuetzlich beim ersten
                     Mal, aber sie besetzte genau den Streifen, den das Datenband
@@ -493,9 +497,9 @@ function Territory({
             )}
             <span className="mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
             <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
-                <span>{territory.spaces} Bereiche</span>
+                <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
                 <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
-                <span>{territory.documents} Docs</span>
+                <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
             </span>
             {/* Was sich hier bewegt - an einer FESTEN Stelle unter dem
                 Planeten, nicht als schwebendes Etikett am kreisenden Mond.
@@ -556,7 +560,7 @@ function MobileTerritory({
             </span>
             <span className="mt-3 max-w-full truncate text-sm font-medium text-white/84">{territory.name}</span>
             <span className="mt-1 text-[9px] uppercase tracking-[0.12em] text-white/30">
-                {territory.spaces} Bereiche · {territory.documents} Docs
+                {territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'} · {territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}
             </span>
         </button>
     );

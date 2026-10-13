@@ -13,6 +13,7 @@ import type { UniverseSignal } from '@/lib/universe/types';
 import { OrganizationField, type OrganizationTerritory } from '@/components/universe/OrganizationField';
 import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
@@ -501,7 +502,8 @@ export default function UniverseView() {
                 />
             )}
 
-            <UniverseObservatory
+            {/* Universe v2: die vier Seitenkarten weichen – MÔRA bündelt sie in einem Satz und einem Vorschlag. */}
+            {!isUniverseV2Enabled() && <UniverseObservatory
                 mail={mailPreview}
                 calendar={calendarPreview}
                 feed={feedPreview}
@@ -519,7 +521,7 @@ export default function UniverseView() {
                 onOpenCalendar={() => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 980, height: 700 } })}
                 onOpenFeed={() => openPane({ id: 'feeds-main', type: 'feeds', title: 'Dein Feed', size: { width: 920, height: 680 } })}
                 onOpenNightwatch={() => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } })}
-            />
+            />}
 
 
             {/* Der Umschalter "Organisation | Zusammenhaenge" ist entfernt.

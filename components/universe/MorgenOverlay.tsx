@@ -153,81 +153,92 @@ export function MorgenOverlay() {
   // Nur im Universe (wenn echte Planeten sichtbar sind) – sonst bleibt das OS unberührt.
   if (anchors.length === 0) return null;
 
+  const n = items.length;
+  const SUB: Record<DayPhase, string> = {
+    morgen: n ? `${n === 1 ? 'Eine Sache ist' : `${['', '', 'Zwei', 'Drei', 'Vier'][n]} Dinge sind`} heute wichtig${data?.proposal ? ' – eine wartet auf dich.' : '.'}` : 'Nichts drängt heute.',
+    tag: n ? 'Nur was sich bewegt, leuchtet.' : 'Alles ruhig.',
+    abend: 'Heute: 3 Vorschläge, 2 freigegeben, 1 offen bis morgen. Die Wache war still.',
+    nacht: 'Alles ruht. Nur die Wache bleibt wach.',
+  };
+  const ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[40]" data-testid="universe-v2-overlay" data-phase={phase}>
+    <div className="pointer-events-none fixed inset-0 z-[40] antialiased" data-testid="universe-v2-overlay" data-phase={phase}
+      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", system-ui, sans-serif' }}>
       {/* Tagesphase: leiser Schleier über dem bestehenden Hintergrund */}
       <div className="absolute inset-0 transition-[background] duration-[3000ms]" style={{ background: TINT[phase] }} />
 
-      {/* MÔRAs warmes Licht nahe der Mitte */}
+      {/* MÔRAs Licht – kein Ring, kein Text darin, nur Atem */}
       <div className="absolute left-1/2 top-[49%] -translate-x-1/2 -translate-y-1/2">
-        <div className="h-44 w-44 rounded-full" style={{ background: `radial-gradient(circle, rgba(255,214,150,${night ? 0.10 : 0.22}) 0%, rgba(255,190,120,0.06) 40%, transparent 70%)`, animation: 'uv2breath 7s ease-in-out infinite' }} />
+        <div className="h-56 w-56 rounded-full" style={{ background: `radial-gradient(circle, rgba(255,222,170,${night ? 0.08 : 0.16}) 0%, rgba(255,200,140,0.04) 42%, transparent 70%)`, animation: `uv2breath 9s ${ease} infinite` }} />
       </div>
 
-      {/* Begrüßung oben, schmal */}
-      <div className="absolute left-1/2 top-[53%] w-[280px] -translate-x-1/2 text-center">
-        <p className="font-light tracking-wide text-white/80" style={{ fontSize: 15 }}>{GREETING[phase]}</p>
-        {phase === 'abend' && <p className="mt-1 text-[11px] leading-snug text-white/45">Heute: 3 Vorschläge, 2 freigegeben, 1 offen bis morgen. Die Wache war still.</p>}
-        {night && <p className="mt-1 text-xs text-white/40">Alles ruht. Nur die Wache bleibt wach.</p>}
-      </div>
+      {/* Eine Überschrift: MÔRAs Begrüßung + ein Satz. Ersetzt „Woraus … besteht“. */}
+      <header className="absolute left-1/2 top-[104px] w-[min(640px,90vw)] -translate-x-1/2 text-center" data-testid="uv2-greeting"><div style={{ animation: `uv2in 1.2s ${ease} both` }}>
+        <h1 className="font-semibold text-white" style={{ fontSize: 34, lineHeight: '40px', letterSpacing: '-0.022em', textShadow: '0 2px 24px rgba(0,0,0,0.55)' }}>{GREETING[phase]}</h1>
+        <p className="mt-2 text-white/60" style={{ fontSize: 15, lineHeight: '20px', letterSpacing: '-0.01em', textShadow: '0 1px 12px rgba(0,0,0,0.6)' }}>{SUB[phase]}</p>
+      </div></header>
 
-      {/* Sternbilder an echten Planeten, je mit Quellenzeile */}
+      {/* Sternbilder an echten Planeten – zwei Textebenen, gleiche Abstände */}
       {items.map((it, i) => {
         const slot = slots[i];
         if (slot === null) return null;
         const a = usable[slot];
-        const W = 160;
-        const toLeft = a.x < cx - 40; // Text nach außen, weg von MÔRAs Licht und den Planetennamen
-        const left = toLeft ? a.x - a.r - 10 - W : a.x + a.r + 10;
+        const toLeft = a.x < cx - 40;
+        // Rechts nie unter das Vorschlagsfeld laufen (rechter Rand 24 + Breite 296 + Luft 24).
+        const limit = showComet ? vw - 24 - 296 - 24 : vw - 24;
+        const W = toLeft ? 176 : Math.max(120, Math.min(176, limit - (a.x + a.r + 16)));
+        const left = toLeft ? a.x - a.r - 16 - W : a.x + a.r + 16;
         return (
-          <div key={i} className="absolute flex items-start gap-2" data-testid="uv2-constellation"
-            style={{ left: Math.max(12, left), top: a.y - a.r - 6, width: W, flexDirection: toLeft ? 'row-reverse' : 'row', textAlign: toLeft ? 'right' : 'left' }}>
+          <div key={i} className="absolute flex items-start gap-2.5" data-testid="uv2-constellation"
+            style={{ left: Math.max(24, left), top: a.y - a.r - 4, width: W, flexDirection: toLeft ? 'row-reverse' : 'row', textAlign: toLeft ? 'right' : 'left', animation: `uv2in 1.4s ${ease} ${0.6 + i * 0.25}s both` }}>
             <Constellation seed={i} dim={phase === 'abend'} />
-            <div className="min-w-0">
-              <p className="text-[12px] leading-tight text-white/85">{it.title}</p>
-              <p className="mt-0.5 text-[10px] uppercase tracking-[0.12em] text-amber-100/45">{it.source}</p>
+            <div className="min-w-0" style={{ textShadow: '0 1px 10px rgba(0,0,0,0.75)' }}>
+              <p className="font-medium text-white/90" style={{ fontSize: 13, lineHeight: '17px', letterSpacing: '-0.005em' }}>{it.title}</p>
+              <p className="mt-1 text-white/45" style={{ fontSize: 11, lineHeight: '14px' }}>{it.source}</p>
             </div>
           </div>
         );
       })}
 
-      {/* Nachts leuchtet nur die Wache */}
       {night && watch && (
         <div className="absolute rounded-full" data-testid="uv2-watch-glow"
-          style={{ left: watch.x - watch.r * 2.2, top: watch.y - watch.r * 2.2, width: watch.r * 4.4, height: watch.r * 4.4, background: 'radial-gradient(circle, rgba(229,115,115,0.22), transparent 65%)', animation: 'uv2breath 6s ease-in-out infinite' }} />
+          style={{ left: watch.x - watch.r * 2.2, top: watch.y - watch.r * 2.2, width: watch.r * 4.4, height: watch.r * 4.4, background: 'radial-gradient(circle, rgba(229,115,115,0.18), transparent 65%)', animation: `uv2breath 8s ${ease} infinite` }} />
       )}
 
       {today === 'nebel' && (
-        <p className="absolute left-1/2 top-[56%] -translate-x-1/2 text-xs italic text-white/40">MÔRAs Tagesbild liegt noch im Nebel – Quelle nicht erreichbar.</p>
+        <p className="absolute left-1/2 top-[160px] -translate-x-1/2 text-[13px] text-white/45">MÔRAs Tagesbild liegt noch im Nebel – Quelle nicht erreichbar.</p>
       )}
 
-      {/* Komet + ruhiges Seitenfeld */}
+      {/* Komet: eine feine Spur, die im Vorschlag endet */}
       {showComet && data?.proposal && (
         <>
-          <div className="absolute" data-testid="uv2-comet" style={{ right: 300, top: 150, width: 120, height: 1.5, transform: 'rotate(-28deg)', transformOrigin: 'right center', background: 'linear-gradient(to left, rgba(255,236,200,0.95), rgba(255,236,200,0.25) 30%, transparent)', borderRadius: 2, boxShadow: '2px 0 8px rgba(255,230,190,0.8)' }} />
-          <aside className="pointer-events-auto absolute right-7 top-[184px] w-[262px] rounded-2xl border border-white/10 bg-black/45 p-4 backdrop-blur-md" data-testid="uv2-proposal">
-            <p className="text-[10px] uppercase tracking-[0.18em] text-amber-100/60">Vorschlag</p>
-            <p className="mt-1.5 text-[14px] leading-snug text-white/90">{data.proposal.label}</p>
-            <p className="mt-1.5 text-[11.5px] leading-relaxed text-white/55">{data.proposal.reason}</p>
-            <p className="mt-3 text-[10px] uppercase tracking-[0.12em] text-white/35">Quelle · {data.proposal.sources.join(' · ')}</p>
-            <div className="mt-4 flex gap-2">
-              <button type="button" disabled={demo} className="rounded-full bg-amber-100/90 px-4 py-1.5 text-xs text-black disabled:opacity-70">Ja, freigeben</button>
-              <button type="button" onClick={() => setDismissed(true)} className="rounded-full border border-white/15 px-4 py-1.5 text-xs text-white/70">Später</button>
+          <div className="absolute" data-testid="uv2-comet" style={{ right: 24 + 296 - 8, top: 212, width: 96, height: 1, transform: 'rotate(-24deg)', transformOrigin: 'right center', background: 'linear-gradient(to left, rgba(255,240,215,0.9), transparent)', animation: `uv2fade 1.6s ${ease} 1.4s both` }} />
+          <aside className="pointer-events-auto absolute right-6 top-[200px] w-[296px] rounded-[20px] p-5" data-testid="uv2-proposal"
+            style={{ background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), inset 0 1px 0 rgba(255,255,255,0.06), 0 20px 50px rgba(0,0,0,0.45)', animation: `uv2in 1.2s ${ease} 1.8s both` }}>
+            <p className="font-medium text-amber-100/70" style={{ fontSize: 12, lineHeight: '16px' }}>MÔRA schlägt vor</p>
+            <p className="mt-2 font-semibold text-white" style={{ fontSize: 17, lineHeight: '22px', letterSpacing: '-0.015em' }}>{data.proposal.label}</p>
+            <p className="mt-2 text-white/60" style={{ fontSize: 13, lineHeight: '18px' }}>{data.proposal.reason}</p>
+            <p className="mt-3 text-white/40" style={{ fontSize: 11, lineHeight: '14px' }}>Quelle: {data.proposal.sources.join(', ')}</p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button type="button" disabled={demo} className="h-9 rounded-full bg-white font-semibold text-black transition-transform active:scale-[0.97] disabled:opacity-80" style={{ fontSize: 13 }}>Freigeben</button>
+              <button type="button" onClick={() => setDismissed(true)} className="h-9 rounded-full font-medium text-white/80 transition-colors hover:bg-white/15" style={{ fontSize: 13, background: 'rgba(255,255,255,0.08)' }}>Später</button>
             </div>
           </aside>
         </>
       )}
 
-      {/* Ehrlicher Nebel für nicht angeschlossene Quellen */}
+      {/* Ehrlicher Nebel – eine leise Zeile, kein Kasten */}
       {!!data?.nebel?.length && !night && (
-        <div className="absolute bottom-[92px] left-1/2 -translate-x-1/2 whitespace-nowrap rounded-xl px-3 py-2 text-center" style={{ background: 'rgba(255,255,255,0.03)', filter: 'blur(0px)' }} data-testid="nebel">
-          <p className="text-[11px] italic text-white/45"><span className="not-italic text-[10px] uppercase tracking-[0.14em] text-white/35">Im Nebel · noch nicht angeschlossen:</span> {data.nebel.join(' · ')}</p>
-        </div>
+        <p className="absolute bottom-[124px] left-1/2 -translate-x-1/2 whitespace-nowrap text-white/40" data-testid="nebel" style={{ fontSize: 12, textShadow: '0 1px 8px rgba(0,0,0,0.7)' }}>
+          Noch im Nebel: {data.nebel.join(', ')}
+        </p>
       )}
 
       {demo && (
-        <div className="absolute left-7 top-6 rounded-full border border-amber-200/30 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-amber-100/80">Entwurf · Beispieldaten</div>
+        <div className="absolute left-6 top-6 rounded-full px-2.5 py-1 font-medium text-amber-100/75" style={{ fontSize: 11, background: 'rgba(0,0,0,0.35)', boxShadow: 'inset 0 0 0 0.5px rgba(255,220,160,0.3)' }}>Entwurf · Beispieldaten</div>
       )}
-      <style>{`@keyframes uv2breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.08);opacity:1}}`}</style>
+      <style>{`@keyframes uv2breath{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.05);opacity:1}}@keyframes uv2fade{from{opacity:0}to{opacity:1}}@keyframes uv2in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){[data-testid=universe-v2-overlay] *{animation:none!important}}`}</style>
     </div>
   );
 }
