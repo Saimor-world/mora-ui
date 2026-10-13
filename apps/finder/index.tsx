@@ -2336,6 +2336,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
                                                         key={folder.id}
                                                         onClick={(e: React.MouseEvent) => handleFolderClick(e, folder.id)}
                                                         onContextMenu={(e: React.MouseEvent) => handleContextMenu(e, folder, 'folder')}
+                                                        data-uv2-folder={uv2On() ? '' : undefined}
                                                         className={`${folderCardClass} overflow-hidden border transition-all duration-200 flex flex-col gap-3 cursor-pointer group relative hover:-translate-y-1 active:scale-[0.985] ${isSelected
                                                             ? 'bg-[linear-gradient(160deg,rgba(16,185,129,0.24),rgba(6,95,70,0.12)_52%,rgba(1,14,12,0.8))] border-emerald-300/55 shadow-[0_28px_80px_rgba(0,0,0,0.34),0_0_34px_rgba(16,185,129,0.14)]'
                                                             : 'bg-[radial-gradient(circle_at_20%_0%,rgba(59,130,246,0.1),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.065),rgba(255,255,255,0.018)_54%,rgba(0,0,0,0.12))] border-white/[0.08] hover:bg-[radial-gradient(circle_at_20%_0%,rgba(16,185,129,0.16),transparent_42%),linear-gradient(160deg,rgba(255,255,255,0.09),rgba(255,255,255,0.028))] hover:border-emerald-200/18 hover:shadow-[0_22px_60px_rgba(0,0,0,0.28)]'
