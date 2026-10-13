@@ -91,7 +91,7 @@ const SECONDARY_AREAS: Area[] = [
   {
     id: 'nightwatch-main',
     type: 'nightwatch',
-    title: 'Nightwatch',
+    title: 'Wache',
     kicker: 'System',
     description: 'Störungen, Hinweise und Dinge, die Aufmerksamkeit brauchen.',
     icon: Radar,
@@ -354,7 +354,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[12vh] antialiased sm:px-10 lg:px-24"
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
       style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(5,7,6,.7), rgba(5,7,6,.35))' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
@@ -370,7 +370,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>
             Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
           </p>
-          <form className="mt-8 max-w-[520px]" data-testid="uv2-home-ask"
+          <form className="mt-6 max-w-[520px]" data-testid="uv2-home-ask"
             onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
               // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
               useNavStore.getState().setCoreMode('explore');
@@ -390,7 +390,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
         </motion.div>
 
         {/* hd21: Orte als App-Symbole wie ein Home-Bildschirm – Symbol + Name, Beschreibung als Tooltip */}
-        <motion.section className="mt-14" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
+        <motion.section className="mt-8" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.55 }}>
           <p style={{ ...M, color: '#D6A848' }}>Orte</p>
           <div className="uv2-places mt-4" data-testid="uv2-places">
             {areas.map((area) => {
