@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import "./globals.css";
 import "./saimor-next.css";
 import "./universe-v2.css";
+import "./live-polish.css";
 import { isUniverseV2Enabled } from "@/lib/universe/morgen";
 import { UV2_FONTS_HREF } from "@/lib/universe/tokens";
 import "react-grid-layout/css/styles.css";

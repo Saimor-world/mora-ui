@@ -1809,7 +1809,7 @@ export default function FinderApp({ paneId, initialData = {} }: AppProps) {
     return (
         <>
             <GlassPanel
-                title={<span className="normal-case text-[11px] tracking-[0.22em] text-emerald-100/78">{finderTitle}</span>}
+                title={finderTitle}
                 width={pane.size.width}
                 height={pane.size.height}
                 initialX={pane.position.x}

@@ -219,7 +219,7 @@ export function TodayOverview() {
     const live = sources.filter((x) => !x.copy.unavailable);
     const fog = sources.filter((x) => x.copy.unavailable);
     const isLoading = loading && !snapshot;
-    const M: React.CSSProperties = { fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase' };
+    const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
     return (
       <section className="mt-16" data-testid="uv2-today">
         <p style={{ ...M, color: '#D6A848' }}>Heute</p>

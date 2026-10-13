@@ -155,7 +155,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 {showDeptBack && (
                     <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
                         className="flex h-8 items-center gap-1 transition-colors hover:text-white"
-                        style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(247,244,233,0.6)' }}>
+                        style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(247,244,233,0.6)' }}>
                         <ChevronLeft size={15} strokeWidth={1.5} /> Universum
                     </button>
                 )}
@@ -168,7 +168,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                                     data-testid={m === 'explore' ? 'universe-toggle' : 'home-toggle'}
                                     onClick={() => setCoreMode(m)}
                                     className="relative h-8 transition-colors duration-300"
-                                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: active ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                                    style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: active ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
                                     {m === 'home' ? 'Home' : 'Universe'}
                                 </button>
                             );
@@ -177,12 +177,12 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 )}
                 <button type="button" data-testid="uv2-lage-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Lage = r.dataset.uv2Lage === 'open' ? '' : 'open'; setLageOpen(r.dataset.uv2Lage === 'open'); }}
                     className="h-8 transition-colors" title="Lage: Post, Kalender, Feed, Wache, Puls, Systemwerte"
-                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
                     Lage
                 </button>
                 <button type="button" data-testid="uv2-still-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Still = r.dataset.uv2Still === 'on' ? '' : 'on'; setStill(r.dataset.uv2Still === 'on'); }}
                     className="h-8 transition-colors" title="Still: Seitenwidgets ausblenden, nur Planeten und Begrüßung"
-                    style={{ fontFamily: '"Space Mono", ui-monospace, monospace', fontSize: 10, letterSpacing: '0.22em', textTransform: 'uppercase', color: still ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
+                    style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: still ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
                     Still
                 </button>
                 {showCompanySwitcher && (

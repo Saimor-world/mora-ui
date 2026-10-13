@@ -728,12 +728,12 @@ export const Dock = () => {
             case 'cockpit':  openPane({ id: 'apps-main', type: 'apps', title: 'Arbeit', size: { width: 980, height: 760 } }); break;
             case 'map':      useNavStore.getState().navigateToExplore(); break;
             case 'ambient':  toggleVoiceOverlay(); break;
-            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MORA',           size: { width: 860, height: 680 } }); break;
+            case 'chat':     openPane({ id: 'chat-main',     type: 'chat',     title: 'MÔRA',           size: { width: 860, height: 680 } }); break;
             case 'finder':   openPane({ id: 'finder-main',   type: 'finder',   title: 'Finder',         size: { width: 1280, height: 820 } }); break;
             case 'dateien':  openPane({ id: 'dateien-main',  type: 'meine-dateien', title: 'Dateien',   size: { width: 1180, height: 780 } }); break;
             case 'team':     openPane({ id: 'team-main',     type: 'team',     title: 'Team',           size: { width: 900, height: 640 } }); break;
             case 'notes':    openPane({ id: 'notes-main',    type: 'notes',    title: 'Notizen',        size: { width: 720, height: 560 } }); break;
-            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Saim?r Setup', size: { width: 920, height: 700 }, data: { section: 'workspace-control' } }); break;
+            case 'settings': openPane({ id: 'settings-main', type: 'settings', title: 'Saimôr Setup', size: { width: 920, height: 700 }, data: { section: 'workspace-control' } }); break;
             case 'desk':     window.open(ESTATE.desk, '_blank', 'noopener,noreferrer'); break;
             // ── Curated demo destinations (public_playground only) ──────
             case 'dossier': {
@@ -1637,7 +1637,7 @@ export const Dock = () => {
                                                             ))}
                                                         </div>
                                                         <div className="mt-1 flex items-center justify-between gap-2 border-t border-white/[0.08] px-2 pt-2">
-                                                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/45" style={{ fontFamily: '"Space Mono", ui-monospace, monospace' }}>Steuerung · Fokus · Modus</span>
+                                                            <span className="text-[10px] uppercase tracking-[0.2em] text-white/45" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>Steuerung · Fokus · Modus</span>
                                                             <div className="flex items-center gap-1">
                                                                 {!websiteEntryContext && <FocusModeWidget />}
                                                                 {!websiteEntryContext && <AdminModeSwitcher />}

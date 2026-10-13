@@ -90,7 +90,7 @@ export const SystemStats: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="fixed bottom-24 left-0 right-0 z-[50] pointer-events-none"
         >
-            <div className="flex items-center justify-center gap-6 py-1.5 text-[9px] font-mono text-white/20">
+            <div className="flex items-center justify-center gap-6 py-1.5 text-[12px] font-sans tabular-nums text-white/50">
                 {/* Context */}
                 <div className="flex items-center gap-1.5">
                     <Database size={10} className="opacity-50" />

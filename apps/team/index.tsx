@@ -84,10 +84,10 @@ function memberPosition(
     const col = index % cols;
     const row = Math.floor(index / cols);
     const rows = Math.ceil(total / cols);
-    const jitterX = (((hash >>> 8) & 0xff) / 255) * 20 - 10;
-    const jitterY = (((hash >>> 16) & 0xff) / 255) * 20 - 10;
+    const jitterX = (((hash >>> 8) & 0xff) / 255) * 8 - 4;
+    const jitterY = (((hash >>> 16) & 0xff) / 255) * 8 - 4;
     const x = 15 + (cols > 1 ? (col / (cols - 1)) * 70 : 35) + jitterX;
-    const y = 20 + (rows > 1 ? (row / (rows - 1)) * 50 : 25) + jitterY;
+    const y = 26 + (rows > 1 ? (row / (rows - 1)) * 44 : 22) + jitterY;
     return {
         x: Math.max(10, Math.min(90, x)),
         y: Math.max(10, Math.min(72, y)),
@@ -96,7 +96,7 @@ function memberPosition(
 
 function formatTime(iso: string): string {
     try {
-        return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return new Date(iso).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
     } catch {
         return '';
     }
@@ -318,9 +318,12 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
         });
         const total = sorted.length;
         return sorted.map((member, index) => {
+            // live-polish: bis 6 Menschen in einer ruhigen Reihe – nichts überlappt, auch bei wenig Höhe
             const pos = total === 1
-                ? { x: 50, y: 40 }
-                : memberPosition(member.id, total, index);
+                ? { x: 50, y: 32 }
+                : total <= 6
+                    ? { x: 10 + (index + 0.5) * (80 / total), y: index % 2 === 0 ? 30 : 37 }
+                    : memberPosition(member.id, total, index);
             const delay = index * 0.3;
             const size = member.is_self ? 110 : isOwnerRole(member.role) ? 96 : 80;
             return { member, pos, delay, size };
@@ -404,7 +407,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                         <div className="flex h-full flex-col">
                             {/* Orb canvas — takes most of the height */}
                             <div
-                                className="relative flex-1 overflow-hidden"
+                                className="relative min-h-[260px] flex-1 overflow-hidden"
                                 data-uv2-system-bg=""
                                 style={{
                                     background:
@@ -472,6 +475,8 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                     style={{
                                                         left: `${pos.x}%`,
                                                         top: `${pos.y}%`,
+                                                        // framer-motion ersetzt transform-Klassen: Zentrierung hier, sonst sitzt die Reihe schief
+                                                        x: '-50%',
                                                     }}
                                                 >
                                                     <div className="relative flex items-center justify-center">
@@ -513,7 +518,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                             {member.is_self ? 'Du' : member.name}
                                                         </div>
                                                         <div className="text-[9px] uppercase tracking-widest text-white/35">
-                                                            {member.role}
+                                                            {isOwnerRole(member.role) ? 'Inhaber' : member.role === 'admin' ? 'Admin' : 'Mitglied'}
                                                         </div>
                                                     </div>
                                                 </motion.div>
@@ -523,7 +528,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                             </div>
 
                             {/* ── Group chat strip ── */}
-                            <div className="flex h-48 flex-col border-t border-white/[0.06] bg-black/30">
+                            <div className="flex h-[42%] min-h-[220px] flex-col border-t border-white/[0.06] bg-black/30">
                                 {/* Messages */}
                                 <div className="flex-1 overflow-y-auto px-3 py-2 space-y-2">
                                     {messages.length === 0 && (
@@ -556,7 +561,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                         </span>
                                                     </div>
                                                     <div
-                                                        className={`max-w-[220px] rounded-xl px-3 py-1.5 text-xs text-white/85 ${self ? 'bg-white/10' : 'bg-white/[0.05] border border-white/[0.06]'}`}
+                                                        className={`max-w-[min(520px,75%)] rounded-2xl px-3.5 py-2 text-sm leading-relaxed text-white/85 ${self ? 'bg-white/10' : 'bg-white/[0.05] border border-white/[0.06]'}`}
                                                     >
                                                         {msg.content}
                                                     </div>
