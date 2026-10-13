@@ -663,3 +663,15 @@ html[data-uv2="on"] [data-uv2-cx] { border: 0 !important; background: none !impo
 html[data-uv2="on"] [data-uv2-cx="assistant"] { box-shadow: inset 1px 0 0 rgba(var(--uv-gold-rgb), .45); }
 html[data-uv2="on"] [data-uv2-cx] > div:first-child { font-family: var(--uv-mono); letter-spacing: .22em !important; color: var(--uv-gold) !important; }
 html[data-uv2="on"] [data-uv2-cx="user"] > div:first-child { color: rgba(var(--uv-cream), .5) !important; }
+/* hd14 · Terminal: ruhige Konsole in Saimôr-Farben */
+html[data-uv2="on"] [data-uv2-app="terminal"] { background: rgba(5,7,6,.6) !important; font-family: var(--uv-sans); }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-legacy-head] { display: none !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-line] { font-family: var(--uv-mono); font-size: 13px; line-height: 1.7; }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-line="input"] { color: var(--uv-gold) !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-line="output"] { color: rgba(var(--uv-cream), .82) !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-line="system"] { color: rgba(var(--uv-cream), .5) !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] [data-uv2-line="error"] { color: #E0876A !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] > div:last-child { padding: 14px 32px !important; border-color: var(--uv-hair) !important; background: none !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] > div:last-child span { color: var(--uv-gold) !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime [data-uv2-app="terminal"] input { background: transparent !important; border: 0 !important; font-family: var(--uv-mono) !important; color: rgb(var(--uv-cream)) !important; }
+html[data-uv2="on"] [data-uv2-app="terminal"] > div:nth-last-child(2) { padding: 20px 32px !important; }

@@ -16,6 +16,7 @@
  *   unauthenticated — no user in store; input locked
  */
 
+import { AppHero, uv2 } from "@/components/universe/app/AppStage";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
@@ -580,9 +581,17 @@ export default function TerminalApp({ paneId }: AppProps) {
         >
             <div
                 className="flex flex-col h-full bg-[#0a0a0a] font-mono text-sm cursor-text"
+                data-uv2-app="terminal"
                 onClick={focusInput}
             >
-                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/50">
+                {uv2() && (
+                    <AppHero app="terminal" eyebrow={"Terminal · " + (session ? (session.host_label ?? "Remote") + " · " + (session.cwd ?? "/") : "Rolle " + (user?.role ?? "?"))}
+                        title={connectionState === "ready" ? `Verbunden mit ${session?.host_label ?? "Core"}.` : connectionState === "unauthenticated" ? "Erst anmelden." : connectionState === "checking" ? "Verbindung wird geprüft …" : connectionState === "disconnected" ? "Die Session ist getrennt." : "Core ist gerade nicht erreichbar."}
+                        sub={connectionState === "ready" ? "Jeder Befehl läuft mit deiner Rolle und wird protokolliert." : connectionState === "offline" ? "MÔRA-Befehle bleiben verfügbar. Tippe help für eine Übersicht." : "Tippe reconnect, sobald die Verbindung wieder steht."}
+                        figure={commandHistory.length} figureLabel="Befehle"
+                        action={connectionState === "disconnected" ? { label: "Neu verbinden", onClick: () => void executeCommand("reconnect") } : { label: "Befehle zeigen", onClick: () => void executeCommand("help") }} />
+                )}
+                <div className="flex items-center gap-2 px-4 py-2 border-b border-white/5 bg-black/50" data-uv2-legacy-head>
                     <div className="flex gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-full bg-red-500/50" />
                         <div className="w-2.5 h-2.5 rounded-full bg-yellow-500/50" />
@@ -598,6 +607,7 @@ export default function TerminalApp({ paneId }: AppProps) {
                     {lines.map((line) => (
                         <div
                             key={line.id}
+                            data-uv2-line={line.type}
                             className={`whitespace-pre-wrap break-words ${getLineStyle(line.type)}`}
                         >
                             {line.content}

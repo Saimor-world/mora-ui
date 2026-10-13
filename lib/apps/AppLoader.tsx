@@ -5,6 +5,7 @@ import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React from 'react';
 import dynamic from 'next/dynamic';
 import { ShieldAlert, Sparkles } from 'lucide-react';
+import { AppEmpty } from '@/components/universe/app/AppStage';
 import type { AppProps } from './types';
 import { getAppManifest } from './appRegistry';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -99,7 +100,18 @@ export function AppLoader({ appId, paneId, initialData, onClose, onNavigate }: A
         <p>Diese App ist für deine aktuelle Rolle nicht freigegeben.</p>
       </div>
     );
-    return isUniverseV2Enabled() && paneId ? <PaneWindow paneId={paneId} title={manifest.name}>{denied}</PaneWindow> : denied;
+    if (isUniverseV2Enabled() && paneId) {
+      return (
+        <PaneWindow paneId={paneId} title={manifest.name}>
+          <div className="flex h-full items-center justify-center" role="alert" data-testid={`app-access-denied-${appId}`}>
+            <AppEmpty glyph={<ShieldAlert size={22} strokeWidth={1.25} />} title={`${manifest.name} ist geschützt.`}
+              text="Dieser Systembereich öffnet sich nur mit passender Rolle. Wenn du ihn brauchst, kann eine Inhaberin oder ein Admin ihn freigeben."
+              action={{ label: 'Fenster schließen', onClick: () => usePaneStore.getState().removePane(paneId) }} />
+          </div>
+        </PaneWindow>
+      );
+    }
+    return denied;
   }
 
   return <App paneId={paneId} initialData={initialData} onClose={onClose} onNavigate={onNavigate} />;
