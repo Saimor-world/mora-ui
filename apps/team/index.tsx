@@ -620,7 +620,7 @@ export const TeamApp: React.FC<AppProps> = ({ paneId }) => {
                                                         const aura = getAura(member, currentUser?.role);
                                                         const role = isOwnerRole(member.role) ? 'Inhaber' : member.role === 'admin' ? 'Admin' : 'Mitglied';
                                                         return (
-                                                            <div key={member.id} className="uv2-member" data-testid={`team-member-${member.id}`} data-online={st === 'online' ? '' : undefined}>
+                                                            <div key={member.id} className="uv2-member uv2-tip" data-tip={member.email || undefined} tabIndex={member.email ? 0 : undefined} data-testid={`team-member-${member.id}`} data-online={st === 'online' ? '' : undefined}>
                                                                 <span className="uv2-member__avatar" style={{ ['--aura' as any]: aura }}>{member.name.charAt(0).toUpperCase()}</span>
                                                                 <span className="uv2-member__name">{member.name}{member.is_self && <small>Du</small>}</span>
                                                                 <span className="uv2-member__role">{role}</span>

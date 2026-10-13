@@ -124,7 +124,7 @@ export function CapitalDetailV2({ snap }: { snap: CompanyFinanceSnapshot }) {
                     {listings.length === 0 ? <p className="uv2-capx__empty">Keine offenen Angebote.</p> : (
                         <div className="uv2-capx__listings">
                             {listings.slice(0, 6).map((l) => (
-                                <div key={l.offerId} className="uv2-capx__listing">
+                                <div key={l.offerId} className="uv2-capx__listing uv2-tip" data-tip={`Verkäufer ${l.seller}`} tabIndex={0} aria-label={`${l.nftName}, Verkäufer ${l.seller}`}>
                                     <span className="uv2-capx__gem"><Gem /></span>
                                     <span className="uv2-capx__txt"><b>{l.nftName}</b><small>{l.expiration ? `bis ${day(l.expiration)}` : 'ohne Ablauf'}</small></span>
                                     <span className="uv2-capx__price">{nf(l.askingPriceXrp)}<small>XRP</small></span>
@@ -138,7 +138,7 @@ export function CapitalDetailV2({ snap }: { snap: CompanyFinanceSnapshot }) {
 
             {o && (
                 <section className="uv2-capx__card uv2-capx__origin" data-testid="finance-origin-v2">
-                    <span className="uv2-capx__originArt"><Gem /><i>#111</i></span>
+                    <span className="uv2-capx__originArt uv2-tip" data-tip={`NFT ${o.nftokenId}\nBild ${o.artIpfs}\nMetadaten ${o.metadataIpfs}`} tabIndex={0} aria-label={`NFT-ID ${o.nftokenId}`}><Gem /><i>#111</i></span>
                     <div className="uv2-capx__originBody">
                         <div className="uv2-capx__originTop">
                             <b>{o.name}</b>

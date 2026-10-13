@@ -1414,3 +1414,10 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-bar .uv2-bar__title { margin: 
 .uv2-place__ico svg { width: 24px; height: 24px; stroke-width: 1.5; }
 .uv2-place:hover .uv2-place__ico { transform: translateY(-2px) scale(1.04); }
 .uv2-place__name { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── hd22 Tooltip (Hover + Tastaturfokus) ── */
+.uv2-tip { position: relative; }
+.uv2-tip[data-tip]::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translate(-50%, 4px); z-index: 30; width: max-content; max-width: 340px; padding: 7px 10px; border-radius: 10px; background: rgba(12,13,12,.94); box-shadow: inset 0 0 0 .5px rgba(216,181,106,.35), 0 10px 30px rgba(0,0,0,.5); color: #efe6d2; font: 400 11px/1.45 "Space Mono", ui-monospace, monospace; white-space: pre-wrap; word-break: break-all; text-align: left; opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s cubic-bezier(.23,1,.32,1); }
+.uv2-tip[data-tip]:hover::after, .uv2-tip[data-tip]:focus-visible::after { opacity: 1; transform: translate(-50%, 0); transition-delay: .25s; }
+.uv2-capx__originArt.uv2-tip::after { left: 0; transform: translate(0, 4px); }
+.uv2-capx__originArt.uv2-tip:hover::after, .uv2-capx__originArt.uv2-tip:focus-visible::after { transform: translate(0, 0); }
