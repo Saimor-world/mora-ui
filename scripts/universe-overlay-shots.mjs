@@ -15,7 +15,7 @@ const base=`http://localhost:${port}`;
 const b=await chromium.launch({executablePath:'/home/box/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome'});
 const W=+(process.env.W||1440), H=+(process.env.H||900);
 const ctx=await b.newContext({viewport:{width:W,height:H}, deviceScaleFactor: +(process.env.DPR||2), timezoneId:'Europe/Berlin'});
-await ctx.addInitScript(()=>{localStorage.setItem('last_activity',new Date().toISOString());localStorage.setItem('saimor_dev_token','mock');});
+await ctx.addInitScript(()=>{localStorage.setItem('last_activity',new Date().toISOString());localStorage.setItem('saimor_dev_token','sess_harness_mock');});
 if(process.env.PRE) await ctx.addInitScript(process.env.PRE);
 const page=await ctx.newPage(); page.on('pageerror',e=>console.log('err',e.message));
 const profile={user_id:'owner',email:'owner@saimor.world',full_name:'Marius',role:'system_owner',tenant_id:'tenant-saimor-hq',operational_state:'operational',setup_required:false,active_company_id:company.id,active_company_name:company.name,company_count:(real.companies||[]).length,scope_source:'real-export'};
@@ -27,7 +27,7 @@ await page.route('**/api/core/**', async r=>{ const u=r.request().url(); let bod
   else if(/\/v3\/(departments|tree)(\?|$)/.test(u)) { body=depts; if(u.includes('/v3/tree')) body={departments:depts}; }
   else if(u.includes('/users/me/memberships')) body={department_memberships:[]};
   await r.fulfill({status:200,contentType:'application/json',body:JSON.stringify(body)}); });
-await ctx.addCookies([{name:'mora_auth_token',value:'mock',url:base},{name:'mora_session',value:'local_demo_fallback',url:base}]);
+await ctx.addCookies([{name:'mora_auth_token',value:'sess_harness_mock',url:base},{name:'mora_session',value:'sess_harness_mock',url:base}]);
 await ctx.addInitScript((cid)=>{localStorage.setItem('last_company_id',cid);localStorage.setItem('saimor_active_company',cid);}, company.id);
 await page.goto(base+'/home'+query,{waitUntil:'load',timeout:90000}).catch(e=>console.log(e.message));
 await page.waitForTimeout(9000); await page.mouse.move(300,300); await page.mouse.move(700,500); await page.waitForTimeout(1500); console.log('body', (await page.locator('body').innerText()).slice(0,200).replace(/\n/g,' '));
