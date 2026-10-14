@@ -11,6 +11,7 @@ import React, { useCallback, useState } from 'react';
 import { corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { hasVerifiedExecutionPath, MORA_MODES, sendModeMessage, describeFlag, type MoraMode } from '@/lib/mora/moraModes';
+import { setMoraPresence } from '@/lib/universe/moraPresence';
 import { calmExcerpt, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
 import { MOTION } from '@/lib/universe/motion';
 import { approveLabel, type ApproveOutcome } from '@/lib/universe/approve';
@@ -125,7 +126,7 @@ export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindo
             <p className="mt-2" style={{ ...TYPE.text, fontWeight: 400, color: UV.cream }}>{p.label}</p>
             <div className="mt-4 flex items-center gap-6">
               <button type="button" disabled={!ok || demo || !onApprove || !!o} data-testid="uv2-space-approve"
-                onClick={async () => { if (!onApprove) return; setOutcome((x) => ({ ...x, [p.id]: 'running' })); const r = await onApprove(p); setOutcome((x) => ({ ...x, [p.id]: r })); }}
+                onClick={async () => { if (!onApprove) return; setOutcome((x) => ({ ...x, [p.id]: 'running' })); setMoraPresence({ state: 'working' }); const r = await onApprove(p); setOutcome((x) => ({ ...x, [p.id]: r })); setMoraPresence({ state: 'done' }); }}
                 className="h-10 rounded-full px-6 transition-transform active:scale-[0.97] disabled:opacity-45" style={{ background: UV.goldGrad, color: UV.ink, fontSize: 15, fontWeight: 500 }}>
                 {o === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}
               </button>

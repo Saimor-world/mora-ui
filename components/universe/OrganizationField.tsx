@@ -17,6 +17,7 @@ import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { ORBIT, orbitRxOf } from '@/lib/universe/planetModel';
 import '@/app/universe-orbits.css';
+import { MoraCore } from '@/components/universe/MoraCore';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -356,6 +357,11 @@ export function OrganizationField({
                             return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} data-hover={t.id === hoverId || undefined} />;
                         })}
                     </svg>
+                )}
+                {territories.some((t) => t.model) && (
+                    <MoraCore
+                        planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y, needs: !!t.model?.glow }))}
+                    />
                 )}
                 <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (

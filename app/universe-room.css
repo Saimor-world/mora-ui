@@ -1,0 +1,78 @@
+/* hd37: Raum-Schalter + MÔRA-Kern (Gastgeberin §2/§4) */
+
+/* ---- MÔRA-Kern ---- */
+.uv2-mora { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.uv2-mora__core { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; translate: -50% -50%; pointer-events: auto; border-radius: 50%; background: none; border: 0; cursor: pointer; }
+.uv2-mora__light { position: absolute; inset: 19px; border-radius: 50%; background: radial-gradient(circle, #fff6dc 0%, #f0cf7c 38%, rgba(214,168,72,.85) 62%, rgba(214,168,72,0) 100%); box-shadow: 0 0 22px 6px rgba(214,168,72,.35); animation: uv2MoraBreath 6s ease-in-out infinite; }
+.uv2-mora__halo { position: absolute; inset: -26px; border-radius: 50%; background: radial-gradient(circle, rgba(214,168,72,.20) 0%, rgba(214,168,72,.07) 45%, rgba(214,168,72,0) 70%); transition: inset .8s cubic-bezier(.22,1,.36,1), opacity .8s; }
+.uv2-mora__arc { position: absolute; left: 50%; top: 2px; width: 22px; translate: -50% 0; overflow: visible; }
+.uv2-mora__arc path { fill: none; stroke: rgba(240,207,124,.75); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 3px rgba(214,168,72,.6)); }
+.uv2-mora__caption { position: absolute; left: 50%; top: calc(50% + 34px); translate: -50% 0; font: italic 400 15px/1.2 var(--uv-serif, Georgia, serif); letter-spacing: .01em; color: rgba(240,207,124,.9); text-shadow: 0 1px 10px rgba(0,0,0,.8); white-space: nowrap; animation: uv2MoraIn .5s ease both; }
+.uv2-mora__thread { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.uv2-mora__thread line { stroke: rgba(240,207,124,.8); stroke-width: 1.2; vector-effect: non-scaling-stroke; stroke-dasharray: 2 5; animation: uv2MoraFlow 1.4s linear infinite; filter: drop-shadow(0 0 3px rgba(214,168,72,.7)); }
+.uv2-mora__thread circle { fill: none; stroke: rgba(255,240,200,.9); stroke-width: 1.2; vector-effect: non-scaling-stroke; animation: uv2MoraGlint 1.2s ease-out both; }
+
+[data-mora-state="listening"] .uv2-mora__halo { inset: -8px; opacity: 1; }
+[data-mora-state="listening"] .uv2-mora__light { animation-duration: 2.4s; }
+[data-mora-state="thinking"] .uv2-mora__light { animation: uv2MoraInward 1.6s ease-in-out infinite; }
+[data-mora-state="thinking"] .uv2-mora__halo { animation: uv2MoraInwardHalo 1.6s ease-in-out infinite; }
+[data-mora-state="working"] .uv2-mora__light { box-shadow: 0 0 28px 8px rgba(214,168,72,.45); }
+[data-mora-state="done"] .uv2-mora__light { animation: uv2MoraShine 1.2s ease-out both; }
+[data-mora-state="needs"] .uv2-mora__halo { inset: -34px; background: radial-gradient(ellipse 60% 70% at 50% 72%, rgba(240,207,124,.30) 0%, rgba(214,168,72,.10) 50%, rgba(214,168,72,0) 75%); animation: uv2MoraToward 3.2s ease-in-out infinite; }
+
+@keyframes uv2MoraBreath { 0%,100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes uv2MoraInward { 0%,100% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(.86); filter: brightness(1.35); } }
+@keyframes uv2MoraInwardHalo { 0%,100% { inset: -26px; opacity: .9; } 50% { inset: -12px; opacity: 1; } }
+@keyframes uv2MoraShine { 0% { filter: brightness(1.8); transform: scale(1.12); } 100% { filter: none; transform: none; } }
+@keyframes uv2MoraToward { 0%,100% { translate: 0 0; opacity: .8; } 50% { translate: 0 6px; opacity: 1; } }
+@keyframes uv2MoraFlow { to { stroke-dashoffset: -14; } }
+@keyframes uv2MoraGlint { 0% { opacity: 0; r: .5; } 40% { opacity: 1; } 100% { opacity: 0; r: 4; } }
+@keyframes uv2MoraIn { from { opacity: 0; translate: -50% 4px; } to { opacity: 1; translate: -50% 0; } }
+@media (prefers-reduced-motion: reduce) { .uv2-mora * { animation: none !important; } }
+
+/* MÔRA-Stufen: Leise = nur Antworten, Faden nur bei eigenen Aktionen; Aus = nur Kern-Licht */
+html[data-uv2-mora="leise"] [data-testid="uv2-proposal"],
+html[data-uv2-mora="aus"] [data-testid="uv2-proposal"],
+html[data-uv2-mora="leise"] [data-mora-state="needs"] .uv2-mora__caption,
+html[data-uv2-mora="aus"] .uv2-mora__caption,
+html[data-uv2-mora="aus"] .uv2-mora__thread,
+html[data-uv2-mora="aus"] .uv2-cursor-agent { display: none !important; }
+html[data-uv2-mora="aus"] .uv2-mora__light { animation: none; opacity: .7; }
+
+/* ---- Fragezeile in jedem Modus (auch bei offener Lage) ---- */
+html[data-uv2="on"][data-uv2-lage="open"] [data-testid="uv2-ask"] { display: block !important; }
+
+/* MoraPulse-Uhr rutscht unter die Raum-Schalter */
+@media (min-width: 1280px) { html[data-uv2=on] [data-mora-playground-root] { top: 64px !important; } }
+
+/* ---- Immersiv: Planeten füllen den Raum, Seiten fahren am Rand herein ---- */
+@media (min-width: 1024px) {
+  html[data-uv2="on"][data-uv2-immersive="on"]:not([data-uv2-x]) [data-uv2-field]:has(.uv2-orbits) { left: 0 !important; right: 0 !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { left: 8vw !important; right: 8vw !important; top: 96px !important; bottom: 170px !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"] .uv2-col-right,
+  html[data-uv2="on"][data-uv2-immersive="on"] [data-testid="uv2-greeting"],
+  html[data-uv2="on"][data-uv2-immersive="on"] .uv2-col-lage { transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .4s ease !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"]:not([data-uv2-peek="right"]) .uv2-col-right { transform: translateX(calc(100% + 80px)); opacity: 0; pointer-events: none !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"]:not([data-uv2-peek="left"]) :is([data-testid="uv2-greeting"], .uv2-col-lage) { transform: translateX(calc(-100% - 120px)); opacity: 0 !important; pointer-events: none !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"][data-uv2-peek] :is(.uv2-col-right, [data-testid="uv2-greeting"], .uv2-col-lage) { background: linear-gradient(90deg, rgba(5,7,6,.78), rgba(5,7,6,.55)) !important; backdrop-filter: blur(14px); border-radius: 14px; }
+}
+/* Rand-Hinweis im Immersiv-Modus: zwei Haarlinien zeigen, dass dort etwas wartet */
+html[data-uv2="on"][data-uv2-immersive="on"] body::before,
+html[data-uv2="on"][data-uv2-immersive="on"] body::after { content: ""; position: fixed; top: 38%; bottom: 38%; width: 2px; border-radius: 2px; background: rgba(214,168,72,.35); z-index: 60; pointer-events: none; }
+html[data-uv2="on"][data-uv2-immersive="on"] body::before { left: 6px; }
+html[data-uv2="on"][data-uv2-immersive="on"] body::after { right: 6px; }
+
+/* ---- Telefon: Planeten auf ihren Bahnen, verkleinert (statt Chip-Reihe) ---- */
+@media (max-width: 1023px) {
+  html[data-uv2="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { display: block !important; left: -12vw !important; right: -12vw !important; top: 230px !important; bottom: 200px !important; scale: .74; translate: none !important; }
+  html[data-uv2="on"] [data-uv2-field]:has(.uv2-orbits) [data-testid="mobile-territories"] { display: none !important; }
+  html[data-uv2="on"] [data-uv2-plane] [data-planet-kind] .saimor-territory-name { font-size: 18px !important; }
+  html[data-uv2="on"] [data-uv2-plane] [data-planet-kind][data-planet-kind="domain"] .saimor-territory-name { font-size: 17px !important; }
+  html[data-uv2="on"] [data-uv2-plane] .uv2-orbits ellipse { stroke-width: 1.4; }
+}
+@media (max-width: 639px) {
+  html[data-uv2="on"] [data-testid="uv2-header"] { left: 20px !important; transform: none !important; translate: none !important; }
+  html[data-uv2="on"] [data-testid="uv2-room"] { right: 14px !important; gap: 6px !important; }
+  html[data-uv2="on"] [data-testid="uv2-room"] .uv2-room-label { display: none; }
+  html[data-uv2="on"] [data-testid="uv2-mora-toggle"] { width: 32px; padding: 0 !important; justify-content: center; }
+}

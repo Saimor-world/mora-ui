@@ -6,6 +6,7 @@
  * Die Ebene liest nur die Positionen der echten Planeten (data-planet-name)
  * und hängt kleine Sternbilder mit Quellenzeile daran.
  */
+import { getMoraPresence, setMoraPresence } from '@/lib/universe/moraPresence';
 import React, { useCallback, useEffect, useState } from 'react';
 import { coreGet } from '@/lib/api/http';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -110,6 +111,14 @@ export function MorgenOverlay() {
   const [returned, setReturned] = useState(0);
   const wasNear = React.useRef(false);
   const space = useMoraSpace(demo);
+  // MÔRAs Kern zeigt, was sie gerade tut: hört zu (Fragezeile fokussiert), denkt (Anfrage läuft), fertig (Antwort da).
+  useEffect(() => {
+    const cur = getMoraPresence().state;
+    if (space.state.status === 'thinking') setMoraPresence({ state: 'thinking' });
+    else if (space.state.status === 'answer' && cur === 'thinking') setMoraPresence({ state: 'done' });
+    else if (askFocus && (cur === 'calm' || cur === 'done')) setMoraPresence({ state: 'listening' });
+    else if (!askFocus && (cur === 'listening' || cur === 'thinking')) setMoraPresence({ state: 'calm' });
+  }, [askFocus, space.state.status]);
   const modeRef = React.useRef(mode); modeRef.current = mode;
   // „Im Fenster weiter": das Gespräch aus dem Raum wandert mit – nichts wird neu gefragt.
   const openWindow = useCallback((q: string) => {

@@ -598,7 +598,7 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
+            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only uv2-cursor-agent"><CursorAgent
                     active
                     action="point"
                     target={attentionPoint}
