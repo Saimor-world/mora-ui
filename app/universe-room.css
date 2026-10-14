@@ -114,3 +114,10 @@ html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not
 /* hd41b: Name steht schon unter dem Planeten – HUD zeigt nur die Chips; Monde in der Übersicht leiser */
 .uv2-hud__label { display: none !important; }
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .32 !important; scale: .8; }
+
+/* ---- hd42: Planeten mit eigenem Material – keine Entsättigung mehr, Schattierung kommt aus der Kugel ---- */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { filter: none !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: saturate(1.05) contrast(1.04) !important; }
+html[data-uv2="on"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet, html[data-uv2="on"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet { filter: saturate(.95) brightness(.95) !important; opacity: 1; }
+html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet { filter: saturate(.7) brightness(.82) !important; }
+@media (max-width: 1023px) { html[data-uv2="on"] .uv2-hud__chips { scale: 1.35; transform-origin: bottom center; } }

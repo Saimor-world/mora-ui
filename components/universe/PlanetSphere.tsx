@@ -23,19 +23,21 @@ type Material = {
   /** Atmosphäre (rgb) */
   atmo: string;
   ring?: boolean;
+  /** Oberflächenmerkmal: Wolken, Bänder, Krater, Wirbel */
+  feature?: 'clouds' | 'bands' | 'craters' | 'swirl';
 };
 
 const MATERIALS: Record<string, Material> = {
   // Finanzen: warmes Gold-Ocker mit Wolkenbändern (Gasriese)
-  finanzen: { day: '#e9cf95', mid: '#a7793a', night: '#2a1a0b', fx: 0.35, fy: 9, oct: 3, relief: 0.55, atmo: '247,226,180', ring: true },
+  finanzen: { day: '#e9cf95', mid: '#a7793a', night: '#2a1a0b', fx: 0.35, fy: 9, oct: 3, relief: 0.55, atmo: '247,226,180', ring: true, feature: 'bands' },
   // Post & Termine: tiefer Ozean mit Wolkenschleiern
-  post: { day: '#9cc4d8', mid: '#2f5f7c', night: '#06121c', fx: 2.4, fy: 2.4, oct: 4, relief: 0.45, atmo: '170,215,240' },
+  post: { day: '#9cc4d8', mid: '#2f5f7c', night: '#06121c', fx: 2.4, fy: 2.4, oct: 4, relief: 0.45, atmo: '170,215,240', feature: 'clouds' },
   // Werkstatt: Kupfer/Rost, felsig
-  werkstatt: { day: '#d9a07a', mid: '#7c4126', night: '#1a0b05', fx: 3.2, fy: 3.2, oct: 5, relief: 0.7, atmo: '240,190,160' },
+  werkstatt: { day: '#d9a07a', mid: '#7c4126', night: '#1a0b05', fx: 3.2, fy: 3.2, oct: 5, relief: 0.7, atmo: '240,190,160', feature: 'craters' },
   // Wissen: Indigo-Marmor
-  wissen: { day: '#b9b2dc', mid: '#4d4782', night: '#0c0a1c', fx: 1.6, fy: 3.4, oct: 4, relief: 0.5, atmo: '205,200,245' },
+  wissen: { day: '#b9b2dc', mid: '#4d4782', night: '#0c0a1c', fx: 1.6, fy: 3.4, oct: 4, relief: 0.5, atmo: '205,200,245', feature: 'swirl' },
   // Wache: Eis/Tiefsee-Teal, ruhig
-  wache: { day: '#bfe0da', mid: '#3d7470', night: '#061413', fx: 0.8, fy: 6, oct: 3, relief: 0.4, atmo: '190,235,228' },
+  wache: { day: '#bfe0da', mid: '#3d7470', night: '#061413', fx: 0.8, fy: 6, oct: 3, relief: 0.4, atmo: '190,235,228', feature: 'clouds' },
   default: { day: '#d9d3c2', mid: '#6b6656', night: '#0e0d0a', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '247,244,233' },
 };
 
@@ -46,13 +48,13 @@ const ARCHETYPE_MATERIALS: Record<string, Material> = {
   'marble-indigo': MATERIALS.wissen,
   ice: MATERIALS.wache,
   'copper-rock': MATERIALS.werkstatt,
-  forest: { day: '#b9d6a2', mid: '#3f6b3a', night: '#08140a', fx: 2.8, fy: 2.2, oct: 5, relief: 0.55, atmo: '200,232,190' },
-  coral: { day: '#f2b6a0', mid: '#a44f3f', night: '#1e0a07', fx: 1.2, fy: 4.2, oct: 4, relief: 0.5, atmo: '250,205,190' },
-  'nebula-violet': { day: '#d6b8e8', mid: '#6a3f86', night: '#130a1c', fx: 0.9, fy: 2.6, oct: 4, relief: 0.5, atmo: '228,205,245' },
-  'sand-dune': { day: '#eedcb6', mid: '#9c7a4a', night: '#1c140a', fx: 0.5, fy: 7, oct: 3, relief: 0.45, atmo: '246,232,205' },
-  'crystal-teal': { day: '#a8e2e0', mid: '#2f7f86', night: '#041416', fx: 3.6, fy: 1.8, oct: 5, relief: 0.6, atmo: '180,238,236' },
-  ember: { day: '#f4c27e', mid: '#b2522a', night: '#200904', fx: 2.2, fy: 2.8, oct: 5, relief: 0.65, atmo: '252,210,160' },
-  pearl: { day: '#ece8de', mid: '#8f8a7d', night: '#141310', fx: 1.4, fy: 3.0, oct: 3, relief: 0.35, atmo: '247,244,233' },
+  forest: { day: '#b9d6a2', mid: '#3f6b3a', night: '#08140a', fx: 2.8, fy: 2.2, oct: 5, relief: 0.55, atmo: '200,232,190', feature: 'clouds' },
+  coral: { day: '#f2b6a0', mid: '#a44f3f', night: '#1e0a07', fx: 1.2, fy: 4.2, oct: 4, relief: 0.5, atmo: '250,205,190', feature: 'swirl' },
+  'nebula-violet': { day: '#d6b8e8', mid: '#6a3f86', night: '#130a1c', fx: 0.9, fy: 2.6, oct: 4, relief: 0.5, atmo: '228,205,245', feature: 'swirl' },
+  'sand-dune': { day: '#eedcb6', mid: '#9c7a4a', night: '#1c140a', fx: 0.5, fy: 7, oct: 3, relief: 0.45, atmo: '246,232,205', feature: 'bands' },
+  'crystal-teal': { day: '#a8e2e0', mid: '#2f7f86', night: '#041416', fx: 3.6, fy: 1.8, oct: 5, relief: 0.6, atmo: '180,238,236', feature: 'clouds' },
+  ember: { day: '#f4c27e', mid: '#b2522a', night: '#200904', fx: 2.2, fy: 2.8, oct: 5, relief: 0.65, atmo: '252,210,160', feature: 'craters' },
+  pearl: { day: '#ece8de', mid: '#8f8a7d', night: '#141310', fx: 1.4, fy: 3.0, oct: 3, relief: 0.35, atmo: '247,244,233', feature: 'bands' },
 };
 export function archetypeMaterial(archetype?: string | null): Material | null {
   return (archetype && ARCHETYPE_MATERIALS[archetype]) || null;
@@ -68,7 +70,7 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   return 'default';
 }
 
-export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping' }) {
+export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false, lit }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping'; /** Richtung zur Sonne (Bogenmaß, Bildschirm) – schaltet die echte Kugelschattierung ein */ lit?: number }) {
   const uid = useId().replace(/:/g, '');
   const m = archetypeMaterial(archetype) || planetMaterial(name);
   const ringW = size * 1.9;
@@ -91,6 +93,17 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
               <feTurbulence type="fractalNoise" baseFrequency={`${m.fx / 100} ${m.fy / 100}`} numOctaves={m.oct} seed={seed % 97} stitchTiles="stitch" />
               <feColorMatrix type="matrix" values={`0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  ${m.relief * 1.6} 0 0 0 ${-m.relief * 0.55}`} />
             </filter>
+            <linearGradient id={`bd${uid}`} x1="0" y1="0" x2="0" y2="1">
+              {[0, .12, .2, .31, .38, .47, .55, .63, .71, .8, .88, 1].map((o, i) => <stop key={i} offset={o} stopColor={i % 2 ? m.day : m.night} stopOpacity={i % 3 === 0 ? 0.5 : 0.25} />)}
+            </linearGradient>
+            <filter id={`cl${uid}`} x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.018 0.05" numOctaves={4} seed={(seed % 89) + 3} stitchTiles="stitch" />
+              <feColorMatrix type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  2.6 0 0 0 -1.15" />
+            </filter>
+            <filter id={`sw${uid}`} x="0" y="0" width="100%" height="100%">
+              <feTurbulence type="fractalNoise" baseFrequency="0.012 0.03" numOctaves={3} seed={(seed % 61) + 5} result="t" />
+              <feDisplacementMap in="SourceGraphic" in2="t" scale="40" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
             <linearGradient id={`b${uid}`} x1="0" y1="0" x2="0" y2="1">
               <stop offset="0" stopColor={m.mid} />
               <stop offset="0.5" stopColor={m.day} />
@@ -100,6 +113,13 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
           <rect width="200" height="100" fill={`url(#b${uid})`} />
           <rect width="200" height="100" filter={`url(#n${uid})`} style={{ mixBlendMode: 'overlay' }} />
           <rect width="200" height="100" filter={`url(#n${uid})`} opacity={0.5} style={{ mixBlendMode: 'multiply' }} />
+          {m.feature === 'bands' && <rect width="200" height="100" fill={`url(#bd${uid})`} style={{ mixBlendMode: 'soft-light' }} opacity={0.9} />}
+          {m.feature === 'clouds' && <rect width="200" height="100" filter={`url(#cl${uid})`} style={{ mixBlendMode: 'screen' }} opacity={0.42} />}
+          {m.feature === 'swirl' && <rect width="200" height="100" fill={m.day} filter={`url(#sw${uid})`} style={{ mixBlendMode: 'soft-light' }} opacity={0.85} />}
+          {m.feature === 'craters' && Array.from({ length: 9 }, (_, i) => {
+            const h = (seed * (i + 3) * 2654435761) >>> 0; const cx = (h % 200), cy = 18 + ((h >>> 8) % 64), r = 2.5 + ((h >>> 16) % 7);
+            return <g key={i}><circle cx={cx} cy={cy} r={r} fill={m.night} opacity={0.32} /><circle cx={cx - r * 0.25} cy={cy - r * 0.25} r={r * 0.8} fill="none" stroke={m.day} strokeWidth={0.5} opacity={0.35} /></g>;
+          })}
         </svg>
         {/* Bereichszeichen: in die Oberfläche geprägt – unter Terminator & Randverdunkelung, darum gleich beleuchtet */}
         {Glyph && (
@@ -112,18 +132,23 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
               style={{ color: 'rgba(255,251,240,0.78)', mixBlendMode: 'screen', transform: 'translate(-0.4px,-0.5px)' }} />
           </span>
         )}
+        {lit == null ? (<>
         {/* Terminator: Licht oben links, Nacht unten rechts – weicher Übergang */}
-        <span className="uv2-sun absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 30% 26%, rgba(255,250,235,0.20) 0%, rgba(255,250,235,0) 34%), linear-gradient(128deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 66%, ${m.night} 86%)` }} />
-        {/* Tageszeit-Tönung: Morgen warm, Abend Amber, Nacht kühl (gesetzt über --uv2-sun-tint) */}
-        <span className="uv2-sun-tint absolute inset-0 rounded-full" />
-        {/* Randverdunkelung */}
-        <span className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle at 42% 40%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.8) 100%)' }} />
-        {/* Atmosphäre: feiner Saum auf der Lichtseite */}
-        <span className="absolute inset-0 rounded-full" style={{ boxShadow: `inset ${size * 0.035}px ${size * 0.035}px ${size * 0.06}px rgba(${m.atmo},0.38), inset 0 0 0 0.5px rgba(${m.atmo},0.22)` }} />
+          <span className="uv2-sun absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 30% 26%, rgba(255,250,235,0.20) 0%, rgba(255,250,235,0) 34%), linear-gradient(128deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.5) 52%, rgba(0,0,0,0.82) 66%, ${m.night} 86%)` }} />
+          {/* Tageszeit-Tönung: Morgen warm, Abend Amber, Nacht kühl (gesetzt über --uv2-sun-tint) */}
+          <span className="uv2-sun-tint absolute inset-0 rounded-full" />
+          {/* Randverdunkelung */}
+          <span className="absolute inset-0 rounded-full" style={{ background: 'radial-gradient(circle at 42% 40%, rgba(0,0,0,0) 52%, rgba(0,0,0,0.42) 78%, rgba(0,0,0,0.8) 100%)' }} />
+          {/* Atmosphäre: feiner Saum auf der Lichtseite */}
+          <span className="absolute inset-0 rounded-full" style={{ boxShadow: `inset ${size * 0.035}px ${size * 0.035}px ${size * 0.06}px rgba(${m.atmo},0.38), inset 0 0 0 0.5px rgba(${m.atmo},0.22)` }} />
+  </>) : (<>
+          <span className="uv2-sun-tint absolute inset-0 rounded-full" />
+          <SphereShade size={size} lit={lit} atmo={m.atmo} night={m.night} />
+        </>)}
       </span>
 
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
-      <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at 34% 30%, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />
+      <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />
 
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
@@ -211,4 +236,52 @@ void CURATED_HUES;
 export function planetMaterial(name: string): Material {
   const k = planetMaterialKey(name);
   return k === 'default' ? generatedMaterial(name) : MATERIALS[k];
+}
+
+/**
+ * Echte Kugelschattierung (einmal pro Größe/Lichtrichtung gerechnet, gecacht):
+ * Lambert zur Sonne, weicher Terminator, Blinn-Glanz, warmes Fresnel-Randlicht auf der
+ * Lichtseite und ein kühler Gegenlicht-Saum von der Nebelseite. Liegt über der Oberfläche.
+ */
+const SHADE_CACHE = new Map<string, string>();
+function shadeUrl(px: number, lit: number, atmo: string, night: string): string {
+  const key = `${px}|${lit.toFixed(2)}|${atmo}|${night}`;
+  const hit = SHADE_CACHE.get(key); if (hit) return hit;
+  if (typeof document === 'undefined') return '';
+  const cv = document.createElement('canvas'); cv.width = cv.height = px;
+  const ctx = cv.getContext('2d'); if (!ctx) return '';
+  const img = ctx.createImageData(px, px); const d = img.data;
+  const lx0 = Math.cos(lit) * 0.78, ly0 = Math.sin(lit) * 0.78, lz0 = 0.62; const ll = Math.hypot(lx0, ly0, lz0);
+  const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
+  const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
+  const [ar, ag, ab] = atmo.split(',').map(Number);
+  const nr = parseInt(night.slice(1, 3), 16) || 10, ng = parseInt(night.slice(3, 5), 16) || 10, nb = parseInt(night.slice(5, 7), 16) || 12;
+  const r = px / 2;
+  for (let y = 0; y < px; y++) for (let x = 0; x < px; x++) {
+    const u = (x + 0.5 - r) / r, v = (y + 0.5 - r) / r; const q = u * u + v * v; const i = (y * px + x) * 4;
+    if (q > 1) { d[i + 3] = 0; continue; }
+    const z = Math.sqrt(1 - q);
+    const ndl = u * lx + v * ly + z * lz;
+    const diff = Math.max(0, ndl);
+    const term = 1 / (1 + Math.exp(-ndl * 7)); // weicher Terminator
+    const light = 0.1 + 0.9 * Math.pow(diff, 0.85) * term;
+    const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 46) * 0.55;
+    const fres = Math.pow(1 - z, 3);
+    const rimLit = fres * Math.max(0, u * lx + v * ly) * 1.25;
+    const rimBack = fres * Math.max(0, -(u * lx + v * ly)) * 0.22;
+    // dunkel: Nachtfarbe mit Alpha; hell: warmes Licht additiv (vorgemischt in einem Pixel)
+    const shadowA = 1 - light;
+    const add = spec + rimLit * 0.6;
+    const rr = nr * shadowA + (255 * 0.98) * add + ar * rimBack, gg = ng * shadowA + (255 * 0.9) * add + ag * rimBack, bb = nb * shadowA + (255 * 0.72) * add + ab * rimBack;
+    const a = Math.min(1, shadowA * 0.92 + add + rimBack);
+    const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.2);
+    d[i] = Math.min(255, rr / Math.max(a, 1e-3)); d[i + 1] = Math.min(255, gg / Math.max(a, 1e-3)); d[i + 2] = Math.min(255, bb / Math.max(a, 1e-3)); d[i + 3] = Math.round(255 * a * edge);
+  }
+  ctx.putImageData(img, 0, 0);
+  const url = cv.toDataURL('image/png'); SHADE_CACHE.set(key, url); return url;
+}
+function SphereShade({ size, lit, atmo, night }: { size: number; lit: number; atmo: string; night: string }) {
+  const [url, setUrl] = React.useState('');
+  React.useEffect(() => { setUrl(shadeUrl(Math.round(size * Math.min(2, window.devicePixelRatio || 1)), lit, atmo, night)); }, [size, lit, atmo, night]);
+  return <span className="uv2-shade absolute inset-0 rounded-full" style={url ? { backgroundImage: `url(${url})`, backgroundSize: '100% 100%' } : { background: 'radial-gradient(circle at 35% 30%, rgba(0,0,0,0) 30%, rgba(0,0,0,.7) 75%)' }} />;
 }

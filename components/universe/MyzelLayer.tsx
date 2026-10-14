@@ -69,12 +69,43 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const c = net.getContext('2d')!; c.scale(dpr, dpr); c.lineCap = 'round';
             const R = rng(42);
             const dim = targetId ? 0.45 : 1; dimNow = dim;
-            c.shadowColor = `rgba(${J},0.5)`; c.shadowBlur = 6;
-            const go = (a: Pt, b: Pt, al: number) => { const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() - 0.5) * 0.9; hypha(c, R, a[0], a[1], ang, 900, 1.0, al * dim, b, 0); };
-            // Ruhe: nur ein eleganter Faden vom Stein zur Mitte. Fäden zu Planeten erst bei Zeigen/Fokus.
-            if (stone) go([stone[0], stone[1] - 18], sun, 0.34);
+            c.shadowColor = `rgba(${J},0.6)`; c.shadowBlur = 5;
+            void hypha; void R;
+            // Ruhe: kein Faden. Bei Zeigen/Fokus: Stein → Mitte → Planet, um andere Planeten herum geführt.
             const fp = focusId && !targetId ? planets.find((p) => p.id === focusId) : undefined;
-            if (fp) { const R2 = rng(1 + [...fp.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 2147483646); const T = P(fp); const ang = Math.atan2(T[1] - sun[1], T[0] - sun[0]) + (R2() - 0.5) * 0.6; hypha(c, R2, sun[0], sun[1], ang, 900, 1.0, 0.5, T, 2); }
+            const obstacles: Array<[number, number, number]> = [];
+            plane.querySelectorAll<HTMLElement>('[data-uv2-planet]').forEach((el) => {
+                const id = el.getAttribute('data-uv2-planet'); const pl = planets.find((q) => q.id === id); if (!pl) return;
+                const sz = parseFloat(el.style.getPropertyValue('--territory-size')) || 60; const pp = P(pl);
+                obstacles.push([pp[0], pp[1] + sz * 0.25, sz / 2 + 22]); // Kugel + Name darunter
+            });
+            const routed = (a: Pt, b: Pt, skip: Pt | null): Pt[] => {
+                const n = 48; let pts: Pt[] = Array.from({ length: n }, (_, i) => [a[0] + (b[0] - a[0]) * i / (n - 1), a[1] + (b[1] - a[1]) * i / (n - 1)] as Pt);
+                const obs = obstacles.filter((o) => !skip || Math.hypot(o[0] - skip[0], o[1] - skip[1]) > 4);
+                for (let it = 0; it < 60; it++) {
+                    for (let i = 1; i < n - 1; i++) for (const [ox, oy, orr] of obs) {
+                        const dx = pts[i][0] - ox, dy = pts[i][1] - oy; const d = Math.hypot(dx, dy) || 0.01;
+                        if (d < orr) { pts[i] = [ox + dx / d * orr, oy + dy / d * orr]; }
+                    }
+                    pts = pts.map((q, i) => (i === 0 || i === n - 1) ? q : [(pts[i - 1][0] + q[0] * 2 + pts[i + 1][0]) / 4, (pts[i - 1][1] + q[1] * 2 + pts[i + 1][1]) / 4] as Pt);
+                }
+                return pts;
+            };
+            const strokeRouted = (pts: Pt[], al: number) => {
+                const n = pts.length;
+                for (let i = 1; i < n - 1; i++) {
+                    const t = i / n; const fade = Math.min(1, Math.sin(Math.PI * t) * 1.8 + 0.2);
+                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 1;
+                    const m0: Pt = [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2];
+                    const m1: Pt = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+                    c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(pts[i][0], pts[i][1], m1[0], m1[1]); c.stroke();
+                }
+            };
+            if (fp) {
+                const T = P(fp);
+                if (stone) strokeRouted(routed([stone[0], stone[1] - 18], sun, null), 0.32);
+                strokeRouted(routed(sun, T, T), 0.55);
+            }
             c.shadowBlur = 0;
             // Staub: Punkte um die Mitte, wenige warme dazwischen.
             const g = () => (R() + R() + R() - 1.5) / 1.5;
