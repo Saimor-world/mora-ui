@@ -11,7 +11,7 @@ import React, { useCallback, useState } from 'react';
 import { corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { hasVerifiedExecutionPath, MORA_MODES, sendModeMessage, describeFlag, type MoraMode } from '@/lib/mora/moraModes';
-import { calmExcerpt, demoAnswer, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
+import { calmExcerpt, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
 import { MOTION } from '@/lib/universe/motion';
 import { approveLabel, type ApproveOutcome } from '@/lib/universe/approve';
 import { answerBox } from '@/lib/universe/answerLayout';
@@ -27,10 +27,7 @@ export function useMoraSpace(demo: boolean) {
     setState({ status: 'thinking', question, mode });
     try {
       let answer: SpaceAnswer;
-      if (demo) {
-        await new Promise((r) => setTimeout(r, 900));
-        answer = demoAnswer(mode, question);
-      } else if (mode === 'denken') {
+      if (mode === 'denken') {
         const r = (await corePost('/v3/chat', { message: question, history, context: buildChatContext({ session_id: 'universe_space' }) })) as { reply?: string; response?: string };
         answer = { mode, question, text: r?.reply || r?.response || '', sources: [], proposals: [], flags: [] };
       } else {
