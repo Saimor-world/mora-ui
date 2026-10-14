@@ -341,7 +341,7 @@ export function OrganizationField({
                 data-uv2-plane
                 data-uv2-focus={territories.some((t) => t.model) && (selectedId || hoverId) ? '' : undefined}
                 data-uv2-zoom={zoomTarget ? '' : undefined}
-                style={zoomTarget ? ({ transformOrigin: zoomTarget.x + '% ' + zoomTarget.y + '%', transform: 'translate(' + (50 - zoomTarget.x) + '%, ' + (42 - zoomTarget.y) + '%) scale(1.3)' } as CSSProperties) : undefined}
+                style={zoomTarget ? ({ transformOrigin: zoomTarget.x + '% ' + zoomTarget.y + '%', transform: 'translate(' + (40 - zoomTarget.x) + '%, ' + (56 - zoomTarget.y) + '%) scale(1.3)' } as CSSProperties) : undefined}
                 onPointerOver={(e) => { const el = (e.target as HTMLElement).closest('[data-uv2-planet]'); setHoverId(el ? el.getAttribute('data-uv2-planet') : null); }}
                 onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
