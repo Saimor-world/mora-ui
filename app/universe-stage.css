@@ -78,3 +78,9 @@ html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [dat
   .uv2-stage__sun-core { width: 34px; height: 34px; }
   .uv2-stage__sun-label { font-size: 9.5px; }
 }
+@media (max-width: 1023px) {
+  /* Telefon: Hat MÔRA heute Punkte (Liste unter der Begrüßung), gehört der Bildschirm der Liste – das System tritt zurück statt darunter zu liegen. */
+  html[data-uv2=on]:has([data-testid="uv2-today"]) [data-uv2-field] [data-uv2-plane][data-uv2-stage=model] { display: none !important; }
+  /* Demo-Hinweis nicht über dem Datum, sondern über dem Dock */
+  html[data-uv2=on] [data-testid="uv2-demo-sector"] { top: auto !important; bottom: 150px; white-space: nowrap; }
+}
