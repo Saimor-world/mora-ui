@@ -121,3 +121,8 @@ html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: saturate(1.05) cont
 html[data-uv2="on"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet, html[data-uv2="on"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet { filter: saturate(.95) brightness(.95) !important; opacity: 1; }
 html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet { filter: saturate(.7) brightness(.82) !important; }
 @media (max-width: 1023px) { html[data-uv2="on"] .uv2-hud__chips { scale: 1.35; transform-origin: bottom center; } }
+
+/* Pixel-Varianten: gemeinsame Saimôr-Hand */
+html[data-uv2-pstyle] .uv2-planet .uv2-planet-glyph { display: none; }
+html[data-uv2-pstyle] .uv2-planet svg ellipse { stroke: rgba(226,192,118,.4); }
+html[data-uv2-pstyle="B"] .saimor-territory-name, html[data-uv2-pstyle="C"] .saimor-territory-name { font-family: var(--uv-mono) !important; text-transform: uppercase; letter-spacing: .14em !important; font-size: 11px !important; color: rgba(190,226,212,.78) !important; }

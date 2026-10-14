@@ -73,6 +73,7 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
 export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false, lit }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping'; /** Richtung zur Sonne (Bogenmaß, Bildschirm) – schaltet die echte Kugelschattierung ein */ lit?: number }) {
   const uid = useId().replace(/:/g, '');
   const m = archetypeMaterial(archetype) || planetMaterial(name);
+  const pstyle = usePixelStyle();
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
@@ -86,7 +87,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -145,10 +146,10 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
           <span className="uv2-sun-tint absolute inset-0 rounded-full" />
           <SphereShade size={size} lit={lit} atmo={m.atmo} night={m.night} />
         </>)}
-      </span>
+      </span>}
 
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
-      <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />
+      {!pstyle && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
@@ -284,4 +285,63 @@ function SphereShade({ size, lit, atmo, night }: { size: number; lit: number; at
   const [url, setUrl] = React.useState('');
   React.useEffect(() => { setUrl(shadeUrl(Math.round(size * Math.min(2, window.devicePixelRatio || 1)), lit, atmo, night)); }, [size, lit, atmo, night]);
   return <span className="uv2-shade absolute inset-0 rounded-full" style={url ? { backgroundImage: `url(${url})`, backgroundSize: '100% 100%' } : { background: 'radial-gradient(circle at 35% 30%, rgba(0,0,0,0) 30%, rgba(0,0,0,.7) 75%)' }} />;
+}
+
+/* ─── Saimôr-Pixelkugeln (Varianten A/B/C, Wahl über localStorage "uv2-planet-style") ─── */
+type PStyle = 'A' | 'B' | 'C';
+function usePixelStyle(): PStyle | null {
+  const [v, setV] = React.useState<PStyle | null>(null);
+  React.useEffect(() => {
+    const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
+    if (x === 'A' || x === 'B' || x === 'C') { setV(x); document.documentElement.setAttribute('data-uv2-pstyle', x); }
+  }, []);
+  return v;
+}
+const hex = (h: string) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) || 0);
+const mix = (a: number[], b: number[], t: number) => a.map((x, i) => Math.round(x + (b[i] - x) * t));
+const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: number; tint: string; variant: PStyle; seed: number }) {
+  const ref = React.useRef<HTMLCanvasElement>(null);
+  React.useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const cell = variant === 'C' ? Math.max(3, size / 18) : variant === 'B' ? 3.2 : 2;
+    const n = Math.max(8, Math.round(size / cell));
+    const W = Math.round(size * dpr); cv.width = cv.height = W;
+    const c = cv.getContext('2d'); if (!c) return;
+    c.clearRect(0, 0, W, W); c.imageSmoothingEnabled = false;
+    const t = hex(tint);
+    const pal = [[6, 20, 17], [22, 64, 55], [52, 122, 104], [118, 196, 172]].map((p) => mix(p, t, 0.22));
+    const gold = [226, 192, 118];
+    const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.35; const ll = Math.hypot(lx0, ly0, lz0);
+    const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
+    const px = W / n;
+    // feine Oberfläche: deterministisches Rauschen pro Zelle (ruhig, nicht fleckig)
+    const noise = (x: number, y: number) => { const h = Math.sin(x * 12.9898 + y * 78.233 + seed * 0.37) * 43758.5453; return h - Math.floor(h); };
+    for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+      const u = (x + 0.5) / n * 2 - 1, v = (y + 0.5) / n * 2 - 1; const q = u * u + v * v; if (q > 1) continue;
+      const z = Math.sqrt(1 - q);
+      const ndl = u * lx + v * ly + z * lz;
+      const band = 0.06 * Math.sin((v + seed * 0.01) * 9) + (noise(x, y) - 0.5) * 0.08;
+      const sh = Math.max(0, Math.min(1, 0.08 + 0.92 * Math.max(0, ndl) + band * Math.max(0.2, ndl)));
+      const rim = Math.pow(1 - z, 3) * Math.max(0, u * lx + v * ly);
+      if (variant === 'A') {
+        const f = sh * 3; const lo = Math.floor(f); const th = (BAYER[(y % 4) * 4 + (x % 4)] + 0.5) / 16;
+        const lvl = Math.min(3, lo + (f - lo > th ? 1 : 0)); let col = pal[lvl];
+        if (sh > 0.9 && th < 0.35) col = gold; if (rim > 0.35 && th < 0.6) col = gold;
+        c.fillStyle = `rgb(${col})`; c.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
+      } else if (variant === 'B') {
+        c.fillStyle = `rgba(${pal[0]},0.9)`; c.fillRect(x * px, y * px, px + 0.5, px + 0.5);
+        const r = px * (0.12 + 0.36 * sh); const col = sh > 0.88 ? gold : mix(pal[2], pal[3], sh);
+        c.fillStyle = `rgba(${col},${0.35 + 0.65 * sh})`; c.beginPath(); c.arc((x + 0.5) * px, (y + 0.5) * px, r, 0, Math.PI * 2); c.fill();
+      } else {
+        const lvl = Math.min(3, Math.floor(sh * 3.6)); let col = pal[lvl];
+        if (sh > 0.86 && noise(y, x) > 0.45) col = gold;
+        const edge = Math.sqrt(q) > 1 - 1.4 / n; if (edge) col = sh > 0.4 ? mix(gold, pal[3], 0.3) : pal[1];
+        c.fillStyle = `rgb(${col})`; c.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
+      }
+    }
+    if (variant === 'B') { c.strokeStyle = 'rgba(226,192,118,0.55)'; c.lineWidth = dpr * 0.75; c.beginPath(); c.arc(W / 2, W / 2, W / 2 - dpr, 0, Math.PI * 2); c.stroke(); }
+  }, [size, lit, tint, variant, seed]);
+  return <canvas ref={ref} className="absolute inset-0 h-full w-full" data-pstyle={variant} style={{ imageRendering: variant === 'B' ? 'auto' : 'pixelated', borderRadius: variant === 'B' ? '50%' : undefined, overflow: 'hidden' }} />;
 }
