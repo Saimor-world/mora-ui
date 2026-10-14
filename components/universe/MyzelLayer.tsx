@@ -38,7 +38,7 @@ function hypha(ctx: CanvasRenderingContext2D, R: () => number, x: number, y: num
     }
 }
 
-export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number; y: number }> }) {
+export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: string; x: number; y: number }>; focusId?: string | null }) {
     const ref = useRef<HTMLCanvasElement>(null);
     const presence = useMoraPresence();
     const working = presence.state === 'working' || presence.state === 'done';
@@ -69,15 +69,48 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
             const c = net.getContext('2d')!; c.scale(dpr, dpr); c.lineCap = 'round';
             const R = rng(42);
             const dim = targetId ? 0.45 : 1; dimNow = dim;
-            c.shadowColor = `rgba(${J},0.5)`; c.shadowBlur = 6;
-            const go = (a: Pt, b: Pt, al: number) => { const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() - 0.5) * 0.9; hypha(c, R, a[0], a[1], ang, 900, 1.0, al * dim, b, 0); };
-            if (stone) go([stone[0], stone[1] - 18], sun, 0.6);
-            planets.forEach((p) => go(sun, P(p), 0.46));
+            c.shadowColor = `rgba(${J},0.6)`; c.shadowBlur = 5;
+            void hypha; void R;
+            // Ruhe: kein Faden. Bei Zeigen/Fokus: Stein → Mitte → Planet, um andere Planeten herum geführt.
+            const fp = focusId && !targetId ? planets.find((p) => p.id === focusId) : undefined;
+            const obstacles: Array<[number, number, number]> = [];
+            plane.querySelectorAll<HTMLElement>('[data-uv2-planet]').forEach((el) => {
+                const id = el.getAttribute('data-uv2-planet'); const pl = planets.find((q) => q.id === id); if (!pl) return;
+                const sz = parseFloat(el.style.getPropertyValue('--territory-size')) || 60; const pp = P(pl);
+                obstacles.push([pp[0], pp[1] + sz * 0.2, sz / 2 + 10]); // Kugel + Name darunter
+            });
+            const routed = (a: Pt, b: Pt, skip: Pt | null): Pt[] => {
+                const n = 48; let pts: Pt[] = Array.from({ length: n }, (_, i) => [a[0] + (b[0] - a[0]) * i / (n - 1), a[1] + (b[1] - a[1]) * i / (n - 1)] as Pt);
+                const obs = obstacles.filter((o) => !skip || Math.hypot(o[0] - skip[0], o[1] - skip[1]) > 4);
+                for (let it = 0; it < 60; it++) {
+                    for (let i = 1; i < n - 1; i++) for (const [ox, oy, orr] of obs) {
+                        const dx = pts[i][0] - ox, dy = pts[i][1] - oy; const d = Math.hypot(dx, dy) || 0.01;
+                        if (d < orr) { pts[i] = [ox + dx / d * orr, oy + dy / d * orr]; }
+                    }
+                    pts = pts.map((q, i) => (i === 0 || i === n - 1) ? q : [(pts[i - 1][0] + q[0] * 2 + pts[i + 1][0]) / 4, (pts[i - 1][1] + q[1] * 2 + pts[i + 1][1]) / 4] as Pt);
+                }
+                return pts;
+            };
+            const strokeRouted = (pts: Pt[], al: number) => {
+                const n = pts.length;
+                for (let i = 1; i < n - 1; i++) {
+                    const t = i / n; const fade = Math.min(1, Math.sin(Math.PI * t) * 1.8 + 0.2);
+                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 1;
+                    const m0: Pt = [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2];
+                    const m1: Pt = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+                    c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(pts[i][0], pts[i][1], m1[0], m1[1]); c.stroke();
+                }
+            };
+            if (fp) {
+                const T = P(fp);
+                if (stone && targetId) strokeRouted(routed([stone[0], stone[1] - 18], sun, null), 0.32);
+                strokeRouted(routed(sun, T, T), 0.55);
+            }
             c.shadowBlur = 0;
             // Staub: Punkte um die Mitte, wenige warme dazwischen.
             const g = () => (R() + R() + R() - 1.5) / 1.5;
             dust = [];
-            const n = Math.round(Math.min(900, W * H / 900));
+            const n = Math.round(Math.min(240, W * H / 3200));
             for (let i = 0; i < n; i++) dust.push([sun[0] + g() * W * 0.42, sun[1] + g() * H * 0.48, R() < 0.85 ? 0.7 : 1.3, 0.3 + R() * 0.7, R() < 0.22]);
             if (targetId && stone) {
                 const el = plane.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(targetId)}"]`);
@@ -107,7 +140,7 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
             for (let i = 0; i < dust.length; i++) {
                 const [x, y, r, a, warm] = dust[i];
                 const tw = reduce ? 1 : 0.7 + 0.3 * Math.sin(tt * (0.6 + (i % 7) * 0.13) + i);
-                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.5 : 0.55) * a * tw * dimNow})`;
+                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * tw * dimNow})`;
                 c.beginPath(); c.arc(x + ox, y + oy, r, 0, 6.3); c.fill();
             }
             if (reduce) cancelAnimationFrame(raf);
@@ -118,10 +151,10 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
         let rt = 0;
         const onResize = () => { window.clearTimeout(rt); rt = window.setTimeout(build, 200); };
         window.addEventListener('resize', onResize);
-        const t2 = window.setTimeout(build, 900); // nach dem Einschweben neu messen
+        const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
         return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key, targetId]);
+    }, [key, targetId, focusId]);
 
     return <canvas ref={ref} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true" />;
 }

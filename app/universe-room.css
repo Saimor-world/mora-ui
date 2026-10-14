@@ -92,3 +92,43 @@ html[data-uv2="on"][data-uv2-lage="open"] [data-mora-playground-root] { display:
 /* ---- Myzel hinter den Planeten ---- */
 .uv2-myzel { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; z-index: 0; opacity: .9; transition: opacity .8s ease; }
 html[data-uv2="on"] [data-uv2-zoom] .uv2-myzel { opacity: .35; }
+
+/* ---- hd41: hochwertigere Planeten, weniger Streupunkte, Arbeits-Chips ---- */
+/* Licht von der Mitte: Terminator + feines Randlicht drehen sich zur Sonne */
+html[data-uv2="on"] [data-planet-kind] .uv2-sun { rotate: var(--uv2-lit, 0deg); }
+html[data-uv2="on"] [data-planet-kind] .uv2-sun::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 1.5px 1.5px 2px rgba(255,238,205,.42), inset 4px 4px 9px rgba(255,214,150,.10); }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: contrast(1.06) saturate(.85); }
+/* Dokument-Sterne und Mondlichter nur bei Zeigen/Fokus – Übersicht bleibt sauber */
+html[data-uv2="on"] [data-planet-kind] .saimor-doc-star { opacity: 0 !important; transition: opacity .5s ease; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .saimor-doc-star { opacity: .55 !important; }
+html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .55; filter: saturate(.4); transition: opacity .5s; }
+/* HUD-Chips: kurze echte Zahlen, sauber gesetzt */
+.uv2-hud__label { bottom: calc(100% + 30px) !important; font-size: 12.5px !important; letter-spacing: .02em; }
+.uv2-hud__chips { position: absolute; left: 50%; bottom: calc(100% + 6px); translate: -50% 0; display: flex; gap: 4px; white-space: nowrap; }
+.uv2-chip { display: inline-flex; align-items: baseline; gap: 5px; height: 20px; padding: 0 8px; border-radius: 4px; font: 500 11px/20px var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.78); background: rgba(8,12,16,.72); box-shadow: inset 0 0 0 .5px rgba(236,240,246,.18); backdrop-filter: blur(8px); }
+.uv2-chip b { font: 600 11.5px/20px var(--uv-mono, ui-monospace, monospace); color: rgba(247,244,233,.96); font-variant-numeric: tabular-nums; }
+.uv2-chip[data-tone="open"] { box-shadow: inset 0 0 0 .5px rgba(214,168,72,.45); }
+.uv2-chip[data-tone="open"] b { color: #E8C277; }
+.uv2-chip[data-tone="need"] { color: #F0D49A; box-shadow: inset 0 0 0 .5px rgba(240,207,124,.7), 0 0 12px rgba(214,168,72,.25); }
+.uv2-chip[data-tone="calm"]:only-child { color: rgba(236,240,246,.55); font-style: italic; }
+/* hd41b: Name steht schon unter dem Planeten – HUD zeigt nur die Chips; Monde in der Übersicht leiser */
+.uv2-hud__label { display: none !important; }
+html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .32 !important; scale: .8; }
+
+/* ---- hd42: Planeten mit eigenem Material – keine Entsättigung mehr, Schattierung kommt aus der Kugel ---- */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { filter: none !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: saturate(1.05) contrast(1.04) !important; }
+html[data-uv2="on"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet, html[data-uv2="on"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet { filter: saturate(.95) brightness(.95) !important; opacity: 1; }
+html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet { filter: saturate(.7) brightness(.82) !important; }
+@media (max-width: 1023px) { html[data-uv2="on"] .uv2-hud__chips { scale: 1.35; transform-origin: bottom center; } }
+
+/* Pixel-Varianten: gemeinsame Saimôr-Hand */
+html[data-uv2-pstyle] .uv2-planet .uv2-planet-glyph { display: none; }
+html[data-uv2-pstyle] .uv2-planet svg ellipse { stroke: rgba(226,192,118,.4); }
+html[data-uv2-pstyle="B"] .saimor-territory-name, html[data-uv2-pstyle="C"] .saimor-territory-name { font-family: var(--uv-mono) !important; text-transform: uppercase; letter-spacing: .14em !important; font-size: 11px !important; color: rgba(190,226,212,.78) !important; }
+
+/* hd44: hellere, klarere Oberfläche */
+html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor-territory-name { font-family: var(--uv-mono) !important; text-transform: uppercase; letter-spacing: .14em !important; font-size: 11.5px !important; font-weight: 500 !important; color: rgba(214,236,226,.9) !important; text-shadow: 0 1px 8px rgba(0,0,0,.7); }
+html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"], html[data-uv2="on"] [data-planet-kind][data-planet-state="seed"] { opacity: .62; }
+html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind][data-planet-state="sleeping"] .saimor-territory-name, html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind][data-planet-state="seed"] .saimor-territory-name { font-size: 10px !important; color: rgba(214,236,226,.6) !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-meta { color: rgba(247,244,233,.7) !important; }

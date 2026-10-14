@@ -1,0 +1,17 @@
+/* hd45 – Marius 14.10.: "es ist immer viel zu dunkel, alles". Global heller, ruhig, nicht grau. */
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime { background-color: rgba(20,36,40,.78) !important; backdrop-filter: blur(28px) saturate(140%); box-shadow: 0 0 0 .5px rgba(247,244,233,.2), 0 24px 70px rgba(0,0,0,.4) !important; }
+html[data-uv2="on"] [data-testid="planet-detail"] { background: rgba(18,34,38,.88) !important; }
+.uv2-widget { background: rgba(32,50,52,.55) !important; box-shadow: inset 0 0 0 .5px rgba(247,244,233,.16) !important; }
+.uv2-widget__label { color: rgba(239,230,210,.82) !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uv2-widget__go { color: rgba(239,230,210,.6) !important; }
+
+html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/30"],[class*="text-white/35"]) { color: rgba(255,255,255,.55) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/40"],[class*="text-white/45"]) { color: rgba(255,255,255,.66) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/50"],[class*="text-white/55"]) { color: rgba(255,255,255,.76) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/60"],[class*="text-white/65"]) { color: rgba(255,255,255,.84) !important; }
+html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/70"],[class*="text-white/75"]) { color: rgba(255,255,255,.9) !important; }
+/* Ordnung: Planeten mit heutiger Arbeit tragen, ruhige treten zurück */
+html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #f1dca4 !important; font-size: 12.5px !important; }
+html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-state="sleeping"]):not([data-planet-state="seed"]) { opacity: .9; }
+@media (max-width: 639px) { .uv2-widget[data-off] .uv2-widget__go { display: none; } .uv2-widget__label { white-space: normal !important; } }
+.uv2-widget__value { color: #fff8e6; }

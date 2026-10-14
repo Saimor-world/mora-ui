@@ -81,6 +81,13 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointermove', onMove); };
     }, [updateRoom, cycleMora]);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
+    // Marius 14.10.: auf dem Telefon kein Planetensystem – dort immer die ruhige Home-Ansicht.
+    React.useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const mq = window.matchMedia('(max-width: 767px)');
+        const f = () => { if (mq.matches && coreMode !== 'home') setCoreMode('home'); };
+        f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f);
+    }, [coreMode, setCoreMode]);
     const surfaceProfile = useSurfaceProfile();
 
     const { data: departments = [] } = useDepartments(activeCompany?.id ?? null);
@@ -197,7 +204,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     </button>
                 )}
                 {showCoreSurfaceSwitch && (
-                    <div role="tablist" aria-label="Ansicht" className="relative flex h-8 items-center gap-5">
+                    <div role="tablist" aria-label="Ansicht" className="relative hidden md:flex h-8 items-center gap-5">
                         {(['home', 'explore'] as const).map((m) => {
                             const active = m === 'home' ? coreMode === 'home' : coreMode !== 'home';
                             return (

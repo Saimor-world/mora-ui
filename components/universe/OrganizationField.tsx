@@ -18,6 +18,7 @@ import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { ORBIT, orbitRxOf } from '@/lib/universe/planetModel';
 import '@/app/universe-orbits.css';
 import { MoraCore } from '@/components/universe/MoraCore';
+import type { PlanetChip } from '@/lib/universe/planetModel';
 import { MyzelLayer } from '@/components/universe/MyzelLayer';
 
 export type UniverseLens = 'organization' | 'relations';
@@ -49,6 +50,7 @@ export interface OrganizationTerritory {
         meta: string;
         glow?: { level: string; reason: string } | null;
         demo?: boolean;
+        chips?: PlanetChip[];
     };
 }
 
@@ -360,7 +362,7 @@ export function OrganizationField({
                     </svg>
                 )}
                 {territories.some((t) => t.model) && (
-                    <MyzelLayer planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y }))} />
+                    <MyzelLayer planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y }))} focusId={hoverId || selectedId} />
                 )}
                 {territories.some((t) => t.model) && (
                     <MoraCore
@@ -514,7 +516,9 @@ function Territory({
     const accent = territory.color || '#67e8f9';
     const v2 = isUniverseV2Enabled();
     const model = territory.model;
-    const size = Math.round((model ? model.diameter : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const quiet = model && (model.state === 'sleeping' || model.state === 'seed');
+    const today = !!model?.chips?.some((c: any) => c.tone && c.tone !== 'calm');
+    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.24 : 1.08) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
@@ -538,6 +542,8 @@ function Territory({
         '--territory-size': size + 'px',
         '--territory-drift': (16 + (drift % 9)) + 's',
         '--territory-phase': '-' + ((drift >>> 4) % 13) + 's',
+        // Licht kommt von der Mitte (MÔRAs Licht): Terminator und Randlicht drehen sich zu ihr.
+        '--uv2-lit': (Math.atan2(50 - territory.y, 50 - territory.x) * 180 / Math.PI + 135).toFixed(1) + 'deg',
     } as CSSProperties;
 
     return (
@@ -547,6 +553,7 @@ function Territory({
             data-uv2-planet={territory.id}
             data-planet-kind={model?.kind}
             data-planet-state={model?.state}
+            data-uv2-today={today ? '' : undefined}
             data-planet-glow={model?.glow ? model.glow.level : undefined}
             data-uv2-attn={v2 ? attnLevel : undefined}
             data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
@@ -589,7 +596,7 @@ function Territory({
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
                 {model && territory.access !== 'locked' ? (
-                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
+                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
                 ) : isUniverseV2Enabled() && territory.access !== 'locked' ? (
                     <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
@@ -616,7 +623,7 @@ function Territory({
                 )}
 
                 <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} planetName={territory.name} />
-                {isUniverseV2Enabled() && territory.access !== 'locked' && orbitals.moons.length === 0 && <AmbientMoons name={territory.name} size={size} seed={drift} />}
+                {false && isUniverseV2Enabled() && territory.access !== 'locked' && orbitals.moons.length === 0 && <AmbientMoons name={territory.name} size={size} seed={drift} />}
             </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
@@ -669,7 +676,7 @@ function Territory({
                     {orbitals.moons.find((moon) => moon.inMotion)!.name}
                 </span>
             )}
-            {model && <PlanetHud name={territory.name} meta={model.meta} size={size} documents={territory.documents} seed={drift} />}
+            {model && <PlanetHud name={territory.name} meta={model.meta} chips={model.chips ?? []} size={size} documents={territory.documents} seed={drift} />}
             {territory.access === 'locked' ? (
                 <span className="mt-1.5 block text-[9px] text-amber-200/62">Mitgliedschaft erforderlich</span>
             ) : territory.metricSource === 'missing' && !isUniverseV2Enabled() && (
@@ -962,7 +969,7 @@ function TruthValue({ icon, value, label }: { icon: React.ReactNode; value: numb
     );
 }
 /** HUD statt Karte: feine Eckklammern + kurzes Etikett; dazu das Sternbild der Dateien (nur bei Zeigen/Auswahl sichtbar, per CSS). */
-function PlanetHud({ name, meta, size, documents, seed }: { name: string; meta: string; size: number; documents: number; seed: number }) {
+function PlanetHud({ name, meta, chips, size, documents, seed }: { name: string; meta: string; chips: PlanetChip[]; size: number; documents: number; seed: number }) {
     const box = Math.round(size + 28);
     const n = Math.min(9, Math.max(0, documents));
     const pts = Array.from({ length: n }, (_, i) => {
@@ -975,7 +982,12 @@ function PlanetHud({ name, meta, size, documents, seed }: { name: string; meta: 
         <>
             <span className="uv2-hud" aria-hidden="true" style={{ width: box, height: box, marginLeft: -box / 2, top: size / 2 - box / 2 }}>
                 <i /><i /><i /><i />
-                <span className="uv2-hud__label">{name}{meta ? <em> · {meta}</em> : null}</span>
+                <span className="uv2-hud__label">{name}</span>
+                <span className="uv2-hud__chips">
+                    {chips.length ? chips.map((c, i) => (
+                        <span key={i} className="uv2-chip" data-tone={c.tone}>{c.value != null && <b>{c.value}</b>}{c.label}</span>
+                    )) : <span className="uv2-chip" data-tone="calm">{meta || 'ruhig'}</span>}
+                </span>
             </span>
             {n >= 2 && (
                 <svg className="uv2-constellation" aria-hidden="true" width={ext * 2} height={ext * 2} viewBox={`${-ext} ${-ext} ${ext * 2} ${ext * 2}`} style={{ marginLeft: -ext, top: size / 2 - ext }}>

@@ -192,10 +192,10 @@ export const MoraLivingBackground: React.FC = () => {
         : [0.90, 1.08, 0.97, 1.05, 0.90];
 
     return (
-        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none" data-os-bg style={{ filter: 'brightness(1.75) saturate(1.05)' }}>
 
             {/* Fallback base — near-black so nothing is ever white */}
-            <div className="absolute inset-0 bg-[#05080e]" />
+            <div className="absolute inset-0 bg-[#0d1d22]" />
 
             {/* Scene base — cross-fades the entire deep backdrop colour */}
             {RITUAL_SCENE_ORDER.map((sceneId) => (
