@@ -77,7 +77,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             plane.querySelectorAll<HTMLElement>('[data-uv2-planet]').forEach((el) => {
                 const id = el.getAttribute('data-uv2-planet'); const pl = planets.find((q) => q.id === id); if (!pl) return;
                 const sz = parseFloat(el.style.getPropertyValue('--territory-size')) || 60; const pp = P(pl);
-                obstacles.push([pp[0], pp[1] + sz * 0.25, sz / 2 + 22]); // Kugel + Name darunter
+                obstacles.push([pp[0], pp[1] + sz * 0.2, sz / 2 + 10]); // Kugel + Name darunter
             });
             const routed = (a: Pt, b: Pt, skip: Pt | null): Pt[] => {
                 const n = 48; let pts: Pt[] = Array.from({ length: n }, (_, i) => [a[0] + (b[0] - a[0]) * i / (n - 1), a[1] + (b[1] - a[1]) * i / (n - 1)] as Pt);
@@ -103,7 +103,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             };
             if (fp) {
                 const T = P(fp);
-                if (stone) strokeRouted(routed([stone[0], stone[1] - 18], sun, null), 0.32);
+                if (stone && targetId) strokeRouted(routed([stone[0], stone[1] - 18], sun, null), 0.32);
                 strokeRouted(routed(sun, T, T), 0.55);
             }
             c.shadowBlur = 0;

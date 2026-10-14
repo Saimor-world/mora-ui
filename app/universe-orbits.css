@@ -41,7 +41,7 @@ html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed=
 /* Gold nur für „braucht dich“ und Auswahl */
 html[data-uv2="on"] [data-planet-glow] .saimor-territory-body { box-shadow: 0 0 0 1px rgba(214,168,72,.55), 0 0 26px 4px rgba(214,168,72,.25); border-radius: 50%; }
 /* Fokus: Rest tritt auf ~40 % zurück */
-html[data-uv2="on"] [data-uv2-focus] [data-planet-kind]:not(:hover):not([aria-pressed="true"]) { opacity: .4 !important; filter: blur(.4px); }
+html[data-uv2="on"] [data-uv2-focus] [data-planet-kind]:not(:hover):not([aria-pressed="true"]) { opacity: .72 !important; }
 html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([data-selected]) { stroke-opacity: .5; }
 /* HUD-Klammern + Etikett (nur Zeigen/Auswahl) */
 .uv2-hud { position: absolute; left: 50%; pointer-events: none; opacity: 0; transform: scale(1.08); transition: opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1); }

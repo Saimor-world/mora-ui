@@ -517,7 +517,8 @@ function Territory({
     const v2 = isUniverseV2Enabled();
     const model = territory.model;
     const quiet = model && (model.state === 'sleeping' || model.state === 'seed');
-    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : 1.14) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const today = !!model?.chips?.some((c: any) => c.tone && c.tone !== 'calm');
+    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.24 : 1.08) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
@@ -552,6 +553,7 @@ function Territory({
             data-uv2-planet={territory.id}
             data-planet-kind={model?.kind}
             data-planet-state={model?.state}
+            data-uv2-today={today ? '' : undefined}
             data-planet-glow={model?.glow ? model.glow.level : undefined}
             data-uv2-attn={v2 ? attnLevel : undefined}
             data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}

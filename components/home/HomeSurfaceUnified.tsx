@@ -356,7 +356,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
       className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
-      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(5,7,6,.7), rgba(5,7,6,.35))' }}>
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(12,26,30,.55), rgba(12,26,30,.22)), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
@@ -368,7 +368,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
             {greeting}{firstName ? `, ${firstName}.` : '.'}
           </h1>
-          <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.6)' }}>
+          <p className="mt-6 max-w-[520px] text-[15px] font-light leading-[1.6]" style={{ color: 'rgba(247,244,233,.82)' }}>
             Ich bin da. Sag mir, was du brauchst – oder wohin du willst.
           </p>
           <form className="mt-6 max-w-[520px]" data-testid="uv2-home-ask"

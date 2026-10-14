@@ -306,7 +306,7 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const dpr = Math.min(3, window.devicePixelRatio || 1);
-    const cell = variant === 'C' ? Math.max(3, size / 18) : variant === 'B' ? 3.2 : 2;
+    const cell = variant === 'C' ? Math.max(3, size / 18) : variant === 'B' ? 2.5 : 2;
     const n = Math.max(8, Math.round(size / cell));
     const W = Math.round(size * dpr); cv.width = cv.height = W;
     const c = cv.getContext('2d'); if (!c) return;
@@ -332,9 +332,9 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
         if (sh > 0.9 && th < 0.35) col = gold; if (rim > 0.35 && th < 0.6) col = gold;
         c.fillStyle = `rgb(${col})`; c.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
       } else if (variant === 'B') {
-        c.fillStyle = `rgba(${pal[0]},0.9)`; c.fillRect(x * px, y * px, px + 0.5, px + 0.5);
-        const r = px * (0.12 + 0.36 * sh); const col = sh > 0.88 ? gold : mix(pal[2], pal[3], sh);
-        c.fillStyle = `rgba(${col},${0.35 + 0.65 * sh})`; c.beginPath(); c.arc((x + 0.5) * px, (y + 0.5) * px, r, 0, Math.PI * 2); c.fill();
+        c.fillStyle = `rgb(${mix(pal[0], pal[1], 0.35 + 0.4 * sh)})`; c.fillRect(x * px, y * px, px + 0.5, px + 0.5);
+        const r = px * (0.26 + 0.24 * sh); const col = sh > 0.9 ? gold : mix(pal[1], pal[3], Math.min(1, sh * 1.1));
+        c.fillStyle = `rgba(${col},${0.7 + 0.3 * sh})`; c.beginPath(); c.arc((x + 0.5) * px, (y + 0.5) * px, r, 0, Math.PI * 2); c.fill();
       } else {
         const lvl = Math.min(3, Math.floor(sh * 3.6)); let col = pal[lvl];
         if (sh > 0.86 && noise(y, x) > 0.45) col = gold;
@@ -342,7 +342,7 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
         c.fillStyle = `rgb(${col})`; c.fillRect(Math.floor(x * px), Math.floor(y * px), Math.ceil(px), Math.ceil(px));
       }
     }
-    if (variant === 'B') { c.strokeStyle = 'rgba(226,192,118,0.55)'; c.lineWidth = dpr * 0.75; c.beginPath(); c.arc(W / 2, W / 2, W / 2 - dpr, 0, Math.PI * 2); c.stroke(); }
+    if (variant === 'B') { c.strokeStyle = 'rgba(232,198,120,0.92)'; c.lineWidth = dpr * 1.1; c.beginPath(); c.arc(W / 2, W / 2, W / 2 - dpr, 0, Math.PI * 2); c.stroke(); }
   }, [size, lit, tint, variant, seed]);
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" data-pstyle={variant} style={{ imageRendering: variant === 'B' ? 'auto' : 'pixelated', borderRadius: variant === 'B' ? '50%' : undefined, overflow: 'hidden' }} />;
 }
