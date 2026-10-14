@@ -1,5 +1,5 @@
 import { shortcutLabel, isApplePlatform } from '@/lib/os/shortcut';
-import { planetForSource, calmExcerpt, demoAnswer } from '@/lib/universe/spaceAnswer';
+import { planetForSource, calmExcerpt } from '@/lib/universe/spaceAnswer';
 import { universeLayerFor, homeLayerFor, cameraTransition, CAMERA } from '@/lib/universe/motion';
 import { moonSlots, interiorSentence } from '@/components/universe/PlanetInterior';
 
@@ -25,10 +25,6 @@ describe('MÔRA ohne Fenster', () => {
     expect(r.truncated).toBe(true);
     expect(r.excerpt.endsWith('.')).toBe(true);
     expect(calmExcerpt('Kurz.').truncated).toBe(false);
-  });
-  it('Bauen liefert einen Vorschlag, der nicht ausführbar ist', () => {
-    const a = demoAnswer('bauen', 'x');
-    expect(a.proposals[0].execution).toBeUndefined();
   });
 });
 

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><title>MÔRA Universe – Hero-Varianten</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html,body{margin:0;height:100%;background:#030405;overflow:hidden;font-family:Inter,-apple-system,system-ui,sans-serif;color:#F7F4E9}
+  canvas{position:fixed;inset:0;width:100vw;height:100vh;display:block}
+  .hud{position:fixed;left:64px;top:84px;pointer-events:none}
+  .eyebrow{font:600 11px/1 Inter,sans-serif;letter-spacing:.16em;color:#D6A848;text-transform:uppercase}
+  .title{font:300 46px/1.05 "Cormorant Garamond",Georgia,serif;margin-top:18px;letter-spacing:-.01em}
+  .sub{font:400 14px/1.5 Inter,sans-serif;color:rgba(247,244,233,.62);margin-top:14px}
+  .tag{position:fixed;right:64px;top:84px;font:500 11px/1 Inter,sans-serif;letter-spacing:.18em;color:rgba(247,244,233,.4);text-transform:uppercase}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="hud"><div class="eyebrow" id="eb"></div><div class="title" id="tt">Guten Morgen,<br>Marius.</div><div class="sub" id="sb">Nichts drängt heute.</div></div>
+<div class="tag" id="tag"></div>
+<script>
+// Prototyp: rendert das ECHTE Planeten-Modell (Export aus CORE, ?data=…) in drei Bildsprachen. Keine erfundenen Inhalte.
+const Q = new URLSearchParams(location.search);
+const V = (Q.get('v') || 'A').toUpperCase(), COMPANY = (Q.get('company') || '').toLowerCase();
+const T0 = +(Q.get('t') || 0); // fester Zeitpunkt für Screenshots
+const PAL = {
+  'gas-gold':['#5a3d17','#a77b3c','#d9b26a','#f2dcae','#b88a48'], 'ocean':['#06182e','#0f3d66','#2a73a8','#7fbcdf','#d8eef7'],
+  'marble-indigo':['#130f33','#2f2870','#5d52b0','#a69de0','#e9e5ff'], 'ice':['#3d5a6b','#7ea3b6','#bcd8e4','#e9f6fb','#ffffff'],
+  'copper-rock':['#2a130a','#6b331b','#a85a32','#d6905e','#f0c49a'], 'coral':['#3a1214','#7d3030','#b8574c','#e29579','#f6cbb3'],
+  'nebula-violet':['#1a0a24','#45205a','#7a3f92','#b989c9','#ead2f2'], 'pearl':['#4a4a4f','#8d8b8c','#c9c4bd','#ece7df','#ffffff'],
+  'sand-dune':['#3d2c17','#7d5f37','#b8935e','#dcc196','#f5e6c8'], 'forest':['#0c1f14','#1f4630','#3f7a52','#86b48a','#d3e8c9'],
+  'crystal-teal':['#062428','#0f4d55','#2b8a90','#7fcfcc','#dff7f3'], 'ember':['#2a0d06','#6e2410','#b34a1d','#ea8a45','#ffd2a0'],
+};
+const ATM = {'gas-gold':'255,214,150','ocean':'120,190,255','marble-indigo':'170,150,255','ice':'200,235,255','copper-rock':'255,170,120','coral':'255,160,140','nebula-violet':'220,150,255','pearl':'240,236,230','sand-dune':'250,215,160','forest':'160,230,170','crystal-teal':'140,240,230','ember':'255,150,90'};
+function hash(n){ n = Math.imul(n ^ 61 ^ (n >>> 16), 9); n ^= n >>> 4; n = Math.imul(n, 0x27d4eb2d); return ((n ^ (n >>> 15)) >>> 0) / 4294967296; }
+function vnoise(x,y,s){ const xi=Math.floor(x), yi=Math.floor(y), xf=x-xi, yf=y-yi; const r=(a,b)=>hash((a*374761393+b*668265263+s*982451653)|0);
+  const u=xf*xf*(3-2*xf), v=yf*yf*(3-2*yf); return (r(xi,yi)*(1-u)+r(xi+1,yi)*u)*(1-v)+(r(xi,yi+1)*(1-u)+r(xi+1,yi+1)*u)*v; }
+function fbm(x,y,s){ let a=0,f=1,w=.5; for(let i=0;i<5;i++){ a+=w*vnoise(x*f,y*f,s+i*17); f*=2.03; w*=.5;} return a; }
+const hex = h => [1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+function ramp(p,t){ t=Math.max(0,Math.min(.999,t)); const k=t*(p.length-1), i=Math.floor(k), f=k-i; const a=hex(p[i]), b=hex(p[i+1]); return [a[0]+(b[0]-a[0])*f,a[1]+(b[1]-a[1])*f,a[2]+(b[2]-a[2])*f]; }
+// Äquirektanguläre Textur je Planet (einmalig), danach pro Bild nur Beleuchtung + Drehung.
+function makeTex(arch, seed){ const W=512,H=256, p=PAL[arch]||PAL.pearl, d=new Float32Array(W*H*3), banded = arch==='gas-gold'||arch==='sand-dune'||arch==='ice';
+  for(let y=0;y<H;y++) for(let x=0;x<W;x++){ const nx=x/W*8, ny=y/H*4; let t;
+    if(banded){ t = .5+.38*Math.sin(ny*4.2 + fbm(nx*.6,ny*2,seed)*3.2) + .18*(fbm(nx*1.5,ny*6,seed+3)-.5); }
+    else if(arch==='ocean'){ const c=fbm(nx,ny,seed); t = c>.55 ? .62+ (c-.55)*1.6 : c*.95; }
+    else { t = fbm(nx+fbm(nx,ny,seed+9)*1.4, ny+fbm(nx+3,ny,seed+5)*1.4, seed); t = (t-.2)*1.5; }
+    const c=ramp(p,t); const i=(y*W+x)*3; d[i]=c[0]; d[i+1]=c[1]; d[i+2]=c[2]; }
+  return {W,H,d}; }
+function renderSphere(tex, R, rot, lx, ly, lz, atm, dim){ // R in Gerätepixeln
+  const S=Math.ceil(R*2+R*0.5), cv=document.createElement('canvas'); cv.width=cv.height=S; const g=cv.getContext('2d'); const img=g.createImageData(S,S), o=img.data, c=S/2;
+  for(let py=0;py<S;py++) for(let px=0;px<S;px++){ const x=(px+.5-c)/R, y=(py+.5-c)/R, r2=x*x+y*y; const k=(py*S+px)*4;
+    if(r2<=1){ const z=Math.sqrt(1-r2); // Normale; Achse leicht geneigt
+      const tilt=.36, yy=y*Math.cos(tilt)-z*Math.sin(tilt), zz=y*Math.sin(tilt)+z*Math.cos(tilt);
+      const lon=Math.atan2(x,zz)+rot, lat=Math.asin(Math.max(-1,Math.min(1,yy)));
+      const u=((lon/(2*Math.PI))%1+1)%1, v=lat/Math.PI+.5; const ti=((Math.floor(v*(tex.H-1)))*tex.W+Math.floor(u*(tex.W-1)))*3;
+      let ndl = x*lx + y*ly + z*lz; const diff = Math.max(0, ndl); // weicher Terminator
+      const term = Math.pow(Math.min(1, Math.max(0,(ndl+.18)/1.18)), 1.25);
+      const limb = .55+.45*Math.pow(z,.5); const amb=.035;
+      const spec = Math.pow(Math.max(0, (2*ndl*z - lz)), 28) * .25 * (ndl>0?1:0);
+      const L = (amb + term*1.05) * limb;
+      let rr=tex.d[ti]*L+spec*255, gg=tex.d[ti+1]*L+spec*255, bb=tex.d[ti+2]*L+spec*255;
+      // Atmosphäre am beleuchteten Rand
+      const fres = Math.pow(1-z, 2.2) * Math.max(0, ndl+.35);
+      rr += atm[0]*fres*.55; gg += atm[1]*fres*.55; bb += atm[2]*fres*.55;
+      o[k]=Math.min(255,rr*dim); o[k+1]=Math.min(255,gg*dim); o[k+2]=Math.min(255,bb*dim); o[k+3]=255;
+      const e = (1-Math.sqrt(r2))*R; if(e<1.2) o[k+3]=255*Math.max(0,e/1.2); // Kantenglättung
+    } else { // äußerer Atmosphärensaum
+      const d=Math.sqrt(r2)-1; if(d<.16){ const lit=Math.max(0,(x*lx+y*ly)/Math.sqrt(r2)+.3); const a=Math.pow(1-d/.16,2.4)*lit*.55*dim; o[k]=atm[0];o[k+1]=atm[1];o[k+2]=atm[2];o[k+3]=255*a; } }
+  }
+  g.putImageData(img,0,0); return cv; }
+
+let model=null, bodies=[], belt=[], W=0,H=0,DPR=1, stars=[];
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+function layout(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; }
+const CFG = {
+  // A: Keynote-Orrery – gekippte Ebene, Sonne mittig, wenige große Helden, ferner Gürtel
+  A:{cx:.5,cy:.53, tilt:.30, r1:.27, beltR:.45, hero:84, minor:20, sun:62, dof:.9, label:'A · Orrery'},
+  // B: Horizont – flache Kamera, große Sonne im Vordergrund links unten, Planeten auf weitem Bogen
+  B:{cx:.5,cy:.64, tilt:.16, r1:.3, beltR:.47, hero:92, minor:18, sun:96, dof:1.4, label:'B · Horizont'},
+  // C: Ruhige Aufsicht – steilere Ebene, klassisches System, Licht von der Sonne
+  C:{cx:.5,cy:.52, tilt:.52, r1:.22, beltR:.36, hero:70, minor:18, sun:54, dof:.5, label:'C · Aufsicht'},
+}[V];
+function build(){
+  const by=model.by_company; const key=Object.keys(by).find(k=>!COMPANY||k.toLowerCase().includes(COMPANY)) || Object.keys(by)[0]; const u=by[key];
+  document.getElementById('tag').textContent = CFG.label + (u.company.sector==='demo' ? ' · Demo '+u.company.name : ' · '+u.company.name);
+  const now=new Date(); document.getElementById('eb').textContent = now.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'})+' · '+now.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  const sys = u.planets.filter(p=>p.kind==='system').sort((a,b)=>(a.angle??0)-(b.angle??0));
+  const heroes = sys.filter(p=>p.state!=='seed'), seeds = sys.filter(p=>p.state==='seed');
+  const doms = u.planets.filter(p=>p.kind==='domain' && !p.joins && !p.cluster).concat((u.clusters||[]).map(c=>({...c, kind:'cluster', state:'active', size:c.size||'M'})));
+  const sizeF={S:.82,M:1,L:1.12,XL:1.2};
+  bodies = heroes.map((p,i)=>({p, kind:'hero', a: -Math.PI/2 + i*2*Math.PI/heroes.length + .35, r:CFG.r1, size: CFG.hero*(sizeF[p.size]||1)*(p.state==='sleeping'?.86:1), dim: p.state==='sleeping'?.72:1, speed:.012}))
+    .concat(seeds.map((p,i)=>({p, kind:'seed', a: -Math.PI/2 + (i+.5)*2*Math.PI/Math.max(1,seeds.length) + .9, r:CFG.r1*.62, size: CFG.minor*.8, dim:.5, speed:.02})))
+    .concat(doms.map((p,i)=>({p, kind:'belt', a: -Math.PI/2 + (i+.5)*2*Math.PI/Math.max(1,doms.length), r:CFG.beltR, size: CFG.minor*(sizeF[p.size]||1)*(p.state==='sleeping'?.85:1), dim: p.state==='sleeping'?.55:.78, speed:.004})));
+  bodies.forEach((b,i)=>{ const arch=b.p.look?.archetype||'pearl'; b.arch=arch; b.tex=makeTex(arch, (b.p.look?.seed||i*31)%997); b.atm=(ATM[arch]||'240,236,230').split(',').map(Number); });
+  belt = Array.from({length:900},(_,i)=>({a:hash(i*7+1)*Math.PI*2, r:CFG.beltR*(1+(hash(i*13+5)-.5)*.16), s:.4+hash(i*3+2)*1.2, o:.15+hash(i*11+9)*.5}));
+  stars = Array.from({length:520},(_,i)=>({x:hash(i*5+3),y:hash(i*9+7),s:hash(i*17+1)*1.3+.2,o:.15+hash(i*23+4)*.6,tw:hash(i*29+2)*6}));
+}
+function proj(a, r, t){ // Bahn → Bildschirm (gekippte Ebene), plus Tiefe 0 (fern) … 1 (nah)
+  const R=Math.min(W*1.12,H*1.75)*r; const x = W*CFG.cx + Math.cos(a)*R, y = H*CFG.cy + Math.sin(a)*R*CFG.tilt; const depth=(Math.sin(a)+1)/2; return {x,y,depth}; }
+let cache=new Map();
+function frame(ms){
+  const t = (T0 || ms/1000);
+  ctx.setTransform(DPR,0,0,DPR,0,0); ctx.fillStyle='#030405'; ctx.fillRect(0,0,W,H);
+  // Himmel: tiefe Nebelwärme + Sterne mit Parallaxe
+  const px = Math.sin(t*.05)*6, py = Math.cos(t*.04)*4;
+  let g=ctx.createRadialGradient(W*CFG.cx,H*CFG.cy,0,W*CFG.cx,H*CFG.cy,Math.max(W,H)*.8); g.addColorStop(0,'rgba(60,42,18,.55)'); g.addColorStop(.35,'rgba(22,18,14,.5)'); g.addColorStop(1,'rgba(3,4,5,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  g=ctx.createRadialGradient(W*.85,H*.2,0,W*.85,H*.2,W*.5); g.addColorStop(0,'rgba(40,60,90,.18)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{ ctx.globalAlpha=s.o*(.7+.3*Math.sin(t*.8+s.tw)); ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(s.x*W+px*s.s*.3, s.y*H+py*s.s*.3, s.s*.7, 0, 6.283); ctx.fill(); }); ctx.globalAlpha=1;
+  const sunP={x:W*CFG.cx, y:H*CFG.cy};
+  // Bahn (hinterer Teil) und Gürtel
+  const ring=(r,alpha,front)=>{ const R=Math.min(W*1.12,H*1.75)*r; ctx.beginPath(); ctx.ellipse(sunP.x,sunP.y,R,R*CFG.tilt,0, front?0:Math.PI, front?Math.PI:2*Math.PI); ctx.strokeStyle=`rgba(232,200,130,${alpha})`; ctx.lineWidth=1; ctx.stroke(); };
+  ring(CFG.r1,.13,false); ring(CFG.r1*.62,.06,false);
+  belt.forEach(b=>{ const p=proj(b.a+t*.003,b.r,t); if(p.depth>.5) return; ctx.globalAlpha=b.o*(.35+.5*p.depth); ctx.fillStyle='rgb(230,215,190)'; ctx.fillRect(p.x,p.y,b.s,b.s); }); ctx.globalAlpha=1;
+  // Körper nach Tiefe sortieren (fern zuerst), Sonne dazwischen
+  const items = bodies.map(b=>{ const a=b.a+t*b.speed; const p=proj(a,b.r,t); return {b,a,...p}; });
+  const drawBody = it => { const b=it.b; const persp = .72 + .5*it.depth; const Rcss = b.size/2*persp; const Rd=Math.round(Rcss*DPR);
+    // Licht kommt von der Sonne: Richtung im Bild + etwas zur Kamera
+    let lx=sunP.x-it.x, ly=sunP.y-it.y; const ln=Math.hypot(lx,ly)||1; lx/=ln; ly/=ln; const lz=.28 - .55*(it.depth-.5); const n=Math.hypot(lx*.95,ly*.95,lz); 
+    const key=b.p.key+'|'+Rd+'|'+Math.round(lx*20)+'|'+Math.round(ly*20)+'|'+Math.round(t*b.speed*40*6);
+    let sp=cache.get(key); if(!sp){ sp=renderSphere(b.tex, Rd, t*.06*(1+b.size/100)+b.a, lx*.95/n, ly*.95/n, lz/n, b.atm, b.dim); if(cache.size>400) cache.clear(); cache.set(key,sp); }
+    const blur = b.kind==='hero' ? Math.max(0,(1-it.depth)-.55)*CFG.dof*2.2 : (1-it.depth)*CFG.dof*1.2;
+    ctx.save(); if(blur>.25) ctx.filter=`blur(${blur.toFixed(2)}px)`; ctx.drawImage(sp, it.x-sp.width/2/DPR, it.y-sp.height/2/DPR, sp.width/DPR, sp.height/DPR); ctx.restore();
+    if(b.arch==='gas-gold' && b.kind==='hero'){ // Ring des Gasriesen
+      ctx.save(); ctx.translate(it.x,it.y); ctx.rotate(-.32); ctx.scale(1,.26); for(let k=0;k<3;k++){ ctx.beginPath(); ctx.arc(0,0,Rcss*(1.55+k*.14),0,Math.PI*2); ctx.strokeStyle=`rgba(240,214,160,${.32-k*.08})`; ctx.lineWidth=Rcss*.08/(.26); ctx.stroke(); } ctx.restore(); }
+    // Beschriftung
+    if(b.kind==='hero'){ ctx.font=`500 ${13+persp*1.5}px Inter, system-ui, sans-serif`; ctx.textAlign='center'; ctx.fillStyle=`rgba(247,240,222,${.6+.35*it.depth})`; ctx.shadowColor='rgba(0,0,0,.9)'; ctx.shadowBlur=8; ctx.fillText(b.p.label, it.x, it.y+Rcss*(b.arch==='gas-gold'?1.25:1)+22); ctx.shadowBlur=0; }
+    else if(b.kind==='belt'){ ctx.font=`450 11px Inter, system-ui, sans-serif`; ctx.textAlign='center'; ctx.fillStyle=`rgba(247,244,233,${.25+.25*it.depth})`; ctx.fillText(b.p.label, it.x, it.y+Rcss+14); }
+  };
+  items.filter(i=>i.depth<.5).sort((a,b)=>a.depth-b.depth).forEach(drawBody);
+  // MÔRA-Sonne mit Korona
+  const S=CFG.sun, pulse=1+.04*Math.sin(t*.7);
+  g=ctx.createRadialGradient(sunP.x,sunP.y,0,sunP.x,sunP.y,S*5.5*pulse); g.addColorStop(0,'rgba(255,214,140,.38)'); g.addColorStop(.18,'rgba(240,180,90,.16)'); g.addColorStop(.5,'rgba(200,140,60,.05)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.save(); ctx.translate(sunP.x,sunP.y); ctx.globalCompositeOperation='lighter';
+  for(let k=0;k<48;k++){ const a=k/48*Math.PI*2 + t*.01; const len=S*(1.25+.9*hash(k*7+Math.floor(t*.2+k))*(.6+.4*Math.sin(t*.5+k))); ctx.rotate(Math.PI*2/48); const lg=ctx.createLinearGradient(0,0,len,0); lg.addColorStop(0,'rgba(255,220,150,.10)'); lg.addColorStop(1,'rgba(255,200,120,0)'); ctx.fillStyle=lg; ctx.beginPath(); ctx.moveTo(S*.4,-S*.05); ctx.lineTo(len,0); ctx.lineTo(S*.4,S*.05); ctx.fill(); }
+  ctx.globalCompositeOperation='source-over';
+  g=ctx.createRadialGradient(-S*.18,-S*.2,S*.05,0,0,S*.5); g.addColorStop(0,'#fffaf0'); g.addColorStop(.35,'#ffe3a8'); g.addColorStop(.75,'#f0b65c'); g.addColorStop(1,'#c9832e'); ctx.fillStyle=g; ctx.shadowColor='rgba(255,200,120,.9)'; ctx.shadowBlur=S*.9; ctx.beginPath(); ctx.arc(0,0,S*.5,0,Math.PI*2); ctx.fill(); ctx.shadowBlur=0;
+  // Granulation
+  ctx.globalAlpha=.18; for(let k=0;k<70;k++){ const a=hash(k*3+1)*6.283+t*.02, rr=Math.sqrt(hash(k*5+2))*S*.46; ctx.fillStyle=k%2?'#fff4d8':'#d98f3a'; ctx.beginPath(); ctx.arc(Math.cos(a)*rr,Math.sin(a)*rr,S*.035,0,6.283); ctx.fill(); } ctx.globalAlpha=1;
+  ctx.restore();
+  ctx.font='500 10.5px Inter, system-ui, sans-serif'; ctx.textAlign='center'; ctx.fillStyle='rgba(243,223,174,.75)'; ctx.fillText('M Ô R A', sunP.x, sunP.y+S*.5+24);
+  // vordere Bahnhälfte, vorderer Gürtel, nahe Körper
+  ring(CFG.r1,.2,true); ring(CFG.r1*.62,.08,true);
+  belt.forEach(b=>{ const p=proj(b.a+t*.003,b.r,t); if(p.depth<=.5) return; ctx.globalAlpha=b.o*(.35+.5*p.depth); ctx.fillStyle='rgb(230,215,190)'; ctx.fillRect(p.x,p.y,b.s*1.2,b.s*1.2); }); ctx.globalAlpha=1;
+  items.filter(i=>i.depth>=.5).sort((a,b)=>a.depth-b.depth).forEach(drawBody);
+  // Vignette
+  g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,.55)'); ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  if(!T0) requestAnimationFrame(frame); else document.body.dataset.ready='1';
+}
+fetch(Q.get('data')||'/mora/real-universe-export.json').then(r=>r.json()).then(d=>{ model=d; layout(); build(); addEventListener('resize',()=>{layout();}); requestAnimationFrame(frame); });
+</script></body></html>

@@ -15,6 +15,8 @@ import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { RINGS, stageScale } from '@/lib/universe/planetModel';
+import '@/app/universe-stage.css';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -170,6 +172,8 @@ export function OrganizationField({
     }, [territories, attention]);
     const publishedRef = useRef('');
     const territoryCountRef = useRef(territories.length); territoryCountRef.current = territories.length;
+    const territoriesRef = useRef(territories); territoriesRef.current = territories;
+    const hasModelStage = territories.some((t) => t.model);
 
     useLayoutEffect(() => {
         const publish = () => {
@@ -180,7 +184,9 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
+                const hasModel = territoriesRef.current.some((t) => t.model);
+                // Telefon: die Ebene misst beim ersten Layout noch die Desktop-Box (hidden→block per CSS) – deshalb zusätzlich an der Fensterbreite deckeln.
+                const next = hasModel ? Math.min(stageScale(box.width, box.height), window.innerWidth < 1024 ? Math.max(0.42, window.innerWidth / 760) : 2) : Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -198,9 +204,29 @@ export function OrganizationField({
         publish();
         window.addEventListener('resize', publish);
         return () => window.removeEventListener('resize', publish);
-    }, [anchors, clearField, setField]);
+    }, [anchors, clearField, setField, hasModelStage]);
 
     useEffect(() => () => { publishedRef.current = ''; clearField(); }, [clearField]);
+
+    // Telefon: Begrüßung und System teilen sich eine Spalte – das System beginnt unter der Begrüßung,
+    // egal wie lang sie gerade ist (Heute-Liste, Vorschlag). Kein Überlappen.
+    useEffect(() => {
+        if (!hasModelStage) return;
+        const plane = fieldRef.current; if (!plane) return;
+        const sync = () => {
+            if (window.innerWidth >= 1024) { plane.style.removeProperty('--uv2-phone-top'); return; }
+            const g = document.querySelector('[data-testid="uv2-greeting"]') as HTMLElement | null;
+            const bottom = g && g.offsetParent !== null ? g.getBoundingClientRect().bottom : 220;
+            plane.style.setProperty('--uv2-phone-top', Math.round(Math.max(200, bottom + 16)) + 'px');
+        };
+        sync();
+        const g = document.querySelector('[data-testid="uv2-greeting"]');
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+        if (g && ro) ro.observe(g);
+        window.addEventListener('resize', sync);
+        const t = window.setInterval(sync, 1500);
+        return () => { ro?.disconnect(); window.removeEventListener('resize', sync); window.clearInterval(t); };
+    }, [hasModelStage]);
 
     // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
     // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte
@@ -325,10 +351,21 @@ export function OrganizationField({
             <div
                 ref={fieldRef}
                 data-uv2-plane
+                data-uv2-stage={hasModelStage ? 'model' : undefined}
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
                 className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
             >
+                {hasModelStage && (
+                    <svg className="uv2-stage__orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        {([1, 2] as const).map((ring) => (
+                            <ellipse key={ring} data-ring={ring} cx="50" cy="50" rx={RINGS[ring].rx} ry={RINGS[ring].ry} />
+                        ))}
+                    </svg>
+                )}
+                {hasModelStage && (
+                    <div className="uv2-stage__sun" aria-hidden="true"><span className="uv2-stage__sun-core" /><span className="uv2-stage__sun-label">MÔRA</span></div>
+                )}
                 <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (
                     <Territory
@@ -792,7 +829,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
-        <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <span className="pointer-events-none absolute inset-0" aria-hidden="true" data-uv2-orbitals>
             {/* 64 Sterne in DREI gemalten Ebenen statt 64 Elementen.
                 Frueher war jeder Stern ein eigenes animiertes div mit
                 box-shadow - die Kosten kamen von der Bauweise, nicht von der

@@ -20,8 +20,9 @@ describe('Planeten-Modell UI', () => {
     placed.forEach((p) => { expect(p.x).toBeGreaterThanOrEqual(0); expect(p.x).toBeLessThanOrEqual(100); });
   });
   it('Keime klein, System höchstens L, Meta ehrlich', () => {
-    expect(planetDiameter('XL', 'seed', 'system')).toBeLessThan(planetDiameter('S', 'active', 'domain'));
-    expect(planetDiameter('XL', 'active', 'system')).toBe(planetDiameter('L', 'active', 'system'));
+    expect(planetDiameter('S', 'seed', 'domain')).toBeLessThan(planetDiameter('S', 'active', 'domain'));
+    expect(planetDiameter('XL', 'active', 'system')).toBe(planetDiameter('S', 'active', 'system'));
+    expect(planetDiameter('XL', 'active', 'domain')).toBeLessThan(planetDiameter('S', 'active', 'system'));
     expect(bodyMeta(sys('markt', 0, 'seed') as any, null)).toBe('verbinden');
     expect(bodyMeta(dom('a') as any, null)).toBe('1 Bereich · 2 Dokumente');
   });
