@@ -172,3 +172,36 @@ export function bodyMeta(p: ModelPlanet | null, c: ModelCluster | null): string 
   if (p.state === 'sleeping') parts.push('ruht');
   return parts.join(' · ');
 }
+
+/** Arbeits-Chips am Planeten (HUD bei Zeigen/Fokus) – nur echte Zahlen aus CORE, nie erfunden. */
+export interface PlanetChip { label: string; value?: string | number | null; tone: 'calm' | 'open' | 'need' }
+export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): PlanetChip[] {
+  if (c) return [{ label: c.members.length === 1 ? 'Bereich' : 'Bereiche', value: c.members.length, tone: 'calm' }];
+  if (!p) return [];
+  const n = (k: string) => Number(p.counts?.[k] ?? 0);
+  const out: PlanetChip[] = [];
+  if (p.glow) out.push({ label: p.glow.reason || 'braucht dich', tone: 'need' });
+  if (p.state === 'seed') return [...out, { label: 'noch nicht verbunden', tone: 'calm' }];
+  if (p.kind === 'domain') {
+    if (n('docs')) out.push({ label: n('docs') === 1 ? 'Dokument' : 'Dokumente', value: n('docs'), tone: 'calm' });
+    if (n('spaces')) out.push({ label: n('spaces') === 1 ? 'Bereich' : 'Bereiche', value: n('spaces'), tone: 'calm' });
+  } else {
+    switch (p.capability) {
+      case 'finanzen': if (n('transactions_14d')) out.push({ label: 'Buchungen · 14 Tage', value: n('transactions_14d'), tone: 'calm' }); break;
+      case 'post': if (n('mails')) out.push({ label: 'Mails im Eingang', value: n('mails'), tone: 'open' }); break;
+      case 'wissen': if (n('docs')) out.push({ label: 'Dokumente', value: n('docs'), tone: 'calm' }); break;
+      case 'wache': out.push(n('open_incidents') ? { label: 'offene Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
+      case 'werkstatt': if (n('open_tasks')) out.push({ label: 'offene Aufgaben', value: n('open_tasks'), tone: 'open' }); break;
+      case 'betrieb': {
+        const eur = Number(p.counts?.estimated_eur ?? 0);
+        if (eur) out.push({ label: 'Kosten geschätzt', value: eur.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }), tone: 'calm' });
+        if (n('tenants')) out.push({ label: 'Tenants', value: n('tenants'), tone: 'calm' });
+        break;
+      }
+    }
+    const connected = (p.sources || []).filter((s) => s.status === 'connected').length;
+    if (connected) out.push({ label: connected === 1 ? 'Quelle verbunden' : 'Quellen verbunden', value: connected, tone: 'calm' });
+  }
+  if (p.state === 'sleeping') out.push({ label: 'ruht', tone: 'calm' });
+  return out.slice(0, 4);
+}

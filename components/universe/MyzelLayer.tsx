@@ -38,7 +38,7 @@ function hypha(ctx: CanvasRenderingContext2D, R: () => number, x: number, y: num
     }
 }
 
-export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number; y: number }> }) {
+export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: string; x: number; y: number }>; focusId?: string | null }) {
     const ref = useRef<HTMLCanvasElement>(null);
     const presence = useMoraPresence();
     const working = presence.state === 'working' || presence.state === 'done';
@@ -71,13 +71,15 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
             const dim = targetId ? 0.45 : 1; dimNow = dim;
             c.shadowColor = `rgba(${J},0.5)`; c.shadowBlur = 6;
             const go = (a: Pt, b: Pt, al: number) => { const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) + (R() - 0.5) * 0.9; hypha(c, R, a[0], a[1], ang, 900, 1.0, al * dim, b, 0); };
-            if (stone) go([stone[0], stone[1] - 18], sun, 0.6);
-            planets.forEach((p) => go(sun, P(p), 0.46));
+            // Ruhe: nur ein eleganter Faden vom Stein zur Mitte. Fäden zu Planeten erst bei Zeigen/Fokus.
+            if (stone) go([stone[0], stone[1] - 18], sun, 0.34);
+            const fp = focusId && !targetId ? planets.find((p) => p.id === focusId) : undefined;
+            if (fp) { const R2 = rng(1 + [...fp.id].reduce((a, ch) => a * 31 + ch.charCodeAt(0), 7) % 2147483646); const T = P(fp); const ang = Math.atan2(T[1] - sun[1], T[0] - sun[0]) + (R2() - 0.5) * 0.6; hypha(c, R2, sun[0], sun[1], ang, 900, 1.0, 0.5, T, 2); }
             c.shadowBlur = 0;
             // Staub: Punkte um die Mitte, wenige warme dazwischen.
             const g = () => (R() + R() + R() - 1.5) / 1.5;
             dust = [];
-            const n = Math.round(Math.min(900, W * H / 900));
+            const n = Math.round(Math.min(240, W * H / 3200));
             for (let i = 0; i < n; i++) dust.push([sun[0] + g() * W * 0.42, sun[1] + g() * H * 0.48, R() < 0.85 ? 0.7 : 1.3, 0.3 + R() * 0.7, R() < 0.22]);
             if (targetId && stone) {
                 const el = plane.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(targetId)}"]`);
@@ -107,7 +109,7 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
             for (let i = 0; i < dust.length; i++) {
                 const [x, y, r, a, warm] = dust[i];
                 const tw = reduce ? 1 : 0.7 + 0.3 * Math.sin(tt * (0.6 + (i % 7) * 0.13) + i);
-                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.5 : 0.55) * a * tw * dimNow})`;
+                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * tw * dimNow})`;
                 c.beginPath(); c.arc(x + ox, y + oy, r, 0, 6.3); c.fill();
             }
             if (reduce) cancelAnimationFrame(raf);
@@ -118,10 +120,10 @@ export function MyzelLayer({ planets }: { planets: Array<{ id: string; x: number
         let rt = 0;
         const onResize = () => { window.clearTimeout(rt); rt = window.setTimeout(build, 200); };
         window.addEventListener('resize', onResize);
-        const t2 = window.setTimeout(build, 900); // nach dem Einschweben neu messen
+        const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
         return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key, targetId]);
+    }, [key, targetId, focusId]);
 
     return <canvas ref={ref} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true" />;
 }
