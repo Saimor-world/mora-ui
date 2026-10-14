@@ -12,3 +12,16 @@ html[data-uv2="on"] [data-planet-kind] { translate: 0 calc(50% - var(--territory
 }
 /* Feinschliff: lange Unterzeilen am Außenrand umbrechen statt in die Instrumentenspalte zu laufen */
 html[data-uv2="on"] [data-planet-kind] .uv2-planet-meta { white-space: normal !important; max-width: 150px; margin-left: auto; margin-right: auto; text-align: center; line-height: 1.35; }
+
+/* hd34 ruhiger: weniger Mitspieler */
+.uv2-orbits ellipse { stroke: rgba(247,244,233,.045); }
+.uv2-orbits ellipse[data-kind="system"] { stroke: rgba(214,168,72,.075); }
+.uv2-orbits ellipse[data-hover] { stroke: rgba(232,200,130,.32); }
+.uv2-orbits ellipse[data-selected] { stroke: rgba(232,200,130,.5); }
+/* keine Mondpunkte, keine Zeichen auf den Kugeln */
+html[data-uv2="on"] [data-planet-kind] :is(.saimor-moon-orbit, [data-testid="uv2-ambient-moons"]) { display: none !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-glyph { display: none !important; }
+/* Bereiche: leiser und etwas zurückgenommen, beim Zeigen voll da */
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) { opacity: .74; transition: opacity .35s ease; }
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]):is(:hover, :focus-visible, [aria-pressed="true"]) { opacity: 1; }
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { font-size: 11.5px !important; color: rgba(247,244,233,.6) !important; }

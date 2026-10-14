@@ -143,6 +143,7 @@ export function OrganizationField({
     // ~870x590px. Dort passten die Planeten schlicht nicht nebeneinander und
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
+    const [hoverId, setHoverId] = useState<string | null>(null);
     const [todayAreas, setTodayAreas] = useState<string[]>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2TodayAreas?: string[] }).__uv2TodayAreas) || []);
     useEffect(() => {
         const on = (e: Event) => setTodayAreas(((e as CustomEvent).detail as string[]) || []);
@@ -327,6 +328,8 @@ export function OrganizationField({
             <div
                 ref={fieldRef}
                 data-uv2-plane
+                onPointerOver={(e) => { const el = (e.target as HTMLElement).closest('[data-uv2-planet]'); setHoverId(el ? el.getAttribute('data-uv2-planet') : null); }}
+                onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
                 className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
@@ -336,7 +339,7 @@ export function OrganizationField({
                     <svg className="uv2-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                         {territories.filter((t) => t.model).map((t) => {
                             const rx = orbitRxOf(t.x, t.y);
-                            return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} />;
+                            return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} data-hover={t.id === hoverId || undefined} />;
                         })}
                     </svg>
                 )}
