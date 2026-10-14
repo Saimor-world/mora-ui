@@ -185,7 +185,8 @@ export function OrganizationField({
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
                 const hasModel = territoriesRef.current.some((t) => t.model);
-                const next = hasModel ? stageScale(box.width, box.height) : Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
+                // Telefon: die Ebene misst beim ersten Layout noch die Desktop-Box (hidden→block per CSS) – deshalb zusätzlich an der Fensterbreite deckeln.
+                const next = hasModel ? Math.min(stageScale(box.width, box.height), window.innerWidth < 1024 ? Math.max(0.42, window.innerWidth / 760) : 2) : Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -206,6 +207,26 @@ export function OrganizationField({
     }, [anchors, clearField, setField, hasModelStage]);
 
     useEffect(() => () => { publishedRef.current = ''; clearField(); }, [clearField]);
+
+    // Telefon: Begrüßung und System teilen sich eine Spalte – das System beginnt unter der Begrüßung,
+    // egal wie lang sie gerade ist (Heute-Liste, Vorschlag). Kein Überlappen.
+    useEffect(() => {
+        if (!hasModelStage) return;
+        const plane = fieldRef.current; if (!plane) return;
+        const sync = () => {
+            if (window.innerWidth >= 1024) { plane.style.removeProperty('--uv2-phone-top'); return; }
+            const g = document.querySelector('[data-testid="uv2-greeting"]') as HTMLElement | null;
+            const bottom = g && g.offsetParent !== null ? g.getBoundingClientRect().bottom : 220;
+            plane.style.setProperty('--uv2-phone-top', Math.round(Math.max(200, bottom + 16)) + 'px');
+        };
+        sync();
+        const g = document.querySelector('[data-testid="uv2-greeting"]');
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(sync) : null;
+        if (g && ro) ro.observe(g);
+        window.addEventListener('resize', sync);
+        const t = window.setInterval(sync, 1500);
+        return () => { ro?.disconnect(); window.removeEventListener('resize', sync); window.clearInterval(t); };
+    }, [hasModelStage]);
 
     // Die eine Geste: etwas faellt ins Feld und findet seinen Bereich, ohne
     // dass jemand ihn nennt. computeFallTarget entscheidet ueber echte
