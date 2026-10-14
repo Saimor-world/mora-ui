@@ -85,7 +85,7 @@ export const RINGS = { 1: { rx: 23, ry: 24 }, 2: { rx: 40, ry: 43 } } as const;
 /** Planetengröße folgt der Bühne: 1.0 bei ~700×640 (1440×900), kleiner auf Laptops, größer auf großen Displays. */
 export function stageScale(width: number, height: number): number {
   if (!(width > 0 && height > 0)) return 1;
-  return Math.max(0.6, Math.min(1.3, width / 700, height / 640));
+  return Math.max(0.45, Math.min(1.3, width / 700, height / 640));
 }
 
 /** Systeme innen (gleichmäßig nach Katalogwinkel), Domänen/Cluster außen, halb versetzt. Stabil nach Schlüssel. */
