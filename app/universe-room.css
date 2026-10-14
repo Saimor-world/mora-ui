@@ -2,7 +2,7 @@
 
 /* ---- MÔRA-Kern ---- */
 .uv2-mora { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
-.uv2-mora__core { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; translate: -50% -50%; pointer-events: auto; border-radius: 50%; background: none; border: 0; cursor: pointer; }
+.uv2-mora__core { position: absolute; left: 50%; top: 50%; width: 56px; height: 56px; translate: -50% -50%; pointer-events: none; border-radius: 50%; background: none; border: 0; cursor: pointer; }
 .uv2-mora__light { position: absolute; inset: 16px; border-radius: 50%; background: radial-gradient(circle, #fff6dc 0%, #f0cf7c 38%, rgba(214,168,72,.85) 62%, rgba(214,168,72,0) 100%); box-shadow: 0 0 22px 6px rgba(214,168,72,.35); animation: uv2MoraBreath 6s ease-in-out infinite; }
 .uv2-mora__halo { position: absolute; inset: -26px; border-radius: 50%; background: radial-gradient(circle, rgba(214,168,72,.20) 0%, rgba(214,168,72,.07) 45%, rgba(214,168,72,0) 70%); transition: inset .8s cubic-bezier(.22,1,.36,1), opacity .8s; }
 .uv2-mora__arc { position: absolute; left: 50%; top: 2px; width: 22px; translate: -50% 0; overflow: visible; }

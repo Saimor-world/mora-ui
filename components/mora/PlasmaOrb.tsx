@@ -27,7 +27,7 @@ const PULSE: Record<string, string> = {
 };
 
 function glowColor(color: string, state: PlasmaOrbProps['state']) {
-    if (state === 'alert') return '#EF4444';
+    if (state === 'alert') return '#E0B252';
     if (state === 'insight') return '#F59E0B';
     return /^#[0-9a-fA-F]{6}$/.test(color) ? color : '#10B981';
 }

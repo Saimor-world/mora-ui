@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { useOrbStore } from '@/lib/store/orbStore';
 
 /** MÔRAs sichtbarer Zustand als Licht im Kern (Gastgeberin §2). */
 export type MoraState = 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs';
@@ -15,6 +16,7 @@ export function setMoraPresence(next: MoraPresence) {
     if (next.state === current.state && next.target === current.target) return;
     if (doneTimer) { clearTimeout(doneTimer); doneTimer = null; }
     current = next;
+    useOrbStore.getState().setMoraPresence?.(next);
     if (next.state === 'done') doneTimer = setTimeout(() => setMoraPresence({ state: 'calm' }), 2400);
     subs.forEach((f) => f());
 }
