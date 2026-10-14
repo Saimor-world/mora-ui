@@ -51,6 +51,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     const updateRoom = useCallback((patch: Partial<RoomPrefs>) => {
         setRoom((prev) => { const next = { ...prev, ...patch }; applyRoom(next); saveRoom(userKey, next); return next; });
     }, [userKey]);
+    const cycleMora = useCallback(() => {
+        setRoom((prev) => { const next = { ...prev, mora: nextMoraLevel(prev.mora) }; applyRoom(next); saveRoom(userKey, next); return next; });
+    }, [userKey]);
     useEffect(() => {
         if (!isUniverseV2Enabled()) return;
         const onKey = (e: KeyboardEvent) => {
@@ -59,7 +62,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
             const k = e.key.toLowerCase();
             if (k === 'i') updateRoom({ immersive: !document.documentElement.dataset.uv2Immersive });
             else if (k === 'l') updateRoom({ lage: document.documentElement.dataset.uv2Lage !== 'open' });
-            else if (k === 'm') setRoom((prev) => { const next = { ...prev, mora: nextMoraLevel(prev.mora) }; applyRoom(next); saveRoom(userKey, next); return next; });
+            else if (k === 'm') cycleMora();
             else if (e.key === '/') { const ask = document.querySelector<HTMLInputElement>('input[aria-label="MÔRA fragen"]'); if (ask) { e.preventDefault(); ask.focus(); } }
             else return;
         };
@@ -76,7 +79,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         window.addEventListener('keydown', onKey);
         window.addEventListener('pointermove', onMove);
         return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointermove', onMove); };
-    }, [updateRoom, userKey]);
+    }, [updateRoom, cycleMora]);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
 
@@ -227,7 +230,7 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                     title="Lage (L): Signale, Deutung, Handlung links" className="flex h-8 w-8 items-center justify-center rounded-full transition-colors" style={roomBtn(room.lage)}>
                     <PanelLeft size={14} strokeWidth={1.5} />
                 </button>
-                <button type="button" data-testid="uv2-mora-toggle" onClick={() => updateRoom({ mora: nextMoraLevel(room.mora) })}
+                <button type="button" data-testid="uv2-mora-toggle" onClick={cycleMora}
                     title="MÔRA (M): Aktiv → Leise → Aus" className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] uppercase tracking-[0.08em] transition-colors" style={roomBtn(room.mora === 'aktiv')}>
                     <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: room.mora === 'aus' ? 'rgba(247,244,233,0.3)' : '#D6A848', opacity: room.mora === 'leise' ? 0.55 : 1 }} />
                     <span className="uv2-room-label">MÔRA · {room.mora === 'aktiv' ? 'Aktiv' : room.mora === 'leise' ? 'Leise' : 'Aus'}</span>
