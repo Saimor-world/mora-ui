@@ -48,7 +48,7 @@ html[data-uv2="on"][data-uv2-lage="open"] [data-testid="uv2-ask"] { display: blo
 /* ---- Immersiv: Planeten füllen den Raum, Seiten fahren am Rand herein ---- */
 @media (min-width: 1024px) {
   html[data-uv2="on"][data-uv2-immersive="on"]:not([data-uv2-x]):not([data-uv2-y]) [data-uv2-field]:has(.uv2-orbits) { left: 0 !important; right: 0 !important; }
-  html[data-uv2="on"][data-uv2-immersive="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { left: max(6vw, calc((100vw - (100vh - 250px) * 1.3) / 2)) !important; right: max(6vw, calc((100vw - (100vh - 250px) * 1.3) / 2)) !important; top: 92px !important; bottom: 158px !important; }
+  html[data-uv2="on"][data-uv2-immersive="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { left: max(6vw, calc((100vw - (100vh - 250px) * 1.12) / 2)) !important; right: max(6vw, calc((100vw - (100vh - 250px) * 1.12) / 2)) !important; top: 92px !important; bottom: 158px !important; }
   html[data-uv2="on"][data-uv2-immersive="on"] .uv2-col-right,
   html[data-uv2="on"][data-uv2-immersive="on"] [data-testid="uv2-greeting"],
   html[data-uv2="on"][data-uv2-immersive="on"] .uv2-col-lage { transition: transform .55s cubic-bezier(.22,1,.36,1), opacity .4s ease !important; }
@@ -64,7 +64,7 @@ html[data-uv2="on"][data-uv2-immersive="on"] body::after { right: 6px; }
 
 /* ---- Telefon: Planeten auf ihren Bahnen, verkleinert (statt Chip-Reihe) ---- */
 @media (max-width: 1023px) {
-  html[data-uv2="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { display: block !important; left: -12vw !important; right: -12vw !important; top: 230px !important; bottom: 200px !important; scale: .74; translate: none !important; }
+  html[data-uv2="on"] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { display: block !important; left: -12vw !important; right: -12vw !important; top: 186px !important; bottom: auto !important; height: calc(124vw / 0.92) !important; scale: .74; translate: none !important; }
   html[data-uv2="on"] [data-uv2-field]:has(.uv2-orbits) [data-testid="mobile-territories"] { display: none !important; }
   html[data-uv2="on"] [data-uv2-plane] [data-planet-kind] .saimor-territory-name { font-size: 18px !important; }
   html[data-uv2="on"] [data-uv2-plane] [data-planet-kind][data-planet-kind="domain"] .saimor-territory-name { font-size: 17px !important; }
@@ -84,3 +84,7 @@ html[data-uv2="on"] [data-uv2-plane] [data-mora-lit]::after { content: ""; posit
 .uv2-thread-loader { position: relative; width: 220px; height: 1px; background: rgba(247,244,233,.10); overflow: hidden; }
 .uv2-thread-loader > span { position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, rgba(214,168,72,0), rgba(240,207,124,.95), rgba(214,168,72,0)); animation: uv2ThreadRun 1.8s cubic-bezier(.45,0,.2,1) infinite; }
 @keyframes uv2ThreadRun { from { left: -40%; } to { left: 100%; } }
+
+/* hd38: Lage – leere Signale nur einmal (rechts „Horizont“ sagt es schon); keine Uhr-Kapsel unter den Schaltern */
+html[data-uv2="on"][data-uv2-lage="open"] [data-uv2-instrument="signale"][data-empty] { display: none !important; }
+html[data-uv2="on"][data-uv2-lage="open"] [data-mora-playground-root] { display: none !important; }
