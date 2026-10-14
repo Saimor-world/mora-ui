@@ -144,6 +144,17 @@ export function OrganizationField({
     // ueberlappten. Sie schrumpfen deshalb mit dem Feld - voll ab ~1350x770.
     const [fieldScale, setFieldScale] = useState(1);
     const [hoverId, setHoverId] = useState<string | null>(null);
+    // Fokus-Flug: ein ausgewählter Modell-Planet wird zur Mitte (700 ms, CSS), Esc führt zurück.
+    const zoomTarget = useMemo(() => {
+        const t = territories.find((x) => x.id === selectedId && x.model);
+        return t ? { x: t.x, y: t.y, name: t.name } : null;
+    }, [territories, selectedId]);
+    useEffect(() => {
+        if (!zoomTarget) return;
+        const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onSelect(null); };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [zoomTarget, onSelect]);
     const [todayAreas, setTodayAreas] = useState<string[]>(() => (typeof window !== 'undefined' && (window as unknown as { __uv2TodayAreas?: string[] }).__uv2TodayAreas) || []);
     useEffect(() => {
         const on = (e: Event) => setTodayAreas(((e as CustomEvent).detail as string[]) || []);
@@ -328,6 +339,9 @@ export function OrganizationField({
             <div
                 ref={fieldRef}
                 data-uv2-plane
+                data-uv2-focus={territories.some((t) => t.model) && (selectedId || hoverId) ? '' : undefined}
+                data-uv2-zoom={zoomTarget ? '' : undefined}
+                style={zoomTarget ? ({ transformOrigin: zoomTarget.x + '% ' + zoomTarget.y + '%', transform: 'translate(' + (50 - zoomTarget.x) + '%, ' + (50 - zoomTarget.y) + '%) scale(1.75)' } as CSSProperties) : undefined}
                 onPointerOver={(e) => { const el = (e.target as HTMLElement).closest('[data-uv2-planet]'); setHoverId(el ? el.getAttribute('data-uv2-planet') : null); }}
                 onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
@@ -361,6 +375,14 @@ export function OrganizationField({
                 ))}
             </div>
 
+            {zoomTarget && (
+                <nav className="uv2-crumb" aria-label="Pfad">
+                    <button type="button" onClick={() => onSelect(null)}>Universe</button>
+                    <span aria-hidden="true">›</span>
+                    <span aria-current="page">{zoomTarget.name}</span>
+                    <kbd>Esc</kbd>
+                </nav>
+            )}
             {lens === 'relations' && !(isUniverseV2Enabled() && selectedSignals.length === 0) && (
                 <div className="pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block">
                     <RelationLegend strands={strands} />
@@ -515,6 +537,7 @@ function Territory({
             data-uv2-planet={territory.id}
             data-planet-kind={model?.kind}
             data-planet-state={model?.state}
+            data-planet-glow={model?.glow ? model.glow.level : undefined}
             data-uv2-attn={v2 ? attnLevel : undefined}
             data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
             className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
@@ -636,6 +659,7 @@ function Territory({
                     {orbitals.moons.find((moon) => moon.inMotion)!.name}
                 </span>
             )}
+            {model && <PlanetHud name={territory.name} meta={model.meta} size={size} documents={territory.documents} seed={drift} />}
             {territory.access === 'locked' ? (
                 <span className="mt-1.5 block text-[9px] text-amber-200/62">Mitgliedschaft erforderlich</span>
             ) : territory.metricSource === 'missing' && !isUniverseV2Enabled() && (
@@ -925,5 +949,30 @@ function TruthValue({ icon, value, label }: { icon: React.ReactNode; value: numb
             <span className="mt-2 block text-lg font-medium text-white/88">{value}</span>
             <span className="block text-[9px] uppercase tracking-[0.14em] text-white/28">{label}</span>
         </div>
+    );
+}
+/** HUD statt Karte: feine Eckklammern + kurzes Etikett; dazu das Sternbild der Dateien (nur bei Zeigen/Auswahl sichtbar, per CSS). */
+function PlanetHud({ name, meta, size, documents, seed }: { name: string; meta: string; size: number; documents: number; seed: number }) {
+    const box = Math.round(size + 28);
+    const n = Math.min(9, Math.max(0, documents));
+    const pts = Array.from({ length: n }, (_, i) => {
+        const a = ((seed >>> (i % 16)) % 360) * (Math.PI / 180) + i * 0.7;
+        const r = size * (0.85 + ((seed >>> ((i * 3) % 20)) % 70) / 100);
+        return { x: Math.cos(a) * r, y: Math.sin(a) * r * 0.8, a: Math.atan2(Math.sin(a) * 0.8, Math.cos(a)) };
+    }).sort((p, q) => p.a - q.a);
+    const ext = size * 2.4;
+    return (
+        <>
+            <span className="uv2-hud" aria-hidden="true" style={{ width: box, height: box, marginLeft: -box / 2, top: size / 2 - box / 2 }}>
+                <i /><i /><i /><i />
+                <span className="uv2-hud__label">{name}{meta ? <em> · {meta}</em> : null}</span>
+            </span>
+            {n >= 2 && (
+                <svg className="uv2-constellation" aria-hidden="true" width={ext * 2} height={ext * 2} viewBox={`${-ext} ${-ext} ${ext * 2} ${ext * 2}`} style={{ marginLeft: -ext, top: size / 2 - ext }}>
+                    <polyline points={pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ')} />
+                    {pts.map((p, i) => <circle key={i} cx={p.x.toFixed(1)} cy={p.y.toFixed(1)} r={1.3} />)}
+                </svg>
+            )}
+        </>
     );
 }
