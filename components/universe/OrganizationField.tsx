@@ -516,7 +516,8 @@ function Territory({
     const accent = territory.color || '#67e8f9';
     const v2 = isUniverseV2Enabled();
     const model = territory.model;
-    const size = Math.round((model ? model.diameter : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const quiet = model && (model.state === 'sleeping' || model.state === 'seed');
+    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : 1.14) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.

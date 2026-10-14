@@ -293,7 +293,8 @@ function usePixelStyle(): PStyle | null {
   const [v, setV] = React.useState<PStyle | null>(null);
   React.useEffect(() => {
     const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
-    if (x === 'A' || x === 'B' || x === 'C') { setV(x); document.documentElement.setAttribute('data-uv2-pstyle', x); }
+    const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'C') ? x : 'B';
+    if (st) { setV(st); document.documentElement.setAttribute('data-uv2-pstyle', st); }
   }, []);
   return v;
 }

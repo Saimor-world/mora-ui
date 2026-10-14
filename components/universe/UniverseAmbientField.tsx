@@ -49,7 +49,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 bleibt einfach der geteilte Shell-Hintergrund sichtbar. */}
             <motion.div
                 className="absolute -inset-[3%] bg-cover bg-center"
-                style={{ backgroundImage: 'url(/universe/deep-space-warm.jpg)' }}
+                style={{ backgroundImage: 'url(/universe/deep-space-warm.jpg)', filter: 'brightness(1.55) saturate(1.12) contrast(1.04)' }}
                 animate={reducedMotion ? undefined : { scale: [1, 1.035, 1], x: [0, -14, 0], y: [0, 8, 0] }}
                 transition={{ duration: 90, repeat: Infinity, ease: 'easeInOut' }}
             />
@@ -57,7 +57,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 Namen und Kacheln tragen - das Foto bleibt an den Nebeln sichtbar. */}
             <div
                 className="absolute inset-0"
-                style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(3,6,10,0.42) 0%, rgba(3,6,10,0.18) 55%, rgba(3,6,10,0.5) 100%)' }}
+                style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(3,6,10,0.16) 0%, rgba(3,6,10,0.04) 55%, rgba(3,6,10,0.26) 100%)' }}
             />
             <motion.div
                 className="absolute inset-0"
