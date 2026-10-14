@@ -50,7 +50,7 @@ html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([
 .uv2-hud > i:nth-child(2) { right: 0; top: 0; border-right-width: 1px; border-top-width: 1px; }
 .uv2-hud > i:nth-child(3) { left: 0; bottom: 0; border-left-width: 1px; border-bottom-width: 1px; }
 .uv2-hud > i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1px; border-bottom-width: 1px; }
-.uv2-hud__label { position: absolute; left: calc(100% + 10px); top: -2px; white-space: nowrap; font: 500 12px/1.2 var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.92); text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+.uv2-hud__label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; font: 500 12px/1.2 var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.92); text-shadow: 0 1px 8px rgba(0,0,0,.9); }
 .uv2-hud__label em { font-style: normal; color: rgba(214,168,72,.95); }
 html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .uv2-hud { opacity: 1; transform: none; }
 html[data-uv2="on"] [aria-pressed="true"] .uv2-hud > i { border-color: rgba(214,168,72,.9); }
@@ -70,3 +70,11 @@ html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .group\/moon > span:la
 .uv2-crumb button:hover { color: #fff; }
 .uv2-crumb span[aria-hidden] { color: rgba(236,240,246,.35); }
 .uv2-crumb kbd { margin-left: 6px; font: 500 10.5px/1 var(--uv-sans, Inter); padding: 3px 6px; border-radius: 5px; color: rgba(236,240,246,.5); box-shadow: inset 0 0 0 1px rgba(236,240,246,.18); }
+/* hd36: calmer zoom — others lose labels, constellation behind moons, plane clipped to field */
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) :is(.uv2-planet-meta, [data-planet-name], .uv2-planet-name) { opacity: 0 !important; }
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) { opacity: .28; }
+html[data-uv2="on"] [data-uv2-zoom] .uv2-constellation { z-index: -1; opacity: .45 !important; }
+html[data-uv2="on"] :has(> [data-uv2-zoom]) { overflow: hidden; }
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .saimor-territory-name { opacity: 0 !important; }
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] :is(.saimor-territory-name, .uv2-planet-meta) { opacity: 0 !important; }
+html[data-uv2="on"] [data-uv2-plane][data-uv2-zoom] { clip-path: inset(-20% -6% -20% -6%); }
