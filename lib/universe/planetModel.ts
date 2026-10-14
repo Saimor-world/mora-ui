@@ -80,7 +80,7 @@ export interface PlacedBody {
 
 /** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
  *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
-export const ORBIT = { innerRx: 15, outerRx: 48, aspect: 46 / 48 } as const;
+export const ORBIT = { innerRx: 13, outerRx: 49, aspect: 46 / 48 } as const;
 
 function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
 
@@ -96,16 +96,34 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     ...outer.map((o) => ({ key: o.key, kind: (o.cluster ? 'cluster' : 'domain') as 'cluster' | 'domain', label: o.planet?.label ?? o.cluster!.label, planet: o.planet, cluster: o.cluster })),
   ];
   const n = all.length;
-  // Winkel: alle n Planeten gleichmäßig verteilt (Vielfache von 360°/n), Nachbarbahnen aber weit auseinander –
-  // Schrittweite ≈ goldener Schnitt, teilerfremd zu n, damit jeder Winkel genau einmal vorkommt.
-  let step = Math.max(1, Math.round(n * 0.382));
-  while (n > 1 && gcd(step, n) !== 1) step += 1;
+  const rxOf = (i: number) => (n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx);
+  const at = (i: number, slot: number) => {
+    const rx = rxOf(i), rad = ((slot * (360 / Math.max(1, n)) - 90) * Math.PI) / 180;
+    return { x: 50 + rx * Math.cos(rad), y: 50 + rx * ORBIT.aspect * Math.sin(rad) };
+  };
+  // Winkel: n gleich große Schritte, jeder genau einmal (Schrittweite teilerfremd zu n). Aus allen Schrittweiten/Drehungen
+  // die nehmen, bei der sich Kugeln und Namen am wenigsten nahe kommen (Name hängt unter der Kugel). Deterministisch.
+  let best = { step: 1, rot: 0, score: -Infinity };
+  for (let step = 1; step < Math.max(2, n); step++) {
+    if (n > 1 && gcd(step, n) !== 1) continue;
+    for (let rot = 0; rot < Math.max(1, n); rot++) {
+      const pts = all.map((_, i) => at(i, (i * step + rot) % Math.max(1, n)));
+      let score = Infinity;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const dx = Math.abs(pts[i].x - pts[j].x), dy = pts[i].y - pts[j].y;
+        // Name (≈ 16% breit, 7% hoch) unter jeder Kugel: senkrecht übereinander zählt doppelt.
+        const d = Math.hypot(dx / 1.6, dy) - (dx < 9 && Math.abs(dy) < 10 ? 6 : 0);
+        score = Math.min(score, d);
+      }
+      // Ausgewogen: Schwerpunkt nahe der Mitte
+      const cx = pts.reduce((a, p) => a + p.x, 0) / Math.max(1, n), cy = pts.reduce((a, p) => a + p.y, 0) / Math.max(1, n);
+      score -= Math.hypot(cx - 50, cy - 50) * 0.3;
+      if (score > best.score + 1e-6) best = { step, rot, score };
+    }
+  }
   return all.map((b, i) => {
-    const rx = n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx;
-    const ry = rx * ORBIT.aspect;
-    const deg = ((i * step) % Math.max(1, n)) * (360 / Math.max(1, n));
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { id: b.key, kind: b.kind, label: b.label, x: +(50 + rx * Math.cos(rad)).toFixed(2), y: +(50 + ry * Math.sin(rad)).toFixed(2), planet: b.planet, cluster: b.cluster };
+    const p = at(i, (i * best.step + best.rot) % Math.max(1, n));
+    return { id: b.key, kind: b.kind, label: b.label, x: +p.x.toFixed(2), y: +p.y.toFixed(2), planet: b.planet, cluster: b.cluster };
   });
 }
 

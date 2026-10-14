@@ -5,3 +5,8 @@
 .uv2-orbits ellipse[data-selected] { stroke: rgba(232,200,130,.55); }
 /* Planetenmitte exakt auf der Bahn: der Knopf (Kugel + Name) wird so verschoben, dass die Kugel auf dem Punkt sitzt. */
 html[data-uv2="on"] [data-planet-kind] { translate: 0 calc(50% - var(--territory-size) / 2); }
+/* Mehr Raum für die Bahnen: Feld reicht bis an Begrüßung/Instrumente und nutzt die Höhe bis kurz über „Frag MÔRA“. Spalten, Hintergrund, Planeten bleiben. */
+@media (min-width: 1280px) {
+  html[data-uv2=on]:not([data-uv2-lage=open]):not([data-uv2-still=on]) [data-uv2-field]:has(.uv2-orbits) { left: calc(var(--g-m) + var(--g-3)) !important; right: calc(var(--g-m) + var(--g-3)) !important; }
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { left: 24px !important; right: 24px !important; top: 118px !important; bottom: 196px !important; }
+}
