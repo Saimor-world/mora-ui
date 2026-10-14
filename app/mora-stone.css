@@ -2,9 +2,9 @@
 .mora-stone-light { opacity: 0; transition: opacity .6s ease, box-shadow .6s ease; }
 [data-mora-presence="listening"] .mora-stone-light { opacity: 1; box-shadow: 0 0 0 1px rgba(110,231,183,.55), 0 0 14px 2px rgba(16,185,129,.35); animation: moraStoneHalo 2.4s ease-in-out infinite; }
 [data-mora-presence="thinking"] .mora-stone-light { opacity: 1; box-shadow: inset 0 0 10px 2px rgba(240,207,124,.5), 0 0 12px 1px rgba(214,168,72,.3); animation: moraStoneInward 1.6s ease-in-out infinite; }
-[data-mora-presence="working"] .mora-stone-light { opacity: 1; box-shadow: 0 0 0 1px rgba(240,207,124,.75), 0 0 18px 4px rgba(214,168,72,.4); }
+[data-mora-presence="working"] .mora-stone-light { opacity: 1; box-shadow: 0 0 14px 3px rgba(214,168,72,.4); }
 [data-mora-presence="done"] .mora-stone-light { opacity: 1; animation: moraStoneShine 1.2s ease-out both; }
-[data-mora-presence="needs"] .mora-stone-light { opacity: 1; box-shadow: 0 0 0 1px rgba(240,207,124,.6), 0 6px 22px 6px rgba(224,178,82,.38); animation: moraStoneToward 3.2s ease-in-out infinite; }
+[data-mora-presence="needs"] .mora-stone-light { opacity: 1; box-shadow: 0 0 16px 4px rgba(224,178,82,.34); animation: moraStoneToward 3.2s ease-in-out infinite; }
 @keyframes moraStoneHalo { 0%,100% { transform: scale(1.08); } 50% { transform: scale(.98); } }
 @keyframes moraStoneInward { 0%,100% { transform: scale(1); opacity: .7; } 50% { transform: scale(.92); opacity: 1; } }
 @keyframes moraStoneShine { 0% { box-shadow: 0 0 0 2px rgba(255,240,200,.9), 0 0 30px 10px rgba(240,207,124,.6); } 100% { box-shadow: 0 0 0 0 rgba(255,240,200,0), 0 0 0 0 rgba(240,207,124,0); } }
