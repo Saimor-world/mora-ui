@@ -34,12 +34,14 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
     const [dossier, setDossier] = useState<DossierData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [comingSoon, setComingSoon] = useState(false);
 
     useEffect(() => {
         if (!targetUrl) return;
         let cancelled = false;
         setIsLoading(true);
         setError(null);
+        setComingSoon(false);
 
         coreGet(`/v3/dossier?url=${encodeURIComponent(targetUrl)}`, { isOptional: true })
             .then(data => {
@@ -47,12 +49,13 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
                 if (data && typeof data === 'object') {
                     setDossier(data as DossierData);
                 } else {
-                    // API not yet live — show placeholder with URL
+                    // CORE hat (noch) keine /v3/dossier-Route — ehrlich als „kommt bald“ zeigen
                     setDossier({ url: targetUrl });
+                    setComingSoon(true);
                 }
             })
             .catch(() => {
-                if (!cancelled) setDossier({ url: targetUrl });
+                if (!cancelled) { setDossier({ url: targetUrl }); setComingSoon(true); }
             })
             .finally(() => { if (!cancelled) setIsLoading(false); });
 
@@ -113,6 +116,12 @@ export default function WebsiteDossierApp({ paneId, initialData }: AppProps) {
                         )}
                     </div>
                 </div>}
+
+                {!isLoading && comingSoon && (
+                    <div data-testid="dossier-coming-soon" className="rounded-lg border border-dashed border-amber-300/25 bg-amber-400/[0.06] px-3 py-2 text-xs text-amber-100/80">
+                        Kommt bald: Die Website-Analyse ist noch nicht an CORE angeschlossen. Unten steht nur die URL, keine echten Messwerte.
+                    </div>
+                )}
 
                 {isLoading && (
                     <div className="flex flex-1 items-center justify-center gap-2 text-white/30 text-sm">

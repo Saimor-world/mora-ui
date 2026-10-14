@@ -10,6 +10,9 @@ import { DemoWorkspacesPanel } from './DemoWorkspacesPanel';
 import { DepartmentVisibilityEditor } from './DepartmentVisibilityEditor';
 import { WebsiteLeadLedger } from './WebsiteLeadLedger';
 
+/** Erst auf true setzen, wenn CORE /v3/admin/users(+/memberships) und /v3/admin/departments/{id}/visibility anbietet. */
+export const ADMIN_ROSTER_LIVE = false;
+
 function SourceStatus({ label, connected }: { label: string; connected?: boolean }) {
     return (
         <div className="flex min-w-0 items-center justify-between gap-3 border-b border-white/[0.06] py-2.5 last:border-b-0">
@@ -144,10 +147,28 @@ export const AdminHome: React.FC = () => {
                     </div>
                 </div>
 
-                <AdminRosterView />
-                <div className="mt-8 pt-6 border-t border-white/5">
-                    <DepartmentVisibilityEditor />
-                </div>
+                {/* Ehrlich: CORE hat (noch) keine /v3/admin/users- und /v3/admin/departments/{id}/visibility-Routen.
+                    Statt leerer Kacheln zeigen wir offen „kommt bald“. Team-Verwaltung läuft über /v3/team/admin/users. */}
+                {ADMIN_ROSTER_LIVE ? (
+                    <>
+                        <AdminRosterView />
+                        <div className="mt-8 pt-6 border-t border-white/5">
+                            <DepartmentVisibilityEditor />
+                        </div>
+                    </>
+                ) : (
+                    <section
+                        data-testid="admin-roster-coming-soon"
+                        className="mt-8 rounded-xl border border-dashed border-white/10 bg-white/[0.02] p-4"
+                    >
+                        <span className="rounded-full border border-amber-300/25 bg-amber-400/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-amber-200/80">
+                            Kommt bald
+                        </span>
+                        <p className="mt-3 text-sm text-white/55">
+                            Mitglieder-Übersicht, Abteilungs-Zuordnung und Sichtbarkeit von Abteilungen sind noch nicht an CORE angeschlossen.
+                        </p>
+                    </section>
+                )}
             </div>
         </div>
     );

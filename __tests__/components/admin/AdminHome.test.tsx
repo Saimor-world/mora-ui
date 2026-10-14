@@ -55,3 +55,11 @@ describe('AdminHome integration truth', () => {
         ]));
     });
 });
+
+describe('AdminHome – ehrliche Kacheln', () => {
+    it('zeigt Mitglieder/Sichtbarkeit als „Kommt bald“, solange CORE die Routen nicht hat', () => {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { ADMIN_ROSTER_LIVE } = require('@/components/admin/AdminHome');
+        expect(ADMIN_ROSTER_LIVE).toBe(false);
+    });
+});
