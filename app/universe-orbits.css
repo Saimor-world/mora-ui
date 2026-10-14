@@ -1,0 +1,7 @@
+/* Bahnen: eine je Planet, konzentrisch, ruhig. Nur Anordnung – Look der Planeten bleibt. */
+.uv2-orbits { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.uv2-orbits ellipse { fill: none; stroke: rgba(247,244,233,.11); stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke .4s ease; }
+.uv2-orbits ellipse[data-kind="system"] { stroke: rgba(214,168,72,.2); }
+.uv2-orbits ellipse[data-selected] { stroke: rgba(232,200,130,.55); }
+/* Planetenmitte exakt auf der Bahn: der Knopf (Kugel + Name) wird so verschoben, dass die Kugel auf dem Punkt sitzt. */
+html[data-uv2="on"] [data-planet-kind] { translate: 0 calc(50% - var(--territory-size) / 2); }

@@ -78,9 +78,12 @@ export interface PlacedBody {
   cluster: ModelCluster | null;
 }
 
-const RINGS = { 1: { rx: 29, ry: 28 }, 2: { rx: 48, ry: 46 } } as const;
+/** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
+ *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
+export const ORBIT = { innerRx: 15, outerRx: 48, aspect: 46 / 48 } as const;
 
-/** Systeme innen (gleichmäßig nach Katalogwinkel), Domänen/Cluster außen, halb versetzt. Stabil nach Schlüssel. */
+function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
+
 export function placeUniverse(model: UniverseModel): PlacedBody[] {
   const inner = model.planets.filter((p) => p.kind === 'system').sort((a, b) => (a.angle ?? 0) - (b.angle ?? 0));
   const outerPlanets = model.planets.filter((p) => p.kind === 'domain' && !p.joins && !p.cluster);
@@ -88,26 +91,27 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     ...outerPlanets.map((p) => ({ key: p.key, planet: p, cluster: null })),
     ...model.clusters.map((c) => ({ key: c.key, planet: null, cluster: c })),
   ].sort((a, b) => (a.key < b.key ? -1 : 1));
-  const out: PlacedBody[] = [];
-  const pos = (ring: 1 | 2, deg: number) => {
-    const r = RINGS[ring];
+  const all = [
+    ...inner.map((p) => ({ key: p.key, kind: 'system' as const, label: p.label, planet: p as ModelPlanet | null, cluster: null as ModelCluster | null })),
+    ...outer.map((o) => ({ key: o.key, kind: (o.cluster ? 'cluster' : 'domain') as 'cluster' | 'domain', label: o.planet?.label ?? o.cluster!.label, planet: o.planet, cluster: o.cluster })),
+  ];
+  const n = all.length;
+  // Winkel: alle n Planeten gleichmäßig verteilt (Vielfache von 360°/n), Nachbarbahnen aber weit auseinander –
+  // Schrittweite ≈ goldener Schnitt, teilerfremd zu n, damit jeder Winkel genau einmal vorkommt.
+  let step = Math.max(1, Math.round(n * 0.382));
+  while (n > 1 && gcd(step, n) !== 1) step += 1;
+  return all.map((b, i) => {
+    const rx = n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx;
+    const ry = rx * ORBIT.aspect;
+    const deg = ((i * step) % Math.max(1, n)) * (360 / Math.max(1, n));
     const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: +(50 + r.rx * Math.cos(rad)).toFixed(2), y: +(50 + r.ry * Math.sin(rad)).toFixed(2) };
-  };
-  inner.forEach((p, i) => {
-    const deg = (i * 360) / Math.max(1, inner.length);
-    out.push({ id: p.key, kind: 'system', label: p.label, ...pos(1, deg), planet: p, cluster: null });
+    return { id: b.key, kind: b.kind, label: b.label, x: +(50 + rx * Math.cos(rad)).toFixed(2), y: +(50 + ry * Math.sin(rad)).toFixed(2), planet: b.planet, cluster: b.cluster };
   });
-  // Außen nie auf demselben Strahl wie innen: Bereiche sitzen in den Lücken zwischen Systemplaneten.
-  const n = inner.length;
-  const slots = n && outer.length <= n
-    ? Array.from({ length: outer.length }, (_, i) => ((Math.round((i * n) / outer.length) + 0.5) * 360) / n)
-    : outer.map((_, i) => (n ? 180 / n : 0) + (i * 360) / Math.max(1, outer.length));
-  outer.forEach((o, i) => {
-    const deg = slots[i] % 360;
-    out.push({ id: o.key, kind: o.cluster ? 'cluster' : 'domain', label: o.planet?.label ?? o.cluster!.label, ...pos(2, deg), planet: o.planet, cluster: o.cluster });
-  });
-  return out;
+}
+
+/** Bahnradius (rx in %) aus einer Position – für das Zeichnen der eigenen Bahn. */
+export function orbitRxOf(x: number, y: number): number {
+  return Math.hypot(x - 50, (y - 50) / ORBIT.aspect);
 }
 
 /** planet_key → Department-ID (für Ablage, Navigation, Môra-Ziele). */

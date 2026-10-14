@@ -15,6 +15,8 @@ import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { ORBIT, orbitRxOf } from '@/lib/universe/planetModel';
+import '@/app/universe-orbits.css';
 
 export type UniverseLens = 'organization' | 'relations';
 
@@ -329,6 +331,15 @@ export function OrganizationField({
                 onDrop={handleFieldDrop}
                 className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
             >
+                {territories.some((t) => t.model) && (
+                    // Eine saubere Bahn je Planet; der Planet sitzt mittig darauf.
+                    <svg className="uv2-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                        {territories.filter((t) => t.model).map((t) => {
+                            const rx = orbitRxOf(t.x, t.y);
+                            return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} />;
+                        })}
+                    </svg>
+                )}
                 <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (
                     <Territory
