@@ -111,3 +111,6 @@ html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not
 .uv2-chip[data-tone="open"] b { color: #E8C277; }
 .uv2-chip[data-tone="need"] { color: #F0D49A; box-shadow: inset 0 0 0 .5px rgba(240,207,124,.7), 0 0 12px rgba(214,168,72,.25); }
 .uv2-chip[data-tone="calm"]:only-child { color: rgba(236,240,246,.55); font-style: italic; }
+/* hd41b: Name steht schon unter dem Planeten – HUD zeigt nur die Chips; Monde in der Übersicht leiser */
+.uv2-hud__label { display: none !important; }
+html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .32 !important; scale: .8; }
