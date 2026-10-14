@@ -80,7 +80,7 @@ export interface PlacedBody {
 
 /** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
  *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
-export const ORBIT = { innerRx: 12, outerRx: 44, aspect: 0.92 } as const;
+export const ORBIT = { innerRx: 17, outerRx: 45, aspect: 0.92 } as const;
 
 function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
 
@@ -116,7 +116,7 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
         overlap += ox * oy;
         minD = Math.min(minD, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
       }
-      let score = minD - overlap * 0.5;
+      let score = minD - overlap * 3;
       // Ausgewogen: Schwerpunkt nahe der Mitte
       const cx = pts.reduce((a, p) => a + p.x, 0) / Math.max(1, n), cy = pts.reduce((a, p) => a + p.y, 0) / Math.max(1, n);
       score -= Math.hypot(cx - 50, cy - 50) * 0.3;
