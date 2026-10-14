@@ -48,7 +48,6 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
         <div className="uv2-mora" data-mora-state="calm" aria-hidden="true">
             {threadOn && target && from && (
                 <svg className="uv2-mora__thread" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <line x1={from.x} y1={from.y} x2={target.x} y2={target.y} />
                     {state === 'done' && <circle cx={target.x} cy={target.y} r="2.2" />}
                 </svg>
             )}

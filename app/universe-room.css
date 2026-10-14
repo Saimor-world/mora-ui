@@ -88,3 +88,7 @@ html[data-uv2="on"] [data-uv2-plane] [data-mora-lit]::after { content: ""; posit
 /* hd38: Lage – leere Signale nur einmal (rechts „Horizont“ sagt es schon); keine Uhr-Kapsel unter den Schaltern */
 html[data-uv2="on"][data-uv2-lage="open"] [data-uv2-instrument="signale"][data-empty] { display: none !important; }
 html[data-uv2="on"][data-uv2-lage="open"] [data-mora-playground-root] { display: none !important; }
+
+/* ---- Myzel hinter den Planeten ---- */
+.uv2-myzel { position: absolute; left: 0; top: 0; width: 100%; pointer-events: none; z-index: 0; opacity: .9; transition: opacity .8s ease; }
+html[data-uv2="on"] [data-uv2-zoom] .uv2-myzel { opacity: .35; }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useOrbStore } from '@/lib/store/orbStore';
+import { MoraFace } from '@/components/mora/MoraFace';
 import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -138,6 +139,7 @@ export function MoraOrb({
                     draggable={false}
                     className="h-full w-full select-none pointer-events-none"
                 />
+                <MoraFace size={sz.stone} />
 
                 {/* State tint inside the gold ring (not for idle - pure jade). */}
                 {state !== 'idle' && (

@@ -16,6 +16,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
+import { MoraFace } from '@/components/mora/MoraFace';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
@@ -1794,6 +1795,7 @@ export const Dock = () => {
                                                     data-orb-state={orbState}
                                                     className="relative h-full w-full select-none pointer-events-none"
                                                 />
+                                                {!isStandardMode && <MoraFace size={40} arcsOnGreet={false} />}
                                             </button>
                                         </div>
                                     )}
