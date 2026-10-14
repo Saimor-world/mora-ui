@@ -23,7 +23,7 @@ describe('visibility utilities', () => {
     it('labels the same scopes across Meine Dateien and Finder', () => {
         expect(getCoreFileVisibilityLabel('personal')).toBe('Privat');
         expect(getCoreFileVisibilityLabel('personal', 'node-1')).toBe('Privat + Dokument');
-        expect(getCoreFileVisibilityLabel('company')).toBe('Workspace sichtbar');
+        expect(getCoreFileVisibilityLabel('company')).toBe('Fürs Team sichtbar');
         expect(getCoreFileVisibilityLabel('department')).toBe('Bereich sichtbar');
         expect(getCoreFileVisibilityLabel('public_link')).toBe('Freigabelink');
     });

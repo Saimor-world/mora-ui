@@ -58,7 +58,7 @@ export function WebsiteContextBanner() {
             size: { width: 1040, height: 720 },
             data: { context },
         });
-        toast.success('Dossier im Workspace geöffnet');
+        toast.success('Dossier im Arbeitsbereich geöffnet');
         setIsVisible(false);
     };
 

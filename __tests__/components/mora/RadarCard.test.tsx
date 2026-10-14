@@ -76,4 +76,10 @@ describe('RadarCard', () => {
     render(<RadarCard notification={makeNotif({ tier: 'suggest' })} onDismiss={jest.fn()} />);
     expect(screen.queryByRole('button', { name: /öffnen|ansehen/i })).toBeNull();
   });
+  it('does not crash when the server omits signal_type', () => {
+    const n = makeNotif({ title: 'Rechnung 2041 überfällig' }) as any;
+    delete n.signal_type;
+    render(<RadarCard notification={n} onDismiss={jest.fn()} />);
+    expect(screen.getByText('Rechnung 2041 überfällig')).toBeInTheDocument();
+  });
 });

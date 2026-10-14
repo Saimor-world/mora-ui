@@ -23,7 +23,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'website-dossier',
     name: 'Website Dossier',
-    description: 'Security-Check aus WORLD als HQ-Arbeitsobjekt',
+    description: 'Sicherheits-Check deiner Website',
     icon: 'ShieldCheck',
     color: 'teal',
     category: 'core',
@@ -42,7 +42,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'grid',
     name: 'Alle Inhalte',
-    description: 'Alle Knoten in der Übersicht',
+    description: 'Alles im Überblick',
     icon: 'Grid',
     color: 'green',
     category: 'core',
@@ -50,8 +50,8 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'finance',
-    name: 'Capital',
-    description: 'Wallets, Vermögen und On-chain-Kapital — zuerst read-only',
+    name: 'Kapital',
+    description: 'Wallets und Vermögen – vorerst nur ansehen',
     icon: 'Activity',
     color: 'green',
     category: 'core',
@@ -64,7 +64,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'chat',
     name: 'Chat',
-    description: 'Mit Mora sprechen',
+    description: 'Mit MÔRA sprechen',
     icon: 'MessageCircle',
     color: 'purple',
     category: 'intelligence',
@@ -82,7 +82,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'search',
     name: 'Suche',
-    description: 'Semantisch suchen',
+    description: 'Nach Bedeutung suchen',
     icon: 'Search',
     color: 'indigo',
     category: 'intelligence',
@@ -111,7 +111,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'lagefeld',
     name: 'Lagefeld',
-    description: 'Situationsboard — echte Signale aus Mail, Kalender und Môra',
+    description: 'Was gerade wichtig ist – aus Mail, Kalender und MÔRA',
     icon: 'Network',
     color: 'teal',
     category: 'intelligence',
@@ -121,7 +121,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'codex',
     name: 'Engineering',
-    description: 'Codex — Agent für Code, Refactors und Systemarbeit',
+    description: 'Arbeitet für dich an Code und System',
     icon: 'Bot',
     color: 'indigo',
     category: 'intelligence',
@@ -155,7 +155,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'tasks',
     name: 'Aufgaben',
-    description: 'Kanban-Board für Aufgaben',
+    description: 'Was ansteht, läuft und erledigt ist',
     icon: 'SquareCheckBig',
     color: 'orange',
     category: 'workspace',
@@ -224,7 +224,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'feeds',
     name: 'Dein Feed',
-    description: 'RSS- und Atom-Quellen mit Vorschaubildern',
+    description: 'Nachrichten aus deinen Quellen',
     icon: 'Rss',
     color: 'green',
     category: 'core',
@@ -236,7 +236,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'apps',
     name: 'Apps',
-    description: 'App-Bibliothek und Launcher',
+    description: 'Alle Werkzeuge an einem Ort',
     icon: 'Grid',
     color: 'slate',
     category: 'system',
@@ -264,7 +264,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'settings',
     name: 'Saimôr Setup',
-    description: 'Workspace starten, verbinden und verwalten',
+    description: 'Arbeitsbereich einrichten, verbinden und verwalten',
     icon: 'Settings',
     color: 'slate',
     category: 'system',

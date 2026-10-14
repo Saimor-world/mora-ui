@@ -145,7 +145,7 @@ export const CompanyDetailPane: React.FC<CompanyDetailPaneProps> = ({ id, compan
                             </div>
 
                             <div className="p-6 rounded-xl bg-white/5 border border-red-500/20 space-y-4">
-                                <h4 className="text-white font-medium">Delete Company</h4>
+                                <h4 className="text-white font-medium">Firma löschen</h4>
                                 <p className="text-sm text-white/50">
                                     This will permanently delete <strong className="text-white">{company?.name}</strong> and all associated data including departments, spaces, folders, and files.
                                 </p>

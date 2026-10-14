@@ -355,8 +355,8 @@ export const DepartmentWizard: React.FC<DepartmentWizardProps> = ({ isOpen, onCl
                                             )}
                                         </div>
                                         <div>
-                                            <div className="text-white font-medium">{customName || 'Department Name'}</div>
-                                            <div className="text-xs text-white/40">New planet in your universe</div>
+                                            <div className="text-white font-medium">{customName || 'Name der Abteilung'}</div>
+                                            <div className="text-xs text-white/40">Neuer Planet in deinem Universum</div>
                                         </div>
                                     </div>
                                 </div>

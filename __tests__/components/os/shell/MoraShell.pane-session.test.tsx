@@ -1,0 +1,209 @@
+import React from 'react';
+import { screen, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { renderWithProviders, resetAllStores } from '../../../test-utils';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useOrbStore } from '@/lib/store/orbStore';
+import { MoraShell } from '@/components/os/shell/MoraShell';
+
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
+    usePathname: () => '/',
+    useSearchParams: () => ({ get: jest.fn() }),
+}));
+
+jest.mock('@/lib/hooks/useAuthBootstrapper', () => ({
+    useAuthBootstrapper: () => ({ isBootstrapped: true, authError: null }),
+}));
+
+jest.mock('@/lib/hooks/useOperationalFlip', () => ({
+    useOperationalFlip: jest.fn(),
+}));
+
+jest.mock('@/lib/hooks/useUser', () => ({
+    resetUserState: jest.fn(),
+}));
+
+jest.mock('@/lib/auth/useAccount', () => ({
+    useAccountStore: (selector?: any) => {
+        const store = { logout: jest.fn() };
+        return selector ? selector(store) : store;
+    },
+}));
+
+const mockResetPanes = jest.fn();
+jest.mock('@/lib/store/paneStore', () => ({
+    usePaneStore: (selector?: any) => {
+        const store = {
+            reset: mockResetPanes,
+            openPane: jest.fn(),
+            panes: [],
+        };
+        return selector ? selector(store) : store;
+    },
+}));
+
+jest.mock('@/lib/hooks/shell', () => ({
+    useShellEvents: jest.fn(),
+    useAwareness: jest.fn().mockReturnValue({ orbState: 'idle' }),
+    useMindloopStream: jest.fn(),
+    useRealtime: jest.fn(),
+    useKeyboardShortcuts: jest.fn(),
+}));
+
+jest.mock('@/lib/api/realtimeClient', () => ({
+    realtime: { connect: jest.fn(), disconnect: jest.fn(), on: jest.fn(), off: jest.fn() },
+}));
+
+jest.mock('@/components/layout/ViewPort', () => ({
+    ViewPort: () => <div data-testid="viewport" />,
+}));
+
+jest.mock('@/components/visual/StarField', () => ({
+    StarField: () => <div data-testid="starfield" />,
+}));
+
+jest.mock('@/components/mora/MoraLivingBackground', () => ({
+    MoraLivingBackground: () => <div data-testid="living-bg" />,
+}));
+
+jest.mock('@/components/visual/ForestLightCanopy', () => ({
+    ForestLightCanopy: () => <div data-testid="canopy" />,
+}));
+
+jest.mock('@/components/mora/Dock', () => ({
+    Dock: () => <div data-testid="dock" />,
+}));
+
+jest.mock('@/components/mora/Spotlight', () => ({
+    Spotlight: () => <div data-testid="spotlight" />,
+}));
+
+jest.mock('@/components/mora/KeyboardShortcutsOverlay', () => ({
+    KeyboardShortcutsOverlay: () => <div data-testid="shortcuts" />,
+}));
+
+jest.mock('@/components/auth/LockScreen', () => ({
+    LockScreen: () => <div data-testid="lockscreen" />,
+}));
+
+jest.mock('@/components/layout/UserCursor', () => ({
+    UserCursor: () => <div data-testid="user-cursor" />,
+}));
+
+jest.mock('@/components/home/UniverseControls', () => ({
+    UniverseControls: () => <div data-testid="universe-controls" />,
+}));
+
+jest.mock('@/components/mora/MyceliumDropfield', () => ({
+    MyceliumDropfield: () => <div data-testid="mycelium-dropfield" />,
+}));
+
+jest.mock('@/components/ui/ConnectionBanner', () => ({
+    ConnectionBanner: () => <div data-testid="connection-banner" />,
+}));
+
+jest.mock('@/components/ui/QuickTips', () => ({
+    QuickTips: () => <div data-testid="quick-tips" />,
+}));
+
+jest.mock('@/components/ui/MoraGreeting', () => ({
+    MoraGreeting: () => <div data-testid="mora-greeting" />,
+}));
+
+jest.mock('@/components/ui/SystemStats', () => ({
+    SystemStats: () => <div data-testid="system-stats" />,
+}));
+
+jest.mock('@/components/os/QuickPreview', () => ({
+    QuickPreview: () => <div data-testid="quick-preview" />,
+}));
+
+jest.mock('@/components/os/SnapPreview', () => ({
+    SnapPreview: () => <div data-testid="snap-preview" />,
+}));
+
+jest.mock('@/components/os/AmbientAudioController', () => ({
+    AmbientAudioController: () => <div data-testid="ambient-audio" />,
+}));
+
+jest.mock('@/components/os/InteractionAudioController', () => ({
+    InteractionAudioController: () => <div data-testid="interaction-audio" />,
+}));
+
+jest.mock('@/components/os/TemporalAtmosphere', () => ({
+    TemporalAtmosphere: () => <div data-testid="temporal-atmosphere" />,
+}));
+
+jest.mock('@/components/os/shell/ShellBreadcrumb', () => ({
+    ShellBreadcrumb: () => <div data-testid="shell-breadcrumb" />,
+}));
+
+jest.mock('@/components/visual/NeuralGrid', () => ({
+    NeuralGrid: () => <div data-testid="neural-grid" />,
+}));
+
+jest.mock('@/components/organic/AmbientDust', () => ({
+    AmbientDust: () => <div data-testid="ambient-dust" />,
+}));
+
+jest.mock('@/components/ui/NameConflictModal', () => ({
+    __esModule: true,
+    default: () => <div data-testid="name-conflict" />,
+}));
+
+jest.mock('@/components/dev/IntelligenceDiagnostics', () => ({
+    IntelligenceDiagnostics: () => <div data-testid="diagnostics" />,
+}));
+
+jest.mock('@/lib/constants/tenants', () => ({
+    TENANT_DEMO: 'demo-tenant',
+    TENANT_HQ: 'hq-tenant',
+}));
+
+jest.mock('@/lib/hooks/useWindowSnapping', () => ({
+    useWindowSnapping: () => ({
+        detectSnapZone: jest.fn(),
+        applySnap: jest.fn(),
+        snapPreview: null,
+    }),
+}));
+
+beforeEach(resetAllStores);
+
+function seedShellStores(activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview') {
+    useNavStore.setState({
+        viewLevel: 'core',
+        coreMode: 'home',
+        viewMode: 'workspace',
+        activeCompanyId: 'company-1',
+        activeMode,
+        navigateToCore: jest.fn(),
+        setActiveCompany: jest.fn(),
+        setViewMode: jest.fn(),
+    } as any);
+
+    useSessionStore.setState({
+        user: { role: 'admin', tenant_id: 'tenant-1' },
+        hasBooted: true,
+        isLoggingOut: false,
+    } as any);
+}
+
+describe('MoraShell pane session', () => {
+    beforeEach(() => mockResetPanes.mockClear());
+
+    it('keeps the persisted pane session on first mount (reload)', () => {
+        seedShellStores('real_hq');
+        renderWithProviders(<MoraShell />);
+        expect(mockResetPanes).not.toHaveBeenCalled();
+    });
+
+    it('clears panes when the view mode actually changes', () => {
+        seedShellStores('real_hq');
+        renderWithProviders(<MoraShell />);
+        act(() => { useNavStore.setState({ viewMode: 'universe' } as any); });
+        expect(mockResetPanes).toHaveBeenCalledTimes(1);
+    });
+});

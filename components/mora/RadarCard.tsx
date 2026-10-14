@@ -98,14 +98,14 @@ export const RadarCard: React.FC<RadarCardProps> = ({ notification, onDismiss, o
   );
 };
 
-function getSignalMeta(signalType: string, entityType?: string): {
+function getSignalMeta(signalType: string | null | undefined, entityType?: string): {
   label: string;
   read: string;
   next: string;
   cta: string;
   targetIcon: typeof FileText;
 } {
-  const normalized = signalType
+  const normalized = (signalType ?? "")
     .replace(/Rule$/, '')
     .replace(/([a-z])([A-Z])/g, '$1_$2')
     .toLowerCase();

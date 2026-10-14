@@ -245,7 +245,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
     { id: 'state', label: 'State' },
     { id: 'flow', label: 'Flow' },
     { id: 'treasury', label: 'Treasury' },
-    { id: 'capital', label: 'Capital' },
+    { id: 'capital', label: 'Kapital' },
   ];
 
   const primaryCurrency = state?.currency_states?.[0] || null;

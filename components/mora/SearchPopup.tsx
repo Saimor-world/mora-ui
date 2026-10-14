@@ -280,11 +280,11 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                             : 'rounded-2xl'
                     }`}
                     style={isStandardMode ? {} : {
-                        background: 'linear-gradient(180deg, rgba(10, 15, 13, 0.98) 0%, rgba(6, 10, 8, 0.99) 100%)',
-                        border: '1px solid rgba(16, 185, 129, 0.15)',
+                        background: 'linear-gradient(180deg, rgba(24, 27, 26, 0.97) 0%, rgba(15, 17, 16, 0.99) 100%)',
+                        border: '1px solid rgba(214, 168, 72, 0.22)',
                         boxShadow: `
                             0 25px 60px rgba(0, 0, 0, 0.5),
-                            0 0 80px rgba(16, 185, 129, 0.08),
+                            0 0 80px rgba(214, 168, 72, 0.07),
                             inset 0 1px 0 rgba(255, 255, 255, 0.05)
                         `
                     }}
@@ -296,7 +296,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                         <div className="relative">
                             {isMoraMode ? (
                                 <Sparkles size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${
-                                    isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                    isStandardMode ? 'text-[#0078D4]' : 'text-[#D6A848]'
                                 }`} />
                             ) : (
                                 <Search size={18} className={`absolute left-4 top-1/2 -translate-y-1/2 ${
@@ -319,7 +319,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                         }`
                                         : `bg-black/30 text-white placeholder:text-white/30 rounded-xl ${
                                             isMoraMode
-                                                ? 'border-emerald-500/40 focus:border-emerald-500/60'
+                                                ? 'border-[#D6A848]/35 focus:border-[#D6A848]/60'
                                                 : 'border-white/10 focus:border-white/20'
                                         }`
                                 }`}
@@ -344,7 +344,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 className={`mt-3 flex items-center gap-2 text-sm ${
-                                    isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                    isStandardMode ? 'text-[#0078D4]' : 'text-[#D6A848]'
                                 }`}
                             >
                                 <Sparkles size={14} />
@@ -369,7 +369,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             className={`rounded-md px-2.5 py-1 text-xs transition-colors ${
                                                 isStandardMode
                                                     ? active ? 'bg-[#E5F3FF] text-[#0078D4]' : 'text-gray-500 hover:bg-gray-100'
-                                                    : active ? 'bg-emerald-500/15 text-emerald-300' : 'text-white/45 hover:bg-white/5 hover:text-white/70'
+                                                    : active ? 'bg-[#D6A848]/15 text-[#E8C27A]' : 'text-white/45 hover:bg-white/5 hover:text-white/70'
                                             }`}
                                         >
                                             {m.label}
@@ -399,13 +399,13 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                                     ? 'bg-[#E5F3FF] text-[#1F1F1F] border border-[#0078D4]/30 rounded-lg'
                                                     : 'bg-gray-50 text-[#1F1F1F] border border-gray-200 rounded-lg'
                                                 : msg.role === 'user'
-                                                    ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/30 rounded-xl'
+                                                    ? 'bg-[#D6A848]/15 text-white border border-[#D6A848]/30 rounded-xl'
                                                     : 'bg-white/5 text-white/90 border border-white/10 rounded-xl'
                                         }`}
                                     >
                                         {msg.role === 'assistant' && (
                                             <div className={`flex items-center gap-1.5 text-xs mb-1 ${
-                                                isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                                isStandardMode ? 'text-[#0078D4]' : 'text-[#D6A848]'
                                             }`}>
                                                 <Sparkles size={10} />
                                                 <span>Môra</span>
@@ -431,7 +431,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                             : 'bg-white/5 rounded-xl border border-white/10'
                                     }`}>
                                         <div className={`flex items-center gap-2 ${
-                                            isStandardMode ? 'text-[#0078D4]' : 'text-emerald-400'
+                                            isStandardMode ? 'text-[#0078D4]' : 'text-[#D6A848]'
                                         }`}>
                                             <Loader2 size={14} className="animate-spin" />
                                             <span className="text-sm">Môra denkt nach...</span>
@@ -467,7 +467,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     }}
                                     tone={searchResults.length > 1 ? 'amber' : 'cyan'}
                                     body={searchResults.length > 1
-                                        ? 'Mehrere plausible Treffer. Wähle einen Eintrag.'
+                                        ? 'Wähle, was du öffnen möchtest.'
                                         : 'Ein klarer Treffer. Du kannst ihn direkt öffnen.'}
                                 />
                             </div>
@@ -483,7 +483,7 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     {isStandardMode ? (
                                         <Loader2 size={20} className="text-[#0078D4] animate-spin" />
                                     ) : (
-                                        <Search size={20} className="text-emerald-400" />
+                                        <Search size={20} className="text-[#D6A848]" />
                                     )}
                                 </motion.div>
                             </div>
@@ -607,11 +607,11 @@ export const SearchPopup: React.FC<SearchPopupProps> = ({
                                     className={`mt-3 text-sm flex items-center gap-2 mx-auto ${
                                         isStandardMode
                                             ? 'text-[#0078D4] hover:text-[#005A9E]'
-                                            : 'text-emerald-400 hover:text-emerald-300'
+                                            : 'text-[#D6A848] hover:text-[#E8C27A]'
                                     }`}
                                 >
                                     <Sparkles size={14} />
-                                    Suche prüfen
+                                    In allen Inhalten suchen
                                 </button>
                             </div>
                         )}

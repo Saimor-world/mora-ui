@@ -11,7 +11,7 @@ const GROUPS: AppUniverseGroup[] = [
   },
   {
     id: 'capital',
-    label: 'Capital',
+    label: 'Kapital',
     description: 'Wallets, Vermögen und programmierbares Kapital — observation first.',
     appIds: ['finance'],
   },

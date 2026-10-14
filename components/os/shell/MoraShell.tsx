@@ -453,8 +453,13 @@ export const MoraShell: React.FC = () => {
         };
     }, [detectSnapZone, applySnap]);
 
-    // EFFECT: Clear panes when ViewMode changes
+    // EFFECT: Clear panes when ViewMode changes – not on first mount, otherwise
+    // the persisted pane session (saimor_os_panes_v1) is wiped on every reload.
+    const lastViewModeRef = useRef<typeof viewMode | undefined>(undefined);
     useEffect(() => {
+        const prev = lastViewModeRef.current;
+        lastViewModeRef.current = viewMode;
+        if (prev === undefined || prev === viewMode) return;
         resetPanes();
     }, [viewMode, resetPanes]);
 
@@ -543,7 +548,7 @@ export const MoraShell: React.FC = () => {
             openPane({ id: 'notes-main', type: 'notes', title: 'Notes', size: { width: 720, height: 560 } });
         }, [openPane]),
         onOpenSettings: useCallback(() => {
-            openPane({ id: 'settings-main', type: 'settings', title: 'Settings', size: { width: 860, height: 720 } });
+            openPane({ id: 'settings-main', type: 'settings', title: 'Einstellungen', size: { width: 860, height: 720 } });
         }, [openPane]),
         // 1.0 gated: Terminal, MoraHub, Memory shortcuts disabled (future-tier)
         onGoHome: useCallback(() => {

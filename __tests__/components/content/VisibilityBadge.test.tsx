@@ -14,9 +14,9 @@ describe('VisibilityBadge', () => {
         expect(screen.getByTitle('Bereich sichtbar')).toBeInTheDocument();
     });
 
-    it('shows "Workspace sichtbar" for company visibility', () => {
+    it('shows "Fürs Team sichtbar" for company visibility', () => {
         render(<VisibilityBadge visibility="company" />);
-        expect(screen.getByTitle('Workspace sichtbar')).toBeInTheDocument();
+        expect(screen.getByTitle('Fürs Team sichtbar')).toBeInTheDocument();
     });
 
     it('shows "Freigabelink" for public visibility', () => {

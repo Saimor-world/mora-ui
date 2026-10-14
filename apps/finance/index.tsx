@@ -269,7 +269,7 @@ function AccountCard({ account, title }: { account: AccountSnapshot | null; titl
           <div className="mt-0.5 font-mono text-[9px] text-white/28">{shortAddress(account.address)}</div>
         </div>
         {hasError ? (
-          <StatePill tone="warn">Error</StatePill>
+          <StatePill tone="warn">Fehler</StatePill>
         ) : account.evidence.confidence === 'live' ? (
           <StatePill tone="safe">Live</StatePill>
         ) : (
@@ -487,12 +487,7 @@ export default function FinanceApp({ paneId, initialData }: AppProps) {
 
   return (
     <GlassPanel
-      title={(
-        <span className="flex items-center gap-2">
-          <WalletCards size={14} className="text-emerald-300/80" />
-          <span>Capital</span>
-        </span>
-      )}
+      title="Kapital"
       width={pane.size.width}
       height={pane.size.height}
       initialX={pane.position.x}

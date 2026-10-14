@@ -183,7 +183,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
 
     const tabs = useMemo(() => [
         { id: 'profile', label: 'Profil', icon: User },
-        { id: 'workspace-control', label: 'Workspace', icon: Gauge },
+        { id: 'workspace-control', label: 'Arbeitsbereich', icon: Gauge },
         { id: 'appearance', label: 'Design', icon: Palette },
         { id: 'audio', label: 'Audio', icon: Music },
         { id: 'notifications', label: 'Mitteilungen', icon: Bell },
@@ -191,7 +191,7 @@ export default function SettingsApp({ paneId, initialData }: AppProps) {
         ...(canEditWorkspace ? [{ id: 'workspace', label: structureTabLabel, icon: FolderCog }] : []),
         ...(canManageTeam ? [{ id: 'team', label: 'Team & Benutzer', icon: Users }] : []),
         ...(canViewSystem ? [{ id: 'system', label: 'Systemstatus', icon: Activity }] : []),
-        { id: 'about', label: 'Über Mora', icon: Info }
+        { id: 'about', label: 'Über MÔRA', icon: Info }
     ], [canEditWorkspace, canManageTeam, canViewSystem, structureTabLabel]);
 
 
@@ -567,7 +567,7 @@ useEffect(() => {
                     {/* Bottom version stamp */}
                     <div className={`px-4 py-3 border-t ${isStandardMode ? 'border-gray-200' : 'border-white/[0.06]'}`}>
                         <div className={`text-[10px] ${isStandardMode ? 'text-gray-400' : 'text-white/22'}`}>
-                            SAIMOR OS · v2.0.0-beta
+                            SAIMÔR OS · v2.0.0-beta
                         </div>
                     </div>
                 </div>
