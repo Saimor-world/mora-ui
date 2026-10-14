@@ -84,7 +84,7 @@ export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindo
         <p style={{ ...TYPE.meta, color: UV.gold }}>{MORA_MODES.find((m) => m.id === state.mode)?.label ?? 'MÔRA'}</p>
         <p className="mt-6" style={{ ...TYPE.statement, color: UV.c(0.6) }}>„{state.question}“</p>
         {state.status === 'thinking'
-          ? <p className="mt-6" style={{ ...TYPE.text, color: UV.c(0.6), animation: 'uv2pulse 2.4s ease-in-out infinite' }}>MÔRA denkt nach …</p>
+          ? <span className="uv2-thread-loader mt-6 block" role="status" aria-label="MÔRA denkt nach"><span /></span>
           : <p className="pointer-events-auto mt-6" style={{ ...TYPE.text, color: UV.c(0.6) }}>Gerade antwortet niemand.
               <button type="button" onClick={() => onWindow(state.question)} className="ml-3" style={{ color: UV.gold }}>Im Fenster versuchen</button></p>}
         <style>{'@keyframes uv2pulse{0%,100%{opacity:.45}50%{opacity:.9}}'}</style>

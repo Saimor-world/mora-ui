@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { MORA_STATE_LABEL, useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
 
 /**
@@ -18,6 +18,14 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
         if (waiting) { state = 'needs'; targetId = waiting.id; }
     }
     const target = targetId ? planets.find((p) => p.id === targetId) : undefined;
+    // Fokus = Licht: der Planet, über den sie spricht oder an dem sie arbeitet, wird hell, der Rest tritt zurück.
+    const litId = target && state !== 'calm' ? target.id : null;
+    useEffect(() => {
+        const plane = document.querySelector<HTMLElement>('[data-uv2-plane]');
+        document.querySelectorAll<HTMLElement>('[data-mora-lit]').forEach((el) => delete el.dataset.moraLit);
+        if (plane) plane.dataset.moraFocus = litId ? 'on' : '';
+        if (litId) document.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(litId)}"]`)?.setAttribute('data-mora-lit', '');
+    }, [litId]);
 
     return (
         <div className="uv2-mora" data-mora-state={state} aria-live="polite">
