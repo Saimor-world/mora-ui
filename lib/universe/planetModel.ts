@@ -62,11 +62,11 @@ export function glyphFor(name: string | undefined): React.ComponentType<any> {
 
 /** Durchmesser je Größenstufe (vor fieldScale). Systemkörper tragen den Blick. */
 export function planetDiameter(size: PlanetSize, state: PlanetState, kind: 'system' | 'domain' | 'cluster'): number {
-  if (state === 'seed') return 36;
-  // Innen (System) höchstens L, damit der Kern ruhig bleibt; außen dürfen Bereiche wachsen.
-  const s = kind === 'system' && size === 'XL' ? 'L' : size;
-  const base = { S: 48, M: 60, L: 74, XL: 88 }[s] ?? 60;
-  return kind === 'cluster' ? base + 6 : base;
+  // Ruhe vor Vielfalt: Kernplaneten alle gleich groß (Keim etwas kleiner), Bereiche klein und nur leicht gestuft.
+  if (kind === 'system') return state === 'seed' ? 40 : 56;
+  if (state === 'seed') return 22;
+  const base = { S: 30, M: 34, L: 38, XL: 42 }[size] ?? 34;
+  return kind === 'cluster' ? base + 4 : base;
 }
 
 export interface PlacedBody {
@@ -80,7 +80,7 @@ export interface PlacedBody {
 
 /** Bahnen in % der Bühne. Bühne = gesamter Raum zwischen Begrüßung und Instrumenten (siehe universe-stage.css).
  *  Innen die Systemplaneten, außen die Bereiche; Abstand so, dass Namen (≤ 130px) nie in die Spalten laufen. */
-export const RINGS = { 1: { rx: 26, ry: 27 }, 2: { rx: 40, ry: 44 } } as const;
+export const RINGS = { 1: { rx: 23, ry: 24 }, 2: { rx: 40, ry: 43 } } as const;
 
 /** Planetengröße folgt der Bühne: 1.0 bei ~700×640 (1440×900), kleiner auf Laptops, größer auf großen Displays. */
 export function stageScale(width: number, height: number): number {
@@ -106,11 +106,8 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     const deg = (i * 360) / Math.max(1, inner.length);
     out.push({ id: p.key, kind: 'system', label: p.label, ...pos(1, deg), planet: p, cluster: null });
   });
-  // Außen nie auf demselben Strahl wie innen: Bereiche sitzen in den Lücken zwischen Systemplaneten.
-  const n = inner.length;
-  const slots = n && outer.length <= n
-    ? Array.from({ length: outer.length }, (_, i) => ((Math.round((i * n) / outer.length) + 0.5) * 360) / n)
-    : outer.map((_, i) => (n ? 180 / n : 0) + (i * 360) / Math.max(1, outer.length));
+  // Außen gleichmäßig über den ganzen Kreis, um einen halben Schritt versetzt (symmetrisch, unabhängig vom Innenring).
+  const slots = outer.map((_, i) => ((i + 0.5) * 360) / Math.max(1, outer.length));
   outer.forEach((o, i) => {
     const deg = slots[i] % 360;
     out.push({ id: o.key, kind: o.cluster ? 'cluster' : 'domain', label: o.planet?.label ?? o.cluster!.label, ...pos(2, deg), planet: o.planet, cluster: o.cluster });

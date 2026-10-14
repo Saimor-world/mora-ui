@@ -38,3 +38,33 @@ html[data-uv2="on"] [data-uv2-stage=model] [data-uv2-orbitals] .saimor-moon-orbi
 /* Außen-Unterschriften: breiter, damit zwei Zeilen reichen */
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="domain"] .uv2-planet-meta,
 html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="cluster"] .uv2-planet-meta { max-width: 200px; }
+
+/* ═══ hd29: Ruhe und Ordnung ═══════════════════════════════════════════════
+   Mitte = MÔRA (Sonne). Innen fünf bis acht gleich große Kernplaneten mit Namen.
+   Außen kleine, gedämpfte Bereiche; Zahlen nur beim Zeigen; Keime kaum sichtbar. */
+.uv2-stage__sun { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 10px; pointer-events: none; }
+.uv2-stage__sun-core { width: 46px; height: 46px; border-radius: 50%;
+  background: radial-gradient(circle at 38% 34%, #fff6dc 0%, #f1d38f 28%, #c9973a 62%, #6b4a18 100%);
+  box-shadow: 0 0 24px 6px rgba(232,196,120,.35), 0 0 90px 30px rgba(214,168,72,.12); }
+.uv2-stage__sun-label { font: 500 11px/1 var(--uv-sans, Inter, sans-serif); letter-spacing: .28em; color: rgba(243,223,174,.7); padding-left: .28em; }
+@media (prefers-reduced-motion: no-preference) { .uv2-stage__sun-core { animation: uv2-sun 9s ease-in-out infinite; } }
+@keyframes uv2-sun { 50% { box-shadow: 0 0 30px 8px rgba(232,196,120,.42), 0 0 110px 36px rgba(214,168,72,.15); } }
+
+/* Zahlen nie standardmäßig – nur bei Zeigen, Fokus oder Auswahl */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind] .uv2-planet-meta { opacity: 0 !important; transition: opacity .3s var(--uv-ease); }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .uv2-planet-meta { opacity: 1 !important; }
+/* Kern: Namen klar, gleiche Größe */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="system"] .saimor-territory-name { font-size: 13.5px !important; color: rgba(243,223,174,.92) !important; }
+/* Bereiche: leiser, kürzer */
+html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) { opacity: .78; transition: opacity .3s var(--uv-ease); }
+html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]):is(:hover, :focus-visible, [aria-pressed="true"]) { opacity: 1; }
+html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { font-size: 12px !important; font-weight: 450 !important; color: rgba(247,244,233,.66) !important; max-width: 120px; margin-top: 7px !important; }
+/* Keime: kaum sichtbar, Name erst beim Zeigen */
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="seed"] { opacity: .4; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-state="seed"]:is(:hover, :focus-visible) { opacity: .95; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="domain"][data-planet-state="seed"] .saimor-territory-name { opacity: 0; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="domain"][data-planet-state="seed"]:is(:hover, :focus-visible) .saimor-territory-name { opacity: 1; }
+html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="system"][data-planet-state="seed"] .saimor-territory-name { color: rgba(247,244,233,.6) !important; }
+/* Außenmonde ruhiger: Bereiche ohne eigene Mondbahnen */
+html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) [data-uv2-orbitals] .saimor-moon-orbit { opacity: .45; }
+.uv2-stage__orbits ellipse[data-ring="2"] { stroke: rgba(247,244,233,.12); }

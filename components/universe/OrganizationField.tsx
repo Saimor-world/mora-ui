@@ -342,6 +342,9 @@ export function OrganizationField({
                         ))}
                     </svg>
                 )}
+                {hasModelStage && (
+                    <div className="uv2-stage__sun" aria-hidden="true"><span className="uv2-stage__sun-core" /><span className="uv2-stage__sun-label">MÔRA</span></div>
+                )}
                 <RelationLayer strands={strands} selectedId={selectedId} />
                 {territories.map((territory) => (
                     <Territory
