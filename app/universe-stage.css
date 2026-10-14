@@ -68,3 +68,13 @@ html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="system"][data-plan
 /* Außenmonde ruhiger: Bereiche ohne eigene Mondbahnen */
 html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) [data-uv2-orbitals] .saimor-moon-orbit { opacity: .45; }
 .uv2-stage__orbits ellipse[data-ring="2"] { stroke: rgba(247,244,233,.12); }
+
+/* hd29 Telefon: dasselbe Sonnensystem, kompakt – statt einer abgeschnittenen Kachelzeile */
+@media (max-width: 1023px) {
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane][data-uv2-stage=model] { display: block !important; left: 12px !important; right: 12px !important; top: 250px !important; bottom: 190px !important; }
+  html[data-uv2=on] [data-uv2-field]:has([data-uv2-stage=model]) [data-testid="mobile-territories"] { display: none !important; }
+  html[data-uv2="on"] [data-uv2-stage=model] [data-planet-kind="system"] .saimor-territory-name { font-size: 11px !important; margin-top: 5px !important; max-width: 84px; }
+  html[data-uv2="on"] [data-uv2-stage=model] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { opacity: 0; }
+  .uv2-stage__sun-core { width: 34px; height: 34px; }
+  .uv2-stage__sun-label { font-size: 9.5px; }
+}
