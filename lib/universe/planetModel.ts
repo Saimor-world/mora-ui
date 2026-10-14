@@ -80,7 +80,7 @@ export interface PlacedBody {
 
 /** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
  *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
-export const ORBIT = { innerRx: 13, outerRx: 49, aspect: 46 / 48 } as const;
+export const ORBIT = { innerRx: 12, outerRx: 44, aspect: 0.92 } as const;
 
 function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
 
@@ -108,13 +108,15 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     if (n > 1 && gcd(step, n) !== 1) continue;
     for (let rot = 0; rot < Math.max(1, n); rot++) {
       const pts = all.map((_, i) => at(i, (i * step + rot) % Math.max(1, n)));
-      let score = Infinity;
+      // Jeder Körper belegt eine Box: Kugel (≈ ±5%) plus Name/Unterzeile darunter (≈ 16% breit, bis +13%).
+      let overlap = 0, minD = Infinity;
       for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-        const dx = Math.abs(pts[i].x - pts[j].x), dy = pts[i].y - pts[j].y;
-        // Name (≈ 16% breit, 7% hoch) unter jeder Kugel: senkrecht übereinander zählt doppelt.
-        const d = Math.hypot(dx / 1.6, dy) - (dx < 9 && Math.abs(dy) < 10 ? 6 : 0);
-        score = Math.min(score, d);
+        const ox = Math.max(0, Math.min(pts[i].x + 8.5, pts[j].x + 8.5) - Math.max(pts[i].x - 8.5, pts[j].x - 8.5));
+        const oy = Math.max(0, Math.min(pts[i].y + 13, pts[j].y + 13) - Math.max(pts[i].y - 5, pts[j].y - 5));
+        overlap += ox * oy;
+        minD = Math.min(minD, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
       }
+      let score = minD - overlap * 0.5;
       // Ausgewogen: Schwerpunkt nahe der Mitte
       const cx = pts.reduce((a, p) => a + p.x, 0) / Math.max(1, n), cy = pts.reduce((a, p) => a + p.y, 0) / Math.max(1, n);
       score -= Math.hypot(cx - 50, cy - 50) * 0.3;
