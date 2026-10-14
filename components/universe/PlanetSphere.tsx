@@ -87,7 +87,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      {pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={pstyle === 'M'} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -288,12 +288,12 @@ function SphereShade({ size, lit, atmo, night }: { size: number; lit: number; at
 }
 
 /* ─── Saimôr-Pixelkugeln (Varianten A/B/C, Wahl über localStorage "uv2-planet-style") ─── */
-type PStyle = 'A' | 'B' | 'C';
+type PStyle = 'A' | 'B' | 'C' | 'J' | 'M';
 function usePixelStyle(): PStyle | null {
   const [v, setV] = React.useState<PStyle | null>(null);
   React.useEffect(() => {
     const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
-    const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'C') ? x : 'B';
+    const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'B' || x === 'C' || x === 'M') ? x : 'J';
     if (st) { setV(st); document.documentElement.setAttribute('data-uv2-pstyle', st); }
   }, []);
   return v;
@@ -345,4 +345,75 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
     if (variant === 'B') { c.strokeStyle = 'rgba(232,198,120,0.92)'; c.lineWidth = dpr * 1.1; c.beginPath(); c.arc(W / 2, W / 2, W / 2 - dpr, 0, Math.PI * 2); c.stroke(); }
   }, [size, lit, tint, variant, seed]);
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" data-pstyle={variant} style={{ imageRendering: variant === 'B' ? 'auto' : 'pixelated', borderRadius: variant === 'B' ? '50%' : undefined, overflow: 'hidden' }} />;
+}
+
+/* ─── hd46: eigene, harmonische Farbe je Bereich – gleiche Materialfamilie ─── */
+const AREA_HUES: Array<[RegExp, [number, number, number]]> = [
+  [/finanz|finance|geld|buchhalt/, [214, 168, 72]],      // Gold
+  [/post|termin|mail|kalender/, [74, 118, 196]],         // Saphir
+  [/wissen|knowledge|doku/, [146, 112, 196]],            // Amethyst
+  [/werkstatt|engineering|technik/, [196, 116, 72]],     // Kupfer
+  [/wache|security|sicher/, [72, 168, 132]],             // Jade
+  [/betrieb|operations|ops/, [196, 140, 170]],           // Rosé-Lila
+  [/r&d|forschung|research/, [96, 186, 196]],            // Teal-Eis
+  [/intelligence|analyse/, [206, 182, 132]],             // Sand
+  [/markt|market|sales|vertrieb/, [200, 120, 110]],      // Koralle
+  [/growth|wachstum/, [150, 170, 110]],                  // Moos
+  [/product|produkt/, [120, 150, 170]],                  // Schiefer
+];
+export function areaHue(name: string, _arch?: string | null): [number, number, number] {
+  const n = (name || '').toLowerCase();
+  for (const [re, c] of AREA_HUES) if (re.test(n)) return c;
+  return [140, 170, 160];
+}
+const JEWEL_CACHE = new Map<string, ImageData>();
+function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
+  const ref = React.useRef<HTMLCanvasElement>(null);
+  const h: number[] = quiet ? mix(hue, [128, 134, 132], 0.55) : hue;
+  React.useEffect(() => {
+    const cv = ref.current; if (!cv) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1); const W = Math.round(size * dpr); if (cv.width !== W) cv.width = cv.height = W;
+    const c = cv.getContext('2d'); if (!c) return;
+    const key = [W, lit.toFixed(2), h.join(','), matte, seed, quiet].join('|'); const hit = JEWEL_CACHE.get(key);
+    if (hit) { c.putImageData(hit, 0, 0); drawRim(); return; }
+    const img = c.createImageData(W, W); const d = img.data;
+    const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.55; const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
+    const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
+    const night = h.map((v) => v * 0.13 + 4), deep = h.map((v) => v * 0.5), lite = mix(h, [255, 248, 232], 0.32);
+    const r = W / 2; const cell = 2.4 * dpr;
+    const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
+    for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+      const u = (x + 0.5 - r) / r, v = (y + 0.5 - r) / r, q = u * u + v * v, i = (y * W + x) * 4;
+      if (q > 1) { d[i + 3] = 0; continue; }
+      const z = Math.sqrt(1 - q), ndl = u * lx + v * ly + z * lz;
+      const t = 1 / (1 + Math.exp(-(ndl + 0.05) * 7));          // weicher Terminator
+      const dif = Math.max(0, ndl);
+      // sehr feine, ruhige Struktur: Breitenbänder + Korn
+      const band = Math.sin((v * 6 + u * 0.8 + seed * 0.13)) * 0.035 + Math.sin(v * 17 + seed) * 0.018 + (nz(x >> 1, y >> 1) - 0.5) * 0.03;
+      const k = Math.min(1, Math.max(0, t * (0.45 + 0.55 * dif) + band));
+      let col = k < 0.5 ? mix(night, deep, k * 2) : mix(deep, h.map((v2) => Math.min(255, v2 * 1.05)), (k - 0.5) * 2);
+      if (dif > 0.6) col = mix(col, lite, (dif - 0.6) * (matte ? 0.6 : 0.9));
+      const fres = Math.pow(1 - z, 2.4);
+      const glow = fres * Math.max(0, ndl + 0.3) * 0.9;            // Atmosphäre im eigenen Ton
+      col = mix(col, mix(h, [255, 255, 255], 0.4), Math.min(1, glow));
+      if (!matte) {
+        const sp = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 70) * 0.85 + Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 12) * 0.12;
+        col = mix(col, [255, 252, 244], Math.min(1, sp));
+        const back = fres * Math.max(0, -ndl) * 0.35; col = mix(col, h, back); // Gegenlicht – Edelstein-Tiefe
+      } else {
+        // feines Punktraster nur auf der Lichtseite
+        const cx = (x % cell) - cell / 2, cy = (y % cell) - cell / 2; const dot = Math.hypot(cx, cy) < cell * 0.22;
+        if (dot && t > 0.5) col = mix(col, lite, 0.14 * (t - 0.5) * 2);
+      }
+      const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.4);
+      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge);
+    }
+    JEWEL_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();
+    function drawRim() { if (!c) return; const rr = W / 2; c.strokeStyle = `rgba(226,192,118,${quiet ? 0.4 : 0.78})`; c.lineWidth = dpr * 0.8; c.beginPath(); c.arc(rr, rr, rr - dpr * 0.6, 0, Math.PI * 2); c.stroke(); }
+  }, [size, lit, h.join(','), matte, seed, quiet]);
+  const gx = Math.cos(lit) * size * 0.06, gy = Math.sin(lit) * size * 0.06;
+  return (<>
+    <span className="pointer-events-none absolute rounded-full" style={{ inset: 0, boxShadow: `${gx}px ${gy}px ${size * 0.35}px rgba(${h.join(',')},${quiet ? 0.12 : 0.32})` }} />
+    <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />
+  </>);
 }
