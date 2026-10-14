@@ -32,6 +32,8 @@ export interface UseMoraStreamReturn {
     isStreaming: boolean;
     streamingText: string;
     error: string | null;
+    /** Latest request error, available immediately after awaiting sendMessage. */
+    getError: () => string | null;
     messages: ChatMessage[];
     sendMessage: (message: string, opts?: StreamOptions) => Promise<string>;
     clearHistory: () => void;
@@ -163,7 +165,13 @@ export function useMoraStream(): UseMoraStreamReturn {
     const { data: session } = useRuntimeSession();
     const [isStreaming, setIsStreaming] = useState(false);
     const [streamingText, setStreamingText] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    const [error, setErrorState] = useState<string | null>(null);
+    const errorRef = useRef<string | null>(null);
+    const setError = useCallback((next: string | null) => {
+        errorRef.current = next;
+        setErrorState(next);
+    }, []);
+    const getError = useCallback(() => errorRef.current, []);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [lastResolvedScope, setLastResolvedScope] = useState<ResolvedScope | null>(null);
     const [scopeEnforced, setScopeEnforced] = useState(false);
@@ -235,6 +243,7 @@ export function useMoraStream(): UseMoraStreamReturn {
 
                 while (true) {
                     const { done, value } = await reader.read();
+                    if (controller.signal.aborted) return accumulated;
                     if (done) break;
 
                     buffer += decoder.decode(value, { stream: true });
@@ -246,7 +255,8 @@ export function useMoraStream(): UseMoraStreamReturn {
                         if (!line || line === "[DONE]") continue;
                         if (line === "[ERROR]") {
                             setError("Stream error from server");
-                            break;
+                            await reader.cancel();
+                            return accumulated;
                         }
 
                         try {
@@ -254,7 +264,8 @@ export function useMoraStream(): UseMoraStreamReturn {
 
                             if (json.error) {
                                 setError(json.error);
-                                break;
+                                await reader.cancel();
+                                return accumulated;
                             }
 
                             if (json.orbState) {
@@ -322,7 +333,7 @@ export function useMoraStream(): UseMoraStreamReturn {
                 const msg = err instanceof Error ? err.message : "Streaming failed";
                 setError(msg);
             } finally {
-                setIsStreaming(false);
+                if (abortRef.current === controller) setIsStreaming(false);
             }
 
             if (fullText) {
@@ -331,6 +342,8 @@ export function useMoraStream(): UseMoraStreamReturn {
                     content: fullText,
                 };
                 setMessages((prev) => [...prev, assistantMsg]);
+            } else if (!controller.signal.aborted && !errorRef.current) {
+                setError('MÔRA hat keine Antwort geliefert.');
             }
 
             return fullText;
@@ -349,6 +362,7 @@ export function useMoraStream(): UseMoraStreamReturn {
         isStreaming,
         streamingText,
         error,
+        getError,
         messages,
         sendMessage,
         clearHistory,

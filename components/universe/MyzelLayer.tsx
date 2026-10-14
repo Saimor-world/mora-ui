@@ -8,8 +8,8 @@ import { useMoraPresence } from '@/lib/universe/moraPresence';
  * und von dort zu den Planeten. Liegt hinter den Planeten. Günstig: das Netz wird nur bei
  * Größen-/Planetenänderung neu gezeichnet; nur der Staub flimmert (≈12 fps), pausiert wenn
  * der Tab verborgen ist oder Bewegung reduziert werden soll.
- * Arbeitet MÔRA, tritt das Netz zurück und ein weicher Goldfaden läuft vom Stein bis an den
- * Planetenrand über dessen Namen.
+ * Bei Arbeit führt ein einzelner Jadefaden vom Stein zum Ziel. Kein breites
+ * Glühen: Material und Zustand bleiben an Stein und Planet lesbar.
  */
 type Pt = [number, number];
 const J = '130,215,180';
@@ -69,7 +69,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const c = net.getContext('2d')!; c.scale(dpr, dpr); c.lineCap = 'round';
             const R = rng(42);
             const dim = targetId ? 0.45 : 1; dimNow = dim;
-            c.shadowColor = `rgba(${J},0.6)`; c.shadowBlur = 5;
+            c.shadowColor = `rgba(${J},0.24)`; c.shadowBlur = 2;
             void hypha; void R;
             // Ruhe: kein Faden. Bei Zeigen/Fokus: Stein → Mitte → Planet, um andere Planeten herum geführt.
             const fp = focusId && !targetId ? planets.find((p) => p.id === focusId) : undefined;
@@ -95,7 +95,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
                 const n = pts.length;
                 for (let i = 1; i < n - 1; i++) {
                     const t = i / n; const fade = Math.min(1, Math.sin(Math.PI * t) * 1.8 + 0.2);
-                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 1;
+                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 0.75;
                     const m0: Pt = [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2];
                     const m1: Pt = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
                     c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(pts[i][0], pts[i][1], m1[0], m1[1]); c.stroke();
@@ -110,7 +110,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             // Staub: Punkte um die Mitte, wenige warme dazwischen.
             const g = () => (R() + R() + R() - 1.5) / 1.5;
             dust = [];
-            const n = Math.round(Math.min(240, W * H / 3200));
+            const n = Math.round(Math.min(80, W * H / 9000));
             for (let i = 0; i < n; i++) dust.push([sun[0] + g() * W * 0.42, sun[1] + g() * H * 0.48, R() < 0.85 ? 0.7 : 1.3, 0.3 + R() * 0.7, R() < 0.22]);
             if (targetId && stone) {
                 const el = plane.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(targetId)}"]`);
@@ -121,10 +121,13 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
                     // Ende am Planetenrand seitlich über dem Namen (von der Steinseite her), nie durch den Namen.
                     const side = S[0] >= T[0] ? 1 : -1; const r = size / 2 + 2;
                     const end: Pt = [T[0] + side * r * 0.92, T[1] + r * 0.38];
-                    const grad = c.createLinearGradient(S[0], S[1], end[0], end[1]);
-                    grad.addColorStop(0, 'rgba(255,225,160,0.95)'); grad.addColorStop(1, 'rgba(240,200,120,0.85)');
-                    const path = () => { c.beginPath(); c.moveTo(S[0], S[1]); c.bezierCurveTo(S[0] - side * 30, S[1] - 90, end[0] + side * 70, end[1] + Math.min(160, (S[1] - end[1]) * 0.45), end[0], end[1]); };
-                    for (const [w, bl, a] of [[10, 18, 0.18], [4, 8, 0.45], [1.4, 2, 1]] as const) { c.save(); c.globalAlpha = a; c.strokeStyle = grad; c.lineWidth = w; c.shadowColor = 'rgba(255,210,130,1)'; c.shadowBlur = bl; path(); c.stroke(); c.restore(); }
+                    c.save();
+                    c.shadowBlur = 2;
+                    strokeRouted(routed(S, end, T), 0.56);
+                    c.shadowBlur = 0;
+                    c.fillStyle = `rgba(${J},0.72)`;
+                    c.beginPath(); c.arc(end[0], end[1], 1.8, 0, Math.PI * 2); c.fill();
+                    c.restore();
                 }
             }
         };

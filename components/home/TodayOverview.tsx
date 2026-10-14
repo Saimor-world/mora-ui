@@ -47,7 +47,9 @@ function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, a
   );
 }
 
-function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = false) {
+type TodayCopy = { value: string; detail: string; unavailable?: boolean; attention?: boolean; reconnect?: boolean };
+
+function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = false): TodayCopy {
   if (loading && !status) {
     return {
       value: 'Wird geladen',
@@ -87,7 +89,7 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
   }
 }
 
-function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolean) {
+function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolean): TodayCopy {
   if (loading) return sourceStateCopy(label, undefined, true);
   if (error === 'unauthorized') {
     return {
@@ -111,7 +113,7 @@ export function TodayOverview() {
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
   const openIntegrations = () => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } });
 
-  const calendarCopy = useMemo(() => {
+  const calendarCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
       return { value: 'Heute frei', detail: 'Keine weiteren Termine für heute.' };
@@ -134,7 +136,7 @@ export function TodayOverview() {
     };
   }, [loadError, loading, snapshot]);
 
-  const mailCopy = useMemo(() => {
+  const mailCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);
     if (snapshot.mail.status === 'empty') {
       return { value: 'Posteingang ruhig', detail: 'Keine Mail im zuletzt geladenen Ausschnitt.' };
@@ -152,7 +154,7 @@ export function TodayOverview() {
     };
   }, [loadError, loading, snapshot]);
 
-  const taskCopy = useMemo(() => {
+  const taskCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Gemeinsame Aufgaben', loadError, loading);
     if (snapshot.tasks.status === 'empty') {
       return { value: 'Nichts offen', detail: 'Keine offenen gemeinsamen Aufgaben dieser Organisation.' };
@@ -176,7 +178,7 @@ export function TodayOverview() {
     return { value: `${open} offen`, detail: 'Gemeinsame Aufgaben dieser Organisation · heute nichts fällig.' };
   }, [loadError, loading, snapshot]);
 
-  const nightwatchCopy = useMemo(() => {
+  const nightwatchCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Nightwatch', loadError, loading);
     if (snapshot.nightwatch.status === 'empty') {
       return { value: 'Alles ruhig', detail: 'Keine offenen Vorfälle.' };
@@ -209,47 +211,52 @@ export function TodayOverview() {
                 : 'nicht verfügbar';
 
   if (isUniverseV2Enabled()) {
-    type Copy = { value: string; detail: string; unavailable?: boolean; attention?: boolean };
-    const sources: { key: string; label: string; icon: LucideIcon; copy: Copy; open: () => void }[] = [
-      { key: 'calendar', label: 'Kalender', icon: CalendarDays, copy: calendarCopy, open: () => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } }) },
-      { key: 'mail', label: 'Post', icon: Mail, copy: mailCopy, open: () => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } }) },
+    const sources: { key: string; label: string; icon: LucideIcon; copy: TodayCopy; open: () => void; connectable?: boolean }[] = [
+      { key: 'calendar', label: 'Kalender', icon: CalendarDays, copy: calendarCopy, connectable: true, open: () => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } }) },
+      { key: 'mail', label: 'Post', icon: Mail, copy: mailCopy, connectable: true, open: () => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } }) },
       { key: 'tasks', label: 'Aufgaben', icon: ListTodo, copy: taskCopy, open: () => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } }) },
       { key: 'watch', label: 'Wache', icon: Radar, copy: nightwatchCopy, open: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }) },
     ];
-    const live = sources.filter((x) => !x.copy.unavailable);
     const fog = sources.filter((x) => x.copy.unavailable);
     const isLoading = loading && !snapshot;
     const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
     return (
-      <section className="mt-16" data-testid="uv2-today">
-        <p style={{ ...M, color: '#D6A848' }}>Heute</p>
-        {/* hd21: Jede Quelle ein Widget – Symbol, Stand, Detail; Tippen öffnet die App. Was fehlt, sagt ehrlich „nicht verbunden“. */}
+      <section className="mt-10" data-testid="uv2-today" aria-busy={loading || refreshing}>
+        <div className="flex items-center justify-between gap-4">
+          <p style={{ ...M, color: '#D6A848' }}>Heute</p>
+          <span className="uv2-today-status" role="status">{overallLabel}</span>
+        </div>
         <div className="uv2-todayw mt-4">
           {sources.map((x) => {
             const off = x.copy.unavailable;
+            const reconnect = Boolean(x.connectable && x.copy.reconnect);
+            const retry = Boolean(off && !reconnect);
+            const disabled = isLoading || (retry && refreshing) || (!snapshot && loadError === 'forbidden');
             const Icon = x.icon;
             return (
-              <button key={x.key} type="button" onClick={off ? openIntegrations : x.open} data-testid={`uv2-today-${x.key}`}
-                className="uv2-widget" data-off={off ? '' : undefined} data-attn={!off && x.copy.attention ? '' : undefined}>
+              <button key={x.key} type="button" disabled={disabled}
+                onClick={reconnect ? openIntegrations : retry ? () => void refresh(false) : x.open}
+                data-testid={`uv2-today-${x.key}`} className="uv2-widget" data-off={off ? '' : undefined} data-reconnect={reconnect ? '' : undefined}
+                data-attn={!off && x.copy.attention ? '' : undefined}>
                 <span className="uv2-widget__top">
                   <span className="uv2-widget__ico"><Icon /></span>
                   <span className="uv2-widget__label">{x.label}</span>
-                  <span className="uv2-widget__go" aria-hidden>{off ? 'Verbinden' : '›'}</span>
+                  <span className="uv2-widget__go" aria-hidden>{reconnect ? 'Verbinden' : retry ? <RefreshCw size={14} /> : '›'}</span>
                 </span>
-                <span className="uv2-widget__value">{isLoading ? 'Wird gelesen …' : off ? 'Nicht verbunden' : x.copy.value}</span>
-                {!off && !isLoading && x.copy.detail && <span className="uv2-widget__detail">{x.copy.detail}</span>}
+                <span className="uv2-widget__value">{x.copy.value}</span>
+                {x.copy.detail && <span className="uv2-widget__detail">{x.copy.detail}</span>}
               </button>
             );
           })}
         </div>
         {fog.length > 0 && !isLoading && (
           <div className="mt-4 flex items-center gap-6" data-testid="uv2-today-fog">
-            <button type="button" onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white" style={{ color: 'rgba(247,244,233,.6)' }}>
+            <button type="button" disabled={refreshing} onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white disabled:opacity-60" style={{ color: 'rgba(247,244,233,.6)' }}>
               {refreshing ? 'Prüft …' : 'Erneut prüfen'}
             </button>
           </div>
         )}
-        {!(calendarCopy as Copy).unavailable && <CalendarContinuity />}
+        {!calendarCopy.unavailable && <CalendarContinuity />}
       </section>
     );
   }

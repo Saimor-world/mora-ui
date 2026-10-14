@@ -99,4 +99,24 @@ describe('openMoraWorkspace transient intent', () => {
     expect(JSON.stringify(pane)).not.toContain('osContext');
     expect(JSON.stringify(pane)).not.toContain('Wie gehen wir weiter?');
   });
+
+  it('submits Home questions through transient data and accepts another question in the same pane', () => {
+    const question = 'Wie geht es weiter? '.repeat(70).trim();
+    openMoraWorkspace({ source: 'home', draftQuestion: question, submitQuestion: true });
+    const first = usePaneStore.getState().getPane('chat-main');
+    const firstId = first?.data.initialMessageId;
+    expect(first?.data.initialMessage).toBe(question);
+    expect(firstId).toBe(readMoraWorkspaceIntent()?.requestId);
+    expect(JSON.stringify(first)).not.toContain(question);
+    expect(JSON.stringify(first)).not.toContain('initialMessage');
+
+    openMoraWorkspace({ source: 'home', draftQuestion: 'Und danach?', submitQuestion: true });
+    const second = usePaneStore.getState().getPane('chat-main');
+    expect(second?.data.initialMessageId).not.toBe(firstId);
+    expect(second?.data.initialMessage).toBe('Und danach?');
+    expect(usePaneStore.getState().panes).toHaveLength(1);
+
+    openMoraWorkspace({ source: 'work', label: 'Arbeit' });
+    expect(usePaneStore.getState().getPane('chat-main')?.data.initialMessage).toBeUndefined();
+  });
 });

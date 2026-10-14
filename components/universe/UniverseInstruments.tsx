@@ -139,10 +139,12 @@ export function UniverseInstruments(props: {
                 <Row label="Mail" when={relativeTime(mail?.date)} link="mail"
                     value={props.mailStatus === 'unavailable' ? 'Nicht erreichbar – Verbindung prüfen' : mail?.subject || 'Posteingang ruhig'}
                     onClick={props.mailStatus === 'unavailable' && props.onOpenIntegrations ? props.onOpenIntegrations : props.onOpenMail} />
-                <Row label="Feed" when={relativeTime((feed as { publishedAt?: string; published_at?: string } | undefined)?.publishedAt || (feed as { published_at?: string } | undefined)?.published_at)} link="rss"
-                    value={feed?.title || 'Keine neuen Feed-Signale'} onClick={props.onOpenFeed} />
+                {feed && <Row label="Feed" when={relativeTime((feed as { publishedAt?: string; published_at?: string } | undefined)?.publishedAt || (feed as { published_at?: string } | undefined)?.published_at)} link="rss"
+                    value={feed.title} onClick={props.onOpenFeed} />}
             </Block>
 
+            <details className="uv2-instrument-details" open={open > 0 || undefined}>
+                <summary><span>Bereiche &amp; System</span><span aria-hidden className="uv2-details-plus">+</span></summary>
             <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
 
             <Block id="wache" label="Wache · 14 Tage" aside={open ? <><CountUp value={open} /> offen</> : 'ruhig'}>
@@ -169,6 +171,8 @@ export function UniverseInstruments(props: {
             <Block id="wirtschaft" label="Wirtschaft" aside={amount ? `${b.activeCount} Abo${b.activeCount === 1 ? '' : 's'}` : 'Paddle bereit'}>
                 <p className="uv2-inst-text">{amount ? <>Monatlich <span className="uv2-inst-figure">{amount}</span></> : 'Noch kein Umsatz – das erste Abo erscheint hier.'}</p>
             </Block>
+            {!feed && <button type="button" className="uv2-inst-row" onClick={props.onOpenFeed}><span className="uv2-inst-text">Feed öffnen</span></button>}
+            </details>
         </div>
     );
 }

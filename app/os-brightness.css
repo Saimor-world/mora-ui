@@ -15,3 +15,62 @@ html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv
 html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-state="sleeping"]):not([data-planet-state="seed"]) { opacity: .9; }
 @media (max-width: 639px) { .uv2-widget[data-off] .uv2-widget__go { display: none; } .uv2-widget__label { white-space: normal !important; } }
 .uv2-widget__value { color: #fff8e6; }
+.uv2-widget__detail { white-space: normal; overflow: visible; text-overflow: clip; font-size: 13px; line-height: 1.5; color: rgba(247,244,233,.76); }
+.uv2-widget__top { align-items: flex-start; }
+.uv2-widget__label { line-height: 1.4; }
+.uv2-widget__go { flex-shrink: 0; }
+.uv2-widget:disabled { cursor: default; transform: none; }
+.uv2-widget:focus-visible, .uv2-place:focus-visible { outline: 2px solid #a9d2be; outline-offset: 4px; }
+.uv2-today-status { font-size: 13px; color: rgba(247,244,233,.75); }
+body .glass-panel-runtime.glass-panel-runtime[data-maximized="true"],
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { border-radius: 0 !important; border: 0 !important; max-width: 100vw !important; max-height: 100vh !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] { width: 40px !important; height: 40px !important; background: none !important; box-shadow: none; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] svg { display: block; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] h3 + p { font-family: Inter, system-ui, sans-serif; font-size: 13px !important; letter-spacing: 0; text-transform: none; color: rgba(247,244,233,.76) !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-msg="welcome"] p:first-of-type { font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.65; margin-bottom: 0; }
+@media (max-width: 639px) {
+  .uv2-todayw { gap: 10px; }
+  .uv2-widget { padding: 14px; border-radius: 18px; min-height: 170px; }
+  .uv2-widget__top { flex-wrap: wrap; }
+  .uv2-widget__value { font-size: 24px; margin-top: 8px; }
+  .uv2-widget[data-off] .uv2-widget__value { font: 500 16px/1.4 Inter, system-ui, sans-serif; }
+  .uv2-widget[data-off] .uv2-widget__go { display: inline; }
+  .uv2-widget[data-reconnect] .uv2-widget__top { display: grid; grid-template-columns: 22px minmax(0, 1fr); }
+  .uv2-widget[data-reconnect] .uv2-widget__go { grid-column: 1 / -1; margin-top: 4px; font-size: 13px; text-transform: none; color: #a9d2be !important; }
+  html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] { padding: 12px 16px !important; }
+  html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] .chat-engineering-label { display: none; }
+  html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-tabs] { padding: 0 16px; gap: 20px !important; }
+  html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-stream] { padding: 24px 16px !important; }
+  html[data-uv2="on"] body:not(.standard-mode) [data-uv2-msg="assistant"] > div { padding-left: 14px !important; }
+  html[data-uv2="on"] [data-testid="main-chat-mode-switch"] { flex-wrap: wrap; gap: 0; }
+  html[data-uv2="on"] [data-testid="main-chat-mode-switch"] > span { display: none; }
+  html[data-uv2="on"] [data-testid="main-chat-mode-switch"] > div { gap: 18px; flex-wrap: wrap; }
+  html[data-uv2="on"] [data-uv2-chat-composer] textarea { min-width: 0; }
+}
+
+/* Local refinement: quiet instruments, readable text and room for the nebula. */
+html[data-uv2="on"] .uv2-grain { opacity: .025; }
+html[data-uv2="on"] [data-uv2-col="right"].uv2-col-right { width: min(var(--g-3), 260px); }
+html[data-uv2="on"] .uv2-instruments { gap: 28px; }
+html[data-uv2="on"] [data-testid="uv2-lage"] [data-uv2-col="right"] > .uv2-instruments { justify-content: flex-start !important; gap: 28px; }
+html[data-uv2="on"] [data-uv2-col="right"]::before { content: ""; position: absolute; top: -40px; left: -52px; right: -52px; height: 400px; z-index: -1; pointer-events: none; background: rgba(16,32,36,.85); backdrop-filter: blur(18px); -webkit-mask-image: radial-gradient(ellipse at 50% 26%, #000 12%, transparent 72%); mask-image: radial-gradient(ellipse at 50% 26%, #000 12%, transparent 72%); }
+html[data-uv2="on"] [data-uv2-col="right"]:has(.uv2-instrument-details[open])::before { height: calc(100% + 48px); }
+html[data-uv2="on"] .uv2-inst-label { color: #ddc696 !important; font-size: 12px !important; letter-spacing: .06em !important; }
+html[data-uv2="on"] .uv2-inst-row .uv2-inst-label { color: rgba(247,244,233,.76) !important; letter-spacing: .03em !important; }
+html[data-uv2="on"] .uv2-inst-text { font-size: 14px; line-height: 1.6; }
+html[data-uv2="on"] .uv2-instrument-details { border-top: 1px solid rgba(247,244,233,.2); padding-top: 16px; }
+html[data-uv2="on"] .uv2-instrument-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; font: 400 14px/1.6 Inter, system-ui, sans-serif; color: #f7f4e9; list-style: none; }
+html[data-uv2="on"] .uv2-instrument-details > summary::-webkit-details-marker { display: none; }
+html[data-uv2="on"] .uv2-details-plus { font-size: 20px; color: #a9d2be; }
+html[data-uv2="on"] .uv2-instrument-details[open] .uv2-details-plus { transform: rotate(45deg); }
+html[data-uv2="on"] .uv2-instrument-details > section { display: block; padding: 20px 0 !important; margin: 0; background: none !important; box-shadow: none !important; border: 0 !important; border-bottom: 1px solid rgba(247,244,233,.12) !important; border-radius: 0 !important; }
+html[data-uv2="on"] .uv2-substance-empty { padding: 12px 0; }
+html[data-uv2="on"] .uv2-empty-orbit { display: block; width: 32px; height: 24px; margin-bottom: 14px; border: 1px solid rgba(169,210,190,.42); border-radius: 50%; transform: rotate(-20deg); }
+html[data-uv2="on"] .uv2-empty-areas summary { cursor: pointer; color: rgba(247,244,233,.78); font: 400 13px/1.6 Inter, system-ui, sans-serif; }
+html[data-uv2="on"] .uv2-instrument-details summary:focus-visible,
+html[data-uv2="on"] .uv2-empty-areas summary:focus-visible { outline: 2px solid #a9d2be; outline-offset: 6px; border-radius: 2px; }
+@media (min-width: 1280px) {
+  html[data-uv2="on"] { --g-3: min(280px, calc(3 * var(--g-col) + 2 * var(--g-g))); }
+  html[data-uv2="on"] [data-uv2-col="right"] { padding-bottom: 24px; }
+  html[data-uv2="on"] .uv2-instrument-details { max-height: calc(100vh - 350px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 12px; }
+}

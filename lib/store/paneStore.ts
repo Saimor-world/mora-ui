@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { useActivityStore } from '@/lib/store/activityStore';
-import { getSheetAnchor, type SheetAnchor } from '@/lib/os/glassSheet';
 
 export interface PaneConfig {
     id: string;
@@ -71,67 +70,17 @@ const getWorkspaceInsets = (windowWidth: number, windowHeight: number) => {
     return { leftInset, rightInset, topInset, bottomInset, workspaceWidth, workspaceHeight };
 };
 
-const clampToViewport = (
-    x: number,
-    y: number,
-    size: { width: number; height: number },
-    windowWidth: number,
-    windowHeight: number,
-) => ({
-    x: Math.max(20, Math.min(x, windowWidth - size.width - 20)),
-    y: Math.max(40, Math.min(y, windowHeight - size.height - 100)),
-});
-
-const getCenteredPosition = (size: { width: number; height: number }, offset: number = 0) => {
+const getCenteredPosition = (size: { width: number; height: number }) => {
     const { windowWidth, windowHeight } = getViewport();
-    const { leftInset, topInset, workspaceWidth, workspaceHeight } = getWorkspaceInsets(windowWidth, windowHeight);
-
-    // Apply cascade offset for multiple windows (20px per open window)
-    const cascadeOffset = offset * 25;
-
-    const x = size.width <= workspaceWidth
-        ? leftInset + Math.floor((workspaceWidth - size.width) / 2) + cascadeOffset
-        : Math.max(leftInset, Math.floor((windowWidth - size.width) / 2) + cascadeOffset);
-    const y = size.height <= workspaceHeight
-        ? topInset + Math.floor((workspaceHeight - size.height) / 2) + cascadeOffset
-        : Math.max(48, topInset - 34) + cascadeOffset;
-
-    return clampToViewport(x, y, size, windowWidth, windowHeight);
-};
-
-// Anchored sheets hug a screen edge (Mail = left, Team = right) so two apps can
-// sit beside each other with the living cosmos still breathing behind/between.
-const getAnchoredPosition = (
-    size: { width: number; height: number },
-    anchor: 'left' | 'right',
-    offset: number = 0,
-) => {
-    const { windowWidth, windowHeight } = getViewport();
-    const { topInset, bottomInset } = getWorkspaceInsets(windowWidth, windowHeight);
-    const edgeMargin = windowWidth >= 1440 ? 64 : windowWidth >= 1024 ? 36 : 16;
-    const availableHeight = Math.max(320, windowHeight - topInset - bottomInset);
-
-    // Gentle vertical cascade keeps stacked anchored sheets from hiding each other.
-    const cascadeOffset = offset * 18;
-
-    const x = anchor === 'left'
-        ? edgeMargin
-        : windowWidth - edgeMargin - size.width;
-    const y = topInset + Math.max(0, Math.floor((availableHeight - size.height) / 2)) + cascadeOffset;
-
-    return clampToViewport(x, y, size, windowWidth, windowHeight);
-};
-
-const resolveDefaultPosition = (
-    type: PaneType,
-    size: { width: number; height: number },
-    offset: number,
-) => {
-    const anchor: SheetAnchor = getSheetAnchor(type);
-    if (anchor === 'left' || anchor === 'right') {
-        return getAnchoredPosition(size, anchor, offset);
-    }
-    return getCenteredPosition(size, offset);
+    const compact = windowWidth < 720;
+    // Match the rendered GlassPanel bounds, including oversized app requests.
+    // Sidebar reservations and app-specific edge anchors must not shift the centre.
+    const renderedWidth = compact ? Math.max(304, windowWidth - 16) : Math.min(size.width, windowWidth - 32);
+    const renderedHeight = compact ? Math.max(360, windowHeight - 148) : Math.min(size.height, windowHeight - 160);
+    return {
+        x: Math.max(0, Math.floor((windowWidth - renderedWidth) / 2)),
+        y: Math.max(0, Math.floor((windowHeight - renderedHeight) / 2)),
+    };
 };
 
 export type LayoutPreset = 'focus_single' | 'split_50_50' | 'split_33_66' | 'triple_columns' | 'tile_quad' | 'close_all';
@@ -332,11 +281,8 @@ export const usePaneStore = create<PaneState>((set, get) => ({
             return;
         }
 
-        // Calculate cascade offset based on number of open panes
-        const openPaneCount = get().panes.filter(p => !p.minimized).length;
-        // No explicit position → fall back to the app's default anchor (Mail left,
-        // Team right, others centered). User stays free to drag afterwards.
-        const position = request.position ?? resolveDefaultPosition(request.type, request.size, openPaneCount);
+        // Default app windows are centred; explicit user/layout positions still win.
+        const position = request.position ?? getCenteredPosition(request.size);
         get().addPane({
             id: request.id,
             type: request.type,

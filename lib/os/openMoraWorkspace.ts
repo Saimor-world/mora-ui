@@ -39,6 +39,8 @@ export type MoraWorkspaceContext = {
   sourcePaneId?: string;
   label?: string;
   draftQuestion?: string;
+  /** Explicit user submission from an OS question field, rather than a draft. */
+  submitQuestion?: boolean;
   taskId?: string;
   taskTitle?: string;
   nodeId?: string;
@@ -109,7 +111,7 @@ function withTransientIntent(data: unknown, intent: MoraWorkspaceIntent): Record
     : {};
   // Drop any legacy enumerable launch context before cloning. The new property is
   // deliberately non-enumerable so pane geometry persistence cannot serialize it.
-  const { osContext: _legacyContext, draftInput: _legacyDraft, ...durableData } = source;
+  const { osContext: _legacyContext, draftInput: _legacyDraft, initialMessage: _legacyMessage, initialMessageId: _legacyMessageId, ...durableData } = source;
   const nextData: Record<string, unknown> = { ...durableData };
   Object.defineProperty(nextData, 'osContext', {
     value: intent,
@@ -168,7 +170,8 @@ function resolveWorkspaceGeometry() {
 
 /**
  * Canonical entry into MÔRA as an OS workspace.
- * Opening is navigation only: it never submits a message or executes a tool.
+ * Opening is navigation only unless submitQuestion explicitly carries a user-submitted question.
+ * Drafts and operational references alone never submit a message or execute a tool.
  */
 export function openMoraWorkspace(context: MoraWorkspaceContext = {}) {
   const store = usePaneStore.getState();
@@ -176,6 +179,12 @@ export function openMoraWorkspace(context: MoraWorkspaceContext = {}) {
   const { size, position } = resolveWorkspaceGeometry();
   const intent = buildIntent(context);
   const nextData = withTransientIntent(existing?.data, intent);
+  if (context.submitQuestion && intent.draftQuestion) {
+    Object.defineProperties(nextData, {
+      initialMessage: { value: context.draftQuestion!.trim(), writable: true, configurable: true, enumerable: false },
+      initialMessageId: { value: intent.requestId, writable: true, configurable: true, enumerable: false },
+    });
+  }
 
   if (existing) {
     const recoveryWidth = Math.min(RECOVERY_MIN.width, size.width);

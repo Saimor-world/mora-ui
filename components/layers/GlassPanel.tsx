@@ -483,8 +483,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     opacity: 1,
                     scale: 1,
                     filter: 'blur(0px)',
-                    x: isCompactViewport && !isMaximized ? 8 : panelPosition.x,
-                    y: isCompactViewport && !isMaximized ? 64 : panelPosition.y,
+                    x: isCompactViewport && !isMaximized ? Math.max(0, (viewportSize.width - compactPanelSize.width) / 2) : panelPosition.x,
+                    y: isCompactViewport && !isMaximized ? Math.max(0, (viewportSize.height - compactPanelSize.height) / 2) : panelPosition.y,
                     width: isCompactViewport && !isMaximized ? compactPanelSize.width : panelSize.width,
                     height: isCompactViewport && !isMaximized ? compactPanelSize.height : panelSize.height
                 }}
@@ -504,6 +504,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 data-active={effectiveIsActive ? 'true' : 'false'}
                 data-app-id={appManifest?.id}
                 data-pane-id={paneId}
+                data-maximized={isMaximized ? 'true' : 'false'}
                 data-app-tone={appManifest?.color ?? 'slate'}
                 data-app-category={appManifest?.category}
                 data-pane-stack={hasPaneStack ? 'true' : 'false'}
@@ -522,7 +523,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                     backdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     WebkitBackdropFilter: isStandardMode || effectiveBlur === 0 ? 'none' : `blur(${effectiveBlur}px) saturate(${effectiveSaturation}%)`,
                     boxShadow: panelBoxShadow,
-                    borderRadius: isStandardMode ? '4px' : isCompactViewport ? '18px' : '24px',
+                    borderRadius: isMaximized ? 0 : isStandardMode ? '4px' : isCompactViewport ? '18px' : '24px',
                     overflow: 'hidden'
                     // borderRadius is now set conditionally above based on isStandardMode
                 }}
