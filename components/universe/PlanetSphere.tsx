@@ -293,7 +293,7 @@ function usePixelStyle(): PStyle | null {
   const [v, setV] = React.useState<PStyle | null>(null);
   React.useEffect(() => {
     const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
-    const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'B' || x === 'C' || x === 'M') ? x : 'J';
+    const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'B' || x === 'C' || x === 'J') ? x : 'M';
     if (st) { setV(st); document.documentElement.setAttribute('data-uv2-pstyle', st); }
   }, []);
   return v;
@@ -369,7 +369,10 @@ export function areaHue(name: string, _arch?: string | null): [number, number, n
 const JEWEL_CACHE = new Map<string, ImageData>();
 function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
-  const h: number[] = quiet ? mix(hue, [128, 134, 132], 0.55) : hue;
+  const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
+  // hd47 (Marius): matt nur leicht getönt – Sättigung gut halbiert
+  const base: number[] = matte ? mix(hue, mix(grey(hue), [150, 168, 166], 0.35), 0.62) : hue;
+  const h: number[] = quiet ? mix(base, [128, 134, 132], 0.55) : base;
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1); const W = Math.round(size * dpr); if (cv.width !== W) cv.width = cv.height = W;
@@ -403,17 +406,26 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
       } else {
         // feines Punktraster nur auf der Lichtseite
         const cx = (x % cell) - cell / 2, cy = (y % cell) - cell / 2; const dot = Math.hypot(cx, cy) < cell * 0.22;
-        if (dot && t > 0.5) col = mix(col, lite, 0.14 * (t - 0.5) * 2);
+        if (dot && t > 0.5) col = mix(col, lite, 0.08 * (t - 0.5) * 2);
       }
       const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.4);
-      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge);
+      // Universe Glass (hd47): Milchglas – Kosmos scheint durch, weiche Innenglut, feine Kantenlichter
+      if (matte) {
+        const inner = Math.pow(z, 3) * 0.10 * (0.4 + 0.6 * t);              // weiche Innenglut
+        col = mix(col, mix(h, [255, 250, 238], 0.6), inner);
+        const edgeHi = Math.pow(1 - z, 6) * Math.max(0, u * lx + v * ly + 0.15) * 1.4; // Kantenlicht auf der Lichtseite
+        col = mix(col, [250, 244, 228], Math.min(0.55, edgeHi));
+      }
+      const al = matte ? Math.min(1, 0.34 + 0.22 * t + 0.35 * Math.pow(1 - z, 3)) : 1; // Mitte ~55–65 % durchsichtig, Rand dichter
+      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge * al);
     }
     JEWEL_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();
     function drawRim() { if (!c) return; const rr = W / 2; c.strokeStyle = `rgba(226,192,118,${quiet ? 0.4 : 0.78})`; c.lineWidth = dpr * 0.8; c.beginPath(); c.arc(rr, rr, rr - dpr * 0.6, 0, Math.PI * 2); c.stroke(); }
   }, [size, lit, h.join(','), matte, seed, quiet]);
   const gx = Math.cos(lit) * size * 0.06, gy = Math.sin(lit) * size * 0.06;
   return (<>
-    <span className="pointer-events-none absolute rounded-full" style={{ inset: 0, boxShadow: `${gx}px ${gy}px ${size * 0.35}px rgba(${h.join(',')},${quiet ? 0.12 : 0.32})` }} />
+    <span className="pointer-events-none absolute rounded-full" style={{ inset: 0, boxShadow: `${gx}px ${gy}px ${size * 0.35}px rgba(${h.join(',')},${quiet ? 0.08 : matte ? 0.18 : 0.32})` }} />
+    {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ backdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', WebkitBackdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', transform: 'scale(1.0)', boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22)` }} />}
     <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />
   </>);
 }
