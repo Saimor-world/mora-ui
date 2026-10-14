@@ -78,9 +78,12 @@ export interface PlacedBody {
   cluster: ModelCluster | null;
 }
 
-const RINGS = { 1: { rx: 29, ry: 28 }, 2: { rx: 48, ry: 46 } } as const;
+/** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
+ *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
+export const ORBIT = { innerRx: 17, outerRx: 45, aspect: 0.92 } as const;
 
-/** Systeme innen (gleichmäßig nach Katalogwinkel), Domänen/Cluster außen, halb versetzt. Stabil nach Schlüssel. */
+function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
+
 export function placeUniverse(model: UniverseModel): PlacedBody[] {
   const inner = model.planets.filter((p) => p.kind === 'system').sort((a, b) => (a.angle ?? 0) - (b.angle ?? 0));
   const outerPlanets = model.planets.filter((p) => p.kind === 'domain' && !p.joins && !p.cluster);
@@ -88,26 +91,47 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     ...outerPlanets.map((p) => ({ key: p.key, planet: p, cluster: null })),
     ...model.clusters.map((c) => ({ key: c.key, planet: null, cluster: c })),
   ].sort((a, b) => (a.key < b.key ? -1 : 1));
-  const out: PlacedBody[] = [];
-  const pos = (ring: 1 | 2, deg: number) => {
-    const r = RINGS[ring];
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: +(50 + r.rx * Math.cos(rad)).toFixed(2), y: +(50 + r.ry * Math.sin(rad)).toFixed(2) };
+  const all = [
+    ...inner.map((p) => ({ key: p.key, kind: 'system' as const, label: p.label, planet: p as ModelPlanet | null, cluster: null as ModelCluster | null })),
+    ...outer.map((o) => ({ key: o.key, kind: (o.cluster ? 'cluster' : 'domain') as 'cluster' | 'domain', label: o.planet?.label ?? o.cluster!.label, planet: o.planet, cluster: o.cluster })),
+  ];
+  const n = all.length;
+  const rxOf = (i: number) => (n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx);
+  const at = (i: number, slot: number) => {
+    const rx = rxOf(i), rad = ((slot * (360 / Math.max(1, n)) - 90) * Math.PI) / 180;
+    return { x: 50 + rx * Math.cos(rad), y: 50 + rx * ORBIT.aspect * Math.sin(rad) };
   };
-  inner.forEach((p, i) => {
-    const deg = (i * 360) / Math.max(1, inner.length);
-    out.push({ id: p.key, kind: 'system', label: p.label, ...pos(1, deg), planet: p, cluster: null });
+  // Winkel: n gleich große Schritte, jeder genau einmal (Schrittweite teilerfremd zu n). Aus allen Schrittweiten/Drehungen
+  // die nehmen, bei der sich Kugeln und Namen am wenigsten nahe kommen (Name hängt unter der Kugel). Deterministisch.
+  let best = { step: 1, rot: 0, score: -Infinity };
+  for (let step = 1; step < Math.max(2, n); step++) {
+    if (n > 1 && gcd(step, n) !== 1) continue;
+    for (let rot = 0; rot < Math.max(1, n); rot++) {
+      const pts = all.map((_, i) => at(i, (i * step + rot) % Math.max(1, n)));
+      // Jeder Körper belegt eine Box: Kugel (≈ ±5%) plus Name/Unterzeile darunter (≈ 16% breit, bis +13%).
+      let overlap = 0, minD = Infinity;
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+        const ox = Math.max(0, Math.min(pts[i].x + 8.5, pts[j].x + 8.5) - Math.max(pts[i].x - 8.5, pts[j].x - 8.5));
+        const oy = Math.max(0, Math.min(pts[i].y + 13, pts[j].y + 13) - Math.max(pts[i].y - 5, pts[j].y - 5));
+        overlap += ox * oy;
+        minD = Math.min(minD, Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y));
+      }
+      let score = minD - overlap * 3;
+      // Ausgewogen: Schwerpunkt nahe der Mitte
+      const cx = pts.reduce((a, p) => a + p.x, 0) / Math.max(1, n), cy = pts.reduce((a, p) => a + p.y, 0) / Math.max(1, n);
+      score -= Math.hypot(cx - 50, cy - 50) * 0.3;
+      if (score > best.score + 1e-6) best = { step, rot, score };
+    }
+  }
+  return all.map((b, i) => {
+    const p = at(i, (i * best.step + best.rot) % Math.max(1, n));
+    return { id: b.key, kind: b.kind, label: b.label, x: +p.x.toFixed(2), y: +p.y.toFixed(2), planet: b.planet, cluster: b.cluster };
   });
-  // Außen nie auf demselben Strahl wie innen: Bereiche sitzen in den Lücken zwischen Systemplaneten.
-  const n = inner.length;
-  const slots = n && outer.length <= n
-    ? Array.from({ length: outer.length }, (_, i) => ((Math.round((i * n) / outer.length) + 0.5) * 360) / n)
-    : outer.map((_, i) => (n ? 180 / n : 0) + (i * 360) / Math.max(1, outer.length));
-  outer.forEach((o, i) => {
-    const deg = slots[i] % 360;
-    out.push({ id: o.key, kind: o.cluster ? 'cluster' : 'domain', label: o.planet?.label ?? o.cluster!.label, ...pos(2, deg), planet: o.planet, cluster: o.cluster });
-  });
-  return out;
+}
+
+/** Bahnradius (rx in %) aus einer Position – für das Zeichnen der eigenen Bahn. */
+export function orbitRxOf(x: number, y: number): number {
+  return Math.hypot(x - 50, (y - 50) / ORBIT.aspect);
 }
 
 /** planet_key → Department-ID (für Ablage, Navigation, Môra-Ziele). */

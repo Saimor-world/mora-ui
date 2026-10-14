@@ -1,0 +1,34 @@
+/* MÔRA = der Jadestein. Zustände nur als Licht um den Stein (Regel 14.09.: Stein unverändert, keine Augen). */
+.mora-stone-light { opacity: 0; transition: opacity .6s ease, box-shadow .6s ease; }
+[data-mora-presence="listening"] .mora-stone-light { opacity: 1; box-shadow: 0 0 0 1px rgba(110,231,183,.55), 0 0 14px 2px rgba(16,185,129,.35); animation: moraStoneHalo 2.4s ease-in-out infinite; }
+[data-mora-presence="thinking"] .mora-stone-light { opacity: 1; box-shadow: inset 0 0 10px 2px rgba(240,207,124,.5), 0 0 12px 1px rgba(214,168,72,.3); animation: moraStoneInward 1.6s ease-in-out infinite; }
+[data-mora-presence="working"] .mora-stone-light { opacity: 1; box-shadow: 0 0 14px 3px rgba(214,168,72,.4); }
+[data-mora-presence="done"] .mora-stone-light { opacity: 1; animation: moraStoneShine 1.2s ease-out both; }
+[data-mora-presence="needs"] .mora-stone-light { opacity: 1; box-shadow: 0 0 16px 4px rgba(224,178,82,.34); animation: moraStoneToward 3.2s ease-in-out infinite; }
+@keyframes moraStoneHalo { 0%,100% { transform: scale(1.08); } 50% { transform: scale(.98); } }
+@keyframes moraStoneInward { 0%,100% { transform: scale(1); opacity: .7; } 50% { transform: scale(.92); opacity: 1; } }
+@keyframes moraStoneShine { 0% { box-shadow: 0 0 0 2px rgba(255,240,200,.9), 0 0 30px 10px rgba(240,207,124,.6); } 100% { box-shadow: 0 0 0 0 rgba(255,240,200,0), 0 0 0 0 rgba(240,207,124,0); } }
+@keyframes moraStoneToward { 0%,100% { translate: 0 0; } 50% { translate: 0 -2px; } }
+@media (prefers-reduced-motion: reduce) { .mora-stone-light { animation: none !important; } }
+
+/* ---- A4-Gesicht: Licht im Stein ---- */
+.mora-face { position: absolute; inset: 0; pointer-events: none; border-radius: 50%; }
+.mora-face__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; mix-blend-mode: screen; }
+/* Adern-Maske: der Stein selbst als Luminanz-Maske → Licht sitzt in den hellen Adern */
+.mora-face__veins { -webkit-mask: url(/brand/mora-stone-v1.png) center / 100% 100%; mask: url(/brand/mora-stone-v1.png) center / 100% 100% luminance; }
+.mora-face__eyes { transform-box: view-box; transform-origin: 50% 57%; animation: moraBlink 5.6s infinite, moraGlance 13s ease-in-out infinite; }
+.mora-face__svg { animation: moraFaceBreath 6s ease-in-out infinite; }
+.mora-face__leak { position: absolute; inset: -18%; border-radius: 50%; background: radial-gradient(circle at 50% 58%, rgba(64,242,140,.16), rgba(64,242,140,0) 62%); mix-blend-mode: screen; animation: moraFaceBreath 6s ease-in-out infinite; }
+[data-face-state="need"] .mora-face__leak { background: radial-gradient(circle at 50% 58%, rgba(255,196,110,.30), rgba(255,196,110,0) 62%); }
+[data-face-state="greet"] .mora-face__leak { background: radial-gradient(circle at 50% 58%, rgba(242,192,102,.22), rgba(242,192,102,0) 62%); }
+[data-face-state="think"] .mora-face__svg { animation: moraFaceThink 1.8s ease-in-out infinite; }
+[data-face-state="think"] .mora-face__eyes { animation: moraLookUp 3.6s ease-in-out infinite; }
+[data-face-state="work"] .mora-face__eyes { animation: moraBlink 7s infinite; }
+[data-face-state="listen"] .mora-face__svg { animation-duration: 3s; }
+[data-face-state="greet"] .mora-face__eyes, [data-face-state="done"] .mora-face__eyes { animation: none; }
+@keyframes moraBlink { 0%, 93%, 100% { transform: scaleY(1); } 95.5% { transform: scaleY(.08); } }
+@keyframes moraGlance { 0%, 62%, 100% { translate: 0 0; } 68%, 76% { translate: 1.6px 0; } 82% { translate: 0 0; } }
+@keyframes moraLookUp { 0%, 100% { translate: 0 0; } 50% { translate: .8px -1.2px; } }
+@keyframes moraFaceBreath { 0%, 100% { opacity: .9; } 50% { opacity: 1; } }
+@keyframes moraFaceThink { 0%, 100% { opacity: .75; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .mora-face *, .mora-face__svg, .mora-face__leak { animation: none !important; } }

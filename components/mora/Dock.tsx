@@ -16,6 +16,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
+import { MoraFace } from '@/components/mora/MoraFace';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
@@ -553,6 +554,7 @@ export const Dock = () => {
     const navigateToSpace = useNavStore((s) => s.navigateToSpace);
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
+    const moraPresence = useOrbStore((s) => s.moraPresence?.state ?? "calm");
     const user = useSessionStore((s) => s.user);
     const { data: companies = [], refetch: refetchCompanies } = useCompanies({ includeDemo: true });
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
@@ -713,7 +715,7 @@ export const Dock = () => {
 
     const accent = useMemo(() => {
         switch (orbState) {
-            case 'alert': return '#EF4444';
+            case 'alert': return '#E0B252';
             case 'thinking': return '#3B82F6';
             case 'insight': return '#F59E0B';
             case 'demo': return '#14B8A6';
@@ -1748,7 +1750,7 @@ export const Dock = () => {
                                     )}
 
                                     {activeMode !== 'public_playground' && (
-                                        <div className="flex items-center shrink-0" data-mora-orb>
+                                        <div className="flex items-center shrink-0" data-mora-orb data-mora-presence={moraPresence}>
                                             <button
                                                 onClick={() => handleDockClick('chat')}
                                                 data-mora-home="true"
@@ -1780,6 +1782,8 @@ export const Dock = () => {
                                                         }}
                                                     />
                                                 )}
+                                                {/* Zustand nur als Licht um den Stein (Regel 14.09.: der Stein selbst bleibt unverändert). */}
+                                                <span aria-hidden className="mora-stone-light pointer-events-none absolute inset-[-7px] rounded-full" />
                                                 {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
                                                 {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset in the always-visible dock */}
                                                 <img
@@ -1791,6 +1795,7 @@ export const Dock = () => {
                                                     data-orb-state={orbState}
                                                     className="relative h-full w-full select-none pointer-events-none"
                                                 />
+                                                {!isStandardMode && <MoraFace size={40} arcsOnGreet={false} />}
                                             </button>
                                         </div>
                                     )}

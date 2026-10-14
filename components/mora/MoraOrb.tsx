@@ -1,5 +1,7 @@
 "use client";
 
+import { useOrbStore } from '@/lib/store/orbStore';
+import { MoraFace } from '@/components/mora/MoraFace';
 import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -50,6 +52,7 @@ export function MoraOrb({
     onCursorSpawn
 }: MoraOrbProps) {
     const [mounted, setMounted] = useState(false);
+    const moraPresence = useOrbStore((s) => s.moraPresence?.state ?? "calm");
     const orbRef = useRef<HTMLDivElement>(null);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -63,7 +66,7 @@ export function MoraOrb({
 
         switch (state) {
             case 'alert':
-                return { color: '#EF4444', glowIntensity: 60, pulse: 1.0 };
+                return { color: '#E0B252', glowIntensity: 60, pulse: 1.0 };
             case 'insight':
                 return { color: '#F59E0B', glowIntensity: 50, pulse: 2.0 };
             case 'listening':
@@ -92,10 +95,12 @@ export function MoraOrb({
             className={`relative select-none pointer-events-auto ${sz.wrapper} flex items-center justify-center`}
             ref={orbRef}
             data-mora-state={state}
+            data-mora-presence={moraPresence}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onClick={onClick}
         >
+            <span aria-hidden className="mora-stone-light pointer-events-none absolute inset-[6%] rounded-full" />
             {/* Soft presence field around the stone. */}
             <motion.div
                 className="absolute inset-[-30%] rounded-full mix-blend-screen pointer-events-none"
@@ -134,6 +139,7 @@ export function MoraOrb({
                     draggable={false}
                     className="h-full w-full select-none pointer-events-none"
                 />
+                <MoraFace size={sz.stone} />
 
                 {/* State tint inside the gold ring (not for idle - pure jade). */}
                 {state !== 'idle' && (

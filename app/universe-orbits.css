@@ -1,0 +1,86 @@
+/* Bahnen: eine je Planet, konzentrisch, ruhig. Nur Anordnung – Look der Planeten bleibt. */
+.uv2-orbits { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.uv2-orbits ellipse { fill: none; stroke: rgba(247,244,233,.11); stroke-width: 1; vector-effect: non-scaling-stroke; transition: stroke .4s ease; }
+.uv2-orbits ellipse[data-kind="system"] { stroke: rgba(214,168,72,.2); }
+.uv2-orbits ellipse[data-selected] { stroke: rgba(232,200,130,.55); }
+/* Planetenmitte exakt auf der Bahn: der Knopf (Kugel + Name) wird so verschoben, dass die Kugel auf dem Punkt sitzt. */
+html[data-uv2="on"] [data-planet-kind] { translate: 0 calc(50% - var(--territory-size) / 2); }
+/* Mehr Raum für die Bahnen: Feld reicht bis an Begrüßung/Instrumente und nutzt die Höhe bis kurz über „Frag MÔRA“. Spalten, Hintergrund, Planeten bleiben. */
+@media (min-width: 1280px) {
+  html[data-uv2=on]:not([data-uv2-lage=open]):not([data-uv2-still=on]) [data-uv2-field]:has(.uv2-orbits) { left: calc(var(--g-m) + var(--g-3)) !important; right: calc(var(--g-m) + var(--g-3)) !important; }
+  html[data-uv2=on] [data-uv2-field] [data-uv2-plane]:has(.uv2-orbits) { left: 24px !important; right: 24px !important; top: 118px !important; bottom: 196px !important; }
+}
+/* Feinschliff: lange Unterzeilen am Außenrand umbrechen statt in die Instrumentenspalte zu laufen */
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-meta { white-space: normal !important; max-width: 150px; margin-left: auto; margin-right: auto; text-align: center; line-height: 1.35; }
+
+/* hd34 ruhiger: weniger Mitspieler */
+.uv2-orbits ellipse { stroke: rgba(247,244,233,.085); }
+.uv2-orbits ellipse[data-kind="system"] { stroke: rgba(214,168,72,.12); }
+.uv2-orbits ellipse[data-hover] { stroke: rgba(232,200,130,.32); }
+.uv2-orbits ellipse[data-selected] { stroke: rgba(232,200,130,.5); }
+/* keine Zeichen auf den Kugeln (Monde bleiben – Mond = großer Ordner) */
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-glyph { display: none !important; }
+/* Bereiche: leiser und etwas zurückgenommen, beim Zeigen voll da */
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) { opacity: .74; transition: opacity .35s ease; }
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]):is(:hover, :focus-visible, [aria-pressed="true"]) { opacity: 1; }
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { font-size: 11.5px !important; color: rgba(247,244,233,.6) !important; }
+
+/* ═══ hd35: Semantischer Zoom, Fokus, HUD ═══ */
+/* Namen: Planeten 15px, Bereiche 14px leiser */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-name { font-family: var(--uv-sans) !important; font-size: 15px !important; letter-spacing: .01em !important; text-transform: none !important; font-weight: 500 !important; color: rgba(236,240,246,.9) !important; text-shadow: 0 1px 10px rgba(0,0,0,.85); }
+html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { font-size: 14px !important; color: rgba(220,228,238,.6) !important; }
+/* Übersicht: nur Planetennamen – keine Unterzeilen, keine Mondnamen */
+html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind] .uv2-planet-meta { display: none !important; }
+/* Monde: kleine beleuchtete Punkte (Größe = Dateien, kommt aus buildOrbitals) */
+html[data-uv2="on"] [data-planet-kind] .group\/moon > [role="button"] { box-shadow: 0 0 6px rgba(220,232,255,.35); }
+/* Dateien als feiner Sternstaub */
+html[data-uv2="on"] [data-planet-kind] .saimor-doc-star { opacity: .55; filter: saturate(.3); }
+/* Monochrom-kühle Basis: Kugeln leicht entsättigt; Fokus/Zeigen bringt Farbe */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { filter: saturate(.62) brightness(.96); transition: filter .5s ease; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .saimor-territory-body { filter: none; }
+/* Gold nur für „braucht dich“ und Auswahl */
+html[data-uv2="on"] [data-planet-glow] .saimor-territory-body { box-shadow: 0 0 0 1px rgba(214,168,72,.55), 0 0 26px 4px rgba(214,168,72,.25); border-radius: 50%; }
+/* Fokus: Rest tritt auf ~40 % zurück */
+html[data-uv2="on"] [data-uv2-focus] [data-planet-kind]:not(:hover):not([aria-pressed="true"]) { opacity: .4 !important; filter: blur(.4px); }
+html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([data-selected]) { stroke-opacity: .5; }
+/* HUD-Klammern + Etikett (nur Zeigen/Auswahl) */
+.uv2-hud { position: absolute; left: 50%; pointer-events: none; opacity: 0; transform: scale(1.08); transition: opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1); }
+.uv2-hud > i { position: absolute; width: 10px; height: 10px; border: 0 solid rgba(236,240,246,.75); }
+.uv2-hud > i:nth-child(1) { left: 0; top: 0; border-left-width: 1px; border-top-width: 1px; }
+.uv2-hud > i:nth-child(2) { right: 0; top: 0; border-right-width: 1px; border-top-width: 1px; }
+.uv2-hud > i:nth-child(3) { left: 0; bottom: 0; border-left-width: 1px; border-bottom-width: 1px; }
+.uv2-hud > i:nth-child(4) { right: 0; bottom: 0; border-right-width: 1px; border-bottom-width: 1px; }
+.uv2-hud__label { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); white-space: nowrap; font: 500 12px/1.2 var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.92); text-shadow: 0 1px 8px rgba(0,0,0,.9); }
+.uv2-hud__label em { font-style: normal; color: rgba(214,168,72,.95); }
+html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .uv2-hud { opacity: 1; transform: none; }
+html[data-uv2="on"] [aria-pressed="true"] .uv2-hud > i { border-color: rgba(214,168,72,.9); }
+/* Sternbild: dünne Goldlinien nur bei Zeigen/Auswahl */
+.uv2-constellation { position: absolute; left: 50%; pointer-events: none; opacity: 0; transition: opacity .4s ease; overflow: visible; }
+.uv2-constellation polyline { fill: none; stroke: rgba(214,168,72,.6); stroke-width: .6; }
+.uv2-constellation circle { fill: rgba(250,236,200,.95); }
+html[data-uv2="on"] [data-planet-kind]:is(:hover, [aria-pressed="true"]) .uv2-constellation { opacity: 1; }
+/* Flug: 700 ms zur Mitte, Esc/Brotkrume zurück */
+html[data-uv2="on"] [data-uv2-plane] { transition: transform .7s cubic-bezier(.22,1,.36,1), translate 1.2s cubic-bezier(.22,1,.36,1); }
+html[data-uv2="on"] [data-uv2-zoom] .uv2-orbits ellipse:not([data-selected]) { stroke-opacity: .3; }
+/* Im Zoom: Mondnamen sichtbar (eine Ebene Beschriftung), als ruhige Zeile statt Karte */
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .group\/moon > span:last-child { opacity: 1 !important; background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 !important; margin-top: 4px; transform: translateX(-50%) scale(.6); transform-origin: top center; }
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .group\/moon > span:last-child > span:first-child { font-size: 12px; color: rgba(236,240,246,.9); }
+.uv2-crumb { position: absolute; left: 50%; top: 104px; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 10px; font: 500 13px/1 var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.88); }
+.uv2-crumb button { all: unset; cursor: pointer; color: rgba(236,240,246,.55); }
+.uv2-crumb button:hover { color: #fff; }
+.uv2-crumb span[aria-hidden] { color: rgba(236,240,246,.35); }
+.uv2-crumb kbd { margin-left: 6px; font: 500 10.5px/1 var(--uv-sans, Inter); padding: 3px 6px; border-radius: 5px; color: rgba(236,240,246,.5); box-shadow: inset 0 0 0 1px rgba(236,240,246,.18); }
+/* hd36: calmer zoom — others lose labels, constellation behind moons, plane clipped to field */
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) :is(.uv2-planet-meta, [data-planet-name], .uv2-planet-name) { opacity: 0 !important; }
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) { opacity: .28; }
+html[data-uv2="on"] [data-uv2-zoom] .uv2-constellation { z-index: -1; opacity: .45 !important; }
+html[data-uv2="on"] :has(> [data-uv2-zoom]) { overflow: hidden; }
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .saimor-territory-name { opacity: 0 !important; }
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] :is(.saimor-territory-name, .uv2-planet-meta) { opacity: 0 !important; }
+html[data-uv2="on"] :has(> [data-uv2-plane][data-uv2-zoom]) { -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%); mask-image: linear-gradient(to bottom, transparent 0, #000 22%); }
+/* hd36: Detailkarte erst nach dem Flug, neben dem System */
+@keyframes uv2CardIn { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+html[data-uv2="on"] [data-testid="planet-detail"] { animation: uv2CardIn .35s ease .75s both; }
+@media (min-width: 1280px) {
+  html[data-uv2="on"] :has(.uv2-orbits) [data-testid="planet-detail"] { left: calc(50% + 110px) !important; right: auto !important; bottom: 210px !important; width: 260px !important; }
+}

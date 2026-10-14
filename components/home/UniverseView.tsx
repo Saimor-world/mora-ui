@@ -55,6 +55,9 @@ interface TerritoryMetrics {
     source: 'live' | 'derived' | 'missing';
 }
 
+// Quellen-Monde lesbar benennen (echte Verbindung, nur hübscher Name)
+const SOURCE_LABEL: Record<string, string> = { google_mail: 'Gmail', google_calendar: 'Kalender', google_drive: 'Drive', cloud_storage: 'Cloud', nextcloud_oauth: 'Nextcloud' };
+
 export default function UniverseView() {
     const {
         activeCompanyId,
@@ -413,7 +416,7 @@ export default function UniverseView() {
             if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
             const moons = c
                 ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || universeModel.planets.find((x) => x.key === k)?.label || '' }))
-                : (p?.moons || []).map((m) => ({ id: m.department_id || m.key, name: m.label }));
+                : (p?.moons || []).map((m: any) => ({ id: m.department_id || m.key, name: SOURCE_LABEL[m.label] || m.label, documents: Number(m.docs ?? 0) }));
             return {
                 id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
                 spaces: c ? c.members.length : Number(p?.counts?.spaces ?? 0), folders: 0,
@@ -595,7 +598,7 @@ export default function UniverseView() {
 
             {/* Sie zeigt nur, wenn es ein echtes Ziel UND einen echten Grund
                 gibt - kein Zeiger ins Leere. */}
-            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only"><CursorAgent
+            {attention && attentionPoint && !(isUniverseV2Enabled() && attention.reason === 'missing-source') && (isUniverseV2Enabled() ? <div className="uv2-lage-only uv2-cursor-agent"><CursorAgent
                     active
                     action="point"
                     target={attentionPoint}

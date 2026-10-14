@@ -211,7 +211,7 @@ export function LageSignals(props: {
 
     return (
         <div className="uv2-instruments uv2-lage-left" data-testid="uv2-lage-signale">
-            <section data-uv2-instrument="signale" className="uv2-inst">
+            <section data-uv2-instrument="signale" data-empty={list.length === 0 || undefined} className="uv2-inst">
                 <header className="flex items-baseline justify-between gap-3">
                     <p className="uv2-inst-label">Signale</p><span className="uv2-inst-aside">{list.length}</span>
                 </header>

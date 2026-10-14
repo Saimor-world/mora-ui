@@ -11,7 +11,8 @@ import React, { useCallback, useState } from 'react';
 import { corePost } from '@/lib/api/coreClient';
 import { buildChatContext } from '@/lib/api/moraAgentClient';
 import { hasVerifiedExecutionPath, MORA_MODES, sendModeMessage, describeFlag, type MoraMode } from '@/lib/mora/moraModes';
-import { calmExcerpt, demoAnswer, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
+import { setMoraPresence } from '@/lib/universe/moraPresence';
+import { calmExcerpt, planetForSource, type SpaceAnswer } from '@/lib/universe/spaceAnswer';
 import { MOTION } from '@/lib/universe/motion';
 import { approveLabel, type ApproveOutcome } from '@/lib/universe/approve';
 import { answerBox } from '@/lib/universe/answerLayout';
@@ -27,10 +28,7 @@ export function useMoraSpace(demo: boolean) {
     setState({ status: 'thinking', question, mode });
     try {
       let answer: SpaceAnswer;
-      if (demo) {
-        await new Promise((r) => setTimeout(r, 900));
-        answer = demoAnswer(mode, question);
-      } else if (mode === 'denken') {
+      if (mode === 'denken') {
         const r = (await corePost('/v3/chat', { message: question, history, context: buildChatContext({ session_id: 'universe_space' }) })) as { reply?: string; response?: string };
         answer = { mode, question, text: r?.reply || r?.response || '', sources: [], proposals: [], flags: [] };
       } else {
@@ -86,7 +84,7 @@ export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindo
         <p style={{ ...TYPE.meta, color: UV.gold }}>{MORA_MODES.find((m) => m.id === state.mode)?.label ?? 'MÔRA'}</p>
         <p className="mt-6" style={{ ...TYPE.statement, color: UV.c(0.6) }}>„{state.question}“</p>
         {state.status === 'thinking'
-          ? <p className="mt-6" style={{ ...TYPE.text, color: UV.c(0.6), animation: 'uv2pulse 2.4s ease-in-out infinite' }}>MÔRA denkt nach …</p>
+          ? <span className="uv2-thread-loader mt-6 block" role="status" aria-label="MÔRA denkt nach"><span /></span>
           : <p className="pointer-events-auto mt-6" style={{ ...TYPE.text, color: UV.c(0.6) }}>Gerade antwortet niemand.
               <button type="button" onClick={() => onWindow(state.question)} className="ml-3" style={{ color: UV.gold }}>Im Fenster versuchen</button></p>}
         <style>{'@keyframes uv2pulse{0%,100%{opacity:.45}50%{opacity:.9}}'}</style>
@@ -128,7 +126,7 @@ export function MoraSpaceAnswer({ state, anchors, cx, cy, demo, onClose, onWindo
             <p className="mt-2" style={{ ...TYPE.text, fontWeight: 400, color: UV.cream }}>{p.label}</p>
             <div className="mt-4 flex items-center gap-6">
               <button type="button" disabled={!ok || demo || !onApprove || !!o} data-testid="uv2-space-approve"
-                onClick={async () => { if (!onApprove) return; setOutcome((x) => ({ ...x, [p.id]: 'running' })); const r = await onApprove(p); setOutcome((x) => ({ ...x, [p.id]: r })); }}
+                onClick={async () => { if (!onApprove) return; setOutcome((x) => ({ ...x, [p.id]: 'running' })); setMoraPresence({ state: 'working' }); const r = await onApprove(p); setOutcome((x) => ({ ...x, [p.id]: r })); setMoraPresence({ state: 'done' }); }}
                 className="h-10 rounded-full px-6 transition-transform active:scale-[0.97] disabled:opacity-45" style={{ background: UV.goldGrad, color: UV.ink, fontSize: 15, fontWeight: 500 }}>
                 {o === 'running' ? 'Wird ausgeführt …' : 'Freigeben'}
               </button>

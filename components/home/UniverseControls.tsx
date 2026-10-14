@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic, Maximize2, PanelLeft } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -9,6 +9,8 @@ import { requestCommandDeckOpen } from '@/lib/os/commandDeck';
 import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { applyRoom, DEFAULT_ROOM, loadRoom, nextMoraLevel, saveRoom, type RoomPrefs } from '@/lib/universe/roomPrefs';
+import '@/app/universe-room.css';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
 
@@ -42,9 +44,42 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     contextLabelOverride,
     contextSubtitleOverride,
 }) => {
-    const [lageOpen, setLageOpen] = useState(false);
-    const [still, setStill] = useState(false);
     const user = useSessionStore((state) => state.user);
+    const userKey = (user as { id?: string } | null)?.id ?? null;
+    const [room, setRoom] = useState<RoomPrefs>(DEFAULT_ROOM);
+    useEffect(() => { if (!isUniverseV2Enabled()) return; const r = loadRoom(userKey); setRoom(r); applyRoom(r); }, [userKey]);
+    const updateRoom = useCallback((patch: Partial<RoomPrefs>) => {
+        setRoom((prev) => { const next = { ...prev, ...patch }; applyRoom(next); saveRoom(userKey, next); return next; });
+    }, [userKey]);
+    const cycleMora = useCallback(() => {
+        setRoom((prev) => { const next = { ...prev, mora: nextMoraLevel(prev.mora) }; applyRoom(next); saveRoom(userKey, next); return next; });
+    }, [userKey]);
+    useEffect(() => {
+        if (!isUniverseV2Enabled()) return;
+        const onKey = (e: KeyboardEvent) => {
+            const t = e.target as HTMLElement | null;
+            if (e.metaKey || e.ctrlKey || e.altKey || (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)))) return;
+            const k = e.key.toLowerCase();
+            if (k === 'i') updateRoom({ immersive: !document.documentElement.dataset.uv2Immersive });
+            else if (k === 'l') updateRoom({ lage: document.documentElement.dataset.uv2Lage !== 'open' });
+            else if (k === 'm') cycleMora();
+            else if (e.key === '/') { const ask = document.querySelector<HTMLInputElement>('input[aria-label="MÔRA fragen"]'); if (ask) { e.preventDefault(); ask.focus(); } }
+            else return;
+        };
+        // Immersiv: Seitenflächen kommen herein, wenn die Maus an den Rand geht.
+        const onMove = (e: PointerEvent) => {
+            const r = document.documentElement.dataset;
+            if (r.uv2Immersive !== 'on') { if (r.uv2Peek) r.uv2Peek = ''; return; }
+            const w = window.innerWidth;
+            if (e.clientX < 18) r.uv2Peek = 'left';
+            else if (e.clientX > w - 18) r.uv2Peek = 'right';
+            else if (r.uv2Peek === 'left' && e.clientX > 460) r.uv2Peek = '';
+            else if (r.uv2Peek === 'right' && e.clientX < w - 460) r.uv2Peek = '';
+        };
+        window.addEventListener('keydown', onKey);
+        window.addEventListener('pointermove', onMove);
+        return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointermove', onMove); };
+    }, [updateRoom, cycleMora]);
     const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
     const surfaceProfile = useSurfaceProfile();
 
@@ -150,7 +185,9 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     // Universe v2: die Kopfleiste ist nur noch ein Schalter „Home | Universe“.
     // Kein Instanz-Badge, kein Firmenname (steht in MÔRAs Satz), kein zweiter Control-Center-Knopf.
     if (isUniverseV2Enabled()) {
+        const roomBtn = (on: boolean): React.CSSProperties => ({ ...V2_GLASS, color: on ? '#D6A848' : 'rgba(247,244,233,0.55)', boxShadow: on ? 'inset 0 0 0 0.5px rgba(214,168,72,0.6), 0 0 18px rgba(214,168,72,0.18)' : V2_GLASS.boxShadow });
         return (
+            <>
             <div className="fixed left-1/2 top-6 z-50 flex -translate-x-1/2 items-center gap-5 text-white" data-testid="uv2-header">
                 {showDeptBack && (
                     <button type="button" onClick={navigateToExplore} title="Zurück zum Universum"
@@ -175,23 +212,31 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                         })}
                     </div>
                 )}
-                <button type="button" data-testid="uv2-lage-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Lage = r.dataset.uv2Lage === 'open' ? '' : 'open'; setLageOpen(r.dataset.uv2Lage === 'open'); }}
-                    className="h-8 transition-colors" title="Lage: Post, Kalender, Feed, Wache, Puls, Systemwerte"
-                    style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: lageOpen ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
-                    Lage
-                </button>
-                <button type="button" data-testid="uv2-still-toggle" onClick={() => { const r = document.documentElement; r.dataset.uv2Still = r.dataset.uv2Still === 'on' ? '' : 'on'; setStill(r.dataset.uv2Still === 'on'); }}
-                    className="h-8 transition-colors" title="Still: Seitenwidgets ausblenden, nur Planeten und Begrüßung"
-                    style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: still ? '#D6A848' : 'rgba(247,244,233,0.4)' }}>
-                    Still
-                </button>
-                {showCompanySwitcher && (
-                    <button type="button" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}
-                        className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/70 hover:text-white" style={V2_GLASS}>
-                        <Globe size={13} strokeWidth={1.5} /> {activeCompany?.name}
+                {showCompanySwitcher ? (
+                    <button type="button" data-testid="uv2-company-chip" onClick={handleContextClick} title={nextCompany ? `Wechseln zu: ${nextCompany.name}` : 'Organisation wechseln'}
+                        className="flex h-7 items-center gap-1.5 rounded-full px-3 text-[12px] text-white/70 hover:text-white" style={V2_GLASS}>
+                        <Globe size={12} strokeWidth={1.5} /> {activeCompany?.name}
                     </button>
-                )}
+                ) : activeCompany?.name ? (
+                    <span data-testid="uv2-company-chip" className="hidden h-7 items-center rounded-full px-3 text-[12px] text-white/60 sm:flex" style={V2_GLASS}>{activeCompany.name}</span>
+                ) : null}
             </div>
+            <div className="fixed right-6 top-6 z-50 flex items-center gap-2" data-testid="uv2-room" role="toolbar" aria-label="Raum">
+                <button type="button" data-testid="uv2-immersive-toggle" aria-pressed={room.immersive} onClick={() => updateRoom({ immersive: !room.immersive })}
+                    title="Immersiv (I): Planeten füllen den Raum, Seiten kommen am Rand herein" className="flex h-8 w-8 items-center justify-center rounded-full transition-colors" style={roomBtn(room.immersive)}>
+                    <Maximize2 size={14} strokeWidth={1.5} />
+                </button>
+                <button type="button" data-testid="uv2-lage-toggle" aria-pressed={room.lage} onClick={() => updateRoom({ lage: !room.lage })}
+                    title="Lage (L): Signale, Deutung, Handlung links" className="flex h-8 w-8 items-center justify-center rounded-full transition-colors" style={roomBtn(room.lage)}>
+                    <PanelLeft size={14} strokeWidth={1.5} />
+                </button>
+                <button type="button" data-testid="uv2-mora-toggle" onClick={cycleMora}
+                    title="MÔRA (M): Aktiv → Leise → Aus" className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] uppercase tracking-[0.08em] transition-colors" style={roomBtn(room.mora === 'aktiv')}>
+                    <span aria-hidden className="h-1.5 w-1.5 rounded-full" style={{ background: room.mora === 'aus' ? 'rgba(247,244,233,0.3)' : '#D6A848', opacity: room.mora === 'leise' ? 0.55 : 1 }} />
+                    <span className="uv2-room-label">MÔRA · {room.mora === 'aktiv' ? 'Aktiv' : room.mora === 'leise' ? 'Leise' : 'Aus'}</span>
+                </button>
+            </div>
+            </>
         );
     }
 

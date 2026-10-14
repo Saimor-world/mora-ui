@@ -6,6 +6,7 @@
  * Die Ebene liest nur die Positionen der echten Planeten (data-planet-name)
  * und hängt kleine Sternbilder mit Quellenzeile daran.
  */
+import { getMoraPresence, setMoraPresence } from '@/lib/universe/moraPresence';
 import React, { useCallback, useEffect, useState } from 'react';
 import { coreGet } from '@/lib/api/http';
 import { usePaneStore } from '@/lib/store/paneStore';
@@ -47,20 +48,7 @@ const GREETING: Record<DayPhase, string> = {
   morgen: 'Guten Morgen, Marius.', tag: 'Ein ruhiger Tag.', abend: 'Guten Abend, Marius.', nacht: 'Die Wache hält Licht.',
 };
 
-const DEMO: Today = {
-  items: [
-    { title: 'Rechnung R-2041 seit 14 Tagen offen', source: 'Buchhaltung · Offene Posten', area: 'Finanzen' },
-    { title: 'Bankgespräch heute um 10:00', source: 'Kalender · heute', area: 'Post & Termine' },
-    { title: 'Website-Update wartet auf Freigabe', source: 'Werkstatt · Freigaben', area: 'Werkstatt' },
-    { title: 'Leitfaden „Onboarding“ seit 30 Tagen ungeprüft', source: 'Wissen · Dokumente', area: 'Wissen' },
-  ],
-  proposal: {
-    id: 'demo', label: 'Zahlungserinnerung für R-2041 senden',
-    reason: 'Die Rechnung ist 14 Tage überfällig. Eine freundliche Erinnerung ist üblich und ändert nichts an der Buchhaltung.',
-    sources: ['Buchhaltung · Offene Posten'], undo: 'Bis zum Versand jederzeit zurückziehbar.',
-  },
-  nebel: ['Bankumsätze', 'Reichweite in Monaten'],
-};
+// Keine Beispielinhalte im HQ: „Heute“ kommt nur aus CORE /v3/mora/today (auch lokal).
 
 function isDemo(): boolean {
   if (typeof window === 'undefined') return false;
@@ -123,6 +111,14 @@ export function MorgenOverlay() {
   const [returned, setReturned] = useState(0);
   const wasNear = React.useRef(false);
   const space = useMoraSpace(demo);
+  // MÔRAs Kern zeigt, was sie gerade tut: hört zu (Fragezeile fokussiert), denkt (Anfrage läuft), fertig (Antwort da).
+  useEffect(() => {
+    const cur = getMoraPresence().state;
+    if (space.state.status === 'thinking') setMoraPresence({ state: 'thinking' });
+    else if (space.state.status === 'answer' && cur === 'thinking') setMoraPresence({ state: 'done' });
+    else if (askFocus && (cur === 'calm' || cur === 'done')) setMoraPresence({ state: 'listening' });
+    else if (!askFocus && (cur === 'listening' || cur === 'thinking')) setMoraPresence({ state: 'calm' });
+  }, [askFocus, space.state.status]);
   const modeRef = React.useRef(mode); modeRef.current = mode;
   // „Im Fenster weiter": das Gespräch aus dem Raum wandert mit – nichts wird neu gefragt.
   const openWindow = useCallback((q: string) => {
@@ -174,8 +170,7 @@ export function MorgenOverlay() {
     const d = isDemo(); setDemo(d);
     // Nur lokal im Demo-Modus: Fenster für Screenshot-Durchläufe öffnen/schließen.
     if (d) Object.assign(window as any, { __uv2panes: usePaneStore });
-    if (d) setToday(DEMO);
-    else coreGet('/v3/mora/today').then((r) => setToday(unwrap(r))).catch(() => setToday('nebel'));
+    coreGet('/v3/mora/today').then((r) => setToday(unwrap(r))).catch(() => setToday('nebel'));
   }, []);
 
   // Solange eine Antwort offen ist und Planeten ausweichen, wird nicht neu gemessen –
