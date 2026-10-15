@@ -28,7 +28,7 @@ function fbm(x, y, z, seed, octaves = 4) {
   return sum / weight;
 }
 
-/** One quiet mineral family: area colour, shallow grain, soft light; no miniature landscapes. */
+/** Translucent mineral glass: shallow grain, soft light and a restrained polished reflection. */
 function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160, 140, 120], seed = 1, lit = -2.2, quiet = false }) {
   const width = Math.round(clamp(Number(requestedWidth) || 96, 16, 256));
   const count = width * width, rgba = new Uint8ClampedArray(count * 4);
@@ -56,6 +56,7 @@ function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160,
   const length = Math.hypot(Math.cos(lit), Math.sin(lit), .75);
   const lx = Math.cos(lit) / length, ly = Math.sin(lit) / length, lz = .75 / length;
   const halfLength = Math.hypot(lx, ly, lz + 1);
+  const pearl = [248, 244, 232];
   for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
     const u = (x + .5 - radius) / radius, v = (y + .5 - radius) / radius, q = u * u + v * v;
     if (q >= 1) continue;
@@ -71,12 +72,14 @@ function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160,
     const nl = Math.hypot(nx, ny, nz);
     const diffuse = smooth(-.45, 1, (nx * lx + ny * ly + nz * lz) / nl);
     const lighting = (.57 + .44 * diffuse) * (.88 + .12 * z);
-    const satin = Math.pow(Math.max(0, (nx * lx + ny * ly + nz * (lz + 1)) / nl / halfLength), 22) * .035;
-    const rim = Math.pow(1 - z, 4) * Math.max(0, u * lx + v * ly) * .12;
+    const reflection = Math.max(0, (nx * lx + ny * ly + nz * (lz + 1)) / nl / halfLength);
+    const polish = (Math.pow(reflection, 20) * .055 + Math.pow(reflection, 96) * .12) * (quiet ? .78 : 1);
+    const rim = Math.pow(1 - z, 5) * (Math.max(0, u * lx + v * ly) * .11 + Math.max(0, -u * lx - v * ly) * .018);
     for (let channel = 0; channel < 3; channel++) {
-      rgba[offset + channel] = clamp(base[channel] * albedo[index] * lighting + 230 * satin + base[channel] * rim, 0, 255);
+      rgba[offset + channel] = clamp(base[channel] * albedo[index] * lighting + pearl[channel] * polish + (base[channel] * .55 + 110) * rim, 0, 255);
     }
-    rgba[offset + 3] = Math.round(255 * clamp((1 - Math.sqrt(q)) * radius));
+    const translucency = .58 + .27 * Math.pow(1 - z, 2.4) + Math.min(.12, polish * .65);
+    rgba[offset + 3] = Math.round(255 * clamp((1 - Math.sqrt(q)) * radius) * translucency);
   }
   return { width, rgba };
 }

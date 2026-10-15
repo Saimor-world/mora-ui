@@ -2,12 +2,16 @@ import { renderPlanetSurface, type PlanetSurfaceOptions, type SurfaceKind } from
 
 const options: PlanetSurfaceOptions = { width: 64, kind: 'rock', hue: [196, 116, 72], seed: 27, lit: 0 };
 
-it('draws opaque ground inside the sphere and leaves its surroundings transparent', () => {
+it('draws translucent material inside the sphere and leaves its surroundings transparent', () => {
   const { rgba, width } = renderPlanetSurface(options);
   expect(rgba.length).toBe(width * width * 4);
   expect(rgba[3]).toBe(0);
   for (let y = 8; y < 56; y++) for (let x = 8; x < 56; x++) {
-    if (Math.hypot(x - 31.5, y - 31.5) < 24) expect(rgba[(y * width + x) * 4 + 3]).toBe(255);
+    if (Math.hypot(x - 31.5, y - 31.5) < 24) {
+      const alpha = rgba[(y * width + x) * 4 + 3];
+      expect(alpha).toBeGreaterThan(120);
+      expect(alpha).toBeLessThan(230);
+    }
   }
 });
 
