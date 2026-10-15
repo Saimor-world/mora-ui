@@ -12,6 +12,7 @@
  *  5. Orbitring: haarfeine, geneigte Ellipse (vorne über, hinten unter dem Körper)
  */
 import React, { useId } from 'react';
+import { TexturedSphere } from './TexturedSphere';
 
 type Material = {
   /** Tag-, Mittel-, Nachtton */
@@ -87,7 +88,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={pstyle === 'M'} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle === undefined ? <span className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 36% 30%, ${m.mid}, ${m.night})` }} /> : pstyle === 'M' && lit != null ? <TexturedSphere name={name} archetype={archetype} size={size} lit={lit} hue={areaHue(name, archetype)} seed={seed} quiet={!!dim} /> : pstyle === 'J' && lit != null ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={false} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -149,7 +150,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       </span>}
 
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
-      {!pstyle && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
+      {pstyle === null && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
@@ -289,12 +290,17 @@ function SphereShade({ size, lit, atmo, night }: { size: number; lit: number; at
 
 /* ─── Saimôr-Pixelkugeln (Varianten A/B/C, Wahl über localStorage "uv2-planet-style") ─── */
 type PStyle = 'A' | 'B' | 'C' | 'J' | 'M';
-function usePixelStyle(): PStyle | null {
-  const [v, setV] = React.useState<PStyle | null>(null);
+function usePixelStyle(): PStyle | null | undefined {
+  // Keep the server/client placeholder cheap: do not run the old SVG/shading
+  // renderer for one frame before the selected, worker-backed material mounts.
+  const [v, setV] = React.useState<PStyle | null | undefined>(undefined);
   React.useEffect(() => {
-    const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
+    let x = '';
+    try { x = localStorage.getItem('uv2-planet-style') || ''; } catch { /* Default material also works with storage disabled. */ }
     const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'B' || x === 'C' || x === 'J') ? x : 'M';
-    if (st) { setV(st); document.documentElement.setAttribute('data-uv2-pstyle', st); }
+    setV(st);
+    if (st) document.documentElement.setAttribute('data-uv2-pstyle', st);
+    else document.documentElement.removeAttribute('data-uv2-pstyle');
   }, []);
   return v;
 }
