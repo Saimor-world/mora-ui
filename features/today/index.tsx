@@ -14,6 +14,7 @@ import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
 import { allSourcesVerified, sourceTruth, todayCards } from './data/truth';
 import { sampleTodaySnapshot } from './data/sample';
+import { todayGreetingName } from './data/greeting';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
 
@@ -51,7 +52,7 @@ function Section({ icon, title, children, aside }: { icon: React.ReactNode; titl
 
 export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps) {
   const phaseOverride = useOsShellStore((s) => s.phaseOverride);
-  const userName = useSessionStore((s) => s.user?.name?.split(' ')[0] ?? null);
+  const userName = useSessionStore((s) => todayGreetingName(s.user?.name, s.user?.email));
   const today = useScopedToday({ backgroundRefresh: true });
   const finance = useFinanceSignal();
   const sample = preview && !today.snapshot;
@@ -65,7 +66,12 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
     <div className="flex flex-col gap-6" data-testid="feature-today">
       <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
-        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
+        <div className="os-today-hero mt-2 min-w-0">
+          <MoraStone size={44} halo />
+          <Text variant="display" className="min-w-0 flex-1 max-w-full [overflow-wrap:anywhere]" data-testid="today-greeting">
+            {greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.
+          </Text>
+        </div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
