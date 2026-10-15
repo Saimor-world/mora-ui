@@ -175,14 +175,19 @@ for (const state of ['ok', 'empty', 'disconnected', 'partial', 'unavailable', 's
       await expect(page.getByTestId('mail-summary-empty')).toContainText('wirklich leer', { timeout: 25_000 });
       await expect(page.getByTestId('mail-summary')).toHaveCount(0);
     } else if (state === 'disconnected') {
-      await expect(page.getByTestId('mail-summary-error')).toContainText('Kein verifiziert verbundenes Postfach', { timeout: 25_000 });
+      // No verified connector means MÔRA must not fetch a mail summary.
+      await expect(page.getByTestId('briefing-pending')).toContainText('Quellen angebunden', { timeout: 25_000 });
+      await expect(page.getByTestId('mail-summary')).toHaveCount(0);
       await expect(page.getByTestId('mail-summary-empty')).toHaveCount(0);
+      expect(visited.some((p) => p.endsWith('/connections/mail/summary'))).toBe(false);
     } else {
       await expect(page.getByTestId('mail-summary-degraded')).toHaveAttribute('data-state', state, { timeout: 25_000 });
       await expect(page.getByTestId('mail-summary-degraded')).toContainText('Keine Aussage über neue oder fehlende Nachrichten.');
       await expect(page.getByTestId('mail-summary-empty')).toHaveCount(0);
     }
     expect(visited.some((s) => s.includes('/today?company_id=company-browser-qa'))).toBe(true);
-    expect(visited.some((s) => s.endsWith('/connections/mail/summary'))).toBe(true);
+    if (state !== 'disconnected') {
+      expect(visited.some((s) => s.endsWith('/connections/mail/summary'))).toBe(true);
+    }
   });
 }
