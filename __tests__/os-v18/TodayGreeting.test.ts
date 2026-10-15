@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest';
 import { todayGreetingName } from '@/features/today/data/greeting';
 
 describe('Today greeting on small screens', () => {
