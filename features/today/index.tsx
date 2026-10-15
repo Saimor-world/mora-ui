@@ -69,7 +69,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         <div className="os-today-hero mt-2 min-w-0">
           <MoraStone size={44} halo />
           <Text variant="display" className="min-w-0 flex-1 max-w-full [overflow-wrap:anywhere]" data-testid="today-greeting">
-            {greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.
+            {greeting(phaseOverride)}
+            {userName ? <>{', '}<span className="inline-block max-w-full overflow-hidden text-ellipsis whitespace-nowrap align-baseline" data-testid="today-greeting-name">{userName}.</span></> : '.'}
           </Text>
         </div>
         <Text className="mt-2 max-w-2xl">
