@@ -5,7 +5,7 @@ import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { MoraStone, SampleTag } from '@/components/os-kit';
 import { buildDemoUniverse, type DemoLayout } from '../data/demoUniverse';
-import { PlanetDetail } from './PlanetDetail';
+
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 /**
@@ -44,7 +44,6 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  const openKnowledge = (q: string) => { useOsShellStore.getState().setKnowledgeQuery(q); onOpenArea('knowledge'); };
   const noop = () => onOpenArea('post');
   const core = (
     <button type="button" className="os-legacy-universe__core" data-testid="universe-core" aria-label="MÔRA – Kern des Universe. Fragen"
@@ -73,15 +72,12 @@ export function DemoOrganizationUniverse({ onOpenArea, onAskMora }: { onOpenArea
         onOpen={() => onOpenArea('knowledge')} onOpenMoon={() => onOpenArea('knowledge')}
         onAskMora={(t) => onAskMora(`Was weißt du über ${t.name}?`)}
         onFile={async () => false}
-        renderDetail={(t) => (
-          <PlanetDetail territory={t} signals={demo.signals} onClose={() => setSelectedId(null)}
-            onOpenKnowledge={openKnowledge} onOpenPost={() => onOpenArea('post')} onAskMora={onAskMora} />
-        )}
-        strandOrigin={{ x: 50, y: 50 }}
-        centerSlot={selectedId ? null : core}
-        vivid
-        frame={{ header: 'os-legacy-universe__header', field: 'os-legacy-universe__field', legend: 'os-legacy-universe__legend', mobile: 'os-legacy-universe__mobile' }}
       />
+      {!selectedId ? (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+          <div className="pointer-events-auto">{core}</div>
+        </div>
+      ) : null}
       {!selectedId ? (
         <button type="button" className="os-ulx__attention os-legacy-universe__pill" data-testid="universe-attention" onClick={() => setSelectedId(demo.attention.targetId)}>
           <MoraStone size={18} halo={false} />
