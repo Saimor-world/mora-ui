@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import { AppLoader, APP_IDS } from '@/lib/apps/AppLoader';
+import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
 
 /**
  * Die wenigen Faelle, in denen Fenstertyp und App-Kennung auseinandergehen.
@@ -96,6 +98,27 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     }
 };
 
+/** Minimize hides the conversation without discarding its transcript or running response.
+ * A company/account switch starts a separate conversation; a restored hidden pane is not loaded eagerly.
+ */
+const RetainedChat: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
+    const [hasOpened, setHasOpened] = useState(!pane.minimized);
+    const companyId = useNavStore(state => state.activeCompanyId);
+    const sessionGeneration = useSessionStore(state => state.sessionGeneration);
+    const scope = `${sessionGeneration}:${companyId ?? ''}`;
+    const launch = useRef({ scope, data: pane.data, allowed: true });
+    if (launch.current.scope !== scope) {
+        // Old launch text/transcripts must not reappear or auto-submit in a new context,
+        // including when the user later returns to the original company.
+        launch.current = { scope, data: pane.data, allowed: false };
+    } else if (launch.current.data !== pane.data) {
+        launch.current = { scope, data: pane.data, allowed: true };
+    }
+    useEffect(() => { if (!pane.minimized) setHasOpened(true); }, [pane.minimized]);
+    if (!hasOpened && pane.minimized) return null;
+    return <PaneRenderer key={scope} pane={launch.current.allowed ? pane : { ...pane, data: undefined }} />;
+};
+
 export const PaneManager: React.FC = () => {
     const panes = usePaneStore((state) => state.panes);
 
@@ -107,7 +130,7 @@ export const PaneManager: React.FC = () => {
         <div className="pointer-events-none fixed inset-0 z-[100]">
             <AnimatePresence>
                 {panes.map((pane) => (
-                    !pane.minimized && (
+                    (!pane.minimized || pane.type === 'chat') && (
                         // Frueher fing dieser Wrapper Zeigerereignisse auf ganzer
                         // Flaeche ab. Er haelt aber gar nichts: GlassPanel rendert per
                         // createPortal nach document.body (GlassPanel.tsx:433),
@@ -123,7 +146,7 @@ export const PaneManager: React.FC = () => {
                         // Portalierter Inhalt bringt seine eigenen Zeigerereignisse
                         // mit und ist davon unberuehrt.
                         <div key={pane.id} className="pointer-events-none absolute inset-0">
-                            <PaneRenderer pane={pane} />
+                            {pane.type === 'chat' ? <RetainedChat pane={pane} /> : <PaneRenderer pane={pane} />}
                         </div>
                     )
                 ))}

@@ -6,7 +6,7 @@ import { useMoraPresence } from '@/lib/universe/moraPresence';
 /**
  * Myzel (freigegeben 14.10.): feine organische Jade-Fäden + Sternenstaub vom Stein zur Mitte
  * und von dort zu den Planeten. Liegt hinter den Planeten. Günstig: das Netz wird nur bei
- * Größen-/Planetenänderung neu gezeichnet; nur der Staub flimmert (≈12 fps), pausiert wenn
+ * Größen-/Planetenänderung neu gezeichnet; der Staub flimmert in gecachten Ebenen, pausiert wenn
  * der Tab verborgen ist oder Bewegung reduziert werden soll.
  * Bei Arbeit führt ein einzelner Jadefaden vom Stein zum Ziel. Kein breites
  * Glühen: Material und Zustand bleiben an Stein und Planet lesbar.
@@ -40,6 +40,8 @@ function hypha(ctx: CanvasRenderingContext2D, R: () => number, x: number, y: num
 
 export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: string; x: number; y: number }>; focusId?: string | null }) {
     const ref = useRef<HTMLCanvasElement>(null);
+    const hostRef = useRef<HTMLDivElement>(null);
+    const dustRefs = useRef<Array<HTMLCanvasElement | null>>([]);
     const presence = useMoraPresence();
     const working = presence.state === 'working' || presence.state === 'done';
     const targetId = working ? presence.target ?? null : null;
@@ -47,9 +49,9 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
 
     useEffect(() => {
         const cv = ref.current; if (!cv) return;
-        const plane = cv.parentElement as HTMLElement | null; if (!plane) return;
-        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        let raf = 0; let last = 0; let net: HTMLCanvasElement | null = null; let dust: Array<[number, number, number, number, boolean]> = [];
+        const host = hostRef.current; if (!host) return;
+        const plane = host.parentElement as HTMLElement | null; if (!plane) return;
+        let net: HTMLCanvasElement | null = null; let dust: Array<[number, number, number, number, boolean]> = [];
         let W = 0, H = 0, dpr = 1, ox = 0, oy = 0; let dimNow = 1;
 
         const build = () => {
@@ -61,7 +63,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const extraBottom = sr ? Math.max(0, (sr.bottom - pr.bottom) * sx + 24) : 0;
             ox = 0; oy = 0; W = plane.offsetWidth; H = plane.offsetHeight + extraBottom;
             dpr = Math.min(2, window.devicePixelRatio || 1);
-            cv.style.height = H + 'px'; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+            host.style.height = H + 'px'; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
             const P = (p: { x: number; y: number }): Pt => [p.x / 100 * plane.offsetWidth, p.y / 100 * plane.offsetHeight];
             const sun: Pt = [0.5 * plane.offsetWidth, 0.5 * plane.offsetHeight];
             const stone: Pt | null = sr ? [(sr.left + sr.width / 2 - pr.left) * sx, (sr.top + sr.height / 2 - pr.top) * sx] : null;
@@ -130,34 +132,35 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
                     c.restore();
                 }
             }
-        };
-
-        const draw = (tms: number) => {
-            raf = requestAnimationFrame(draw);
-            if (document.hidden || tms - last < 80) return; last = tms;
-            const c = cv.getContext('2d'); if (!c || !net) return;
-            c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
-            c.globalAlpha = 1; c.drawImage(net, 0, 0);
-            c.setTransform(dpr, 0, 0, dpr, 0, 0);
-            const tt = tms / 1000;
-            for (let i = 0; i < dust.length; i++) {
-                const [x, y, r, a, warm] = dust[i];
-                const tw = reduce ? 1 : 0.7 + 0.3 * Math.sin(tt * (0.6 + (i % 7) * 0.13) + i);
-                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * tw * dimNow})`;
-                c.beginPath(); c.arc(x + ox, y + oy, r, 0, 6.3); c.fill();
-            }
-            if (reduce) cancelAnimationFrame(raf);
+            const lines = cv.getContext('2d'); if (!lines) return;
+            lines.setTransform(1, 0, 0, 1, 0, 0); lines.clearRect(0, 0, cv.width, cv.height);
+            lines.drawImage(net, 0, 0);
+            // Paint each dust band once. Native opacity animation reuses the texture;
+            // it no longer invalidates a large canvas and nearby glass on every frame.
+            dustRefs.current.forEach((layer, band) => {
+                if (!layer) return;
+                layer.width = cv.width; layer.height = cv.height;
+                const paint = layer.getContext('2d'); if (!paint) return;
+                paint.setTransform(dpr, 0, 0, dpr, 0, 0);
+                dust.forEach(([x, y, r, a, warm], index) => {
+                    if (index % 3 !== band) return;
+                    paint.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * dimNow})`;
+                    paint.beginPath(); paint.arc(x + ox, y + oy, r, 0, 6.3); paint.fill();
+                });
+            });
         };
 
         build();
-        raf = requestAnimationFrame(draw);
         let rt = 0;
         const onResize = () => { window.clearTimeout(rt); rt = window.setTimeout(build, 200); };
         window.addEventListener('resize', onResize);
         const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
-        return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
+        return () => { window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, targetId, focusId]);
 
-    return <canvas ref={ref} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true" />;
+    return <div ref={hostRef} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true">
+        <canvas ref={ref} className="absolute inset-0 h-full w-full" />
+        {[0, 1, 2].map(band => <canvas key={band} ref={node => { dustRefs.current[band] = node; }} className="uv2-myzel-dust absolute inset-0 h-full w-full" style={{ animationDuration: `${7 + band * 2}s`, animationDelay: `${-band * 2}s` }} />)}
+    </div>;
 }

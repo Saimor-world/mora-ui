@@ -17,6 +17,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowRight, FileText } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useSpaces } from '@/lib/queries/useSpaces';
 import { useTree } from '@/lib/queries/useTree';
@@ -111,8 +112,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
   return (
     <div className="absolute inset-0 overflow-hidden text-white antialiased" data-testid="uv2-planet-interior" style={{ fontFamily: FONT }}>
       {/* Derselbe Kosmos wie draußen */}
-      <div className="absolute -inset-[3%] bg-cover bg-center" style={{ backgroundImage: 'url(/universe/deep-space-warm.jpg)', transform: 'scale(1.08)', filter: 'saturate(0.9)' }} />
-      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(3,6,10,0.35) 0%, rgba(3,6,10,0.25) 50%, rgba(3,6,10,0.6) 100%)' }} />
+      <div className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 40%, rgba(3,6,10,0.12) 0%, rgba(3,6,10,0.08) 50%, rgba(3,6,10,0.3) 100%)' }} />
 
       {/* Der Horizont: die Oberfläche dieses Planeten */}
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
@@ -148,7 +148,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       )}
 
       {/* Editorial-Spalte statt Glasfläche: der Planet spricht links, der Horizont trägt rechts */}
-      <div className="absolute inset-y-0 left-0 w-[52%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.78), rgba(5,7,6,0.3) 70%, transparent)' }} />
+      <div className="absolute inset-y-0 left-0 w-[52%]" style={{ background: 'linear-gradient(90deg, rgba(12,26,30,0.4), rgba(12,26,30,0.16) 70%, transparent)' }} />
       <motion.section className="absolute left-6 right-6 top-20 md:left-24 md:right-auto md:top-[15vh] md:w-[480px]" data-testid="uv2-planet-panel" {...appear(0.15)}>
         <p style={{ ...TYPE.meta, color: UV.gold }}>Planet · {spaces.length} {spaces.length === 1 ? 'Bereich' : 'Bereiche'}</p>
         <h1 className="mt-6" style={{ ...TYPE.display, color: UV.cream }}>{name}</h1>
@@ -186,7 +186,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
         )}
 
         <div className="mt-10 flex items-center gap-6">
-          <button type="button" onClick={() => openPane({ id: 'chat-main', type: 'chat', title: 'MÔRA', size: { width: 560, height: 640 }, data: { initialPrompt: `Was ist in ${name} gerade wichtig?` } } as any)}
+          <button type="button" onClick={() => openMoraWorkspace({ source: 'system', label: name, draftQuestion: `Was ist in ${name} gerade wichtig?`, submitQuestion: true })}
             className="h-10 rounded-full px-6 transition-transform active:scale-[0.97]" style={{ background: UV.goldGrad, color: UV.ink, fontSize: 15, fontWeight: 500 }}>
             MÔRA fragen
           </button>

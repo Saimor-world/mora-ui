@@ -52,6 +52,7 @@ if (typeof window !== 'undefined') {
       return {
         clearRect: () => {},
         fillRect: () => {},
+        drawImage: () => {},
         createRadialGradient: () => ({ addColorStop: () => {} }),
         setTransform: () => {},
         beginPath: () => {},

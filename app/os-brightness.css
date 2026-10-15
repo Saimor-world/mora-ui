@@ -1,7 +1,8 @@
 /* hd45 – Marius 14.10.: "es ist immer viel zu dunkel, alles". Global heller, ruhig, nicht grau. */
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime { background-color: rgba(20,36,40,.78) !important; backdrop-filter: blur(28px) saturate(140%); box-shadow: 0 0 0 .5px rgba(247,244,233,.2), 0 24px 70px rgba(0,0,0,.4) !important; }
 html[data-uv2="on"] [data-testid="planet-detail"] { background: rgba(18,34,38,.88) !important; }
-.uv2-widget { background: rgba(32,50,52,.55) !important; box-shadow: inset 0 0 0 .5px rgba(247,244,233,.16) !important; }
+.uv2-widget { background: rgba(32,50,52,.82) !important; backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: inset 0 0 0 .5px rgba(247,244,233,.22) !important; transition: background-color .16s, box-shadow .16s, transform .16s; }
+.uv2-widget:not(:disabled):hover, .uv2-widget:focus-visible { background: rgba(46,70,70,.94) !important; box-shadow: inset 0 0 0 1px rgba(169,210,190,.65), 0 12px 30px rgba(0,0,0,.2) !important; }
 .uv2-widget__label { color: rgba(239,230,210,.82) !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .uv2-widget__go { color: rgba(239,230,210,.6) !important; }
 
@@ -22,6 +23,19 @@ html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-st
 .uv2-widget:disabled { cursor: default; transform: none; }
 .uv2-widget:focus-visible, .uv2-place:focus-visible { outline: 2px solid #a9d2be; outline-offset: 4px; }
 .uv2-today-status { font-size: 13px; color: rgba(247,244,233,.75); }
+.uv2-cosmos-nebula { will-change: transform; animation: uv2CosmosDrift 90s ease-in-out infinite; }
+.uv2-cosmos-image { background-image: url('/universe/deep-space-warm.jpg'); filter: brightness(1.95) saturate(.92) contrast(.96); }
+html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind] .uv2-planet { filter: none !important; }
+.uv2-myzel-dust { will-change: opacity; animation: uv2DustGlimmer 7s ease-in-out infinite; }
+@keyframes uv2DustGlimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .uv2-myzel-dust { animation: none; will-change: auto; } }
+html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .72 !important; scale: 1; filter: none; }
+html[data-uv2="on"] .group\/moon:focus-within { opacity: 1 !important; }
+html[data-uv2="on"] .uv2-inst-row:hover, html[data-uv2="on"] .uv2-inst-row:focus-visible { background: rgba(46,70,70,.68) !important; box-shadow: inset 2px 0 #a9d2be; }
+html[data-uv2="on"] .uv2-inst-row:hover .uv2-inst-text { color: #f7f4e9; }
+@keyframes uv2CosmosDrift { 0%, 100% { transform: translate3d(0,0,0) scale(1); } 50% { transform: translate3d(-14px,8px,0) scale(1.035); } }
+@media (prefers-reduced-motion: reduce) { .uv2-cosmos-nebula { animation: none; will-change: auto; } }
+.saimor-moon-orbit:has([role="button"]:hover), .saimor-moon-orbit:focus-within { animation-play-state: paused; }
 body .glass-panel-runtime.glass-panel-runtime[data-maximized="true"],
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { border-radius: 0 !important; border: 0 !important; max-width: 100vw !important; max-height: 100vh !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] { width: 40px !important; height: 40px !important; background: none !important; box-shadow: none; }
@@ -53,7 +67,7 @@ html[data-uv2="on"] .uv2-grain { opacity: .025; }
 html[data-uv2="on"] [data-uv2-col="right"].uv2-col-right { width: min(var(--g-3), 260px); }
 html[data-uv2="on"] .uv2-instruments { gap: 28px; }
 html[data-uv2="on"] [data-testid="uv2-lage"] [data-uv2-col="right"] > .uv2-instruments { justify-content: flex-start !important; gap: 28px; }
-html[data-uv2="on"] [data-uv2-col="right"]::before { content: ""; position: absolute; top: -40px; left: -52px; right: -52px; height: 400px; z-index: -1; pointer-events: none; background: rgba(16,32,36,.85); backdrop-filter: blur(18px); -webkit-mask-image: radial-gradient(ellipse at 50% 26%, #000 12%, transparent 72%); mask-image: radial-gradient(ellipse at 50% 26%, #000 12%, transparent 72%); }
+html[data-uv2="on"] [data-uv2-col="right"]::before { content: ""; position: absolute; top: -40px; left: -52px; right: -52px; height: 400px; z-index: -1; pointer-events: none; background: radial-gradient(ellipse at 50% 26%, rgba(28,48,48,.85) 12%, transparent 72%); }
 html[data-uv2="on"] [data-uv2-col="right"]:has(.uv2-instrument-details[open])::before { height: calc(100% + 48px); }
 html[data-uv2="on"] .uv2-inst-label { color: #ddc696 !important; font-size: 12px !important; letter-spacing: .06em !important; }
 html[data-uv2="on"] .uv2-inst-row .uv2-inst-label { color: rgba(247,244,233,.76) !important; letter-spacing: .03em !important; }

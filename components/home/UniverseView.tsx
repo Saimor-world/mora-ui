@@ -44,7 +44,10 @@ import { buildTickerItems } from '@/lib/universe/ticker';
 import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
+import { scopeUniverseModel } from '@/lib/universe/access';
 import { placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { resolveMoonTarget } from '@/lib/universe/navigation';
+import { toast } from 'sonner';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -66,7 +69,6 @@ export default function UniverseView() {
         coreMode,
         setCoreMode,
         navigateToDepartment,
-        navigateToFolder,
         universeScope,
         universeScopeDeptId,
     } = useNavStore();
@@ -387,7 +389,7 @@ export default function UniverseView() {
                 // Monde tragen jetzt echte Ordnernamen; solange die noch
                 // laden, dienen die Bereiche als Zwischenstand statt
                 // eines leeren Orbits.
-                spaceList: folderMoons[department.id] || spaceListByDepartment[department.id] || [],
+                spaceList: folderMoons[department.id]?.length ? folderMoons[department.id] : (spaceListByDepartment[department.id] || []).map(space => ({ ...space, id: `space:${space.id}` })),
                 metricSource: value?.source || 'missing',
                 access: department.universeAccess,
             };
@@ -397,7 +399,9 @@ export default function UniverseView() {
 
     // Planeten-Modell v1: eine Wahrheit aus CORE /v3/universe. Systemplaneten (Finanzen, Post,
     // Wissen, Wache, Werkstatt …) sind immer da – notfalls als Keim; Abteilungen außen, viele als Cluster.
-    const { data: universeModel } = useUniverseModel(effectiveCompanyId);
+    const { data: universeSnapshot } = useUniverseModel(effectiveCompanyId);
+    const departmentAccess = useMemo(() => new Map(accessibleDepartments.map(department => [String(department.id), department.universeAccess])), [accessibleDepartments]);
+    const universeModel = useMemo(() => universeSnapshot ? scopeUniverseModel(universeSnapshot, departmentAccess) : null, [universeSnapshot, departmentAccess]);
     const fieldTerritories = useMemo<OrganizationTerritory[]>(() => {
         if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return territories;
         const byDept = new Map(territories.map((t) => [t.id, t]));
@@ -405,7 +409,7 @@ export default function UniverseView() {
         return placeUniverse(universeModel).map((body) => {
             const p = body.planet; const c = body.cluster;
             const look = (p || c)!.look;
-            const deptId = p ? departmentIdOf(p.key) : null;
+            const deptId = p ? p.department_id || departmentIdOf(p.key) : null;
             const base = deptId ? byDept.get(deptId) : undefined;
             const state = p ? p.state : 'active';
             const model = {
@@ -421,19 +425,42 @@ export default function UniverseView() {
                 id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
                 spaces: c ? c.members.length : Number(p?.counts?.spaces ?? 0), folders: 0,
                 documents: Number(p?.counts?.docs ?? 0), spaceList: moons,
-                metricSource: 'live', access: 'open', model,
+                metricSource: 'live', access: deptId ? departmentAccess.get(deptId) ?? 'locked' : 'open', model,
             } as OrganizationTerritory;
         });
-    }, [universeModel, territories]);
+    }, [universeModel, territories, departmentAccess]);
+    const moonContext = useMemo(() => {
+        const departmentIds = new Set(accessibleDepartments.filter(department => department.universeAccess === 'open').map(department => String(department.id)));
+        const spaceDepartments: Record<string, string> = {};
+        const folderDepartments: Record<string, string> = {};
+        Object.entries(spaceListByDepartment).forEach(([departmentId, spaces]) => spaces.forEach(space => { spaceDepartments[space.id] = departmentId; }));
+        Object.entries(folderMoons).forEach(([departmentId, folders]) => folders.forEach(folder => { folderDepartments[folder.id] = departmentId; }));
+        return { model: universeModel, departmentIds, spaceDepartments, folderDepartments };
+    }, [accessibleDepartments, spaceListByDepartment, folderMoons, universeModel]);
+    const openMoon = (key: string, title: string) => {
+        const target = resolveMoonTarget(key, moonContext);
+        if (!target) { toast.info('Dieser Ort ist gerade nicht verfügbar. Bitte aktualisiere die Ansicht.'); return; }
+        setSelectedTerritoryId(null);
+        if (target.kind === 'department') { navigateToDepartment(target.departmentId); return; }
+        if (target.kind === 'pane') { openPane(target.pane); return; }
+        const isSpace = target.kind === 'space';
+        const locationId = isSpace ? target.spaceId : target.folderId;
+        // Finder owns the opened location. Opening a moon must not switch the scene behind the app.
+        openPane({
+            id: `finder-${isSpace ? 'space' : 'folder'}-${locationId}`,
+            type: 'finder', title, size: { width: 1040, height: 720 },
+            data: { companyId: effectiveCompanyId, departmentId: target.departmentId, ...(isSpace ? { spaceId: locationId } : { folderId: locationId }) },
+        });
+    };
     const openBody = (id: string) => {
         if (id.startsWith('system:')) {
             const pane = SYSTEM_PANES[id.slice(7)];
-            if (pane) openPane(pane as Parameters<typeof openPane>[0]);
+            if (pane) { setSelectedTerritoryId(null); openPane(pane as Parameters<typeof openPane>[0]); }
             return;
         }
         if (id.startsWith('cluster:')) {
             const cl = universeModel?.clusters.find((c) => c.key === id);
-            const first = cl?.members.map(departmentIdOf).find(Boolean);
+            const first = cl?.members.map(departmentIdOf).find(id => id && departmentAccess.get(id) === 'open');
             if (first) navigateToDepartment(first);
             return;
         }
@@ -678,37 +705,7 @@ export default function UniverseView() {
                 onSelect={setSelectedTerritoryId}
                 onOpen={openBody}
                 attentionId={attention?.targetId ?? null}
-                onOpenMoon={(folderId, folderName) => {
-                    // Mond des Sammelplaneten "Weitere" = ein ganzer Bereich: direkt dorthin.
-                    const overflowDept = capped.overflow.find((d) => String(d.id) === folderId);
-                    if (overflowDept) { navigateToDepartment(String(overflowDept.id)); return; }
-                    // Mond eines Clusters oder Systemplaneten = ganze Abteilung: direkt dorthin.
-                    if (departments.some((d: any) => String(d.id) === folderId)) { navigateToDepartment(folderId); return; }
-                    if (folderId.startsWith('source:') || folderId.startsWith('space:')) return;
-                    // In den Ordner selbst, nicht in ein generisches Fenster:
-                    // navigateToFolder setzt den Kontext, der Finder oeffnet
-                    // sich darin. Ein Mond ist ein Ort, kein Vorschaubild.
-                    navigateToFolder(folderId);
-                    openPane({
-                        // Eigene Fenster-id je Ordner. Mit der festen
-                        // 'finder-main' traf openPane ein bereits offenes
-                        // Fenster und uebernahm dessen alte Daten nicht - der
-                        // Finder blieb auf "Start" stehen, statt den
-                        // angeklickten Ordner zu zeigen.
-                        id: 'finder-' + folderId,
-                        type: 'finder',
-                        title: folderName,
-                        size: { width: 1040, height: 720 },
-                        // companyId MUSS mit: apps/finder/index.tsx setzt beim
-                        // Aufloesen der Firma auf den Wurzelordner zurueck,
-                        // solange der Aufrufer keine mitgibt (`if
-                        // (!paneCompanyId) resetNavigationRoot(null)`, Zeile
-                        // 575). Ohne sie sprang der Finder sofort wieder auf
-                        // "Start" - der angeklickte Mond war nach einem
-                        // Wimpernschlag wieder weg.
-                        data: { folderId, companyId: effectiveCompanyId },
-                    });
-                }}
+                onOpenMoon={openMoon}
                 onFile={async (departmentId, label, kind) => {
                     try {
                         const created = await intakeIntoDepartment(departmentId, {

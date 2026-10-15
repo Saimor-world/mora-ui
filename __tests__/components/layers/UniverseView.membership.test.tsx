@@ -6,6 +6,14 @@ import { renderWithProviders, resetAllStores, createTestQueryClient } from '../.
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { queryKeys } from '@/lib/queries/queryKeys';
+import type { UniverseModel } from '@/lib/universe/planetModel';
+
+// Membership tests exercise real territory/navigation rendering; canvas materials are checked in the browser.
+jest.mock('@/components/universe/PlanetSphere', () => ({
+    PlanetSphere: () => <span aria-hidden="true" />,
+    AmbientMoons: () => null,
+    moonBackground: () => '',
+}));
 
 jest.mock('@/lib/api/coreClient', () => ({
     ...jest.requireActual('@/lib/api/coreClient'),
@@ -82,8 +90,9 @@ describe('UniverseView membership-scoped territories', () => {
         } as any);
     });
 
-    function renderView() {
+    function renderView(model?: UniverseModel) {
         const queryClient = createTestQueryClient();
+        if (model) queryClient.setQueryData(['universe-model', 'company-1'], model);
         queryClient.setQueryData(queryKeys.departments('company-1'), departments);
         queryClient.setQueryData(queryKeys.tree('company-1'), []);
         queryClient.setQueryData(queryKeys.companies(), [{ id: 'company-1', name: 'Test Corp' }]);
@@ -116,6 +125,28 @@ describe('UniverseView membership-scoped territories', () => {
             expect(screen.queryByTestId('territory-dept-hr')).not.toBeInTheDocument();
             expect(screen.queryByTestId('locked-territory-dept-hr')).not.toBeInTheDocument();
         });
+    });
+
+    it('also respects memberships when CORE supplies planets for every department', async () => {
+        mockFetchUserMemberships.mockResolvedValue({
+            department_memberships: memberships,
+            personal_space_id: 'space-test',
+            has_department_assignments: true,
+        });
+        renderView({
+            company: { id: 'company-1', name: 'Test Corp', sector: 'live', industry_template: 'custom', template_label: '' },
+            edition: 'customer', model_version: 1, clusters: [], belt: null, suggestions: [],
+            planets: departments.map((department, index) => ({
+                key: `dept:${department.id}`, department_id: department.id, kind: 'domain',
+                label: department.name, state: 'active', size: 'M', brightness: 1, score: 1, ring: index,
+                look: { archetype: 'work', hue: 140, glyph: 'orbit', seed: index }, moons: [], more_moons: 0, counts: {},
+            })),
+        });
+        await screen.findByTestId('territory-dept-eng');
+        expect(screen.getByTestId('territory-dept-all')).toBeInTheDocument();
+        expect(screen.getByTestId('locked-territory-dept-fin')).toBeInTheDocument();
+        expect(screen.queryByTestId('territory-dept-hr')).not.toBeInTheDocument();
+        expect(screen.queryByText('HR')).not.toBeInTheDocument();
     });
 
     it('renders visible departments as locked and non-enterable', async () => {

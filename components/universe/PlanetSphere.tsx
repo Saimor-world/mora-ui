@@ -77,7 +77,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
-    <span className="uv2-planet absolute inset-0 block" data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} style={dim ? { filter: dim === 'sleeping' ? 'saturate(0.9) brightness(0.86)' : 'saturate(0.6) brightness(0.74)' } : undefined} aria-hidden>
+    <span className="uv2-planet absolute inset-0 block" data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
       {/* Ring hinten (hinter dem Körper) */}
       {m.ring && (
         <svg className="pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>
@@ -425,7 +425,7 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   const gx = Math.cos(lit) * size * 0.06, gy = Math.sin(lit) * size * 0.06;
   return (<>
     <span className="pointer-events-none absolute rounded-full" style={{ inset: 0, boxShadow: `${gx}px ${gy}px ${size * 0.35}px rgba(${h.join(',')},${quiet ? 0.08 : matte ? 0.18 : 0.32})` }} />
-    {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ backdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', WebkitBackdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', transform: 'scale(1.0)', boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22)` }} />}
+    {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 32% 28%, rgba(247,244,233,.13), rgba(${h.join(',')},.08) 55%, transparent 82%)`, boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22)` }} />}
     <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />
   </>);
 }

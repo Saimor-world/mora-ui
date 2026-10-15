@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { useNavStore } from '@/lib/store/navStore';
 
 /**
  * Der Nachweis, den die Textsuche nicht fuehren kann.
@@ -31,7 +32,13 @@ jest.mock('@/lib/store/paneStore', () => ({
 // aufgerufen wird und mit welcher Kennung.
 jest.mock('@/lib/apps/AppLoader', () => ({
   ...jest.requireActual('@/lib/apps/AppLoader'),
-  AppLoader: ({ appId }: { appId: string }) => <div data-testid="app">{appId}</div>,
+  AppLoader: ({ appId, paneId, initialData }: { appId: string; paneId: string; initialData?: any }) => {
+    const [draft, setDraft] = React.useState('');
+    return <div data-testid="app" hidden={panes.find(pane => pane.id === paneId)?.minimized}>{appId}
+      {appId === 'chat' && <input aria-label="Conversation draft" value={draft} onChange={event => setDraft(event.target.value)} />}
+      {appId === 'chat' && <output data-testid="launch-text">{initialData?.initialMessage}</output>}
+    </div>;
+  },
 }));
 
 import { PaneManager } from '@/components/mora/PaneManager';
@@ -79,5 +86,50 @@ describe('Unbekanntes bleibt leer', () => {
     const { unmount } = zeige('gibt-es-nicht');
     expect(screen.queryByTestId('app')).toBeNull();
     unmount();
+  });
+});
+
+describe('Conversation lifetime', () => {
+  it('keeps a conversation while minimized, but discards it on close or company switch', () => {
+    useNavStore.setState({ activeCompanyId: 'company-a' });
+    const view = zeige('chat');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Conversation draft' }), { target: { value: 'Still writing' } });
+    panes[0] = { ...panes[0], minimized: true };
+    view.rerender(<PaneManager />);
+    expect(screen.getByTestId('app')).not.toBeVisible();
+    panes[0] = { ...panes[0], minimized: false };
+    view.rerender(<PaneManager />);
+    expect(screen.getByRole('textbox', { name: 'Conversation draft' })).toHaveValue('Still writing');
+
+    act(() => useNavStore.setState({ activeCompanyId: 'company-b' }));
+    expect(screen.getByRole('textbox', { name: 'Conversation draft' })).toHaveValue('');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Conversation draft' }), { target: { value: 'Company B draft' } });
+    const closed = panes.pop();
+    view.rerender(<PaneManager />);
+    panes.push(closed);
+    view.rerender(<PaneManager />);
+    expect(screen.getByRole('textbox', { name: 'Conversation draft' })).toHaveValue('');
+  });
+
+  it('does not load a persisted minimized conversation before the user opens it', () => {
+    panes.length = 0;
+    panes.push({ id: 'chat-main', type: 'chat', minimized: true });
+    render(<PaneManager />);
+    expect(screen.queryByTestId('app')).not.toBeInTheDocument();
+  });
+
+  it('does not replay launch text after switching companies, including on return', () => {
+    useNavStore.setState({ activeCompanyId: 'company-a' });
+    const view = zeige('chat');
+    panes[0] = { ...panes[0], data: { initialMessage: 'Company A question' } };
+    view.rerender(<PaneManager />);
+    expect(screen.getByTestId('launch-text')).toHaveTextContent('Company A question');
+    act(() => useNavStore.setState({ activeCompanyId: 'company-b' }));
+    expect(screen.getByTestId('launch-text')).toBeEmptyDOMElement();
+    act(() => useNavStore.setState({ activeCompanyId: 'company-a' }));
+    expect(screen.getByTestId('launch-text')).toBeEmptyDOMElement();
+    panes[0] = { ...panes[0], data: { initialMessage: 'New explicit question' } };
+    view.rerender(<PaneManager />);
+    expect(screen.getByTestId('launch-text')).toHaveTextContent('New explicit question');
   });
 });

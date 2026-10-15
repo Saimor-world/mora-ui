@@ -17,6 +17,7 @@
 import { uv2 } from '@/components/universe/app/AppStage';
 const MN = () => (uv2() ? 'MÔRA' : 'Môra');
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
@@ -457,11 +458,12 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 
     // Fullscreen: sync body class + fire event bus for MoraShell
     useEffect(() => {
-        document.body.classList.toggle('chat-fullscreen', isFullscreen);
+        const visibleFullscreen = isFullscreen && !pane?.minimized;
+        document.body.classList.toggle('chat-fullscreen', visibleFullscreen);
         window.dispatchEvent(new CustomEvent('mora-pane-fullscreen-change', {
-            detail: { paneId: paneId, isFullscreen }
+            detail: { paneId: paneId, isFullscreen: visibleFullscreen }
         }));
-    }, [isFullscreen, paneId]);
+    }, [isFullscreen, paneId, pane?.minimized]);
 
     // Fullscreen: cleanup on unmount (or paneId change) — signal MoraShell to remove this pane from fullscreen set.
     // Always dispatches isFullscreen: false — intentional stale closure; [paneId] dep only.
@@ -477,11 +479,11 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
 
     // Fullscreen: ESC to exit
     useEffect(() => {
-        if (!isFullscreen) return;
+        if (!isFullscreen || pane?.minimized) return;
         const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setIsFullscreen(false); };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
-    }, [isFullscreen]);
+    }, [isFullscreen, pane?.minimized]);
 
     // Parse explicit commands only; conversational mentions stay in normal chat.
     const parseIntent = useCallback(
@@ -1011,6 +1013,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     initialMessageSender.current = processMessage;
     useEffect(() => {
         if (initialMessage && initialMessageRequest && initialMessageProcessed.current !== initialMessageRequest) {
+            if (initialMessageId && readMoraWorkspaceIntent(paneId)?.requestId !== initialMessageId) return;
 
             // Set input as visual feedback
             setInput(initialMessage);
@@ -1074,7 +1077,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         await processMessage(userMessage.content);
     };
 
-    if (!pane) return null;
+    if (!pane || pane.minimized) return null;
     const hasUserMessage = messages.some((message) => message.role === 'user');
 
     // ── Fullscreen wrapper ───────────────────────────────────────────────────
@@ -1736,9 +1739,11 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     );
 
     if (isFullscreen) {
-        return (
+        return createPortal(
             <motion.div
                 key="chat-fullscreen"
+                data-pane-id={paneId}
+                data-maximized="true"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -1746,7 +1751,8 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 style={{ paddingBottom: '0' }}
             >
                 {chatInner}
-            </motion.div>
+            </motion.div>,
+            document.body,
         );
     }
 

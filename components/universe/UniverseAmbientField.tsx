@@ -47,13 +47,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 dunkle ruhige Mitte) traegt jetzt das Feld. Es treibt kaum
                 merklich, damit der Raum lebt, ohne abzulenken. Fehlt die Datei,
                 bleibt einfach der geteilte Shell-Hintergrund sichtbar. */}
-            <motion.div
-                className="absolute -inset-[3%] bg-cover bg-center"
-                data-testid="uv2-nebula"
-                style={{ backgroundImage: 'url(/universe/deep-space-warm.jpg)', filter: 'brightness(1.95) saturate(.92) contrast(.96)' }}
-                animate={reducedMotion ? undefined : { scale: [1, 1.035, 1], x: [0, -14, 0], y: [0, 8, 0] }}
-                transition={{ duration: 90, repeat: Infinity, ease: 'easeInOut' }}
-            />
+            {/* The nebula is shared by the shell. This layer only expresses lens and selection. */}
             {/* Lesbarkeit: Mitte und Raender leicht abdunkeln, damit Planeten,
                 Namen und Kacheln tragen - das Foto bleibt an den Nebeln sichtbar. */}
             <div
@@ -71,14 +65,14 @@ export function UniverseAmbientField({ lens, selected }: Props) {
             />
 
             <motion.div
-                className="absolute left-[12%] top-[14%] h-[54vw] max-h-[720px] w-[54vw] max-w-[900px] rounded-full blur-[100px]"
-                style={{ background: 'radial-gradient(circle,rgba(45,212,191,0.06),rgba(20,83,77,0.03) 44%,transparent 72%)' }}
+                className="absolute left-[12%] top-[14%] h-[54vw] max-h-[720px] w-[54vw] max-w-[900px] rounded-full"
+                style={{ background: 'radial-gradient(circle,rgba(45,212,191,0.06),rgba(20,83,77,0.03) 44%,transparent 72%)', willChange: reducedMotion ? undefined : 'transform' }}
                 animate={reducedMotion ? undefined : { x: [0, 34, -12, 0], y: [0, -24, 18, 0], scale: [1, 1.06, 0.98, 1] }}
                 transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
             />
             <motion.div
-                className="absolute -bottom-[20%] -left-[8%] h-[58%] w-[64%] rounded-full blur-[110px]"
-                style={{ background: 'radial-gradient(circle,rgba(212,167,61,0.12),rgba(115,83,35,0.04) 46%,transparent 72%)' }}
+                className="absolute -bottom-[20%] -left-[8%] h-[58%] w-[64%] rounded-full"
+                style={{ background: 'radial-gradient(circle,rgba(212,167,61,0.12),rgba(115,83,35,0.04) 46%,transparent 72%)', willChange: reducedMotion ? undefined : 'transform, opacity' }}
                 animate={reducedMotion ? undefined : { x: [0, 42, 0], opacity: [0.5, 0.72, 0.5] }}
                 transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut' }}
             />
