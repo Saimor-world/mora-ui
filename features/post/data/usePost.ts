@@ -20,8 +20,31 @@ export function parsePostList<T>(value: unknown, keys: readonly string[]): T[] |
   return null;
 }
 
+export type PostSourceState = 'stale' | 'partial' | 'disconnected' | 'unavailable';
+
+export class PostSourceFailure extends Error {
+  constructor(
+    public readonly state: PostSourceState,
+    public readonly asOf: string | null,
+  ) {
+    super('CORE source is ' + state);
+    this.name = 'PostSourceFailure';
+  }
+}
+
+/** Preserve the provider's explicit degraded status, never silently map to []. */
+export function postSourceFailure(raw: unknown): PostSourceFailure | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const v = raw as Record<string, unknown>;
+  const state = v.status;
+  if (state !== 'stale' && state !== 'partial' && state !== 'disconnected' && state !== 'unavailable') return null;
+  return new PostSourceFailure(state, typeof v.as_of === 'string' ? v.as_of : null);
+}
+
 async function readList<T>(path: string, keys: string[]): Promise<T[] | null> {
   const data: unknown = await coreGet(path, { isOptional: true, throwAuthErrors: true });
+  const failure = postSourceFailure(data);
+  if (failure) throw failure;
   return parsePostList<T>(data, keys);
 }
 

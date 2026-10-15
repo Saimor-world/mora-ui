@@ -8,7 +8,7 @@ import { Button, SampleTag, FailureState, Loading, ResponsiveGrid, Stack, StateV
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
-import { usePostCalendar, usePostInbox } from './data/usePost';
+import { PostSourceFailure, usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { DEMO_CALENDAR, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
@@ -28,6 +28,23 @@ function Column({ icon, title, action, children }: { icon: React.ReactNode; titl
 function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; isError: boolean; error: unknown; data: T[] | null | undefined; refetch: () => void; fetchStatus: string }; empty: string; render: (items: T[]) => React.ReactNode; subject: string }) {
   if (q.fetchStatus === 'idle' && q.data === undefined) return <FailureState kind="unauthenticated" compact subject={subject} />;
   if (q.isLoading) return <Loading lines={4} />;
+  if (q.isError && q.error instanceof PostSourceFailure) {
+    const title = {
+      stale: 'Daten veraltet',
+      partial: 'Abruf unvollständig',
+      disconnected: 'Quelle nicht verbunden',
+      unavailable: 'Quelle nicht erreichbar',
+    }[q.error.state];
+    const asOf = q.error.asOf ? new Date(q.error.asOf) : null;
+    const observed = asOf && Number.isFinite(asOf.getTime())
+      ? asOf.toLocaleString('de-DE')
+      : 'unbekannt';
+    return (
+      <StateView kind="not_configured" compact title={title}
+        copy="Dieser Quellenstatus belegt weder einen leeren Posteingang noch einen freien Tag."
+        detail={`Letzter bestätigter Stand: ${observed}`} />
+    );
+  }
   if (q.isError) return <FailureState kind={classifyCoreFailure(q.error)} compact subject={subject} onRetry={q.refetch} />;
   if (q.data === null) return <StateView kind="not_configured" compact copy="CORE hat keine Daten geliefert – Quelle nicht verbunden oder nicht erreichbar." detail={subject} />;
   if (!q.data || q.data.length === 0) return <StateView kind="empty" compact title={empty} />;
