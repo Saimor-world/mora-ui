@@ -24,6 +24,14 @@ export const STATUS_LABEL: Record<string, string> = {
   connected: 'verbunden', available: 'bereit zum Verbinden', setup_required: 'Server-Einrichtung fehlt',
 };
 
+/** Pass the selected workspace to CORE for server-side authorization.
+ * The mail connector itself remains user-owned; the query parameter is a
+ * requested viewing context, not an ownership claim.
+ */
+export function connectionReadPath(companyId: string | null): string {
+  return companyId ? `/v3/connections?company_id=${encodeURIComponent(companyId)}` : '/v3/connections';
+}
+
 export function useSources(enabled: boolean) {
   const tenant = useSessionStore((s) => s.user?.tenant_id ?? null);
   const userId = useSessionStore((s) => s.user?.id ?? null);
@@ -33,7 +41,7 @@ export function useSources(enabled: boolean) {
     // Never reuse one person's connector evidence after a principal/company switch.
     queryKey: ['os', 'sources', tenant, userId, generation, company],
     queryFn: async () => {
-      const result: unknown = await coreGet('/v3/connections', { throwAuthErrors: true });
+      const result: unknown = await coreGet(connectionReadPath(company), { throwAuthErrors: true });
       // coreGet can return null on network failure. Never convert that into a
       // successful empty connection list or a misleading demo state.
       if (!result || typeof result !== 'object' || !Array.isArray((result as SourcesResponse).connections)) {

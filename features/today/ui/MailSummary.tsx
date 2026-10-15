@@ -45,6 +45,18 @@ export function MailSummaryView({ enabled, variant = 'full' }: { enabled: boolea
       {s.source?.dev_only ? <Status tone="warning">Test-Server · nur Entwicklung</Status> : null}
     </Stack>
   );
+  // The stored local IMAP snapshot can be older than the source TTL. A stale
+  // status must take precedence even over a historical total of zero.
+  if (s.status !== 'ok' && s.status !== 'empty') {
+    return (
+      <div className="os-mail-summary" data-testid="mail-summary-degraded" data-state={s.status}>
+        {tags}
+        <Text tone="default" className="mt-2">{s.status === 'stale' ? 'Postfachdaten veraltet' : 'Postfachdaten nicht zuverlässig verfügbar'}</Text>
+        <Text variant="meta">{s.headline || 'Der letzte verifizierte Stand ist nicht mehr aktuell.'}</Text>
+        <Text variant="meta">Letzter bestätigter Abruf: {when(s.verified_at) || 'unbekannt'}. Keine Aussage über neue oder fehlende Nachrichten.</Text>
+      </div>
+    );
+  }
   if (s.status === 'empty' || s.total === 0) {
     return (
       <div className="os-mail-summary" data-testid="mail-summary-empty" data-state="empty">

@@ -64,6 +64,17 @@ describe('V1.8 MailSummaryView', () => {
     expect(await screen.findByTestId('mail-summary-empty')).toHaveTextContent('wirklich leer');
   });
 
+  it('stale mail snapshot is not shown as an empty or current inbox, even with historical zero', async () => {
+    coreGet.mockResolvedValue({ ...SUMMARY, status: 'stale', total: 0, groups: [], other: { count: 0, refs: [] }, headline: 'Der verifizierte Testpostfach-Stand ist nicht mehr aktuell.' });
+    renderView({ enabled: true });
+    const degraded = await screen.findByTestId('mail-summary-degraded');
+    expect(degraded).toHaveAttribute('data-state', 'stale');
+    expect(degraded).toHaveTextContent('Postfachdaten veraltet');
+    expect(degraded).toHaveTextContent('Keine Aussage über neue oder fehlende Nachrichten');
+    expect(screen.queryByTestId('mail-summary-empty')).toBeNull();
+    expect(screen.queryByTestId('mail-summary')).toBeNull();
+  });
+
   it('no answer from CORE is an error, never an empty mailbox', async () => {
     coreGet.mockResolvedValue(null);
     renderView({ enabled: true });
