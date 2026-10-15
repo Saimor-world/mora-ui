@@ -26,7 +26,6 @@ function Column({ icon, title, action, children }: { icon: React.ReactNode; titl
 }
 
 function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; isError: boolean; error: unknown; data: T[] | null | undefined; refetch: () => void; fetchStatus: string }; empty: string; render: (items: T[]) => React.ReactNode; subject: string }) {
-  if (q.fetchStatus === 'idle' && q.data === undefined) return <FailureState kind="unauthenticated" compact subject={subject} />;
   if (q.isLoading) return <Loading lines={4} />;
   if (q.isError && q.error instanceof PostSourceFailure) {
     const title = {
@@ -46,6 +45,9 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
     );
   }
   if (q.isError) return <FailureState kind={classifyCoreFailure(q.error)} compact subject={subject} onRetry={q.refetch} />;
+  // React Query reports fetchStatus='idle' after a settled error as well.
+  // Only a request that never ran is unauthenticated; do not mask failures.
+  if (q.fetchStatus === 'idle' && q.data === undefined) return <FailureState kind="unauthenticated" compact subject={subject} />;
   if (q.data === null) return <StateView kind="not_configured" compact copy="CORE hat keine Daten geliefert – Quelle nicht verbunden oder nicht erreichbar." detail={subject} />;
   if (!q.data || q.data.length === 0) return <StateView kind="empty" compact title={empty} />;
   return <>{render(q.data)}</>;
