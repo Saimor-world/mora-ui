@@ -163,7 +163,7 @@ interface CapsuleDockIconProps {
     children?: React.ReactNode;
 }
 
-const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
+export const CapsuleDockIcon: React.FC<CapsuleDockIconProps> = ({
     icon: Icon,
     label,
     description,

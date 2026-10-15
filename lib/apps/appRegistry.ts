@@ -60,6 +60,18 @@ export const APP_REGISTRY: AppManifest[] = [
     isNew: true,
   },
 
+  {
+    id: 'finance-v2',
+    name: 'Finance',
+    description: 'Cashflow, Profit Center, CORE Treasury, Quellen und XRPL read-only',
+    icon: 'Landmark',
+    color: 'green',
+    category: 'core',
+    defaultSize: { width: 1080, height: 760 },
+    singleton: true,
+    launcherHidden: true,
+  },
+
   // ── Intelligence ──────────────────────────────────────────────────────────
   {
     id: 'chat',

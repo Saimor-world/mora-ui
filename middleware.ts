@@ -78,6 +78,12 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
+    // Local-only OS integration preview. Never exposes data endpoints without
+    // the existing CORE session checks.
+    if (pathname === "/os" && isLocalhost && process.env.NEXT_PUBLIC_OS_PREVIEW === "local") {
+        return NextResponse.next();
+    }
+
     const isApiRoute = pathname.startsWith("/api/");
 
     // mora_auth_token is the readable bridge for website-entry preview sessions

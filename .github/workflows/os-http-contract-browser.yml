@@ -1,0 +1,57 @@
+name: OS HTTP Contract Browser
+on:
+  pull_request:
+    paths:
+      - 'features/post/**'
+      - 'lib/os-prototype/useSources.ts'
+      - 'e2e/os-http-contract.spec.ts'
+      - 'e2e/os-six-source-states.spec.ts'
+      - '.github/workflows/os-http-contract-browser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      NEXT_TELEMETRY_DISABLED: '1'
+      NEXT_PUBLIC_OS_PROTOTYPE: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Compile OS in non-preview mode
+        run: npm run build
+      - name: Start isolated UI
+        run: |
+          npm start > /tmp/os-contract-next.log 2>&1 &
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3000/os > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/os-contract-next.log
+          exit 1
+      - name: Test synthetic CORE HTTP contracts
+        env:
+          BASE_URL: http://127.0.0.1:3000
+        run: npx playwright test e2e/os-http-contract.spec.ts e2e/os-six-source-states.spec.ts --workers=1 --retries=0 --reporter=list
+      - name: Upload browser evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: os-http-contract-failures
+          path: test-results/
+          if-no-files-found: ignore
+          retention-days: 7

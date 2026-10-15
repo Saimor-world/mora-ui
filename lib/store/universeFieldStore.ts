@@ -23,6 +23,24 @@ interface UniverseFieldState {
 export const useUniverseFieldStore = create<UniverseFieldState>((set) => ({
     anchors: [],
     rect: null,
-    setField: (anchors, rect) => set({ anchors, rect }),
-    clearField: () => set({ anchors: [], rect: null }),
+    // Nur bei echter Aenderung schreiben: OrganizationField misst sich in
+    // jedem Layout-Durchlauf neu. Ein neues Array/Objekt mit gleichem Inhalt
+    // weckte alle Leser auf und konnte zusammen mit UniverseView eine
+    // Render-Schleife ausloesen (React #185 auf /#universe ohne Sitzung).
+    setField: (anchors, rect) => set((state) => (
+        sameAnchors(state.anchors, anchors) && sameRect(state.rect, rect) ? state : { anchors, rect }
+    )),
+    clearField: () => set((state) => (state.anchors.length === 0 && state.rect === null ? state : { anchors: [], rect: null })),
 }));
+
+function sameRect(a: FieldRect | null, b: FieldRect | null): boolean {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    return a.left === b.left && a.top === b.top && a.width === b.width && a.height === b.height;
+}
+
+function sameAnchors(a: FieldAnchor[], b: FieldAnchor[]): boolean {
+    if (a === b) return true;
+    if (a.length !== b.length) return false;
+    return a.every((anchor, i) => JSON.stringify(anchor) === JSON.stringify(b[i]));
+}
