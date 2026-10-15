@@ -129,7 +129,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
     }
 
     return (
-        <div className="pointer-events-none fixed inset-0 z-[2] overflow-hidden">
+        <div data-ambient-scene={ritualSceneId} data-ambient-band={timeBand} data-ambient-orb={orbState} className="pointer-events-none fixed inset-0 z-[2] overflow-hidden">
             {/* Layer 0: Dynamic Lead Context Aura (Proactive Adaptive Theming) */}
             {websiteContext && (
                 <motion.div
@@ -153,7 +153,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
 
             {/* Layer 1: Band + scene haze — slow drift, amplified when audio is on */}
 
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute inset-0"
                 style={{
                     background: `${BAND_BACKGROUNDS[timeBand]}, ${sceneProfile.haze}, radial-gradient(circle at 28% 78%, ${sceneDefinition.accent} 0%, transparent 36%), radial-gradient(circle at 84% 22%, ${sceneDefinition.aura} 0%, transparent 32%)`,
@@ -190,7 +190,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
             />
 
             {/* Layer 2: Orb accent pulse — richer beat when audio active */}
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute inset-0"
                 style={{
                     background: `radial-gradient(circle at 50% 50%, ${orbAccent} 0%, transparent 44%)`,
@@ -243,7 +243,7 @@ export const TemporalAtmosphere: React.FC<{ paused?: boolean }> = ({ paused = fa
             />}
 
             {/* Layer 4: Deep scene orb glow — blooms wider with audio */}
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute inset-0"
                 style={{
                     background: `radial-gradient(circle at 50% 56%, ${sceneProfile.orbAccent} 0%, transparent 52%)`,

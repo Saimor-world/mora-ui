@@ -28,35 +28,45 @@ function fbm(x, y, z, seed, octaves = 4) {
   return sum / weight;
 }
 
-/** Translucent mineral glass: shallow grain, soft light and a restrained polished reflection. */
-function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160, 140, 120], seed = 1, lit = -2.2, quiet = false }) {
+/** Bilinear sampling of the shared nebula/ambient lighting probe. */
+function environmentColor(environment, x, y, fallback) {
+  if (!environment) return fallback;
+  const px = clamp(x) * (environment.width - 1), py = clamp(y) * (environment.height - 1);
+  const x0 = Math.floor(px), y0 = Math.floor(py), x1 = Math.min(x0 + 1, environment.width - 1), y1 = Math.min(y0 + 1, environment.height - 1);
+  const tx = px - x0, ty = py - y0, data = environment.rgba;
+  return [0, 1, 2].map(c => {
+    const a = data[(y0 * environment.width + x0) * 4 + c] * (1 - tx) + data[(y0 * environment.width + x1) * 4 + c] * tx;
+    const b = data[(y1 * environment.width + x0) * 4 + c] * (1 - tx) + data[(y1 * environment.width + x1) * 4 + c] * tx;
+    return a * (1 - ty) + b * ty;
+  });
+}
+
+/** Environment-lit mineral: transmitted nebula, layered inclusions and broad coloured reflections. */
+function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160, 140, 120], seed = 1, lit = -2.2, quiet = false, environment, center = [.5, .5], radius: screenRadius = [.05, .075] }) {
   const width = Math.round(clamp(Number(requestedWidth) || 96, 16, 256));
   const count = width * width, rgba = new Uint8ClampedArray(count * 4);
-  const heights = new Float32Array(count), albedo = new Float32Array(count);
+  const heights = new Float32Array(count), albedo = new Float32Array(count), folds = new Float32Array(count);
   const radius = width / 2;
   const base = blend(hue, [147, 163, 158], quiet ? .64 : .50);
-  const character = { rock: .18, gas: .12, ocean: .10, forest: .14, ice: .08, marble: .11, dune: .16, volcanic: .17 }[kind] || .14;
+  const character = { rock: .50, gas: .36, ocean: .39, forest: .46, ice: .33, marble: .52, dune: .44, volcanic: .54 }[kind] || .44;
   for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
     const u = (x + .5 - radius) / radius, v = (y + .5 - radius) / radius, q = u * u + v * v;
     if (q >= 1) continue;
     const z = Math.sqrt(1 - q), index = y * width + x;
-    const body = fbm(u * 4 + 4, v * 4 + 9, z * 4 + 2, seed, 3);
-    const grain = fbm(u * 34 + 7, v * 34 + 3, z * 34 + 11, seed + 91, 2);
-    // Differences remain in the material's grain, not in illustrative surface objects.
-    const fold = Math.sin(v * 12 + u * 2 + body * 6 + seed * .13);
-    const vein = Math.pow(1 - Math.abs(Math.sin((u * 2 + v * 3 + z) * 5 + body * 9)), 8);
-    const feature = kind === 'gas' ? fold * .020
-      : kind === 'dune' ? fold * .012
-      : kind === 'marble' ? (vein - .12) * .025
-      : kind === 'ice' ? (grain - .5) * .025 : 0;
-    const variation = (body - .5) * character + (grain - .5) * .075 + feature;
+    const body = fbm(u * 3.2 + 4, v * 3.2 + 9, z * 3.2 + 2, seed, 4);
+    const grain = fbm(u * 43 + 7, v * 43 + 3, z * 43 + 11, seed + 91, 2);
+    // Warped strata vary in width and break up, rather than drawing regular bands.
+    const strata = fbm(u * 7 + body * 3, v * 11 + body * 4, z * 6, seed + 51, 3);
+    const vein = Math.pow(1 - Math.abs(Math.sin((u * 1.7 + v * 2.6 + z) * 4 + body * 18 + strata * 4)), 12);
+    const feature = (strata - .5) * character + vein * (kind === 'marble' ? .18 : .11);
+    const variation = (body - .5) * character + (grain - .5) * .09 + feature;
     albedo[index] = 1 + variation;
-    heights[index] = body * .035 + grain * .012 + feature * .12;
+    folds[index] = vein;
+    heights[index] = body * .065 + strata * .027 + grain * .012 + vein * .004;
   }
   const length = Math.hypot(Math.cos(lit), Math.sin(lit), .75);
   const lx = Math.cos(lit) / length, ly = Math.sin(lit) / length, lz = .75 / length;
   const halfLength = Math.hypot(lx, ly, lz + 1);
-  const pearl = [248, 244, 232];
   for (let y = 0; y < width; y++) for (let x = 0; x < width; x++) {
     const u = (x + .5 - radius) / radius, v = (y + .5 - radius) / radius, q = u * u + v * v;
     if (q >= 1) continue;
@@ -68,17 +78,27 @@ function renderPlanetSurface({ width: requestedWidth, kind = 'rock', hue = [160,
     };
     const dx = (neighbour(x + 1, y) - neighbour(x - 1, y)) * width * .25;
     const dy = (neighbour(x, y + 1) - neighbour(x, y - 1)) * width * .25;
-    const nx = u - dx * .075 * z, ny = v - dy * .075 * z, nz = z;
+    const nx = u - dx * .14 * z, ny = v - dy * .14 * z, nz = z;
     const nl = Math.hypot(nx, ny, nz);
     const diffuse = smooth(-.45, 1, (nx * lx + ny * ly + nz * lz) / nl);
-    const lighting = (.57 + .44 * diffuse) * (.88 + .12 * z);
+    const lighting = (.36 + .78 * diffuse) * (.88 + .12 * z);
     const reflection = Math.max(0, (nx * lx + ny * ly + nz * (lz + 1)) / nl / halfLength);
-    const polish = (Math.pow(reflection, 20) * .055 + Math.pow(reflection, 96) * .12) * (quiet ? .78 : 1);
-    const rim = Math.pow(1 - z, 5) * (Math.max(0, u * lx + v * ly) * .11 + Math.max(0, -u * lx - v * ly) * .018);
+    const polish = Math.pow(reflection, 28) * .060 * (quiet ? .78 : 1);
+    const fresnel = .14 + .72 * Math.pow(1 - z, 1.6);
+    const transmitted = environmentColor(environment, center[0] + (u * (.66 + .20 * z) + dx * .25) * screenRadius[0], center[1] + (v * (.66 + .20 * z) + dy * .25) * screenRadius[1], base);
+    const reflected = environmentColor(environment, center[0] + nx / nl * .47, center[1] + ny / nl * .47, [216, 217, 203]);
+    const local = environmentColor(environment, center[0] + u * screenRadius[0], center[1] + v * screenRadius[1], base);
+    // The probe supplies incident colour, not an already-shadowed surface colour.
+    // Lift that radiance before shading the body so dark nebula patches do not shade it twice.
+    const mineral = blend(base, local.map(c => c * .9 + 65), environment ? .52 : 0);
+    const rim = Math.pow(1 - z, 5) * (.045 + .12 * Math.max(0, u * lx + v * ly));
     for (let channel = 0; channel < 3; channel++) {
-      rgba[offset + channel] = clamp(base[channel] * albedo[index] * lighting + pearl[channel] * polish + (base[channel] * .55 + 110) * rim, 0, 255);
+      const body = mineral[channel] * albedo[index] * lighting;
+      const transmission = transmitted[channel] * (.88 + .12 * albedo[index]);
+      const deep = body * .84 + transmission * .16;
+      rgba[offset + channel] = clamp(deep * (1 - fresnel) + (reflected[channel] * .95 + 24) * fresnel + (reflected[channel] * .65 + 90) * (polish + rim + folds[index] * .030), 0, 255);
     }
-    const translucency = .58 + .27 * Math.pow(1 - z, 2.4) + Math.min(.12, polish * .65);
+    const translucency = .57 + .25 * Math.pow(1 - z, 2.4) + Math.min(.08, polish * .65);
     rgba[offset + 3] = Math.round(255 * clamp((1 - Math.sqrt(q)) * radius) * translucency);
   }
   return { width, rgba };

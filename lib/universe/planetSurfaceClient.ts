@@ -34,7 +34,7 @@ function getWorker(): Worker | null {
 
 /** Bounded, shared cache. Size/lighting changes do not start per-frame texture work. */
 export function loadPlanetSurface(options: PlanetSurfaceOptions): Promise<PlanetSurfaceResult> {
-  const key = [options.width, options.kind, options.hue.join(','), options.seed, options.lit.toFixed(2), !!options.quiet].join('|');
+  const key = [options.width, options.kind, options.hue.join(','), options.seed, options.lit.toFixed(2), !!options.quiet, options.environment?.key, options.center?.join(','), options.radius?.join(',')].join('|');
   const hit = cache.get(key); if (hit) return hit;
   const result = new Promise<PlanetSurfaceResult>(resolve => {
     const renderer = getWorker();

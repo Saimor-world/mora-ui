@@ -48,3 +48,27 @@ it('bounds texture resolution even when a caller supplies an excessive size', ()
   expect(result.width).toBe(256);
   expect(result.rgba.length).toBe(256 * 256 * 4);
 });
+
+it('takes its reflected colour from the environment instead of a fixed white highlight', () => {
+  const render = (rgb: number[]) => {
+    const rgba = new Uint8ClampedArray(4 * 4 * 4);
+    for (let i = 0; i < rgba.length; i += 4) rgba.set([...rgb, 255], i);
+    return renderPlanetSurface({ ...options, environment: { width: 4, height: 4, rgba, key: 'fixture' } }).rgba;
+  };
+  const warm = render([190, 95, 40]), cool = render([40, 95, 190]);
+  const center = (32 * 64 + 32) * 4;
+  expect(warm[center]).toBeGreaterThan(cool[center] + 40);
+  expect(cool[center + 2]).toBeGreaterThan(warm[center + 2] + 40);
+  expect(warm[center + 3]).toBe(cool[center + 3]);
+});
+
+it('uses each planet location to sample the same shared environment', () => {
+  const rgba = new Uint8ClampedArray(8 * 4 * 4);
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 8; x++) rgba.set([x < 4 ? 180 : 25, 90, x < 4 ? 25 : 180, 255], (y * 8 + x) * 4);
+  const environment = { width: 8, height: 4, rgba, key: 'fixture' };
+  const warm = renderPlanetSurface({ ...options, environment, center: [.1, .5] }).rgba;
+  const cool = renderPlanetSurface({ ...options, environment, center: [.9, .5] }).rgba;
+  const center = (32 * 64 + 32) * 4;
+  expect(warm[center]).toBeGreaterThan(cool[center] + 40);
+  expect(cool[center + 2]).toBeGreaterThan(warm[center + 2] + 40);
+});

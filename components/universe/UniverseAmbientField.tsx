@@ -30,7 +30,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
     const reducedMotion = useReducedMotion();
 
     return (
-        <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
+        <div data-ambient-lens={lens} className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
             {/* Ein dosierter Schleier, kein Deckel.
                 Als der blickdichte Hintergrund fiel (damit Universe wieder am
                 geteilten Ambient-System haengt), kam die Szenenfarbe in voller
@@ -50,11 +50,11 @@ export function UniverseAmbientField({ lens, selected }: Props) {
             {/* The nebula is shared by the shell. This layer only expresses lens and selection. */}
             {/* Lesbarkeit: Mitte und Raender leicht abdunkeln, damit Planeten,
                 Namen und Kacheln tragen - das Foto bleibt an den Nebeln sichtbar. */}
-            <div
+            <div data-cosmos-light-layer
                 className="absolute inset-0"
                 style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(174,205,192,0.09) 0%, rgba(224,207,178,0.04) 55%, rgba(3,6,10,0.12) 100%)' }}
             />
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute inset-0"
                 animate={{
                     background: lens === 'relations'
@@ -64,13 +64,13 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 transition={{ duration: 1.4, ease: 'easeInOut' }}
             />
 
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute left-[12%] top-[14%] h-[54vw] max-h-[720px] w-[54vw] max-w-[900px] rounded-full"
                 style={{ background: 'radial-gradient(circle,rgba(45,212,191,0.06),rgba(20,83,77,0.03) 44%,transparent 72%)', willChange: reducedMotion ? undefined : 'transform' }}
                 animate={reducedMotion ? undefined : { x: [0, 34, -12, 0], y: [0, -24, 18, 0], scale: [1, 1.06, 0.98, 1] }}
                 transition={{ duration: 32, repeat: Infinity, ease: 'easeInOut' }}
             />
-            <motion.div
+            <motion.div data-cosmos-light-layer
                 className="absolute -bottom-[20%] -left-[8%] h-[58%] w-[64%] rounded-full"
                 style={{ background: 'radial-gradient(circle,rgba(212,167,61,0.12),rgba(115,83,35,0.04) 46%,transparent 72%)', willChange: reducedMotion ? undefined : 'transform, opacity' }}
                 animate={reducedMotion ? undefined : { x: [0, 42, 0], opacity: [0.5, 0.72, 0.5] }}
