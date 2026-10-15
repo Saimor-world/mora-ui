@@ -24,11 +24,24 @@ html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-st
 .uv2-widget:focus-visible, .uv2-place:focus-visible { outline: 2px solid #a9d2be; outline-offset: 4px; }
 .uv2-today-status { font-size: 13px; color: rgba(247,244,233,.75); }
 .uv2-cosmos-nebula { will-change: transform; animation: uv2CosmosDrift 90s ease-in-out infinite; }
-.uv2-cosmos-image { background-image: url('/universe/deep-space-warm.jpg'); filter: brightness(1.95) saturate(.92) contrast(.96); }
+.uv2-cosmos-image { background-image: url('/universe/deep-space-warm.jpg'); filter: brightness(2.12) saturate(.94) contrast(.96); }
+/* One painted room image replaces continuously composited full-screen filter layers.
+   Keep source geometry/styles available for the shared lighting probe. */
+html[data-uv2-composed-cosmos="on"] [data-cosmos-light-layer],
+html[data-uv2-composed-cosmos="on"] .uv2-cosmos-nebula { visibility: hidden; }
+html[data-uv2-composed-cosmos="on"] .uv2-cosmos-nebula { animation: none; will-change: auto; }
+.uv2-cosmos-composite { inset: 0; width: 100%; height: 100%; }
+.uv2-cosmos-breath { width: min(24vw, 280px); height: min(30vw, 340px); opacity: .14; will-change: transform, opacity; animation: uv2AmbientBreath 18s ease-in-out infinite; }
+.uv2-cosmos-breath--near { left: 35%; top: 40%; }
+.uv2-cosmos-breath--far { left: 58%; top: 18%; animation-duration: 26s; animation-delay: -9s; }
+@keyframes uv2AmbientBreath { 0%,100% { transform: translate3d(0,0,0) scale(.94); opacity: .10; } 50% { transform: translate3d(18px,-14px,0) scale(1.06); opacity: .23; } }
+@media (prefers-reduced-motion: reduce) { .uv2-cosmos-breath { animation: none; will-change: auto; } }
 html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind] .uv2-planet { filter: none !important; }
 .uv2-myzel-dust { will-change: opacity; animation: uv2DustGlimmer 7s ease-in-out infinite; }
+.uv2-myzel-glint { position: absolute; width: 6px; height: 6px; pointer-events: none; will-change: opacity; animation: uv2DustGlimmer 7s ease-in-out infinite; }
 @keyframes uv2DustGlimmer { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .uv2-myzel-dust { animation: none; will-change: auto; } }
+@media (prefers-reduced-motion: reduce) { .uv2-myzel-glint { animation: none; will-change: auto; } }
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .72 !important; scale: 1; filter: none; }
 html[data-uv2="on"] .group\/moon:focus-within { opacity: 1 !important; }
 html[data-uv2="on"] .uv2-inst-row:hover, html[data-uv2="on"] .uv2-inst-row:focus-visible { background: rgba(46,70,70,.68) !important; box-shadow: inset 2px 0 #a9d2be; }
@@ -38,6 +51,7 @@ html[data-uv2="on"] .uv2-inst-row:hover .uv2-inst-text { color: #f7f4e9; }
 .saimor-moon-orbit:has([role="button"]:hover), .saimor-moon-orbit:focus-within { animation-play-state: paused; }
 body .glass-panel-runtime.glass-panel-runtime[data-maximized="true"],
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { border-radius: 0 !important; border: 0 !important; max-width: 100vw !important; max-height: 100vh !important; }
+html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background-color: #192c30 !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] { width: 40px !important; height: 40px !important; background: none !important; box-shadow: none; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] svg { display: block; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] h3 + p { font-family: Inter, system-ui, sans-serif; font-size: 13px !important; letter-spacing: 0; text-transform: none; color: rgba(247,244,233,.76) !important; }
@@ -88,3 +102,68 @@ html[data-uv2="on"] .uv2-empty-areas summary:focus-visible { outline: 2px solid 
   html[data-uv2="on"] [data-uv2-col="right"] { padding-bottom: 24px; }
   html[data-uv2="on"] .uv2-instrument-details { max-height: calc(100vh - 350px); overflow-y: auto; scrollbar-width: thin; padding-bottom: 12px; }
 }
+
+/* Presence comes from a small, clear response at the object, without washing out the room. */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { transition: scale .22s ease; }
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body::after { content: ''; position: absolute; inset: -4px; border-radius: 50%; border: 1px solid rgba(216,235,220,.66); opacity: 0; pointer-events: none; transition: opacity .18s ease; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) { opacity: 1 !important; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) .saimor-territory-body { scale: 1.055; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) .saimor-territory-body::after { opacity: .85; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) .saimor-territory-name { color: #fff6df !important; }
+html[data-uv2="on"] [data-planet-kind]:focus-visible { outline: none; }
+html[data-uv2="on"] [data-planet-kind]:focus-visible .saimor-territory-body::after { border-width: 2px; }
+html[data-uv2="on"] .uv2-hud > i { display: none; }
+html[data-uv2="on"] .uv2-chip { backdrop-filter: none; -webkit-backdrop-filter: none; background: rgba(30,48,48,.96); }
+html[data-uv2="on"] .group\/moon:focus-within { opacity: 1 !important; }
+html[data-uv2="on"] .group\/moon > [role="button"]:focus-visible { outline: 2px solid #e6f5e8; outline-offset: 4px; }
+.uv2-widget:not(:disabled):is(:hover,:focus-visible) .uv2-widget__detail { color: #fff6df; }
+.uv2-widget:not(:disabled):is(:hover,:focus-visible) .uv2-widget__go { color: #c9f1db !important; transform: translateX(3px); }
+.uv2-widget__go { transition: color .16s ease, transform .16s ease; }
+
+.uv2-knowledge { padding: 24px 30px 36px; color: #f7f4e9; }
+.uv2-knowledge__intro { position: relative; padding: 4px 0 26px; max-width: 640px; }
+.uv2-knowledge__eyebrow { display: flex; align-items: center; gap: 9px; color: #badac8; font: 500 12px/1.5 Inter,system-ui,sans-serif; }
+.uv2-knowledge h2 { margin: 18px 0 12px; font: 400 38px/1.08 "Cormorant Garamond",Georgia,serif; letter-spacing: -.025em; }
+.uv2-knowledge__intro p { max-width: 510px; font-size: 14px; line-height: 1.7; color: rgba(247,244,233,.78); }
+.uv2-knowledge__browse { display: inline-flex; align-items: center; gap: 12px; margin-top: 18px; padding: 9px 13px; border-radius: 10px; background: rgba(169,210,190,.11); border: 1px solid rgba(169,210,190,.26); font-size: 13px; }
+.uv2-knowledge__section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 22px 0 12px; }
+.uv2-knowledge h3 { font: 500 14px/1.5 Inter,system-ui,sans-serif; }
+.uv2-knowledge__section-head > span { color: rgba(247,244,233,.55); font-size: 12px; }
+.uv2-knowledge__spaces { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 10px; }
+.uv2-knowledge__spaces > button { display: grid; grid-template-columns: 1fr auto; gap: 10px; padding: 16px; border-radius: 15px; border: 1px solid rgba(169,210,190,.24); background: linear-gradient(145deg,rgba(169,210,190,.1),rgba(169,210,190,.025)); text-align: left; }
+.uv2-knowledge__spaces > button > svg:first-child { grid-column: 1/-1; color: #b6d6c5; }
+.uv2-knowledge__spaces strong { grid-column: 1/-1; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.uv2-knowledge__spaces > button > span { font-size: 11px; color: rgba(247,244,233,.6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uv2-knowledge__documents > button { display: flex; align-items: center; width: 100%; gap: 13px; border-bottom: 1px solid rgba(247,244,233,.12); padding: 12px 9px; border-radius: 8px; text-align: left; }
+.uv2-knowledge__documents > button > span { flex: 1; min-width: 0; }
+.uv2-knowledge__documents strong,.uv2-knowledge__documents small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.uv2-knowledge__documents strong { font-size: 14px; font-weight: 500; }
+.uv2-knowledge__documents small { margin-top: 4px; color: rgba(247,244,233,.56); font-size: 12px; }
+.uv2-knowledge__empty { padding: 16px 0; max-width: 560px; color: rgba(247,244,233,.65); font-size: 14px; line-height: 1.7; }
+.uv2-knowledge__notice { padding: 16px; border: 1px solid rgba(232,200,130,.25); border-radius: 14px; color: #eddbaf; }
+.uv2-knowledge__notice button { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 13px; }
+.uv2-knowledge__recent { margin-top: 28px; }
+.uv2-knowledge__recent button { padding: 7px 11px; margin: 9px 8px 0 0; border: 1px solid rgba(247,244,233,.18); border-radius: 20px; color: #d7e9dd; font-size: 12px; }
+.uv2-knowledge button { transition: background-color .15s ease,border-color .15s ease; }
+.uv2-knowledge button:disabled { opacity: .5; cursor: default; }
+.uv2-knowledge button:not(:disabled):hover { background-color: rgba(169,210,190,.15); border-color: rgba(169,210,190,.5); }
+.uv2-knowledge button:focus-visible { outline: 2px solid #a9d2be; outline-offset: 3px; }
+@media (max-width: 719px) { .uv2-knowledge { padding: 18px 16px 28px; } .uv2-knowledge h2 { font-size: 30px; } .uv2-knowledge__spaces { grid-template-columns: repeat(2,minmax(0,1fr)); } .uv2-knowledge__section-head { flex-wrap: wrap; } }
+@media (prefers-reduced-motion: reduce) { html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { transition: none; } }
+.uv2-mail-senders { padding: 0 20px 14px; }
+.uv2-mail-senders > summary { cursor: pointer; font-size: 13px; color: #c9dfd1; padding: 8px 0; }
+.uv2-mail-clear-filter { margin: 0 20px 14px; font-size: 12px; color: #e4d5b3; }
+.uv2-mail-reader { background: #192c30; }
+.uv2-mail-reader > div:first-child { background: rgba(247,244,233,.035); }
+.uv2-mail-reader > div:nth-child(2) { padding: 30px clamp(20px,4vw,56px); }
+.uv2-mail-reader h2 { font: 400 32px/1.2 "Cormorant Garamond",Georgia,serif; }
+.uv2-mail-body { max-width: 760px; overflow-wrap: anywhere; }
+.uv2-mail-detail-status { padding: 14px 16px; margin-bottom: 22px; border-radius: 12px; background: rgba(232,200,130,.08); border: 1px solid rgba(232,200,130,.24); color: #eedeb9; font-size: 13px; line-height: 1.6; }
+.uv2-mail-detail-status button { display: block; margin-top: 9px; text-decoration: underline; text-underline-offset: 3px; }
+.uv2-mail-preview-label { margin-bottom: 12px; font-size: 12px; color: #c9d6ce; }
+.uv2-mail-filter-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 50px 24px; text-align: center; }
+.uv2-mail-filter-empty h3 { color: #f7f4e9; font-size: 16px; }
+.uv2-mail-filter-empty p { max-width: 400px; font-size: 14px; color: rgba(247,244,233,.7); line-height: 1.6; }
+.uv2-mail-filter-empty button { color: #c0dfcc; border: 1px solid rgba(169,210,190,.3); border-radius: 9px; padding: 9px 13px; font-size: 13px; }
+html[data-uv2="on"] [data-uv2-mail-row]:is(:hover,:focus-visible) { background: rgba(169,210,190,.12); outline: none; box-shadow: inset 3px 0 #a9d2be; }
+.uv2-mail-senders > summary:focus-visible,.uv2-mail-detail-status button:focus-visible,.uv2-mail-clear-filter:focus-visible { outline: 2px solid #a9d2be; outline-offset: 3px; }

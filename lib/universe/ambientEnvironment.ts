@@ -53,8 +53,8 @@ function nebulaImage() {
 /** Low-resolution lighting probe of the actual nebula and the same ambient layers.
  * Rebuilt on room/viewport changes and occasionally while visible, never per frame.
  */
-export function startAmbientEnvironment(): () => void {
-  let stopped = false, pending = 0, capturing = false, requested = false;
+export function startAmbientEnvironment(onBackdrop?: (canvas: HTMLCanvasElement) => void): () => void {
+  let stopped = false, pending = 0, scheduledAt = 0, capturing = false, requested = false;
   const capture = async () => {
     if (stopped || document.hidden) return;
     if (capturing) { requested = true; return; }
@@ -62,7 +62,8 @@ export function startAmbientEnvironment(): () => void {
     try {
       const image = await nebulaImage(); if (stopped) return;
       const viewportWidth = window.innerWidth, viewportHeight = window.innerHeight;
-      const width = 160, height = Math.max(64, Math.round(width * viewportHeight / viewportWidth));
+      const width = Math.min(1920, Math.round(viewportWidth * Math.min(1.25, window.devicePixelRatio || 1)));
+      const height = Math.round(width * viewportHeight / viewportWidth);
       const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
       const context = canvas.getContext('2d'); if (!context) return;
       const scale = width / viewportWidth;
@@ -76,7 +77,9 @@ export function startAmbientEnvironment(): () => void {
       document.querySelectorAll<HTMLElement>('[data-cosmos-light-layer]').forEach(node => {
         const style = getComputedStyle(node), box = node.getBoundingClientRect();
         if (style.display === 'none' || Number(style.opacity) === 0 || !box.width || !box.height) return;
-        const layer = document.createElement('canvas'); layer.width = Math.max(1, Math.round(box.width * scale)); layer.height = Math.max(1, Math.round(box.height * scale));
+        // Gradients contain no fine image detail: paint them small, then enlarge them.
+        const lightScale = Math.min(scale, 320 / viewportWidth);
+        const layer = document.createElement('canvas'); layer.width = Math.max(1, Math.round(box.width * lightScale)); layer.height = Math.max(1, Math.round(box.height * lightScale));
         const paint = layer.getContext('2d'); if (!paint) return;
         splitGradientLayers(style.backgroundImage).reverse().forEach(gradient => paintGradient(paint, gradient, layer.width, layer.height));
         context.globalAlpha = Number(style.opacity);
@@ -85,20 +88,32 @@ export function startAmbientEnvironment(): () => void {
         context.drawImage(layer, box.left * scale, box.top * scale, box.width * scale, box.height * scale);
       });
       context.filter = 'none'; context.globalAlpha = 1; context.globalCompositeOperation = 'source-over';
-      const rgba = context.getImageData(0, 0, width, height).data;
-      useAmbientEnvironment.setState({ environment: { width, height, rgba, key: String(++generation) } });
-    } catch {
+      onBackdrop?.(canvas);
+      const probe = document.createElement('canvas'); probe.width = 160; probe.height = Math.max(64, Math.round(160 * viewportHeight / viewportWidth));
+      const probeContext = probe.getContext('2d'); if (!probeContext) return;
+      probeContext.drawImage(canvas, 0, 0, probe.width, probe.height);
+      const rgba = probeContext.getImageData(0, 0, probe.width, probe.height).data;
+      useAmbientEnvironment.setState({ environment: { width: probe.width, height: probe.height, rgba, key: String(++generation) } });
+    } catch (error) {
       // Keep the last valid lighting probe if an image is temporarily unavailable.
+      if (process.env.NODE_ENV !== 'production') console.warn('[Cosmos] Room lighting update failed.', error);
     } finally {
       capturing = false;
       if (requested && !stopped) { requested = false; schedule(); }
     }
   };
-  const schedule = () => { window.clearTimeout(pending); pending = window.setTimeout(() => { void capture(); }, 800); };
+  const schedule = () => {
+    const now = performance.now();
+    if (!scheduledAt) scheduledAt = now;
+    window.clearTimeout(pending);
+    // A busy scene must still receive its first image; trailing-only debounce
+    // could postpone it indefinitely while the camera/assistant changes state.
+    pending = window.setTimeout(() => { scheduledAt = 0; void capture(); }, Math.min(800, Math.max(0, 1600 - (now - scheduledAt))));
+  };
   const observer = new MutationObserver(records => {
     if (records.some(record => record.type === 'attributes' || [...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element && (node.matches('[data-cosmos-light-layer]') || node.querySelector('[data-cosmos-light-layer]'))))) schedule();
   });
-  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-ambient-scene', 'data-ambient-band', 'data-ambient-orb', 'data-ambient-lens', 'data-uv2-immersive', 'data-uv2-zoom'] });
+  observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['data-ambient-scene', 'data-ambient-band', 'data-ambient-orb', 'data-ambient-lens', 'data-uv2-immersive', 'data-uv2-zoom', 'data-shot', 'data-settled'] });
   const interval = window.setInterval(() => { void capture(); }, 30_000);
   window.addEventListener('resize', schedule); document.addEventListener('visibilitychange', schedule);
   schedule();

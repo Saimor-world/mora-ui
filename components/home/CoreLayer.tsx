@@ -109,7 +109,7 @@ export const CoreLayer: React.FC = () => {
  * der Wechsel ist eine einzige Kamerafahrt mit MÔRAs Licht als Fluchtpunkt:
  * Home = nah (Universe unscharf dahinter), Universe = weit.
  */
-function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
+const CameraCore = React.memo(function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
     const t = cameraTransition(reduced);
     const [settled, setSettled] = React.useState(shot === 'far');
     // Home bleibt nur während der Fahrt gemountet – im Weitbild fängt es keine Klicks ab.
@@ -161,4 +161,4 @@ function CameraCore({ shot, reduced }: { shot: CameraShot; reduced: boolean }) {
             </motion.div>
         </div>
     );
-}
+});

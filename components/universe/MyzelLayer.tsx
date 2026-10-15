@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useMoraPresence } from '@/lib/universe/moraPresence';
 
 /**
  * Myzel (freigegeben 14.10.): feine organische Jade-Fäden + Sternenstaub vom Stein zur Mitte
  * und von dort zu den Planeten. Liegt hinter den Planeten. Günstig: das Netz wird nur bei
- * Größen-/Planetenänderung neu gezeichnet; der Staub flimmert in gecachten Ebenen, pausiert wenn
- * der Tab verborgen ist oder Bewegung reduziert werden soll.
+ * Größen-/Planetenänderung neu gezeichnet; Staub liegt im selben Bild, nur wenige kleine
+ * Lichtpunkte flimmern. Reduzierte Bewegung wird respektiert.
  * Bei Arbeit führt ein einzelner Jadefaden vom Stein zum Ziel. Kein breites
  * Glühen: Material und Zustand bleiben an Stein und Planet lesbar.
  */
@@ -41,7 +41,7 @@ function hypha(ctx: CanvasRenderingContext2D, R: () => number, x: number, y: num
 export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: string; x: number; y: number }>; focusId?: string | null }) {
     const ref = useRef<HTMLCanvasElement>(null);
     const hostRef = useRef<HTMLDivElement>(null);
-    const dustRefs = useRef<Array<HTMLCanvasElement | null>>([]);
+    const [glints, setGlints] = useState<Array<{ x: number; y: number; warm: boolean }>>([]);
     const presence = useMoraPresence();
     const working = presence.state === 'working' || presence.state === 'done';
     const targetId = working ? presence.target ?? null : null;
@@ -135,19 +135,14 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const lines = cv.getContext('2d'); if (!lines) return;
             lines.setTransform(1, 0, 0, 1, 0, 0); lines.clearRect(0, 0, cv.width, cv.height);
             lines.drawImage(net, 0, 0);
-            // Paint each dust band once. Native opacity animation reuses the texture;
-            // it no longer invalidates a large canvas and nearby glass on every frame.
-            dustRefs.current.forEach((layer, band) => {
-                if (!layer) return;
-                layer.width = cv.width; layer.height = cv.height;
-                const paint = layer.getContext('2d'); if (!paint) return;
-                paint.setTransform(dpr, 0, 0, dpr, 0, 0);
-                dust.forEach(([x, y, r, a, warm], index) => {
-                    if (index % 3 !== band) return;
-                    paint.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * dimNow})`;
-                    paint.beginPath(); paint.arc(x + ox, y + oy, r, 0, 6.3); paint.fill();
-                });
+            // The dust shares the static network image. Only six tiny glints breathe:
+            // animating three mostly empty room-sized textures still costs full-area blending.
+            lines.setTransform(dpr, 0, 0, dpr, 0, 0);
+            dust.forEach(([x, y, r, a, warm]) => {
+                lines.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * dimNow * .8})`;
+                lines.beginPath(); lines.arc(x + ox, y + oy, r, 0, 6.3); lines.fill();
             });
+            setGlints(dust.filter((_, index) => index % 7 === 0).slice(0, 6).map(([x, y, , , warm]) => ({ x: x + ox, y: y + oy, warm })));
         };
 
         build();
@@ -161,6 +156,6 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
 
     return <div ref={hostRef} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true">
         <canvas ref={ref} className="absolute inset-0 h-full w-full" />
-        {[0, 1, 2].map(band => <canvas key={band} ref={node => { dustRefs.current[band] = node; }} className="uv2-myzel-dust absolute inset-0 h-full w-full" style={{ animationDuration: `${7 + band * 2}s`, animationDelay: `${-band * 2}s` }} />)}
+        {glints.map((glint, index) => <span key={index} className="uv2-myzel-glint" style={{ left: glint.x - 3, top: glint.y - 3, background: `radial-gradient(circle, rgba(${glint.warm ? GOLD : J},.55), transparent 65%)`, animationDuration: `${7 + index * 2}s`, animationDelay: `${-index * 2}s` }} />)}
     </div>;
 }

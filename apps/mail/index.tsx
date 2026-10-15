@@ -103,6 +103,10 @@ export default function MailApp({ paneId }: AppProps) {
     const [labelingSuggestionId, setLabelingSuggestionId] = useState<string | null>(null);
     const [uvFilter, setUvFilter] = useState<'all' | 'unread'>('all');
     const [uvSender, setUvSender] = useState<string | null>(null);
+    const [loadedAt, setLoadedAt] = useState<Date | null>(null);
+    const [detailState, setDetailState] = useState<{ id: string; status: 'loading' | 'ready' | 'error' } | null>(null);
+    const listRequest = useRef(0), detailRequest = useRef(0);
+    const filteredMails = useMemo(() => mails.filter(mail => (uvFilter === 'all' || mail.read === false) && (!uvSender || senderName(mail) === uvSender)), [mails, uvFilter, uvSender]);
 
     // For notification logic
     const prevCountRef = useRef<number>(0);
@@ -115,12 +119,15 @@ export default function MailApp({ paneId }: AppProps) {
     );
 
     const fetchMails = useCallback(async () => {
+        const request = ++listRequest.current;
         setLoading(true);
         setError(null);
         try {
             const response = await coreGet('/v3/mail/messages');
+            if (request !== listRequest.current) return;
             const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
             setMails(fetchedMails);
+            setLoadedAt(new Date());
             setSelectedIds(new Set());
             setConfirmingTrash(false);
 
@@ -134,15 +141,17 @@ export default function MailApp({ paneId }: AppProps) {
             initializedRef.current = true;
             broadcastCommunicationSync('mail-fetch');
         } catch (err: any) {
+            if (request !== listRequest.current) return;
             console.error('Failed to load mail:', err);
             setError(err.message || 'Verbindung zum Mailserver fehlgeschlagen');
         } finally {
-            setLoading(false);
+            if (request === listRequest.current) setLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        fetchMails();
+        void fetchMails();
+        return () => { ++listRequest.current; ++detailRequest.current; };
     }, [fetchMails]);
 
     const saveMail = async (mail: MailObject) => {
@@ -217,13 +226,19 @@ export default function MailApp({ paneId }: AppProps) {
     const openMail = async (mail: MailObject) => {
         setViewingMail(mail);
         const id = mailKey(mail);
+        const request = ++detailRequest.current;
+        setDetailState({ id, status: 'loading' });
         try {
             const detail = await coreGet(`/v3/mail/messages/${encodeURIComponent(id)}`);
-            if (!detail || typeof detail !== 'object') return;
+            if (request !== detailRequest.current) return;
+            if (!detail || typeof detail !== 'object') throw new Error('Message unavailable');
             const hydrated = { ...mail, ...detail } as MailObject;
             setViewingMail((current) => current && mailKey(current) === id ? hydrated : current);
             setMails((current) => current.map((item) => mailKey(item) === id ? hydrated : item));
+            setDetailState({ id, status: 'ready' });
         } catch (err) {
+            if (request !== detailRequest.current) return;
+            setDetailState({ id, status: 'error' });
             console.warn('[MailApp] Full message hydration failed', err);
         }
     };
@@ -389,7 +404,7 @@ export default function MailApp({ paneId }: AppProps) {
             resizable
             {...GLASS_SHEET_PRESENTATION}
         >
-            <div className="flex flex-col h-full relative">
+            <div className="flex flex-col h-full min-h-0 relative" data-uv2-app="mail">
                 {!viewingMail && !composing && (
                     <div className="flex items-center justify-between p-4 border-b border-white/10">
                         <div className="flex items-center gap-3">
@@ -397,7 +412,8 @@ export default function MailApp({ paneId }: AppProps) {
                                 <Mail className="w-5 h-5 text-red-400" />
                             </div>
                             <div>
-                                <p className="text-xs text-white/50 font-bold uppercase tracking-wider">Posteingang</p>
+                                <p className="text-sm text-white/85 font-medium">Posteingang</p>
+                                <p className="mt-1 text-[11px] text-white/60" role="status">{loading ? 'Nachrichten werden geladen …' : error ? 'Abruf fehlgeschlagen' : loadedAt ? `Abgerufen um ${loadedAt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}` : 'Noch nicht abgerufen'}</p>
                             </div>
                         </div>
 
@@ -446,12 +462,15 @@ export default function MailApp({ paneId }: AppProps) {
                                 <span style={{ flex: 1 }} />
                                 <button type="button" className="uv2-pill" data-testid="mail-v2-newest" onClick={() => void openMail(mails[0])}><Mail />Neueste</button>
                             </div>
+                            <details className="uv2-mail-senders"><summary>Nach Absender filtern{uvSender ? ` · ${uvSender}` : ''}</summary>
                             <TileGrid label="Absender" size="s">
                                 {[...senders.entries()].slice(0, 10).map(([name, e]) => (
                                     <Tile key={name} testId={`mail-sender-${name}`} icon={<span className="uv2-mono-glyph">{name.charAt(0).toUpperCase()}</span>} label={name}
                                         badge={e.unread || undefined} active={uvSender === name} onClick={() => setUvSender(uvSender === name ? null : name)} />
                                 ))}
                             </TileGrid>
+                            </details>
+                            {uvSender && <button type="button" className="uv2-mail-clear-filter" onClick={() => setUvSender(null)}>Absenderfilter aufheben</button>}
                         </div>
                     );
                 })()}
@@ -547,7 +566,7 @@ export default function MailApp({ paneId }: AppProps) {
                 )}
 
                 {/* Mail List */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 min-h-0 overflow-y-auto">
                     {loading && !viewingMail && (
                         <div className="flex items-center justify-center h-full">
                             <Loader2 className="animate-spin w-8 h-8 text-emerald-500" />
@@ -570,7 +589,7 @@ export default function MailApp({ paneId }: AppProps) {
                         <div className="flex h-full items-center justify-center">
                             {summary.mailConfigured
                                 ? <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Der Posteingang ist leer."
-                                    text="Nichts wartet auf dich. MÔRA sortiert neue Post, sobald sie ankommt."
+                                    text="Beim letzten Abruf wurden keine Nachrichten geladen. Du kannst den Eingang aktualisieren oder eine Nachricht schreiben."
                                     action={{ label: 'Nachricht schreiben', onClick: () => setComposing(true) }} />
                                 : <AppEmpty glyph={<Inbox size={22} strokeWidth={1.25} />} title="Deine Post, ruhig sortiert."
                                     text="Verbinde dein Postfach. MÔRA hebt hervor, was eine Antwort braucht, und lässt den Rest leise."
@@ -591,13 +610,21 @@ export default function MailApp({ paneId }: AppProps) {
                         </div>
                     )}
 
-                    {!loading && !viewingMail && (uv2() ? mails.filter((m) => (uvFilter === 'all' || m.read === false) && (!uvSender || senderName(m) === uvSender)) : mails).map((mail) => {
+                    {!loading && !error && !viewingMail && uv2() && mails.length > 0 && filteredMails.length === 0 && <div className="uv2-mail-filter-empty" role="status">
+                        <Mail size={24} strokeWidth={1.3} /><h3>Keine Nachrichten in diesem Filter.</h3><p>Dein Posteingang bleibt erhalten. Zeige alle Nachrichten an, um weiterzulesen.</p>
+                        <button type="button" onClick={() => { setUvFilter('all'); setUvSender(null); }}>Alle Nachrichten anzeigen</button>
+                    </div>}
+                    {!loading && !error && !viewingMail && (uv2() ? filteredMails : mails).map((mail) => {
                         const id = mailKey(mail);
                         const selected = selectedIds.has(id);
                         return (
                             <div
                                 key={mail.id}
                                 onClick={() => selectionMode ? toggleSelection(mail) : openMail(mail)}
+                                role="button"
+                                tabIndex={0}
+                                aria-label={`${mail.subject || 'Nachricht ohne Betreff'} von ${senderName(mail)} öffnen`}
+                                onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); if (selectionMode) toggleSelection(mail); else void openMail(mail); } }}
                                 data-uv2-mail-row={mail.read === false ? 'unread' : 'read'}
                                 className={`p-4 border-b border-white/5 transition-colors cursor-pointer group flex items-start gap-4 ${selected ? 'bg-emerald-400/[0.055]' : 'hover:bg-white/5'}`}
                             >
@@ -641,10 +668,11 @@ export default function MailApp({ paneId }: AppProps) {
                             initial={{ opacity: 0, x: 20 }}
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 20 }}
-                            className="absolute inset-0 bg-[#0a0a0a]/95 backdrop-blur-md flex flex-col z-20"
+                            className="uv2-mail-reader absolute inset-0 flex flex-col z-20"
                         >
                             <div className="flex items-center gap-3 p-4 border-b border-white/10">
                                 <button
+                                    aria-label="Zurück zum Posteingang"
                                     onClick={() => setViewingMail(null)}
                                     className="p-2 -ml-2 rounded-lg hover:bg-white/10 text-white/60 transition-colors"
                                 >
@@ -669,7 +697,12 @@ export default function MailApp({ paneId }: AppProps) {
                                     </div>
                                 </div>
 
-                                <div className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-light">
+                                {detailState?.id === mailKey(viewingMail) && detailState.status === 'loading' && <p className="uv2-mail-detail-status" role="status">Vollständige Nachricht wird geladen …</p>}
+                                {detailState?.id === mailKey(viewingMail) && detailState.status === 'error' && <div className="uv2-mail-detail-status" role="alert">
+                                    <p>Die vollständige Nachricht konnte nicht geladen werden.</p><button type="button" onClick={() => void openMail(viewingMail)}>Erneut laden</button>
+                                </div>}
+                                {!viewingMail.body_text && <p className="uv2-mail-preview-label">Vorschau · vollständiger Nachrichtentext noch nicht verfügbar</p>}
+                                <div className="uv2-mail-body text-white/85 text-[15px] leading-[1.85] whitespace-pre-wrap font-normal">
                                     {viewingMail.body_text || viewingMail.snippet}
                                 </div>
 

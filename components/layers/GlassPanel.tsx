@@ -8,6 +8,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { getAppManifest } from '@/lib/apps/appRegistry';
 import type { AppCategory } from '@/lib/apps/types';
+import { fitPanePosition } from '@/lib/os/paneGeometry';
 
 const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
     core: 'Kern',
@@ -158,7 +159,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
     const [isDragging, setIsDragging] = useState(false);
     const [isResizing, setIsResizing] = useState(false);
     const [isMaximized, setIsMaximized] = useState(false);
-    const preMaximizeRef = useRef<{ position: { x: number; y: number }; size: { width: number; height: number } } | null>(null);
+    const preMaximizeRef = useRef<{ position: { x: number; y: number }; size: { width: number; height: number }; viewport: { width: number; height: number } } | null>(null);
 
     // Live viewport size — updates on resize/F11/zoom so drag bounds stay correct
     const [viewportSize, setViewportSize] = useState({
@@ -166,6 +167,7 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         height: typeof window !== 'undefined' ? window.innerHeight : 1080,
     });
     const isCompactViewport = viewportSize.width < 720;
+    const previousViewport = useRef(viewportSize);
     const compactPanelSize = {
         width: Math.max(304, viewportSize.width - 16),
         height: Math.max(360, viewportSize.height - 148),
@@ -232,15 +234,13 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
     // Re-clamp normal panes into viewport after F11/zoom/resize
     useEffect(() => {
+        const oldViewport = previousViewport.current;
+        previousViewport.current = viewportSize;
         if (isMaximized) return;
-        const margin = 20;
-        const maxX = viewportSize.width - panelSize.width - margin;
-        const maxY = viewportSize.height - panelSize.height - 80; // dock clearance
-        const clampedX = Math.max(margin, Math.min(panelPosition.x, maxX));
-        const clampedY = Math.max(margin, Math.min(panelPosition.y, maxY));
-        if (clampedX !== panelPosition.x || clampedY !== panelPosition.y) {
-            setPanelPosition({ x: clampedX, y: clampedY });
-            onPositionChange?.(clampedX, clampedY);
+        const next = fitPanePosition(panelPosition, panelSize, viewportSize, oldViewport);
+        if (next.x !== panelPosition.x || next.y !== panelPosition.y) {
+            setPanelPosition(next);
+            onPositionChange?.(next.x, next.y);
         }
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [viewportSize]);
@@ -259,7 +259,8 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
         if (!isMaximized) {
             preMaximizeRef.current = {
                 position: panelPosition,
-                size: panelSize
+                size: panelSize,
+                viewport: { width: window.innerWidth, height: window.innerHeight },
             };
             const nextPosition = { x: 0, y: 0 };
             const nextSize = { width: window.innerWidth, height: window.innerHeight };
@@ -274,9 +275,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
 
         const restore = preMaximizeRef.current;
         if (restore) {
-            setPanelPosition(restore.position);
+            const position = fitPanePosition(restore.position, restore.size, { width: window.innerWidth, height: window.innerHeight }, restore.viewport);
+            setPanelPosition(position);
             setPanelSize(restore.size);
-            onPositionChange?.(restore.position.x, restore.position.y);
+            onPositionChange?.(position.x, position.y);
             onResize?.(restore.size.width, restore.size.height);
         }
         setIsMaximized(false);
@@ -471,7 +473,10 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 }}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
-                onClick={onFocus}
+                // Focus the source before a child opens a new app. Bubbling click focus
+                // otherwise raises the source over the destination it just launched.
+                onPointerDownCapture={() => { if (!effectiveIsActive) onFocus?.(); }}
+                onFocusCapture={() => { if (!effectiveIsActive) onFocus?.(); }}
                 initial={disableAnimations ? false : {
                     opacity: 0,
                     scale: 0.05,
@@ -534,9 +539,9 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                 )}
 
                 {/* UPGRADE A1: Elegant Borders - reduced in standard mode */}
-                <div className={`absolute inset-0 pointer-events-none border ${isStandardMode ? 'rounded-[4px] border-[#E1E1E1]' : 'rounded-[24px] border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
+                <div style={{ borderRadius: isMaximized ? 0 : undefined }} className={`absolute inset-0 pointer-events-none border ${isStandardMode ? 'rounded-[4px] border-[#E1E1E1]' : 'rounded-[24px] border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]'}`} />
                 {!isStandardMode && effectiveIsActive && (
-                    <div className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
+                    <div style={{ borderRadius: isMaximized ? 0 : undefined }} className="absolute inset-0 rounded-[24px] pointer-events-none border-t border-white/20 opacity-50" />
                 )}
                 {/* UPGRADE C1: Enhanced Header with minimize and tabs */}
                 {(title || showBackButton || showCloseButton || showMinimizeButton || allowMaximize || tabs.length > 0) && (
