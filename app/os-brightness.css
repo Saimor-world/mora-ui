@@ -52,8 +52,8 @@ html[data-uv2="on"] .uv2-inst-row:hover .uv2-inst-text { color: #f7f4e9; }
 body .glass-panel-runtime.glass-panel-runtime[data-maximized="true"],
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { border-radius: 0 !important; border: 0 !important; max-width: 100vw !important; max-height: 100vh !important; }
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime[data-maximized="true"] { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; background-color: #192c30 !important; }
-html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] { width: 40px !important; height: 40px !important; background: none !important; box-shadow: none; }
-html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] [data-mora-identity] svg { display: block; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div[data-mora-identity]:first-child { width: 40px !important; height: 40px !important; background: none !important; box-shadow: none !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div[data-mora-identity]:first-child svg { display: block; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] h3 + p { font-family: Inter, system-ui, sans-serif; font-size: 13px !important; letter-spacing: 0; text-transform: none; color: rgba(247,244,233,.76) !important; }
 html[data-uv2="on"] body:not(.standard-mode) [data-uv2-msg="welcome"] p:first-of-type { font-family: Inter, system-ui, sans-serif; font-size: 16px; line-height: 1.65; margin-bottom: 0; }
 @media (max-width: 639px) {
@@ -167,3 +167,59 @@ html[data-uv2="on"] .group\/moon > [role="button"]:focus-visible { outline: 2px 
 .uv2-mail-filter-empty button { color: #c0dfcc; border: 1px solid rgba(169,210,190,.3); border-radius: 9px; padding: 9px 13px; font-size: 13px; }
 html[data-uv2="on"] [data-uv2-mail-row]:is(:hover,:focus-visible) { background: rgba(169,210,190,.12); outline: none; box-shadow: inset 3px 0 #a9d2be; }
 .uv2-mail-senders > summary:focus-visible,.uv2-mail-detail-status button:focus-visible,.uv2-mail-clear-filter:focus-visible { outline: 2px solid #a9d2be; outline-offset: 3px; }
+.uv2-mail-actions { padding: 16px 20px; border-top: 1px solid rgb(210 241 233 / .13); display: flex; flex-wrap: wrap; gap: 10px; background: #1a3032; }
+.uv2-mail-actions > button { flex: 1 1 150px; min-height: 44px; }
+.uv2-mail-action { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 10px 15px; border: 1px solid rgb(208 236 225 / .2); border-radius: 12px; color: #edf8f2 !important; background: #29403e !important; font-size: 13px; line-height: 1.45; transition: background .18s, border-color .18s; }
+.uv2-mail-action--mora { background: #315b50 !important; border-color: #7aa28a !important; }
+.uv2-mail-action:hover { background: #3b665a !important; border-color: #b0d2bc !important; }
+.uv2-mail-action:focus-visible { outline: 2px solid #c9e7d0; outline-offset: 3px; }
+.uv2-mail-action:disabled { opacity: .5; cursor: default; }
+.uv2-mail-composer { background: #1a3033; }
+.uv2-mail-field { display: flex; flex-direction: column; gap: 6px; color: #bed1c9; font-size: 12px; }
+.uv2-mail-field input { width: 100%; padding: 9px 10px; background: rgb(9 26 28 / .3); border: 1px solid rgb(220 241 230 / .16); border-radius: 8px; color: #f3f8f5; font-size: 14px; }
+.uv2-mail-field--body { flex: 1; min-height: 80px; }
+.uv2-mail-field textarea { flex: 1; min-height: 0; width: 100%; resize: none; padding: 12px; background: rgb(9 26 28 / .25); border: 1px solid rgb(220 241 230 / .16); border-radius: 10px; color: #f3f8f5; font-size: 15px; line-height: 1.75; }
+.uv2-mail-field input:focus, .uv2-mail-field textarea:focus { outline: 2px solid #a1c9b5; outline-offset: 1px; }
+
+.uv2-mora-context { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; padding: 14px 22px; background: linear-gradient(115deg, #29453e, #233a3e); border-bottom: 1px solid rgb(210 237 221 / .15); }
+.uv2-mora-context > div:first-child { flex: 1; min-width: 160px; }
+.uv2-mora-context__eyebrow { display: block; margin-bottom: 5px; color: #d1ddba; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; }
+.uv2-mora-context__status { max-width: 240px; color: #d9e8de; font-size: 12px; }
+
+.uv2-mora-start { width: 100%; max-width: 780px; margin: auto; padding: 8px 0 20px; }
+.uv2-mora-start__eyebrow { color: #d7dbb5; font-size: 10px; text-transform: uppercase; letter-spacing: .18em; }
+.uv2-mora-start h2 { margin: 10px 0 12px; font-size: clamp(23px, 3vw, 34px) !important; font-weight: 400 !important; line-height: 1.2; letter-spacing: -.025em; color: #f1f6ed; }
+.uv2-mora-start__intro { max-width: 590px; color: #d0ded6; font-size: 14px; line-height: 1.75; }
+.uv2-mora-start__primary { display: flex; align-items: center; gap: 14px; width: 100%; margin: 24px 0 16px; padding: 18px; text-align: left; border-radius: 18px; background: linear-gradient(115deg, #37594b, #2d4944) !important; border: 1px solid #93ac86 !important; color: #f5f7e9 !important; }
+.uv2-mora-start__primary > span { flex: 1; }
+.uv2-mora-start__primary strong { display: block; font-size: 15px; font-weight: 500; }
+.uv2-mora-start__primary small { display: block; margin-top: 5px; font-size: 12px; color: #d4e0cf; line-height: 1.5; }
+.uv2-mora-start__sources { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+.uv2-mora-start__sources > button { display: flex; align-items: flex-start; gap: 9px; padding: 14px 11px; border: 1px solid rgb(215 238 222 / .17); border-radius: 13px; background: rgb(78 113 100 / .14); text-align: left; color: #dce8df; }
+.uv2-mora-start__sources > button > span { flex: 1; min-width: 0; }
+.uv2-mora-start__sources strong { display: block; font-size: 12px; font-weight: 500; }
+.uv2-mora-start__sources span > span { display: block; margin-top: 7px; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; color: #c3d5cb; }
+.uv2-mora-start__sources small { display: block; margin-top: 7px; font-size: 10px; color: #a7bdb1; }
+.uv2-mora-start__paths { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 20px; }
+.uv2-mora-start__paths button { display: grid; grid-template-columns: 1fr auto; gap: 5px 12px; text-align: left; padding: 14px; border: 1px solid rgb(210 235 218 / .12); border-radius: 13px; background: rgb(197 221 198 / .045); color: #dce8dc; }
+.uv2-mora-start__paths strong { font-size: 13px; font-weight: 500; }
+.uv2-mora-start__paths span { grid-column: 1; font-size: 12px; line-height: 1.6; color: #b4c9bc; }
+.uv2-mora-start__paths svg { grid-row: 1; grid-column: 2; }
+.uv2-mora-start button:hover { border-color: #b7d2b7 !important; background-color: rgb(105 145 120 / .26) !important; }
+.uv2-mora-start button:focus-visible { outline: 2px solid #c5debc; outline-offset: 3px; }
+.uv2-mora-start__footnote { margin-top: 20px; font-size: 11px; line-height: 1.7; color: #a4bdaf; }
+.uv2-mora-start__notice { margin: 16px 0; color: #d2dfcf; font-size: 13px; line-height: 1.7; }
+.uv2-mora-start__notice button { margin-top: 8px; text-decoration: underline; }
+@media (max-width: 600px) { .uv2-mora-start__sources, .uv2-mora-start__paths { grid-template-columns: 1fr; } .uv2-mora-start__primary { margin-top: 18px; } }
+
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div[data-mora-identity]:first-child img { position: absolute; inset: 0; width: 40px; height: 40px; display: block !important; object-fit: contain; opacity: 1; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-chat-head] > div[data-mora-identity]:first-child svg { position: absolute; inset: 0; display: block !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] .uv2-mora-start h2 { font-size: clamp(26px, 3vw, 34px) !important; line-height: 1.2; }
+html[data-uv2="on"] [data-uv2-app-chat] .uv2-mora-start p, html[data-uv2="on"] [data-uv2-app-chat] .uv2-mora-start button { font-weight: 400; }
+
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] [data-uv2-msg="assistant"] > [data-mora-result] { width: 100%; max-width: 100% !important; padding: 22px !important; background: #29413e !important; border: 1px solid #738f7b !important; border-radius: 18px !important; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] [data-uv2-msg="assistant"] > [data-mora-result] .uv2-mora-result-label { margin-bottom: 15px; font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: #d5debe; }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] [data-uv2-msg="assistant"] > [data-mora-result] .leading-relaxed { line-height: 1.85; }
+
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] { background: rgba(30, 52, 54, .94); }
+html[data-uv2="on"] body:not(.standard-mode) [data-uv2-app-chat] [data-uv2-msg="assistant"] > [data-mora-result]::before { content: none; }

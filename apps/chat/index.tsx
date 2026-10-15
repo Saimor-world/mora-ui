@@ -22,7 +22,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { readMoraWorkspaceIntent } from '@/lib/os/openMoraWorkspace';
+import { readMoraWorkspaceIntent, currentMoraIdentityKey } from '@/lib/os/openMoraWorkspace';
+import { currentMailDraftScope, useMailDraftStore, type MailReplyTarget } from '@/lib/mail/mailDraft';
 import { MoraFace } from '@/components/mora/MoraFace';
 import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
@@ -34,8 +35,10 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
-import { learnInsight, searchMemory } from '@/lib/api/coreClient';
-import { buildChatContext } from '@/lib/api/moraAgentClient';
+import { CoreError, learnInsight, searchMemory } from '@/lib/api/coreClient';
+import { buildChatContext, moraAgentClient } from '@/lib/api/moraAgentClient';
+import { toast } from 'sonner';
+import { getMoraPresence, setMoraPresence } from '@/lib/universe/moraPresence';
 import { useMoraPerception } from '@/lib/queries/useMoraPerception';
 import { isMoraPerceiveV1Enabled } from '@/lib/featureFlags';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
@@ -68,6 +71,7 @@ import { fetchMoraMemories, type MoraMemory } from '@/lib/api/memoryClient';
 import { MemoriesView } from './components/MemoriesView';
 import MoraUpdatesFeed from '@/components/mora/MoraUpdatesFeed';
 import { MemoryStats } from '@/components/mora/MoraMemory';
+import { MoraWorkspaceStart } from './components/MoraWorkspaceStart';
 import { SaveInsightButton, MemoryHint, RelevantMemories } from './components/MemoryComponents';
 import { MORA_MODES, sendModeMessage, type MoraMode, type MoraModeResult } from '@/lib/mora/moraModes';
 import { MoraModeAnswer } from '@/components/mora/MoraModeAnswer';
@@ -87,6 +91,12 @@ interface Message {
     content: string;
     timestamp: Date;
     isTyping?: boolean;
+    displayContent?: string;
+    workspaceAnswer?: boolean;
+    responseTo?: string;
+    failed?: boolean;
+    mailReplyFor?: string;
+    mailDraftErrorFor?: string;
     savedAsInsight?: boolean; // Track if message was saved as insight
     pendingAction?: PendingAction;
     /** set when the agent produced a work-session plan; used to open WorkSessionPane */
@@ -230,6 +240,12 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     const messageScrollRef = useRef<HTMLDivElement>(null);
     const followConversationRef = useRef(true);
     const lastUserMessageRef = useRef<string | null>(null);
+    const [mailReplyRequest, setMailReplyRequest] = useState<{ target: MailReplyTarget; questionId: string; identity: string; companyId: string | null } | null>(null);
+    const directRequest = useRef(0);
+    useEffect(() => () => {
+        ++directRequest.current;
+        if (getMoraPresence().target === paneId) setMoraPresence({ state: 'calm' });
+    }, [paneId]);
     const initialMessageProcessed = useRef<string | null>(null);
     const hasPromptedSetupRef = useRef(false);
 
@@ -620,10 +636,42 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     }, [activeCompanyId, activeDepartmentId, activeFolderId, activeSpaceId, executeSearch, openPane]);
 
     // Process message content (used by both sendMessage and initial message handler)
-    const processMessage = useCallback(async (content: string) => {
+    const processMessage = useCallback(async (content: string, mailQuestionId?: string, readOnly = false, questionId?: string) => {
         setIsLoading(true);
         setAmbiguityChoice(null);
         setOpenIntentReceipt(null);
+
+        if (mailQuestionId || readOnly) {
+            const scope = currentMailDraftScope();
+            const request = ++directRequest.current;
+            setMoraPresence({ state: 'thinking', target: paneId });
+            try {
+                // Use the conversation endpoint directly. Quoted mail must never pass
+                // through navigation, memory-write or agent/tool intent detection.
+                const result = await moraAgentClient.chat({ message: content, history: [], context: { pane_id: paneId } });
+                if (scope !== currentMailDraftScope() || request !== directRequest.current) return;
+                if (!result.response?.trim()) throw new Error('Empty answer');
+                setMoraPresence({ state: 'done', target: paneId });
+                setMessages(previous => [...previous, {
+                    id: crypto.randomUUID(), role: 'assistant', content: result.response,
+                    timestamp: new Date(), mailReplyFor: mailQuestionId, workspaceAnswer: readOnly, responseTo: mailQuestionId ?? questionId,
+                }]);
+            } catch (error) {
+                if (scope !== currentMailDraftScope() || request !== directRequest.current) return;
+                const failure = error instanceof CoreError && error.status === 401
+                    ? 'Deine Sitzung ist abgelaufen. Bitte melde dich erneut an.'
+                    : error instanceof CoreError && error.status === 403
+                        ? 'Für diese Anfrage fehlen dir Zugriffsrechte.'
+                        : mailQuestionId ? 'Ich konnte den Antwortentwurf gerade nicht formulieren. Deine Mail bleibt unverändert.' : 'Ich konnte den verfügbaren Stand gerade nicht einordnen. Bitte versuche es erneut.';
+                setMoraPresence({ state: 'needs', target: paneId });
+                setMessages(previous => [...previous, {
+                    id: crypto.randomUUID(), role: 'assistant',
+                    content: failure,
+                    timestamp: new Date(), mailDraftErrorFor: mailQuestionId, responseTo: mailQuestionId ?? questionId, failed: true,
+                }]);
+            } finally { if (request === directRequest.current) setIsLoading(false); }
+            return;
+        }
 
         // ── Recall-Intent: direkt aus Memory rendern, kein Agent-Call ──────────────
         if (detectRecallIntent(content)) {
@@ -1013,6 +1061,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
     initialMessageSender.current = processMessage;
     useEffect(() => {
         if (initialMessage && initialMessageRequest && initialMessageProcessed.current !== initialMessageRequest) {
+            if (isLoading || isStreaming || isFrameStreaming) return;
             if (initialMessageId && readMoraWorkspaceIntent(paneId)?.requestId !== initialMessageId) return;
 
             // Set input as visual feedback
@@ -1021,34 +1070,53 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             const timer = window.setTimeout(() => {
                 if (initialMessageId && readMoraWorkspaceIntent(paneId)?.requestId !== initialMessageId) return;
                 initialMessageProcessed.current = initialMessageRequest;
+                setChatView('chat');
                 const userMessage: Message = {
                     id: crypto.randomUUID(),
                     role: 'user',
                     content: initialMessage,
                     timestamp: new Date()
                 };
+                const launch = readMoraWorkspaceIntent(paneId);
+                setMailReplyRequest(launch?.source === 'mail' && launch.mailReply ? {
+                    target: launch.mailReply, questionId: userMessage.id,
+                    identity: launch.identityKey, companyId: launch.requestedCompanyId,
+                } : null);
                 setMessages(prev => [...prev, userMessage]);
                 setInput('');
-                void initialMessageSender.current(userMessage.content);
+                void initialMessageSender.current(userMessage.content, launch?.source === 'mail' && launch.mailReply ? userMessage.id : undefined);
             }, 300);
 
             return () => window.clearTimeout(timer);
         }
-    }, [initialMessage, initialMessageId, initialMessageRequest, paneId]);
+    }, [initialMessage, initialMessageId, initialMessageRequest, paneId, isLoading, isStreaming, isFrameStreaming]);
 
-    const sendMessage = async () => {
-        if (!input.trim() || isLoading || isStreaming || isFrameStreaming) return;
+    const activeMailReply = mailReplyRequest
+        && mailReplyRequest.identity === currentMoraIdentityKey()
+        && mailReplyRequest.companyId === (activeCompanyId ?? null) ? mailReplyRequest : null;
+    const mailAnswerId = activeMailReply ? messages.find(message => message.mailReplyFor === activeMailReply.questionId)?.id : undefined;
+    const mailDraftFailed = activeMailReply && !mailAnswerId && messages.some(message => message.mailDraftErrorFor === activeMailReply.questionId);
+    const takeMailDraft = (content: string) => {
+        if (!activeMailReply) return;
+        const started = useMailDraftStore.getState().startReply(currentMailDraftScope(), activeMailReply.target, content);
+        if (!started) toast.info('Dein vorhandener Entwurf bleibt erhalten. Du kannst den Vorschlag aus dem Gespräch kopieren.');
+        openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1040, height: 720 } });
+    };
+
+    const sendMessage = async (prepared = input, readOnly = false, displayContent?: string) => {
+        if (!prepared.trim() || isLoading || isStreaming || isFrameStreaming) return;
 
         const userMessage: Message = {
             id: crypto.randomUUID(),
             role: 'user',
-            content: input.trim(),
+            content: prepared.trim(),
+            displayContent,
             timestamp: new Date()
         };
 
         setMessages(prev => [...prev, userMessage]);
         setInput('');
-        if (moraMode !== 'denken' && agentMode === 'mora') {
+        if (!readOnly && moraMode !== 'denken' && agentMode === 'mora') {
             setIsLoading(true);
             try {
                 const history = messages.filter((m) => !m.isTyping).map(({ role, content }) => ({ role, content }));
@@ -1074,11 +1142,12 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
             }
             return;
         }
-        await processMessage(userMessage.content);
+        await processMessage(userMessage.content, undefined, readOnly, userMessage.id);
     };
 
     if (!pane || pane.minimized) return null;
     const hasUserMessage = messages.some((message) => message.role === 'user');
+    const answeredQuestions = new Set(messages.filter(message => message.responseTo && !message.failed).map(message => message.responseTo));
 
     // ── Fullscreen wrapper ───────────────────────────────────────────────────
     const chatInner = (
@@ -1090,13 +1159,13 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                     ? 'bg-[#0078D4]'
                     : 'bg-gradient-to-br from-violet-400 to-cyan-500'
                     }`}>
-                    {uv2() ? <><img src="/brand/mora-stone-v1.png" alt="" width={40} height={40} draggable={false} /><MoraFace size={40} /></> : <Sparkles className="w-5 h-5 text-white" />}
+                    {uv2() ? <><img src="/brand/mora-stone-v1.png" alt="" width={40} height={40} draggable={false} /><MoraFace size={40} state={isLoading || isStreaming || isFrameStreaming ? 'think' : undefined} /></> : <Sparkles className="w-5 h-5 text-white" />}
                 </div>
                 <div>
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
                         }`}>{MN()}</h3>
                     <p className={`text-xs ${isStandardMode ? 'text-[#0078D4]' : 'text-violet-400'
-                        }`}>{agentMode === 'codex' ? 'Code & Systemarbeit' : uv2() ? 'Ich bin da' : 'Deine KI-Begleiterin'}</p>
+                        }`}>{isLoading || isStreaming || isFrameStreaming ? 'Ich denke mit …' : agentMode === 'codex' ? 'Code & Systemarbeit' : uv2() ? 'Ich bin da' : 'Deine KI-Begleiterin'}</p>
                 </div>
                 <div className="ml-auto flex items-center gap-2">
                     {/* Engineering mode toggle — codex agent inside MÔRA */}
@@ -1146,7 +1215,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                     : 'border-transparent text-white/40 hover:text-white/70'
                         }`}
                     >
-                        {tab === 'chat' ? 'Chat' : tab === 'memories' ? 'Erinnerungen' : 'Signale'}
+                        {tab === 'chat' ? (uv2() ? 'Arbeitsraum' : 'Chat') : tab === 'memories' ? 'Erinnerungen' : 'Signale'}
                     </button>
                 ))}
             </div>
@@ -1192,12 +1261,27 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 </div>
             )}
 
+            {activeMailReply && chatView === 'chat' && (
+                <div className="uv2-mora-context" data-testid="mora-mail-context">
+                    <div className="min-w-0"><span className="uv2-mora-context__eyebrow">Mail → Antwortentwurf</span>
+                        <p className="truncate text-sm text-white/95">{activeMailReply.target.subject}</p>
+                        <p className="truncate text-xs text-white/65">An {activeMailReply.target.to || 'Empfänger noch prüfen'}</p>
+                    </div>
+                    <div className="uv2-mora-context__status" role="status">{isLoading ? 'Entwurf wird formuliert …' : mailAnswerId ? 'Vorschlag bereit · noch nicht versendet' : mailDraftFailed ? 'Antwort gerade nicht verfügbar' : 'Mail liegt als Kontext vor'}</div>
+                    {mailDraftFailed && <button type="button" className="uv2-mail-action" disabled={isLoading} onClick={() => {
+                        const question = messages.find(message => message.id === activeMailReply.questionId);
+                        if (question) void processMessage(question.content, question.id);
+                    }}>Erneut versuchen</button>}
+                </div>
+            )}
+
             {/* Messages */}
             <div ref={messageScrollRef} data-uv2-chat-stream
                 onScroll={(event) => { const scroll = event.currentTarget; followConversationRef.current = scroll.scrollHeight - scroll.scrollTop - scroll.clientHeight < 64; }}
                 className={`min-h-0 flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 ${isFullscreen ? 'max-w-4xl mx-auto w-full' : ''} ${chatView !== 'chat' ? 'hidden' : ''}`}>
+                {uv2() && !hasUserMessage && !isLoading && !isStreaming && !isFrameStreaming && <MoraWorkspaceStart context={activeDepartment?.name || moraCtx.scopeLabels.company} onAsk={(question, label) => void sendMessage(question, true, label)} />}
                 {/* Empty state — shown when no messages yet */}
-                {messages.length === 0 && !isStreaming && !isFrameStreaming && (
+                {!uv2() && messages.length === 0 && !isStreaming && !isFrameStreaming && (
                     <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4 py-8 select-none">
                         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
                             isStandardMode
@@ -1238,7 +1322,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                 )}
 
                 <AnimatePresence>
-                    {messages.filter((message) => message.id !== 'welcome' || !hasUserMessage).map((msg) => (
+                    {messages.filter(message => (!message.failed || !message.responseTo || !answeredQuestions.has(message.responseTo)) && (message.id !== 'welcome' || (!uv2() && !hasUserMessage))).map((msg) => (
                         <motion.div
                             key={msg.id}
                             initial={{ opacity: 0, y: 10 }}
@@ -1247,7 +1331,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                             data-uv2-msg={msg.id === 'welcome' ? 'welcome' : msg.role}
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                         >
-                            <div className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode
+                            <div data-mora-result={msg.mailReplyFor ? 'mail-draft' : msg.workspaceAnswer ? 'briefing' : undefined} className={`max-w-[80%] ${isFullscreen ? 'px-6 py-4' : 'px-4 py-3'} ${isStandardMode
                                 ? msg.role === 'user'
                                     ? 'border text-[#1F1F1F] rounded-lg'
                                     : 'bg-gray-50 border border-gray-200 text-[#1F1F1F] rounded-lg'
@@ -1262,6 +1346,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                     background: `${userAura}1a`,
                                     borderColor: `${userAura}40`,
                                 }) : undefined}>
+                                {(msg.mailReplyFor || msg.workspaceAnswer) && <p className="uv2-mora-result-label">{msg.mailReplyFor ? 'Antwortvorschlag' : 'Einordnung'}</p>}
                                 {/* Sprint 3: "Mora erinnert sich" recall indicator */}
                                 {msg.role === 'assistant' && msg.recalledMemoryIds && msg.recalledMemoryIds.length > 0 && (
                                     <div className="mb-1 inline-flex items-center gap-1 text-[10px] text-violet-300/72">
@@ -1282,10 +1367,15 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                         </div>
                                     ) : (
                                         <div className="flex-1 min-w-0">
-                                            <div
+                                            {activeMailReply?.questionId === msg.id ? (
+                                                <div className="text-sm leading-relaxed">
+                                                    <p>Bitte formuliere einen prüfbaren Antwortentwurf auf diese Mail.</p>
+                                                    <details className="mt-2 text-white/65"><summary className="cursor-pointer">Mail und Auftrag ansehen</summary><p className="mt-3 whitespace-pre-wrap break-words">{msg.content}</p></details>
+                                                </div>
+                                            ) : <div
                                                 className={`${isFullscreen ? 'text-base' : 'text-sm'} leading-relaxed max-w-none`}
-                                                dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.content) }}
-                                            />
+                                                dangerouslySetInnerHTML={{ __html: renderMarkdown(msg.displayContent || msg.content) }}
+                                            />}
                                             {msg.role === 'assistant' && msg.modeDetails && (
                                                 <MoraModeAnswer result={msg.modeDetails} isStandardMode={isStandardMode} />
                                             )}
@@ -1306,7 +1396,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                     }`}>
                                     <span>{msg.timestamp.toLocaleTimeString()}</span>
                                     {/* Save as Insight Button - only for assistant messages (not welcome) */}
-                                    {msg.role === 'assistant' && msg.id !== 'welcome' && (
+                                    {msg.role === 'assistant' && msg.id !== 'welcome' && !msg.mailReplyFor && !msg.mailDraftErrorFor && (
                                         <SaveInsightButton
                                             content={msg.content}
                                             companyId={activeCompanyId || undefined}
@@ -1315,10 +1405,19 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                         />
                                     )}
                                     {/* Scope indicator -- spec Section 5: Memory Scope Visibility Rule */}
-                                    {msg.role === 'assistant' && (
+                                    {msg.role === 'assistant' && !msg.mailReplyFor && !msg.mailDraftErrorFor && (
                                         <MoraContextLabel {...derivedScope} />
                                     )}
                                 </div>
+                                {msg.failed && msg.responseTo && !msg.mailDraftErrorFor && <button type="button" className="uv2-mail-action mt-3" disabled={isLoading || isStreaming || isFrameStreaming} onClick={() => {
+                                    const question = messages.find(message => message.id === msg.responseTo);
+                                    if (question) void processMessage(question.content, undefined, true, question.id);
+                                }}>Erneut versuchen</button>}
+                                {msg.id === mailAnswerId && !isLoading && !isStreaming && !isFrameStreaming && (
+                                    <button type="button" className="uv2-mail-action uv2-mail-action--mora mt-3" onClick={() => takeMailDraft(msg.content)}>
+                                        Als Antwortentwurf übernehmen
+                                    </button>
+                                )}
                                 {msg.planId && (
                                     <button
                                         type="button"
@@ -1711,7 +1810,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                 className={`flex-1 bg-black/40 border border-violet-500/20 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/10 transition-all disabled:opacity-50 ${isFullscreen ? 'text-base' : 'text-sm'}`}
                             />
                             <button
-                                onClick={sendMessage}
+                                onClick={() => void sendMessage()}
                                 aria-label="Nachricht senden"
                                 disabled={!input.trim() || isLoading || isStreaming || isFrameStreaming}
                                 className="shrink-0 px-5 py-3 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:hover:bg-violet-600 rounded-xl text-white font-medium transition-colors flex items-center gap-2 shadow-lg shadow-violet-500/20"
@@ -1720,7 +1819,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                 {isFullscreen && <span>Senden</span>}
                             </button>
                         </div>
-                        {uv2() && hasUserMessage ? null : isFullscreen ? (
+                        {uv2() ? null : isFullscreen ? (
                             <div className="max-w-4xl mx-auto w-full">
                                 <ChatSuggestions onSelect={setInput} />
                             </div>

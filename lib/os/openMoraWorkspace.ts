@@ -1,6 +1,7 @@
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import type { MailReplyTarget } from '@/lib/mail/mailDraft';
 
 export type MoraWorkspaceSource =
   | 'home'
@@ -32,6 +33,7 @@ export type MoraWorkspaceIntent = {
   label?: string;
   draftQuestion?: string;
   createdAt: number;
+  mailReply?: MailReplyTarget;
 };
 
 export type MoraWorkspaceContext = {
@@ -47,6 +49,7 @@ export type MoraWorkspaceContext = {
   planId?: string;
   companyId?: string | null;
   references?: MoraOperationalReference[];
+  mailReply?: MailReplyTarget;
 };
 
 const DESKTOP_SIZE = { width: 900, height: 720 } as const;
@@ -100,7 +103,8 @@ function buildIntent(context: MoraWorkspaceContext): MoraWorkspaceIntent {
     requestedCompanyId: context.companyId ?? navCompanyId,
     references: buildReferences(context),
     label: cleanText(context.label ?? context.taskTitle, MAX_LABEL_LENGTH),
-    draftQuestion: cleanText(context.draftQuestion, MAX_DRAFT_LENGTH),
+    draftQuestion: cleanText(context.draftQuestion, context.submitQuestion ? 16000 : MAX_DRAFT_LENGTH),
+    mailReply: context.source === 'mail' && context.mailReply ? { ...context.mailReply } : undefined,
     createdAt: Date.now(),
   };
 }
@@ -181,7 +185,7 @@ export function openMoraWorkspace(context: MoraWorkspaceContext = {}) {
   const nextData = withTransientIntent(existing?.data, intent);
   if (context.submitQuestion && intent.draftQuestion) {
     Object.defineProperties(nextData, {
-      initialMessage: { value: context.draftQuestion!.trim(), writable: true, configurable: true, enumerable: false },
+      initialMessage: { value: intent.draftQuestion, writable: true, configurable: true, enumerable: false },
       initialMessageId: { value: intent.requestId, writable: true, configurable: true, enumerable: false },
     });
   }

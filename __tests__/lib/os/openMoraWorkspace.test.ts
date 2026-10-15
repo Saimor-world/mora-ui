@@ -119,4 +119,18 @@ describe('openMoraWorkspace transient intent', () => {
     openMoraWorkspace({ source: 'work', label: 'Arbeit' });
     expect(usePaneStore.getState().getPane('chat-main')?.data.initialMessage).toBeUndefined();
   });
+
+  it('keeps mail context in memory, bounds submission size and rejects an old company context', () => {
+    openMoraWorkspace({
+      source: 'mail', submitQuestion: true, draftQuestion: 'Private Mailquelle '.repeat(2000),
+      mailReply: { messageId: 'mail-1', to: 'person@example.invalid', subject: 'Private Antwort' },
+    });
+    const pane = usePaneStore.getState().getPane('chat-main');
+    expect(pane?.data.initialMessage).toHaveLength(16000);
+    expect(readMoraWorkspaceIntent()?.mailReply?.messageId).toBe('mail-1');
+    expect(JSON.stringify(pane)).not.toContain('Private Mailquelle');
+    expect(JSON.stringify(pane)).not.toContain('person@example.invalid');
+    useNavStore.setState({ activeCompanyId: 'company-b' });
+    expect(readMoraWorkspaceIntent()).toBeNull();
+  });
 });
