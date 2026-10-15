@@ -82,9 +82,16 @@ describe('OrganizationField: die beiden Linsen', () => {
         const paths = Array.from(container.querySelectorAll('path[vector-effect]'));
         const dashed = paths.filter((path) => path.getAttribute('stroke-dasharray'));
 
+        // Universe Glass renders the evidence distinction through the strands,
+        // not the older textual counter legend. A documented relation is solid
+        // and stronger; an inference must stay dashed and visually subordinate.
         expect(dashed).toHaveLength(1);
-        expect(screen.getByText(/1 Zusammenhänge belegt/)).toBeInTheDocument();
-        expect(screen.getByText(/1 von MÔRA vermutet/)).toBeInTheDocument();
+        const solid = paths.filter((path) => !path.hasAttribute('stroke-dasharray'));
+        expect(solid).toHaveLength(1);
+        expect(dashed[0]).toHaveAttribute('stroke-opacity', '0.34');
+        expect(solid[0]).toHaveAttribute('stroke-opacity', '0.62');
+        expect(dashed[0]).toHaveAttribute('stroke-width', '1');
+        expect(solid[0]).toHaveAttribute('stroke-width', '1.6');
     });
 
     // Frueher stand hier: "sagt es ausdruecklich, wenn nichts nachweisbar
