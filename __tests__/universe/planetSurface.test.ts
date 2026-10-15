@@ -11,7 +11,7 @@ it('draws opaque ground inside the sphere and leaves its surroundings transparen
   }
 });
 
-it('keeps a surface stable across redraws and gives different seeds distinct geography', () => {
+it('keeps the material grain stable across redraws and distinct for different seeds', () => {
   const first = renderPlanetSurface(options).rgba;
   expect(renderPlanetSurface(options).rgba).toEqual(first);
   expect(renderPlanetSurface({ ...options, seed: 28 }).rgba).not.toEqual(first);
@@ -33,7 +33,7 @@ it('lights the actual surface from the requested side', () => {
   expect(fromLeft.left).toBeGreaterThan(fromLeft.right * 1.15);
 });
 
-it('gives each material a distinct surface, rather than recolouring one smooth sphere', () => {
+it('retains subtle material differences within the shared finish', () => {
   const kinds: SurfaceKind[] = ['rock', 'gas', 'ocean', 'forest', 'ice', 'marble', 'dune', 'volcanic'];
   const surfaces = kinds.map(kind => renderPlanetSurface({ ...options, kind }).rgba);
   for (let i = 0; i < surfaces.length; i++) for (let j = i + 1; j < surfaces.length; j++) expect(surfaces[i]).not.toEqual(surfaces[j]);

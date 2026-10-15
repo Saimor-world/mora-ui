@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { loadPlanetSurface, planetSurfaceKind } from '@/lib/universe/planetSurfaceClient';
 
-/** A static texture with real relief lighting; the shared worker keeps generation off the UI thread. */
+/** A quiet satin mineral surface, cached and generated outside the UI thread. */
 export function TexturedSphere({ name, archetype, size, lit, hue, seed, quiet }: {
   name: string; archetype?: string | null; size: number; lit: number;
   hue: [number, number, number]; seed: number; quiet: boolean;
@@ -28,8 +28,8 @@ export function TexturedSphere({ name, archetype, size, lit, hue, seed, quiet }:
   }, [size, kind, red, green, blue, seed, lit, quiet]);
   return <span className="absolute inset-0 rounded-full" style={{
     background: `radial-gradient(circle at 36% 30%, rgb(${red},${green},${blue}), #17272b)`,
-    boxShadow: `0 ${size * .12}px ${size * .26}px rgba(0,0,0,.28)`,
+    boxShadow: `0 ${size * .08}px ${size * .18}px rgba(0,0,0,.18)`,
   }}>
-    <canvas ref={canvas} className="absolute inset-0 h-full w-full rounded-full" data-pstyle="M" data-surface-kind={kind} data-surface-ready={ready ? 'true' : 'false'} />
+    <canvas ref={canvas} className="absolute inset-0 h-full w-full rounded-full" data-pstyle="M" data-surface-finish="satin" data-surface-kind={kind} data-surface-ready={ready ? 'true' : 'false'} />
   </span>;
 }
