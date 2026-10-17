@@ -102,6 +102,13 @@ describe('middleware session validation', () => {
         expect(publicStatus.headers.get('x-middleware-next')).toBe('1');
         expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
 
+        const publicTxLookup = await middleware(request('/api/xrpl-testnet-public-transaction?hash=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'));
+        expect(publicTxLookup.headers.get('x-middleware-next')).toBe('1');
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
+        const otherFinanceApi = await middleware(request('/api/xrpl-testnet-private-orders'));
+        expect(otherFinanceApi.status).toBe(401);
+
         const sibling = await middleware(request('/xrpl-commerce-lab-admin'));
         expect(sibling.status).toBe(307);
 
