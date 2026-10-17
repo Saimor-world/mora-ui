@@ -24,6 +24,7 @@ const PUBLIC_PATHS = [
     "/",
     "/login",
     "/xrpl-commerce-lab", // Standalone synthetic demonstration; never connected to private CORE\n    "/api/xrpl-testnet-public-status", // Fixed public Testnet status; no auth or personal data
+    "/api/xrpl-testnet-public-transaction", // Bounded public validated transaction explorer; read-only
     "/playground",     // Public playground entry
     "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
     "/home",           // Website entry preview — needs to render so localStorage bridge works
