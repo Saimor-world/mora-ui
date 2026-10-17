@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useRef, useState } from "react";
 import { Activity, ArrowUpRight, CheckCircle2, Database, Fingerprint, LockKeyhole, Search, ShieldAlert } from "lucide-react";
 import { CoreError } from "@/lib/api/http";
 import {
@@ -26,6 +26,7 @@ export function XRPLTestnetInspector() {
   const [observation, setObservation] = useState<TestnetTransferObservation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [observedHash, setObservedHash] = useState("");
+  const requestVersion = useRef(0);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -37,12 +38,15 @@ export function XRPLTestnetInspector() {
       setError("Der Transaktionshash muss genau 64 hexadezimale Zeichen enthalten.");
       return;
     }
+    const thisRequest = ++requestVersion.current;
     setIsLoading(true);
     try {
       const result = await inspectRealTestnetTransaction(hash.trim());
+      if (requestVersion.current !== thisRequest) return;
       setObservation(result);
       setObservedHash(hash.trim().toUpperCase());
     } catch (cause) {
+      if (requestVersion.current !== thisRequest) return;
       if (cause instanceof CoreError) {
         if (cause.status === 401 || cause.status === 403) {
           setError("Für echte Testnet-Abfragen brauchst du eine gültige SAIMÔR-System-Owner-Sitzung.");
@@ -55,7 +59,7 @@ export function XRPLTestnetInspector() {
         setError(cause instanceof Error ? cause.message : "Testnet-Inspektion fehlgeschlagen.");
       }
     } finally {
-      setIsLoading(false);
+      if (requestVersion.current === thisRequest) setIsLoading(false);
     }
   }
 
@@ -93,7 +97,7 @@ export function XRPLTestnetInspector() {
               autoCapitalize="characters"
               maxLength={64}
               value={hash}
-              onChange={(event) => { setHash(event.target.value); setError(null); setObservation(null); }}
+              onChange={(event) => { requestVersion.current += 1; setIsLoading(false); setHash(event.target.value); setError(null); setObservation(null); }}
               placeholder="64-stelliger bestätigter Testnet-Hash"
               className="w-full min-w-0 rounded-xl border border-white/[.14] bg-[#070d0d] px-4 py-3.5 font-mono text-xs text-white outline-none placeholder:text-white/25 focus:border-emerald-200/40"
             />
