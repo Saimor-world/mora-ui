@@ -23,6 +23,7 @@ import {
 const PUBLIC_PATHS = [
     "/",
     "/login",
+    "/xrpl-commerce-lab", // Public, exclusively synthetic standalone lab; never connects to CORE
     "/playground",     // Public playground entry
     "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
     "/home",           // Website entry preview — needs to render so localStorage bridge works
