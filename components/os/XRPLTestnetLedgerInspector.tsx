@@ -151,7 +151,7 @@ export function TestnetLedgerInspector() {
   };
 
   return (
-    <section aria-label="Echte XRPL-Testnet-Prüfung" className="mt-6 rounded-[26px] border border-emerald-100/[.14] bg-[#0c1514]/95 px-6 py-7 sm:px-8">
+    <section id="lab-evidence" aria-label="Echte XRPL-Testnet-Prüfung" className="mt-6 min-w-0 rounded-[26px] border border-emerald-100/[.14] bg-[#0c1514]/95 px-5 py-7 sm:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="grid h-10 w-10 place-items-center rounded-2xl border border-emerald-100/[.14] bg-emerald-100/[.06] text-emerald-100">
