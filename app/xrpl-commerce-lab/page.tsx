@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import "./scroll.css";
 import Link from "next/link";
 import {
   Activity, ArrowLeft, ArrowRight, Check,
@@ -48,7 +49,7 @@ export default function XRPLCommerceLabPage() {
 
 
   return (
-    <main data-testid="xrpl-commerce-lab" className="relative min-h-screen overflow-hidden bg-[#060a0b] text-[#ecf2eb] selection:bg-emerald-200/20">
+    <main id="xrpl-commerce-lab" data-testid="xrpl-commerce-lab" className="relative min-h-dvh min-w-0 overflow-x-clip bg-[#060a0b] text-[#ecf2eb] selection:bg-emerald-200/20">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{
         background: "radial-gradient(ellipse 42% 48% at 78% 11%,rgba(35,91,69,.18),transparent 80%),radial-gradient(ellipse 40% 35% at 5% 85%,rgba(85,66,45,.09),transparent 85%),linear-gradient(155deg,#070b0d 0%,#070c0b 62%,#06080b 100%)",
       }} />
@@ -79,7 +80,15 @@ export default function XRPLCommerceLabPage() {
           </div>
         </header>
 
-        <section className="grid gap-8 pb-10 pt-14 lg:grid-cols-[1.08fr_.92fr] lg:items-end lg:gap-14">
+        <nav aria-label="Commerce Lab · mobile Bereiche" className="sticky top-0 z-40 -mx-5 mt-3 flex items-center gap-2 border-y border-white/[.08] bg-[#081210]/95 px-5 py-3 backdrop-blur-xl sm:hidden">
+          <a href="#lab-simulation" className="flex min-h-11 flex-1 items-center justify-center rounded-full border border-emerald-200/20 bg-emerald-200/[.08] px-3 text-[11px] font-semibold text-emerald-100">
+            Simulation
+          </a>
+          <a href="#lab-evidence" className="flex min-h-11 flex-1 items-center justify-center rounded-full border border-white/10 bg-white/[.03] px-3 text-[11px] font-semibold text-white/75">
+            Echte Testnet-Prüfung
+          </a>
+        </nav>
+        <section className="grid gap-8 pb-9 pt-9 sm:pt-14 lg:grid-cols-[1.08fr_.92fr] lg:items-end lg:gap-14">
           <div>
             <div className="mb-5 flex items-center gap-3 text-[10px] font-semibold uppercase tracking-[.3em] text-emerald-200/70">
               <span className="h-px w-8 bg-emerald-200/40" /> Commerce Infrastructure · Experiment 01
@@ -103,8 +112,8 @@ export default function XRPLCommerceLabPage() {
           </div>
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.53fr)_minmax(340px,.85fr)]">
-          <div className="space-y-5">
+        <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1.53fr)_minmax(340px,.85fr)]">
+          <div className="min-w-0 space-y-5">
             <section className="overflow-hidden rounded-[26px] border border-white/[.085] bg-[#101717]/90 shadow-[0_30px_100px_rgba(0,0,0,.20)]">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[.065] px-6 py-5 sm:px-8">
                 <div className="flex items-center gap-3">
@@ -143,7 +152,7 @@ export default function XRPLCommerceLabPage() {
               </div>
             </section>
 
-            <section className="rounded-[26px] border border-white/[.08] bg-[#0e1515]/90 px-6 pb-6 pt-6 sm:px-8">
+            <section id="lab-simulation" className="min-w-0 rounded-[26px] border border-white/[.08] bg-[#0e1515]/90 px-5 pb-6 pt-6 sm:px-8">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <div className="text-[10px] uppercase tracking-[.2em] text-white/32">02 / Transaktionsprüfung</div>
