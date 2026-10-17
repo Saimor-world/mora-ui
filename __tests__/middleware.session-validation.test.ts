@@ -92,6 +92,35 @@ describe('middleware session validation', () => {
         expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
     });
 
+    it('permits only the synthetic XRPL Commerce Lab without an OS session', async () => {
+        const lab = await middleware(request('/xrpl-commerce-lab'));
+        expect(lab.headers.get('x-middleware-next')).toBe('1');
+        expect(mockGetToken).not.toHaveBeenCalled();
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
+        const publicStatus = await middleware(request('/api/xrpl-testnet-public-status'));
+        expect(publicStatus.headers.get('x-middleware-next')).toBe('1');
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
+        const publicTxLookup = await middleware(request('/api/xrpl-testnet-public-transaction?hash=AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'));
+        expect(publicTxLookup.headers.get('x-middleware-next')).toBe('1');
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
+        const otherFinanceApi = await middleware(request('/api/xrpl-testnet-private-orders'));
+        expect(otherFinanceApi.status).toBe(401);
+
+        const sample = await middleware(request('/api/xrpl-testnet-public-sample'));
+        expect(sample.headers.get('x-middleware-next')).toBe('1');
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
+        const sibling = await middleware(request('/xrpl-commerce-lab-admin'));
+        expect(sibling.status).toBe(307);
+
+        const api = await middleware(request('/api/xrpl-commerce-lab'));
+        expect(api.status).toBe(401);
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+    });
+
     it('does not trust NextAuth tokens in production without a real secret', async () => {
         setEnv({ NODE_ENV: 'production', NEXTAUTH_SECRET: undefined });
         mockGetToken.mockResolvedValue({ sub: 'forged' });

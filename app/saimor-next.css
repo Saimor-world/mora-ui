@@ -232,3 +232,20 @@ body:not(.standard-mode) select {
     transform: none !important;
   }
 }
+
+
+/* XRPL Commerce Lab is a standalone long-form page. The legacy OS uses
+   html, body { overflow:hidden; height:100% } for the window manager.
+   Exempt only this exact route so touch/keyboard/mouse scrolling works. */
+html.commerce-lab-scroll,
+html.commerce-lab-scroll body {
+  height: auto;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+html.commerce-lab-scroll body {
+  min-height: 100vh;
+}
