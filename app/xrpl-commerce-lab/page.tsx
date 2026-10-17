@@ -37,6 +37,48 @@ export default function XRPLCommerceLabPage() {
   const [scenario, setScenario] = useState<CommerceScenario>("valid");
   const [phase, setPhase] = useState<Phase>("prepared");
   const [run, setRun] = useState(1);
+  const [txQuery, setTxQuery] = useState("");
+  const [txBusy, setTxBusy] = useState(false);
+  const [txFailure, setTxFailure] = useState("");
+  const [txProof, setTxProof] = useState<{
+    hash: string;
+    ledgerIndex: number;
+    ledgerHash: string;
+    transactionType: string;
+    result: string;
+    nativePaymentDrops: string | null;
+    successful: boolean;
+  } | null>(null);
+  const inspectTestnetTx = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const candidate = txQuery.trim();
+    if (!/^[0-9a-fA-F]{64}$/.test(candidate)) {
+      setTxFailure("Bitte einen vollständigen 64-stelligen Testnet-Transaktionshash eingeben.");
+      setTxProof(null);
+      return;
+    }
+    setTxBusy(true);
+    setTxProof(null);
+    setTxFailure("");
+    try {
+      const response = await fetch("/api/xrpl-testnet-public-transaction?hash=" + encodeURIComponent(candidate), {cache: "no-store"});
+      const data = await response.json();
+      if (!response.ok || data.status !== "validated") throw new Error("Kein validierter Testnet-Nachweis gefunden oder Testnet nicht erreichbar.");
+      setTxProof({
+        hash: data.hash,
+        ledgerIndex: data.ledgerIndex,
+        ledgerHash: data.ledgerHash,
+        transactionType: data.transactionType,
+        result: data.result,
+        nativePaymentDrops: data.nativePaymentDrops,
+        successful: data.successful === true,
+      });
+    } catch {
+      setTxFailure("Kein validierter Testnet-Nachweis gefunden oder Testnet nicht erreichbar.");
+    } finally {
+      setTxBusy(false);
+    }
+  };
   const [testnet, setTestnet] = useState<{ status: string; validatedLedger: number | null }>({status: "loading", validatedLedger: null});
   useEffect(() => {
     const controller = new AbortController();
@@ -123,6 +165,49 @@ export default function XRPLCommerceLabPage() {
           </div>
           <Indicator tone={testnet.status === "connected" ? "green" : testnet.status === "loading" ? "muted" : "amber"} label={testnet.status === "connected" ? "Testnet verbunden" : testnet.status === "loading" ? "Prüfe Verbindung" : "Testnet nicht erreichbar"} />
           <p className="w-full text-[10px] text-white/35">Die Ledger-Nummer stammt vom echten Testnet. Die Zahlungsfälle darunter bleiben Simulationen – keine verifizierten Käufe.</p>
+        </section>
+        <section className="mb-6 overflow-hidden rounded-[26px] border border-emerald-100/[.12] bg-[#0c1514] px-6 py-6 sm:px-8" aria-labelledby="real-tx-title">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <div><div className="text-[10px] font-semibold uppercase tracking-[.2em] text-emerald-200/60">Echte Blockchain-Abfrage / Read only</div>
+              <h2 id="real-tx-title" className="mt-2 text-xl font-light tracking-tight">Eine echte Testnet-Transaktion überprüfen</h2></div>
+            <Indicator tone="green" label="Echte Ledger-Daten" />
+          </div>
+          <p className="mb-5 text-xs leading-6 text-white/45">
+            Hash einer bereits gesendeten <strong className="font-medium text-white/70">XRPL-Testnet-Transaktion</strong> einfügen.
+            Wir prüfen Netzwerkkennung, Transaktion und validierten Ledger. Das stellt <strong className="font-medium text-white/65">keinen Kaufnachweis für YORI</strong> dar.
+          </p>
+          <form onSubmit={inspectTestnetTx} className="flex flex-col gap-3 sm:flex-row">
+            <label htmlFor="testnet-tx-hash" className="sr-only">Testnet-Transaktionshash</label>
+            <input
+              id="testnet-tx-hash"
+              value={txQuery}
+              onChange={(event) => { setTxQuery(event.target.value); setTxFailure(""); setTxProof(null); }}
+              placeholder="64-stelliger Testnet-TX-Hash"
+              maxLength={64}
+              spellCheck={false}
+              autoCapitalize="off"
+              autoComplete="off"
+              className="min-h-[47px] w-full min-w-0 flex-1 rounded-xl border border-white/[.12] bg-black/25 px-4 font-mono text-[11px] tracking-[.04em] text-white/90 placeholder:text-white/30 focus:border-emerald-200/45 focus:outline-none"
+            />
+            <button type="submit" disabled={txBusy || !/^[0-9a-fA-F]{64}$/.test(txQuery.trim())}
+              className="flex min-h-[47px] shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-100 px-5 text-xs font-semibold text-[#072117] transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40">
+              <ShieldCheck size={15} />{txBusy ? "Ledger wird geprüft …" : "Echten Nachweis prüfen"}
+            </button>
+          </form>
+          {txFailure && <p role="alert" className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.04] p-4 text-xs text-amber-100/80">{txFailure}</p>}
+          {txProof && (
+            <div aria-live="polite" className="mt-5 rounded-2xl border border-emerald-200/20 bg-emerald-200/[.035] px-5 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3"><span className="flex items-center gap-2 text-sm font-medium text-emerald-100"><ShieldCheck size={16} /> Validierter Testnet-Ledger</span><Indicator tone="amber" label="Kein Shop-Zahlungsbeleg" /></div>
+              <div className="mt-4 grid gap-x-8 sm:grid-cols-2">
+                <Field title="Ledger" value={txProof.ledgerIndex.toLocaleString("de-DE")} mono />
+                <Field title="Transaktion" value={txProof.transactionType} />
+                <Field title="Ergebnis" value={txProof.result} mono />
+                <Field title="XRP-Drops zugestellt" value={txProof.nativePaymentDrops ?? "Keine reine XRP-Zahlung"} mono />
+              </div>
+              <p className="mt-3 break-all font-mono text-[10px] leading-5 text-white/40">Ledger-Hash: {txProof.ledgerHash}</p>
+              <p className="mt-3 text-[11px] leading-5 text-white/50">Diese Abfrage beweist die Ledger-Validierung des angegebenen Testnet-Hashes. Es gibt weder Bestellzuordnung noch Freigabe oder Geldfluss durch SAIMÔR.</p>
+            </div>
+          )}
         </section>
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.53fr)_minmax(340px,.85fr)]">
           <div className="space-y-5">
