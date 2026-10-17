@@ -136,7 +136,7 @@ export default function XRPLCommerceLabPage() {
               </div>
               <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.065] bg-white/[.012] px-6 py-4 sm:px-8">
                 <div className="flex items-center gap-2 text-[11px] text-white/40"><LockKeyhole size={13} className="text-emerald-200/65" /> Testdaten bleiben von CORE getrennt</div>
-                <button type="button" onClick={() => {setRun(v => v + 1);setPhase("prepared");setCopied(false);}} className="flex items-center gap-2 text-[11px] font-medium text-emerald-100/80 hover:text-emerald-50">
+                <button type="button" onClick={() => {setRun(v => v + 1);setPhase("prepared");}} className="flex items-center gap-2 text-[11px] font-medium text-emerald-100/80 hover:text-emerald-50">
                   <RefreshCcw size={13} /> Neuen Demo-Auftrag
                 </button>
               </div>
