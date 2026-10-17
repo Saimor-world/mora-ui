@@ -39,8 +39,8 @@ export async function inspectRealTestnetTransaction(hash: string): Promise<Testn
     d.status !== "validated_testnet_xrp_transfer_observed" ||
     !HASH.test(d.tx_hash ?? "") ||
     !HASH.test(d.ledger_hash ?? "") ||
-    !Number.isInteger(d.ledger_index) || (d.ledger_index ?? 0) <= 0 ||
-    !Number.isSafeInteger(d.delivered_drops) || (d.delivered_drops ?? 0) <= 0 ||
+    (typeof d.ledger_index !== "number" || !Number.isInteger(d.ledger_index) || d.ledger_index <= 0) ||
+    (typeof d.delivered_drops !== "number" || !Number.isSafeInteger(d.delivered_drops) || d.delivered_drops <= 0) ||
     typeof d.sender !== "string" ||
     typeof d.destination !== "string" ||
     d.order_verified !== false ||
