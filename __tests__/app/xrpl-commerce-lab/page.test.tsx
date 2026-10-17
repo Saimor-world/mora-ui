@@ -55,7 +55,7 @@ describe("XRPL Commerce Lab — visible UI boundaries", () => {
         ? { status: "validated", hash: tx, ledgerIndex: 9999, ledgerHash: "B".repeat(64),
             transactionType: "Payment", result: "tesSUCCESS", nativePaymentDrops: "1000", successful: true }
         : { status: "connected", validatedLedger: 10001 },
-    })) as typeof fetch;
+    })) as unknown as typeof fetch;
     render(<XRPLCommerceLabPage />);
     expect(screen.getByRole("button", { name: /Echten Nachweis prüfen/i })).toBeDisabled();
     fireEvent.change(screen.getByRole("textbox", { name: "Testnet-Transaktionshash" }), {
