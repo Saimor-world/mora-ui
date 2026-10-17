@@ -11,6 +11,15 @@ jest.mock("next/link", () => {
 });
 
 describe("XRPL Commerce Lab — visible UI boundaries", () => {
+  const originalFetch = global.fetch;
+  beforeEach(() => {
+    // JSDOM deliberately does not implement fetch. Simulate a pending read-only
+    // status request; scenario tests must never rely on blockchain availability.
+    global.fetch = jest.fn(() => new Promise<Response>(() => undefined)) as typeof fetch;
+  });
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
   it("clearly labels synthetic data and never promises a live payment", () => {
     render(<XRPLCommerceLabPage />);
     expect(screen.getByText("Nur Simulation")).toBeInTheDocument();
