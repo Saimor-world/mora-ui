@@ -23,7 +23,7 @@ import {
 const PUBLIC_PATHS = [
     "/",
     "/login",
-    "/xrpl-commerce-lab", // Public, synthetic checkout; real read-only network status separate\n    "/api/xrpl-testnet-public-status", // Only fixed Testnet network status, no user input or private records
+    "/xrpl-commerce-lab", // Standalone synthetic demonstration; never connected to private CORE\n    "/api/xrpl-testnet-public-status", // Fixed public Testnet status; no auth or personal data
     "/playground",     // Public playground entry
     "/entry",          // Website entry preview — React app gates real data via useAuthBootstrapper
     "/home",           // Website entry preview — needs to render so localStorage bridge works
