@@ -121,7 +121,7 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={isStandaloneCommerceLab ? "commerce-lab-scroll" : undefined} suppressHydrationWarning>
       <head>
         <title>SAIMÔR OS</title>
         <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
