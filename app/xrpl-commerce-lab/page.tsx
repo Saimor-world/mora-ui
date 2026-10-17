@@ -3,16 +3,14 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  Activity, ArrowLeft, ArrowRight, Check, CheckCircle2, ChevronRight,
-  CircleAlert, CircleDot, Copy, ExternalLink, Fingerprint,
+  Activity, ArrowLeft, ArrowRight, Check,
+  CircleAlert, CircleDot, Fingerprint,
   LockKeyhole, Play, RefreshCcw, ShieldCheck, Wallet, XCircle, Zap,
 } from "lucide-react";
 import { COMMERCE_SCENARIOS, simulateCommerceOutcome, type CommerceScenario } from "@/lib/xrplCommerceLab";
 
 type Phase = "prepared" | "reviewed";
-const INVOICE = "A7C9E201DEMO44B73F8E092BC7D1A6E3";
 const DEMO_QUOTE = "QT-DEMO-017";
-const DEMO_DESTINATION = "rTESTNET_DEMO_NO_ACTUAL_WALLET";
 const INVOICE_VISUAL = "A7C9 · E201 · ... · A6E3";
 
 function Indicator({ tone = "muted", label }: { tone?: "green" | "amber" | "red" | "muted"; label: string }) {
@@ -39,7 +37,6 @@ export default function XRPLCommerceLabPage() {
   const [scenario, setScenario] = useState<CommerceScenario>("valid");
   const [phase, setPhase] = useState<Phase>("prepared");
   const [run, setRun] = useState(1);
-  const [copied, setCopied] = useState(false);
   const outcome = useMemo(() => simulateCommerceOutcome(scenario), [scenario]);
   const complete = phase === "reviewed";
 
@@ -47,16 +44,7 @@ export default function XRPLCommerceLabPage() {
     setScenario(next);
     setPhase("prepared");
   };
-  const copyInvoice = async () => {
-    // Preview uses a clearly non-transactional demo marker instead of an
-    // executable XRP InvoiceID, avoiding accidental real-wallet use.
-    try {
-      await navigator.clipboard.writeText("SAIMOR-SIMULATION-NO-REAL-INVOICE");
-      setCopied(true);
-    } catch {
-      setCopied(false);
-    }
-  };
+
 
   return (
     <main data-testid="xrpl-commerce-lab" className="relative min-h-screen overflow-hidden bg-[#060a0b] text-[#ecf2eb] selection:bg-emerald-200/20">
