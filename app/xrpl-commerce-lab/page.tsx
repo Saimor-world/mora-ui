@@ -11,6 +11,7 @@ import { COMMERCE_SCENARIOS, simulateCommerceOutcome, type CommerceScenario } fr
 
 type Phase = "prepared" | "reviewed";
 const DEMO_QUOTE = "QT-DEMO-017";
+const VERIFIED_REHEARSAL_TX_HASH = "A5B453A22F19F1787163411FEE6633E12BFD67BE9E0A27A5C6DAFF407E681303";
 const INVOICE_VISUAL = "A7C9 · E201 · ... · A6E3";
 
 function Indicator({ tone = "muted", label }: { tone?: "green" | "amber" | "red" | "muted"; label: string }) {
@@ -80,6 +81,10 @@ export default function XRPLCommerceLabPage() {
   const inspectTestnetTx = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     void inspectHash(txQuery.trim());
+  };
+  const inspectVerifiedRehearsal = () => {
+    setTxQuery(VERIFIED_REHEARSAL_TX_HASH);
+    void inspectHash(VERIFIED_REHEARSAL_TX_HASH);
   };
   const [sampleBusy, setSampleBusy] = useState(false);
   const loadRealExample = async () => {
@@ -221,6 +226,10 @@ export default function XRPLCommerceLabPage() {
               className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-emerald-200/25 bg-emerald-100/[.055] px-5 text-[11px] font-semibold text-emerald-100 transition hover:bg-emerald-100/[.1] disabled:opacity-40">
               <Activity size={14} />{sampleBusy ? "Suche echten Testnet-Nachweis …" : "Echte Testnet-Transaktion laden"}
             </button>
+            <button type="button" onClick={inspectVerifiedRehearsal} disabled={txBusy || sampleBusy}
+              className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-amber-200/20 bg-amber-200/[.07] px-5 text-[11px] font-semibold text-amber-100 transition hover:bg-amber-200/[.13] disabled:opacity-40">
+              <ShieldCheck size={14} /> Unsere erste echte Testnet-Zahlung ansehen
+            </button>
             <span className="text-[10px] text-white/40">Ein öffentlicher Ledger-Eintrag – ohne Wallet oder erfundene Daten</span>
           </div>
           {txFailure && <p role="alert" className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.04] p-4 text-xs text-amber-100/80">{txFailure}</p>}
@@ -238,6 +247,16 @@ export default function XRPLCommerceLabPage() {
                 className="mt-3 inline-flex items-center gap-2 text-[11px] font-medium text-emerald-200/80 underline-offset-4 hover:text-emerald-100 hover:underline">
                 <ExternalLink size={13} /> Im offiziellen Testnet-Explorer ansehen
               </a>
+              {txProof.hash === VERIFIED_REHEARSAL_TX_HASH && (
+                <div className="mt-4 rounded-xl border border-amber-200/10 bg-amber-100/[.035] p-4 text-[11px] leading-5 text-white/55">
+                  <strong className="font-semibold text-amber-100/80">Dokumentierte Entwickler-Generalprobe · 17.10.2026</strong>
+                  <p className="mt-1">Dieser öffentliche Hash gehört zur erfolgreichen, separat im CORE geprüften Testnet-Demobestellung. Der hier angezeigte Live-Ledger-Check prüft nur die Transaktion; Bestellbindung und Wiederholungsschutz sind im privaten Prüfbericht dokumentiert, nicht mit dem öffentlichen Browser verbunden.</p>
+                  <a href="https://github.com/Saimor-world/saimor-core/blob/feature/xrpl-commerce-testnet-reconcile-m1-20261017/docs/XRPL_COMMERCE_TESTNET_REAL_PAYMENT_PROOF_20261017.md"
+                    target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-amber-100/85 underline underline-offset-4 hover:text-amber-50">
+                    CORE-Prüfbericht öffnen
+                  </a>
+                </div>
+              )}
               <p className="mt-3 text-[11px] leading-5 text-white/50">Diese Abfrage beweist die Ledger-Validierung des angegebenen Testnet-Hashes. Es gibt weder Bestellzuordnung noch Freigabe oder Geldfluss durch SAIMÔR.</p>
             </div>
           )}
