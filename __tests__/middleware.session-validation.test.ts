@@ -98,6 +98,10 @@ describe('middleware session validation', () => {
         expect(mockGetToken).not.toHaveBeenCalled();
         expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
 
+        const publicStatus = await middleware(request('/api/xrpl-testnet-public-status'));
+        expect(publicStatus.headers.get('x-middleware-next')).toBe('1');
+        expect(mockFetchCoreUpstream).not.toHaveBeenCalled();
+
         const sibling = await middleware(request('/xrpl-commerce-lab-admin'));
         expect(sibling.status).toBe(307);
 
