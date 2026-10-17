@@ -1,5 +1,5 @@
 import React from "react";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import XRPLCommerceLabPage from "@/app/xrpl-commerce-lab/page";
 
 jest.mock("next/link", () => {
@@ -45,6 +45,26 @@ describe("XRPL Commerce Lab — visible UI boundaries", () => {
     fireEvent.click(screen.getByRole("button", { name: /Neuen Demo-Auftrag/i }));
     expect(screen.queryByText("AMOUNT_MISMATCH")).not.toBeInTheDocument();
     expect(screen.getByText(/#0002/)).toBeInTheDocument();
+  });
+
+  it("accepts a pasted Testnet hash but never reports that a product was purchased", async () => {
+    const tx = "A".repeat(64);
+    global.fetch = jest.fn(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes("public-transaction")
+        ? { status: "validated", hash: tx, ledgerIndex: 9999, ledgerHash: "B".repeat(64),
+            transactionType: "Payment", result: "tesSUCCESS", nativePaymentDrops: "1000", successful: true }
+        : { status: "connected", validatedLedger: 10001 },
+    })) as typeof fetch;
+    render(<XRPLCommerceLabPage />);
+    expect(screen.getByRole("button", { name: /Echten Nachweis prüfen/i })).toBeDisabled();
+    fireEvent.change(screen.getByRole("textbox", { name: "Testnet-Transaktionshash" }), {
+      target: { value: tx },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Echten Nachweis prüfen/i }));
+    await waitFor(() => expect(screen.getByText("Validierter Testnet-Ledger")).toBeInTheDocument());
+    expect(screen.getByText("Kein Shop-Zahlungsbeleg")).toBeInTheDocument();
+    expect(screen.getByText(/weder Bestellzuordnung noch Freigabe/)).toBeInTheDocument();
   });
 
   it("requires a new simulation after switching scenarios", () => {
