@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Activity, ArrowLeft, ArrowRight, Check,
@@ -37,6 +37,18 @@ export default function XRPLCommerceLabPage() {
   const [scenario, setScenario] = useState<CommerceScenario>("valid");
   const [phase, setPhase] = useState<Phase>("prepared");
   const [run, setRun] = useState(1);
+  const [testnet, setTestnet] = useState<{ status: string; validatedLedger: number | null }>({status: "loading", validatedLedger: null});
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/xrpl-testnet-public-status", {signal: controller.signal, cache: "no-store"})
+      .then(res => res.json())
+      .then(data => { if (!controller.signal.aborted) setTestnet({
+        status: data.status === "connected" ? "connected" : "unavailable",
+        validatedLedger: Number.isSafeInteger(data.validatedLedger) ? data.validatedLedger : null
+      }); })
+      .catch(() => { if (!controller.signal.aborted) setTestnet({status:"unavailable",validatedLedger:null}); });
+    return () => controller.abort();
+  }, []);
   const outcome = useMemo(() => simulateCommerceOutcome(scenario), [scenario]);
   const complete = phase === "reviewed";
 
@@ -102,6 +114,16 @@ export default function XRPLCommerceLabPage() {
           </div>
         </section>
 
+        <section className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-[22px] border border-emerald-100/[.11] bg-[#101817] px-6 py-5" aria-label="Echter XRPL-Testnet-Netzwerkstatus">
+          <div className="flex items-center gap-3">
+            <Activity size={16} className="text-emerald-200/70" />
+            <div><p className="text-[10px] uppercase tracking-[.18em] text-white/40">Echte Netzwerkdaten · Nur lesend</p>
+              <p className="mt-1 text-sm text-white/80">XRPL Testnet · Validierter Ledger: <span className="font-mono">{testnet.validatedLedger?.toLocaleString("de-DE") ?? "–"}</span></p>
+            </div>
+          </div>
+          <Indicator tone={testnet.status === "connected" ? "green" : testnet.status === "loading" ? "muted" : "amber"} label={testnet.status === "connected" ? "Testnet verbunden" : testnet.status === "loading" ? "Prüfe Verbindung" : "Testnet nicht erreichbar"} />
+          <p className="w-full text-[10px] text-white/35">Die Ledger-Nummer stammt vom echten Testnet. Die Zahlungsfälle darunter bleiben Simulationen – keine verifizierten Käufe.</p>
+        </section>
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.53fr)_minmax(340px,.85fr)]">
           <div className="space-y-5">
             <section className="overflow-hidden rounded-[26px] border border-white/[.085] bg-[#101717]/90 shadow-[0_30px_100px_rgba(0,0,0,.20)]">
