@@ -42,7 +42,7 @@ for (const width of [375, 390, 1440]) {
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(120);
       await expect(page.getByRole("heading", { name: "XRPL Testnet · Ledger prüfen" })).toBeVisible();
       await nav.getByRole("link", { name: "Simulation" }).click();
-      await expect.poll(() => page.evaluate(() => window.scrollY)).toBeLessThan(1350);
+      await expect(page.locator("#lab-simulation")).toBeInViewport({ ratio: 0.05 });
     } else {
       await page.mouse.wheel(0, 800);
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(180);
