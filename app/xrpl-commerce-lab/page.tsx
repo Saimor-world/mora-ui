@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   Activity, ArrowLeft, ArrowRight, Check,
@@ -49,7 +49,7 @@ export default function XRPLCommerceLabPage() {
     nativePaymentDrops: string | null;
     successful: boolean;
   } | null>(null);
-  const inspectTestnetTx = async (event: React.FormEvent<HTMLFormElement>) => {
+  const inspectTestnetTx = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const candidate = txQuery.trim();
     if (!/^[0-9a-fA-F]{64}$/.test(candidate)) {
