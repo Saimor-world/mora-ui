@@ -49,9 +49,7 @@ export default function XRPLCommerceLabPage() {
     nativePaymentDrops: string | null;
     successful: boolean;
   } | null>(null);
-  const inspectTestnetTx = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const candidate = txQuery.trim();
+  const inspectHash = async (candidate: string) => {
     if (!/^[0-9a-fA-F]{64}$/.test(candidate)) {
       setTxFailure("Bitte einen vollständigen 64-stelligen Testnet-Transaktionshash eingeben.");
       setTxProof(null);
@@ -77,6 +75,30 @@ export default function XRPLCommerceLabPage() {
       setTxFailure("Kein validierter Testnet-Nachweis gefunden oder Testnet nicht erreichbar.");
     } finally {
       setTxBusy(false);
+    }
+  };
+  const inspectTestnetTx = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    void inspectHash(txQuery.trim());
+  };
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const loadRealExample = async () => {
+    setSampleBusy(true);
+    setTxFailure("");
+    setTxProof(null);
+    try {
+      const response = await fetch("/api/xrpl-testnet-public-sample", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok || payload.status !== "sample" || typeof payload.txHash !== "string" ||
+          !/^[0-9a-fA-F]{64}$/.test(payload.txHash)) {
+        throw new Error("Testnet sample unavailable");
+      }
+      setTxQuery(payload.txHash);
+      await inspectHash(payload.txHash);
+    } catch {
+      setTxFailure("Aktuell keine geeignete validierte Testnet-Transaktion abrufbar. Du kannst weiterhin einen eigenen Hash verwenden.");
+    } finally {
+      setSampleBusy(false);
     }
   };
   const [testnet, setTestnet] = useState<{ status: string; validatedLedger: number | null }>({status: "loading", validatedLedger: null});
@@ -194,6 +216,13 @@ export default function XRPLCommerceLabPage() {
               <ShieldCheck size={15} />{txBusy ? "Ledger wird geprüft …" : "Echten Nachweis prüfen"}
             </button>
           </form>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button type="button" onClick={() => void loadRealExample()} disabled={sampleBusy || txBusy}
+              className="inline-flex min-h-[42px] items-center gap-2 rounded-full border border-emerald-200/25 bg-emerald-100/[.055] px-5 text-[11px] font-semibold text-emerald-100 transition hover:bg-emerald-100/[.1] disabled:opacity-40">
+              <Activity size={14} />{sampleBusy ? "Suche echten Testnet-Nachweis …" : "Echte Testnet-Transaktion laden"}
+            </button>
+            <span className="text-[10px] text-white/40">Ein öffentlicher Ledger-Eintrag – ohne Wallet oder erfundene Daten</span>
+          </div>
           {txFailure && <p role="alert" className="mt-4 rounded-xl border border-amber-200/15 bg-amber-200/[.04] p-4 text-xs text-amber-100/80">{txFailure}</p>}
           {txProof && (
             <div aria-live="polite" className="mt-5 rounded-2xl border border-emerald-200/20 bg-emerald-200/[.035] px-5 py-4">
