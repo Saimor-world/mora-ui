@@ -34,6 +34,8 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const isTunnelDev = pathname === "/tunnel";
+  // Independent document-style lab, unlike the full-screen OS canvas.
+  const isCommerceLab = pathname === "/xrpl-commerce-lab";
   // Auth / entry routes don't need the floating pane stack — keep first paint thin.
   const isAuthEntryRoute =
     pathname === "/" ||
@@ -119,24 +121,24 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-route-scrollable={isCommerceLab ? "commerce-lab" : undefined} suppressHydrationWarning>
       <head>
         <title>SAIMÔR OS</title>
         <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
       </head>
-      <body className="font-sans antialiased overflow-hidden" suppressHydrationWarning>
+      <body className={`font-sans antialiased ${isCommerceLab ? "commerce-lab-scroll" : "overflow-hidden"}`} suppressHydrationWarning>
         <QueryProvider>
           <ErrorBoundary>
             <MoraSessionProvider>
               <StandardModeHandler />
               {children}
-              {mounted && !isTunnelDev && !isAuthEntryRoute && (
+              {mounted && !isTunnelDev && !isAuthEntryRoute && !isCommerceLab && (
                 <>
                   <PaneManager />
                   <Toaster position="top-right" />
                 </>
               )}
-              {mounted && !isTunnelDev && isAuthEntryRoute && (
+              {mounted && !isTunnelDev && (isAuthEntryRoute || isCommerceLab) && (
                 <Toaster position="top-right" />
               )}
             </MoraSessionProvider>

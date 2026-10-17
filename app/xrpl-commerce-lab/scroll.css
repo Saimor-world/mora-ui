@@ -1,0 +1,55 @@
+/* Only the Commerce Lab is a document-style route.
+ * OS itself is a deliberately scroll-locked full-screen canvas.
+ * Keep this override scoped to the route marker set by app/layout.tsx.
+ */
+html[data-route-scrollable="commerce-lab"],
+html[data-route-scrollable="commerce-lab"] > body {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: clip !important;
+  overflow-y: auto !important;
+  overscroll-behavior-y: auto;
+}
+
+html[data-route-scrollable="commerce-lab"] {
+  scroll-behavior: smooth;
+}
+
+html[data-route-scrollable="commerce-lab"] > body {
+  position: relative;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-route-scrollable="commerce-lab"] #xrpl-commerce-lab {
+  min-height: 100dvh;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-y: visible;
+}
+
+html[data-route-scrollable="commerce-lab"] #xrpl-commerce-lab section {
+  min-width: 0;
+  scroll-margin-top: 28px;
+}
+
+html[data-route-scrollable="commerce-lab"] #xrpl-commerce-lab input {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  html[data-route-scrollable="commerce-lab"] #xrpl-commerce-lab {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  html[data-route-scrollable="commerce-lab"] #xrpl-commerce-lab section {
+    scroll-margin-top: 76px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-route-scrollable="commerce-lab"] {
+    scroll-behavior: auto;
+  }
+}
