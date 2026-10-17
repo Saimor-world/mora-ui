@@ -89,6 +89,28 @@ describe("XRPL Commerce Lab — visible UI boundaries", () => {
     expect(screen.getByText("OfferCreate")).toBeInTheDocument();
   });
 
+  it("loads the documented on-chain Testnet rehearsal without inventing an entitlement", async () => {
+    const hash = "A5B453A22F19F1787163411FEE6633E12BFD67BE9E0A27A5C6DAFF407E681303";
+    global.fetch = jest.fn(async (url: string) => ({
+      ok: true,
+      json: async () => url.includes("public-transaction")
+        ? { status: "validated", hash, ledgerIndex: 21607308,
+            ledgerHash: "4138BD5D7D9E6565D72FBA1D65F83A7046564B5BCA606BE00DBBE72A8DE6BC77",
+            transactionType: "Payment", result: "tesSUCCESS",
+            nativePaymentDrops: "1000", successful: true, commerceMatched: false,
+            productAccessGranted: false }
+        : { status: "connected", validatedLedger: 21607309 },
+    })) as unknown as typeof fetch;
+    render(<XRPLCommerceLabPage />);
+    fireEvent.click(screen.getByRole("button", { name: /Unsere erste echte Testnet-Zahlung ansehen/i }));
+    await waitFor(() => expect(screen.getByText(/Dokumentierte Entwickler-Generalprobe/i)).toBeInTheDocument());
+    expect(screen.getByRole("textbox", { name: "Testnet-Transaktionshash" })).toHaveValue(hash);
+    expect(screen.getByText("Kein Shop-Zahlungsbeleg")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /CORE-Prüfbericht öffnen/i })).toHaveAttribute(
+      "href", expect.stringContaining("XRPL_COMMERCE_TESTNET_REAL_PAYMENT_PROOF_20261017.md"),
+    );
+  });
+
   it("requires a new simulation after switching scenarios", () => {
     render(<XRPLCommerceLabPage />);
     fireEvent.click(screen.getByRole("button", { name: /Zahlungsprüfung simulieren/i }));
