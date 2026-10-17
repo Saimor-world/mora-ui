@@ -22,7 +22,7 @@ describe("XRPL Commerce Lab — visible UI boundaries", () => {
   });
   it("clearly labels synthetic data and never promises a live payment", () => {
     render(<XRPLCommerceLabPage />);
-    expect(screen.getByText("Nur Simulation")).toBeInTheDocument();
+    expect(screen.getByText("Testnet live · Checkout Simulation")).toBeInTheDocument();
     expect(screen.getByText("LIVE SETTLEMENT: DEAKTIVIERT")).toBeInTheDocument();
     expect(screen.getByText(/Keine Verbindung zur Blockchain/)).toBeInTheDocument();
     expect(screen.getByText("Bereit für die Überprüfung")).toBeInTheDocument();
@@ -85,6 +85,7 @@ describe("XRPL Commerce Lab — visible UI boundaries", () => {
     await waitFor(() => expect(screen.getByText("Validierter Testnet-Ledger")).toBeInTheDocument());
     expect(screen.getByRole("textbox", { name: "Testnet-Transaktionshash" })).toHaveValue(tx);
     expect(screen.getByText("Kein Shop-Zahlungsbeleg")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Im offiziellen Testnet-Explorer ansehen/i })).toHaveAttribute("href", "https://testnet.xrpl.org/transactions/" + tx);
     expect(screen.getByText("OfferCreate")).toBeInTheDocument();
   });
 
