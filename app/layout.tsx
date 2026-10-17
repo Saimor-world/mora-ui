@@ -34,11 +34,13 @@ export default function RootLayout({
   const pathname = usePathname();
 
   const isTunnelDev = pathname === "/tunnel";
+  const isStandaloneCommerceLab = pathname === "/xrpl-commerce-lab";
   // Auth / entry routes don't need the floating pane stack — keep first paint thin.
   const isAuthEntryRoute =
     pathname === "/" ||
     pathname === "/login" ||
     pathname === "/entry" ||
+    isStandaloneCommerceLab ||
     pathname === "/reset-password" ||
     pathname.startsWith("/begleiter") ||
     pathname.startsWith("/join") ||
@@ -124,7 +126,7 @@ export default function RootLayout({
         <title>SAIMÔR OS</title>
         <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
       </head>
-      <body className="font-sans antialiased overflow-hidden" suppressHydrationWarning>
+      <body className={isStandaloneCommerceLab ? "font-sans antialiased min-h-screen overflow-y-auto overflow-x-hidden" : "font-sans antialiased overflow-hidden"} suppressHydrationWarning>
         <QueryProvider>
           <ErrorBoundary>
             <MoraSessionProvider>
