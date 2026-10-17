@@ -8,6 +8,7 @@ import {
   LockKeyhole, Play, RefreshCcw, ShieldCheck, Wallet, XCircle, Zap,
 } from "lucide-react";
 import { COMMERCE_SCENARIOS, simulateCommerceOutcome, type CommerceScenario } from "@/lib/xrplCommerceLab";
+import { TestnetLedgerInspector } from "@/components/os/XRPLTestnetLedgerInspector";
 
 type Phase = "prepared" | "reviewed";
 const DEMO_QUOTE = "QT-DEMO-017";
@@ -224,6 +225,8 @@ export default function XRPLCommerceLabPage() {
             </section>
           </aside>
         </div>
+
+        <TestnetLedgerInspector />
 
         <footer className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/[.075] pt-5 text-[10px] text-white/28">
           <span>SAIMÔR SYSTEMS / COMMERCE LAB · EXPERIENCE PREVIEW</span>
