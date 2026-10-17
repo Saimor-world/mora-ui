@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import Link from "next/link";
 import {
   Activity, ArrowLeft, ArrowRight, Check,
-  CircleAlert, CircleDot, Fingerprint,
+  CircleAlert, CircleDot, ExternalLink, Fingerprint,
   LockKeyhole, Play, RefreshCcw, ShieldCheck, Wallet, XCircle, Zap,
 } from "lucide-react";
 import { COMMERCE_SCENARIOS, simulateCommerceOutcome, type CommerceScenario } from "@/lib/xrplCommerceLab";
@@ -149,7 +149,7 @@ export default function XRPLCommerceLabPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Indicator label="Nur Simulation" tone="amber" />
+            <Indicator label="Testnet live · Checkout Simulation" tone="amber" />
             <span className="hidden text-[11px] text-white/30 md:block">Keine Wallet · Kein Mainnet · Kein Zugriff</span>
           </div>
         </header>
@@ -234,6 +234,10 @@ export default function XRPLCommerceLabPage() {
                 <Field title="XRP-Drops zugestellt" value={txProof.nativePaymentDrops ?? "Keine reine XRP-Zahlung"} mono />
               </div>
               <p className="mt-3 break-all font-mono text-[10px] leading-5 text-white/40">Ledger-Hash: {txProof.ledgerHash}</p>
+              <a href={`https://testnet.xrpl.org/transactions/${txProof.hash}`} target="_blank" rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 text-[11px] font-medium text-emerald-200/80 underline-offset-4 hover:text-emerald-100 hover:underline">
+                <ExternalLink size={13} /> Im offiziellen Testnet-Explorer ansehen
+              </a>
               <p className="mt-3 text-[11px] leading-5 text-white/50">Diese Abfrage beweist die Ledger-Validierung des angegebenen Testnet-Hashes. Es gibt weder Bestellzuordnung noch Freigabe oder Geldfluss durch SAIMÔR.</p>
             </div>
           )}
