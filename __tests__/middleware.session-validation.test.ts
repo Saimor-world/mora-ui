@@ -132,3 +132,22 @@ describe('nextAuthVerificationSecret', () => {
         expect(nextAuthVerificationSecret()).toBe('dev_secret_key_change_me_in_prod');
     });
 });
+
+describe('public route boundaries', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        process.env = { ...ORIGINAL_ENV, NODE_ENV: 'production' };
+        delete process.env.NEXTAUTH_SECRET;
+        mockGetToken.mockResolvedValue(null);
+    });
+    afterAll(() => { process.env = ORIGINAL_ENV; });
+    it.each(['/api/authentication', '/api/core-private', '/api/client-errors.js'])('does not expose protected API %s by prefix or file extension', async path => {
+        expect((await middleware(request(path))).status).toBe(401);
+    });
+    it.each(['/tunnel', '/tunel'])('keeps dev museum %s private in production', async path => {
+        expect((await middleware(request(path))).status).toBe(307);
+    });
+    it.each(['/api/auth/session', '/api/core/v3/auth/me'])('preserves intended public bridge %s', async path => {
+        expect((await middleware(request(path))).headers.get('x-middleware-next')).toBe('1');
+    });
+});
