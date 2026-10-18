@@ -54,15 +54,15 @@ const PUBLIC_FILES = [
 ];
 
 function isPublicPath(pathname: string): boolean {
-    if (PUBLIC_PATHS.includes(pathname) || DEV_PUBLIC_PATHS.includes(pathname)) return true;
+    if (PUBLIC_PATHS.includes(pathname) || (process.env.NODE_ENV !== "production" && DEV_PUBLIC_PATHS.includes(pathname))) return true;
 
     for (const prefix of PUBLIC_PREFIXES) {
-        if (pathname.startsWith(prefix)) return true;
+        if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
     }
 
     if (PUBLIC_FILES.includes(pathname)) return true;
 
-    if (pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
+    if (!pathname.startsWith("/api/") && pathname.match(/\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/)) {
         return true;
     }
 
