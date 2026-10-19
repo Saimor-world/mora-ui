@@ -30,6 +30,20 @@ jest.mock('@/lib/queries/useTree', () => {
     return { useTree: () => ({ data: stableTree, isFetching: false }) };
 });
 
+jest.mock('@/apps/search/hooks/useKnowledgeLibrary', () => {
+    const stableEntries: never[] = [];
+    const stableIds = new Set<string>();
+    return {
+        useKnowledgeLibrary: () => ({
+            entries: stableEntries,
+            loading: false,
+            unavailable: false,
+            reload: jest.fn(),
+            allowedDepartmentIds: stableIds,
+        }),
+    };
+});
+
 // ─── paneStore — stable fake ──────────────────────────────────────────────────
 
 const mockGetPane = jest.fn();
