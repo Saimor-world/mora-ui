@@ -67,12 +67,14 @@ function AccountGroup({ title, hint, accounts }: { title: string; hint: string; 
     <div className="rounded-[22px] border border-white/[0.06] bg-white/[0.018] p-4" data-testid={`group-${title}`}>
       <div className="text-[9px] uppercase tracking-[0.18em] text-white/30">{title}</div>
       {accounts.length === 0 ? (
-        <div className="mt-2 text-[11px] text-white/34">{hint}</div>
+        <div className="mt-2 text-[11px] italic text-white/34" data-testid="source-missing">{hint}</div>
       ) : (
         accounts.map((a) => (
           <div key={a.id} className="mt-2 flex items-baseline justify-between gap-3">
             <span className="text-xs text-white/66">{a.display_name}</span>
-            <span className="text-sm tabular-nums text-white/82">{formatFinanceMoney(a.observed_balance)}</span>
+            <span className="text-sm tabular-nums text-white/82">
+              {a.observed_balance ? formatFinanceMoney(a.observed_balance) : 'noch nicht verbunden'}
+            </span>
           </div>
         ))
       )}
@@ -114,8 +116,8 @@ export default function CompanyOverview({ state, records, hasOlderRecords }: {
           <WalletCards size={16} className="text-white/22" />
         </div>
         <div className="grid gap-3 md:grid-cols-3">
-          <AccountGroup title="Revolut Business" hint="Noch nicht verbunden – Datenquelle fehlt." accounts={revolut} />
-          <AccountGroup title="XRPL Treasury" hint="Noch keine Treasury-Adresse zugeordnet." accounts={xrpl} />
+          <AccountGroup title="Revolut Business" hint="noch nicht verbunden" accounts={revolut} />
+          <AccountGroup title="XRPL Treasury" hint="noch nicht verbunden" accounts={xrpl} />
           <AccountGroup title="Weitere Konten" hint="Keine weiteren Konten." accounts={other} />
         </div>
         <div className="mt-3 flex items-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/26">
