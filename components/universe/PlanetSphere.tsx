@@ -287,10 +287,10 @@ function SphereShade({ size, lit, atmo, night }: { size: number; lit: number; at
   return <span className="uv2-shade absolute inset-0 rounded-full" style={url ? { backgroundImage: `url(${url})`, backgroundSize: '100% 100%' } : { background: 'radial-gradient(circle at 35% 30%, rgba(0,0,0,0) 30%, rgba(0,0,0,.7) 75%)' }} />;
 }
 
-/* ─── Saimôr-Pixelkugeln (Varianten A/B/C, Wahl über localStorage "uv2-planet-style") ─── */
+/* ─── Saimôr Universe Glass: default matte translucent style ─── */
 type PStyle = 'A' | 'B' | 'C' | 'J' | 'M';
 function usePixelStyle(): PStyle | null {
-  const [v, setV] = React.useState<PStyle | null>(null);
+  const [v, setV] = React.useState<PStyle | null>('M');
   React.useEffect(() => {
     const x = (typeof localStorage !== 'undefined' && localStorage.getItem('uv2-planet-style')) || '';
     const st: PStyle | null = x === 'off' ? null : (x === 'A' || x === 'B' || x === 'C' || x === 'J') ? x : 'M';
@@ -367,12 +367,20 @@ export function areaHue(name: string, _arch?: string | null): [number, number, n
   return [140, 170, 160];
 }
 const JEWEL_CACHE = new Map<string, ImageData>();
+/**
+ * Universe Glass: Matte translucent orbs with the cosmos shimmering inside.
+ * Marius: "glass orbs with the cosmos shimmering inside, refined individual hue per planet but not garish"
+ */
 function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
-  // hd47 (Marius): matt nur leicht getönt – Sättigung gut halbiert
-  const base: number[] = matte ? mix(hue, mix(grey(hue), [150, 168, 166], 0.35), 0.62) : hue;
-  const h: number[] = quiet ? mix(base, [128, 134, 132], 0.55) : base;
+  
+  // Universe Glass: very lightly tinted, matte, translucent – brighter than before
+  const base: number[] = matte 
+    ? mix(hue, mix(grey(hue), [175, 185, 180], 0.45), 0.55) 
+    : hue;
+  const h: number[] = quiet ? mix(base, [155, 165, 160], 0.45) : base;
+  
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1); const W = Math.round(size * dpr); if (cv.width !== W) cv.width = cv.height = W;
@@ -382,50 +390,86 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     const img = c.createImageData(W, W); const d = img.data;
     const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.55; const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
-    const night = h.map((v) => v * 0.13 + 4), deep = h.map((v) => v * 0.5), lite = mix(h, [255, 248, 232], 0.32);
-    const r = W / 2; const cell = 2.4 * dpr;
+    
+    // Brighter color range for Universe Glass
+    const night = h.map((v) => v * 0.18 + 12);
+    const deep = h.map((v) => v * 0.6);
+    const lite = mix(h, [255, 252, 240], 0.45);
+    const r = W / 2; const cell = 2.8 * dpr;
     const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
+    
     for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
       const u = (x + 0.5 - r) / r, v = (y + 0.5 - r) / r, q = u * u + v * v, i = (y * W + x) * 4;
       if (q > 1) { d[i + 3] = 0; continue; }
       const z = Math.sqrt(1 - q), ndl = u * lx + v * ly + z * lz;
-      const t = 1 / (1 + Math.exp(-(ndl + 0.05) * 7));          // weicher Terminator
+      const t = 1 / (1 + Math.exp(-(ndl + 0.08) * 6));
       const dif = Math.max(0, ndl);
-      // sehr feine, ruhige Struktur: Breitenbänder + Korn
-      const band = Math.sin((v * 6 + u * 0.8 + seed * 0.13)) * 0.035 + Math.sin(v * 17 + seed) * 0.018 + (nz(x >> 1, y >> 1) - 0.5) * 0.03;
-      const k = Math.min(1, Math.max(0, t * (0.45 + 0.55 * dif) + band));
-      let col = k < 0.5 ? mix(night, deep, k * 2) : mix(deep, h.map((v2) => Math.min(255, v2 * 1.05)), (k - 0.5) * 2);
-      if (dif > 0.6) col = mix(col, lite, (dif - 0.6) * (matte ? 0.6 : 0.9));
-      const fres = Math.pow(1 - z, 2.4);
-      const glow = fres * Math.max(0, ndl + 0.3) * 0.9;            // Atmosphäre im eigenen Ton
-      col = mix(col, mix(h, [255, 255, 255], 0.4), Math.min(1, glow));
+      
+      // Very subtle texture
+      const band = Math.sin((v * 5 + u * 0.6 + seed * 0.1)) * 0.025 + (nz(x >> 1, y >> 1) - 0.5) * 0.02;
+      const k = Math.min(1, Math.max(0, t * (0.5 + 0.5 * dif) + band));
+      
+      let col = k < 0.5 ? mix(night, deep, k * 2) : mix(deep, h.map((v2) => Math.min(255, v2 * 1.1)), (k - 0.5) * 2);
+      
+      // Brighter lit side
+      if (dif > 0.5) col = mix(col, lite, (dif - 0.5) * (matte ? 0.75 : 1.0));
+      
+      // Fresnel rim glow
+      const fres = Math.pow(1 - z, 2.2);
+      const glow = fres * Math.max(0, ndl + 0.35) * 1.0;
+      col = mix(col, mix(h, [255, 255, 255], 0.5), Math.min(1, glow));
+      
       if (!matte) {
-        const sp = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 70) * 0.85 + Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 12) * 0.12;
+        const sp = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 60) * 0.8 + Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 10) * 0.15;
         col = mix(col, [255, 252, 244], Math.min(1, sp));
-        const back = fres * Math.max(0, -ndl) * 0.35; col = mix(col, h, back); // Gegenlicht – Edelstein-Tiefe
+        const back = fres * Math.max(0, -ndl) * 0.3; col = mix(col, h, back);
       } else {
-        // feines Punktraster nur auf der Lichtseite
-        const cx = (x % cell) - cell / 2, cy = (y % cell) - cell / 2; const dot = Math.hypot(cx, cy) < cell * 0.22;
-        if (dot && t > 0.5) col = mix(col, lite, 0.08 * (t - 0.5) * 2);
+        // Universe Glass: subtle inner shimmer
+        const shimmer = Math.sin(u * 8 + v * 6 + seed * 0.2) * 0.02 + 0.02;
+        if (t > 0.55) col = mix(col, lite, shimmer * (t - 0.55) * 3);
       }
-      const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.4);
-      // Universe Glass (hd47): Milchglas – Kosmos scheint durch, weiche Innenglut, feine Kantenlichter
+      
+      const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.5);
+      
+      // Universe Glass: translucent with inner glow
       if (matte) {
-        const inner = Math.pow(z, 3) * 0.10 * (0.4 + 0.6 * t);              // weiche Innenglut
-        col = mix(col, mix(h, [255, 250, 238], 0.6), inner);
-        const edgeHi = Math.pow(1 - z, 6) * Math.max(0, u * lx + v * ly + 0.15) * 1.4; // Kantenlicht auf der Lichtseite
-        col = mix(col, [250, 244, 228], Math.min(0.55, edgeHi));
+        const inner = Math.pow(z, 2.8) * 0.12 * (0.5 + 0.5 * t);
+        col = mix(col, mix(h, [255, 252, 242], 0.65), inner);
+        const edgeHi = Math.pow(1 - z, 5) * Math.max(0, u * lx + v * ly + 0.2) * 1.2;
+        col = mix(col, [255, 250, 235], Math.min(0.5, edgeHi));
       }
-      const al = matte ? Math.min(1, 0.34 + 0.22 * t + 0.35 * Math.pow(1 - z, 3)) : 1; // Mitte ~55–65 % durchsichtig, Rand dichter
+      
+      // More translucent in center, denser at edge
+      const al = matte ? Math.min(1, 0.38 + 0.24 * t + 0.32 * Math.pow(1 - z, 2.5)) : 1;
       d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge * al);
     }
     JEWEL_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();
-    function drawRim() { if (!c) return; const rr = W / 2; c.strokeStyle = `rgba(226,192,118,${quiet ? 0.4 : 0.78})`; c.lineWidth = dpr * 0.8; c.beginPath(); c.arc(rr, rr, rr - dpr * 0.6, 0, Math.PI * 2); c.stroke(); }
+    
+    function drawRim() { 
+      if (!c) return; 
+      const rr = W / 2; 
+      // Subtle gold ring – refined, not garish
+      c.strokeStyle = `rgba(220,190,120,${quiet ? 0.35 : 0.65})`; 
+      c.lineWidth = dpr * 0.7; 
+      c.beginPath(); 
+      c.arc(rr, rr, rr - dpr * 0.5, 0, Math.PI * 2); 
+      c.stroke(); 
+    }
   }, [size, lit, h.join(','), matte, seed, quiet]);
-  const gx = Math.cos(lit) * size * 0.06, gy = Math.sin(lit) * size * 0.06;
+  
+  const gx = Math.cos(lit) * size * 0.05, gy = Math.sin(lit) * size * 0.05;
   return (<>
-    <span className="pointer-events-none absolute rounded-full" style={{ inset: 0, boxShadow: `${gx}px ${gy}px ${size * 0.35}px rgba(${h.join(',')},${quiet ? 0.08 : matte ? 0.18 : 0.32})` }} />
-    {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ backdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', WebkitBackdropFilter: 'blur(2.5px) brightness(1.18) saturate(.9)', transform: 'scale(1.0)', boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22)` }} />}
+    {/* Subtle ambient glow */}
+    <span className="pointer-events-none absolute rounded-full" style={{ 
+      inset: -size * 0.08, 
+      boxShadow: `${gx}px ${gy}px ${size * 0.4}px rgba(${h.join(',')},${quiet ? 0.06 : matte ? 0.14 : 0.28})` 
+    }} />
+    {/* Backdrop blur for glass effect */}
+    {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ 
+      backdropFilter: 'blur(3px) brightness(1.22) saturate(.85)', 
+      WebkitBackdropFilter: 'blur(3px) brightness(1.22) saturate(.85)', 
+      boxShadow: `inset 0 0 ${size * 0.15}px rgba(${h.join(',')},.18)` 
+    }} />}
     <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />
   </>);
 }

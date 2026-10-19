@@ -76,8 +76,8 @@ function SignalRow({ icon, label, value, onClick, drag }: {
         >
             <span className="mt-0.5 text-cyan-100/42 transition group-hover:text-cyan-100/80">{icon}</span>
             <span className="min-w-0">
-                <span className="block text-[8px] uppercase tracking-[0.17em] text-white/27">{label}</span>
-                <span className="mt-0.5 block truncate text-[11px] leading-relaxed text-white/62 transition group-hover:text-white/88">{value}</span>
+                <span className="block text-[11px] uppercase tracking-[0.12em] text-white/35">{label}</span>
+                <span className="mt-0.5 block truncate text-[13px] leading-relaxed text-white/68 transition group-hover:text-white/92">{value}</span>
             </span>
         </button>
     );
@@ -94,7 +94,7 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
     if (business.activeCount === 0) {
         return (
             <Instrument eyebrow="Wirtschaft" title="Noch kein Umsatz">
-                <p className="text-[11px] leading-relaxed text-white/48">
+                <p className="text-[13px] leading-relaxed text-white/52">
                     Vorbereitet auf den ersten zahlenden Kunden. Paddle ist angebunden – sobald ein Abo aktiv wird, erscheint es hier.
                 </p>
             </Instrument>
@@ -111,7 +111,7 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
                 <TrendingUp size={14} className="text-emerald-300/75" />
                 <span className="text-lg font-medium text-white/90">{amount}</span>
             </div>
-            <p className="mt-1.5 text-[10px] uppercase tracking-[0.14em] text-white/32">
+            <p className="mt-1.5 text-[12px] uppercase tracking-[0.10em] text-white/42">
                 {business.activeCount} aktive{business.activeCount === 1 ? 's Abo' : ' Abos'} · {business.providers.join(', ')}
             </p>
         </Instrument>
@@ -181,12 +181,12 @@ export function UniverseObservatory(props: Props) {
                                 {openIncidents.length ? <Activity size={14} className="text-amber-300/75" /> : <ShieldCheck size={14} className="text-emerald-300/70" />}
                                 {openIncidents.length ? `${openIncidents.length} offen` : 'Systeme ruhig'}
                             </span>
-                            <span className="text-[8px] uppercase tracking-[0.16em] text-white/24 transition group-hover:text-white/55">Öffnen</span>
+                            <span className="text-[11px] uppercase tracking-[0.12em] text-white/32 transition group-hover:text-white/60">Öffnen</span>
                         </div>
                         {/* Vorher feste 34px Hoehe: "Keine belegten Vorfaelle im
                             aktuellen Lagebild." brach um und die zweite Zeile
                             wurde abgeschnitten. */}
-                        <div className="mt-3 line-clamp-2 rounded-xl border border-white/[0.05] bg-black/25 px-3 py-2 text-[10px] leading-relaxed text-white/50">
+                        <div className="mt-3 line-clamp-2 rounded-xl border border-white/[0.06] bg-black/25 px-3 py-2 text-[12px] leading-relaxed text-white/55">
                             {openIncidents[0]?.title || 'Keine belegten Vorfälle im aktuellen Lagebild.'}
                         </div>
                     </button>

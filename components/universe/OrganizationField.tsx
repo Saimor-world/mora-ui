@@ -320,7 +320,7 @@ export function OrganizationField({
                     hinschauen soll" war der Befund; ein Erklaertext ist keine
                     Information, ein laufendes Band echter Werte schon. */}
                 {landed && (
-                    <p className={'pointer-events-none mx-auto mt-3 inline-flex max-w-[52ch] items-center gap-1.5 rounded-full border px-4 py-1.5 text-[11px] ' +
+                    <p className={'pointer-events-none mx-auto mt-3 inline-flex max-w-[52ch] items-center gap-1.5 rounded-full border px-4 py-1.5 text-[13px] ' +
                         (landed.state === 'failed'
                             ? 'border-amber-300/25 bg-[#1b1206]/85 text-amber-100/80'
                             : 'border-white/10 bg-[#08121e]/80 text-white/58')}>
@@ -416,27 +416,38 @@ export function OrganizationField({
             </div>
 
             {selected && (
-                <aside data-testid="planet-detail" style={isUniverseV2Enabled() ? { background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', borderColor: 'transparent', borderRadius: 20, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 20px 50px rgba(0,0,0,0.45)' } : undefined} className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
+                <aside
+                    data-testid="planet-detail"
+                    style={isUniverseV2Enabled() ? {
+                        background: 'rgba(18,20,26,0.72)',
+                        backdropFilter: 'blur(40px) saturate(150%)',
+                        WebkitBackdropFilter: 'blur(40px) saturate(150%)',
+                        borderColor: 'rgba(255,250,235,0.12)',
+                        borderRadius: 20,
+                        boxShadow: 'inset 0 0 0 0.5px rgba(255,250,235,0.10), 0 24px 60px rgba(0,0,0,0.5)',
+                    } : undefined}
+                    className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6"
+                >
                     <button
                         type="button"
                         onClick={() => onSelect(null)}
-                        className="absolute right-4 top-4 rounded-full p-2 text-white/38 transition hover:bg-white/10 hover:text-white"
+                        className="absolute right-4 top-4 rounded-full p-2 text-[#F7F4E9]/40 transition hover:bg-[#F7F4E9]/10 hover:text-[#F7F4E9]"
                         aria-label="Auswahl schließen"
                     >
                         <X size={16} />
                     </button>
-                    <div className="text-[9px] font-semibold uppercase tracking-[0.24em] text-cyan-100/48">
-                        {selected.metricSource === 'missing' ? 'Datenquelle fehlt' : metricLabel[selected.metricSource]}
+                    <div className="text-[12px] font-medium uppercase tracking-[0.15em] text-[#D6A848]/85">
+                        {selected.metricSource === 'missing' ? 'Bereit für Daten' : metricLabel[selected.metricSource]}
                     </div>
-                    <h2 className="mt-3 pr-8 text-xl font-medium text-white/94">{selected.name}</h2>
-                    <p className="mt-2 text-sm leading-relaxed text-white/48">
-                        {selected.description || 'Noch keine Beschreibung hinterlegt.'}
+                    <h2 className="mt-3 pr-8 text-xl font-medium text-[#F7F4E9]/94">{selected.name}</h2>
+                    <p className="mt-2 text-[13px] leading-relaxed text-[#F7F4E9]/55">
+                        {selected.description || 'Dieser Bereich wartet auf seine Geschichte.'}
                     </p>
                     {isUniverseV2Enabled() ? (
-                        <p className="mt-5 border-y border-white/[0.09] py-3 text-[10px] uppercase tracking-[0.2em] text-white/45" data-testid="planet-detail-facts" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>
+                        <p className="mt-5 border-y border-[#F7F4E9]/10 py-3 text-[12px] tracking-[0.12em] text-[#F7F4E9]/55" data-testid="planet-detail-facts" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>
                             {[selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
                               selected.documents ? `${selected.documents} Dokumente` : null,
-                              selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Noch leer'}
+                              selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Bereit für Inhalte'}
                         </p>
                     ) : (
                     <div className="mt-5 grid grid-cols-3 gap-2">
@@ -448,15 +459,15 @@ export function OrganizationField({
                     {lens === 'relations' && (
                         <div className="mt-5 space-y-2">
                             {selectedSignals.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-white/12 px-4 py-3 text-xs leading-relaxed text-white/38">
-                                    Keine belegte Beziehung. Saimôr zeichnet hier bewusst keine Verbindung.
+                                <div className="rounded-2xl border border-dashed border-[#F7F4E9]/12 px-4 py-3 text-[13px] leading-relaxed text-[#F7F4E9]/45">
+                                    Keine belegte Beziehung – noch ruhig.
                                 </div>
                             ) : selectedSignals.slice(0, 3).map((signal) => (
-                                <div key={signal.kind + '-' + signal.id} className="flex items-start gap-3 border-t border-white/[0.07] pt-3">
-                                    <Radio size={12} className="mt-0.5 shrink-0 text-amber-200/72" />
+                                <div key={signal.kind + '-' + signal.id} className="flex items-start gap-3 border-t border-[#F7F4E9]/8 pt-3">
+                                    <Radio size={12} className="mt-0.5 shrink-0 text-[#D6A848]/75" />
                                     <div className="min-w-0">
-                                        <div className="truncate text-xs text-white/74">{signal.title}</div>
-                                        <div className="mt-0.5 text-[9px] uppercase tracking-[0.12em] text-white/28">{signal.subtitle}</div>
+                                        <div className="truncate text-[13px] text-[#F7F4E9]/78">{signal.title}</div>
+                                        <div className="mt-0.5 text-[12px] uppercase tracking-[0.08em] text-[#F7F4E9]/45">{signal.subtitle}</div>
                                     </div>
                                 </div>
                             ))}
@@ -468,7 +479,7 @@ export function OrganizationField({
                             disabled={selected.access === 'locked'}
                             data-uv2-open="true"
                             onClick={() => onOpen(selected.id)}
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-xs font-semibold text-slate-950 transition hover:bg-cyan-100 disabled:cursor-not-allowed disabled:bg-white/10 disabled:text-white/38"
+                            className="inline-flex items-center gap-2 rounded-full bg-[#F7F4E9] px-4 py-2.5 text-[13px] font-semibold text-slate-900 transition hover:bg-[#D6A848] disabled:cursor-not-allowed disabled:bg-[#F7F4E9]/10 disabled:text-[#F7F4E9]/40"
                         >
                             {selected.access === 'locked'
                                 ? <>Mitgliedschaft erforderlich <Lock size={13} /></>
@@ -477,7 +488,7 @@ export function OrganizationField({
                         <button
                             type="button"
                             onClick={() => onAskMora(selected)}
-                            className="inline-flex items-center gap-2 rounded-full border border-cyan-100/16 px-4 py-2.5 text-xs font-semibold text-cyan-100/72 transition hover:border-cyan-100/34 hover:text-cyan-50"
+                            className="inline-flex items-center gap-2 rounded-full border border-[#D6A848]/25 px-4 py-2.5 text-[13px] font-semibold text-[#D6A848]/85 transition hover:border-[#D6A848]/50 hover:text-[#D6A848]"
                         >
                             <Sparkles size={13} /> Mit Môra klären
                         </button>
@@ -650,15 +661,15 @@ function Territory({
             ) : isUniverseV2Enabled() ? (
                 // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
                 (territory.spaces > 0 || territory.documents > 0) && (
-                    <span className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">
+                    <span className="uv2-planet-meta mt-2 block font-mono text-[12px] leading-[16px] tracking-[0.06em] tabular-nums text-[#F7F4E9]/55">
                         {[territory.spaces > 0 && `${territory.spaces} ${territory.spaces === 1 ? 'Bereich' : 'Bereiche'}`,
                           territory.documents > 0 && `${territory.documents} ${territory.documents === 1 ? 'Dokument' : 'Dokumente'}`].filter(Boolean).join(' · ')}
                     </span>
                 )
             ) : (
-            <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
+            <span className="mt-1 flex items-center justify-center gap-2 text-[12px] uppercase tracking-[0.10em] text-white/45">
                 <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
-                <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
+                <span className="h-0.5 w-0.5 rounded-full bg-white/35" />
                 <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
             </span>
             )}
@@ -669,7 +680,7 @@ function Territory({
                 kann auch nichts verdecken. */}
             {orbitals.moons.find((moon) => moon.inMotion) && (
                 <span
-                    className="mt-1.5 flex items-center justify-center gap-1.5 text-[9px] font-medium tracking-[0.02em]"
+                    className="mt-1.5 flex items-center justify-center gap-1.5 text-[12px] font-medium tracking-[0.02em]"
                     style={{ color: accent }}
                 >
                     <span className="inline-block h-1 w-1 rounded-full" style={{ background: accent }} />
@@ -814,7 +825,7 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
     if (strands.length === 0) return null;
 
     return (
-        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/94 px-5 py-2.5 text-[10px] text-white/52">
+        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-[#08121e]/94 px-5 py-2.5 text-[12px] text-white/58">
             <span className="flex items-center gap-2">
                 <svg width="22" height="6" aria-hidden="true"><line x1="1" y1="3" x2="21" y2="3" stroke="#fcd34d" strokeWidth="1.6" strokeLinecap="round" /></svg>
                 {assigned} belegt
@@ -945,10 +956,10 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                             />
                         )}
                         <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
-                            <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
-                            <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
+                            <span className="block text-[13px] font-medium text-white/92">{moon.name}</span>
+                            <span className="mt-1 block text-[11px] uppercase tracking-[0.10em] text-white/52">
                                 {moon.documents === 0
-                                    ? 'noch leer'
+                                    ? 'Bereit'
                                     : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}
                             </span>
                         </span>
@@ -964,7 +975,7 @@ function TruthValue({ icon, value, label }: { icon: React.ReactNode; value: numb
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.035] px-3 py-3">
             <span className="text-cyan-100/46">{icon}</span>
             <span className="mt-2 block text-lg font-medium text-white/88">{value}</span>
-            <span className="block text-[9px] uppercase tracking-[0.14em] text-white/28">{label}</span>
+            <span className="block text-[12px] uppercase tracking-[0.10em] text-white/38">{label}</span>
         </div>
     );
 }

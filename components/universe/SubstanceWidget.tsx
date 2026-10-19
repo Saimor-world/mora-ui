@@ -37,14 +37,14 @@ export function SubstanceWidget({ bars, onSelect }: {
             </h2>
 
             {leer ? (
-                <p className="mt-3 text-[11px] leading-relaxed text-white/45">
-                    Noch nichts abgelegt. Sobald Inhalte entstehen, zeigt sich hier ihre Verteilung.
+                <p className="mt-3 text-[13px] leading-relaxed text-white/52">
+                    Bereit für Inhalte. Sobald Dokumente entstehen, zeigt sich hier ihre Verteilung.
                 </p>
             ) : (
                 <div className="mt-3 space-y-2.5">
                     {isUniverseV2Enabled() && (
                         <div data-testid="uv2-verteilung-summe" className="pb-1">
-                            <p className="flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#F7F4E9]/45">
+                            <p className="flex items-baseline gap-2 font-mono text-[12px] uppercase tracking-[0.14em] text-[#F7F4E9]/55">
                                 <span className="font-serif text-[22px] normal-case tracking-normal text-[#F7F4E9]"><CountUp value={bars.reduce((n, b) => n + b.documents, 0)} /></span>
                                 Dokumente gesamt
                             </p>
@@ -66,9 +66,9 @@ export function SubstanceWidget({ bars, onSelect }: {
                             className="group block w-full text-left"
                         >
                             <span className="flex items-baseline justify-between gap-2">
-                                <span className="truncate text-[11px] text-white/72 transition group-hover:text-white/95">{bar.name}</span>
-                                <span className="shrink-0 text-[9px] tabular-nums text-white/38">
-                                    <CountUp value={bar.documents} /> Dok · <CountUp value={bar.folders} /> Ord
+                                <span className="truncate text-[13px] text-white/76 transition group-hover:text-white/95">{bar.name}</span>
+                                <span className="shrink-0 text-[12px] tabular-nums text-white/45">
+                                    <CountUp value={bar.documents} />
                                 </span>
                             </span>
                             <span className="mt-1 block h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07]">
