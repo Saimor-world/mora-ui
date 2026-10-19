@@ -420,7 +420,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
         if (!followConversationRef.current) return;
         const frame = window.requestAnimationFrame(() => {
             const scroll = messageScrollRef.current;
-            if (scroll) scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'auto' });
+            if (typeof scroll?.scrollTo === 'function') scroll.scrollTo({ top: scroll.scrollHeight, behavior: 'auto' });
         });
         return () => window.cancelAnimationFrame(frame);
     }, [messages, streamingText, liveFrames, chatView]);
