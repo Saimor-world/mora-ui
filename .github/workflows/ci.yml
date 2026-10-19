@@ -15,6 +15,7 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     permissions:
       contents: read
     env:
@@ -51,3 +52,13 @@ jobs:
 
       - name: Production build
         run: npm run build
+
+      - name: Production dependency audit against temporary baseline
+        shell: bash
+        run: |
+          set +e
+          npm audit --omit=dev --json > /tmp/npm-audit.json
+          audit_status=$?
+          set -e
+          echo "npm audit exit status: $audit_status"
+          node scripts/check-npm-audit-baseline.mjs /tmp/npm-audit.json security/npm-audit-baseline.json

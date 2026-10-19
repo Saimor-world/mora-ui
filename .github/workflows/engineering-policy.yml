@@ -1,0 +1,130 @@
+name: Engineering Policy
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: engineering-policy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  policy:
+    name: Engineering policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, verified upstream 2026-07-16
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require engineering contract
+        shell: bash
+        run: |
+          test -s ENGINEERING.md || {
+            echo "::error::ENGINEERING.md is required and must not be empty."
+            exit 1
+          }
+
+      - name: Reject unresolved merge markers
+        shell: bash
+        run: |
+          if git grep -n -E '^(<<<<<<< |>>>>>>> )' -- .; then
+            echo "::error::Unresolved Git merge-conflict markers found."
+            exit 1
+          fi
+
+      - name: Guard changed workflow action references and sensitive files
+        if: github.event_name == 'pull_request'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+          from pathlib import PurePosixPath
+
+          base = os.environ["BASE_SHA"]
+          diff = subprocess.check_output(
+              ["git", "diff", "--unified=0", base, "HEAD", "--", ".github/workflows"],
+              text=True,
+              errors="replace",
+          )
+
+          bad_actions = []
+          for raw in diff.splitlines():
+              if not raw.startswith("+") or raw.startswith("+++"):
+                  continue
+              line = raw[1:]
+              match = re.search(r"\buses:\s*([^\s#]+)", line)
+              if not match:
+                  continue
+              ref = match.group(1)
+              if ref.startswith("./"):
+                  continue
+              if not re.search(r"@[0-9a-fA-F]{40}$", ref):
+                  bad_actions.append(ref)
+
+          added = subprocess.check_output(
+              ["git", "diff", "--name-only", "--diff-filter=A", base, "HEAD"],
+              text=True,
+              errors="replace",
+          ).splitlines()
+
+          forbidden_names = {
+              ".env",
+              ".env.local",
+              ".env.production",
+              ".env.development",
+              ".env.test",
+              "id_rsa",
+              "id_ed25519",
+          }
+          forbidden_suffixes = {".p12", ".pfx"}
+          bad_files = []
+          for item in added:
+              path = PurePosixPath(item)
+              name = path.name.lower()
+              if name.endswith(".example") or name.endswith(".sample") or name.endswith(".template"):
+                  continue
+              if name in forbidden_names or path.suffix.lower() in forbidden_suffixes:
+                  bad_files.append(item)
+
+          full_diff = subprocess.check_output(
+              ["git", "diff", "--unified=0", base, "HEAD"],
+              text=True,
+              errors="replace",
+          )
+          private_key_pattern = re.compile(r"^\+.*BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY", re.MULTILINE)
+          key_material_added = bool(private_key_pattern.search(full_diff))
+
+          failed = False
+          if bad_actions:
+              failed = True
+              print("::error::New/changed GitHub Actions must use local actions or an immutable 40-character commit SHA.")
+              for ref in sorted(set(bad_actions)):
+                  print(f"  unpinned: {ref}")
+
+          if bad_files:
+              failed = True
+              print("::error::Sensitive environment/key files must not be committed.")
+              for item in bad_files:
+                  print(f"  sensitive file: {item}")
+
+          if key_material_added:
+              failed = True
+              print("::error::Private-key material appears in added diff content.")
+
+          if failed:
+              sys.exit(1)
+
+          print("Engineering policy checks passed.")
+          PY
