@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 interface AmbientDustProps {
     /** Number of particles to render */
@@ -14,6 +14,8 @@ interface AmbientDustProps {
     color?: string;
     /** Particle opacity */
     opacity?: number;
+    /** Obey the shell motion controls. */
+    paused?: boolean;
 }
 
 /**
@@ -24,36 +26,47 @@ interface AmbientDustProps {
  * 
  * Design:
  * - Subtle, slow-moving particles
- * - Random starting positions
- * - Vertical drift animation (float up + fade)
- * - Emerald-tinted for brand consistency
+ * - Deterministic starting positions
+ * - Matte radial light with gentle drift and continuous presence
+ * - Scene tint supplied by the shell
  * 
  * Performance:
  * - Optimized with useMemo (particles calculated once)
  * - CSS transforms (GPU-accelerated)
  * - Configurable count (adjust for performance)
  */
+const DEFAULT_SIZE: [number, number] = [3, 8];
+const DEFAULT_DURATION: [number, number] = [22, 40];
+const seeded = (index: number) => { const n = Math.sin(index * 127.1 + 311.7) * 43758.5453; return n - Math.floor(n); };
+
 export const AmbientDust: React.FC<AmbientDustProps> = ({
     count = 20,
-    sizeRange = [0.5, 2],
-    durationRange = [15, 30],
-    color = 'rgba(16, 185, 129, 0.1)', // emerald-500/10
-    opacity = 0.2
+    sizeRange = DEFAULT_SIZE,
+    durationRange = DEFAULT_DURATION,
+    color = 'rgba(190, 211, 194, 0.65)',
+    opacity = 0.22,
+    paused = false
 }) => {
-    // Generate particle data (memoized for performance)
-    const particles = useMemo(() => {
-        return Array.from({ length: count }).map((_, i) => ({
-            id: i,
-            x: Math.random() * 100, // 0-100%
-            y: Math.random() * 100, // 0-100%
-            size: sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]),
-            duration: durationRange[0] + Math.random() * (durationRange[1] - durationRange[0]),
-            delay: Math.random() * 5 // stagger start times
-        }));
-    }, [count, sizeRange, durationRange]);
+    const reduced = useReducedMotion();
+    const [visible, setVisible] = useState(true);
+    useEffect(() => {
+        const sync = () => setVisible(!document.hidden);
+        sync(); document.addEventListener('visibilitychange', sync);
+        return () => document.removeEventListener('visibilitychange', sync);
+    }, []);
+    const moving = !paused && !reduced && visible;
+    const [minSize, maxSize] = sizeRange, [minDuration, maxDuration] = durationRange;
+    // Stable positions survive shell rerenders and match server/client rendering.
+    const particles = useMemo(() => Array.from({ length: Math.min(40, Math.max(0, count)) }, (_, i) => ({
+        id: i,
+        x: seeded(i * 5 + 1) * 100, y: seeded(i * 5 + 2) * 100,
+        size: minSize + seeded(i * 5 + 3) * (maxSize - minSize),
+        duration: minDuration + seeded(i * 5 + 4) * (maxDuration - minDuration),
+        delay: -seeded(i * 5 + 5) * maxDuration,
+    })), [count, minSize, maxSize, minDuration, maxDuration]);
 
     return (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
             {particles.map((particle) => (
                 <motion.div
                     key={particle.id}
@@ -63,18 +76,19 @@ export const AmbientDust: React.FC<AmbientDustProps> = ({
                         top: `${particle.y}%`,
                         width: particle.size,
                         height: particle.size,
-                        backgroundColor: color,
+                        background: `radial-gradient(circle, ${color} 0%, transparent 72%)`,
+                        filter: 'blur(0.5px)',
                         opacity: opacity
                     }}
-                    animate={{
-                        y: [0, -120, 0], // drift up 120px, return
-                        opacity: [0, opacity, 0] // fade in/out
-                    }}
+                    initial={false}
+                    animate={moving ? {
+                        x: [0, 12, 0], y: [0, -28, 0], opacity: [opacity * 0.45, opacity, opacity * 0.45],
+                    } : { x: 0, y: 0, opacity: opacity * 0.65 }}
                     transition={{
-                        duration: particle.duration,
-                        repeat: Infinity,
-                        ease: 'linear',
-                        delay: particle.delay
+                        repeat: moving ? Infinity : 0,
+                        duration: moving ? particle.duration : 0,
+                        ease: 'easeInOut',
+                        delay: moving ? particle.delay : 0
                     }}
                 />
             ))}

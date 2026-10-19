@@ -800,10 +800,11 @@ export const MoraShell: React.FC = () => {
 
                     <AmbientDust
                         count={ambient.density === 'low' || universeLightAmbient ? 8 : 32}
-                        color="rgba(var(--scene-rgb, 16, 185, 129), 0.07)"
-                        sizeRange={[0.8, 2.5]}
-                        durationRange={[18, 36]}
-                        opacity={universeLightAmbient ? 0.14 : 0.28}
+                        color="rgba(var(--scene-rgb, 190, 211, 194), 0.65)"
+                        sizeRange={[3, 9]}
+                        durationRange={[22, 40]}
+                        opacity={universeLightAmbient ? 0.14 : 0.24}
+                        paused={pauseHeavyBackground}
                     />
                 </>
             )}
