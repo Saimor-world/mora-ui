@@ -150,6 +150,63 @@ export function useConnectCompanyBitvavo(companyId?: string | null) {
 }
 
 
+export type RevolutBusinessEnvironment = 'production' | 'sandbox';
+
+export function useStartCompanyRevolut(companyId?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, {
+    clientId: string;
+    privateKeyPem: string;
+    redirectUri: string;
+    environment: RevolutBusinessEnvironment;
+    label?: string | null;
+  }>({
+    mutationFn: async ({ clientId, privateKeyPem, redirectUri, environment, label }) => {
+      if (!companyId) throw new Error('Company scope fehlt.');
+      return corePost(
+        '/v3/finance/connections/revolut-business/start',
+        {
+          company_id: companyId,
+          client_id: clientId,
+          private_key_pem: privateKeyPem,
+          redirect_uri: redirectUri,
+          environment,
+          label: label || null,
+          ownership_attested: true,
+        },
+        { throwAuthErrors: true, preserveEnvelope: true },
+      );
+    },
+    onSuccess: async () => {
+      const current = currentIdentity();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.financeConnections(current.tenantId, current.identityKey, 'company', companyId),
+      });
+    },
+  });
+}
+
+export function useCompleteCompanyRevolut(companyId?: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation<any, Error, { connectionId: string; code: string }>({
+    mutationFn: ({ connectionId, code }) => corePost(
+      '/v3/finance/connections/revolut-business/complete',
+      {
+        connection_id: connectionId,
+        code,
+      },
+      { throwAuthErrors: true, preserveEnvelope: true },
+    ),
+    onSettled: async () => {
+      const current = currentIdentity();
+      await queryClient.invalidateQueries({
+        queryKey: queryKeys.financeConnections(current.tenantId, current.identityKey, 'company', companyId),
+      });
+    },
+  });
+}
+
+
 export type OpenBankingInstitution = {
   id: string;
   name: string;
