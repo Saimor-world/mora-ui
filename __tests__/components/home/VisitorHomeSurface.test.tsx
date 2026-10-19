@@ -1,17 +1,7 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { VisitorHomeSurface } from '@/components/home/VisitorHomeSurface';
-import { submitDossierToWall } from '@/lib/api/wallClient';
-import { useCreateDossierNode } from '@/lib/hooks/useCreateDossierNode';
 import { useNavStore } from '@/lib/store/navStore';
-
-jest.mock('@/lib/api/wallClient', () => ({
-    submitDossierToWall: jest.fn(),
-}));
-
-jest.mock('@/lib/hooks/useCreateDossierNode', () => ({
-    useCreateDossierNode: jest.fn(),
-}));
 
 jest.mock('@/lib/hooks/useWebsiteEntryContext', () => ({
     useWebsiteEntryContext: () => ({
@@ -25,23 +15,6 @@ jest.mock('@/lib/hooks/useWebsiteEntryContext', () => ({
         rooms: [],
         documents: [],
         tasks: [{ title: 'CSP setzen', priority: 'hoch' }],
-    }),
-}));
-
-jest.mock('@/lib/queries/useDossierView', () => ({
-    useDossierView: () => ({
-        data: {
-            company: { name: 'Acme GmbH' },
-            audit: {
-                domain: 'acme.de',
-                score: 64,
-                level: 'mittel',
-                summary: 'CSP fehlt.',
-                logo_url: null,
-                expires_at: null,
-                findings: [{ title: 'CSP fehlt', severity: 'risk', desc: 'Header nicht gesetzt.' }],
-            },
-        },
     }),
 }));
 
@@ -75,29 +48,32 @@ jest.mock('framer-motion', () => {
 beforeEach(() => {
     jest.clearAllMocks();
     useNavStore.setState({ activeCompanyId: 'company-acme', coreMode: 'home' } as any);
-    (useCreateDossierNode as jest.Mock).mockReturnValue({ nodeId: 'node-audit-1', isCreating: false });
-    (submitDossierToWall as jest.Mock).mockResolvedValue({ success: true, wall_status: 'pending' });
 });
 
-it('opens the tenant-scoped Simple Coffee demo without using the public playground', async () => {
+it('renders the unified preview home with UV2 design tokens', () => {
     render(<VisitorHomeSurface />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Geführte Simple Coffee Demo öffnen/i }));
+    expect(screen.getByTestId('visitor-home-surface')).toBeInTheDocument();
+    expect(screen.getByText('Acme GmbH')).toBeInTheDocument();
+    expect(screen.getByText('Score 64')).toBeInTheDocument();
+    expect(screen.getByText('CSP setzen')).toBeInTheDocument();
+});
+
+it('opens the tenant-scoped Simple Coffee demo', async () => {
+    render(<VisitorHomeSurface />);
+
+    const demoButton = screen.getByRole('button', { name: /Simple Coffee Group/i });
+    await userEvent.click(demoButton);
 
     expect(useNavStore.getState().activeCompanyId).toBe('company-simple-coffee');
     expect(useNavStore.getState().coreMode).toBe('explore');
 });
 
-it('submits the visitor dossier node to the Wall queue', async () => {
+it('navigates to Universe explore mode', async () => {
     render(<VisitorHomeSurface />);
 
-    await userEvent.click(screen.getByRole('button', { name: /Signal veröffentlichen/i }));
+    const universeButton = screen.getByRole('button', { name: /Topographie erkunden/i });
+    await userEvent.click(universeButton);
 
-    expect(submitDossierToWall).toHaveBeenCalledWith(expect.objectContaining({
-        node_id: 'node-audit-1',
-        visibility: 'domain-only',
-    }));
-    await waitFor(() => {
-        expect(screen.getByText(/Wall-Signal ist vorgemerkt/i)).toBeInTheDocument();
-    });
+    expect(useNavStore.getState().coreMode).toBe('explore');
 });
