@@ -25,8 +25,8 @@ function AppSkeleton() {
         <div className="mt-5 h-3 w-44 overflow-hidden rounded-full bg-white/[0.06]">
           <div className="h-full w-1/2 rounded-full bg-gradient-to-r from-emerald-300/0 via-emerald-200/70 to-cyan-200/0 animate-[mora-loader_1.4s_ease-in-out_infinite]" />
         </div>
-        <div className="mt-4 text-[10px] uppercase tracking-[0.24em] text-emerald-100/42">App wird aufgebaut</div>
-        <p className="mt-2 text-sm leading-relaxed text-white/42">Interface, Datenkontext und Interaktionen werden synchronisiert.</p>
+        <div className="mt-4 text-[11px] uppercase tracking-[0.16em] text-emerald-100/65">Einen Moment</div>
+        <p className="mt-2 text-sm leading-relaxed text-white/65">Dein Arbeitsraum öffnet sich.</p>
       </div>
     </div>
   );

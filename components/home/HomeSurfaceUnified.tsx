@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { TodayOverview } from '@/components/home/TodayOverview';
+import { MoraFace } from '@/components/mora/MoraFace';
 import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
 import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/surfaceContract';
 import { useNavStore } from '@/lib/store/navStore';
@@ -122,6 +123,7 @@ function PresenceOrb() {
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset on the home hero */}
         <img src="/brand/mora-stone-v1.png" alt="" width={56} height={56} draggable={false} className="h-full w-full select-none drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]" />
+        <MoraFace size={56} />
       </motion.div>
     </div>
   );
@@ -356,7 +358,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
       className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
-      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(12,26,30,.55), rgba(12,26,30,.22)), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(12,26,30,.4), rgba(12,26,30,.12))' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
@@ -373,6 +375,11 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           </p>
           <form className="mt-6 max-w-[520px]" data-testid="uv2-home-ask"
             onSubmit={(e) => { e.preventDefault(); const q = ask.trim(); if (!q) return;
+              if (window.matchMedia('(max-width: 767px)').matches) {
+                openMoraWorkspace({ source: 'home', label: 'Frage von Home', draftQuestion: q, submitQuestion: true });
+                setAsk('');
+                return;
+              }
               // Eine Frage aus dem Nahbild: die Kamera fährt zurück, MÔRA antwortet im Raum.
               useNavStore.getState().setCoreMode('explore');
               window.setTimeout(() => window.dispatchEvent(new CustomEvent('uv2:ask', { detail: q })), 700); setAsk(''); }}>

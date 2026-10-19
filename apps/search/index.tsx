@@ -6,38 +6,46 @@ import type { AppProps } from '@/lib/apps/types';
 import { useNavStore } from '@/lib/store/navStore';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
-import { openSearchResult } from '@/lib/utils/searchOpen';
+import { openSearchResult, type OpenableSearchResult } from '@/lib/utils/searchOpen';
 import { AmbiguityChoiceSurface } from '@/components/ui/AmbiguityChoiceSurface';
 import { GlassPanel } from '@/components/layers/GlassPanel';
 import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { useSearchQuery } from './hooks/useSearchQuery';
-import { AppEmpty, uv2 } from '@/components/universe/app/AppStage';
+import { uv2 } from '@/components/universe/app/AppStage';
+import { KnowledgeStart } from './components/KnowledgeStart';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { useKnowledgeLibrary } from './hooks/useKnowledgeLibrary';
 
 export default function SearchApp({ paneId, initialData }: AppProps) {
   const { removePane, openPane, minimizePane, focusPane, getPane, updatePanePosition, updatePaneSize } = usePaneStore();
   const isActive = usePaneStore((s) => s.activePaneId === paneId);
   const pane = getPane(paneId);
   const activeCompanyId = useNavStore((s) => s.activeCompanyId);
+  const userId = useSessionStore(s => s.user?.id);
+  const historyKey = userId && activeCompanyId ? `saimor_recent_searches_v2:${userId}:${activeCompanyId}` : null;
   const navigateToDepartment = useNavStore((s) => s.navigateToDepartment);
   const navigateToSpace = useNavStore((s) => s.navigateToSpace);
   const { data: companies = [] } = useCompanies();
 
   const safeCompanies = Array.isArray(companies) ? companies : [];
   const activeCompanyName = safeCompanies.find(c => c.id === activeCompanyId)?.name ?? null;
+  const knowledge = useKnowledgeLibrary(activeCompanyId, uv2());
 
   const { query, setQuery, results, isSearching, searchMode, searchHint, selectedIndex, setSelectedIndex } =
-    useSearchQuery(typeof initialData?.query === 'string' ? initialData.query : '');
+    useSearchQuery(typeof initialData?.query === 'string' ? initialData.query : '', uv2() ? knowledge.entries : undefined, uv2() ? knowledge.allowedDepartmentIds : undefined);
 
   const inputRef = useRef<HTMLInputElement>(null);
-  const [recentSearches, setRecentSearches] = React.useState<string[]>([]);
+  const [history, setHistory] = React.useState<{ key: string | null; items: string[] }>({ key: null, items: [] });
+  const recentSearches = history.key === historyKey ? history.items : [];
 
   useEffect(() => {
-    inputRef.current?.focus();
+    if (pane?.title !== 'Wissen' || initialData?.query) inputRef.current?.focus();
     try {
-      const saved = localStorage.getItem('saimor_recent_searches');
-      if (saved) setRecentSearches(JSON.parse(saved).slice(0, 5));
+      const saved = historyKey ? localStorage.getItem(historyKey) : null;
+      const parsed: unknown = saved ? JSON.parse(saved) : [];
+      setHistory({ key: historyKey, items: Array.isArray(parsed) ? parsed.filter((value): value is string => typeof value === 'string').slice(0, 5) : [] });
     } catch {}
-  }, []);
+  }, [historyKey]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
@@ -49,9 +57,11 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
   };
 
   const handleResultClick = async (result: any) => {
-    const newRecent = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
-    setRecentSearches(newRecent);
-    localStorage.setItem('saimor_recent_searches', JSON.stringify(newRecent));
+    if (query.trim() && historyKey) {
+      const newRecent = [query, ...recentSearches.filter(s => s !== query)].slice(0, 5);
+      setHistory({ key: historyKey, items: newRecent });
+      try { localStorage.setItem(historyKey, JSON.stringify(newRecent)); } catch { /* Search still works when browser storage is unavailable. */ }
+    }
 
     switch (result.type) {
       case 'department': navigateToDepartment(result.departmentId || result.id); removePane(paneId); break;
@@ -62,11 +72,29 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
     }
   };
 
+  const handleKnowledgeOpen = (entry: OpenableSearchResult) => {
+    if (!activeCompanyId || entry.companyId !== activeCompanyId) return;
+    const document = entry.type === 'node' || entry.type === 'file';
+    // The chosen content is the destination. Keep its path, without opening a second
+    // app behind it or a global navigation explanation over the next work surface.
+    openPane({
+      id: document ? `document-${entry.nodeId || entry.id}` : `finder-knowledge-${entry.type}-${entry.id}`,
+      type: document ? 'document' : 'finder', title: entry.title,
+      size: document ? { width: 900, height: 720 } : { width: 1100, height: 760 },
+      data: { companyId: activeCompanyId, departmentId: entry.departmentId, spaceId: entry.spaceId, folderId: entry.folderId,
+        ...(document ? { nodeId: entry.nodeId || entry.id, name: entry.title, navigationContext: {
+          title: 'Aus deiner Wissensablage', message: 'Der Ablageort bleibt mit diesem Dokument verbunden.',
+          label: entry.title, path: entry.path, companyId: activeCompanyId, folderId: entry.folderId, timestamp: Date.now(),
+        } } : {}),
+      },
+    });
+  };
+
   if (!pane) return null;
 
   return (
     <GlassPanel
-      title="Suche"
+      title={pane.title === 'Wissen' ? 'Wissen' : 'Suche'}
       paneId={paneId}
       width={pane.size.width}
       height={pane.size.height}
@@ -93,6 +121,7 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40" size={18} />
           <input
             ref={inputRef}
+            aria-label="Wissen durchsuchen"
             type="text"
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -152,7 +181,9 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
               </div>
             )}
           </AnimatePresence>
-        ) : recentSearches.length > 0 ? (
+        ) : uv2() ? <KnowledgeStart companyId={activeCompanyId} companyName={activeCompanyName} recent={recentSearches} onSearch={setQuery} library={knowledge}
+          onOpen={handleKnowledgeOpen}
+          onBrowse={() => { if (activeCompanyId) openPane({ id: `finder-knowledge-${activeCompanyId}`, type: 'finder', title: 'Wissensablage', size: { width: 1100, height: 760 }, data: { companyId: activeCompanyId } }); }} /> : recentSearches.length > 0 ? (
           <div>
             <div className="flex items-center gap-2 px-3 py-2 text-xs text-white/40 uppercase tracking-wider"><Clock size={12} />Zuletzt gesucht</div>
             <div className="space-y-1">
@@ -161,17 +192,6 @@ export default function SearchApp({ paneId, initialData }: AppProps) {
                   <Clock size={14} className="text-white/30" />
                   <span className="text-sm text-white/70">{s}</span>
                 </button>
-              ))}
-            </div>
-          </div>
-        ) : uv2() ? (
-          <div className="flex h-full flex-col items-center justify-center">
-            <AppEmpty glyph={<Search size={22} strokeWidth={1.25} />} title="Alles an einem Ort."
-              text="Dokumente, Ordner und Bereiche. MÔRA versteht auch, was du nur ungefähr weißt."
-              action={null} />
-            <div className="uv2-search-hints -mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2">
-              {(['Bericht', 'Rechnung', 'Protokoll', 'Strategie'] as const).map((hint) => (
-                <button key={hint} type="button" onClick={() => setQuery(hint)}>{hint}</button>
               ))}
             </div>
           </div>

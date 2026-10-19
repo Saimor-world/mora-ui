@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 
 import { TodayOverview } from '@/components/home/TodayOverview';
 import { CoreError } from '@/lib/api/http';
@@ -10,6 +10,9 @@ let mockUserId = 'user-a';
 let mockTenantId = 'tenant-a';
 let mockSessionGeneration = 1;
 const mockOpenPane = jest.fn();
+let mockUniverseV2 = false;
+jest.mock('@/lib/universe/morgen', () => ({ isUniverseV2Enabled: () => mockUniverseV2 }));
+jest.mock('@/components/home/CalendarContinuity', () => ({ CalendarContinuity: () => null }));
 
 jest.mock('@/lib/store/navStore', () => ({
   useNavStore: (selector: (state: { activeCompanyId: string | null }) => unknown) =>
@@ -122,6 +125,54 @@ beforeEach(() => {
   mockUserId = 'user-a';
   mockTenantId = 'tenant-a';
   mockSessionGeneration = 1;
+  mockUniverseV2 = false;
+});
+
+describe('TodayOverview Universe V2 source truth', () => {
+  beforeEach(() => { mockUniverseV2 = true; });
+
+  it('shows loading and prevents connection setup while a response is pending', async () => {
+    const pending = deferred<TodaySnapshot | null>();
+    (fetchTodaySnapshot as jest.Mock).mockReturnValue(pending.promise);
+    render(<TodayOverview />);
+    expect(screen.getAllByText('Wird geladen')).toHaveLength(4);
+    expect(screen.getByTestId('uv2-today-calendar')).toBeDisabled();
+    expect(screen.queryByText('Nicht verbunden')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('uv2-today-calendar'));
+    expect(mockOpenPane).not.toHaveBeenCalled();
+  });
+
+  it.each([401, 403])('retains the %s distinction in the actual V2 widgets', async (status) => {
+    (fetchTodaySnapshot as jest.Mock).mockRejectedValue(new CoreError('test', status, 'test'));
+    render(<TodayOverview />);
+    await waitFor(() => expect(screen.getAllByText(status === 401 ? 'Sitzung abgelaufen' : 'Kein Zugriff')).toHaveLength(status === 401 ? 5 : 4));
+    expect(screen.queryByText('Nicht verbunden')).not.toBeInTheDocument();
+    expect(screen.queryByText('Verbinden')).not.toBeInTheDocument();
+    if (status === 403) expect(screen.getByTestId('uv2-today-calendar')).toBeDisabled();
+  });
+
+  it('retries a server failure instead of opening account setup', async () => {
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValueOnce(null).mockResolvedValueOnce(snapshotFor('company-a', 'Wieder da'));
+    render(<TodayOverview />);
+    await waitFor(() => expect(screen.getAllByText('Nicht verfügbar')).toHaveLength(4));
+    fireEvent.click(screen.getByTestId('uv2-today-tasks'));
+    expect(await screen.findByText('Wieder da')).toBeInTheDocument();
+    expect(mockOpenPane).not.toHaveBeenCalled();
+  });
+
+  it('only opens setup for explicitly disconnected external sources', async () => {
+    const snapshot = snapshotFor('company-a', 'Keine Verbindung');
+    snapshot.mail.status = 'disconnected';
+    snapshot.mail.inbox_loaded = null;
+    snapshot.mail.items = [];
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snapshot);
+    render(<TodayOverview />);
+    await screen.findByText('Nicht verbunden');
+    fireEvent.click(screen.getByTestId('uv2-today-mail'));
+    expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'integrations' }));
+    fireEvent.click(screen.getByTestId('uv2-today-tasks'));
+    expect(mockOpenPane).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'tasks' }));
+  });
 });
 
 describe('TodayOverview scope and auth boundaries', () => {

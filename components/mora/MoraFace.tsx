@@ -22,6 +22,7 @@ const SMILE: Record<FaceState, boolean> = { rest: true, greet: true, listen: tru
 
 const R = 43; // Jade-Radius in viewBox-Einheiten (Stein = 100)
 const C = 50;
+const FACE_LIFT = 0.14 * R; // Eyes close to the stone's optical centre, same A4 proportions.
 
 export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: number; arcsOnGreet?: boolean; state?: FaceState }) {
     const presence = useOrbStore((s) => s.moraPresence?.state ?? 'calm');
@@ -32,7 +33,7 @@ export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: nu
     const arcs = (state === 'greet' && arcsOnGreet && size >= 64) || (state === 'done' && size >= 64);
     const tiny = size < 64;
 
-    const ex = 0.34 * R, ey = C + 0.16 * R + (state === 'work' ? 0.05 * R : state === 'think' ? -0.03 * R : 0), rx = 0.165 * R;
+    const ex = 0.34 * R, ey = C + 0.16 * R - FACE_LIFT + (state === 'work' ? 0.05 * R : state === 'think' ? -0.03 * R : 0), rx = 0.165 * R;
     const ry = RY[state] * R;
     const warm = state === 'need' ? '255,219,140' : '204,255,224';
     const jade = state === 'need' ? '255,196,110' : '64,242,140';
@@ -46,7 +47,7 @@ export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: nu
             {eye(-1, 'l')}{eye(1, 'r')}
         </g>
     );
-    const smileY = C + 0.44 * R - 0.1 * R;
+    const smileY = C + 0.44 * R - 0.1 * R - FACE_LIFT;
     const smile = `M ${C - 0.11 * R} ${smileY} Q ${C} ${smileY + 0.13 * R} ${C + 0.11 * R} ${smileY}`;
     // Bei 40 px ist alles unter 1 px Rauschen: weniger Lagen, kräftigere Kerne.
     const b = (u: number) => Math.max(u, tiny ? 0.6 : 0.3);
@@ -66,8 +67,8 @@ export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: nu
                         <g filter={`url(#w${id})`} opacity={tiny ? 0.55 : 0.75}>{eyes(`rgb(${jade})`)}</g>
                         <g filter={`url(#m${id})`} opacity={0.8}>{eyes(`rgb(${jade})`)}</g>
                         {!tiny && <g className="mora-face__cheeks" filter={`url(#w${id})`} opacity={state === 'work' ? 0.1 : 0.22} fill="rgb(255,120,110)">
-                            <ellipse cx={C - 0.52 * R} cy={C + 0.38 * R} rx={0.15 * R} ry={0.1 * R} />
-                            <ellipse cx={C + 0.52 * R} cy={C + 0.38 * R} rx={0.15 * R} ry={0.1 * R} />
+                            <ellipse cx={C - 0.52 * R} cy={C + 0.38 * R - FACE_LIFT} rx={0.15 * R} ry={0.1 * R} />
+                            <ellipse cx={C + 0.52 * R} cy={C + 0.38 * R - FACE_LIFT} rx={0.15 * R} ry={0.1 * R} />
                         </g>}
                     </g>
                     {/* Kern: warmes Licht */}

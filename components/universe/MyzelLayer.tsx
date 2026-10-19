@@ -1,15 +1,15 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useMoraPresence } from '@/lib/universe/moraPresence';
 
 /**
  * Myzel (freigegeben 14.10.): feine organische Jade-Fäden + Sternenstaub vom Stein zur Mitte
  * und von dort zu den Planeten. Liegt hinter den Planeten. Günstig: das Netz wird nur bei
- * Größen-/Planetenänderung neu gezeichnet; nur der Staub flimmert (≈12 fps), pausiert wenn
- * der Tab verborgen ist oder Bewegung reduziert werden soll.
- * Arbeitet MÔRA, tritt das Netz zurück und ein weicher Goldfaden läuft vom Stein bis an den
- * Planetenrand über dessen Namen.
+ * Größen-/Planetenänderung neu gezeichnet; Staub liegt im selben Bild, nur wenige kleine
+ * Lichtpunkte flimmern. Reduzierte Bewegung wird respektiert.
+ * Bei Arbeit führt ein einzelner Jadefaden vom Stein zum Ziel. Kein breites
+ * Glühen: Material und Zustand bleiben an Stein und Planet lesbar.
  */
 type Pt = [number, number];
 const J = '130,215,180';
@@ -40,6 +40,8 @@ function hypha(ctx: CanvasRenderingContext2D, R: () => number, x: number, y: num
 
 export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: string; x: number; y: number }>; focusId?: string | null }) {
     const ref = useRef<HTMLCanvasElement>(null);
+    const hostRef = useRef<HTMLDivElement>(null);
+    const [glints, setGlints] = useState<Array<{ x: number; y: number; warm: boolean }>>([]);
     const presence = useMoraPresence();
     const working = presence.state === 'working' || presence.state === 'done';
     const targetId = working ? presence.target ?? null : null;
@@ -47,9 +49,9 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
 
     useEffect(() => {
         const cv = ref.current; if (!cv) return;
-        const plane = cv.parentElement as HTMLElement | null; if (!plane) return;
-        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        let raf = 0; let last = 0; let net: HTMLCanvasElement | null = null; let dust: Array<[number, number, number, number, boolean]> = [];
+        const host = hostRef.current; if (!host) return;
+        const plane = host.parentElement as HTMLElement | null; if (!plane) return;
+        let net: HTMLCanvasElement | null = null; let dust: Array<[number, number, number, number, boolean]> = [];
         let W = 0, H = 0, dpr = 1, ox = 0, oy = 0; let dimNow = 1;
 
         const build = () => {
@@ -61,7 +63,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const extraBottom = sr ? Math.max(0, (sr.bottom - pr.bottom) * sx + 24) : 0;
             ox = 0; oy = 0; W = plane.offsetWidth; H = plane.offsetHeight + extraBottom;
             dpr = Math.min(2, window.devicePixelRatio || 1);
-            cv.style.height = H + 'px'; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+            host.style.height = H + 'px'; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
             const P = (p: { x: number; y: number }): Pt => [p.x / 100 * plane.offsetWidth, p.y / 100 * plane.offsetHeight];
             const sun: Pt = [0.5 * plane.offsetWidth, 0.5 * plane.offsetHeight];
             const stone: Pt | null = sr ? [(sr.left + sr.width / 2 - pr.left) * sx, (sr.top + sr.height / 2 - pr.top) * sx] : null;
@@ -69,7 +71,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const c = net.getContext('2d')!; c.scale(dpr, dpr); c.lineCap = 'round';
             const R = rng(42);
             const dim = targetId ? 0.45 : 1; dimNow = dim;
-            c.shadowColor = `rgba(${J},0.6)`; c.shadowBlur = 5;
+            c.shadowColor = `rgba(${J},0.24)`; c.shadowBlur = 2;
             void hypha; void R;
             // Ruhe: kein Faden. Bei Zeigen/Fokus: Stein → Mitte → Planet, um andere Planeten herum geführt.
             const fp = focusId && !targetId ? planets.find((p) => p.id === focusId) : undefined;
@@ -95,7 +97,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
                 const n = pts.length;
                 for (let i = 1; i < n - 1; i++) {
                     const t = i / n; const fade = Math.min(1, Math.sin(Math.PI * t) * 1.8 + 0.2);
-                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 1;
+                    c.strokeStyle = `rgba(${J},${al * fade})`; c.lineWidth = 0.75;
                     const m0: Pt = [(pts[i - 1][0] + pts[i][0]) / 2, (pts[i - 1][1] + pts[i][1]) / 2];
                     const m1: Pt = [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
                     c.beginPath(); c.moveTo(m0[0], m0[1]); c.quadraticCurveTo(pts[i][0], pts[i][1], m1[0], m1[1]); c.stroke();
@@ -110,7 +112,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             // Staub: Punkte um die Mitte, wenige warme dazwischen.
             const g = () => (R() + R() + R() - 1.5) / 1.5;
             dust = [];
-            const n = Math.round(Math.min(240, W * H / 3200));
+            const n = Math.round(Math.min(80, W * H / 9000));
             for (let i = 0; i < n; i++) dust.push([sun[0] + g() * W * 0.42, sun[1] + g() * H * 0.48, R() < 0.85 ? 0.7 : 1.3, 0.3 + R() * 0.7, R() < 0.22]);
             if (targetId && stone) {
                 const el = plane.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(targetId)}"]`);
@@ -121,40 +123,39 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
                     // Ende am Planetenrand seitlich über dem Namen (von der Steinseite her), nie durch den Namen.
                     const side = S[0] >= T[0] ? 1 : -1; const r = size / 2 + 2;
                     const end: Pt = [T[0] + side * r * 0.92, T[1] + r * 0.38];
-                    const grad = c.createLinearGradient(S[0], S[1], end[0], end[1]);
-                    grad.addColorStop(0, 'rgba(255,225,160,0.95)'); grad.addColorStop(1, 'rgba(240,200,120,0.85)');
-                    const path = () => { c.beginPath(); c.moveTo(S[0], S[1]); c.bezierCurveTo(S[0] - side * 30, S[1] - 90, end[0] + side * 70, end[1] + Math.min(160, (S[1] - end[1]) * 0.45), end[0], end[1]); };
-                    for (const [w, bl, a] of [[10, 18, 0.18], [4, 8, 0.45], [1.4, 2, 1]] as const) { c.save(); c.globalAlpha = a; c.strokeStyle = grad; c.lineWidth = w; c.shadowColor = 'rgba(255,210,130,1)'; c.shadowBlur = bl; path(); c.stroke(); c.restore(); }
+                    c.save();
+                    c.shadowBlur = 2;
+                    strokeRouted(routed(S, end, T), 0.56);
+                    c.shadowBlur = 0;
+                    c.fillStyle = `rgba(${J},0.72)`;
+                    c.beginPath(); c.arc(end[0], end[1], 1.8, 0, Math.PI * 2); c.fill();
+                    c.restore();
                 }
             }
-        };
-
-        const draw = (tms: number) => {
-            raf = requestAnimationFrame(draw);
-            if (document.hidden || tms - last < 80) return; last = tms;
-            const c = cv.getContext('2d'); if (!c || !net) return;
-            c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, cv.width, cv.height);
-            c.globalAlpha = 1; c.drawImage(net, 0, 0);
-            c.setTransform(dpr, 0, 0, dpr, 0, 0);
-            const tt = tms / 1000;
-            for (let i = 0; i < dust.length; i++) {
-                const [x, y, r, a, warm] = dust[i];
-                const tw = reduce ? 1 : 0.7 + 0.3 * Math.sin(tt * (0.6 + (i % 7) * 0.13) + i);
-                c.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * tw * dimNow})`;
-                c.beginPath(); c.arc(x + ox, y + oy, r, 0, 6.3); c.fill();
-            }
-            if (reduce) cancelAnimationFrame(raf);
+            const lines = cv.getContext('2d'); if (!lines) return;
+            lines.setTransform(1, 0, 0, 1, 0, 0); lines.clearRect(0, 0, cv.width, cv.height);
+            lines.drawImage(net, 0, 0);
+            // The dust shares the static network image. Only six tiny glints breathe:
+            // animating three mostly empty room-sized textures still costs full-area blending.
+            lines.setTransform(dpr, 0, 0, dpr, 0, 0);
+            dust.forEach(([x, y, r, a, warm]) => {
+                lines.fillStyle = `rgba(${warm ? GOLD : J},${(warm ? 0.32 : 0.34) * a * dimNow * .8})`;
+                lines.beginPath(); lines.arc(x + ox, y + oy, r, 0, 6.3); lines.fill();
+            });
+            setGlints(dust.filter((_, index) => index % 7 === 0).slice(0, 6).map(([x, y, , , warm]) => ({ x: x + ox, y: y + oy, warm })));
         };
 
         build();
-        raf = requestAnimationFrame(draw);
         let rt = 0;
         const onResize = () => { window.clearTimeout(rt); rt = window.setTimeout(build, 200); };
         window.addEventListener('resize', onResize);
         const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
-        return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
+        return () => { window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, targetId, focusId]);
 
-    return <canvas ref={ref} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true" />;
+    return <div ref={hostRef} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true">
+        <canvas ref={ref} className="absolute inset-0 h-full w-full" />
+        {glints.map((glint, index) => <span key={index} className="uv2-myzel-glint" style={{ left: glint.x - 3, top: glint.y - 3, background: `radial-gradient(circle, rgba(${glint.warm ? GOLD : J},.55), transparent 65%)`, animationDuration: `${7 + index * 2}s`, animationDelay: `${-index * 2}s` }} />)}
+    </div>;
 }

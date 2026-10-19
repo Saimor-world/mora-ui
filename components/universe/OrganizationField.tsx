@@ -198,7 +198,9 @@ export function OrganizationField({
             }
             const box = node.getBoundingClientRect();
             if (box.width > 0 && box.height > 0) {
-                const next = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
+                const immersive = isUniverseV2Enabled() && document.documentElement.dataset.uv2Immersive === 'on';
+                const fit = Math.max(0.6, Math.min(1, box.width / (isUniverseV2Enabled() ? (territoryCountRef.current > 5 ? 900 : 780) : 1350), box.height / 770));
+                const next = fit * (immersive ? 1.4 : 1);
                 setFieldScale((current) => (Math.abs(current - next) < 0.01 ? current : next));
             }
             // Unter lg ist das Feld ausgeblendet und misst 0x0. Dann steht hier
@@ -215,7 +217,16 @@ export function OrganizationField({
 
         publish();
         window.addEventListener('resize', publish);
-        return () => window.removeEventListener('resize', publish);
+        // Room controls change the field's CSS bounds without a window resize.
+        const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(publish) : null;
+        if (fieldRef.current) resizeObserver?.observe(fieldRef.current);
+        const roomObserver = new MutationObserver(publish);
+        roomObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-uv2-immersive'] });
+        return () => {
+            window.removeEventListener('resize', publish);
+            resizeObserver?.disconnect();
+            roomObserver.disconnect();
+        };
     }, [anchors, clearField, setField]);
 
     useEffect(() => () => { publishedRef.current = ''; clearField(); }, [clearField]);
@@ -847,7 +858,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (
-        <span className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <span className="pointer-events-none absolute inset-0">
             {/* 64 Sterne in DREI gemalten Ebenen statt 64 Elementen.
                 Frueher war jeder Stern ein eigenes animiertes div mit
                 box-shadow - die Kosten kamen von der Bauweise, nicht von der
@@ -859,6 +870,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                     <span
                         key={'starband-' + band}
                         className="saimor-doc-star absolute inset-0"
+                        aria-hidden="true"
                         style={{
                             color: accent,
                             backgroundImage: layer,
@@ -944,7 +956,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                                 }}
                             />
                         )}
-                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
+                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100 group-focus-within/moon:opacity-100">
                             <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
                             <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
                                 {moon.documents === 0

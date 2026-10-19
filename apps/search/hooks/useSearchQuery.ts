@@ -27,7 +27,7 @@ function flattenTree(nodes: CoreTreeNode[], path: string[] = []): SearchResult[]
   return out;
 }
 
-export function useSearchQuery(initialQuery = '') {
+export function useSearchQuery(initialQuery = '', accessibleLibrary?: OpenableSearchResult[], allowedDepartments?: ReadonlySet<string>) {
   const [query, setQuery] = useState(initialQuery);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -35,6 +35,7 @@ export function useSearchQuery(initialQuery = '') {
   const [searchHint, setSearchHint] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const searchRequestRef = useRef(0);
+  const [resultCompanyId, setResultCompanyId] = useState<string | null>(null);
 
   const activeCompanyId = useNavStore((s) => s.activeCompanyId);
   const { data: departments = [] } = useDepartments(activeCompanyId);
@@ -42,15 +43,15 @@ export function useSearchQuery(initialQuery = '') {
 
   // Flattened tree nodes for local search — stable reference when query empty
   const localTreeResults = useMemo(
-    () => flattenTree(Array.isArray(treeData) ? treeData : []),
-    [treeData],
+    () => accessibleLibrary ? accessibleLibrary.map(entry => ({ ...entry, source: 'local' as const, icon: entry.type === 'node' ? FileText : entry.type === 'department' ? Building2 : Folder })) : flattenTree(Array.isArray(treeData) ? treeData : []),
+    [treeData, accessibleLibrary],
   );
 
   const buildLocalResults = useCallback((q: string): SearchResult[] => {
     const lq = q.toLowerCase();
     const out: SearchResult[] = [];
     (Array.isArray(departments) ? departments : []).forEach(d => {
-      if (d.name.toLowerCase().includes(lq))
+      if ((!allowedDepartments || allowedDepartments.has(d.id)) && d.name.toLowerCase().includes(lq))
         out.push({ id: d.id, type: 'department', title: d.name, subtitle: 'Abteilung', icon: Building2, source: 'local' });
     });
     localTreeResults.forEach(r => {
@@ -60,9 +61,12 @@ export function useSearchQuery(initialQuery = '') {
     const deduped = new Map<string, SearchResult>();
     out.forEach(r => { deduped.set(`${r.type}:${r.id}`, r); });
     return Array.from(deduped.values()).slice(0, 10);
-  }, [departments, localTreeResults]);
+  }, [departments, localTreeResults, allowedDepartments]);
 
   useEffect(() => {
+    // Clearing the query or leaving the company also invalidates in-flight replies.
+    const reqId = ++searchRequestRef.current;
+    setResultCompanyId(activeCompanyId);
     if (!query.trim()) {
       setResults([]);
       setSearchMode(null);
@@ -83,7 +87,6 @@ export function useSearchQuery(initialQuery = '') {
       return;
     }
 
-    const reqId = ++searchRequestRef.current;
     setIsSearching(true);
 
     const timer = setTimeout(async () => {
@@ -94,7 +97,7 @@ export function useSearchQuery(initialQuery = '') {
         ]);
         if (reqId !== searchRequestRef.current) return;
 
-        const mapped: SearchResult[] = semanticResults.map((r: any) => ({
+        const mapped: SearchResult[] = semanticResults.filter((r: any) => !r.company_id || r.company_id === activeCompanyId).map((r: any) => ({
           id: r.node_id,
           type: 'node' as const,
           title: r.metadata?.title || 'Untitled',
@@ -112,10 +115,10 @@ export function useSearchQuery(initialQuery = '') {
 
         const kwMapped = ((keywordResponse as any)?.results || [])
           .map((raw: any) => { const m = mapRawSearchResult(raw); return m ? { ...m, source: 'mora' as const } : null; })
-          .filter(Boolean) as SearchResult[];
+          .filter((result: SearchResult | null) => result && (!result.companyId || result.companyId === activeCompanyId)) as SearchResult[];
 
         const deduped = new Map<string, SearchResult>();
-        [...kwMapped, ...mapped].forEach(r => { const k = `${r.type}:${r.id}`; if (!deduped.has(k)) deduped.set(k, r); });
+        [...kwMapped, ...mapped].forEach(r => { if (allowedDepartments && r.departmentId && !allowedDepartments.has(r.departmentId)) return; const k = `${r.type}:${r.id}`; if (!deduped.has(k)) deduped.set(k, r); });
         const merged = Array.from(deduped.values());
 
         if (merged.length > 0) {
@@ -133,8 +136,9 @@ export function useSearchQuery(initialQuery = '') {
       }
     }, 200);
 
-    return () => clearTimeout(timer);
-  }, [query, activeCompanyId, buildLocalResults]);
+    return () => { clearTimeout(timer); ++searchRequestRef.current; };
+  }, [query, activeCompanyId, buildLocalResults, allowedDepartments]);
 
-  return { query, setQuery, results, isSearching, searchMode, searchHint, selectedIndex, setSelectedIndex };
+  const current = resultCompanyId === activeCompanyId;
+  return { query, setQuery, results: current ? results : [], isSearching: current && isSearching, searchMode: current ? searchMode : null, searchHint: current ? searchHint : null, selectedIndex, setSelectedIndex };
 }

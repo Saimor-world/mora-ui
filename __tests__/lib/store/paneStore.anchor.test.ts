@@ -1,10 +1,9 @@
 import { usePaneStore } from '@/lib/store/paneStore';
 import { GLASS_SHEET_SIZE } from '@/lib/os/glassSheet';
 
-// Anchored sheets (Task A): Mail hugs the left edge, Team hugs the right edge,
-// everything else stays centered. User can still drag afterwards (position is a
-// plain mutable field), so we only assert the *default* open position here.
-describe('paneStore default sheet anchors', () => {
+// Marius' current requirement: app windows start at the viewport centre.
+// Explicit positions remain authoritative for dragging and saved layouts.
+describe('paneStore centred default windows', () => {
     const originalWidth = window.innerWidth;
     const originalHeight = window.innerHeight;
 
@@ -29,18 +28,15 @@ describe('paneStore default sheet anchors', () => {
         return pane.position;
     };
 
-    it('anchors Mail to the left, Team to the right, Finder centered', () => {
+    it('centres Mail, Team and Finder regardless of old sidebar reservations', () => {
         const mail = openAndGet('mail-main', 'mail');
         const team = openAndGet('team-main', 'team');
         const finder = openAndGet('finder-main', 'finder');
 
-        // Left sheet sits left of center; right sheet sits right of center.
-        expect(mail.x).toBeLessThan(finder.x);
-        expect(team.x).toBeGreaterThan(finder.x);
-
-        // And the anchored sheets actually hug their edges.
-        expect(mail.x).toBeLessThan(200);
-        expect(team.x + GLASS_SHEET_SIZE.width).toBeGreaterThan(1920 - 200);
+        const centre = { x: (1920 - GLASS_SHEET_SIZE.width) / 2, y: (1080 - GLASS_SHEET_SIZE.height) / 2 };
+        expect(mail).toEqual(centre);
+        expect(team).toEqual(centre);
+        expect(finder).toEqual(centre);
     });
 
     it('keeps every sheet fully on-screen', () => {
@@ -63,5 +59,11 @@ describe('paneStore default sheet anchors', () => {
             position: { x: 777, y: 333 },
         });
         expect(usePaneStore.getState().getPane('mail-fixed')?.position).toEqual({ x: 777, y: 333 });
+    });
+
+    it.each([[1440, 960, 260, 160], [1024, 768, 52, 80], [390, 844, 8, 74]])('centres the rendered bounds at %s × %s', (width, height, x, y) => {
+        setViewport(width, height);
+        const pos = openAndGet('calendar-main', 'calendar');
+        expect(pos).toEqual({ x, y });
     });
 });

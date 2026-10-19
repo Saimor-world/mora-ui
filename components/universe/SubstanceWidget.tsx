@@ -25,7 +25,11 @@ export function SubstanceWidget({ bars, onSelect }: {
 }) {
     if (bars.length === 0) return null;
 
-    const leer = bars.every((bar) => bar.ratio === 0);
+    const v2 = isUniverseV2Enabled();
+    const populated = bars.filter((bar) => bar.documents > 0 || bar.folders > 0);
+    const documents = bars.reduce((n, bar) => n + bar.documents, 0);
+    const leer = v2 ? populated.length === 0 : bars.every((bar) => bar.ratio === 0);
+    const visible = v2 ? populated : bars;
 
     return (
         <section data-uv2-instrument="verteilung" className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
@@ -37,15 +41,17 @@ export function SubstanceWidget({ bars, onSelect }: {
             </h2>
 
             {leer ? (
-                <p className="mt-3 text-[11px] leading-relaxed text-white/45">
-                    Noch nichts abgelegt. Sobald Inhalte entstehen, zeigt sich hier ihre Verteilung.
-                </p>
+                <div className="uv2-substance-empty mt-3" data-testid="uv2-substance-empty">
+                    <span aria-hidden className="uv2-empty-orbit" />
+                    <p className="uv2-inst-text">Raum für deine Arbeit.</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-white/65">Deine Dokumente erscheinen hier, sobald du sie ablegst.</p>
+                </div>
             ) : (
                 <div className="mt-3 space-y-2.5">
-                    {isUniverseV2Enabled() && (
+                    {v2 && documents > 0 && (
                         <div data-testid="uv2-verteilung-summe" className="pb-1">
                             <p className="flex items-baseline gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-[#F7F4E9]/45">
-                                <span className="font-serif text-[22px] normal-case tracking-normal text-[#F7F4E9]"><CountUp value={bars.reduce((n, b) => n + b.documents, 0)} /></span>
+                                <span className="font-serif text-[22px] normal-case tracking-normal text-[#F7F4E9]"><CountUp value={documents} /></span>
                                 Dokumente gesamt
                             </p>
                             {/* Zusammensetzung: ein Strang, jeder Bereich in seiner Planetenfarbe */}
@@ -56,7 +62,7 @@ export function SubstanceWidget({ bars, onSelect }: {
                             </span>
                         </div>
                     )}
-                    {bars.map((bar) => (
+                    {visible.map((bar) => (
                         <button
                             key={bar.id}
                             type="button"
@@ -68,7 +74,9 @@ export function SubstanceWidget({ bars, onSelect }: {
                             <span className="flex items-baseline justify-between gap-2">
                                 <span className="truncate text-[11px] text-white/72 transition group-hover:text-white/95">{bar.name}</span>
                                 <span className="shrink-0 text-[9px] tabular-nums text-white/38">
-                                    <CountUp value={bar.documents} /> Dok · <CountUp value={bar.folders} /> Ord
+                                    {bar.documents > 0 && <><CountUp value={bar.documents} /> {bar.documents === 1 ? 'Dokument' : 'Dokumente'}</>}
+                                    {bar.documents > 0 && bar.folders > 0 && ' · '}
+                                    {bar.folders > 0 && <><CountUp value={bar.folders} /> Ordner</>}
                                 </span>
                             </span>
                             <span className="mt-1 block h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07]">
@@ -87,6 +95,16 @@ export function SubstanceWidget({ bars, onSelect }: {
                         </button>
                     ))}
                 </div>
+            )}
+            {v2 && bars.some((bar) => bar.documents === 0 && bar.folders === 0) && (
+                <details className="uv2-empty-areas mt-3">
+                    <summary>Weitere Bereiche</summary>
+                    {bars.filter((bar) => bar.documents === 0 && bar.folders === 0).map((bar) => (
+                        <button key={bar.id} type="button" onClick={() => onSelect(bar.id)} className="uv2-inst-row">
+                            <span className="uv2-inst-text">{bar.name}</span><span className="uv2-inst-aside">Noch keine Inhalte</span>
+                        </button>
+                    ))}
+                </details>
             )}
         </section>
     );

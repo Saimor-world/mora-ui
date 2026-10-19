@@ -92,6 +92,7 @@ import { AdminHome } from '@/components/admin/AdminHome';
 
 // Background Layers — CSS plate first; heavy canvas/DOM ambient deferred via dynamic()
 import { MoraLivingBackground } from '@/components/mora/MoraLivingBackground';
+import { CosmosBackdrop } from '@/components/universe/CosmosBackdrop';
 
 const StarField = dynamic(
     () => import('@/components/visual/StarField').then((m) => ({ default: m.StarField })),
@@ -402,7 +403,7 @@ export const MoraShell: React.FC = () => {
     /** Universe has its own nebula backdrop — skip duplicate shell particle layers. */
     const universeLightAmbient = isUniverseExploreSurface && !pauseHeavyBackground;
     const ambient = useAmbientCapability();
-    const mountHeavyAmbient = ambient.enableHeavy && ambient.heavyReady && !pauseHeavyBackground;
+    const mountHeavyAmbient = ambient.enableHeavy && ambient.heavyReady && !pauseHeavyBackground && !v2SharedCosmos;
     const starFieldDensity =
         ambient.density === 'low' || universeLightAmbient ? 'low' : 'medium';
 
@@ -775,7 +776,7 @@ export const MoraShell: React.FC = () => {
 
             <RitualSceneStyler muted={isUniverseExploreSurface || v2SharedCosmos} />
             <ShellStaticBackdrop />
-            <MoraLivingBackground />
+            {v2SharedCosmos ? <CosmosBackdrop /> : <MoraLivingBackground />}
             <TemporalAtmosphere paused={pauseHeavyBackground || !mountHeavyAmbient} />
 
             {mountHeavyAmbient && (
