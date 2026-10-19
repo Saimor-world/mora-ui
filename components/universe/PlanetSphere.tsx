@@ -29,7 +29,7 @@ type Material = {
 
 const MATERIALS: Record<string, Material> = {
   // Finanzen: warmes Gold-Ocker mit Wolkenbändern (Gasriese)
-  finanzen: { day: '#e9cf95', mid: '#a7793a', night: '#2a1a0b', fx: 0.35, fy: 9, oct: 3, relief: 0.55, atmo: '247,226,180', ring: true, feature: 'bands' },
+  finanzen: { day: '#e9cf95', mid: '#a7793a', night: '#2a1a0b', fx: 0.35, fy: 9, oct: 3, relief: 0.55, atmo: '247,226,180', feature: 'bands' },
   // Post & Termine: tiefer Ozean mit Wolkenschleiern
   post: { day: '#9cc4d8', mid: '#2f5f7c', night: '#06121c', fx: 2.4, fy: 2.4, oct: 4, relief: 0.45, atmo: '170,215,240', feature: 'clouds' },
   // Werkstatt: Kupfer/Rost, felsig
@@ -375,11 +375,11 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   const ref = React.useRef<HTMLCanvasElement>(null);
   const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
   
-  // Universe Glass: very lightly tinted, matte, translucent – brighter than before
+  // Universe Glass: lightly tinted, matte, translucent – brighter with more color
   const base: number[] = matte 
-    ? mix(hue, mix(grey(hue), [175, 185, 180], 0.45), 0.55) 
+    ? mix(hue, mix(grey(hue), [185, 195, 190], 0.35), 0.48) 
     : hue;
-  const h: number[] = quiet ? mix(base, [155, 165, 160], 0.45) : base;
+  const h: number[] = quiet ? mix(base, [165, 175, 170], 0.38) : base;
   
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -391,10 +391,10 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.55; const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     
-    // Brighter color range for Universe Glass
-    const night = h.map((v) => v * 0.18 + 12);
-    const deep = h.map((v) => v * 0.6);
-    const lite = mix(h, [255, 252, 240], 0.45);
+    // Brighter color range for Universe Glass - much brighter overall
+    const night = h.map((v) => v * 0.28 + 25);
+    const deep = h.map((v) => v * 0.72 + 15);
+    const lite = mix(h, [255, 252, 240], 0.55);
     const r = W / 2; const cell = 2.8 * dpr;
     const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
     
@@ -439,8 +439,8 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
         col = mix(col, [255, 250, 235], Math.min(0.5, edgeHi));
       }
       
-      // More translucent in center, denser at edge
-      const al = matte ? Math.min(1, 0.38 + 0.24 * t + 0.32 * Math.pow(1 - z, 2.5)) : 1;
+      // More translucent in center, denser at edge - slightly more opaque for visibility
+      const al = matte ? Math.min(1, 0.48 + 0.22 * t + 0.28 * Math.pow(1 - z, 2.5)) : 1;
       d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge * al);
     }
     JEWEL_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();

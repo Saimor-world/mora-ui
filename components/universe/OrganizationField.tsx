@@ -609,7 +609,7 @@ function Territory({
                 {model && territory.access !== 'locked' ? (
                     <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
                 ) : isUniverseV2Enabled() && territory.access !== 'locked' ? (
-                    <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
+                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
                 <span
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"

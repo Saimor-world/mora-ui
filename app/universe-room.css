@@ -77,10 +77,28 @@ html[data-uv2="on"][data-uv2-immersive="on"] body::after { right: 6px; }
   html[data-uv2="on"] [data-testid="uv2-mora-toggle"] { width: 32px; padding: 0 !important; justify-content: center; }
 }
 
-/* ---- Vibe §5: Fokus = Licht, Faden statt Ladebalken ---- */
+/* ---- Vibe §5: Fokus = Licht, gentle pulse instead of gold connecting line ---- */
 html[data-uv2="on"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind]:not([data-mora-lit]) { opacity: .45; filter: saturate(.5) brightness(.8); transition: opacity .8s ease, filter .8s ease; }
 html[data-uv2="on"] [data-uv2-plane] [data-mora-lit] [data-planet-glow], html[data-uv2="on"] [data-uv2-plane] [data-mora-lit] { filter: none !important; opacity: 1 !important; }
-html[data-uv2="on"] [data-uv2-plane] [data-mora-lit]::after { content: ""; position: absolute; left: 50%; top: calc(var(--territory-size) / 2); width: calc(var(--territory-size) * 2.2); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; background: radial-gradient(circle, rgba(240,207,124,.22), rgba(240,207,124,0) 65%); pointer-events: none; z-index: -1; }
+/* Gentle pulsing glow on the target planet where MÔRA is working (replaces the gold connecting line) */
+html[data-uv2="on"] [data-uv2-plane] [data-mora-lit]::after { 
+  content: ""; 
+  position: absolute; 
+  left: 50%; 
+  top: calc(var(--territory-size) / 2); 
+  width: calc(var(--territory-size) * 2.4); 
+  aspect-ratio: 1; 
+  translate: -50% -50%; 
+  border-radius: 50%; 
+  background: radial-gradient(circle, rgba(110,231,183,.18), rgba(110,231,183,0) 60%); 
+  pointer-events: none; 
+  z-index: -1;
+  animation: uv2MoraGlow 3s ease-in-out infinite;
+}
+@keyframes uv2MoraGlow {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+}
 .uv2-thread-loader { position: relative; width: 220px; height: 1px; background: rgba(247,244,233,.10); overflow: hidden; }
 .uv2-thread-loader > span { position: absolute; top: 0; bottom: 0; width: 40%; background: linear-gradient(90deg, rgba(214,168,72,0), rgba(240,207,124,.95), rgba(214,168,72,0)); animation: uv2ThreadRun 1.8s cubic-bezier(.45,0,.2,1) infinite; }
 @keyframes uv2ThreadRun { from { left: -40%; } to { left: 100%; } }

@@ -112,21 +112,9 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             dust = [];
             const n = Math.round(Math.min(240, W * H / 3200));
             for (let i = 0; i < n; i++) dust.push([sun[0] + g() * W * 0.42, sun[1] + g() * H * 0.48, R() < 0.85 ? 0.7 : 1.3, 0.3 + R() * 0.7, R() < 0.22]);
-            if (targetId && stone) {
-                const el = plane.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(targetId)}"]`);
-                const t = planets.find((p) => p.id === targetId);
-                if (el && t) {
-                    const size = parseFloat(el.style.getPropertyValue('--territory-size')) || 60;
-                    const T = P(t); const S: Pt = [stone[0], stone[1] - 18];
-                    // Ende am Planetenrand seitlich über dem Namen (von der Steinseite her), nie durch den Namen.
-                    const side = S[0] >= T[0] ? 1 : -1; const r = size / 2 + 2;
-                    const end: Pt = [T[0] + side * r * 0.92, T[1] + r * 0.38];
-                    const grad = c.createLinearGradient(S[0], S[1], end[0], end[1]);
-                    grad.addColorStop(0, 'rgba(255,225,160,0.95)'); grad.addColorStop(1, 'rgba(240,200,120,0.85)');
-                    const path = () => { c.beginPath(); c.moveTo(S[0], S[1]); c.bezierCurveTo(S[0] - side * 30, S[1] - 90, end[0] + side * 70, end[1] + Math.min(160, (S[1] - end[1]) * 0.45), end[0], end[1]); };
-                    for (const [w, bl, a] of [[10, 18, 0.18], [4, 8, 0.45], [1.4, 2, 1]] as const) { c.save(); c.globalAlpha = a; c.strokeStyle = grad; c.lineWidth = w; c.shadowColor = 'rgba(255,210,130,1)'; c.shadowBlur = bl; path(); c.stroke(); c.restore(); }
-                }
-            }
+            // Marius dislikes the gold connecting line from stone to planet.
+            // Instead, the target planet gets a gentle glow via CSS [data-mora-lit] attribute.
+            // The glow is handled in universe-room.css and universe-orbits.css
         };
 
         const draw = (tms: number) => {

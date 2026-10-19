@@ -25,12 +25,13 @@ export function SubstanceWidget({ bars, onSelect }: {
 }) {
     if (bars.length === 0) return null;
 
-    const leer = bars.every((bar) => bar.ratio === 0);
+    const totalDocs = bars.reduce((n, b) => n + b.documents, 0);
+    const leer = bars.every((bar) => bar.ratio === 0) || totalDocs === 0;
 
     return (
         <section data-uv2-instrument="verteilung" className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
             <div className="absolute inset-y-5 left-0 w-px bg-violet-300/50" />
-            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">Verteilung</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-white/38">Verteilung</p>
             <h2 className="mt-1 flex items-center gap-2 text-sm font-medium tracking-[-0.01em] text-white/82">
                 <Layers size={13} className="text-violet-200/70" />
                 Wo die Arbeit liegt
@@ -67,9 +68,11 @@ export function SubstanceWidget({ bars, onSelect }: {
                         >
                             <span className="flex items-baseline justify-between gap-2">
                                 <span className="truncate text-[13px] text-white/76 transition group-hover:text-white/95">{bar.name}</span>
-                                <span className="shrink-0 text-[12px] tabular-nums text-white/45">
-                                    <CountUp value={bar.documents} />
-                                </span>
+                                {bar.documents > 0 && (
+                                    <span className="shrink-0 text-[12px] tabular-nums text-white/45">
+                                        <CountUp value={bar.documents} />
+                                    </span>
+                                )}
                             </span>
                             <span className="mt-1 block h-[3px] w-full overflow-hidden rounded-full bg-white/[0.07]">
                                 <span

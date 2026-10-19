@@ -41,7 +41,7 @@ function Instrument({ eyebrow, title, children, accent = 'cyan' }: {
     return (
         <section data-uv2-instrument={eyebrow.replace(/^Dein /, '').toLowerCase()} className="relative overflow-hidden rounded-[24px] border border-white/[0.09] bg-[#071522]/92 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.32)]">
             <div className={'absolute inset-y-5 left-0 w-px ' + (accent === 'amber' ? 'bg-amber-300/55' : 'bg-cyan-300/50')} />
-            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] text-white/30">{eyebrow}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.20em] text-white/38">{eyebrow}</p>
             <h2 className="mt-1 text-sm font-medium tracking-[-0.01em] text-white/82">{title}</h2>
             <div className="mt-3">{children}</div>
         </section>
@@ -164,7 +164,7 @@ export function UniverseObservatory(props: Props) {
                         drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
                     />
                 </Instrument></>)}
-                <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
+                <div className="flex items-center gap-3 px-2 text-[11px] uppercase tracking-[0.12em] text-white/35">
                     <Sparkles size={11} className="text-cyan-200/44" />
                     <span>{props.territoryCount} Bereiche</span>
                     <span className="h-1 w-1 rounded-full bg-white/20" />
