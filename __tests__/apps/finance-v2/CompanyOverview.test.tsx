@@ -20,6 +20,15 @@ it('shows company figures and placeholders, no trading line', () => {
   expect(screen.getByText('Einnahmen')).toBeInTheDocument();
   expect(screen.getByText('Ausgaben')).toBeInTheDocument();
   expect(screen.getByText(/Revolut Business/)).toBeInTheDocument();
-  expect(screen.getByText(/Noch keine Treasury-Adresse/)).toBeInTheDocument();
+  // Missing sources say so instead of showing 0 / empty values.
+  expect(screen.getAllByText('noch nicht verbunden').length).toBeGreaterThanOrEqual(2);
   expect(screen.queryByText(/Trading|Anlagen|Bot/i)).toBeNull();
+});
+
+it('shows "noch nicht verbunden" for an account without observed balance, not 0', () => {
+  const state = { accounts: [{ id: 'x', display_name: 'XRPL Treasury', currency: 'XRP', truth_state: 'missing_observation', observed_balance: null, projected_balance: null }], currency_states: [], warnings: [] } as any;
+  render(<CompanyOverview state={state} records={[]} hasOlderRecords={false} />);
+  const group = screen.getByTestId('group-XRPL Treasury');
+  expect(group.textContent).toContain('noch nicht verbunden');
+  expect(group.textContent).not.toMatch(/\b0[,.]00\b|—/);
 });
