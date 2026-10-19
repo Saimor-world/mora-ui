@@ -14,6 +14,7 @@ export default function MoraWaterGuide({ chapter, still, label, onActivate, butt
   const gradient = useRef<SVGLinearGradientElement>(null);
   const traceId = `mora-flight-${useId().replace(/:/g, '')}`;
   const controls = useRef({ chapter, still }); controls.current = { chapter, still };
+  const wake = useRef<() => void>(() => {});
   const engaged = useRef({ pointer: false, focus: false });
   const [ready, setReady] = useState(false);
   const presence = useOrbStore(state => state.moraPresence?.state ?? 'calm');
@@ -23,10 +24,11 @@ export default function MoraWaterGuide({ chapter, still, label, onActivate, butt
     const tail = Array.from({ length: 18 }, () => ({ x, y }));
     let previousChapter = -2;
     const draw = (now: number) => {
-      frame = requestAnimationFrame(draw);
+      frame = 0;
+      if (document.hidden) return;
       const dt = Math.min(.05, Math.max(0, (now - previous) / 1000)); previous = now;
       const c = controls.current;
-      if (document.hidden) return;
+      if (!c.still) frame = requestAnimationFrame(draw);
       // Autonomous, bounded wandering; contextual chapters gently attract her.
       const perches = [[.5,.78],[.63,.67],[.43,.72],[.65,.79]];
       const anchor = [[.58,.70],[.72,.76],[.81,.61]][c.chapter] ?? perches[Math.floor(time / 9) % perches.length];
@@ -71,9 +73,28 @@ export default function MoraWaterGuide({ chapter, still, label, onActivate, butt
       gradient.current?.setAttribute('x1', String(localX(tail[tail.length - 1].x)));
       gradient.current?.setAttribute('y1', String(localY(tail[tail.length - 1].y)));
     };
-    frame = requestAnimationFrame(draw);
-    return () => cancelAnimationFrame(frame);
+    const resume = () => {
+      if (document.hidden || frame) return;
+      previous = performance.now();
+      frame = requestAnimationFrame(draw);
+    };
+    const visibility = () => {
+      if (document.hidden) { cancelAnimationFrame(frame); frame = 0; }
+      else resume();
+    };
+    const resize = () => { previousChapter = -2; resume(); };
+    wake.current = () => { previousChapter = -2; resume(); };
+    document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('resize', resize);
+    resume();
+    return () => {
+      cancelAnimationFrame(frame);
+      wake.current = () => {};
+      document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('resize', resize);
+    };
   }, []);
+  useEffect(() => { wake.current(); }, [chapter, still]);
   return <div className={styles.flight} data-guide-chapter={chapter} data-still={still}>
     <span ref={stone} className={styles.position}>
     <svg className={styles.trace} viewBox="0 0 280 280" aria-hidden="true">
