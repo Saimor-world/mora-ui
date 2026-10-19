@@ -17,8 +17,8 @@
 
 .uv2-orbits ellipse { 
   fill: none; 
-  stroke: rgba(255,250,235,.16); 
-  stroke-width: 1; 
+  stroke: rgba(255,250,235,.20); 
+  stroke-width: 1.2; 
   vector-effect: non-scaling-stroke; 
   transition: stroke .4s ease, stroke-opacity .4s ease; 
 }
@@ -83,20 +83,20 @@ html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"
   color: rgba(255,250,238,.72) !important; 
 }
 
-/* ═══ Typography: readable, warm cream, premium ═══ */
+/* ═══ Typography: readable (≥13px), warm cream, premium ═══ */
 html[data-uv2="on"] [data-planet-kind] .saimor-territory-name { 
   font-family: var(--uv-sans, 'Inter', system-ui, sans-serif) !important; 
   font-size: 14px !important; 
   letter-spacing: .015em !important; 
   text-transform: none !important; 
   font-weight: 500 !important; 
-  color: rgba(255,252,242,.94) !important; 
-  text-shadow: 0 2px 10px rgba(0,0,0,.55), 0 0 18px rgba(0,0,0,.35);
+  color: rgba(255,252,242,.96) !important; 
+  text-shadow: 0 2px 10px rgba(0,0,0,.50), 0 0 18px rgba(0,0,0,.30);
 }
 
 html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name { 
   font-size: 13px !important; 
-  color: rgba(255,248,235,.78) !important; 
+  color: rgba(255,250,240,.85) !important; 
 }
 
 /* Hide meta in overview – show only on zoom/hover */
@@ -144,9 +144,18 @@ html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([
   position: absolute; 
   left: 50%; 
   pointer-events: none; 
-  opacity: 0; 
-  transform: scale(1.06); 
+  opacity: 1; 
+  transform: none;
   transition: opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1); 
+}
+
+/* Show chips always (when value > 0), hide brackets except on hover/focus */
+.uv2-hud > i {
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .uv2-hud > i {
+  opacity: 1;
 }
 
 .uv2-hud > i { 
@@ -179,7 +188,12 @@ html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([
 
 html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .uv2-hud { 
   opacity: 1; 
-  transform: none; 
+  transform: none;
+}
+
+/* In zoom mode, hide chips from non-selected planets */
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .uv2-hud {
+  opacity: 0;
 }
 
 html[data-uv2="on"] [aria-pressed="true"] .uv2-hud > i { 
@@ -277,7 +291,8 @@ html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]
 }
 
 html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) { 
-  opacity: .32; 
+  opacity: .25; 
+  filter: saturate(.5) brightness(.85);
 }
 
 html[data-uv2="on"] [data-uv2-zoom] .uv2-constellation { 
@@ -328,13 +343,27 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
   width: 100%;
   pointer-events: none;
   z-index: 1;
-  opacity: .78;
+  opacity: .82;
   transition: opacity .6s ease;
-  filter: brightness(1.15);
+  filter: brightness(1.20);
 }
 
 .uv2-myzel[data-working] {
-  opacity: .55;
+  opacity: .60;
+}
+
+/* ═══ Soft center halo: warm glow around MÔRA core ═══ */
+.uv2-center-halo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 280px;
+  height: 280px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(240,225,180,.12) 0%, rgba(220,195,140,.06) 35%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* ═══ MÔRA core light ═══ */

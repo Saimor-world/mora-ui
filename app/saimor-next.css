@@ -165,7 +165,7 @@ body:not(.standard-mode) .app-library__card:hover {
 
 /* ── Dock: orientation bar, not a glowing second dashboard ──────────────── */
 body:not(.standard-mode) [data-testid='mora-dock'] {
-  bottom: 18px !important;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
 body:not(.standard-mode) [data-testid='dock'] {

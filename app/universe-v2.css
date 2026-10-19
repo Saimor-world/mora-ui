@@ -285,8 +285,8 @@ html[data-uv2=on] [data-testid="uv2-lage"] [data-uv2-col] > .uv2-instruments { b
 /* Instrument: kein Kasten – Haarlinie oben, Rhythmus 8 */
 html[data-uv2=on] .uv2-instruments > section { all: unset; display: block; box-sizing: border-box; padding-top: 12px !important; border-top: 1px solid rgba(247,244,233,.14) !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; border-left: 0 !important; }
 html[data-uv2=on] .uv2-instruments > section > .absolute { display: none !important; }
-html[data-uv2=on] .uv2-inst-label, html[data-uv2=on] .uv2-instruments section > p:first-of-type { font-family: var(--uv-mono) !important; font-size: 12px !important; letter-spacing: .06em !important; text-transform: uppercase; color: #D6A848 !important; font-weight: 400 !important; }
-html[data-uv2=on] .uv2-inst-aside { font-family: var(--uv-mono); font-size: 12px; letter-spacing: .06em; color: rgba(255,250,235,.58); }
+html[data-uv2=on] .uv2-inst-label, html[data-uv2=on] .uv2-instruments section > p:first-of-type { font-family: var(--uv-mono) !important; font-size: 13px !important; letter-spacing: .05em !important; text-transform: uppercase; color: #D6A848 !important; font-weight: 400 !important; }
+html[data-uv2=on] .uv2-inst-aside { font-family: var(--uv-mono); font-size: 13px; letter-spacing: .05em; color: rgba(255,250,235,.62); }
 html[data-uv2=on] .uv2-inst-text { display: block; font-size: 14px; line-height: 22px; color: rgba(255,250,235,.88); }
 html[data-uv2=on] .uv2-inst-figure { font-family: "Cormorant Garamond", serif; font-size: 20px; color: #F7F4E9; }
 html[data-uv2=on] .uv2-instruments h2 { font-family: "Cormorant Garamond", serif !important; font-size: 20px !important; line-height: 24px; color: #F7F4E9 !important; margin-top: 4px; }
@@ -297,7 +297,7 @@ html[data-uv2=on] .uv2-inst-row .uv2-inst-label { color: rgba(247,244,233,.62) !
 html[data-uv2=on] .uv2-inst-row:hover .uv2-inst-text { color: #F7F4E9; }
 /* Verteilung im gleichen Ton */
 html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] span.text-\[11px\] { font-size: 13px !important; color: rgba(247,244,233,.86) !important; }
-html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] span.text-\[9px\] { font-family: var(--uv-mono); font-size: 11.5px !important; color: rgba(247,244,233,.62) !important; }
+html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] span.text-\[9px\] { font-family: var(--uv-mono); font-size: 13px !important; color: rgba(247,244,233,.62) !important; }
 html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] .space-y-2\.5 > * + * { margin-top: 8px !important; }
 html[data-uv2=on] .uv2-instruments [data-uv2-instrument="verteilung"] [data-testid="uv2-verteilung-summe"] p { color: rgba(247,244,233,.62) !important; }
 /* Zufluss: ein Punkt wandert beim Zeigen nach links, Richtung Planeten */

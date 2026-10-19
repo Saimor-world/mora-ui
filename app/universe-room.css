@@ -121,14 +121,14 @@ html[data-uv2="on"] [data-planet-kind] .saimor-doc-star { opacity: 0 !important;
 html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .saimor-doc-star { opacity: .55 !important; }
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .55; filter: saturate(.4); transition: opacity .5s; }
 /* HUD-Chips: kurze echte Zahlen, sauber gesetzt */
-.uv2-hud__label { bottom: calc(100% + 30px) !important; font-size: 12.5px !important; letter-spacing: .02em; }
+.uv2-hud__label { bottom: calc(100% + 30px) !important; font-size: 13px !important; letter-spacing: .02em; }
 .uv2-hud__chips { position: absolute; left: 50%; bottom: calc(100% + 6px); translate: -50% 0; display: flex; gap: 4px; white-space: nowrap; }
-.uv2-chip { display: inline-flex; align-items: baseline; gap: 5px; height: 20px; padding: 0 8px; border-radius: 4px; font: 500 11px/20px var(--uv-sans, Inter, sans-serif); color: rgba(236,240,246,.78); background: rgba(8,12,16,.72); box-shadow: inset 0 0 0 .5px rgba(236,240,246,.18); backdrop-filter: blur(8px); }
-.uv2-chip b { font: 600 11.5px/20px var(--uv-mono, ui-monospace, monospace); color: rgba(247,244,233,.96); font-variant-numeric: tabular-nums; }
-.uv2-chip[data-tone="open"] { box-shadow: inset 0 0 0 .5px rgba(214,168,72,.45); }
-.uv2-chip[data-tone="open"] b { color: #E8C277; }
-.uv2-chip[data-tone="need"] { color: #F0D49A; box-shadow: inset 0 0 0 .5px rgba(240,207,124,.7), 0 0 12px rgba(214,168,72,.25); }
-.uv2-chip[data-tone="calm"]:only-child { color: rgba(236,240,246,.55); font-style: italic; }
+.uv2-chip { display: inline-flex; align-items: baseline; gap: 5px; height: 22px; padding: 0 10px; border-radius: 5px; font: 500 12px/22px var(--uv-sans, Inter, sans-serif); color: rgba(240,244,250,.85); background: rgba(12,16,22,.75); box-shadow: inset 0 0 0 .5px rgba(240,244,250,.22); backdrop-filter: blur(10px); }
+.uv2-chip b { font: 600 12.5px/22px var(--uv-mono, ui-monospace, monospace); color: rgba(250,248,240,.98); font-variant-numeric: tabular-nums; }
+.uv2-chip[data-tone="open"] { box-shadow: inset 0 0 0 .5px rgba(214,168,72,.50); }
+.uv2-chip[data-tone="open"] b { color: #F0D090; }
+.uv2-chip[data-tone="need"] { color: #F5DCA5; box-shadow: inset 0 0 0 .5px rgba(245,215,135,.75), 0 0 14px rgba(220,175,80,.30); }
+.uv2-chip[data-tone="calm"]:only-child { color: rgba(240,244,250,.60); font-style: italic; }
 /* hd41b: Name steht schon unter dem Planeten – HUD zeigt nur die Chips; Monde in der Übersicht leiser */
 .uv2-hud__label { display: none !important; }
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .32 !important; scale: .8; }

@@ -172,6 +172,19 @@ async function main() {
   // Wait for Universe to render
   await page.waitForTimeout(4000);
   
+  // Hide Next.js dev badge (N indicator)
+  await page.addStyleTag({ content: `
+    [data-nextjs-toast], 
+    [data-nextjs-dialog],
+    nextjs-portal,
+    #__next-build-indicator,
+    .nextjs-toast-errors-parent { 
+      display: none !important; 
+      visibility: hidden !important;
+      opacity: 0 !important;
+    }
+  `});
+  
   // Move mouse to trigger any hover states, then away
   await page.mouse.move(W / 2, H / 2);
   await page.waitForTimeout(500);

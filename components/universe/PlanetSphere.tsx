@@ -348,23 +348,40 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
 }
 
 /* ─── hd46: eigene, harmonische Farbe je Bereich – gleiche Materialfamilie ─── */
+/** Archetype → distinct bright tint (brighter palette for Universe Glass) */
+const ARCHETYPE_HUES: Record<string, [number, number, number]> = {
+  'gas-gold': [228, 185, 95],       // Amber/Gold - warm yellow
+  'ocean': [85, 165, 210],          // Teal/Ocean - bright cyan-blue
+  'copper-rock': [215, 145, 95],    // Copper - warm orange-brown
+  'marble-indigo': [165, 135, 210], // Lilac - bright purple
+  'ice': [120, 195, 185],           // Steel/Ice - cool teal
+  'sand-dune': [210, 175, 120],     // Sand - warm beige
+  'pearl': [200, 208, 225],         // Pearl - soft silver-blue
+  'forest': [130, 185, 130],        // Sage/Forest - natural green
+  'crystal-teal': [95, 200, 195],   // Crystal teal - bright cyan
+  'coral': [220, 150, 140],         // Coral - warm pink
+  'ember': [225, 145, 95],          // Ember - orange
+  'nebula-violet': [180, 145, 210], // Violet - purple
+};
 const AREA_HUES: Array<[RegExp, [number, number, number]]> = [
-  [/finanz|finance|geld|buchhalt/, [214, 168, 72]],      // Gold
-  [/post|termin|mail|kalender/, [74, 118, 196]],         // Saphir
-  [/wissen|knowledge|doku/, [146, 112, 196]],            // Amethyst
-  [/werkstatt|engineering|technik/, [196, 116, 72]],     // Kupfer
-  [/wache|security|sicher/, [72, 168, 132]],             // Jade
-  [/betrieb|operations|ops/, [196, 140, 170]],           // Rosé-Lila
-  [/r&d|forschung|research/, [96, 186, 196]],            // Teal-Eis
-  [/intelligence|analyse/, [206, 182, 132]],             // Sand
-  [/markt|market|sales|vertrieb/, [200, 120, 110]],      // Koralle
-  [/growth|wachstum/, [150, 170, 110]],                  // Moos
-  [/product|produkt/, [120, 150, 170]],                  // Schiefer
+  [/finanz|finance|geld|buchhalt/, [228, 185, 95]],      // Gold (brighter)
+  [/post|termin|mail|kalender/, [85, 165, 210]],         // Teal (brighter)
+  [/wissen|knowledge|doku/, [165, 135, 210]],            // Lilac (brighter)
+  [/werkstatt|engineering|technik/, [215, 145, 95]],     // Copper (brighter)
+  [/wache|security|sicher/, [120, 195, 185]],            // Steel (brighter)
+  [/betrieb|operations|ops/, [210, 175, 120]],           // Sand (brighter)
+  [/r&d|forschung|research/, [200, 208, 225]],           // Pearl (brighter)
+  [/intelligence|analyse/, [210, 175, 120]],             // Sand
+  [/markt|market|sales|vertrieb/, [130, 185, 130]],      // Sage (brighter)
+  [/growth|wachstum/, [150, 185, 130]],                  // Moos
+  [/product|produkt/, [140, 175, 195]],                  // Schiefer
 ];
-export function areaHue(name: string, _arch?: string | null): [number, number, number] {
+export function areaHue(name: string, arch?: string | null): [number, number, number] {
+  // Archetype from server takes priority
+  if (arch && ARCHETYPE_HUES[arch]) return ARCHETYPE_HUES[arch];
   const n = (name || '').toLowerCase();
   for (const [re, c] of AREA_HUES) if (re.test(n)) return c;
-  return [140, 170, 160];
+  return [160, 185, 175];
 }
 const JEWEL_CACHE = new Map<string, ImageData>();
 /**
@@ -376,10 +393,12 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
   
   // Universe Glass: lightly tinted, matte, translucent – brighter with more color
+  // Boost colors by mixing with a brighter, more saturated version of themselves
+  const brightened = hue.map(v => Math.min(255, v * 1.22 + 25)) as [number, number, number];
   const base: number[] = matte 
-    ? mix(hue, mix(grey(hue), [185, 195, 190], 0.35), 0.48) 
-    : hue;
-  const h: number[] = quiet ? mix(base, [165, 175, 170], 0.38) : base;
+    ? mix(brightened, mix(grey(brightened), [210, 220, 215], 0.22), 0.35) 
+    : brightened;
+  const h: number[] = quiet ? mix(base, [185, 195, 190], 0.28) : base;
   
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -392,9 +411,9 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     
     // Brighter color range for Universe Glass - much brighter overall
-    const night = h.map((v) => v * 0.28 + 25);
-    const deep = h.map((v) => v * 0.72 + 15);
-    const lite = mix(h, [255, 252, 240], 0.55);
+    const night = h.map((v) => v * 0.35 + 35);
+    const deep = h.map((v) => v * 0.78 + 25);
+    const lite = mix(h, [255, 252, 245], 0.50);
     const r = W / 2; const cell = 2.8 * dpr;
     const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
     

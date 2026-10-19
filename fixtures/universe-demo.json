@@ -13,7 +13,7 @@
       {
         "key": "sys:finanzen",
         "kind": "system",
-        "capability": "finance",
+        "capability": "finanzen",
         "label": "Finanzen",
         "state": "active",
         "size": "L",
@@ -21,20 +21,20 @@
         "score": 0.88,
         "ring": 0,
         "angle": 45,
-        "look": { "archetype": "jade", "hue": 45, "glyph": "wallet", "seed": 101 },
+        "look": { "archetype": "gas-gold", "hue": 42, "glyph": "wallet", "seed": 101 },
         "moons": [
           { "key": "space:buchhaltung", "label": "Buchhaltung", "docs": 34 },
           { "key": "space:rechnungen", "label": "Rechnungen", "docs": 12, "status": "active" }
         ],
         "more_moons": 0,
-        "counts": { "open_invoices": 3, "pending_approvals": 2, "total_docs": 46 },
-        "glow": null,
+        "counts": { "transactions_14d": 47, "docs": 46 },
+        "glow": { "level": "medium", "reason": "2 offene Rechnungen" },
         "links": { "open": "/workspace/finanzen" }
       },
       {
         "key": "sys:post",
         "kind": "system",
-        "capability": "communication",
+        "capability": "post",
         "label": "Post & Termine",
         "state": "active",
         "size": "M",
@@ -42,20 +42,20 @@
         "score": 0.76,
         "ring": 1,
         "angle": 120,
-        "look": { "archetype": "sapphire", "hue": 220, "glyph": "mail", "seed": 202 },
+        "look": { "archetype": "ocean", "hue": 175, "glyph": "mail", "seed": 202 },
         "moons": [
-          { "key": "space:eingang", "label": "Eingang", "docs": 8 },
-          { "key": "space:kalender", "label": "Kalender", "docs": 0 }
+          { "key": "space:eingang", "label": "Eingang", "docs": 18 },
+          { "key": "space:kalender", "label": "Kalender", "docs": 5 }
         ],
         "more_moons": 0,
-        "counts": { "unread_mails": 5, "today_meetings": 2, "total_docs": 8 },
-        "glow": { "level": "medium", "reason": "5 neue Nachrichten" },
+        "counts": { "mails": 4, "docs": 23 },
+        "glow": { "level": "high", "reason": "4 neue Nachrichten" },
         "links": { "open": "/workspace/post" }
       },
       {
         "key": "sys:werkstatt",
         "kind": "system",
-        "capability": "engineering",
+        "capability": "werkstatt",
         "label": "Werkstatt",
         "state": "active",
         "size": "L",
@@ -63,20 +63,20 @@
         "score": 0.91,
         "ring": 2,
         "angle": 200,
-        "look": { "archetype": "copper", "hue": 25, "glyph": "hammer", "seed": 303 },
+        "look": { "archetype": "copper-rock", "hue": 18, "glyph": "hammer", "seed": 303 },
         "moons": [
           { "key": "space:projekte", "label": "Projekte", "docs": 28 },
-          { "key": "space:tickets", "label": "Tickets", "docs": 15, "status": "active" }
+          { "key": "space:tickets", "label": "Tickets", "docs": 16, "status": "active" }
         ],
         "more_moons": 1,
-        "counts": { "active_tasks": 7, "completed_today": 3, "total_docs": 43 },
-        "glow": null,
+        "counts": { "open_tasks": 3, "docs": 44 },
+        "glow": { "level": "low", "reason": "3 offene Aufgaben" },
         "links": { "open": "/workspace/werkstatt" }
       },
       {
         "key": "sys:wissen",
         "kind": "system",
-        "capability": "knowledge",
+        "capability": "wissen",
         "label": "Wissen",
         "state": "active",
         "size": "M",
@@ -84,34 +84,34 @@
         "score": 0.65,
         "ring": 3,
         "angle": 280,
-        "look": { "archetype": "amethyst", "hue": 280, "glyph": "book-open", "seed": 404 },
+        "look": { "archetype": "marble-indigo", "hue": 270, "glyph": "book-open", "seed": 404 },
         "moons": [
           { "key": "space:dokumentation", "label": "Dokumentation", "docs": 52 },
           { "key": "space:anleitungen", "label": "Anleitungen", "docs": 18 }
         ],
         "more_moons": 0,
-        "counts": { "recent_updates": 4, "total_docs": 70 },
+        "counts": { "docs": 70 },
         "glow": null,
         "links": { "open": "/workspace/wissen" }
       },
       {
         "key": "sys:wache",
         "kind": "system",
-        "capability": "security",
+        "capability": "wache",
         "label": "Wache",
         "state": "active",
         "size": "S",
-        "brightness": 0.72,
-        "score": 0.58,
+        "brightness": 0.82,
+        "score": 0.68,
         "ring": 4,
         "angle": 340,
-        "look": { "archetype": "jade", "hue": 160, "glyph": "shield-check", "seed": 505 },
+        "look": { "archetype": "ice", "hue": 210, "glyph": "shield-check", "seed": 505 },
         "moons": [
           { "key": "space:protokolle", "label": "Protokolle", "docs": 24 }
         ],
         "more_moons": 0,
-        "counts": { "open_incidents": 0, "total_docs": 24 },
-        "glow": null,
+        "counts": { "open_incidents": 1, "docs": 24 },
+        "glow": { "level": "low", "reason": "1 offener Vorfall" },
         "links": { "open": "/workspace/wache" }
       },
       {
@@ -126,13 +126,13 @@
         "score": 0.74,
         "ring": 5,
         "angle": 70,
-        "look": { "archetype": "rose", "hue": 330, "glyph": "server", "seed": 606 },
+        "look": { "archetype": "sand-dune", "hue": 38, "glyph": "server", "seed": 606 },
         "moons": [
           { "key": "space:infrastruktur", "label": "Infrastruktur", "docs": 19 },
           { "key": "space:monitoring", "label": "Monitoring", "docs": 8 }
         ],
         "more_moons": 0,
-        "counts": { "uptime": "99.8%", "active_services": 12, "total_docs": 27 },
+        "counts": { "spaces": 2, "docs": 27 },
         "glow": null,
         "links": { "open": "/workspace/betrieb" }
       },
@@ -148,14 +148,14 @@
         "score": 0.82,
         "ring": 6,
         "angle": 160,
-        "look": { "archetype": "teal", "hue": 185, "glyph": "flask-conical", "seed": 707 },
+        "look": { "archetype": "pearl", "hue": 220, "glyph": "flask-conical", "seed": 707 },
         "moons": [
           { "key": "space:experimente", "label": "Experimente", "docs": 14 },
           { "key": "space:prototypen", "label": "Prototypen", "docs": 6 }
         ],
         "more_moons": 0,
-        "counts": { "active_experiments": 3, "total_docs": 20 },
-        "glow": { "level": "low", "reason": "MÔRA arbeitet hier" },
+        "counts": { "spaces": 2, "docs": 20 },
+        "glow": null,
         "links": { "open": "/workspace/rd" }
       },
       {
@@ -170,13 +170,13 @@
         "score": 0.62,
         "ring": 7,
         "angle": 250,
-        "look": { "archetype": "coral", "hue": 15, "glyph": "store", "seed": 808 },
+        "look": { "archetype": "forest", "hue": 145, "glyph": "store", "seed": 808 },
         "moons": [
           { "key": "space:leads", "label": "Leads", "docs": 22 },
           { "key": "space:kunden", "label": "Kunden", "docs": 31 }
         ],
         "more_moons": 0,
-        "counts": { "open_leads": 8, "this_month": 4, "total_docs": 53 },
+        "counts": { "spaces": 2, "docs": 53 },
         "glow": null,
         "links": { "open": "/workspace/markt" }
       }
@@ -185,195 +185,48 @@
     "belt": { "unassigned": { "spaces": 2, "docs": 5 } },
     "suggestions": []
   },
-  "by_company": {
-    "company-saimor-hq": {
-      "company": {
-        "id": "company-saimor-hq",
-        "name": "SAIMÔR HQ",
-        "sector": "live",
-        "industry_template": "service",
-        "template_label": "Dienstleistung"
-      },
-      "edition": "owner",
-      "model_version": 2,
-      "planets": [
-        {
-          "key": "sys:finanzen",
-          "kind": "system",
-          "capability": "finance",
-          "label": "Finanzen",
-          "state": "active",
-          "size": "L",
-          "brightness": 0.92,
-          "score": 0.88,
-          "ring": 0,
-          "angle": 45,
-          "look": { "archetype": "jade", "hue": 45, "glyph": "wallet", "seed": 101 },
-          "moons": [
-            { "key": "space:buchhaltung", "label": "Buchhaltung", "docs": 34 },
-            { "key": "space:rechnungen", "label": "Rechnungen", "docs": 12, "status": "active" }
-          ],
-          "more_moons": 0,
-          "counts": { "open_invoices": 3, "pending_approvals": 2, "total_docs": 46 },
-          "glow": null,
-          "links": { "open": "/workspace/finanzen" }
-        },
-        {
-          "key": "sys:post",
-          "kind": "system",
-          "capability": "communication",
-          "label": "Post & Termine",
-          "state": "active",
-          "size": "M",
-          "brightness": 0.85,
-          "score": 0.76,
-          "ring": 1,
-          "angle": 120,
-          "look": { "archetype": "sapphire", "hue": 220, "glyph": "mail", "seed": 202 },
-          "moons": [
-            { "key": "space:eingang", "label": "Eingang", "docs": 8 },
-            { "key": "space:kalender", "label": "Kalender", "docs": 0 }
-          ],
-          "more_moons": 0,
-          "counts": { "unread_mails": 5, "today_meetings": 2, "total_docs": 8 },
-          "glow": { "level": "medium", "reason": "5 neue Nachrichten" },
-          "links": { "open": "/workspace/post" }
-        },
-        {
-          "key": "sys:werkstatt",
-          "kind": "system",
-          "capability": "engineering",
-          "label": "Werkstatt",
-          "state": "active",
-          "size": "L",
-          "brightness": 0.95,
-          "score": 0.91,
-          "ring": 2,
-          "angle": 200,
-          "look": { "archetype": "copper", "hue": 25, "glyph": "hammer", "seed": 303 },
-          "moons": [
-            { "key": "space:projekte", "label": "Projekte", "docs": 28 },
-            { "key": "space:tickets", "label": "Tickets", "docs": 15, "status": "active" }
-          ],
-          "more_moons": 1,
-          "counts": { "active_tasks": 7, "completed_today": 3, "total_docs": 43 },
-          "glow": null,
-          "links": { "open": "/workspace/werkstatt" }
-        },
-        {
-          "key": "sys:wissen",
-          "kind": "system",
-          "capability": "knowledge",
-          "label": "Wissen",
-          "state": "active",
-          "size": "M",
-          "brightness": 0.78,
-          "score": 0.65,
-          "ring": 3,
-          "angle": 280,
-          "look": { "archetype": "amethyst", "hue": 280, "glyph": "book-open", "seed": 404 },
-          "moons": [
-            { "key": "space:dokumentation", "label": "Dokumentation", "docs": 52 },
-            { "key": "space:anleitungen", "label": "Anleitungen", "docs": 18 }
-          ],
-          "more_moons": 0,
-          "counts": { "recent_updates": 4, "total_docs": 70 },
-          "glow": null,
-          "links": { "open": "/workspace/wissen" }
-        },
-        {
-          "key": "sys:wache",
-          "kind": "system",
-          "capability": "security",
-          "label": "Wache",
-          "state": "active",
-          "size": "S",
-          "brightness": 0.72,
-          "score": 0.58,
-          "ring": 4,
-          "angle": 340,
-          "look": { "archetype": "jade", "hue": 160, "glyph": "shield-check", "seed": 505 },
-          "moons": [
-            { "key": "space:protokolle", "label": "Protokolle", "docs": 24 }
-          ],
-          "more_moons": 0,
-          "counts": { "open_incidents": 0, "total_docs": 24 },
-          "glow": null,
-          "links": { "open": "/workspace/wache" }
-        },
-        {
-          "key": "domain:betrieb",
-          "kind": "domain",
-          "domain_type": "operations",
-          "department_id": "dept-betrieb",
-          "label": "Betrieb",
-          "state": "active",
-          "size": "M",
-          "brightness": 0.82,
-          "score": 0.74,
-          "ring": 5,
-          "angle": 70,
-          "look": { "archetype": "rose", "hue": 330, "glyph": "server", "seed": 606 },
-          "moons": [
-            { "key": "space:infrastruktur", "label": "Infrastruktur", "docs": 19 },
-            { "key": "space:monitoring", "label": "Monitoring", "docs": 8 }
-          ],
-          "more_moons": 0,
-          "counts": { "uptime": "99.8%", "active_services": 12, "total_docs": 27 },
-          "glow": null,
-          "links": { "open": "/workspace/betrieb" }
-        },
-        {
-          "key": "domain:rd",
-          "kind": "domain",
-          "domain_type": "research",
-          "department_id": "dept-rd",
-          "label": "R&D",
-          "state": "active",
-          "size": "M",
-          "brightness": 0.88,
-          "score": 0.82,
-          "ring": 6,
-          "angle": 160,
-          "look": { "archetype": "teal", "hue": 185, "glyph": "flask-conical", "seed": 707 },
-          "moons": [
-            { "key": "space:experimente", "label": "Experimente", "docs": 14 },
-            { "key": "space:prototypen", "label": "Prototypen", "docs": 6 }
-          ],
-          "more_moons": 0,
-          "counts": { "active_experiments": 3, "total_docs": 20 },
-          "glow": { "level": "low", "reason": "MÔRA arbeitet hier" },
-          "links": { "open": "/workspace/rd" }
-        },
-        {
-          "key": "domain:markt",
-          "kind": "domain",
-          "domain_type": "sales",
-          "department_id": "dept-markt",
-          "label": "Markt",
-          "state": "active",
-          "size": "S",
-          "brightness": 0.75,
-          "score": 0.62,
-          "ring": 7,
-          "angle": 250,
-          "look": { "archetype": "coral", "hue": 15, "glyph": "store", "seed": 808 },
-          "moons": [
-            { "key": "space:leads", "label": "Leads", "docs": 22 },
-            { "key": "space:kunden", "label": "Kunden", "docs": 31 }
-          ],
-          "more_moons": 0,
-          "counts": { "open_leads": 8, "this_month": 4, "total_docs": 53 },
-          "glow": null,
-          "links": { "open": "/workspace/markt" }
-        }
-      ],
-      "clusters": [],
-      "belt": { "unassigned": { "spaces": 2, "docs": 5 } },
-      "suggestions": []
-    }
-  },
+  "by_company": {},
   "companies": [
     { "id": "company-saimor-hq", "name": "SAIMÔR HQ", "sector": "live", "label": "Hauptsitz" }
-  ]
+  ],
+  "signals": [
+    { "id": "s1", "kind": "mail", "title": "Anfrage: Produktdemo", "subtitle": "von kunde@beispiel.de", "department_id": null, "timestamp": "2026-10-19T14:30:00Z" },
+    { "id": "s2", "kind": "mail", "title": "RE: Quartalsbericht", "subtitle": "von partner@firma.de", "department_id": null, "timestamp": "2026-10-19T13:15:00Z" },
+    { "id": "s3", "kind": "mail", "title": "Rechnung #2847", "subtitle": "von buchhaltung@lieferant.de", "department_id": "dept-finanzen", "timestamp": "2026-10-19T11:00:00Z" },
+    { "id": "s4", "kind": "mail", "title": "Team-Update KW42", "subtitle": "von team@saimor.world", "department_id": null, "timestamp": "2026-10-19T09:00:00Z" }
+  ],
+  "calendar": [
+    { "id": "c1", "title": "Standup", "time": "09:30", "duration": 15 },
+    { "id": "c2", "title": "Kundengespräch: Demo", "time": "14:00", "duration": 60 }
+  ],
+  "horizont": {
+    "kalender": { "count": 2, "next": "Standup · 09:30" },
+    "mail": { "count": 4, "label": "4 neue Nachrichten" },
+    "feed": { "count": 3, "label": "3 Aktivitäten" }
+  },
+  "wache": {
+    "days14": [0, 0, 1, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 1],
+    "total": 5,
+    "open": 1,
+    "latest": { "title": "Ungewöhnlicher Login-Versuch", "time": "vor 2h" }
+  },
+  "wirtschaft": {
+    "mrr": 2480,
+    "currency": "EUR",
+    "active_subscriptions": 3,
+    "label": "2.480 € mtl."
+  },
+  "verteilung": {
+    "total_docs": 307,
+    "by_area": [
+      { "name": "Finanzen", "docs": 46 },
+      { "name": "Post & Termine", "docs": 23 },
+      { "name": "Werkstatt", "docs": 44 },
+      { "name": "Wissen", "docs": 70 },
+      { "name": "Wache", "docs": 24 },
+      { "name": "Betrieb", "docs": 27 },
+      { "name": "R&D", "docs": 20 },
+      { "name": "Markt", "docs": 53 }
+    ]
+  }
 }

@@ -123,6 +123,7 @@ export default function RootLayout({
       <head>
         <title>SAIMÔR OS</title>
         <meta name="description" content="SAIMÔR OS — Intelligentes Wissenssystem" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
       </head>
       <body className="font-sans antialiased overflow-hidden" suppressHydrationWarning>
         <QueryProvider>
