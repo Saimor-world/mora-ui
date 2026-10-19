@@ -283,6 +283,18 @@ export const APP_REGISTRY: AppManifest[] = [
     defaultSize: { width: 900, height: 660 },
     isNew: true,
   },
+
+  // ── People ────────────────────────────────────────────────────────────────
+  {
+    id: 'begleitungen',
+    name: 'Begleitungen',
+    description: 'Klient:innen und laufende Zusammenarbeiten verwalten',
+    icon: 'Users',
+    color: 'teal',
+    category: 'people',
+    defaultSize: { width: 860, height: 680 },
+    isNew: true,
+  },
 ];
 
 export function getAppManifest(id: string): AppManifest | undefined {
