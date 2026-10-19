@@ -35,8 +35,10 @@ import RecordDetailPanel from './RecordDetailPanel';
 import XrplWatchLab from './XrplWatchLab';
 import CoreTreasuryPanel from './CoreTreasuryPanel';
 import CapitalProfitCenter from './CapitalProfitCenter';
+import CompanyOverview from './CompanyOverview';
+import { isOwner } from '@/lib/auth/roles';
 
-type Section = 'state' | 'flow' | 'treasury' | 'capital';
+type Section = 'overview' | 'state' | 'flow' | 'treasury' | 'capital';
 
 function labelForClassification(value: string) {
   const labels: Record<string, string> = {
@@ -207,6 +209,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
   const updatePaneSize = usePaneStore((state) => state.updatePaneSize);
   const activeCompanyId = useSessionStore((state) => state.user?.active_company_id || null);
   const activeCompanyName = useSessionStore((state) => state.user?.active_company_name || null);
+  const userRole = useSessionStore((state) => state.user?.role || null);
   const [section, setSection] = useState<Section>('state');
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
 
@@ -241,7 +244,12 @@ export default function FinanceV2App({ paneId }: AppProps) {
 
   if (!pane) return null;
 
+  // Owner-only (decision Marius, 19.10.2026). CORE remains the real gate on /v3/finance/*.
+  // Planned later: Sandra as co-partner — NOT granted yet; extend this check only after an explicit decision.
+  const ownerAccess = isOwner(userRole);
+
   const sections: Array<{ id: Section; label: string }> = [
+    { id: 'overview', label: 'Überblick' },
     { id: 'state', label: 'State' },
     { id: 'flow', label: 'Flow' },
     { id: 'treasury', label: 'Treasury' },
@@ -272,7 +280,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
       title={(
         <span className="flex items-center gap-2">
           <Landmark size={14} className="text-emerald-200/80" />
-          <span>Finance</span>
+          <span>Saimôr Finance</span>
         </span>
       )}
       width={pane.size.width}
@@ -296,6 +304,14 @@ export default function FinanceV2App({ paneId }: AppProps) {
       blurIntensity={26}
       opacity={0.42}
     >
+      {!ownerAccess ? (
+        <div className="flex h-full items-center justify-center p-8 text-center text-white" data-testid="finance-owner-only">
+          <div>
+            <ShieldAlert size={18} className="mx-auto text-white/40" />
+            <div className="mt-3 text-sm text-white/70">Saimôr Finance ist nur für den Owner sichtbar.</div>
+          </div>
+        </div>
+      ) : (
       <div className="flex h-full min-h-0 flex-col overflow-hidden text-white">
         <header className="border-b border-white/[0.055] px-1 pb-5">
           <div className="flex flex-wrap items-start justify-between gap-5">
@@ -557,6 +573,10 @@ export default function FinanceV2App({ paneId }: AppProps) {
             </div>
           )}
 
+          {selectedCompanyId && section === 'overview' && !stateDenied && (
+            <CompanyOverview state={state} records={records} hasOlderRecords={Boolean(flowQuery.hasNextPage)} />
+          )}
+
           {selectedCompanyId && section === 'capital' && !stateDenied && (
             <div className="space-y-4">
               <CapitalProfitCenter
@@ -576,6 +596,7 @@ export default function FinanceV2App({ paneId }: AppProps) {
           )}
         </div>
       </div>
+      )}
     </GlassPanel>
   );
 }

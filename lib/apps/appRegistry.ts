@@ -50,8 +50,8 @@ export const APP_REGISTRY: AppManifest[] = [
   },
   {
     id: 'finance',
-    name: 'Kapital',
-    description: 'Wallets und Vermögen – vorerst nur ansehen',
+    name: 'Saimôr Finance',
+    description: 'Einnahmen, Ausgaben und Kontostände – nur lesend, nur Owner',
     icon: 'Activity',
     color: 'green',
     category: 'core',
