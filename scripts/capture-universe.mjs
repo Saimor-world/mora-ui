@@ -196,6 +196,36 @@ async function main() {
   );
   console.log(`Found ${planets.length} planets:`, planets.map(p => p.label).join(', '));
 
+  // Optional: Click on a planet to show detail panel
+  if (process.env.CLICK_PLANET) {
+    const planetName = process.env.CLICK_PLANET;
+    console.log(`Clicking planet: ${planetName}`);
+    try {
+      await page.locator(`[data-planet-kind][data-mora-label="${planetName}"]`).first().click({ force: true });
+      await page.waitForTimeout(1500);
+    } catch (e) {
+      console.log('Could not click planet:', e.message);
+    }
+  }
+
+  // Optional: Enable immersive mode
+  if (process.env.IMMERSIVE) {
+    console.log('Enabling immersive mode...');
+    try {
+      const immersiveBtn = page.locator('[data-testid="uv2-immersive"]');
+      if (await immersiveBtn.isVisible()) {
+        await immersiveBtn.click();
+        await page.waitForTimeout(1000);
+      }
+    } catch (e) {
+      console.log('Could not enable immersive:', e.message);
+    }
+  }
+
+  // Move mouse away from UI elements
+  await page.mouse.move(W / 2, 70);
+  await page.waitForTimeout(800);
+
   // Ensure output directory exists
   const outDir = '/opt/cursor/artifacts/screenshots';
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
