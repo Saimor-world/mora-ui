@@ -5,8 +5,12 @@ import React, { useEffect, useState } from 'react';
 /**
  * Floating banner that tells the user which non-production mode the OS is in
  * (playground / demo / preview / visitor). Renders nothing for real HQ.
- * Extracted verbatim from MoraShell.tsx — behavior-neutral.
+ *
+ * UV2 Design: Compact, gold accent, respects safe-area, never overlaps content.
  */
+
+const GOLD = '#D6A848';
+
 export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview' | 'visitor' }> = ({ activeMode }) => {
     const [ownerReturnAvailable, setOwnerReturnAvailable] = useState(false);
     const [isReturning, setIsReturning] = useState(false);
@@ -38,8 +42,6 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
             if (!response.ok) throw new Error(payload?.detail || 'Owner-Sitzung konnte nicht wiederhergestellt werden.');
             const destination = payload?.destination || '/home';
             const separator = destination.includes('?') ? '&' : '?';
-            // A unique URL forces a full document navigation even when the
-            // preview and the owner HQ both live at /home.
             window.location.replace(`${destination}${separator}ownerReturn=${Date.now()}`);
         } catch (error) {
             setReturnError(error instanceof Error ? error.message : 'Rückkehr nicht möglich.');
@@ -49,68 +51,97 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
 
     if (activeMode === 'real_hq') return null;
 
-    let borderClass = '';
-    let bgClass = '';
-    let glowColor = '';
-    let modeText = '';
     let badgeText = '';
+    let shortText = '';
 
     if (activeMode === 'public_playground') {
-        borderClass = 'border-cyan-500/30';
-        bgClass = 'bg-cyan-500/5';
-        glowColor = 'shadow-[0_0_20px_rgba(6,182,212,0.15)]';
-        badgeText = 'Website-HQ / Public Playground';
-        modeText = 'Geteilte Umgebung. Du kannst Beiträge auf der Wall schreiben.';
+        badgeText = 'Public Playground';
+        shortText = 'Geteilte Umgebung';
     } else if (activeMode === 'personal_demo') {
-        borderClass = 'border-violet-500/30';
-        bgClass = 'bg-violet-500/5';
-        glowColor = 'shadow-[0_0_20px_rgba(139,92,246,0.15)]';
         badgeText = 'Personal Demo';
-        modeText = 'Deine private Testumgebung. Experimente werden nicht veröffentlicht.';
+        shortText = 'Private Testumgebung';
     } else if (activeMode === 'private_preview') {
-        borderClass = 'border-amber-500/30';
-        bgClass = 'bg-amber-500/5';
-        glowColor = 'shadow-[0_0_20px_rgba(245,158,11,0.15)]';
-        badgeText = ownerReturnAvailable ? 'Kunden-Vorschau' : 'Private Preview';
-        modeText = ownerReturnAvailable
-            ? 'Isolierter Kunden-Tenant. Saimôr HQ bleibt getrennt und kann jederzeit wiederhergestellt werden.'
-            : 'Zeitlich begrenzte Voransicht. Deine Sitzung endet nach 24 Stunden; deine Daten werden nach 20 Tagen gelöscht.';
+        badgeText = ownerReturnAvailable ? 'Kunden-Vorschau' : 'Vorschau';
+        shortText = ownerReturnAvailable ? 'Isolierter Tenant' : '20 Tage';
     } else if (activeMode === 'visitor') {
-        borderClass = 'border-emerald-500/30';
-        bgClass = 'bg-emerald-500/5';
-        glowColor = 'shadow-[0_0_20px_rgba(16,185,129,0.15)]';
-        badgeText = 'Visitor';
-        modeText = 'Deine personalisierte Ansicht basierend auf deinem Security Scan.';
+        badgeText = 'Vorschau';
+        shortText = '20 Tage';
     }
 
     return (
-        <div className={`fixed top-20 left-1/2 -translate-x-1/2 z-[80] flex items-center gap-3 px-4 py-2 rounded-full border ${borderClass} ${bgClass} backdrop-blur-xl ${glowColor} transition-all pointer-events-auto`}>
-            <span className="flex h-2 w-2 relative">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    activeMode === 'public_playground' ? 'bg-cyan-400' : activeMode === 'personal_demo' ? 'bg-violet-400' : activeMode === 'visitor' ? 'bg-emerald-400' : 'bg-amber-400'
-                }`} />
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                    activeMode === 'public_playground' ? 'bg-cyan-500' : activeMode === 'personal_demo' ? 'bg-violet-500' : activeMode === 'visitor' ? 'bg-emerald-500' : 'bg-amber-500'
-                }`} />
-            </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white">
-                {badgeText}
-            </span>
-            <span className="text-white/40 font-light">|</span>
-            <span className="text-xs text-white/70 max-w-sm truncate">
-                {modeText}
-            </span>
-            {activeMode === 'private_preview' && ownerReturnAvailable ? (
-                <button
-                    type="button"
-                    onClick={returnToOwner}
-                    disabled={isReturning}
-                    className="rounded-full border border-amber-200/20 bg-amber-200/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-50 transition hover:bg-amber-200/16 disabled:opacity-50"
+        <div
+            className="fixed z-[80] pointer-events-auto top-[max(env(safe-area-inset-top,0px),12px)] sm:top-14"
+            style={{
+                left: '50%',
+                transform: 'translateX(-50%)',
+            }}
+        >
+            <div
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl"
+                title={
+                    activeMode === 'private_preview' || activeMode === 'visitor'
+                        ? '20 Tage Vorschau. Daten bleiben getrennt und laufen automatisch ab.'
+                        : undefined
+                }
+                style={{
+                    background: 'rgba(7,11,12,0.75)',
+                    border: `0.5px solid rgba(214,168,72,0.35)`,
+                    boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+                }}
+            >
+                <span className="relative flex h-1.5 w-1.5">
+                    <span
+                        className="absolute inset-0 rounded-full animate-ping"
+                        style={{ background: GOLD, opacity: 0.6 }}
+                    />
+                    <span
+                        className="relative inline-flex h-1.5 w-1.5 rounded-full"
+                        style={{ background: GOLD }}
+                    />
+                </span>
+                <span
+                    className="text-[11px] font-medium"
+                    style={{
+                        color: GOLD,
+                        letterSpacing: '0.04em',
+                    }}
                 >
-                    {isReturning ? 'Rückkehr…' : 'Zurück zu Saimôr HQ'}
-                </button>
+                    {badgeText}
+                </span>
+                <span
+                    className={
+                        activeMode === 'private_preview' || activeMode === 'visitor'
+                            ? 'text-[11px]'
+                            : 'hidden sm:inline text-[11px]'
+                    }
+                    style={{ color: 'rgba(247,244,233,0.55)' }}
+                >
+                    · {shortText}
+                </span>
+                {activeMode === 'private_preview' && ownerReturnAvailable ? (
+                    <button
+                        type="button"
+                        onClick={returnToOwner}
+                        disabled={isReturning}
+                        className="ml-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition disabled:opacity-50"
+                        style={{
+                            background: `rgba(214,168,72,0.15)`,
+                            border: `0.5px solid rgba(214,168,72,0.35)`,
+                            color: GOLD,
+                        }}
+                    >
+                        {isReturning ? 'Rückkehr…' : 'Zurück'}
+                    </button>
+                ) : null}
+            </div>
+            {returnError ? (
+                <p
+                    className="mt-1 text-center text-[10px]"
+                    style={{ color: 'rgba(251,113,133,0.85)' }}
+                >
+                    {returnError}
+                </p>
             ) : null}
-            {returnError ? <span className="text-xs text-red-200">{returnError}</span> : null}
         </div>
     );
 };

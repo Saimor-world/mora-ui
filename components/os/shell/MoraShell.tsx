@@ -60,6 +60,7 @@ import { useAccountStore } from '@/lib/auth/useAccount';
 import { authLogout } from '@/lib/api/coreClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useAuthBootstrapper } from '@/lib/hooks/useAuthBootstrapper';
+import { usePreviewPhoneCompanion } from '@/lib/hooks/usePreviewPhoneCompanion';
 import { useOperationalFlip } from '@/lib/hooks/useOperationalFlip';
 import { resetUserState } from '@/lib/hooks/useUser';
 import type { OrbState } from '@/lib/api/awarenessClient';
@@ -187,6 +188,7 @@ import { IntelligenceDiagnostics } from '@/components/dev/IntelligenceDiagnostic
 
 export const MoraShell: React.FC = () => {
     const router = useRouter();
+    const { handoff: previewPhoneCompanion } = usePreviewPhoneCompanion();
 
     type MyceliumDropVisualFile = {
         id: string;
@@ -726,6 +728,17 @@ export const MoraShell: React.FC = () => {
             <LoadingScreen
                 name={displayCompany?.name || user?.active_company_name || user?.name || (typeof window !== 'undefined' ? localStorage.getItem('last_user_name') : null) || 'Saimôr'}
                 role={user?.role}
+            />
+        );
+    }
+
+    // Phone preview / visitor: Saimôr OS is only the Companion. Do not paint Home.
+    if (previewPhoneCompanion) {
+        return (
+            <div
+                className="fixed inset-0 bg-[#050706]"
+                data-testid="preview-phone-companion-handoff"
+                aria-hidden
             />
         );
     }

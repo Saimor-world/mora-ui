@@ -7,8 +7,9 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { MoraShell } from '@/components/os/shell/MoraShell';
 
+const mockReplace = jest.fn();
 jest.mock('next/navigation', () => ({
-    useRouter: () => ({ push: jest.fn(), replace: jest.fn(), refresh: jest.fn() }),
+    useRouter: () => ({ push: jest.fn(), replace: mockReplace, refresh: jest.fn() }),
     usePathname: () => '/',
     useSearchParams: () => ({ get: jest.fn() }),
 }));
@@ -169,7 +170,14 @@ jest.mock('@/lib/hooks/useWindowSnapping', () => ({
     }),
 }));
 
-beforeEach(resetAllStores);
+beforeEach(() => {
+    resetAllStores();
+    mockReplace.mockReset();
+    if (typeof window.matchMedia === 'function') {
+        // @ts-expect-error jsdom has no matchMedia by default; tests that stub it must not leak.
+        delete window.matchMedia;
+    }
+});
 
 function seedShellStores(activeMode: 'real_hq' | 'public_playground' | 'personal_demo' | 'private_preview') {
     useNavStore.setState({
@@ -194,29 +202,53 @@ describe('MoraShell mode indicator banner', () => {
     it('does not render banner in real_hq mode', () => {
         seedShellStores('real_hq');
         renderWithProviders(<MoraShell />);
-        expect(screen.queryByText(/Website-HQ \/ Public Playground/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Public Playground/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/Personal Demo/i)).not.toBeInTheDocument();
-        expect(screen.queryByText(/Private Preview/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^Vorschau$/i)).not.toBeInTheDocument();
     });
 
     it('renders public_playground banner correctly', () => {
         seedShellStores('public_playground');
         renderWithProviders(<MoraShell />);
-        expect(screen.getByText(/Website-HQ \/ Public Playground/i)).toBeInTheDocument();
-        expect(screen.getByText(/Geteilte Umgebung. Du kannst Beiträge auf der Wall schreiben./i)).toBeInTheDocument();
+        expect(screen.getByText(/Public Playground/i)).toBeInTheDocument();
+        expect(screen.getByText(/Geteilte Umgebung/i)).toBeInTheDocument();
     });
 
     it('renders personal_demo banner correctly', () => {
         seedShellStores('personal_demo');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Personal Demo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Deine private Testumgebung. Experimente werden nicht veröffentlicht./i)).toBeInTheDocument();
+        expect(screen.getByText(/Private Testumgebung/i)).toBeInTheDocument();
     });
 
     it('renders private_preview banner correctly', () => {
         seedShellStores('private_preview');
         renderWithProviders(<MoraShell />);
-        expect(screen.getByText(/Private Preview/i)).toBeInTheDocument();
-        expect(screen.getByText(/Deine Sitzung endet nach 24 Stunden; deine Daten werden nach 20 Tagen gelöscht./i)).toBeInTheDocument();
+        expect(screen.getByText(/^Vorschau$/i)).toBeInTheDocument();
+        expect(screen.getByText(/20 Tage/i)).toBeInTheDocument();
+    });
+
+    it('hands phone preview visitors to the Companion instead of Home', () => {
+        mockReplace.mockReset();
+        Object.defineProperty(window, 'matchMedia', {
+            writable: true,
+            configurable: true,
+            value: (query: string) => ({
+                matches: query.includes('max-width: 767px'),
+                media: query,
+                onchange: null,
+                addListener: jest.fn(),
+                removeListener: jest.fn(),
+                addEventListener: jest.fn(),
+                removeEventListener: jest.fn(),
+                dispatchEvent: jest.fn(),
+            }),
+        });
+        seedShellStores('private_preview');
+        renderWithProviders(<MoraShell />);
+        expect(screen.getByTestId('preview-phone-companion-handoff')).toBeInTheDocument();
+        expect(screen.queryByTestId('viewport')).not.toBeInTheDocument();
+        expect(screen.queryByText(/^Vorschau$/i)).not.toBeInTheDocument();
+        expect(mockReplace).toHaveBeenCalledWith('/begleiter?demo=1');
     });
 });

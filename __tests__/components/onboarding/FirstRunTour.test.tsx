@@ -65,7 +65,7 @@ afterEach(() => {
 it('does not auto-show in regular HQ sessions', async () => {
     render(<FirstRunTour />);
     act(() => { jest.advanceTimersByTime(3800); });
-    expect(screen.queryByRole('heading', { name: /Dein Home/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/MÔRA · Dein Home/i)).not.toBeInTheDocument();
 });
 
 it('shows first MÔRA step after explicit restart', async () => {
@@ -74,8 +74,7 @@ it('shows first MÔRA step after explicit restart', async () => {
         window.dispatchEvent(new Event('saimor:product-tour-restart'));
     });
     await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Dein Home/i })).toBeInTheDocument();
-        expect(screen.getByText(/^MÔRA$/i)).toBeInTheDocument();
+        expect(screen.getByText(/MÔRA · Dein Home/i)).toBeInTheDocument();
     });
 });
 
@@ -84,19 +83,22 @@ it('advances on weiter button', async () => {
     act(() => {
         window.dispatchEvent(new Event('saimor:product-tour-restart'));
     });
-    await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
+    await waitFor(() => screen.getByText(/MÔRA · Dein Home/i));
     fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
-    expect(screen.getByRole('heading', { name: /Dein Universe/i })).toBeInTheDocument();
+    expect(screen.getByText(/MÔRA · Universe/i)).toBeInTheDocument();
 });
 
-it('persists permanent dismissal via nicht mehr anzeigen', async () => {
+it('persists permanent dismissal via nicht mehr checkbox on last step', async () => {
     render(<FirstRunTour />);
     act(() => {
         window.dispatchEvent(new Event('saimor:product-tour-restart'));
     });
-    await waitFor(() => screen.getByRole('heading', { name: /Dein Home/i }));
-    fireEvent.click(screen.getByRole('checkbox', { name: /nicht mehr anzeigen/i }));
-    fireEvent.click(screen.getByRole('button', { name: /ausblenden/i }));
+    await waitFor(() => screen.getByText(/MÔRA · Dein Home/i));
+    fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
+    expect(screen.getByText(/MÔRA · Universe/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /weiter/i }));
+    expect(screen.getByText(/MÔRA · Dock/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /verstanden/i }));
     expect(markProductTourDismissed).toHaveBeenCalled();
 });
 
@@ -106,6 +108,6 @@ it('shows faster for website entry demo path', async () => {
     render(<FirstRunTour />);
     act(() => { jest.advanceTimersByTime(2200); });
     await waitFor(() => {
-        expect(screen.getByRole('heading', { name: /Dein Home/i })).toBeInTheDocument();
+        expect(screen.getByText(/MÔRA · Dein Home/i)).toBeInTheDocument();
     });
 });

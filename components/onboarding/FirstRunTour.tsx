@@ -32,35 +32,35 @@ const HOME_STEPS: TourStep[] = [
         id: 'home-cockpit',
         icon: LayoutGrid,
         title: 'Dein Home',
-        voice: 'Hier ist dein Home — Signale, Widgets und der Pulse deiner Organisation, ohne Scroll-Chaos.',
+        voice: 'Signale, Widgets und der Pulse deiner Organisation.',
         target: { selector: '[data-testid="home-cockpit"]', offsetY: 8 },
-        accent: 'rgba(52,211,153,0.70)',
+        accent: 'rgba(214,168,72,0.70)',
     },
     {
         id: 'universe',
         icon: Compass,
-        title: 'Dein Universe',
-        voice: 'Wechsle ins Universe, wenn du Bereiche und Verbindungen als Topographie sehen willst.',
+        title: 'Universe',
+        voice: 'Bereiche und Verbindungen als Raum.',
         target: { selector: '[data-testid="universe-toggle"]', offsetY: -8 },
-        accent: 'rgba(103,232,249,0.70)',
+        accent: 'rgba(214,168,72,0.70)',
     },
     {
         id: 'dock',
         icon: Sparkles,
-        title: 'Dein Dock',
-        voice: 'Unten liegt dein Dock — Apps, Navigation und mein Orb. Klick mich an, wenn du etwas brauchst.',
+        title: 'Dock',
+        voice: 'Apps, Navigation und MÔRA. Klick den Stein, wenn du etwas brauchst.',
         target: { selector: '[data-testid="mora-dock"]', offsetY: -12 },
-        accent: 'rgba(167,139,250,0.70)',
+        accent: 'rgba(214,168,72,0.70)',
     },
 ];
 
 const DEMO_APPEAR_DELAY_MS = 2200;
 const DEFAULT_APPEAR_DELAY_MS = 3800;
 const SESSION_SEEN_KEY = 'saimor_product_tour_session';
-const CARD_WIDTH = 320;
-const CARD_ESTIMATED_HEIGHT = 224;
-const CARD_MARGIN = 18;
-const DOCK_RESERVED_HEIGHT = 112;
+const CARD_WIDTH = 280;
+const CARD_ESTIMATED_HEIGHT = 140;
+const CARD_MARGIN = 16;
+const DOCK_RESERVED_HEIGHT = 130;
 
 interface TourPlacement {
     left: number;
@@ -96,6 +96,8 @@ function resolveAppearDelay(activeMode: string): number {
 }
 
 function shouldAutoShowTour(activeMode: string): boolean {
+    // Preview Home owns its own in-flow hint — never overlay that surface.
+    if (activeMode === 'visitor' || activeMode === 'private_preview') return false;
     return isDemoEntryPath(activeMode);
 }
 
@@ -105,37 +107,17 @@ function clamp(n: number, min: number, max: number): number {
 }
 
 function computeTourPlacement(
-    stepId: string,
-    targetRect: DOMRect | null,
+    _stepId: string,
+    _targetRect: DOMRect | null,
     viewport: { width: number; height: number },
 ): TourPlacement {
-    const maxLeft = viewport.width - CARD_WIDTH - CARD_MARGIN;
-    const maxTop = viewport.height - DOCK_RESERVED_HEIGHT - CARD_ESTIMATED_HEIGHT;
-    const fallback = {
-        left: clamp(viewport.width - CARD_WIDTH - CARD_MARGIN, CARD_MARGIN, maxLeft),
-        top: clamp(viewport.height - DOCK_RESERVED_HEIGHT - CARD_ESTIMATED_HEIGHT, CARD_MARGIN, maxTop),
-    };
+    const isMobile = viewport.width < 640;
+    const left = isMobile
+        ? Math.max(CARD_MARGIN, (viewport.width - CARD_WIDTH) / 2)
+        : clamp(viewport.width - CARD_WIDTH - CARD_MARGIN, CARD_MARGIN, viewport.width - CARD_WIDTH - CARD_MARGIN);
+    const top = viewport.height - DOCK_RESERVED_HEIGHT - CARD_ESTIMATED_HEIGHT - 8;
 
-    if (!targetRect || viewport.width <= 0 || viewport.height <= 0) return fallback;
-
-    if (stepId === 'dock') {
-        return {
-            left: clamp(targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2, CARD_MARGIN, maxLeft),
-            top: clamp(targetRect.top - CARD_ESTIMATED_HEIGHT - 16, CARD_MARGIN, maxTop),
-        };
-    }
-
-    if (stepId === 'universe') {
-        return {
-            left: clamp(targetRect.left + targetRect.width / 2 - CARD_WIDTH / 2, CARD_MARGIN, maxLeft),
-            top: clamp(targetRect.bottom + 14, CARD_MARGIN, maxTop),
-        };
-    }
-
-    return {
-        left: clamp(CARD_MARGIN + 12, CARD_MARGIN, maxLeft),
-        top: clamp(targetRect.top + 92, CARD_MARGIN, maxTop),
-    };
+    return { left, top: Math.max(CARD_MARGIN, top) };
 }
 
 export const FirstRunTour: React.FC = () => {
@@ -180,7 +162,7 @@ export const FirstRunTour: React.FC = () => {
             setDismissed(false);
             setStepIdx(0);
             setDontShowAgain(false);
-            if (coreMode === 'home') {
+            if (coreMode === 'home' && activeMode !== 'visitor' && activeMode !== 'private_preview') {
                 setActive(true);
                 markTourSeenThisSession();
             }
@@ -192,7 +174,7 @@ export const FirstRunTour: React.FC = () => {
             window.removeEventListener(PRODUCT_TOUR_STATE_EVENT, onStateChange);
             window.removeEventListener(PRODUCT_TOUR_RESTART_EVENT, onRestart);
         };
-    }, [coreMode, userSettings]);
+    }, [activeMode, coreMode, userSettings]);
 
     useEffect(() => {
         if (dismissed) return;
@@ -245,6 +227,7 @@ export const FirstRunTour: React.FC = () => {
 
     if (dismissed) return null;
     if (coreMode !== 'home') return null;
+    if (activeMode === 'visitor' || activeMode === 'private_preview') return null;
     if (!active) return null;
 
     const step = steps[stepIdx];
@@ -252,75 +235,68 @@ export const FirstRunTour: React.FC = () => {
     const isLastStep = stepIdx === steps.length - 1;
     const placement = computeTourPlacement(step.id, targetRect, viewport);
 
+    const GOLD = '#D6A848';
+    const CREAM = 'rgba(247,244,233,';
+
     return (
         <AnimatePresence>
             <motion.div
                 key={step.id}
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 8 }}
-                transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
                 className="pointer-events-none fixed z-[8000]"
                 style={{ left: placement.left, top: placement.top }}
                 data-testid="product-tour-card"
             >
-                {targetRect && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="pointer-events-none fixed rounded-2xl"
-                        style={{
-                            left: targetRect.left - 4,
-                            top: targetRect.top - 4,
-                            width: targetRect.width + 8,
-                            height: targetRect.height + 8,
-                            border: `1px solid ${step.accent.replace('0.70', '0.22')}`,
-                            boxShadow: `0 0 24px ${step.accent.replace('0.70', '0.08')}`,
-                        }}
-                    />
-                )}
-
                 <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ duration: 0.26, delay: 0.04 }}
-                    className="pointer-events-auto w-[min(320px,calc(100vw-2.5rem))]"
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ duration: 0.24, delay: 0.04 }}
+                    className="pointer-events-auto"
+                    style={{ width: CARD_WIDTH, maxWidth: 'calc(100vw - 2rem)' }}
                 >
                     <div
-                        className="relative overflow-hidden rounded-[20px] shadow-[0_24px_60px_rgba(0,0,0,0.48)] backdrop-blur-[24px]"
+                        className="relative overflow-hidden rounded-xl"
                         style={{
-                            background: 'linear-gradient(135deg, rgba(8,20,16,0.92), rgba(4,12,11,0.86))',
-                            border: '1px solid rgba(124,58,237,0.28)',
+                            background: 'rgba(7,11,12,0.88)',
+                            border: `0.5px solid rgba(214,168,72,0.28)`,
+                            boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+                            backdropFilter: 'blur(20px)',
                         }}
                     >
-                        <span
-                            className="absolute left-0 top-3 bottom-3 w-[2px] rounded-full"
-                            style={{
-                                background: step.accent.replace('0.70', '0.85'),
-                                boxShadow: `0 0 8px ${step.accent.replace('0.70', '0.45')}`,
-                            }}
-                        />
-
-                        <div className="p-4">
-                            <div className="flex items-start gap-3">
+                        <div className="p-3">
+                            <div className="flex items-center gap-2.5">
                                 <div
-                                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
                                     style={{
-                                        background: 'rgba(124,58,237,0.14)',
-                                        border: '1px solid rgba(124,58,237,0.32)',
+                                        background: `rgba(214,168,72,0.12)`,
+                                        border: `0.5px solid rgba(214,168,72,0.28)`,
                                     }}
                                 >
-                                    <Icon size={14} className="text-emerald-300" strokeWidth={1.8} />
+                                    <Icon size={13} style={{ color: GOLD }} strokeWidth={1.6} />
                                 </div>
 
                                 <div className="min-w-0 flex-1">
-                                    <div className="text-[10px] uppercase tracking-[0.22em] text-emerald-300/72">
-                                        MÔRA
-                                    </div>
-                                    <h3 className="mt-0.5 text-[13px] font-medium leading-tight text-white/90">
-                                        {step.title}
-                                    </h3>
-                                    <p className="mt-1.5 text-[12px] leading-snug text-white/58">
+                                    <p
+                                        style={{
+                                            fontSize: 11,
+                                            fontWeight: 500,
+                                            letterSpacing: '0.06em',
+                                            color: GOLD,
+                                        }}
+                                    >
+                                        MÔRA · {step.title}
+                                    </p>
+                                    <p
+                                        className="mt-0.5"
+                                        style={{
+                                            fontSize: 12,
+                                            lineHeight: 1.4,
+                                            color: `${CREAM}0.72)`,
+                                        }}
+                                    >
                                         {step.voice}
                                     </p>
                                 </div>
@@ -329,96 +305,78 @@ export const FirstRunTour: React.FC = () => {
                                     type="button"
                                     onClick={handleCloseSession}
                                     aria-label="Schließen"
-                                    className="-mr-1 -mt-1 shrink-0 rounded-full p-1 text-white/28 transition-colors hover:bg-white/[0.05] hover:text-white/55"
+                                    className="shrink-0 rounded p-1 transition-colors"
+                                    style={{ color: `${CREAM}0.35)` }}
                                 >
-                                    <X size={12} />
+                                    <X size={14} />
                                 </button>
                             </div>
 
-                            <div className="mt-3 flex items-center gap-1.5">
-                                {steps.map((s, i) => (
-                                    <div
-                                        key={s.id}
-                                        className="rounded-full transition-all"
-                                        style={{
-                                            width: i === stepIdx ? 14 : 4,
-                                            height: 4,
-                                            background: i === stepIdx
-                                                ? step.accent.replace('0.70', '0.75')
-                                                : i < stepIdx
-                                                    ? step.accent.replace('0.70', '0.35')
-                                                    : 'rgba(255,255,255,0.12)',
-                                        }}
-                                    />
-                                ))}
-                            </div>
+                            <div className="mt-2.5 flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1">
+                                    {steps.map((s, i) => (
+                                        <div
+                                            key={s.id}
+                                            className="rounded-full transition-all"
+                                            style={{
+                                                width: i === stepIdx ? 12 : 4,
+                                                height: 4,
+                                                background: i === stepIdx
+                                                    ? GOLD
+                                                    : i < stepIdx
+                                                        ? `rgba(214,168,72,0.4)`
+                                                        : `${CREAM}0.12)`,
+                                            }}
+                                        />
+                                    ))}
+                                </div>
 
-                            <div className="mt-3.5 flex flex-col gap-2.5">
-                                <label className="flex cursor-pointer items-center gap-2 text-[11px] text-white/42">
-                                    <input
-                                        type="checkbox"
-                                        checked={dontShowAgain}
-                                        onChange={(e) => setDontShowAgain(e.target.checked)}
-                                        className="h-3.5 w-3.5 rounded border-white/20 bg-white/5 accent-emerald-400"
-                                    />
-                                    Nicht mehr anzeigen
-                                </label>
+                                <div className="flex items-center gap-2">
+                                    <label
+                                        className="flex cursor-pointer items-center gap-1.5"
+                                        style={{ fontSize: 10, color: `${CREAM}0.45)` }}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={dontShowAgain}
+                                            onChange={(e) => setDontShowAgain(e.target.checked)}
+                                            className="h-3 w-3 rounded border-white/20 bg-white/5"
+                                            style={{ accentColor: GOLD }}
+                                        />
+                                        Nicht mehr
+                                    </label>
 
-                                <div className="flex items-center justify-end gap-2">
-                                    {dontShowAgain && (
-                                        <button
-                                            type="button"
-                                            onClick={handleDismissPermanent}
-                                            className="text-[10px] uppercase tracking-[0.14em] text-white/30 transition-colors hover:text-white/55"
-                                        >
-                                            Ausblenden
-                                        </button>
-                                    )}
                                     {!isLastStep ? (
                                         <button
                                             type="button"
                                             onClick={handleNext}
-                                            className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all"
+                                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all"
                                             style={{
-                                                background: step.accent.replace('0.70', '0.12'),
-                                                border: `1px solid ${step.accent.replace('0.70', '0.30')}`,
-                                                color: step.accent.replace('0.70', '0.92'),
+                                                background: `rgba(214,168,72,0.15)`,
+                                                border: `0.5px solid rgba(214,168,72,0.35)`,
+                                                color: GOLD,
                                             }}
                                         >
                                             Weiter
-                                            <ArrowRight size={11} />
+                                            <ArrowRight size={10} />
                                         </button>
-                                    ) : !dontShowAgain ? (
+                                    ) : (
                                         <button
                                             type="button"
                                             onClick={handleDismissPermanent}
-                                            className="inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[11px] font-medium transition-all"
+                                            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-medium transition-all"
                                             style={{
-                                                background: step.accent.replace('0.70', '0.12'),
-                                                border: `1px solid ${step.accent.replace('0.70', '0.30')}`,
-                                                color: step.accent.replace('0.70', '0.92'),
+                                                background: `rgba(214,168,72,0.15)`,
+                                                border: `0.5px solid rgba(214,168,72,0.35)`,
+                                                color: GOLD,
                                             }}
                                         >
                                             Verstanden
                                         </button>
-                                    ) : null}
+                                    )}
                                 </div>
                             </div>
                         </div>
-
-                        <div
-                            className="absolute"
-                            style={{
-                                right: 24,
-                                bottom: -7,
-                                width: 14,
-                                height: 14,
-                                background: 'linear-gradient(135deg, rgba(8,20,16,0.92), rgba(4,12,11,0.86))',
-                                borderRight: '1px solid rgba(124,58,237,0.28)',
-                                borderBottom: '1px solid rgba(124,58,237,0.28)',
-                                transform: 'rotate(45deg)',
-                            }}
-                        />
                     </div>
                 </motion.div>
             </motion.div>

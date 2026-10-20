@@ -2,21 +2,36 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ShieldCheck, X } from 'lucide-react';
+import { ArrowRight, X } from 'lucide-react';
 import { clearWebsiteEntryActiveContext, loadWebsiteEntryContext } from '@/lib/websiteEntryStorage';
 import type { WebsiteEntryContext } from '@/lib/websiteEntryContext';
 import { toast } from 'sonner';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useNavStore } from '@/lib/store/navStore';
 
 const DOSSIER_AUTO_OPEN_FLAG_PREFIX = 'saimor_dossier_auto_opened_';
 const LEGACY_BANNER_AUTO_OPEN_FLAG_PREFIX = 'saimor_website_entry_auto_opened_';
 
+const GOLD = '#D6A848';
+const CREAM = '247,244,233';
+
+/**
+ * Optional dossier hint for HQ sessions that still carry a website-entry context.
+ * Preview / visitor Home already owns this story — do not stack a second card there.
+ * Never render empty placeholders such as "--" or "0".
+ */
 export function WebsiteContextBanner() {
     const [context, setContext] = useState<WebsiteEntryContext | null>(null);
     const [isVisible, setIsVisible] = useState(false);
     const openPane = usePaneStore((s) => s.openPane);
+    const activeMode = useNavStore((s) => s.activeMode);
 
     useEffect(() => {
+        if (activeMode === 'visitor' || activeMode === 'private_preview') {
+            setIsVisible(false);
+            return;
+        }
+
         const stored = loadWebsiteEntryContext();
         if (!stored) return;
 
@@ -40,9 +55,15 @@ export function WebsiteContextBanner() {
             setIsVisible(true);
         }, 1500);
         return () => clearTimeout(timer);
-    }, []);
+    }, [activeMode]);
+
+    const hasRealScore = typeof context?.score === 'number';
+    const docCount = context?.documents?.length ?? 0;
+    const taskCount = context?.tasks?.length ?? 0;
+    const hasWork = docCount > 0 || taskCount > 0;
 
     if (!context || !isVisible) return null;
+    if (activeMode === 'visitor' || activeMode === 'private_preview') return null;
 
     const handleClear = () => {
         clearWebsiteEntryActiveContext();
@@ -62,58 +83,102 @@ export function WebsiteContextBanner() {
         setIsVisible(false);
     };
 
+    const detailParts: string[] = [];
+    if (hasRealScore) detailParts.push(`Score ${context.score}`);
+    if (docCount > 0) detailParts.push(`${docCount} Dokument${docCount === 1 ? '' : 'e'}`);
+    if (taskCount > 0) detailParts.push(`${taskCount} Aufgabe${taskCount === 1 ? '' : 'n'}`);
+
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, y: 40, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                className="fixed bottom-24 left-1/2 z-[1000] w-[min(540px,calc(100vw-2rem))] -translate-x-1/2"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="fixed z-[1000] w-[min(420px,calc(100vw-2rem))]"
+                style={{
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    bottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 96px), 112px)',
+                }}
             >
-                <div className="relative overflow-hidden rounded-[24px] border border-emerald-400/25 bg-black/60 p-5 shadow-[0_32px_80px_rgba(0,0,0,0.6)] backdrop-blur-2xl">
-                    <div className="absolute -left-20 -top-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-[60px]" />
-
-                    <div className="relative flex items-start gap-4">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-emerald-300/20 bg-emerald-500/15 text-emerald-300">
-                            <ShieldCheck size={24} />
-                        </div>
-
-                        <div className="flex-1 space-y-1">
-                            <div className="flex items-center justify-between">
-                                <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-emerald-400/80">
-                                    Website-Dossier
-                                </p>
-                                <button
-                                    onClick={() => setIsVisible(false)}
-                                    className="text-white/30 transition-colors hover:text-white"
-                                    aria-label="Hinweis schliessen"
-                                >
-                                    <X size={16} />
-                                </button>
-                            </div>
-                            <h4 className="text-lg font-medium text-white">
-                                {context.companyName} im HQ geladen
-                            </h4>
-                            <p className="text-sm leading-relaxed text-white/55">
-                                Score {context.score ?? '--'}, {context.documents.length} Dokumente und {context.tasks.length} Aufgaben stehen als Arbeitsobjekt bereit.
+                <div
+                    className="relative overflow-hidden rounded-xl p-4"
+                    style={{
+                        background: 'rgba(7,11,12,0.88)',
+                        border: '0.5px solid rgba(214,168,72,0.28)',
+                        boxShadow: '0 12px 40px rgba(0,0,0,0.4)',
+                        backdropFilter: 'blur(20px)',
+                    }}
+                >
+                    <div className="flex items-start justify-between gap-3">
+                        <div>
+                            <p
+                                style={{
+                                    fontSize: 12,
+                                    fontWeight: 500,
+                                    letterSpacing: '0.08em',
+                                    textTransform: 'uppercase',
+                                    color: GOLD,
+                                }}
+                            >
+                                Dossier
                             </p>
-
-                            <div className="flex items-center gap-3 pt-3">
-                                <button
-                                    onClick={handleUseContext}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-xs font-bold text-slate-950 transition-all hover:bg-emerald-300"
-                                >
-                                    Dossier öffnen
-                                    <ArrowRight size={14} />
-                                </button>
-                                <button
-                                    onClick={handleClear}
-                                    className="text-[10px] uppercase tracking-widest text-white/30 transition-colors hover:text-white/50"
-                                >
-                                    Verwerfen
-                                </button>
-                            </div>
+                            <h4
+                                className="mt-1"
+                                style={{
+                                    fontFamily: '"Cormorant Garamond", Georgia, serif',
+                                    fontSize: 20,
+                                    fontWeight: 400,
+                                    color: `rgb(${CREAM})`,
+                                }}
+                            >
+                                {context.companyName}
+                            </h4>
+                            <p
+                                className="mt-1"
+                                style={{
+                                    fontSize: 13,
+                                    lineHeight: 1.5,
+                                    color: `rgba(${CREAM}, 0.62)`,
+                                }}
+                            >
+                                {detailParts.length > 0
+                                    ? `${detailParts.join(' · ')} bereit.`
+                                    : hasWork
+                                        ? 'Arbeitsobjekt bereit.'
+                                        : 'Im Arbeitsbereich öffnen, wenn du tiefer einsteigen willst.'}
+                            </p>
                         </div>
+                        <button
+                            onClick={() => setIsVisible(false)}
+                            aria-label="Hinweis schliessen"
+                            className="shrink-0 rounded p-1"
+                            style={{ color: `rgba(${CREAM}, 0.35)` }}
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-3">
+                        <button
+                            onClick={handleUseContext}
+                            className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[12px] font-medium"
+                            style={{
+                                background: 'rgba(214,168,72,0.16)',
+                                border: '0.5px solid rgba(214,168,72,0.35)',
+                                color: GOLD,
+                            }}
+                        >
+                            Dossier öffnen
+                            <ArrowRight size={12} />
+                        </button>
+                        <button
+                            onClick={handleClear}
+                            className="text-[12px]"
+                            style={{ color: `rgba(${CREAM}, 0.45)` }}
+                        >
+                            Verwerfen
+                        </button>
                     </div>
                 </div>
             </motion.div>

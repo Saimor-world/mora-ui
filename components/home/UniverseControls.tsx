@@ -80,14 +80,16 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
         window.addEventListener('pointermove', onMove);
         return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('pointermove', onMove); };
     }, [updateRoom, cycleMora]);
-    const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore } = useNavStore();
+    const { viewLevel, coreMode, setCoreMode, activeCompanyId, activeDepartmentId, activeSpaceId, activeFolderId, navigateToExplore, activeMode } = useNavStore();
     // Marius 14.10.: auf dem Telefon kein Planetensystem – dort immer die ruhige Home-Ansicht.
+    // Preview / visitor on the phone is the Companion, not Home — skip this force.
     React.useEffect(() => {
         if (typeof window === 'undefined') return;
+        if (activeMode === 'visitor' || activeMode === 'private_preview') return;
         const mq = window.matchMedia('(max-width: 767px)');
         const f = () => { if (mq.matches && coreMode !== 'home') setCoreMode('home'); };
         f(); mq.addEventListener('change', f); return () => mq.removeEventListener('change', f);
-    }, [coreMode, setCoreMode]);
+    }, [activeMode, coreMode, setCoreMode]);
     const surfaceProfile = useSurfaceProfile();
 
     const { data: departments = [] } = useDepartments(activeCompany?.id ?? null);
