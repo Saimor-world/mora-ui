@@ -394,11 +394,11 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   
   // Universe Glass: lightly tinted, matte, translucent – brighter with more color
   // Boost colors by mixing with a brighter, more saturated version of themselves
-  const brightened = hue.map(v => Math.min(255, v * 1.22 + 25)) as [number, number, number];
+  const brightened = hue.map(v => Math.min(255, v * 1.28 + 18)) as [number, number, number];
   const base: number[] = matte 
-    ? mix(brightened, mix(grey(brightened), [210, 220, 215], 0.22), 0.35) 
+    ? mix(brightened, mix(grey(brightened), [220, 228, 222], 0.12), 0.22) 
     : brightened;
-  const h: number[] = quiet ? mix(base, [185, 195, 190], 0.28) : base;
+  const h: number[] = quiet ? mix(base, [190, 198, 192], 0.18) : base;
   
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;

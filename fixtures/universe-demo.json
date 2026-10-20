@@ -27,7 +27,7 @@
           { "key": "space:rechnungen", "label": "Rechnungen", "docs": 12, "status": "active" }
         ],
         "more_moons": 0,
-        "counts": { "transactions_14d": 47, "docs": 46 },
+        "counts": { "transactions_14d": 47, "open_invoices": 2, "docs": 46 },
         "glow": { "level": "medium", "reason": "2 offene Rechnungen" },
         "links": { "open": "/workspace/finanzen" }
       },

@@ -219,11 +219,23 @@ export function TodayOverview() {
     const live = sources.filter((x) => !x.copy.unavailable);
     const fog = sources.filter((x) => x.copy.unavailable);
     const isLoading = loading && !snapshot;
-    const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
+    const allOff = !isLoading && live.length === 0;
+    const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' };
     return (
       <section className="mt-16" data-testid="uv2-today">
         <p style={{ ...M, color: '#D6A848' }}>Heute</p>
-        {/* hd21: Jede Quelle ein Widget – Symbol, Stand, Detail; Tippen öffnet die App. Was fehlt, sagt ehrlich „nicht verbunden“. */}
+        {allOff ? (
+          <button type="button" onClick={openIntegrations} data-testid="uv2-today-calm"
+            className="uv2-widget mt-4 w-full max-w-[520px] text-left">
+            <span className="uv2-widget__top">
+              <span className="uv2-widget__ico"><CalendarDays /></span>
+              <span className="uv2-widget__label">Quellen</span>
+              <span className="uv2-widget__go">Verbinden</span>
+            </span>
+            <span className="uv2-widget__value">Noch still hier</span>
+            <span className="uv2-widget__detail">Kalender, Post, Aufgaben und Wache erscheinen, sobald eine Quelle verbunden ist.</span>
+          </button>
+        ) : (
         <div className="uv2-todayw mt-4">
           {sources.map((x) => {
             const off = x.copy.unavailable;
@@ -242,6 +254,7 @@ export function TodayOverview() {
             );
           })}
         </div>
+        )}
         {fog.length > 0 && !isLoading && (
           <div className="mt-4 flex items-center gap-6" data-testid="uv2-today-fog">
             <button type="button" onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white" style={{ color: 'rgba(247,244,233,.6)' }}>

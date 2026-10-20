@@ -99,9 +99,20 @@ html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"
   color: rgba(255,250,240,.85) !important; 
 }
 
-/* Hide meta in overview – show only on zoom/hover */
+/* Short work caption stays readable in overview; long meta stays on zoom/hover */
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind] .uv2-planet-meta { 
   display: none !important; 
+}
+html[data-uv2="on"] [data-planet-kind] .uv2-planet-caption {
+  font-family: var(--uv-sans, Inter, system-ui, sans-serif) !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.01em !important;
+  color: rgba(255,250,235,.88) !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.55);
+}
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .uv2-planet-caption {
+  opacity: 0 !important;
 }
 
 /* ═══ Moons and stars ═══ */
@@ -144,8 +155,8 @@ html[data-uv2="on"] [data-uv2-focus] .uv2-orbits ellipse:not([data-hover]):not([
   position: absolute; 
   left: 50%; 
   pointer-events: none; 
-  opacity: 1; 
-  transform: none;
+  opacity: 0; 
+  transform: scale(1.04);
   transition: opacity .3s ease, transform .4s cubic-bezier(.2,.8,.2,1); 
 }
 
@@ -239,14 +250,21 @@ html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .group\/moon > span:la
   border: 0 !important; 
   box-shadow: none !important; 
   padding: 0 !important; 
-  margin-top: 4px; 
-  transform: translateX(-50%) scale(.6); 
+  margin-top: 6px; 
+  transform: translateX(-50%); 
   transform-origin: top center; 
 }
 
 html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .group\/moon > span:last-child > span:first-child { 
-  font-size: 12px; 
-  color: rgba(255,252,242,.88); 
+  font-size: 13px !important; 
+  font-weight: 500;
+  text-transform: none !important;
+  letter-spacing: 0.01em !important;
+  color: rgba(255,252,242,.90); 
+}
+html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .group\/moon {
+  opacity: 0 !important;
+  pointer-events: none;
 }
 
 .uv2-crumb { 
@@ -329,10 +347,11 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
 
 @media (min-width: 1280px) {
   html[data-uv2="on"] :has(.uv2-orbits) [data-testid="planet-detail"] { 
-    left: calc(50% + 110px) !important; 
-    right: auto !important; 
+    left: auto !important; 
+    right: calc(var(--g-m, 64px) + 8px) !important; 
     bottom: 200px !important; 
-    width: 280px !important; 
+    width: min(300px, var(--g-3, 280px)) !important; 
+    background: rgba(28, 36, 40, 0.78) !important;
   }
 }
 
@@ -357,11 +376,11 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 280px;
-  height: 280px;
+  width: 360px;
+  height: 360px;
   transform: translate(-50%, -50%);
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,225,180,.12) 0%, rgba(220,195,140,.06) 35%, transparent 70%);
+  background: radial-gradient(circle, rgba(255,236,200,.22) 0%, rgba(230,205,150,.10) 38%, transparent 72%);
   pointer-events: none;
   z-index: 0;
 }

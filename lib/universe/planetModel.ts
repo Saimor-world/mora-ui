@@ -187,11 +187,14 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
     if (n('spaces')) out.push({ label: n('spaces') === 1 ? 'Bereich' : 'Bereiche', value: n('spaces'), tone: 'calm' });
   } else {
     switch (p.capability) {
-      case 'finanzen': if (n('transactions_14d')) out.push({ label: 'Buchungen · 14 Tage', value: n('transactions_14d'), tone: 'calm' }); break;
-      case 'post': if (n('mails')) out.push({ label: 'Mails im Eingang', value: n('mails'), tone: 'open' }); break;
-      case 'wissen': if (n('docs')) out.push({ label: 'Dokumente', value: n('docs'), tone: 'calm' }); break;
-      case 'wache': out.push(n('open_incidents') ? { label: 'offene Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
-      case 'werkstatt': if (n('open_tasks')) out.push({ label: 'offene Aufgaben', value: n('open_tasks'), tone: 'open' }); break;
+      case 'finanzen':
+        if (n('open_invoices')) out.push({ label: 'offen', value: n('open_invoices'), tone: 'open' });
+        else if (n('transactions_14d')) out.push({ label: 'Buchungen · 14 Tage', value: n('transactions_14d'), tone: 'calm' });
+        break;
+      case 'post': if (n('mails')) out.push({ label: 'neu', value: n('mails'), tone: 'open' }); break;
+      case 'wissen': if (n('docs')) out.push({ label: 'Dok', value: n('docs'), tone: 'calm' }); break;
+      case 'wache': out.push(n('open_incidents') ? { label: n('open_incidents') === 1 ? 'Vorfall' : 'Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
+      case 'werkstatt': if (n('open_tasks')) out.push({ label: n('open_tasks') === 1 ? 'Aufgabe' : 'Aufgaben', value: n('open_tasks'), tone: 'open' }); break;
       case 'betrieb': {
         const eur = Number(p.counts?.estimated_eur ?? 0);
         if (eur) out.push({ label: 'Kosten geschätzt', value: eur.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' }), tone: 'calm' });
@@ -203,5 +206,17 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
     if (connected) out.push({ label: connected === 1 ? 'Quelle verbunden' : 'Quellen verbunden', value: connected, tone: 'calm' });
   }
   if (p.state === 'sleeping') out.push({ label: 'ruht', tone: 'calm' });
-  return out.slice(0, 4);
+  return out.slice(0, 2);
+}
+
+/** Kurze Unterzeile am Planeten: „4 neu“, „2 offen“ – nur wenn ein Wert > 0. */
+export function bodyCaption(p: ModelPlanet | null, c: ModelCluster | null): string {
+  const chips = bodyChips(p, c);
+  const action = chips.find((ch) => (ch.tone === 'need' || ch.tone === 'open') && typeof ch.value === 'number' && Number(ch.value) > 0);
+  const numbered = chips.find((ch) => typeof ch.value === 'number' && Number(ch.value) > 0);
+  const ch = action || numbered;
+  if (!ch) return '';
+  if (typeof ch.value === 'number' && ch.value > 0) return `${ch.value} ${ch.label}`;
+  if (typeof ch.value === 'string' && ch.value) return `${ch.value} ${ch.label}`.trim();
+  return '';
 }

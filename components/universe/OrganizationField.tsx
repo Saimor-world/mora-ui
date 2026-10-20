@@ -35,7 +35,7 @@ export interface OrganizationTerritory {
     documents: number;
     /** Die echten Bereiche dieser Abteilung - jeder wird ein Mond. Zahl
      *  allein (spaces) reicht dafuer nicht: ein Mond traegt einen Namen. */
-    spaceList?: { id: string; name: string }[];
+    spaceList?: { id: string; name: string; documents?: number }[];
     metricSource: 'live' | 'derived' | 'missing';
     access: 'open' | 'locked';
     /** Planeten-Modell v1 (CORE /v3/universe): wenn gesetzt, bestimmt der Server Aussehen, Größe und Zustand. */
@@ -48,6 +48,7 @@ export interface OrganizationTerritory {
         state: 'seed' | 'active' | 'sleeping' | 'hidden';
         brightness: number;
         meta: string;
+        caption?: string;
         glow?: { level: string; reason: string } | null;
         demo?: boolean;
         chips?: PlanetChip[];
@@ -436,16 +437,20 @@ export function OrganizationField({
                     >
                         <X size={16} />
                     </button>
-                    <div className="text-[12px] font-medium uppercase tracking-[0.15em] text-[#D6A848]/85">
+                    <div className="text-[13px] font-medium uppercase tracking-[0.15em] text-[#D6A848]/85">
                         {selected.metricSource === 'missing' ? 'Bereit für Daten' : metricLabel[selected.metricSource]}
                     </div>
                     <h2 className="mt-3 pr-8 text-xl font-medium text-[#F7F4E9]/94">{selected.name}</h2>
-                    <p className="mt-2 text-[13px] leading-relaxed text-[#F7F4E9]/55">
-                        {selected.description || 'Dieser Bereich wartet auf seine Geschichte.'}
+                    <p className="mt-2 text-[13px] leading-relaxed text-[#F7F4E9]/78">
+                        {selected.model?.glow?.reason
+                            || selected.description
+                            || selected.model?.caption
+                            || (selected.documents ? `${selected.documents} Dokumente liegen hier.` : 'Dieser Bereich wartet auf seine Geschichte.')}
                     </p>
                     {isUniverseV2Enabled() ? (
-                        <p className="mt-5 border-y border-[#F7F4E9]/10 py-3 text-[12px] tracking-[0.12em] text-[#F7F4E9]/55" data-testid="planet-detail-facts" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>
-                            {[selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
+                        <p className="mt-5 border-y border-[#F7F4E9]/10 py-3 text-[13px] tracking-[0.04em] text-[#F7F4E9]/70" data-testid="planet-detail-facts" style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif' }}>
+                            {[selected.model?.caption || null,
+                              selected.spaces ? `${selected.spaces} ${selected.spaces === 1 ? 'Bereich' : 'Bereiche'}` : null,
                               selected.documents ? `${selected.documents} Dokumente` : null,
                               selectedSignals.length ? `${selectedSignals.length} Signale` : null].filter(Boolean).join(' · ') || 'Bereit für Inhalte'}
                         </p>
@@ -456,18 +461,27 @@ export function OrganizationField({
                         <TruthValue icon={<Radio size={13} />} value={selectedSignals.length} label="Signale" />
                     </div>
                     )}
-                    {lens === 'relations' && (
+                    {((selected.spaceList && selected.spaceList.length > 0) || selectedSignals.length > 0) && (
                         <div className="mt-5 space-y-2">
-                            {selectedSignals.length === 0 ? (
-                                <div className="rounded-2xl border border-dashed border-[#F7F4E9]/12 px-4 py-3 text-[13px] leading-relaxed text-[#F7F4E9]/45">
-                                    Keine belegte Beziehung – noch ruhig.
+                            {(selected.spaceList || []).slice(0, 3).map((moon) => (
+                                <div key={moon.id} className="flex items-start gap-3 border-t border-[#F7F4E9]/8 pt-3">
+                                    <FileText size={13} className="mt-0.5 shrink-0 text-[#D6A848]/75" />
+                                    <div className="min-w-0">
+                                        <div className="truncate text-[13px] text-[#F7F4E9]/82">{moon.name}</div>
+                                        <div className="mt-0.5 text-[13px] text-[#F7F4E9]/55">
+                                            {typeof moon.documents === 'number'
+                                                ? `${moon.documents} ${moon.documents === 1 ? 'Dokument' : 'Dokumente'}`
+                                                : 'Bereich'}
+                                        </div>
+                                    </div>
                                 </div>
-                            ) : selectedSignals.slice(0, 3).map((signal) => (
+                            ))}
+                            {selectedSignals.slice(0, 2).map((signal) => (
                                 <div key={signal.kind + '-' + signal.id} className="flex items-start gap-3 border-t border-[#F7F4E9]/8 pt-3">
-                                    <Radio size={12} className="mt-0.5 shrink-0 text-[#D6A848]/75" />
+                                    <Radio size={13} className="mt-0.5 shrink-0 text-[#D6A848]/75" />
                                     <div className="min-w-0">
                                         <div className="truncate text-[13px] text-[#F7F4E9]/78">{signal.title}</div>
-                                        <div className="mt-0.5 text-[12px] uppercase tracking-[0.08em] text-[#F7F4E9]/45">{signal.subtitle}</div>
+                                        <div className="mt-0.5 text-[13px] text-[#F7F4E9]/55">{signal.subtitle}</div>
                                     </div>
                                 </div>
                             ))}
@@ -652,9 +666,14 @@ function Territory({
                 </span>
             )}
             <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            {model?.caption ? (
+                <span className="uv2-planet-caption mt-1 block text-[13px] leading-[18px] tabular-nums text-[#F7F4E9]/88">
+                    {model.caption}
+                </span>
+            ) : null}
             {model ? (
-                model.meta ? (
-                    <span className={'uv2-planet-meta mt-1.5 block text-[12px] leading-[16px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>
+                model.meta && !model.caption ? (
+                    <span className={'uv2-planet-meta mt-1.5 block text-[13px] leading-[18px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>
                         {model.meta}
                     </span>
                 ) : null
@@ -957,7 +976,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                         )}
                         <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
                             <span className="block text-[13px] font-medium text-white/92">{moon.name}</span>
-                            <span className="mt-1 block text-[11px] uppercase tracking-[0.10em] text-white/52">
+                            <span className="mt-1 block text-[13px] text-white/62">
                                 {moon.documents === 0
                                     ? 'Bereit'
                                     : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}

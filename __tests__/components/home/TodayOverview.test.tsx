@@ -9,6 +9,7 @@ let mockActiveCompanyId: string | null = 'company-a';
 let mockUserId = 'user-a';
 let mockTenantId = 'tenant-a';
 let mockSessionGeneration = 1;
+let mockUniverseV2 = false;
 const mockOpenPane = jest.fn();
 
 jest.mock('@/lib/store/navStore', () => ({
@@ -30,6 +31,10 @@ jest.mock('@/lib/store/sessionStore', () => ({
 jest.mock('@/lib/store/paneStore', () => ({
   usePaneStore: (selector: (state: { openPane: typeof mockOpenPane }) => unknown) =>
     selector({ openPane: mockOpenPane }),
+}));
+
+jest.mock('@/lib/universe/morgen', () => ({
+  isUniverseV2Enabled: () => mockUniverseV2,
 }));
 
 jest.mock('@/lib/api/todayClient', () => {
@@ -122,6 +127,7 @@ beforeEach(() => {
   mockUserId = 'user-a';
   mockTenantId = 'tenant-a';
   mockSessionGeneration = 1;
+  mockUniverseV2 = false;
 });
 
 describe('TodayOverview scope and auth boundaries', () => {
@@ -178,5 +184,26 @@ describe('TodayOverview scope and auth boundaries', () => {
     expect(await screen.findAllByText('Kein Zugriff')).toHaveLength(4);
     expect(await screen.findByText('kein Zugriff')).toBeInTheDocument();
     expect(screen.queryByText('Nicht verbunden')).not.toBeInTheDocument();
+  });
+
+  it('shows one calm hint instead of four empty cards when Universe v2 sources are all disconnected', async () => {
+    mockUniverseV2 = true;
+    const disconnected = snapshotFor('company-a', 'Mail');
+    disconnected.mail.status = 'disconnected';
+    disconnected.mail.inbox_loaded = null;
+    disconnected.calendar.status = 'disconnected';
+    disconnected.calendar.count = null;
+    disconnected.tasks.status = 'disconnected';
+    disconnected.tasks.counts = { open: null, in_progress: null, due_today: null, overdue: null };
+    disconnected.nightwatch.status = 'disconnected';
+    disconnected.nightwatch.open_incidents = null;
+    disconnected.nightwatch.health_score = null;
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValueOnce(disconnected);
+
+    render(<TodayOverview />);
+
+    expect(await screen.findByTestId('uv2-today-calm')).toBeInTheDocument();
+    expect(screen.getByText('Noch still hier')).toBeInTheDocument();
+    expect(screen.queryAllByText('Nicht verbunden')).toHaveLength(0);
   });
 });

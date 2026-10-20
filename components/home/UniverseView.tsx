@@ -44,7 +44,7 @@ import { buildTickerItems } from '@/lib/universe/ticker';
 import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
-import { placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { placeUniverse, planetDiameter, bodyMeta, bodyChips, bodyCaption, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -411,7 +411,7 @@ export default function UniverseView() {
             const model = {
                 kind: body.kind, archetype: look.archetype, glyph: look.glyph, seed: look.seed,
                 diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
-                meta: bodyMeta(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
+                meta: bodyMeta(p, c), caption: bodyCaption(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
             } as OrganizationTerritory['model'];
             if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
             const moons = c
@@ -561,7 +561,7 @@ export default function UniverseView() {
         return anchor ? { x: anchor.x, y: anchor.y } : null;
     }, [attention, fieldAnchors, fieldRect]);
 
-    const substanceBars = useMemo(() => buildSubstanceBars(territories), [territories]);
+    const substanceBars = useMemo(() => buildSubstanceBars(fieldTerritories), [fieldTerritories]);
 
     // Der vorzeitige Ausstieg in die Abteilungs-Ansicht stand frueher WEITER
     // OBEN - mitten zwischen den Hooks. React verlangt aber, dass Hooks in

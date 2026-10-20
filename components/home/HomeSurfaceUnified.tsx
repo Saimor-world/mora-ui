@@ -351,12 +351,12 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
   const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
-  const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
+  const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' };
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pb-40 pt-[8vh] antialiased sm:px-10 lg:px-24"
-      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', background: 'linear-gradient(90deg, rgba(12,26,30,.55), rgba(12,26,30,.22)), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pt-[8vh] antialiased sm:px-10 lg:px-24"
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', paddingBottom: 'calc(11rem + env(safe-area-inset-bottom, 0px))', background: 'linear-gradient(90deg, rgba(18,32,36,.28), rgba(18,32,36,.08)), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
@@ -378,7 +378,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
               window.setTimeout(() => window.dispatchEvent(new CustomEvent('uv2:ask', { detail: q })), 700); setAsk(''); }}>
             <label className="flex h-11 items-center gap-3" style={{ borderBottom: '0.5px solid rgba(247,244,233,.18)' }}>
               <input value={ask} onChange={(e) => setAsk(e.target.value)} aria-label="MÔRA fragen" placeholder="Frag MÔRA"
-                className="min-w-0 flex-1 bg-transparent text-[15px] font-light placeholder:text-[rgba(247,244,233,0.4)] focus:outline-none" style={{ color: '#F7F4E9' }} />
+                className="min-w-0 flex-1 bg-transparent text-[15px] font-light placeholder:text-[rgba(247,244,233,0.62)] focus:outline-none" style={{ color: '#F7F4E9' }} />
               <button type="submit" aria-label="Senden" className="transition-colors hover:text-[#D6A848]" style={{ color: 'rgba(247,244,233,.45)' }}>
                 <ArrowRight size={16} strokeWidth={1.25} />
               </button>

@@ -19,7 +19,7 @@ export const TYPE = {
   display: { fontFamily: UV.serif, fontSize: 64, lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em', fontVariantNumeric: 'lining-nums' as const },
   statement: { fontFamily: UV.serif, fontSize: 30, lineHeight: 1.22, fontWeight: 400, letterSpacing: '-0.01em', fontVariantNumeric: 'lining-nums' as const },
   text: { fontFamily: UV.sans, fontSize: 15, lineHeight: 1.6, fontWeight: 300 },
-  meta: { fontFamily: UV.mono, fontSize: 12, lineHeight: 1.4, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const },
+  meta: { fontFamily: UV.mono, fontSize: 13, lineHeight: 1.4, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' as const },
 };
 
 export function dateEyebrow(d = new Date()): string {

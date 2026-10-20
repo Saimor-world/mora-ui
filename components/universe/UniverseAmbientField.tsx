@@ -27,7 +27,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 className="absolute -inset-[3%] bg-cover bg-center"
                 style={{
                     backgroundImage: 'url(/universe/deep-space-warm.jpg)',
-                    filter: 'brightness(1.95) saturate(1.08) contrast(1.02)',
+                    filter: 'brightness(2.15) saturate(1.12) contrast(1.04)',
                 }}
                 animate={reducedMotion ? undefined : { scale: [1, 1.02, 1], x: [0, -8, 0], y: [0, 5, 0] }}
                 transition={{ duration: 120, repeat: Infinity, ease: 'easeInOut' }}
