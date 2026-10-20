@@ -361,12 +361,17 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
 }
 
 @media (min-width: 1024px) {
+  html[data-uv2="on"] [data-uv2-plane][data-uv2-zoom] {
+    left: 420px !important;
+    right: 280px !important;
+    transform: none !important;
+  }
   html[data-uv2="on"] :has(.uv2-orbits) [data-testid="planet-detail"] { 
-    left: 6vw !important; 
+    left: 32px !important; 
     right: auto !important; 
     top: 12vh !important; 
     bottom: auto !important; 
-    width: min(380px, 28vw) !important; 
+    width: 360px !important; 
     max-height: calc(100vh - 220px);
     overflow: auto;
     background: rgba(28, 36, 40, 0.78) !important;
