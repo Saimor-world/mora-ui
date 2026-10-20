@@ -93,7 +93,7 @@ function JadeCrystal({ state }: { state: MoraState }) {
     useEffect(() => {
         const cv = ref.current; if (!cv) return;
         const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const W = Math.round(52 * dpr);
+        const W = Math.round(58 * dpr);
         cv.width = cv.height = W;
         const c = cv.getContext('2d'); if (!c) return;
         const img = c.createImageData(W, W); const d = img.data;

@@ -449,9 +449,9 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
 
       let col: number[];
       if (aero) {
-        const marble = mix(mix(h, [248, 250, 252], 0.42), dayRgb, 0.55 + relief * 0.25);
-        const k = Math.min(1, 0.22 + 0.78 * term * (0.45 + 0.55 * dif) + relief * 0.12);
-        col = mix(mix(h, [210, 218, 224], 0.25), marble, k);
+        const marble = mix(mix(h, [248, 250, 252], 0.18), dayRgb, 0.78 + relief * 0.16);
+        const k = Math.min(1, 0.28 + 0.72 * term * (0.4 + 0.6 * dif) + relief * 0.14);
+        col = mix(mix(dayRgb, [232, 236, 238], 0.12), marble, k);
         const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 48) * 0.72;
         const fres = Math.pow(1 - z, 2.4);
         col = mix(col, [255, 252, 248], Math.min(1, spec + fres * Math.max(0, ndl + 0.2) * 0.45));
@@ -459,8 +459,8 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
         const inner = Math.pow(z, 2.2) * 0.16;
         col = mix(col, mix(h, [255, 255, 255], 0.35), inner);
       } else {
-        const litCol = mix(dayRgb, h, 0.18);
-        const k = Math.min(1, Math.max(0, term * (0.18 + 0.82 * Math.pow(dif, 0.85)) + relief * 0.16));
+        const litCol = mix(dayRgb, h, 0.08);
+        const k = Math.min(1, Math.max(0, term * (0.22 + 0.78 * Math.pow(dif, 0.8)) + relief * 0.2));
         col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.45), k * 2) : mix(mix(nightRgb, litCol, 0.45), litCol, (k - 0.5) * 2);
         if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.55), Math.min(0.55, relief));
         if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [236, 220, 255], 0.4), Math.min(0.7, relief));
