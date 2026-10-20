@@ -7,6 +7,8 @@ import "./saimor-next.css";
 import "./universe-v2.css";
 import "./live-polish.css";
 import { isUniverseV2Enabled } from "@/lib/universe/morgen";
+import { bootUniverseTheme, watchSystemUniverseTheme } from "@/lib/universe/universeTheme";
+import "./universe-theme.css";
 import { UV2_FONTS_HREF } from "@/lib/universe/tokens";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -56,11 +58,14 @@ export default function RootLayout({
   useEffect(() => {
     if (!isUniverseV2Enabled()) return;
     document.documentElement.dataset.uv2 = "on";
+    bootUniverseTheme();
+    const stop = watchSystemUniverseTheme(() => undefined);
     if (!document.getElementById("uv2-fonts")) {
       const l = document.createElement("link");
       l.id = "uv2-fonts"; l.rel = "stylesheet"; l.href = UV2_FONTS_HREF;
       document.head.appendChild(l);
     }
+    return stop;
   }, []);
 
   // Mora Awareness: Pulse when space/folder changes

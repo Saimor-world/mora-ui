@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic, Maximize2, PanelLeft } from 'lucide-react';
+import { Activity, Globe, Home, LayoutGrid, Orbit, PanelTopOpen, Shield, ChevronLeft, Mic, Maximize2, PanelLeft, Sun, Moon } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDepartments } from '@/lib/queries/useDepartments';
@@ -10,6 +10,7 @@ import { buildShellContextSnapshot } from '@/lib/os/shellContext';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { applyRoom, DEFAULT_ROOM, loadRoom, nextMoraLevel, saveRoom, type RoomPrefs } from '@/lib/universe/roomPrefs';
+import { applyUniverseTheme, bootUniverseTheme, saveUniverseThemePref, watchSystemUniverseTheme, type UniverseTheme } from '@/lib/universe/universeTheme';
 import '@/app/universe-room.css';
 
 export type ViewMode = 'owner' | 'demo' | 'workspace';
@@ -47,7 +48,13 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
     const user = useSessionStore((state) => state.user);
     const userKey = (user as { id?: string } | null)?.id ?? null;
     const [room, setRoom] = useState<RoomPrefs>(DEFAULT_ROOM);
+    const [theme, setTheme] = useState<UniverseTheme>('dark');
     useEffect(() => { if (!isUniverseV2Enabled()) return; const r = loadRoom(userKey); setRoom(r); applyRoom(r); }, [userKey]);
+    useEffect(() => {
+        if (!isUniverseV2Enabled()) return;
+        setTheme(bootUniverseTheme());
+        return watchSystemUniverseTheme(setTheme);
+    }, []);
     const updateRoom = useCallback((patch: Partial<RoomPrefs>) => {
         setRoom((prev) => { const next = { ...prev, ...patch }; applyRoom(next); saveRoom(userKey, next); return next; });
     }, [userKey]);
@@ -236,6 +243,16 @@ export const UniverseControls: React.FC<UniverseControlsProps> = ({
                 <button type="button" data-testid="uv2-lage-toggle" aria-pressed={room.lage} onClick={() => updateRoom({ lage: !room.lage })}
                     title="Lage (L): Signale, Deutung, Handlung links" className="flex h-8 w-8 items-center justify-center rounded-full transition-colors" style={roomBtn(room.lage)}>
                     <PanelLeft size={14} strokeWidth={1.5} />
+                </button>
+                <button type="button" data-testid="uv2-theme-toggle" aria-pressed={theme === 'light'}
+                    onClick={() => {
+                        const next: UniverseTheme = theme === 'light' ? 'dark' : 'light';
+                        saveUniverseThemePref(next); applyUniverseTheme(next); setTheme(next);
+                    }}
+                    title={theme === 'light' ? 'Dunkles Universum' : 'Helles Universum'}
+                    className="flex h-8 w-8 items-center justify-center rounded-full transition-colors" style={roomBtn(theme === 'light')}>
+                    {theme === 'light' ? <Moon size={14} strokeWidth={1.5} /> : <Sun size={14} strokeWidth={1.5} />}
+                    <span className="sr-only">{theme === 'light' ? 'Dunkel' : 'Hell'}</span>
                 </button>
                 <button type="button" data-testid="uv2-mora-toggle" onClick={cycleMora}
                     title="MÔRA (M): Aktiv → Leise → Aus" className="flex h-8 items-center gap-1.5 rounded-full px-3 text-[11px] uppercase tracking-[0.08em] transition-colors" style={roomBtn(room.mora === 'aktiv')}>

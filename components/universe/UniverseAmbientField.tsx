@@ -1,8 +1,9 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { UniverseLens } from './OrganizationField';
+import type { UniverseTheme } from '@/lib/universe/universeTheme';
 
 interface Props {
     lens: UniverseLens;
@@ -10,90 +11,75 @@ interface Props {
 }
 
 /**
- * Universe v3 – bright, airy ambient field
- *
- * Marius's direction: "brighter, airier, the background image clearly visible".
- * The nebula photo carries the scene; overlays only add warmth and subtle tints
- * without darkening. Empty space feels intentional, not unfinished.
+ * Shared field atmosphere. Dark follows saimor.world (deep black-green, jade nebula, gold).
+ * Light is a soft Aero sky. Layout stays the same; only the air changes.
  */
 export function UniverseAmbientField({ lens, selected }: Props) {
     const reducedMotion = useReducedMotion();
+    const [theme, setTheme] = useState<UniverseTheme>('dark');
+    useEffect(() => {
+        const read = () => setTheme(document.documentElement.dataset.uv2Theme === 'light' ? 'light' : 'dark');
+        read();
+        const mo = new MutationObserver(read);
+        mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-uv2-theme'] });
+        return () => mo.disconnect();
+    }, []);
+    const light = theme === 'light';
 
     return (
-        <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true">
-            {/* The nebula background – significantly brighter. Marius: "echtes
-                Universum als Grundlage, in den warmen Farben". */}
-            <motion.div
-                className="absolute -inset-[3%] bg-cover bg-center"
-                style={{
-                    backgroundImage: 'url(/universe/deep-space-warm.jpg)',
-                    filter: 'brightness(3.15) saturate(1.06) contrast(0.92)',
-                }}
-                animate={reducedMotion ? undefined : { scale: [1, 1.02, 1], x: [0, -8, 0], y: [0, 5, 0] }}
-                transition={{ duration: 120, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
-            {/* Very light vignette for readability – no heavy darkening. */}
-            <div
-                className="absolute inset-0"
-                style={{
-                    background: 'radial-gradient(ellipse at 50% 48%, transparent 0%, transparent 72%, rgba(40,28,16,0.06) 100%)',
-                }}
-            />
-
-            {/* Warm/cool tint based on lens – extremely subtle. */}
-            <motion.div
-                className="absolute inset-0"
-                animate={{
-                    background: lens === 'relations'
-                        ? 'radial-gradient(ellipse at 55% 40%, rgba(255,225,180,0.04), transparent 50%), radial-gradient(ellipse at 20% 75%, rgba(180,220,210,0.03), transparent 50%)'
-                        : 'radial-gradient(ellipse at 48% 40%, rgba(255,230,190,0.05), transparent 55%), radial-gradient(ellipse at 80% 20%, rgba(180,215,220,0.04), transparent 50%)',
-                }}
-                transition={{ duration: 1.4, ease: 'easeInOut' }}
-            />
-
-            {/* Soft jade glow at center – subtle presence of light. */}
-            <motion.div
-                className="absolute left-1/2 top-1/2 h-[60vh] max-h-[600px] w-[60vh] max-w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[120px]"
-                style={{ background: 'radial-gradient(circle, rgba(150,215,190,0.08), transparent 65%)' }}
-                animate={reducedMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.6, 0.8, 0.6] }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
-            {/* Warm accents in corners – very light. */}
-            <motion.div
-                className="absolute -bottom-[10%] -left-[5%] h-[40%] w-[50%] rounded-full blur-[100px]"
-                style={{ background: 'radial-gradient(circle, rgba(230,190,130,0.06), transparent 60%)' }}
-                animate={reducedMotion ? undefined : { opacity: [0.5, 0.7, 0.5] }}
-                transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut' }}
-            />
-
-            {/* Occasional meteor – calmer, less frequent. */}
-            {!reducedMotion && (
-                <motion.span
-                    className="absolute h-px w-24 origin-left rotate-[-20deg] rounded-full bg-gradient-to-r from-transparent via-amber-50/60 to-white shadow-[0_0_8px_rgba(255,240,200,0.35)]"
-                    style={{ left: '25%', top: '18%' }}
-                    initial={{ x: -140, y: -60, opacity: 0 }}
-                    animate={{ x: [-140, 380], y: [-60, 140], opacity: [0, 0.7, 0] }}
-                    transition={{ duration: 2.2, delay: 8, repeat: Infinity, repeatDelay: 25, ease: 'easeOut' }}
-                />
+        <div className="pointer-events-none absolute inset-0 z-[4] overflow-hidden" aria-hidden="true" data-uv2-ambient={theme}>
+            {light ? (
+                <>
+                    <div className="absolute inset-0" style={{
+                        background: 'radial-gradient(ellipse at 50% 18%, rgba(255,252,246,0.95) 0%, rgba(214,228,232,0.9) 38%, rgba(186,210,214,0.92) 100%)',
+                    }} />
+                    <motion.div
+                        className="absolute left-1/2 top-[42%] h-[70vh] max-h-[720px] w-[70vh] max-w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"
+                        style={{ background: 'radial-gradient(circle, rgba(214,168,72,0.16), rgba(110,186,160,0.10) 42%, transparent 68%)' }}
+                        animate={reducedMotion ? undefined : { scale: [1, 1.06, 1], opacity: [0.7, 0.95, 0.7] }}
+                        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <div className="absolute inset-0" style={{
+                        background: lens === 'relations'
+                            ? 'radial-gradient(ellipse at 70% 30%, rgba(186,214,245,0.18), transparent 46%)'
+                            : 'radial-gradient(ellipse at 22% 78%, rgba(160,210,190,0.16), transparent 50%)',
+                    }} />
+                </>
+            ) : (
+                <>
+                    <motion.div
+                        className="absolute -inset-[3%] bg-cover bg-center"
+                        style={{
+                            backgroundImage: 'url(/universe/deep-space-warm.jpg)',
+                            filter: 'brightness(0.72) saturate(1.15) hue-rotate(-12deg) contrast(1.08)',
+                        }}
+                        animate={reducedMotion ? undefined : { scale: [1, 1.02, 1], x: [0, -8, 0], y: [0, 5, 0] }}
+                        transition={{ duration: 120, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <div className="absolute inset-0" style={{
+                        background: 'radial-gradient(ellipse at 50% 48%, rgba(8,18,16,0.18) 0%, rgba(5,7,6,0.42) 58%, rgba(5,7,6,0.72) 100%)',
+                    }} />
+                    <motion.div
+                        className="absolute left-1/2 top-1/2 h-[58vh] max-h-[560px] w-[58vh] max-w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[110px]"
+                        style={{ background: 'radial-gradient(circle, rgba(46,140,110,0.22), rgba(214,168,72,0.08) 46%, transparent 68%)' }}
+                        animate={reducedMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.55, 0.85, 0.55] }}
+                        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                    <div className="absolute inset-0" style={{
+                        background: lens === 'relations'
+                            ? 'radial-gradient(ellipse at 55% 40%, rgba(214,168,72,0.06), transparent 50%)'
+                            : 'radial-gradient(ellipse at 80% 18%, rgba(64,160,130,0.08), transparent 48%)',
+                    }} />
+                </>
             )}
 
-            {/* Selection dimmer – lighter than before. */}
             <motion.div
                 className="absolute inset-0"
-                animate={{ opacity: selected ? 0.25 : 0 }}
+                animate={{ opacity: selected ? (light ? 0.18 : 0.28) : 0 }}
                 transition={{ duration: 0.6 }}
-                style={{ background: 'radial-gradient(circle at center, transparent 32%, rgba(28,22,16,0.16) 100%)' }}
-            />
-
-            {/* Very subtle grid – almost invisible, just adds structure. */}
-            <div
-                className="absolute inset-0 opacity-[0.015]"
-                style={{
-                    backgroundImage: 'linear-gradient(rgba(255,255,255,.3) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.25) 1px,transparent 1px)',
-                    backgroundSize: '100px 100px',
-                }}
+                style={{ background: light
+                    ? 'radial-gradient(circle at center, transparent 34%, rgba(40,56,58,0.14) 100%)'
+                    : 'radial-gradient(circle at center, transparent 32%, rgba(5,7,6,0.38) 100%)' }}
             />
         </div>
     );
