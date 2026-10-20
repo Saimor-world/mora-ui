@@ -435,12 +435,12 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
   top: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
-  z-index: 2;
+  z-index: 8;
 }
 
 .uv2-mora__core {
   position: relative;
-  display: block;
+  display: none;
   width: 12px;
   height: 12px;
 }

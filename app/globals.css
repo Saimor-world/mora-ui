@@ -2278,6 +2278,7 @@
 }
 
 .saimor-moon-orbit {
+  transform: rotate(var(--moon-start, 0deg)) translateX(var(--moon-distance, 80px)) rotate(calc(-1 * var(--moon-start, 0deg)));
   animation: saimorMoonOrbit var(--moon-duration, 60s) linear infinite;
 }
 
