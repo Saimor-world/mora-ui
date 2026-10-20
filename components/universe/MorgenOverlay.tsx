@@ -22,7 +22,7 @@ function linkedPlanets(sources: { title?: string; kind?: string }[], names: stri
   return Array.from(new Set(sources.slice(0, 3).map((x) => planetForSource(x, names)).filter((i): i is number => i !== null).map((i) => names[i])));
 }
 
-type Item = { title: string; source: string; area?: string };
+type Item = { title: string; source?: string; area?: string };
 type Proposal = { id: string; label: string; reason: string; sources: string[]; undo?: string; confirm_token?: string; execution?: { verified?: boolean; endpoint?: string } };
 type Today = { text?: string; items: Item[]; proposal: Proposal | null; nebel?: string[] };
 export type DayPhase = 'morgen' | 'tag' | 'abend' | 'nacht';
@@ -73,7 +73,7 @@ const AREA_HINTS: [RegExp, RegExp][] = [
 ];
 
 /** Ordnet jeden Punkt dem passenden echten Planeten zu (Bereich → Quelle → Reihenfolge). */
-export function assignToPlanets<T extends { title: string; source: string; area?: string }>(items: T[], planets: string[]): (number | null)[] {
+export function assignToPlanets<T extends { title: string; source?: string; area?: string }>(items: T[], planets: string[]): (number | null)[] {
   const used = new Set<number>();
   const pick = (test: (name: string) => boolean) => {
     const i = planets.findIndex((n, k) => !used.has(k) && test(n));
@@ -82,10 +82,16 @@ export function assignToPlanets<T extends { title: string; source: string; area?
   };
   const res = items.map((it) => {
     if (it.area) { const i = pick((n) => n.toLowerCase() === it.area!.toLowerCase()); if (i !== null) return i; }
-    const hint = AREA_HINTS.find(([src]) => src.test(it.source + ' ' + it.title));
+    const hint = AREA_HINTS.find(([src]) => src.test((it.source || '') + ' ' + it.title));
     return hint ? pick((n) => hint[1].test(n)) : null;
   });
   return res.map((r) => (r !== null ? r : pick(() => true)));
+}
+
+function itemSourceLine(it: Item): string {
+  if (it.area) return it.area;
+  const head = String(it.source || '').split('·')[0].trim();
+  return head;
 }
 
 export function MorgenOverlay() {
@@ -170,7 +176,17 @@ export function MorgenOverlay() {
     const d = isDemo(); setDemo(d);
     // Nur lokal im Demo-Modus: Fenster für Screenshot-Durchläufe öffnen/schließen.
     if (d) Object.assign(window as any, { __uv2panes: usePaneStore });
-    coreGet('/v3/mora/today').then((r) => setToday(unwrap(r))).catch(() => setToday('nebel'));
+    coreGet('/v3/mora/today').then((r) => {
+      const data = unwrap(r);
+      if (!data || typeof data !== 'object') { setToday('nebel'); return; }
+      const raw = Array.isArray((data as Today).items) ? (data as Today).items : [];
+      const items: Item[] = raw.map((it) => ({
+        title: String(it?.title || '').trim(),
+        source: String(it?.source || it?.area || '').trim(),
+        area: it?.area ? String(it.area) : undefined,
+      })).filter((it) => it.title);
+      setToday({ ...(data as Today), items });
+    }).catch(() => setToday('nebel'));
   }, []);
 
   // Solange eine Antwort offen ist und Planeten ausweichen, wird nicht neu gemessen –
@@ -289,7 +305,7 @@ export function MorgenOverlay() {
                   <span style={{ ...TYPE.meta, color: hover === i ? UV.gold : UV.c(0.35), transition: 'color .3s' }}>{String(i + 1).padStart(2, '0')}</span>
                   <span className="min-w-0 flex-1">
                     <span className="block" style={{ ...TYPE.text, fontWeight: 400, color: UV.c(hover === null || hover === i ? 0.92 : 0.6), transition: 'color .3s' }}>{it.title}</span>
-                    <span className="mt-1 block" style={{ ...TYPE.meta, color: UV.c(0.62) }}>{it.area || it.source.split('·')[0].trim()}</span>
+                    <span className="mt-1 block" style={{ ...TYPE.meta, color: UV.c(0.62) }}>{itemSourceLine(it)}</span>
                   </span>
                 </li>
               ))}

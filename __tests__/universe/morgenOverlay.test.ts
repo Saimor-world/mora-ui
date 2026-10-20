@@ -17,4 +17,13 @@ describe('Universe v2 – Overlay auf dem echten Universe', () => {
     ];
     expect(assignToPlanets(items, planets)).toEqual([0, 3, 2, 1]);
   });
+
+  it('ordnet auch Punkte ohne source einem Planeten zu', () => {
+    const planets = ['Finanzen', 'Post & Termine', 'Werkstatt'];
+    const items = [
+      { title: 'Standup' },
+      { title: 'Rechnung offen', area: 'Finanzen' },
+    ];
+    expect(assignToPlanets(items, planets)).toEqual([1, 0]);
+  });
 });

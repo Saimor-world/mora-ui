@@ -77,12 +77,12 @@ html[data-uv2="on"] .uv2-grain { position: fixed; inset: 0; pointer-events: none
 @media (prefers-reduced-motion: reduce) { html[data-uv2="on"] * { transition-duration: 0ms !important; } }
 
 /* Planeten: nur der Name, als leise Meta-Zeile */
-html[data-uv2="on"] .saimor-territory-name { font-family: var(--uv-mono) !important; font-weight: 400 !important; font-size: 11.5px !important; letter-spacing: .08em !important; text-transform: uppercase; color: rgba(247,244,233,.62) !important; margin-top: 16px !important; }
+html[data-uv2="on"] .saimor-territory-name { font-family: var(--uv-sans) !important; font-weight: 500 !important; font-size: 14px !important; letter-spacing: .015em !important; text-transform: none; color: rgba(247,244,233,.88) !important; margin-top: 16px !important; }
 html[data-uv2="on"] [aria-pressed="true"] .saimor-territory-name { color: var(--uv-gold) !important; }
 /* Planeten-Detail (erster Klick): Editorial statt Glaskarte */
 html[data-uv2="on"] [data-testid="planet-detail"] { background: rgba(5,7,6,.86) !important; border-radius: 12px !important; box-shadow: 0 0 0 .5px rgba(247,244,233,.12), 0 30px 80px rgba(0,0,0,.5) !important; }
 html[data-uv2="on"] [data-testid="planet-detail"] :is(h2,h3) { font-family: var(--uv-serif) !important; font-weight: 400 !important; font-size: 30px !important; letter-spacing: -.01em; }
-html[data-uv2="on"] [data-testid="planet-detail"] :is(.uppercase) { font-family: var(--uv-mono) !important; font-size: 11.5px !important; letter-spacing: .08em !important; }
+html[data-uv2="on"] [data-testid="planet-detail"] :is(.uppercase) { font-family: var(--uv-mono) !important; font-size: 13px !important; letter-spacing: .08em !important; }
 html[data-uv2="on"] [data-testid="planet-detail"] [data-uv2-open] { background: linear-gradient(180deg,#E3BC63,#C9973A) !important; color: #050706 !important; border-radius: 999px !important; }
 
 html[data-uv2="on"] body:not(.standard-mode) .glass-panel-runtime :is([class*="text-[8px]"],[class*="text-[9px]"]) { font-size: 11.5px !important; }
@@ -1423,6 +1423,18 @@ html[data-uv2="on"] body:not(.standard-mode) .uv2-bar .uv2-bar__title { margin: 
 .uv2-capx__originArt.uv2-tip:hover::after, .uv2-capx__originArt.uv2-tip:focus-visible::after { transform: translate(0, 0); }
 /* hd22: Orte nicht unter dem Dock */
 html[data-uv2="on"] body:not(.standard-mode) [data-testid="uv2-places"] { margin-bottom: calc(160px + env(safe-area-inset-bottom, 0px)); }
+html[data-uv2="on"] [data-testid="uv2-camera"][data-shot="near"] :is(.saimor-territory-name, .uv2-planet-caption, .uv2-planet-meta, [data-planet-kind] .group\/moon) {
+  opacity: 0 !important;
+}
+@media (max-width: 767px) {
+  html[data-uv2="on"] body:not(.standard-mode) [data-testid="uv2-places"] {
+    margin-bottom: calc(200px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: 12px;
+  }
+  html[data-uv2="on"] [data-testid="uv2-home"] {
+    padding-bottom: calc(14rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
 /* hd22: Kachel-Beschriftung zweizeilig statt abgeschnitten */
 html[data-uv2="on"] body:not(.standard-mode) .uv2-tile .uv2-tile__label { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: normal; hyphens: auto; }
 /* hd22: im Fokus-Modus bleibt pro Zeile ein Block – volle Breite statt halber Leere */

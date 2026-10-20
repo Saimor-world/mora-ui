@@ -13,5 +13,9 @@ html[data-uv2="on"] body:not(.standard-mode) :is([class*="text-white/70"],[class
 /* Ordnung: Planeten mit heutiger Arbeit tragen, ruhige treten zurück */
 html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #f1dca4 !important; font-size: 12.5px !important; }
 html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-state="sleeping"]):not([data-planet-state="seed"]) { opacity: .9; }
-@media (max-width: 639px) { .uv2-widget[data-off] .uv2-widget__go { display: none; } .uv2-widget__label { white-space: normal !important; } }
+@media (max-width: 639px) {
+  .uv2-widget { min-height: 104px; padding: 14px; }
+  .uv2-widget__go { display: none; }
+  .uv2-widget__label { white-space: nowrap !important; }
+}
 .uv2-widget__value { color: #fff8e6; }

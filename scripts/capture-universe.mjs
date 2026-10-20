@@ -222,7 +222,11 @@ async function main() {
     else if (/\/v3\/universe(\?|$)/.test(url)) body = { data: { ...uni, companies: real.companies } };
     else if (/\/v3\/companies(\?|$)/.test(url)) body = (real.companies || []).map((c) => ({ id: c.id, name: c.name, is_demo: c.sector === 'demo' }));
     else if (/\/v3\/today(\?|$)/.test(url)) body = todaySnapshot;
-    else if (url.includes('/v3/mora/today')) body = { items: empty ? [] : [{ title: 'Standup', time: '09:30' }, { title: 'Kundengespräch: Demo', time: '14:00' }] };
+    else if (url.includes('/v3/mora/today')) body = { items: empty ? [] : [
+      { title: 'Standup 09:30', source: 'Kalender · heute', area: 'Post & Termine' },
+      { title: 'Kundengespräch: Demo', source: 'Kalender · 14:00', area: 'Post & Termine' },
+      { title: 'Anfrage: Produktdemo', source: 'Post · 4 neu', area: 'Post & Termine' },
+    ] };
     else if (/\/v3\/tree(\?|$)/.test(url)) body = { departments: depts };
     else if (/\/v3\/departments(\?|$)/.test(url)) body = depts;
     else if (url.includes('/users/me/memberships')) body = { department_memberships: [] };
@@ -320,7 +324,11 @@ async function main() {
   const outDir = '/opt/cursor/artifacts/screenshots';
   if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
   const outPath = `${outDir}/${name}.png`;
-  await page.screenshot({ path: outPath });
+  await Promise.race([
+    page.evaluate(() => (document.fonts && document.fonts.ready) || Promise.resolve()),
+    new Promise((resolve) => setTimeout(resolve, 2500)),
+  ]);
+  await page.screenshot({ path: outPath, timeout: 60000, animations: 'disabled' });
   console.log(`Screenshot saved to ${outPath}`);
   await browser.close();
   return outPath;
