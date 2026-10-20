@@ -70,9 +70,8 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
 
     return (
         <div
-            className="fixed z-[80] pointer-events-auto"
+            className="fixed z-[80] pointer-events-auto top-[max(env(safe-area-inset-top,0px),12px)] sm:top-14"
             style={{
-                top: 'max(env(safe-area-inset-top, 0px), 12px)',
                 left: '50%',
                 transform: 'translateX(-50%)',
             }}
