@@ -194,29 +194,29 @@ describe('MoraShell mode indicator banner', () => {
     it('does not render banner in real_hq mode', () => {
         seedShellStores('real_hq');
         renderWithProviders(<MoraShell />);
-        expect(screen.queryByText(/Website-HQ \/ Public Playground/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/Public Playground/i)).not.toBeInTheDocument();
         expect(screen.queryByText(/Personal Demo/i)).not.toBeInTheDocument();
-        expect(screen.queryByText(/Private Preview/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^Vorschau$/i)).not.toBeInTheDocument();
     });
 
     it('renders public_playground banner correctly', () => {
         seedShellStores('public_playground');
         renderWithProviders(<MoraShell />);
-        expect(screen.getByText(/Website-HQ \/ Public Playground/i)).toBeInTheDocument();
-        expect(screen.getByText(/Geteilte Umgebung. Du kannst Beiträge auf der Wall schreiben./i)).toBeInTheDocument();
+        expect(screen.getByText(/Public Playground/i)).toBeInTheDocument();
+        expect(screen.getByText(/Geteilte Umgebung/i)).toBeInTheDocument();
     });
 
     it('renders personal_demo banner correctly', () => {
         seedShellStores('personal_demo');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/Personal Demo/i)).toBeInTheDocument();
-        expect(screen.getByText(/Deine private Testumgebung. Experimente werden nicht veröffentlicht./i)).toBeInTheDocument();
+        expect(screen.getByText(/Private Testumgebung/i)).toBeInTheDocument();
     });
 
     it('renders private_preview banner correctly', () => {
         seedShellStores('private_preview');
         renderWithProviders(<MoraShell />);
-        expect(screen.getByText(/Private Preview/i)).toBeInTheDocument();
-        expect(screen.getByText(/Deine Sitzung endet nach 24 Stunden; deine Daten werden nach 20 Tagen gelöscht./i)).toBeInTheDocument();
+        expect(screen.getByText(/^Vorschau$/i)).toBeInTheDocument();
+        expect(screen.getByText(/Endet in 20 Tagen/i)).toBeInTheDocument();
     });
 });

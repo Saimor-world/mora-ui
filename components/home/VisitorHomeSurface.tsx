@@ -14,14 +14,14 @@
  * - activeMode === 'private_preview' (demo tenant preview)
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ArrowRight, Calendar, Shield, Sparkles, Timer } from 'lucide-react';
+import { ArrowRight, Shield, Sparkles, Timer } from 'lucide-react';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useNavStore } from '@/lib/store/navStore';
-import { usePaneStore } from '@/lib/store/paneStore';
+import { UV2_FONTS_HREF } from '@/lib/universe/tokens';
 
 const UV2_TOKENS = {
     gold: '#D6A848',
@@ -110,13 +110,20 @@ function Label({ children }: { children: React.ReactNode }) {
 
 export function VisitorHomeSurface() {
     const context = useWebsiteEntryContext();
-    const openPane = usePaneStore((s) => s.openPane);
     const { data: companies = [] } = useCompanies({ includeDemo: true });
     const setActiveCompany = useNavStore((s) => s.setActiveCompany);
     const navigateToExplore = useNavStore((s) => s.navigateToExplore);
     const guidedDemoCompany = companies.find((c) => c.is_demo && c.name === 'Simple Coffee Group');
 
     const [now, setNow] = useState<Date | null>(null);
+    useEffect(() => {
+        if (document.getElementById('uv2-fonts')) return;
+        const link = document.createElement('link');
+        link.id = 'uv2-fonts';
+        link.rel = 'stylesheet';
+        link.href = UV2_FONTS_HREF;
+        document.head.appendChild(link);
+    }, []);
     useEffect(() => {
         const update = () => setNow(new Date());
         update();

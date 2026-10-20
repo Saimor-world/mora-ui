@@ -11,10 +11,10 @@ describe('ModeIndicatorBanner', () => {
 
   it('shows the matching badge text per mode', () => {
     const cases: Array<[any, string]> = [
-      ['public_playground', 'Website-HQ / Public Playground'],
+      ['public_playground', 'Public Playground'],
       ['personal_demo', 'Personal Demo'],
-      ['private_preview', 'Private Preview'],
-      ['visitor', 'Visitor'],
+      ['private_preview', 'Vorschau'],
+      ['visitor', 'Vorschau'],
     ];
     for (const [mode, badge] of cases) {
       const { unmount } = render(<ModeIndicatorBanner activeMode={mode} />);
@@ -25,7 +25,7 @@ describe('ModeIndicatorBanner', () => {
 
   it('explains the visitor mode context', () => {
     render(<ModeIndicatorBanner activeMode="visitor" />);
-    expect(screen.getByText(/Security Scan/)).toBeInTheDocument();
+    expect(screen.getByText(/Personalisierte Ansicht/i)).toBeInTheDocument();
   });
 
   it('offers a verified return path for owner customer previews', async () => {
@@ -39,7 +39,7 @@ describe('ModeIndicatorBanner', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Kunden-Vorschau')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Zurück zu Saimôr HQ' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Zurück' })).toBeInTheDocument();
     });
     global.fetch = originalFetch;
   });
