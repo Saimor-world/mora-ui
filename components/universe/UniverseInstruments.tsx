@@ -101,10 +101,8 @@ function Row({ label, when, value, onClick, link }: { label: string; when?: stri
     return (
         <button type="button" onClick={onClick} data-uv2-flow={link} className="uv2-inst-row group">
             <span className="uv2-inst-label">{label}</span>
-            <span className="uv2-inst-row-body">
-                <span className="uv2-inst-text truncate">{value}</span>
-                {when && <span className="uv2-inst-aside">{when}</span>}
-            </span>
+            <span className="uv2-inst-text">{value}</span>
+            {when && <span className="uv2-inst-aside">{when}</span>}
             <span aria-hidden className="uv2-flow-dot" />
         </button>
     );

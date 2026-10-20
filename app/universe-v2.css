@@ -278,7 +278,7 @@ html[data-uv2=on] {
   html[data-uv2=on] [data-testid="uv2-greeting"] { left: var(--g-m) !important; top: var(--g-top) !important; width: var(--g-3) !important; }
   html[data-uv2=on]:not([data-uv2-lage=open]) [data-uv2-field],
   html[data-uv2=on]:not([data-uv2-lage=open]):not([data-uv2-still=on]) [data-uv2-field] { left: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; right: calc(var(--g-m) + var(--g-3) + var(--g-g)) !important; }
-  html[data-uv2=on] [data-uv2-col="right"].uv2-col-right { position: absolute; top: var(--g-top); bottom: var(--g-base); right: var(--g-m); width: var(--g-3); }
+  html[data-uv2=on] [data-uv2-col="right"].uv2-col-right { position: absolute; top: var(--g-top); bottom: var(--g-base); right: var(--g-m); width: var(--g-3); box-sizing: border-box; overflow: visible; padding-right: 8px; }
 }
 html[data-uv2=on] [data-uv2-col="left"] { display: none !important; }
 html[data-uv2=on] [data-testid="uv2-lage"] [data-uv2-col] > .uv2-instruments { background: none !important; border: 0 !important; padding: 0 !important; backdrop-filter: none !important; animation: none !important;
@@ -287,13 +287,14 @@ html[data-uv2=on] [data-testid="uv2-lage"] [data-uv2-col] > .uv2-instruments { b
 html[data-uv2=on] .uv2-instruments > section { all: unset; display: block; box-sizing: border-box; padding-top: 14px !important; border-top: 1px solid rgba(214,168,72,.28) !important; background: none !important; border-radius: 0 !important; box-shadow: none !important; border-left: 0 !important; }
 html[data-uv2=on] .uv2-instruments > section > .absolute { display: none !important; }
 html[data-uv2=on] .uv2-inst-label, html[data-uv2=on] .uv2-instruments section > p:first-of-type { font-family: var(--uv-mono) !important; font-size: 13px !important; letter-spacing: .08em !important; text-transform: uppercase; color: #D6A848 !important; font-weight: 400 !important; }
-html[data-uv2=on] .uv2-inst-aside { font-family: var(--uv-mono); font-size: 13px; letter-spacing: .02em; color: rgba(255,250,235,.72); white-space: nowrap; flex-shrink: 0; }
-html[data-uv2=on] .uv2-inst-text { display: block; min-width: 0; font-size: 14px; line-height: 22px; color: rgba(255,250,235,.88); }
+html[data-uv2=on] .uv2-inst-aside { font-family: var(--uv-mono); font-size: 13px; letter-spacing: .02em; color: rgba(255,250,235,.72); white-space: nowrap; }
+html[data-uv2=on] .uv2-inst-text { display: block; min-width: 0; max-width: 100%; font-size: 14px; line-height: 22px; color: rgba(255,250,235,.88); overflow-wrap: anywhere; }
 html[data-uv2=on] .uv2-inst-figure { font-family: "Cormorant Garamond", serif; font-size: 20px; color: #F7F4E9; }
 html[data-uv2=on] .uv2-instruments h2, html[data-uv2=on] .uv2-inst-title { font-family: "Cormorant Garamond", serif !important; font-size: 22px !important; line-height: 28px; color: #F7F4E9 !important; margin-top: 4px; font-weight: 400 !important; }
 html[data-uv2=on] .uv2-instruments h2 svg { display: none; }
-html[data-uv2=on] .uv2-inst-row { position: relative; display: flex; flex-direction: column; gap: 4px; width: 100%; text-align: left; padding: 10px 0; }
-html[data-uv2=on] .uv2-inst-row-body { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
+html[data-uv2=on] .uv2-inst-row { position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; max-width: 100%; box-sizing: border-box; text-align: left; padding: 10px 8px 10px 0; }
+html[data-uv2=on] .uv2-inst-row-body { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; width: 100%; }
+html[data-uv2=on] .uv2-inst-row > .uv2-inst-aside { display: block; margin-top: 1px; }
 html[data-uv2=on] .uv2-inst-row + .uv2-inst-row { border-top: 1px solid rgba(247,244,233,.06); }
 html[data-uv2=on] .uv2-inst-row .uv2-inst-label { color: #D6A848 !important; letter-spacing: .08em !important; }
 html[data-uv2=on] .uv2-inst-row:hover .uv2-inst-text { color: #F7F4E9; }
