@@ -332,8 +332,18 @@ html[data-uv2="on"][data-uv2-theme="light"] [data-testid="dock"] {
   box-shadow: 0 18px 40px rgba(80,110,140,.16), inset 0 1px 0 rgba(255,255,255,.95) !important;
   backdrop-filter: blur(28px) saturate(160%) !important;
 }
+html[data-uv2="on"][data-uv2-theme="light"] [data-testid="dock"] button {
+  color: #3a5268 !important;
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-testid="dock"] button:hover {
+  color: #1a2a36 !important;
+  background: rgba(35, 56, 76, .08) !important;
+}
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-dock-night-fx {
   display: none !important;
+}
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-bottom-fade {
+  background: linear-gradient(to top, rgba(232, 238, 244, .55), transparent) !important;
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-dock-slot {
   border-color: rgba(180, 140, 50, .45);
