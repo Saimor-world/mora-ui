@@ -1,6 +1,9 @@
 /** GPU space-field knobs. Keep the loop cheap: capped DPR, paused when hidden. */
 export const SPACE_DPR_CAP = 1.25;
-export const SPACE_COUNTS = { far: 380, mid: 160, near: 70, dust: 110 } as const;
+export const SPACE_COUNTS = { far: 420, mid: 180, near: 90, dust: 140, spark: 22 } as const;
+/** px / second — large enough that drift and twinkle read in a few seconds. */
+export const SPACE_DRIFT = { far: 9, mid: 22, near: 38, dust: 28, spark: 16 } as const;
+export const SPACE_TIME_SCALE = 1.35;
 
 export function spaceLoopAllowed(hidden: boolean, reducedMotion: boolean): boolean {
   return !hidden && !reducedMotion;

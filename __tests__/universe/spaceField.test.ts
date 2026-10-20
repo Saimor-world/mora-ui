@@ -1,4 +1,4 @@
-import { capDevicePixelRatio, recordFpsSample, SPACE_DPR_CAP, spaceLoopAllowed } from '@/lib/universe/spaceField';
+import { capDevicePixelRatio, recordFpsSample, SPACE_DPR_CAP, SPACE_DRIFT, spaceLoopAllowed } from '@/lib/universe/spaceField';
 
 describe('Universe space field', () => {
   it('caps device pixel ratio for the GPU loop', () => {
@@ -10,6 +10,11 @@ describe('Universe space field', () => {
     expect(spaceLoopAllowed(true, false)).toBe(false);
     expect(spaceLoopAllowed(false, true)).toBe(false);
     expect(spaceLoopAllowed(false, false)).toBe(true);
+  });
+
+  it('drifts stars instead of holding a still field', () => {
+    expect(SPACE_DRIFT.near).toBeGreaterThan(20);
+    expect(SPACE_DRIFT.dust).toBeGreaterThan(10);
   });
 
   it('smooths FPS samples', () => {

@@ -14,6 +14,8 @@ describe('MÔRA look', () => {
     render(<MoraLook look="dark" size={96} />);
     expect(screen.getByTestId('uv2-mora-stone')).toHaveAttribute('src', '/brand/mora-stone-v1.png');
     expect(document.querySelector('.mora-face')).toBeTruthy();
+    expect(document.querySelector('.mora-face__leak')).toBeNull();
+    expect(document.querySelector('.uv2-mora-stone-matte')).toBeTruthy();
     expect(document.querySelector('.uv2-mora-crystal__body')).toBeNull();
   });
 

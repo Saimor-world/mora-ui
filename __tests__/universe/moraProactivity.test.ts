@@ -1,4 +1,4 @@
-import { deriveMoraNudges, PROACTIVITY_RULES, shouldAutoFly } from '@/lib/universe/moraProactivity';
+import { deriveMoraNudges, PROACTIVITY_RULES, shouldAutoFly, splitOpenNudges } from '@/lib/universe/moraProactivity';
 
 const now = new Date('2026-10-20T08:00:00+02:00');
 
@@ -48,5 +48,9 @@ describe('Proactive MÔRA', () => {
       openInvoices: 2,
     });
     expect(nudges.length).toBe(PROACTIVITY_RULES.maxVisible);
+    const split = splitOpenNudges(nudges);
+    expect(split.open).toBeTruthy();
+    expect(split.rest.length).toBe(nudges.length - 1);
+    expect(PROACTIVITY_RULES.maxOpen).toBe(1);
   });
 });

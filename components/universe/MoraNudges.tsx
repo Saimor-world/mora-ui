@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { flyMora, getMoraPresence } from '@/lib/universe/moraPresence';
-import { deriveMoraNudges, shouldAutoFly, type MoraNudge, type MoraNudgeAction } from '@/lib/universe/moraProactivity';
+import { deriveMoraNudges, shouldAutoFly, splitOpenNudges, type MoraNudge, type MoraNudgeAction } from '@/lib/universe/moraProactivity';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { SYSTEM_PANES } from '@/lib/universe/planetModel';
 
@@ -45,6 +45,7 @@ export function MoraNudges({
     openInvoices?: number;
 }) {
     const [dismissed, setDismissed] = useState<string[]>([]);
+    const [openId, setOpenId] = useState<string | null>(null);
     const flew = useRef<string | null>(null);
     const nudges = useMemo(() => {
         const all = deriveMoraNudges({
@@ -60,24 +61,40 @@ export function MoraNudges({
         flyMora('planet', { target: fly.planetId, state: 'needs' });
     }, [nudges]);
 
+    useEffect(() => {
+        if (!nudges.length) { setOpenId(null); return; }
+        if (!openId || !nudges.some((n) => n.id === openId)) setOpenId(nudges[0].id);
+    }, [nudges, openId]);
+
     if (!nudges.length) return null;
 
+    const { open, rest } = splitOpenNudges(nudges, openId);
+    if (!open) return null;
+
     return (
-        <div className="uv2-mora-nudges" data-testid="uv2-mora-nudges" role="region" aria-label="MÔRA schlägt vor">
-            {nudges.map((nudge) => (
-                <div key={nudge.id} className="uv2-mora-nudge" data-nudge-kind={nudge.kind} data-nudge-fly={nudge.fly ? '' : undefined}>
-                    <p className="uv2-mora-nudge__title">{nudge.title}</p>
-                    <p className="uv2-mora-nudge__detail">{nudge.detail}</p>
-                    <div className="uv2-mora-nudge__row">
-                        <button type="button" className="uv2-mora-nudge__ok" onClick={() => actOnNudge(nudge, nudge.action)}>
-                            {nudge.actionLabel}
-                        </button>
-                        <button type="button" className="uv2-mora-nudge__skip" onClick={() => setDismissed((d) => [...d, nudge.id])}>
-                            Später
-                        </button>
-                    </div>
+        <div className="uv2-mora-nudges" data-testid="uv2-mora-nudges" data-nudge-count={nudges.length} role="region" aria-label="MÔRA schlägt vor">
+            <div key={open.id} className="uv2-mora-nudge" data-nudge-kind={open.kind} data-nudge-fly={open.fly ? '' : undefined} data-nudge-open="">
+                <p className="uv2-mora-nudge__title">{open.title}</p>
+                <p className="uv2-mora-nudge__detail">{open.detail}</p>
+                <div className="uv2-mora-nudge__row">
+                    <button type="button" className="uv2-mora-nudge__ok" onClick={() => actOnNudge(open, open.action)}>
+                        {open.actionLabel}
+                    </button>
+                    <button type="button" className="uv2-mora-nudge__skip" onClick={() => setDismissed((d) => [...d, open.id])}>
+                        Später
+                    </button>
                 </div>
-            ))}
+            </div>
+            {rest.length > 0 && (
+                <button
+                    type="button"
+                    className="uv2-mora-nudge-more"
+                    data-testid="uv2-mora-nudge-more"
+                    onClick={() => setOpenId(rest[0].id)}
+                >
+                    {rest.length} weitere
+                </button>
+            )}
         </div>
     );
 }

@@ -273,8 +273,9 @@ async function main() {
     await route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
   });
 
-  console.log('Navigating to', base + '/home');
-  await page.goto(base + '/home', { waitUntil: 'load', timeout: 60000 });
+  const homeUrl = theme === 'dark' ? (base + '/home?fps=1') : (base + '/home');
+  console.log('Navigating to', homeUrl);
+  await page.goto(homeUrl, { waitUntil: 'load', timeout: 60000 });
   await page.waitForTimeout(2500);
 
   if (!stayHome) {
@@ -404,14 +405,18 @@ async function main() {
   console.log(`Screenshot saved to ${outPath}${fps ? ` [fps=${fps}]` : ''}`);
 
   if (process.env.RECORD === '1') {
+    await page.mouse.move(220, 160);
+    await page.waitForTimeout(2800);
+    await page.mouse.move(W - 220, 280);
+    await page.waitForTimeout(2800);
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', place: 'seat' } })));
-    await page.waitForTimeout(900);
-    await page.locator('[data-planet-kind][data-mora-label="Finanzen"]').first().click({ force: true }).catch(() => {});
-    await page.waitForTimeout(2200);
+    await page.waitForTimeout(1400);
     await page.evaluate(() => window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', place: 'dock' } })));
-    await page.waitForTimeout(1200);
+    await page.waitForTimeout(1600);
   }
   const video = process.env.RECORD === '1' ? page.video() : null;
+  await page.close();
+  await ctx.close();
   await browser.close();
   if (video) {
     const vpath = await video.path();

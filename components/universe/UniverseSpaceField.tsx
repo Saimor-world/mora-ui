@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef } from 'react';
-import { capDevicePixelRatio, recordFpsSample, SPACE_COUNTS, spaceLoopAllowed } from '@/lib/universe/spaceField';
+import React, { useEffect, useRef, useState } from 'react';
+import { capDevicePixelRatio, recordFpsSample, SPACE_COUNTS, SPACE_DRIFT, SPACE_TIME_SCALE, spaceLoopAllowed } from '@/lib/universe/spaceField';
 
 declare global {
   interface Window {
@@ -15,6 +15,12 @@ declare global {
  */
 export function UniverseSpaceField() {
   const ref = useRef<HTMLCanvasElement>(null);
+  const hud = useRef<HTMLSpanElement>(null);
+  const [showFps, setShowFps] = useState(false);
+
+  useEffect(() => {
+    setShowFps(new URLSearchParams(window.location.search).get('fps') === '1');
+  }, []);
 
   useEffect(() => {
     const canvas = ref.current;
@@ -59,8 +65,8 @@ export function UniverseSpaceField() {
         vec2 clip = (p / uRes) * 2.0 - 1.0;
         gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);
         gl_PointSize = aSize;
-        float tw = 0.55 + 0.45 * sin(uTime * (0.7 + aPhase) + aPhase * 6.2832);
-        vA = mix(0.85, tw, uTwinkle);
+        float tw = 0.18 + 0.82 * sin(uTime * (1.4 + aPhase * 2.2) + aPhase * 6.2832);
+        vA = mix(0.82, tw, uTwinkle);
       }
     `);
     gl.compileShader(vs);
@@ -95,23 +101,24 @@ export function UniverseSpaceField() {
       canvas.style.width = cssW + 'px';
       canvas.style.height = cssH + 'px';
       gl.viewport(0, 0, canvas.width, canvas.height);
-      const n = SPACE_COUNTS.far + SPACE_COUNTS.mid + SPACE_COUNTS.near + SPACE_COUNTS.dust;
+      const n = SPACE_COUNTS.far + SPACE_COUNTS.mid + SPACE_COUNTS.near + SPACE_COUNTS.dust + SPACE_COUNTS.spark;
       const packed = new Float32Array(n * 6);
       let i = 0;
       const push = (sizeMin: number, sizeMax: number, drift: number, howMany: number) => {
         for (let k = 0; k < howMany; k++) {
           packed[i++] = Math.random() * cssW;
           packed[i++] = Math.random() * cssH;
-          packed[i++] = drift * (0.4 + Math.random());
-          packed[i++] = (Math.random() - 0.5) * drift * 0.35;
+          packed[i++] = drift * (0.45 + Math.random());
+          packed[i++] = (Math.random() - 0.5) * drift * 0.55;
           packed[i++] = sizeMin + Math.random() * (sizeMax - sizeMin);
           packed[i++] = Math.random();
         }
       };
-      push(0.6, 1.2, 3.5, SPACE_COUNTS.far);
-      push(1.0, 1.8, 8, SPACE_COUNTS.mid);
-      push(1.5, 2.6, 14, SPACE_COUNTS.near);
-      push(0.4, 0.9, 11, SPACE_COUNTS.dust);
+      push(0.7, 1.4, SPACE_DRIFT.far, SPACE_COUNTS.far);
+      push(1.2, 2.2, SPACE_DRIFT.mid, SPACE_COUNTS.mid);
+      push(1.8, 3.4, SPACE_DRIFT.near, SPACE_COUNTS.near);
+      push(0.5, 1.1, SPACE_DRIFT.dust, SPACE_COUNTS.dust);
+      push(2.6, 4.4, SPACE_DRIFT.spark, SPACE_COUNTS.spark);
       count = n;
       if (!buf) buf = gl.createBuffer();
       gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -122,6 +129,7 @@ export function UniverseSpaceField() {
       const rounded = Math.round(fps);
       window.__uv2Fps = rounded;
       canvas.dataset.uv2Fps = String(rounded);
+      if (hud.current) hud.current.textContent = `${rounded} fps`;
     };
 
     const draw = (tMs: number) => {
@@ -142,7 +150,7 @@ export function UniverseSpaceField() {
       gl.vertexAttribPointer(3, 1, gl.FLOAT, false, 24, 20);
       gl.uniform2f(gl.getUniformLocation(prog, 'uRes'), cssW, cssH);
       gl.uniform2f(gl.getUniformLocation(prog, 'uParallax'), reduced ? 0 : mouse.x * 16, reduced ? 0 : mouse.y * 12);
-      gl.uniform1f(gl.getUniformLocation(prog, 'uTime'), reduced ? 0 : tMs * 0.001);
+      gl.uniform1f(gl.getUniformLocation(prog, 'uTime'), reduced ? 0 : tMs * 0.001 * SPACE_TIME_SCALE);
       gl.uniform1f(gl.getUniformLocation(prog, 'uTwinkle'), reduced ? 0 : 1);
       gl.drawArrays(gl.POINTS, 0, count);
     };
@@ -205,12 +213,15 @@ export function UniverseSpaceField() {
   }, []);
 
   return (
-    <canvas
-      ref={ref}
-      className="pointer-events-none absolute inset-0 z-[1]"
-      data-testid="uv2-space-field"
-      aria-hidden
-    />
+    <>
+      <canvas
+        ref={ref}
+        className="pointer-events-none absolute inset-0 z-[1]"
+        data-testid="uv2-space-field"
+        aria-hidden
+      />
+      <span ref={hud} className="uv2-fps-hud" data-testid="uv2-fps-hud" hidden={!showFps} />
+    </>
   );
 }
 
@@ -221,8 +232,11 @@ function mountCanvas2dFallback(canvas: HTMLCanvasElement) {
   let running = false;
   let last = 0;
   let fps = 0;
-  const stars = Array.from({ length: 220 }, () => ({
-    x: Math.random(), y: Math.random(), s: Math.random() * 1.4 + 0.3, p: Math.random() * Math.PI * 2,
+  const stars = Array.from({ length: 260 }, () => ({
+    x: Math.random(), y: Math.random(),
+    dx: (0.004 + Math.random() * 0.012) * (Math.random() < 0.5 ? -1 : 1),
+    dy: (Math.random() - 0.5) * 0.006,
+    s: Math.random() * 1.8 + 0.4, p: Math.random() * Math.PI * 2,
   }));
   const resize = () => {
     const dpr = capDevicePixelRatio(window.devicePixelRatio || 1);
@@ -234,10 +248,13 @@ function mountCanvas2dFallback(canvas: HTMLCanvasElement) {
   const draw = (t: number) => {
     const w = canvas.width, h = canvas.height;
     ctx.clearRect(0, 0, w, h);
+    const sec = t * 0.001 * SPACE_TIME_SCALE;
     for (const s of stars) {
-      const a = 0.28 + 0.72 * (0.5 + 0.5 * Math.sin(t * 0.0012 + s.p));
+      const a = 0.12 + 0.88 * (0.5 + 0.5 * Math.sin(sec * 2.4 + s.p));
+      const x = ((s.x + s.dx * sec) % 1 + 1) % 1;
+      const y = ((s.y + s.dy * sec) % 1 + 1) % 1;
       ctx.fillStyle = `rgba(230,240,248,${a})`;
-      ctx.fillRect(s.x * w, s.y * h, s.s, s.s);
+      ctx.fillRect(x * w, y * h, s.s, s.s);
     }
   };
   const frame = (now: number) => {

@@ -2,7 +2,7 @@
  * Proactive MÔRA — first visible Donna layer.
  *
  * Rules (also in the PR):
- *  1. At most 3 quiet suggestions near her.
+ *  1. At most 3 suggestions. UI shows 1 open chip; the rest is a quiet counter.
  *  2. She never sends mail, never mutates tasks, never files, never acks
  *     incidents. Every write needs Marius's OK.
  *  3. She flies to a planet by herself only on a CLEAR trigger
@@ -15,6 +15,7 @@ import type { NightwatchIncidentItem } from '@/lib/openflow/nightwatch';
 
 export const PROACTIVITY_RULES = {
   maxVisible: 3,
+  maxOpen: 1,
   neverAutoSend: true,
   neverAutoMutate: true,
   flyOnlyOnClearTrigger: true,
@@ -182,4 +183,12 @@ export function deriveMoraNudges(input: ProactivityInput): MoraNudge[] {
 
 export function shouldAutoFly(nudges: MoraNudge[]): MoraNudge | null {
   return nudges.find((n) => n.fly) ?? null;
+}
+
+/** One open whisper; the rest stay behind a counter so chips never cover planets. */
+export function splitOpenNudges(nudges: MoraNudge[], openId?: string | null): { open: MoraNudge | null; rest: MoraNudge[] } {
+  if (!nudges.length) return { open: null, rest: [] };
+  const idx = Math.max(0, nudges.findIndex((n) => n.id === openId));
+  const i = idx === -1 ? 0 : idx;
+  return { open: nudges[i], rest: nudges.filter((_, k) => k !== i) };
 }

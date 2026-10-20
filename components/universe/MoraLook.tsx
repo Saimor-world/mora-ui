@@ -84,7 +84,8 @@ export function MoraLook({
                     draggable={false}
                     data-testid="uv2-mora-stone"
                 />
-                <MoraFace size={size} state={STATE_TO_FACE[state] ?? 'rest'} arcsOnGreet={size >= 72} />
+                <span className="uv2-mora-stone-matte" aria-hidden />
+                <MoraFace size={size} state={STATE_TO_FACE[state] ?? 'rest'} arcsOnGreet={false} tone="stone" />
             </span>
         );
     }

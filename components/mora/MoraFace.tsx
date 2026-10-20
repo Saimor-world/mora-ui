@@ -23,19 +23,35 @@ const SMILE: Record<FaceState, boolean> = { rest: true, greet: true, listen: tru
 const R = 43; // Jade-Radius in viewBox-Einheiten (Stein = 100)
 const C = 50;
 
-export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: number; arcsOnGreet?: boolean; state?: FaceState }) {
+export function MoraFace({
+    size,
+    arcsOnGreet = true,
+    state: forced,
+    tone = 'jade',
+}: {
+    size: number;
+    arcsOnGreet?: boolean;
+    state?: FaceState;
+    /** stone = eyes only on the dark matte MÔRA (no smile, leak or cheeks). */
+    tone?: 'jade' | 'stone';
+}) {
     const presence = useOrbStore((s) => s.moraPresence?.state ?? 'calm');
     // Kurzes Begrüßen beim ersten Erscheinen.
     const [greeting, setGreeting] = useState(true);
     useEffect(() => { const t = window.setTimeout(() => setGreeting(false), 2600); return () => window.clearTimeout(t); }, []);
-    const state: FaceState = forced ?? (greeting && presence === 'calm' ? 'greet' : PRESENCE_TO_FACE[presence] ?? 'rest');
-    const arcs = (state === 'greet' && arcsOnGreet && size >= 64) || (state === 'done' && size >= 64);
+    const stone = tone === 'stone';
+    const state: FaceState = forced ?? (greeting && presence === 'calm' && !stone ? 'greet' : PRESENCE_TO_FACE[presence] ?? 'rest');
+    const arcs = !stone && ((state === 'greet' && arcsOnGreet && size >= 64) || (state === 'done' && size >= 64));
     const tiny = size < 64;
 
     const ex = 0.34 * R, ey = C + 0.16 * R + (state === 'work' ? 0.05 * R : state === 'think' ? -0.03 * R : 0), rx = 0.165 * R;
     const ry = RY[state] * R;
-    const warm = state === 'need' ? '255,219,140' : '204,255,224';
-    const jade = state === 'need' ? '255,196,110' : '64,242,140';
+    const warm = stone
+        ? (state === 'need' ? '255,214,150' : '236,228,208')
+        : (state === 'need' ? '255,219,140' : '204,255,224');
+    const jade = stone
+        ? (state === 'need' ? '214,176,96' : '168,186,170')
+        : (state === 'need' ? '255,196,110' : '64,242,140');
     const id = React.useId().replace(/:/g, '');
 
     const eye = (sx: number, key: string, extra?: React.SVGProps<SVGEllipseElement>) => arcs
@@ -65,7 +81,7 @@ export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: nu
                     <g className="mora-face__veins">
                         <g filter={`url(#w${id})`} opacity={tiny ? 0.55 : 0.75}>{eyes(`rgb(${jade})`)}</g>
                         <g filter={`url(#m${id})`} opacity={0.8}>{eyes(`rgb(${jade})`)}</g>
-                        {!tiny && <g className="mora-face__cheeks" filter={`url(#w${id})`} opacity={state === 'work' ? 0.1 : 0.22} fill="rgb(255,120,110)">
+                        {!stone && !tiny && <g className="mora-face__cheeks" filter={`url(#w${id})`} opacity={state === 'work' ? 0.1 : 0.22} fill="rgb(255,120,110)">
                             <ellipse cx={C - 0.52 * R} cy={C + 0.38 * R} rx={0.15 * R} ry={0.1 * R} />
                             <ellipse cx={C + 0.52 * R} cy={C + 0.38 * R} rx={0.15 * R} ry={0.1 * R} />
                         </g>}
@@ -78,13 +94,12 @@ export function MoraFace({ size, arcsOnGreet = true, state: forced }: { size: nu
                             <circle cx={C + ex - 0.05 * R} cy={ey - 0.08 * R} r={tiny ? 0.07 * R : 0.045 * R} />
                         </g>
                     )}
-                    {SMILE[state] && !tiny && (
+                    {!stone && SMILE[state] && !tiny && (
                         <path d={smile} fill="none" stroke={`rgba(${warm},.85)`} strokeWidth={0.032 * R} strokeLinecap="round" filter={`url(#c${id})`} />
                     )}
                 </g>
             </svg>
-            {/* Licht, das aus dem Stein auf den Goldring und nach außen fällt */}
-            <span className="mora-face__leak" />
+            {!stone && <span className="mora-face__leak" />}
         </span>
     );
 }
