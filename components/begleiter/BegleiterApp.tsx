@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { UV2_FONTS_HREF } from '@/lib/universe/tokens';
 import * as api from '@/lib/begleiter/api';
+import { isBegleiterDemoAllowed } from '@/lib/begleiter/demoAccess';
 import { registerWorker, subscribePush } from '@/lib/begleiter/push';
 import type { Decision, Proposal, StoredDevice } from '@/lib/begleiter/api';
 
@@ -17,7 +18,8 @@ export const PLANET: Record<string, string> = {
   'github.rerun_failed_jobs': 'Planet Werkstatt',
 };
 
-// Nur lokal, für Bilder und Tests: ?demo=1 auf localhost – keine echten Daten, kein Face ID.
+// Demo-Inbox: ?demo=1 on localhost, or website-entry preview on the phone Companion.
+// Canned proposals only — no live data, no Face ID. Begleiter chrome is unchanged.
 const DEMO: Proposal[] = [
   { id: 'uv_demo1', tool: 'mora.note.create', label: 'Notiz anlegen: Atelier Nord will ein zweites Projekt',
     reason: 'Du hast es heute am Telefon gesagt. Ich halte es in deinem Wissen fest, sonst ändert sich nichts.',
@@ -54,7 +56,7 @@ export function HoldButton({ onDone, disabled, children }: { onDone: () => void;
 
 export default function BegleiterApp() {
   const sp = useSearchParams();
-  const demo = sp.get('demo') === '1' && typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(location.hostname);
+  const demo = isBegleiterDemoAllowed(sp);
   const [view, setView] = useState<View>({ k: 'locked' });
   const [dev, setDev] = useState<StoredDevice | null>(null);
   const [busy, setBusy] = useState(false);

@@ -138,9 +138,16 @@ async function captureViewport(browser, { name, width, height }) {
 
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
-  const surface = page.locator('[data-testid="visitor-home-surface"]');
-  await surface.waitFor({ state: 'visible', timeout: 25_000 });
-  await page.getByText(/Guten |Willkommen/).first().waitFor({ state: 'visible', timeout: 10_000 });
+  const isPhone = width <= 767;
+  if (isPhone) {
+    await page.waitForURL(/\/begleiter/, { timeout: 25_000 });
+    await page.locator('[data-testid="begleiter"]').waitFor({ state: 'visible', timeout: 25_000 });
+    await page.getByTestId('proposal-title').waitFor({ state: 'visible', timeout: 10_000 });
+  } else {
+    const surface = page.locator('[data-testid="visitor-home-surface"]');
+    await surface.waitFor({ state: 'visible', timeout: 25_000 });
+    await page.getByText(/Guten |Willkommen/).first().waitFor({ state: 'visible', timeout: 10_000 });
+  }
   await page.waitForTimeout(800);
 
   const file = path.join(OUT_DIR, `preview-home-${LABEL}-${name}.png`);

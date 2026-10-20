@@ -64,6 +64,15 @@ describe('Begleiter – Bildschirme', () => {
     expect(screen.getByTestId('unlock-btn')).toBeInTheDocument();
     expect(screen.queryByTestId('proposal-title')).toBeNull();
   });
+
+  it('demo=1: Inbox mit denselben Begleiter-Vorschlägen, ohne Face ID', () => {
+    params = new URLSearchParams('demo=1');
+    render(<BegleiterApp />);
+    expect(screen.getByTestId('begleiter')).toBeInTheDocument();
+    expect(screen.getByText(/MÔRA braucht/)).toBeInTheDocument();
+    expect(screen.getByTestId('proposal-title')).toHaveTextContent(/Atelier Nord/);
+    expect(screen.getByTestId('hold-approve')).toHaveTextContent(/Halten zum Freigeben/);
+  });
 });
 
 describe('Halten zum Freigeben', () => {
