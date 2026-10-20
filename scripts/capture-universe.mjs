@@ -365,15 +365,8 @@ async function main() {
 
   let fps = 0;
   if (theme === 'dark') {
-    fps = await page.evaluate(async () => {
-      const start = performance.now();
-      let last = 0;
-      while (performance.now() - start < 1200) {
-        last = window.__uv2Fps || Number(document.querySelector('[data-testid="uv2-space-field"]')?.dataset.uv2Fps || 0);
-        await new Promise((r) => requestAnimationFrame(r));
-      }
-      return last;
-    });
+    await page.waitForTimeout(1500);
+    fps = await page.evaluate(() => window.__uv2Fps || Number(document.querySelector('[data-testid="uv2-space-field"]')?.dataset.uv2Fps || 0));
     console.log(`FPS (dark space field): ${fps}`);
     writeFileSync(`${outDir}/${name}.fps.txt`, String(fps));
   }

@@ -397,12 +397,12 @@ html[data-uv2="on"][data-uv2-theme="light"] [data-testid="uv2-mora-toggle"] {
 
 html[data-uv2="on"] .uv2-mora-nudges {
   position: absolute;
-  left: calc(var(--mora-x) * 1px + 28px);
-  top: calc(var(--mora-y) * 1px - 10px);
+  left: calc(var(--mora-x) * 1px + 36px);
+  top: calc(var(--mora-y) * 1px - 12px);
   display: flex;
   flex-direction: column;
   gap: 8px;
-  width: min(280px, 42vw);
+  width: min(260px, 32vw);
   pointer-events: auto;
   z-index: 2;
 }
@@ -450,9 +450,17 @@ html[data-uv2="on"] .uv2-mora-nudge__skip {
   opacity: .7;
 }
 html[data-uv2="on"][data-mora-place="dock"] .uv2-mora-nudges {
-  left: auto;
-  right: 18px;
+  left: 50%;
+  right: auto;
   top: auto;
-  bottom: 92px;
-  translate: none;
+  bottom: 96px;
+  width: min(720px, 72vw);
+  translate: -50% 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+html[data-uv2="on"][data-mora-place="dock"] .uv2-mora-nudge {
+  width: min(230px, 70vw);
 }

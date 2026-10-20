@@ -1,6 +1,6 @@
 /** GPU space-field knobs. Keep the loop cheap: capped DPR, paused when hidden. */
 export const SPACE_DPR_CAP = 1.25;
-export const SPACE_COUNTS = { far: 520, mid: 220, near: 90, dust: 160 } as const;
+export const SPACE_COUNTS = { far: 380, mid: 160, near: 70, dust: 110 } as const;
 
 export function spaceLoopAllowed(hidden: boolean, reducedMotion: boolean): boolean {
   return !hidden && !reducedMotion;
