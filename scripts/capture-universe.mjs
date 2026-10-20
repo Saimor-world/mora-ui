@@ -9,6 +9,9 @@ const name = nameArg || 'universe-default';
 const base = `http://localhost:${port}`;
 const empty = process.env.EMPTY === '1';
 const stayHome = process.env.HOME === '1';
+const theme = process.env.THEME === 'light' ? 'light' : 'dark';
+const moraSeat = process.env.MORA_SEAT === 'away' ? 'away' : 'home';
+const crop = process.env.CROP === '1';
 
 const FIXTURE_PATH = process.env.FIXTURE || './fixtures/universe-demo.json';
 const real = JSON.parse(readFileSync(FIXTURE_PATH, 'utf8'));
@@ -178,7 +181,7 @@ const H = +(process.env.H || 900);
 const DPR = +(process.env.DPR || 2);
 
 async function main() {
-  console.log(`Capturing Universe at ${base} → ${name}.png (${W}x${H})${empty ? ' [empty]' : ''}${stayHome ? ' [home]' : ''}`);
+  console.log(`Capturing Universe at ${base} → ${name}.png (${W}x${H})${empty ? ' [empty]' : ''}${stayHome ? ' [home]' : ''} [${theme}/${moraSeat}${crop ? '/crop' : ''}]`);
 
   const browser = await chromium.launch({
     executablePath: '/usr/local/bin/google-chrome',
@@ -205,6 +208,12 @@ async function main() {
     localStorage.setItem('last_company_id', cid);
     localStorage.setItem('saimor_active_company', cid);
   }, company.id);
+  await ctx.addInitScript((t) => {
+    localStorage.setItem('saimor.universe.theme.v1', t);
+  }, theme);
+  await ctx.addInitScript(() => {
+    localStorage.setItem('uv2-planet-style', 'M');
+  });
 
   const page = await ctx.newPage();
   page.on('pageerror', (e) => console.log('Page error:', e.message));
@@ -307,6 +316,12 @@ async function main() {
   );
   console.log(`Found ${planets.length} planets:`, planets.map((p) => `${p.label}${p.caption ? ' · ' + p.caption : ''}`).join(', '));
 
+  await page.evaluate((t) => { document.documentElement.dataset.uv2Theme = t; }, theme);
+  await page.evaluate((seat) => {
+    window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', seat } }));
+  }, moraSeat);
+  await page.waitForTimeout(400);
+
   if (process.env.CLICK_PLANET) {
     const planetName = process.env.CLICK_PLANET;
     console.log(`Clicking planet: ${planetName}`);
@@ -328,7 +343,25 @@ async function main() {
     page.evaluate(() => (document.fonts && document.fonts.ready) || Promise.resolve()),
     new Promise((resolve) => setTimeout(resolve, 2500)),
   ]);
-  await page.screenshot({ path: outPath, timeout: 60000, animations: 'disabled' });
+
+  let clip;
+  if (crop) {
+    clip = await page.evaluate(() => {
+      const seat = document.querySelector('[data-testid="uv2-mora-seat"]');
+      const planets = [...document.querySelectorAll('[data-planet-kind] .saimor-territory-body')].slice(0, 3);
+      const nodes = [seat, ...planets].filter(Boolean);
+      if (!nodes.length) return null;
+      const rects = nodes.map((n) => n.getBoundingClientRect());
+      const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - 48);
+      const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - 36);
+      const right = Math.max(...rects.map((r) => r.right)) + 48;
+      const bottom = Math.max(...rects.map((r) => r.bottom)) + 64;
+      return { x: Math.round(left), y: Math.round(top), width: Math.round(right - left), height: Math.round(bottom - top) };
+    });
+    console.log('Crop clip', clip);
+  }
+
+  await page.screenshot({ path: outPath, timeout: 60000, animations: 'disabled', clip: clip || undefined });
   console.log(`Screenshot saved to ${outPath}`);
   await browser.close();
   return outPath;
