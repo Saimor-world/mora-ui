@@ -323,7 +323,7 @@ html[data-uv2="on"] [data-uv2-zoom] .uv2-constellation {
 }
 
 html[data-uv2="on"] :has(> [data-uv2-zoom]) { 
-  overflow: hidden; 
+  overflow: visible; 
 }
 
 html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .saimor-territory-name { 
@@ -335,8 +335,9 @@ html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] :is(.saimor-territory-
 }
 
 html[data-uv2="on"] :has(> [data-uv2-plane][data-uv2-zoom]) { 
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%); 
-  mask-image: linear-gradient(to bottom, transparent 0, #000 22%); 
+  overflow: visible !important;
+  -webkit-mask-image: none; 
+  mask-image: none; 
 }
 
 /* Detail card animation */
@@ -350,11 +351,14 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
 }
 
 @media (min-width: 1280px) {
+  html[data-uv2="on"] [data-uv2-field]:has([data-uv2-zoom]) {
+    overflow: visible !important;
+  }
   html[data-uv2="on"] [data-testid="planet-detail"] {
-    position: fixed !important;
-    left: var(--g-m) !important;
+    position: absolute !important;
+    left: calc(-1 * var(--g-3)) !important;
     right: auto !important;
-    top: var(--g-top) !important;
+    top: 8px !important;
     bottom: auto !important;
     width: var(--g-3) !important;
     max-height: calc(100vh - var(--g-top) - var(--g-base) - 16px);
