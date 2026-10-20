@@ -90,7 +90,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <WorldSphere size={size} lit={lit} hue={glassHue(name, archetype)} seed={seed} quiet={!!dim} feature={m.feature || 'clouds'} day={m.day} night={m.night} atmo={m.atmo} selected={selected} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={planetMaterial(name).day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <WorldSphere name={name} size={size} lit={lit} hue={glassHue(name, archetype)} seed={seed} quiet={!!dim} feature={m.feature || 'clouds'} day={m.day} night={m.night} atmo={m.atmo} selected={selected} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={planetMaterial(name).day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -354,6 +354,35 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
 export function glassHue(name: string, _arch?: string | null): [number, number, number] {
   return hex(planetMaterial(name).day) as [number, number, number];
 }
+
+/** Light-mode orbs — colours from aero.html / fokus.html. */
+const AERO: Record<string, { c: string; c2: string; c3: string }> = {
+  wissen: { c: '#8b5cf6', c2: '#c4b0ff', c3: '#5b2fc7' },
+  markt: { c: '#e23ca8', c2: '#ff9ad6', c3: '#a3167a' },
+  finanzen: { c: '#f2b51d', c2: '#ffe58a', c3: '#b07a05' },
+  werkstatt: { c: '#f08a1c', c2: '#ffc27a', c3: '#b5560a' },
+  betrieb: { c: '#f06a8a', c2: '#ffb4c6', c3: '#c23a5e' },
+  rd: { c: '#2fbf5a', c2: '#9cf0b2', c3: '#14853a' },
+  wache: { c: '#14b3b0', c2: '#8ef0ea', c3: '#0a7d7d' },
+  post: { c: '#3b82f6', c2: '#a7cbff', c3: '#1d4fc0' },
+  default: { c: '#7aa0c4', c2: '#d5e6f6', c3: '#3d658c' },
+};
+export function aeroPalette(name: string) {
+  return AERO[planetMaterialKey(name)] || AERO.default;
+}
+
+function AeroOrb({ name, selected, quiet }: { name: string; selected: boolean; quiet: boolean }) {
+  const p = aeroPalette(name);
+  return (
+    <span
+      className="uv2-aero-orb absolute inset-0"
+      data-pstyle="aero"
+      data-selected={selected ? '' : undefined}
+      data-quiet={quiet ? '' : undefined}
+      style={{ ['--c' as string]: p.c, ['--c2' as string]: p.c2, ['--c3' as string]: p.c3, ['--sh' as string]: `${p.c}99` } as React.CSSProperties}
+    />
+  );
+}
 export function areaHue(name: string, arch?: string | null): [number, number, number] {
   return glassHue(name, arch);
 }
@@ -392,10 +421,10 @@ function mixNum(a: number, b: number, t: number) { return a + (b - a) * t; }
 /**
  * Dual-mode planet body.
  * Dark: believable work-tool planets (surface, terminator from the centre, atmosphere).
- * Light: premium glass-marble orbs in the area colour, gold ring, not candy.
+ * Light: aero.html glass orbs (area colours, specular, coloured shadow).
  */
-function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, selected }: {
-  size: number; lit: number; hue: [number, number, number]; seed: number; quiet: boolean;
+function WorldSphere({ name, size, lit, hue, seed, quiet, feature, day, night, atmo, selected }: {
+  name: string; size: number; lit: number; hue: [number, number, number]; seed: number; quiet: boolean;
   feature: SurfaceFeature; day: string; night: string; atmo: string; selected: boolean;
 }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
@@ -404,8 +433,10 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
   const dayRgb = hex(day);
   const nightRgb = hex(night);
   const atmoRgb = atmo.split(',').map(Number) as [number, number, number];
+  const aero = mode === 'light';
 
   React.useEffect(() => {
+    if (aero) return;
     const cv = ref.current; if (!cv) return;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const W = Math.max(24, Math.round(size * dpr));
@@ -420,7 +451,6 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
     const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     const r = W / 2;
-    const aero = mode === 'light';
 
     for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
       const u = (x + 0.5 - r) / r, v = (y + 0.5 - r) / r, q = u * u + v * v, i = (y * W + x) * 4;
@@ -448,38 +478,21 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
         relief = (n1 - 0.5) * 0.28 + Math.sin(lon * 3 + lat * 5 + n2) * 0.08;
       }
 
-      let col: number[];
-      if (aero) {
-        const vein = Math.pow(1 - Math.abs(n1 * 2 - 1), 8);
-        const swirl = n2 * 0.22 + relief * 0.18;
-        const glass = mix(mix(h, [255, 255, 255], 0.16), dayRgb, 0.72);
-        col = mix(glass, mix(h, [236, 244, 246], 0.28), 0.22 + swirl);
-        col = mix(col, mix(h, [255, 250, 240], 0.35), vein * 0.4);
-        const k = 0.38 + 0.52 * term * (0.42 + 0.58 * Math.pow(dif, 0.9));
-        col = mix(mix(h, [198, 210, 214], 0.22), col, k);
-        col = mix(col, mix(h, [255, 255, 255], 0.42), Math.pow(z, 3.2) * 0.18);
-        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 86) * 0.38;
-        col = mix(col, [255, 246, 224], spec);
-        const fres = Math.pow(1 - z, 2.15);
-        col = mix(col, mix(h, [255, 255, 255], 0.12), fres * 0.32);
-      } else {
-        const litCol = mix(dayRgb, h, 0.22);
-        const k = Math.min(1, Math.max(0, term * (0.18 + 0.82 * Math.pow(dif, 0.78)) + relief * 0.18));
-        col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.55), k * 2) : mix(mix(nightRgb, litCol, 0.55), litCol, (k - 0.5) * 2);
-        if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.4), Math.min(0.45, relief));
-        if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [214, 176, 255], 0.25), Math.min(0.55, relief));
-        const fres = Math.pow(1 - z, 2.6);
-        const rimLit = fres * Math.max(0, ndl + 0.22) * (selected ? 1.15 : 0.9);
-        col = mix(col, mix(atmoRgb, [255, 248, 230], 0.18), Math.min(0.62, rimLit));
-        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 78) * 0.22;
-        col = mix(col, [255, 246, 220], spec);
-        const nightA = (1 - term) * 0.4;
-        col = mix(col, nightRgb, nightA);
-      }
+      const litCol = mix(dayRgb, h, 0.22);
+      const k = Math.min(1, Math.max(0, term * (0.18 + 0.82 * Math.pow(dif, 0.78)) + relief * 0.18));
+      let col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.55), k * 2) : mix(mix(nightRgb, litCol, 0.55), litCol, (k - 0.5) * 2);
+      if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.4), Math.min(0.45, relief));
+      if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [214, 176, 255], 0.25), Math.min(0.55, relief));
+      const fres = Math.pow(1 - z, 2.6);
+      const rimLit = fres * Math.max(0, ndl + 0.22) * (selected ? 1.15 : 0.9);
+      col = mix(col, mix(atmoRgb, [255, 248, 230], 0.18), Math.min(0.62, rimLit));
+      const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 78) * 0.22;
+      col = mix(col, [255, 246, 220], spec);
+      const nightA = (1 - term) * 0.4;
+      col = mix(col, nightRgb, nightA);
 
       const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.55);
-      const al = aero ? Math.min(1, 0.88 + 0.12 * term) : 1;
-      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge * al);
+      d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge);
     }
     WORLD_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();
 
@@ -487,34 +500,20 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
       if (!c) return;
       const rr = W / 2;
       c.beginPath(); c.arc(rr, rr, rr - dpr * 0.7, 0, Math.PI * 2);
-      c.strokeStyle = aero
-        ? `rgba(214,168,72,${quiet ? 0.55 : selected ? 0.92 : 0.78})`
-        : `rgba(${h.join(',')},${quiet ? 0.28 : selected ? 0.7 : 0.45})`;
-      c.lineWidth = dpr * (aero ? 1.15 : 0.85);
+      c.strokeStyle = `rgba(${h.join(',')},${quiet ? 0.28 : selected ? 0.7 : 0.45})`;
+      c.lineWidth = dpr * 0.85;
       c.stroke();
-      if (aero) {
-        c.beginPath(); c.arc(rr, rr, rr - dpr * 2.2, 0, Math.PI * 2);
-        c.strokeStyle = `rgba(255,252,248,0.35)`;
-        c.lineWidth = dpr * 0.6;
-        c.stroke();
-      }
     }
-  }, [size, lit, h.join(','), seed, quiet, feature, mode, selected, day, night, atmoRgb.join(',')]);
+  }, [size, lit, h.join(','), seed, quiet, feature, mode, selected, day, night, atmoRgb.join(','), aero]);
+
+  if (aero) return <AeroOrb name={name} selected={selected} quiet={quiet} />;
 
   const gx = Math.cos(lit) * size * 0.08, gy = Math.sin(lit) * size * 0.08;
-  const aero = mode === 'light';
   return (<>
     <span className="pointer-events-none absolute rounded-full" style={{
-      inset: -size * (aero ? 0.1 : 0.07),
-      boxShadow: aero
-        ? `${gx}px ${gy}px ${size * 0.42}px rgba(${h.join(',')},${quiet ? 0.12 : 0.28}), 0 ${size * 0.08}px ${size * 0.22}px rgba(40,60,80,0.12)`
-        : `${gx}px ${gy}px ${size * 0.55}px rgba(${atmo},${quiet ? 0.08 : selected ? 0.28 : 0.16})`,
+      inset: -size * 0.07,
+      boxShadow: `${gx}px ${gy}px ${size * 0.55}px rgba(${atmo},${quiet ? 0.08 : selected ? 0.28 : 0.16})`,
     }} />
-    {aero && <span className="pointer-events-none absolute inset-0 rounded-full" style={{
-      backdropFilter: 'blur(2px) saturate(1.08)',
-      WebkitBackdropFilter: 'blur(2px) saturate(1.08)',
-      boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22), inset ${-gx}px ${-gy}px ${size * 0.2}px rgba(255,255,255,.28)`,
-    }} />}
-    <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={aero ? 'aero' : 'world'} />
+    <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle="world" />
   </>);
 }

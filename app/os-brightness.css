@@ -15,14 +15,14 @@ html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv
 html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name,
 html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor-territory-shell .saimor-territory-name,
 html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor-territory-name {
-  color: #14201e !important;
-  text-shadow: 0 1px 8px rgba(255,255,255,0.78);
+  color: #23384c !important;
+  text-shadow: none;
 }
-html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #8a6418 !important; }
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #a77a12 !important; }
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-shell .uv2-planet-caption,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-caption,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-meta {
-  color: rgba(20,32,30,0.72) !important;
+  color: #4f6a80 !important;
 }
 html[data-uv2="on"][data-uv2-theme="light"] [data-testid="planet-detail"] { background: rgba(255,252,246,0.82) !important; }
 html[data-uv2="on"] [data-planet-kind]:not([data-uv2-today]):not([data-planet-state="sleeping"]):not([data-planet-state="seed"]) { opacity: .9; }

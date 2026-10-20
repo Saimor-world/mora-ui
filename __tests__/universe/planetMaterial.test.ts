@@ -1,4 +1,4 @@
-import { glassHue, planetMaterial, planetMaterialKey } from '@/components/universe/PlanetSphere';
+import { aeroPalette, glassHue, planetMaterial, planetMaterialKey } from '@/components/universe/PlanetSphere';
 
 const AREAS: Array<[string, string]> = [
   ['Wissen', 'wissen'],
@@ -41,5 +41,12 @@ describe('Universe Glass – Bereichsfarben', () => {
     const betrieb = glassHue('Betrieb');
     expect(wissen[2]).toBeGreaterThan(wissen[1] + 24);
     expect(betrieb[0]).toBeGreaterThan(betrieb[1] + 12);
+  });
+
+  it('Aero-Palette folgt aero.html', () => {
+    expect(aeroPalette('Wissen').c).toBe('#8b5cf6');
+    expect(aeroPalette('Finanzen').c).toBe('#f2b51d');
+    expect(aeroPalette('Betrieb').c).toBe('#f06a8a');
+    expect(aeroPalette('Post & Termine').c).toBe('#3b82f6');
   });
 });

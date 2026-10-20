@@ -57,17 +57,10 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
                 onClick={onSeat}
             >
                 <span className="uv2-mora-dais" aria-hidden />
-                <svg className="uv2-mora-ring" viewBox="0 0 100 100" aria-hidden>
-                    <ellipse cx="50" cy="70" rx="38" ry="11" fill="none" stroke="rgba(214,168,72,0.38)" strokeWidth="1.2" />
-                    <ellipse cx="50" cy="70" rx="30" ry="8" fill="none" stroke="rgba(227,188,99,0.58)" strokeWidth="0.85" />
-                    <circle cx="50" cy="44" r="32" fill="none" stroke="url(#uv2GoldRing)" strokeWidth="2" />
-                    <defs>
-                        <linearGradient id="uv2GoldRing" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stopColor="#F3DFB0" />
-                            <stop offset="0.45" stopColor="#D6A848" />
-                            <stop offset="1" stopColor="#B8892E" />
-                        </linearGradient>
-                    </defs>
+                <svg className="uv2-mora-ring" viewBox="0 0 120 110" aria-hidden>
+                    <ellipse className="uv2-mora-oval" cx="60" cy="58" rx="57" ry="52" fill="none" stroke="#e1bd62" strokeWidth="3.5" />
+                    <ellipse className="uv2-mora-oval" cx="60" cy="58" rx="57" ry="52" fill="none" stroke="#fff3c4" strokeWidth="1" opacity="0.8" />
+                    <ellipse cx="60" cy="96" rx="40" ry="10" fill="none" stroke="rgba(225,189,98,0.45)" strokeWidth="1.2" />
                 </svg>
                 {away ? (
                     <span className="uv2-mora-afterglow" data-testid="uv2-mora-empty" />
@@ -90,37 +83,29 @@ function JadeCrystal({ state }: { state: MoraState }) {
     }, []);
 
     return (
-        <span className="uv2-mora-crystal" data-testid="uv2-mora-crystal" data-face-state={state}>
-            <svg className="uv2-mora-crystal__body" viewBox="0 0 100 100" aria-hidden>
-                <defs>
-                    <linearGradient id="uv2JadeDeep" x1="0.18" y1="0" x2="0.86" y2="1">
-                        <stop offset="0" stopColor="#F2FFF4" />
-                        <stop offset="0.22" stopColor="#9BEBC0" />
-                        <stop offset="0.52" stopColor="#3CB07A" />
-                        <stop offset="1" stopColor="#0F4A32" />
-                    </linearGradient>
-                    <linearGradient id="uv2JadeTable" x1="0.3" y1="0" x2="0.7" y2="1">
-                        <stop offset="0" stopColor="#F7FFF8" />
-                        <stop offset="1" stopColor="#6ED6A4" />
-                    </linearGradient>
-                    <linearGradient id="uv2JadeGold" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0" stopColor="#F3DFB0" />
-                        <stop offset="0.5" stopColor="#D6A848" />
-                        <stop offset="1" stopColor="#B8892E" />
-                    </linearGradient>
-                </defs>
-                <polygon points="50,6 84,28 72,78 28,78 16,28" fill="url(#uv2JadeDeep)" stroke="rgba(16,64,48,0.35)" strokeWidth="0.6" />
-                <polygon points="50,6 84,28 50,38 16,28" fill="url(#uv2JadeTable)" opacity="0.92" />
-                <polygon points="50,6 50,38 16,28" fill="#D8FFE8" opacity="0.38" />
-                <polygon points="50,38 84,28 72,78" fill="#146046" opacity="0.28" />
-                <polygon points="50,38 72,78 28,78" fill="#0E3C28" opacity="0.22" />
-                <polygon points="50,38 28,78 16,28" fill="#8FE8B8" opacity="0.22" />
-                <polygon points="38,20 50,10 58,22 50,34" fill="#FFFFFF" opacity="0.42" />
-                <circle cx="50" cy="48" r="44" fill="none" stroke="url(#uv2JadeGold)" strokeWidth="2.1" />
+        <span className="uv2-mora-crystal" data-testid="uv2-mora-crystal" data-face-state={state} data-reduce={reduce ? '' : undefined}>
+            <svg className="uv2-mora-crystal__body" viewBox="0 0 120 110" aria-hidden>
+                <ellipse cx="60" cy="58" rx="57" ry="52" fill="none" stroke="#e1bd62" strokeWidth="3.5" />
+                <ellipse cx="60" cy="58" rx="57" ry="52" fill="none" stroke="#fff3c4" strokeWidth="1" opacity="0.8" />
+                <g opacity="0.93" stroke="rgba(255,255,255,.55)" strokeWidth="0.8">
+                    <polygon points="60,10 92,24 60,34" fill="#9fe6c8" />
+                    <polygon points="60,10 28,24 60,34" fill="#d4f8e8" />
+                    <polygon points="28,24 14,56 40,52 60,34" fill="#7fd6b1" />
+                    <polygon points="92,24 106,56 80,52 60,34" fill="#4fb98f" />
+                    <polygon points="60,34 40,52 80,52" fill="#b5efd6" />
+                    <polygon points="14,56 40,52 34,86" fill="#45a882" />
+                    <polygon points="106,56 80,52 86,86" fill="#2e8a67" />
+                    <polygon points="40,52 80,52 86,86 34,86" fill="#62c49c" />
+                    <polygon points="34,86 86,86 60,102" fill="#257a5a" />
+                </g>
+                <polygon points="34,20 52,14 44,30" fill="#fff" opacity="0.7" />
+                <ellipse className="uv2-mora-eye" cx="48" cy="64" rx="5" ry="6.5" fill="#0f3d2e" />
+                <ellipse className="uv2-mora-eye" cx="72" cy="64" rx="5" ry="6.5" fill="#0f3d2e" />
+                <circle cx="49.6" cy="61.6" r="1.8" fill="#fff" />
+                <circle cx="73.6" cy="61.6" r="1.8" fill="#fff" />
+                <ellipse cx="40" cy="74" rx="5" ry="2.5" fill="#ffb4c0" opacity="0.35" />
+                <ellipse cx="80" cy="74" rx="5" ry="2.5" fill="#ffb4c0" opacity="0.35" />
             </svg>
-            <span className="uv2-mora-eyes" data-reduce={reduce ? '' : undefined} aria-hidden>
-                <i /><i />
-            </span>
         </span>
     );
 }

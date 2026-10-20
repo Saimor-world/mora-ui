@@ -31,21 +31,9 @@ export function UniverseAmbientField({ lens, selected }: Props) {
             {light ? (
                 <>
                     <div className="absolute inset-0" style={{
-                        background: 'radial-gradient(ellipse at 50% 8%, rgba(255,255,252,1) 0%, rgba(232,242,244,0.96) 28%, rgba(210,228,232,0.94) 62%, rgba(186,210,214,0.92) 100%)',
-                    }} />
-                    <div className="absolute inset-0" style={{
-                        background: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 26%, rgba(170,196,200,0.12) 100%)',
-                    }} />
-                    <motion.div
-                        className="absolute left-1/2 top-[42%] h-[70vh] max-h-[720px] w-[70vh] max-w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"
-                        style={{ background: 'radial-gradient(circle, rgba(214,168,72,0.16), rgba(110,186,160,0.10) 42%, transparent 68%)' }}
-                        animate={reducedMotion ? undefined : { scale: [1, 1.06, 1], opacity: [0.7, 0.95, 0.7] }}
-                        transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
-                    />
-                    <div className="absolute inset-0" style={{
-                        background: lens === 'relations'
-                            ? 'radial-gradient(ellipse at 70% 30%, rgba(186,214,245,0.18), transparent 46%)'
-                            : 'radial-gradient(ellipse at 22% 78%, rgba(160,210,190,0.16), transparent 50%)',
+                        background: selected
+                            ? 'radial-gradient(circle at 33% 50%, #fff8dc 0, #fdeec0 22%, transparent 55%), radial-gradient(ellipse at 80% 20%, #eaf6ff, transparent 60%), linear-gradient(160deg, #fbf6ea, #e9f3fb)'
+                            : 'radial-gradient(ellipse at 30% 20%, #ffffff 0, #e6f6ff 30%, transparent 60%), radial-gradient(ellipse at 75% 70%, #f3e8ff 0, transparent 55%), radial-gradient(ellipse at 15% 85%, #dff7ef 0, transparent 50%), linear-gradient(160deg, #eaf7ff, #cfeafb 50%, #e9f3ff)',
                     }} />
                 </>
             ) : (
@@ -81,7 +69,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 animate={{ opacity: selected ? (light ? 0.18 : 0.28) : 0 }}
                 transition={{ duration: 0.6 }}
                 style={{ background: light
-                    ? 'radial-gradient(circle at center, transparent 34%, rgba(40,56,58,0.14) 100%)'
+                    ? 'radial-gradient(circle at center, transparent 42%, rgba(80,110,140,0.08) 100%)'
                     : 'radial-gradient(circle at center, transparent 32%, rgba(5,7,6,0.38) 100%)' }}
             />
         </div>
