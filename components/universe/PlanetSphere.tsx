@@ -364,10 +364,7 @@ const JEWEL_CACHE = new Map<string, ImageData>();
 function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
 
-  // Keep the area tint readable as glass — lift without greying the chroma out.
-  const brightened = hue.map((v) => Math.min(255, v * 1.12 + 28)) as [number, number, number];
-  const base: number[] = matte ? mix(brightened, [246, 244, 238], 0.08) : brightened;
-  const h: number[] = quiet ? mix(base, [232, 228, 220], 0.08) : base;
+  const h: number[] = quiet ? mix(hue, [236, 232, 224], 0.06) : hue;
   
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -379,9 +376,9 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.55; const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     
-    const night = h.map((v) => v * 0.58 + 78);
-    const deep = h.map((v) => v * 0.86 + 32);
-    const lite = mix(h, [255, 252, 245], 0.42);
+    const night = h.map((v) => v * 0.62 + 40);
+    const deep = h.map((v) => v * 0.92 + 12);
+    const lite = mix(h, [255, 252, 245], 0.28);
     const r = W / 2; const cell = 2.8 * dpr;
     const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
     
@@ -421,13 +418,12 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
       // Universe Glass: translucent with inner glow
       if (matte) {
         const inner = Math.pow(z, 2.8) * 0.12 * (0.5 + 0.5 * t);
-        col = mix(col, mix(h, [255, 252, 242], 0.65), inner);
+        col = mix(col, mix(h, [255, 252, 242], 0.28), inner);
         const edgeHi = Math.pow(1 - z, 5) * Math.max(0, u * lx + v * ly + 0.2) * 1.2;
-        col = mix(col, [255, 250, 235], Math.min(0.5, edgeHi));
+        col = mix(col, mix(h, [255, 250, 235], 0.35), Math.min(0.35, edgeHi));
       }
-      
-      // More translucent in center, denser at edge - slightly more opaque for visibility
-      const al = matte ? Math.min(1, 0.48 + 0.22 * t + 0.28 * Math.pow(1 - z, 2.5)) : 1;
+
+      const al = matte ? Math.min(1, 0.78 + 0.14 * t + 0.12 * Math.pow(1 - z, 2.2)) : 1;
       d[i] = col[0]; d[i + 1] = col[1]; d[i + 2] = col[2]; d[i + 3] = Math.round(255 * edge * al);
     }
     JEWEL_CACHE.set(key, img); c.putImageData(img, 0, 0); drawRim();
@@ -436,7 +432,7 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
       if (!c) return; 
       const rr = W / 2; 
       // Subtle gold ring – refined, not garish
-      c.strokeStyle = `rgba(220,190,120,${quiet ? 0.35 : 0.65})`; 
+      c.strokeStyle = `rgba(${h.join(',')},${quiet ? 0.35 : 0.55})`; 
       c.lineWidth = dpr * 0.7; 
       c.beginPath(); 
       c.arc(rr, rr, rr - dpr * 0.5, 0, Math.PI * 2); 

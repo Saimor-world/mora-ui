@@ -617,8 +617,11 @@ function Territory({
                 Der Koerper selbst behaelt overflow-hidden fuer seine
                 Innenverlaeufe. */}
             <span
-                className="saimor-territory-body relative mx-auto block"
+                className="saimor-territory-shell relative mx-auto block"
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
+            >
+            <span
+                className="saimor-territory-body absolute inset-0 block"
             >
                 {model && territory.access !== 'locked' ? (
                     <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
@@ -650,6 +653,13 @@ function Territory({
                 <OrbitalSystem orbitals={orbitals} accent={accent} selected={selected} onOpenMoon={onOpenMoon} planetName={territory.name} />
                 {false && isUniverseV2Enabled() && territory.access !== 'locked' && orbitals.moons.length === 0 && <AmbientMoons name={territory.name} size={size} seed={drift} />}
             </span>
+            <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            {model?.caption ? (
+                <span className="uv2-planet-caption mt-1 block text-[13px] leading-[18px] tabular-nums text-[#F7F4E9]/88">
+                    {model.caption}
+                </span>
+            ) : null}
+            </span>
 
             {/* Frueher sassen diese Marker INNERHALB der Blase - die traegt
                 overflow-hidden, und ihre Mittelpunkte lagen bei bis zu 98%.
@@ -665,12 +675,6 @@ function Territory({
                     <span className="text-[9px] font-semibold tabular-nums text-white/62">{signals.length}</span>
                 </span>
             )}
-            <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
-            {model?.caption ? (
-                <span className="uv2-planet-caption mt-1 block text-[13px] leading-[18px] tabular-nums text-[#F7F4E9]/88">
-                    {model.caption}
-                </span>
-            ) : null}
             {model ? (
                 model.meta && !model.caption ? (
                     <span className={'uv2-planet-meta mt-1.5 block text-[13px] leading-[18px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>

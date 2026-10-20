@@ -21,5 +21,6 @@ describe('Arbeits-Chips', () => {
         expect(bodyCaption(planet({ capability: 'werkstatt', counts: { open_tasks: 0 } }), null)).toBe('');
         expect(bodyCaption(planet({ capability: 'wache', counts: { open_incidents: 0 } }), null)).toBe('');
         expect(bodyCaption(planet({ capability: 'wache', counts: { open_incidents: 1, docs: 24 } }), null)).toBe('1 Vorfall');
+        expect(bodyCaption({ ...planet({ kind: 'domain', counts: { docs: 27, spaces: 2 } }) } as never, null)).toBe('27 Dok');
     });
 });

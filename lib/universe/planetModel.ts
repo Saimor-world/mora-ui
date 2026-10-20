@@ -183,7 +183,7 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
   if (p.glow) out.push({ label: p.glow.reason || 'braucht dich', tone: 'need' });
   if (p.state === 'seed') return [...out, { label: 'noch nicht verbunden', tone: 'calm' }];
   if (p.kind === 'domain') {
-    if (n('docs')) out.push({ label: n('docs') === 1 ? 'Dokument' : 'Dokumente', value: n('docs'), tone: 'calm' });
+    if (n('docs')) out.push({ label: 'Dok', value: n('docs'), tone: 'calm' });
     if (n('spaces')) out.push({ label: n('spaces') === 1 ? 'Bereich' : 'Bereiche', value: n('spaces'), tone: 'calm' });
   } else {
     switch (p.capability) {

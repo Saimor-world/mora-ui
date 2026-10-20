@@ -103,20 +103,23 @@ html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind] .uv2-planet-meta { 
   display: none !important; 
 }
-html[data-uv2="on"] [data-planet-kind] .saimor-territory-name {
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell {
+  overflow: visible;
+}
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell .saimor-territory-name {
   position: absolute;
   left: 50%;
-  top: calc(var(--territory-size) + 12px);
+  top: 100%;
   transform: translateX(-50%);
-  margin-top: 0 !important;
+  margin-top: 10px !important;
   white-space: nowrap;
 }
-html[data-uv2="on"] [data-planet-kind] .uv2-planet-caption {
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell .uv2-planet-caption {
   position: absolute;
   left: 50%;
-  top: calc(var(--territory-size) + 34px);
+  top: 100%;
   transform: translateX(-50%);
-  margin-top: 0 !important;
+  margin-top: 32px !important;
   white-space: nowrap;
   font-family: var(--uv-sans, Inter, system-ui, sans-serif) !important;
   font-size: 13px !important;
@@ -128,8 +131,8 @@ html[data-uv2="on"] [data-planet-kind] .uv2-planet-caption {
 html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .uv2-planet-caption {
   opacity: 0 !important;
 }
-html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .uv2-planet-caption {
-  top: calc(var(--territory-size) + 10px);
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .saimor-territory-shell .uv2-planet-caption {
+  margin-top: 8px !important;
 }
 
 /* ═══ Moons and stars ═══ */
