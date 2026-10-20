@@ -36,9 +36,9 @@
   stroke-width: 1; 
 }
 
-/* Planet centered on its orbit path */
+/* Planet centered on its orbit; name/caption hang from the body and stay out of flow */
 html[data-uv2="on"] [data-planet-kind] { 
-  translate: 0 calc(50% - var(--territory-size) / 2); 
+  translate: 0 0; 
 }
 
 /* Field spacing: breathing room for fewer, larger planets */
@@ -132,7 +132,7 @@ html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]
   opacity: 0 !important;
 }
 html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .saimor-territory-shell .uv2-planet-caption {
-  margin-top: 8px !important;
+  margin-top: 16px !important;
 }
 
 /* ═══ Moons and stars ═══ */
