@@ -254,18 +254,7 @@ html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .uv2-moon-tip {
   display: none;
 }
 html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .uv2-moon-name {
-  display: block;
-  position: absolute;
-  left: 50%;
-  top: 100%;
-  transform: translateX(-50%);
-  margin-top: 6px;
-  font: 500 13px/1.2 var(--uv-sans, Inter, sans-serif);
-  color: rgba(255,252,242,.90);
-  text-shadow: 0 1px 8px rgba(0,0,0,.55);
-  white-space: nowrap;
-  text-transform: none;
-  letter-spacing: 0.01em;
+  display: none;
 }
 html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .group\/moon {
   opacity: 0 !important;
@@ -360,20 +349,17 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
   animation: uv2CardIn .35s ease .75s both; 
 }
 
-@media (min-width: 1024px) {
-  html[data-uv2="on"] [data-uv2-plane][data-uv2-zoom] {
-    left: 420px !important;
-    right: 280px !important;
-    transform: none !important;
-  }
-  html[data-uv2="on"] :has(.uv2-orbits) [data-testid="planet-detail"] { 
-    left: 32px !important; 
-    right: auto !important; 
-    top: 12vh !important; 
-    bottom: auto !important; 
-    width: 360px !important; 
-    max-height: calc(100vh - 220px);
+@media (min-width: 1280px) {
+  html[data-uv2="on"] [data-testid="planet-detail"] {
+    position: fixed !important;
+    left: var(--g-m) !important;
+    right: auto !important;
+    top: var(--g-top) !important;
+    bottom: auto !important;
+    width: var(--g-3) !important;
+    max-height: calc(100vh - var(--g-top) - var(--g-base) - 16px);
     overflow: auto;
+    z-index: 50;
     background: rgba(28, 36, 40, 0.78) !important;
   }
 }
