@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
+import React, { useEffect, useRef, useState } from 'react';
+import { getMoraPresence, moraIsAway, setMoraPresence, useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
 
 /**
- * Ruhiges Licht in der Mitte des Systems – keine Figur, keine Sätze.
- * MÔRA selbst ist der Jadestein im Dock; von dort läuft ihr goldener Faden zum Planeten,
- * an dem sie arbeitet, und dieser Planet wird hell (Fokus = Licht).
+ * MÔRAs Sitz in der Mitte des Systems: goldener Ring (SAIMÔR-Logo),
+ * Jadestein wenn sie zu Hause ist, leiser Nachglimmen wenn sie weg ist.
  */
 export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; y: number; needs: boolean }> }) {
     const presence = useMoraPresence();
@@ -18,7 +17,7 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
     }
     const target = targetId ? planets.find((p) => p.id === targetId) : undefined;
     const litId = target && state !== 'calm' ? target.id : null;
-    const threadOn = !!target && (state === 'working' || state === 'done');
+    const away = moraIsAway({ ...presence, state, target: targetId });
 
     useEffect(() => {
         const plane = document.querySelector<HTMLElement>('[data-uv2-plane]');
@@ -27,36 +26,112 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
         if (litId) document.querySelector<HTMLElement>(`[data-uv2-planet="${CSS.escape(litId)}"]`)?.setAttribute('data-mora-lit', '');
     }, [litId]);
 
-    // Startpunkt des Fadens: der Jadestein im Dock, in Prozent der Planetenebene.
-    const [from, setFrom] = useState<{ x: number; y: number } | null>(null);
     useEffect(() => {
-        if (!threadOn) { setFrom(null); return; }
-        const measure = () => {
-            const plane = document.querySelector<HTMLElement>('[data-uv2-plane]');
-            const stone = document.querySelector<HTMLElement>('[data-mora-orb] button, [data-mora-orb]');
-            if (!plane || !stone) { setFrom(null); return; }
-            const p = plane.getBoundingClientRect(); const s = stone.getBoundingClientRect();
-            if (!p.width || !p.height) { setFrom(null); return; }
-            setFrom({ x: ((s.left + s.width / 2 - p.left) / p.width) * 100, y: ((s.top + s.height / 2 - p.top) / p.height) * 100 });
+        const onDock = (e: MouseEvent) => {
+            const el = (e.target as HTMLElement | null)?.closest?.('[data-mora-home], [data-mora-orb]');
+            if (!el) return;
+            setMoraPresence({ state: getMoraPresence().state, target: getMoraPresence().target, seat: 'away' });
         };
-        measure();
-        window.addEventListener('resize', measure);
-        return () => window.removeEventListener('resize', measure);
-    }, [threadOn]);
+        document.addEventListener('click', onDock, true);
+        return () => document.removeEventListener('click', onDock, true);
+    }, []);
+
+    const onSeat = () => {
+        if (away) {
+            setMoraPresence({ state: 'calm', target: null, seat: 'home' });
+            return;
+        }
+        const ask = document.querySelector<HTMLInputElement>('input[aria-label="MÔRA fragen"]');
+        if (ask) { ask.focus(); return; }
+        window.dispatchEvent(new CustomEvent('uv2:open-chat'));
+    };
 
     return (
-        <div className="uv2-mora" data-mora-state="calm" aria-hidden="true">
-            {/* Soft center halo for brightness */}
+        <div className="uv2-mora" data-mora-state={state} data-mora-seat={away ? 'empty' : 'home'} aria-hidden={false}>
             <span className="uv2-center-halo" />
-            {threadOn && target && from && (
-                <svg className="uv2-mora__thread" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    {state === 'done' && <circle cx={target.x} cy={target.y} r="2.2" />}
+            <button
+                type="button"
+                className="uv2-mora-seat"
+                data-testid="uv2-mora-seat"
+                aria-label={away ? 'MÔRA nach Hause rufen' : 'Mit MÔRA sprechen'}
+                onClick={onSeat}
+            >
+                <span className="uv2-mora-dais" aria-hidden />
+                <svg className="uv2-mora-ring" viewBox="0 0 100 100" aria-hidden>
+                    <ellipse cx="50" cy="62" rx="34" ry="10" fill="none" stroke="rgba(214,168,72,0.35)" strokeWidth="1.2" />
+                    <ellipse cx="50" cy="62" rx="28" ry="7.5" fill="none" stroke="rgba(227,188,99,0.55)" strokeWidth="0.8" />
+                    <circle cx="50" cy="46" r="22" fill="none" stroke="url(#uv2GoldRing)" strokeWidth="1.6" />
+                    <defs>
+                        <linearGradient id="uv2GoldRing" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stopColor="#F3DFB0" />
+                            <stop offset="0.45" stopColor="#D6A848" />
+                            <stop offset="1" stopColor="#B8892E" />
+                        </linearGradient>
+                    </defs>
                 </svg>
-            )}
-            <span className="uv2-mora__core">
-                <span className="uv2-mora__halo" />
-                <span className="uv2-mora__light" />
-            </span>
+                {away ? (
+                    <span className="uv2-mora-afterglow" data-testid="uv2-mora-empty" />
+                ) : (
+                    <JadeCrystal state={state} />
+                )}
+            </button>
         </div>
+    );
+}
+
+function JadeCrystal({ state }: { state: MoraState }) {
+    const ref = useRef<HTMLCanvasElement>(null);
+    const [reduce, setReduce] = useState(false);
+    useEffect(() => {
+        const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+        setReduce(mq.matches);
+        const f = () => setReduce(mq.matches);
+        mq.addEventListener('change', f);
+        return () => mq.removeEventListener('change', f);
+    }, []);
+
+    useEffect(() => {
+        const cv = ref.current; if (!cv) return;
+        const dpr = Math.min(2, window.devicePixelRatio || 1);
+        const W = Math.round(52 * dpr);
+        cv.width = cv.height = W;
+        const c = cv.getContext('2d'); if (!c) return;
+        const img = c.createImageData(W, W); const d = img.data;
+        const r = W / 2;
+        for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+            const u = (x + 0.5 - r) / r, v = (y + 0.5 - r) / r, q = u * u + v * v, i = (y * W + x) * 4;
+            const cut = Math.abs(u) * 0.18 + Math.abs(v) * 0.08;
+            if (q > 0.92 - cut) { d[i + 3] = 0; continue; }
+            const z = Math.sqrt(Math.max(0, 1 - q));
+            const facet = Math.abs(Math.sin((u * 5.2 + v * 2.1) * 1.4)) * 0.18 + Math.abs(Math.cos((u * 3.1 - v * 4.4))) * 0.12;
+            const ndl = u * -0.15 + v * -0.35 + z * 0.9;
+            const k = Math.max(0, Math.min(1, 0.22 + 0.7 * ndl + facet));
+            const deep: [number, number, number] = [18, 72, 52];
+            const jade: [number, number, number] = [64, 186, 128];
+            const lite: [number, number, number] = [196, 255, 220];
+            const col = k < 0.55
+                ? deep.map((a, n) => Math.round(a + (jade[n] - a) * (k / 0.55)))
+                : jade.map((a, n) => Math.round(a + (lite[n] - a) * ((k - 0.55) / 0.45)));
+            const fres = Math.pow(1 - z, 2.2);
+            const spec = Math.pow(Math.max(0, u * -0.2 + v * -0.5 + z * 0.84), 28) * 0.65;
+            const rr = Math.min(255, col[0] + fres * 40 + spec * 180);
+            const gg = Math.min(255, col[1] + fres * 55 + spec * 160);
+            const bb = Math.min(255, col[2] + fres * 48 + spec * 140);
+            const edge = Math.min(1, (0.96 - Math.sqrt(q)) * r * 1.4);
+            d[i] = rr; d[i + 1] = gg; d[i + 2] = bb; d[i + 3] = Math.round(255 * edge * 0.96);
+        }
+        c.putImageData(img, 0, 0);
+        c.strokeStyle = 'rgba(214,168,72,0.55)';
+        c.lineWidth = dpr * 1.1;
+        c.beginPath(); c.arc(r, r, r - dpr, 0, Math.PI * 2); c.stroke();
+    }, []);
+
+    return (
+        <span className="uv2-mora-crystal" data-testid="uv2-mora-crystal" data-face-state={state}>
+            <canvas ref={ref} className="uv2-mora-crystal__body" />
+            <span className="uv2-mora-eyes" data-reduce={reduce ? '' : undefined} aria-hidden>
+                <i /><i />
+            </span>
+        </span>
     );
 }

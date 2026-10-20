@@ -285,10 +285,7 @@ export function MorgenOverlay() {
       <style>{`[data-testid^="territory-"]{transition:translate 1.1s ${UV.easeInOut},opacity .9s ${ease},filter .9s ${ease};translate:${shift}px 0}`
         + (hot ? `[data-testid^="territory-"]{opacity:.28!important}${sel(hot)}{opacity:1!important}` : '')}</style>
 
-      {/* MÔRAs Licht – im Zentrum des Kranzes, nur Atem */}
-      <div className="absolute top-[49%] -translate-x-1/2 -translate-y-1/2" style={{ left: cx + shift }}>
-        <div className="h-56 w-56 rounded-full" style={{ background: `radial-gradient(circle, rgba(214,168,72,${night ? 0.06 : 0.12}) 0%, rgba(214,168,72,0.03) 42%, transparent 70%)`, animation: `uv2breath 9s ${ease} infinite` }} />
-      </div>
+      {/* Centre sun replaced by MÔRA's seat in MoraCore. */}
 
       {!answering && (
         <header key={returned} style={{ opacity: paneOpen || detailOpen ? 0 : 1, visibility: paneOpen || detailOpen ? "hidden" : "visible", pointerEvents: paneOpen || detailOpen ? "none" : undefined, transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-16 max-w-[560px] sm:left-12'} data-testid="uv2-greeting">
