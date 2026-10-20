@@ -376,13 +376,13 @@ html[data-uv2="on"] .uv2-mora-stone img {
   object-fit: contain;
   pointer-events: none;
   user-select: none;
-  filter: brightness(0.66) saturate(0.38) contrast(1.32);
+  filter: brightness(0.8) saturate(0.5) contrast(1.18);
 }
 html[data-uv2="on"] .uv2-mora-stone-matte {
   position: absolute;
-  inset: 8%;
+  inset: 11%;
   border-radius: 50%;
-  background: rgba(4, 6, 5, 0.42);
+  background: rgba(8, 10, 9, 0.2);
   mix-blend-mode: multiply;
   pointer-events: none;
 }
@@ -441,27 +441,28 @@ html[data-uv2="on"] .uv2-mora-nudges {
   z-index: 2;
 }
 html[data-uv2="on"][data-mora-place="seat"] .uv2-mora-nudges {
-  /* Inner void, south-east of the ring — not over Markt / Post. */
-  left: calc(var(--mora-x) * 1px + 56px);
-  top: calc(var(--mora-y) * 1px + 48px);
-  width: min(168px, 16vw);
+  /* Hug the ring at 3 o'clock, inside the inner void — not over Markt / Post. */
+  left: calc(var(--mora-x) * 1px + 66px);
+  top: calc(var(--mora-y) * 1px - 28px);
+  width: 148px;
 }
 html[data-uv2="on"][data-mora-place="dock"] .uv2-mora-nudges {
-  left: calc(var(--mora-x) * 1px - 188px);
+  /* Sit on the dock, left of her — below Wache / R&D labels. */
+  left: calc(var(--mora-x) * 1px - 8px);
   top: auto;
-  bottom: 78px;
-  width: min(168px, 22vw);
-  translate: none;
+  bottom: 52px;
+  width: 156px;
+  translate: -100% 0;
   flex-direction: column;
   justify-content: flex-end;
 }
 html[data-uv2="on"][data-mora-place="planet"] .uv2-mora-nudges {
-  left: calc(var(--mora-x) * 1px + 30px);
-  top: calc(var(--mora-y) * 1px - 8px);
-  width: min(168px, 16vw);
+  left: calc(var(--mora-x) * 1px + 28px);
+  top: calc(var(--mora-y) * 1px - 6px);
+  width: 148px;
 }
 html[data-uv2="on"] .uv2-mora-nudge {
-  padding: 8px 10px;
+  padding: 7px 9px;
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(18,22,20,.82), rgba(10,14,12,.74));
   box-shadow: inset 0 0 0 0.5px rgba(247,244,233,.16), 0 10px 22px rgba(0,0,0,.35);
