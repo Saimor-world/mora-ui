@@ -34,11 +34,11 @@ function DoneTrace() {
                 ? <p className="uv2-inst-text mt-2 uv2-getan-leer">Noch nichts selbstständig erledigt. Ich handle erst, wenn du freigibst.</p>
                 : done.map((e) => (
                     <div key={e.action_id} className="uv2-inst-row">
-                        <span className="flex items-baseline justify-between gap-2">
-                            <span className="uv2-inst-label">Erledigt</span>
+                        <span className="uv2-inst-label">Erledigt</span>
+                        <span className="uv2-inst-row-body">
+                            <span className="uv2-inst-text truncate">{e.message}</span>
                             <span className="uv2-inst-aside">{relativeTime(e.timestamp)}</span>
                         </span>
-                        <span className="uv2-inst-text truncate">{e.message}</span>
                     </div>
                 ))}
         </section>
@@ -100,11 +100,11 @@ function Block({ label, title, aside, children, id }: { label: string; title?: R
 function Row({ label, when, value, onClick, link }: { label: string; when?: string; value: string; onClick: () => void; link?: string }) {
     return (
         <button type="button" onClick={onClick} data-uv2-flow={link} className="uv2-inst-row group">
-            <span className="flex items-baseline justify-between gap-2">
-                <span className="uv2-inst-label">{label}</span>
+            <span className="uv2-inst-label">{label}</span>
+            <span className="uv2-inst-row-body">
+                <span className="uv2-inst-text truncate">{value}</span>
                 {when && <span className="uv2-inst-aside">{when}</span>}
             </span>
-            <span className="uv2-inst-text truncate">{value}</span>
             <span aria-hidden className="uv2-flow-dot" />
         </button>
     );

@@ -39,10 +39,10 @@ export function phaseForHour(h: number): DayPhase {
 
 /** Leichter Farbschleier über dem bestehenden Hintergrund – nie deckend. */
 const TINT: Record<DayPhase, string> = {
-  morgen: 'radial-gradient(ellipse at 50% 30%, rgba(255,196,128,0.10), transparent 60%)',
-  tag: 'radial-gradient(ellipse at 50% 40%, rgba(180,210,255,0.05), transparent 65%)',
-  abend: 'radial-gradient(ellipse at 50% 70%, rgba(214,120,90,0.12), transparent 65%), linear-gradient(to bottom, transparent, rgba(40,10,30,0.18))',
-  nacht: 'linear-gradient(to bottom, rgba(2,4,14,0.42), rgba(2,4,14,0.30))',
+  morgen: 'radial-gradient(ellipse at 50% 30%, rgba(255,214,170,0.08), transparent 62%)',
+  tag: 'radial-gradient(ellipse at 50% 40%, rgba(210,226,255,0.04), transparent 68%)',
+  abend: 'radial-gradient(ellipse at 50% 70%, rgba(214,150,110,0.07), transparent 68%)',
+  nacht: 'linear-gradient(to bottom, rgba(18,22,36,0.12), rgba(18,22,36,0.06))',
 };
 const GREETING: Record<DayPhase, string> = {
   morgen: 'Guten Morgen, Marius.', tag: 'Ein ruhiger Tag.', abend: 'Guten Abend, Marius.', nacht: 'Die Wache hält Licht.',
@@ -281,7 +281,7 @@ export function MorgenOverlay() {
       <div className="uv2-grain" aria-hidden />
       <div className="absolute inset-0 transition-[background] duration-[3000ms]" style={{ background: TINT[phase] }} />
       {/* Ruhe hinter der Spalte: ein Schleier statt einer Karte */}
-      {wide && <div data-uv2-scrim className="absolute inset-y-0 left-0 w-[46%]" style={{ background: 'linear-gradient(90deg, rgba(5,7,6,0.72), rgba(5,7,6,0.35) 60%, transparent)' }} />}
+      {wide && <div data-uv2-scrim className="absolute inset-y-0 left-0 w-[42%]" style={{ background: 'linear-gradient(90deg, rgba(18,16,12,0.22), rgba(18,16,12,0.08) 55%, transparent)' }} />}
       <style>{`[data-testid^="territory-"]{transition:translate 1.1s ${UV.easeInOut},opacity .9s ${ease},filter .9s ${ease};translate:${shift}px 0}`
         + (hot ? `[data-testid^="territory-"]{opacity:.28!important}${sel(hot)}{opacity:1!important}` : '')}</style>
 

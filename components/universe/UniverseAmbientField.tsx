@@ -27,7 +27,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 className="absolute -inset-[3%] bg-cover bg-center"
                 style={{
                     backgroundImage: 'url(/universe/deep-space-warm.jpg)',
-                    filter: 'brightness(2.15) saturate(1.12) contrast(1.04)',
+                    filter: 'brightness(3.15) saturate(1.06) contrast(0.92)',
                 }}
                 animate={reducedMotion ? undefined : { scale: [1, 1.02, 1], x: [0, -8, 0], y: [0, 5, 0] }}
                 transition={{ duration: 120, repeat: Infinity, ease: 'easeInOut' }}
@@ -37,7 +37,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
             <div
                 className="absolute inset-0"
                 style={{
-                    background: 'radial-gradient(ellipse at 50% 48%, transparent 0%, transparent 60%, rgba(3,6,10,0.18) 100%)',
+                    background: 'radial-gradient(ellipse at 50% 48%, transparent 0%, transparent 72%, rgba(40,28,16,0.06) 100%)',
                 }}
             />
 
@@ -84,7 +84,7 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 className="absolute inset-0"
                 animate={{ opacity: selected ? 0.25 : 0 }}
                 transition={{ duration: 0.6 }}
-                style={{ background: 'radial-gradient(circle at center, transparent 25%, rgba(10,15,20,0.35) 100%)' }}
+                style={{ background: 'radial-gradient(circle at center, transparent 32%, rgba(28,22,16,0.16) 100%)' }}
             />
 
             {/* Very subtle grid – almost invisible, just adds structure. */}

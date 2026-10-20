@@ -76,7 +76,7 @@ interface Props {
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
-    live: 'live erfasst',
+    live: 'Im Blick',
     derived: 'aus Struktur',
     missing: 'noch ohne Quelle',
 };
@@ -419,14 +419,14 @@ export function OrganizationField({
                 <aside
                     data-testid="planet-detail"
                     style={isUniverseV2Enabled() ? {
-                        background: 'rgba(18,20,26,0.72)',
-                        backdropFilter: 'blur(40px) saturate(150%)',
-                        WebkitBackdropFilter: 'blur(40px) saturate(150%)',
-                        borderColor: 'rgba(255,250,235,0.12)',
-                        borderRadius: 20,
-                        boxShadow: 'inset 0 0 0 0.5px rgba(255,250,235,0.10), 0 24px 60px rgba(0,0,0,0.5)',
+                        background: 'rgba(255,250,236,0.18)',
+                        backdropFilter: 'blur(28px) saturate(140%)',
+                        WebkitBackdropFilter: 'blur(28px) saturate(140%)',
+                        borderColor: 'rgba(214,168,72,0.42)',
+                        borderRadius: 16,
+                        boxShadow: 'inset 0 0 0 0.5px rgba(247,244,233,0.28), 0 18px 48px rgba(40,28,12,0.16)',
                     } : undefined}
-                    className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-auto lg:left-24 lg:top-[12vh] lg:w-[380px] lg:p-6"
+                    className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-auto lg:left-24 lg:top-[12vh] lg:w-[380px] lg:p-7"
                 >
                     <button
                         type="button"
@@ -500,8 +500,9 @@ export function OrganizationField({
                         </button>
                         <button
                             type="button"
+                            data-uv2-ask-mora="true"
                             onClick={() => onAskMora(selected)}
-                            className="inline-flex items-center gap-2 rounded-full border border-[#D6A848]/25 px-4 py-2.5 text-[13px] font-semibold text-[#D6A848]/85 transition hover:border-[#D6A848]/50 hover:text-[#D6A848]"
+                            className="inline-flex items-center gap-2 rounded-full border border-[#D6A848]/80 bg-[#D6A848]/25 px-4 py-2.5 text-[13px] font-semibold text-[#F7F4E9] transition hover:bg-[#D6A848]/40 hover:text-white"
                         >
                             <Sparkles size={13} /> Mit Môra klären
                         </button>

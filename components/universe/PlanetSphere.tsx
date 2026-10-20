@@ -28,33 +28,32 @@ type Material = {
 };
 
 const MATERIALS: Record<string, Material> = {
-  // Finanzen: warmes Gold-Ocker mit Wolkenbändern (Gasriese)
-  finanzen: { day: '#e9cf95', mid: '#a7793a', night: '#2a1a0b', fx: 0.35, fy: 9, oct: 3, relief: 0.55, atmo: '247,226,180', feature: 'bands' },
-  // Post & Termine: tiefer Ozean mit Wolkenschleiern
-  post: { day: '#9cc4d8', mid: '#2f5f7c', night: '#06121c', fx: 2.4, fy: 2.4, oct: 4, relief: 0.45, atmo: '170,215,240', feature: 'clouds' },
-  // Werkstatt: Kupfer/Rost, felsig
-  werkstatt: { day: '#d9a07a', mid: '#7c4126', night: '#1a0b05', fx: 3.2, fy: 3.2, oct: 5, relief: 0.7, atmo: '240,190,160', feature: 'craters' },
-  // Wissen: Indigo-Marmor
-  wissen: { day: '#b9b2dc', mid: '#4d4782', night: '#0c0a1c', fx: 1.6, fy: 3.4, oct: 4, relief: 0.5, atmo: '205,200,245', feature: 'swirl' },
-  // Wache: Eis/Tiefsee-Teal, ruhig
-  wache: { day: '#bfe0da', mid: '#3d7470', night: '#061413', fx: 0.8, fy: 6, oct: 3, relief: 0.4, atmo: '190,235,228', feature: 'clouds' },
+  // Refined Universe Glass tints — distinct, pastel, never grey. Match Verteilung bars.
+  finanzen: { day: '#e8d09a', mid: '#c9a050', night: '#3a2a12', fx: 0.35, fy: 9, oct: 3, relief: 0.45, atmo: '247,226,180', feature: 'bands' },
+  post: { day: '#8fb4ea', mid: '#3d6cb4', night: '#0e1a30', fx: 2.4, fy: 2.4, oct: 4, relief: 0.4, atmo: '186,214,245', feature: 'clouds' },
+  werkstatt: { day: '#e0aa6a', mid: '#c47a30', night: '#2a1808', fx: 3.2, fy: 3.2, oct: 5, relief: 0.5, atmo: '250,214,170', feature: 'craters' },
+  wissen: { day: '#c8b4e6', mid: '#7a5aaf', night: '#1a1230', fx: 1.6, fy: 3.4, oct: 4, relief: 0.42, atmo: '220,205,245', feature: 'swirl' },
+  wache: { day: '#7fd4c8', mid: '#2f8a80', night: '#0a221f', fx: 0.8, fy: 6, oct: 3, relief: 0.35, atmo: '186,236,228', feature: 'clouds' },
+  markt: { day: '#e090b8', mid: '#b04a86', night: '#2a1020', fx: 1.4, fy: 2.8, oct: 4, relief: 0.4, atmo: '245,196,220', feature: 'swirl' },
+  betrieb: { day: '#f0c4bc', mid: '#c07878', night: '#2a1216', fx: 0.5, fy: 7, oct: 3, relief: 0.38, atmo: '246,210,214', feature: 'bands' },
+  rd: { day: '#a8d090', mid: '#5a9450', night: '#122014', fx: 2.8, fy: 2.2, oct: 5, relief: 0.42, atmo: '200,232,190', feature: 'clouds' },
   default: { day: '#d9d3c2', mid: '#6b6656', night: '#0e0d0a', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '247,244,233' },
 };
 
-/** Planeten-Modell v1: Archetypen vom Server (CORE services/universe_model.py), 12 Körper, nie Grau. */
+/** Planeten-Modell v1: Archetypen vom Server — Farbe folgt dem Bereich, nicht dem Gesteinsnamen. */
 const ARCHETYPE_MATERIALS: Record<string, Material> = {
   'gas-gold': MATERIALS.finanzen,
   ocean: MATERIALS.post,
   'marble-indigo': MATERIALS.wissen,
   ice: MATERIALS.wache,
   'copper-rock': MATERIALS.werkstatt,
-  forest: { day: '#b9d6a2', mid: '#3f6b3a', night: '#08140a', fx: 2.8, fy: 2.2, oct: 5, relief: 0.55, atmo: '200,232,190', feature: 'clouds' },
-  coral: { day: '#f2b6a0', mid: '#a44f3f', night: '#1e0a07', fx: 1.2, fy: 4.2, oct: 4, relief: 0.5, atmo: '250,205,190', feature: 'swirl' },
-  'nebula-violet': { day: '#d6b8e8', mid: '#6a3f86', night: '#130a1c', fx: 0.9, fy: 2.6, oct: 4, relief: 0.5, atmo: '228,205,245', feature: 'swirl' },
-  'sand-dune': { day: '#eedcb6', mid: '#9c7a4a', night: '#1c140a', fx: 0.5, fy: 7, oct: 3, relief: 0.45, atmo: '246,232,205', feature: 'bands' },
-  'crystal-teal': { day: '#a8e2e0', mid: '#2f7f86', night: '#041416', fx: 3.6, fy: 1.8, oct: 5, relief: 0.6, atmo: '180,238,236', feature: 'clouds' },
-  ember: { day: '#f4c27e', mid: '#b2522a', night: '#200904', fx: 2.2, fy: 2.8, oct: 5, relief: 0.65, atmo: '252,210,160', feature: 'craters' },
-  pearl: { day: '#ece8de', mid: '#8f8a7d', night: '#141310', fx: 1.4, fy: 3.0, oct: 3, relief: 0.35, atmo: '247,244,233', feature: 'bands' },
+  forest: MATERIALS.markt,
+  coral: MATERIALS.betrieb,
+  'nebula-violet': MATERIALS.wissen,
+  'sand-dune': MATERIALS.betrieb,
+  'crystal-teal': MATERIALS.wache,
+  ember: MATERIALS.werkstatt,
+  pearl: MATERIALS.rd,
 };
 export function archetypeMaterial(archetype?: string | null): Material | null {
   return (archetype && ARCHETYPE_MATERIALS[archetype]) || null;
@@ -67,6 +66,9 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   if (/werkstatt|engineering|technik|product|produkt/.test(n)) return 'werkstatt';
   if (/wissen|knowledge|doku/.test(n)) return 'wissen';
   if (/wache|watch|sicherheit/.test(n)) return 'wache';
+  if (/markt|market|sales|vertrieb/.test(n)) return 'markt';
+  if (/betrieb|operations|ops/.test(n)) return 'betrieb';
+  if (/r&d|forschung|research/.test(n)) return 'rd';
   return 'default';
 }
 
@@ -87,7 +89,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={pstyle === 'M'} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle && lit != null && (pstyle === 'J' || pstyle === 'M') ? <JewelSphere size={size} lit={lit} hue={glassHue(name, archetype)} matte={pstyle === 'M'} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={planetMaterial(name).day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -347,41 +349,12 @@ function PixelSphere({ size, lit, tint, variant, seed }: { size: number; lit: nu
   return <canvas ref={ref} className="absolute inset-0 h-full w-full" data-pstyle={variant} style={{ imageRendering: variant === 'B' ? 'auto' : 'pixelated', borderRadius: variant === 'B' ? '50%' : undefined, overflow: 'hidden' }} />;
 }
 
-/* ─── hd46: eigene, harmonische Farbe je Bereich – gleiche Materialfamilie ─── */
-/** Archetype → distinct bright tint (brighter palette for Universe Glass) */
-const ARCHETYPE_HUES: Record<string, [number, number, number]> = {
-  'gas-gold': [228, 185, 95],       // Amber/Gold - warm yellow
-  'ocean': [85, 165, 210],          // Teal/Ocean - bright cyan-blue
-  'copper-rock': [215, 145, 95],    // Copper - warm orange-brown
-  'marble-indigo': [165, 135, 210], // Lilac - bright purple
-  'ice': [120, 195, 185],           // Steel/Ice - cool teal
-  'sand-dune': [210, 175, 120],     // Sand - warm beige
-  'pearl': [200, 208, 225],         // Pearl - soft silver-blue
-  'forest': [130, 185, 130],        // Sage/Forest - natural green
-  'crystal-teal': [95, 200, 195],   // Crystal teal - bright cyan
-  'coral': [220, 150, 140],         // Coral - warm pink
-  'ember': [225, 145, 95],          // Ember - orange
-  'nebula-violet': [180, 145, 210], // Violet - purple
-};
-const AREA_HUES: Array<[RegExp, [number, number, number]]> = [
-  [/finanz|finance|geld|buchhalt/, [228, 185, 95]],      // Gold (brighter)
-  [/post|termin|mail|kalender/, [85, 165, 210]],         // Teal (brighter)
-  [/wissen|knowledge|doku/, [165, 135, 210]],            // Lilac (brighter)
-  [/werkstatt|engineering|technik/, [215, 145, 95]],     // Copper (brighter)
-  [/wache|security|sicher/, [120, 195, 185]],            // Steel (brighter)
-  [/betrieb|operations|ops/, [210, 175, 120]],           // Sand (brighter)
-  [/r&d|forschung|research/, [200, 208, 225]],           // Pearl (brighter)
-  [/intelligence|analyse/, [210, 175, 120]],             // Sand
-  [/markt|market|sales|vertrieb/, [130, 185, 130]],      // Sage (brighter)
-  [/growth|wachstum/, [150, 185, 130]],                  // Moos
-  [/product|produkt/, [140, 175, 195]],                  // Schiefer
-];
+/* ─── Universe Glass: Bereichsfarbe = Verteilungsbalken. Name vor Archetyp. ─── */
+export function glassHue(name: string, _arch?: string | null): [number, number, number] {
+  return hex(planetMaterial(name).day) as [number, number, number];
+}
 export function areaHue(name: string, arch?: string | null): [number, number, number] {
-  // Archetype from server takes priority
-  if (arch && ARCHETYPE_HUES[arch]) return ARCHETYPE_HUES[arch];
-  const n = (name || '').toLowerCase();
-  for (const [re, c] of AREA_HUES) if (re.test(n)) return c;
-  return [160, 185, 175];
+  return glassHue(name, arch);
 }
 const JEWEL_CACHE = new Map<string, ImageData>();
 /**
@@ -390,15 +363,11 @@ const JEWEL_CACHE = new Map<string, ImageData>();
  */
 function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit: number; hue: [number, number, number]; matte: boolean; seed: number; quiet: boolean }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
-  const grey = (c: number[]) => { const l = c[0] * 0.3 + c[1] * 0.55 + c[2] * 0.15; return [l, l, l]; };
-  
-  // Universe Glass: lightly tinted, matte, translucent – brighter with more color
-  // Boost colors by mixing with a brighter, more saturated version of themselves
-  const brightened = hue.map(v => Math.min(255, v * 1.28 + 18)) as [number, number, number];
-  const base: number[] = matte 
-    ? mix(brightened, mix(grey(brightened), [220, 228, 222], 0.12), 0.22) 
-    : brightened;
-  const h: number[] = quiet ? mix(base, [190, 198, 192], 0.18) : base;
+
+  // Keep the area tint readable as glass — lift without greying the chroma out.
+  const brightened = hue.map((v) => Math.min(255, v * 1.12 + 28)) as [number, number, number];
+  const base: number[] = matte ? mix(brightened, [246, 244, 238], 0.08) : brightened;
+  const h: number[] = quiet ? mix(base, [232, 228, 220], 0.08) : base;
   
   React.useEffect(() => {
     const cv = ref.current; if (!cv) return;
@@ -410,10 +379,9 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.55; const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     
-    // Brighter color range for Universe Glass - much brighter overall
-    const night = h.map((v) => v * 0.35 + 35);
-    const deep = h.map((v) => v * 0.78 + 25);
-    const lite = mix(h, [255, 252, 245], 0.50);
+    const night = h.map((v) => v * 0.58 + 78);
+    const deep = h.map((v) => v * 0.86 + 32);
+    const lite = mix(h, [255, 252, 245], 0.42);
     const r = W / 2; const cell = 2.8 * dpr;
     const nz = (x: number, y: number) => { const q = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453; return q - Math.floor(q); };
     
@@ -485,8 +453,8 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     }} />
     {/* Backdrop blur for glass effect */}
     {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ 
-      backdropFilter: 'blur(3px) brightness(1.22) saturate(.85)', 
-      WebkitBackdropFilter: 'blur(3px) brightness(1.22) saturate(.85)', 
+      backdropFilter: 'blur(3px) brightness(1.12) saturate(1.05)',
+      WebkitBackdropFilter: 'blur(3px) brightness(1.12) saturate(1.05)', 
       boxShadow: `inset 0 0 ${size * 0.15}px rgba(${h.join(',')},.18)` 
     }} />}
     <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />

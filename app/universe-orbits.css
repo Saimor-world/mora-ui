@@ -103,16 +103,33 @@ html[data-uv2="on"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"
 html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind] .uv2-planet-meta { 
   display: none !important; 
 }
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-name {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--territory-size) + 12px);
+  transform: translateX(-50%);
+  margin-top: 0 !important;
+  white-space: nowrap;
+}
 html[data-uv2="on"] [data-planet-kind] .uv2-planet-caption {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--territory-size) + 34px);
+  transform: translateX(-50%);
+  margin-top: 0 !important;
+  white-space: nowrap;
   font-family: var(--uv-sans, Inter, system-ui, sans-serif) !important;
   font-size: 13px !important;
   font-weight: 500 !important;
   letter-spacing: 0.01em !important;
-  color: rgba(255,250,235,.88) !important;
-  text-shadow: 0 1px 8px rgba(0,0,0,.55);
+  color: rgba(255,250,235,.9) !important;
+  text-shadow: 0 1px 8px rgba(0,0,0,.45);
 }
 html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]) .uv2-planet-caption {
   opacity: 0 !important;
+}
+html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] .uv2-planet-caption {
+  top: calc(var(--territory-size) + 10px);
 }
 
 /* ═══ Moons and stars ═══ */
@@ -127,12 +144,12 @@ html[data-uv2="on"] [data-planet-kind] .saimor-doc-star {
 
 /* ═══ Planet body: brighter, less saturated at rest ═══ */
 html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { 
-  filter: saturate(.72) brightness(1.05); 
+  filter: saturate(1.05) brightness(1.08); 
   transition: filter .5s ease; 
 }
 
 html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .saimor-territory-body { 
-  filter: saturate(.95) brightness(1.12); 
+  filter: saturate(1.12) brightness(1.14); 
 }
 
 /* Gold glow for planets that need attention */
@@ -331,6 +348,7 @@ html[data-uv2="on"] [data-uv2-zoom] [data-planet-kind]:not([aria-pressed="true"]
 }
 
 html[data-uv2="on"] [data-uv2-zoom] [aria-pressed="true"] :is(.saimor-territory-name, .uv2-planet-meta) { 
+  display: none !important;
   opacity: 0 !important; 
 }
 
@@ -356,15 +374,16 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
   }
   html[data-uv2="on"] [data-testid="planet-detail"] {
     position: absolute !important;
-    left: calc(-1 * var(--g-3)) !important;
+    left: calc(-1 * var(--g-3) + 12px) !important;
     right: auto !important;
-    top: 8px !important;
+    top: 28px !important;
     bottom: auto !important;
-    width: var(--g-3) !important;
-    max-height: calc(100vh - var(--g-top) - var(--g-base) - 16px);
+    width: calc(var(--g-3) - 12px) !important;
+    max-height: calc(100vh - var(--g-top) - var(--g-base) - 40px);
     overflow: auto;
     z-index: 50;
-    background: rgba(28, 36, 40, 0.78) !important;
+    padding: 28px 24px !important;
+    background: rgba(255, 250, 236, 0.18) !important;
   }
 }
 

@@ -1,0 +1,38 @@
+import { glassHue, planetMaterial, planetMaterialKey } from '@/components/universe/PlanetSphere';
+
+const AREAS: Array<[string, string]> = [
+  ['Wissen', 'wissen'],
+  ['Markt', 'markt'],
+  ['Finanzen', 'finanzen'],
+  ['Werkstatt', 'werkstatt'],
+  ['Betrieb', 'betrieb'],
+  ['R&D', 'rd'],
+  ['Wache', 'wache'],
+  ['Post & Termine', 'post'],
+];
+
+describe('Universe Glass – Bereichsfarben', () => {
+  it('ordnet jeden benannten Bereich einem eigenen Material zu', () => {
+    expect(AREAS.map(([name]) => planetMaterialKey(name))).toEqual(AREAS.map(([, key]) => key));
+  });
+
+  it('Verteilungsbalken und Glaskugel teilen denselben Tageston', () => {
+    for (const [name] of AREAS) {
+      const day = planetMaterial(name).day;
+      const hue = glassHue(name);
+      expect(day.startsWith('#')).toBe(true);
+      expect(hue).toHaveLength(3);
+      expect(hue.every((c) => c >= 90 && c <= 245)).toBe(true);
+    }
+  });
+
+  it('Töne bleiben unterscheidbar, nicht graubeige', () => {
+    const hues = AREAS.map(([name]) => glassHue(name));
+    for (let i = 0; i < hues.length; i++) {
+      for (let j = i + 1; j < hues.length; j++) {
+        const d = Math.hypot(hues[i][0] - hues[j][0], hues[i][1] - hues[j][1], hues[i][2] - hues[j][2]);
+        expect(d).toBeGreaterThan(28);
+      }
+    }
+  });
+});
