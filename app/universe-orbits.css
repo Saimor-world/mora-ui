@@ -108,17 +108,25 @@ html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell {
 }
 html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell .saimor-territory-name {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 100%;
-  transform: translateX(-50%);
+  width: 100%;
+  transform: none;
+  translate: none;
+  text-align: center;
   margin-top: 10px !important;
   white-space: nowrap;
 }
 html[data-uv2="on"] [data-planet-kind] .saimor-territory-shell .uv2-planet-caption {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 100%;
-  transform: translateX(-50%);
+  width: 100%;
+  transform: none;
+  translate: none;
+  text-align: center;
   margin-top: 32px !important;
   white-space: nowrap;
   font-family: var(--uv-sans, Inter, system-ui, sans-serif) !important;
