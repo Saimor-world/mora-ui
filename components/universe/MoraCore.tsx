@@ -93,7 +93,7 @@ function JadeCrystal({ state }: { state: MoraState }) {
     useEffect(() => {
         const cv = ref.current; if (!cv) return;
         const dpr = Math.min(2, window.devicePixelRatio || 1);
-        const W = Math.round(58 * dpr);
+        const W = Math.round(68 * dpr);
         cv.width = cv.height = W;
         const c = cv.getContext('2d'); if (!c) return;
         const img = c.createImageData(W, W); const d = img.data;
@@ -106,9 +106,9 @@ function JadeCrystal({ state }: { state: MoraState }) {
             const facet = Math.abs(Math.sin((u * 5.2 + v * 2.1) * 1.4)) * 0.18 + Math.abs(Math.cos((u * 3.1 - v * 4.4))) * 0.12;
             const ndl = u * -0.15 + v * -0.35 + z * 0.9;
             const k = Math.max(0, Math.min(1, 0.22 + 0.7 * ndl + facet));
-            const deep: [number, number, number] = [18, 72, 52];
-            const jade: [number, number, number] = [64, 186, 128];
-            const lite: [number, number, number] = [196, 255, 220];
+            const deep: [number, number, number] = [28, 110, 78];
+            const jade: [number, number, number] = [86, 214, 150];
+            const lite: [number, number, number] = [220, 255, 232];
             const col = k < 0.55
                 ? deep.map((a, n) => Math.round(a + (jade[n] - a) * (k / 0.55)))
                 : jade.map((a, n) => Math.round(a + (lite[n] - a) * ((k - 0.55) / 0.45)));

@@ -44,9 +44,9 @@ html[data-uv2="on"] .uv2-mora-ring {
 html[data-uv2="on"] .uv2-mora-crystal {
   position: absolute;
   left: 50%;
-  top: 44%;
-  width: 58px;
-  height: 58px;
+  top: 42%;
+  width: 68px;
+  height: 68px;
   translate: -50% -50%;
 }
 html[data-uv2="on"] .uv2-mora-crystal__body {
@@ -77,13 +77,13 @@ html[data-uv2="on"] .uv2-mora-eyes i {
 html[data-uv2="on"] .uv2-mora-afterglow {
   position: absolute;
   left: 50%;
-  top: 44%;
-  width: 36px;
-  height: 36px;
+  top: 58%;
+  width: 42px;
+  height: 14px;
   translate: -50% -50%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(110,210,160,0.22) 0%, rgba(214,168,72,0.12) 42%, transparent 72%);
-  filter: blur(1px);
+  background: radial-gradient(ellipse, rgba(110,210,160,0.28) 0%, rgba(214,168,72,0.14) 55%, transparent 78%);
+  filter: blur(0.6px);
 }
 html[data-uv2="on"] .uv2-center-halo {
   position: absolute;
@@ -120,6 +120,7 @@ html[data-uv2="on"][data-uv2-theme="light"] [data-testid="uv2-lage"] :is(h2,h3) 
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-inst-aside { color: rgba(26,42,38,0.62) !important; }
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-name,
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor-territory-name,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-caption,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-meta {
   color: #14201e !important;
