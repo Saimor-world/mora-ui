@@ -379,7 +379,13 @@ function AeroOrb({ name, selected, quiet }: { name: string; selected: boolean; q
       data-pstyle="aero"
       data-selected={selected ? '' : undefined}
       data-quiet={quiet ? '' : undefined}
-      style={{ ['--c' as string]: p.c, ['--c2' as string]: p.c2, ['--c3' as string]: p.c3, ['--sh' as string]: `${p.c}99` } as React.CSSProperties}
+      style={{
+        ['--uv2-aero-c' as string]: p.c,
+        ['--uv2-aero-c2' as string]: p.c2,
+        ['--uv2-aero-c3' as string]: p.c3,
+        ['--uv2-aero-sh' as string]: `${p.c}aa`,
+        backgroundColor: p.c,
+      } as React.CSSProperties}
     />
   );
 }
@@ -390,7 +396,9 @@ const WORLD_CACHE = new Map<string, ImageData>();
 type SurfaceFeature = NonNullable<Material['feature']>;
 
 function useThemeAttr(): 'dark' | 'light' {
-  const [t, setT] = React.useState<'dark' | 'light'>('dark');
+  const [t, setT] = React.useState<'dark' | 'light'>(() =>
+    typeof document !== 'undefined' && document.documentElement.dataset.uv2Theme === 'light' ? 'light' : 'dark'
+  );
   React.useEffect(() => {
     const read = () => setT(document.documentElement.dataset.uv2Theme === 'light' ? 'light' : 'dark');
     read();
