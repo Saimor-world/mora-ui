@@ -346,7 +346,7 @@ export function OrganizationField({
                 data-uv2-plane
                 data-uv2-focus={territories.some((t) => t.model) && (selectedId || hoverId) ? '' : undefined}
                 data-uv2-zoom={zoomTarget ? '' : undefined}
-                style={zoomTarget ? ({ transformOrigin: zoomTarget.x + '% ' + zoomTarget.y + '%', transform: 'translate(' + (40 - zoomTarget.x) + '%, ' + (56 - zoomTarget.y) + '%) scale(1.3)' } as CSSProperties) : undefined}
+                style={zoomTarget ? ({ transformOrigin: zoomTarget.x + '% ' + zoomTarget.y + '%', transform: 'translate(' + (62 - zoomTarget.x) + '%, ' + (50 - zoomTarget.y) + '%) scale(1.12)' } as CSSProperties) : undefined}
                 onPointerOver={(e) => { const el = (e.target as HTMLElement).closest('[data-uv2-planet]'); setHoverId(el ? el.getAttribute('data-uv2-planet') : null); }}
                 onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
@@ -427,7 +427,7 @@ export function OrganizationField({
                         borderRadius: 20,
                         boxShadow: 'inset 0 0 0 0.5px rgba(255,250,235,0.10), 0 24px 60px rgba(0,0,0,0.5)',
                     } : undefined}
-                    className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6"
+                    className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-auto lg:left-24 lg:top-[12vh] lg:w-[380px] lg:p-6"
                 >
                     <button
                         type="button"
@@ -974,7 +974,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                                 }}
                             />
                         )}
-                        <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
+                        <span className="uv2-moon-tip pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100">
                             <span className="block text-[13px] font-medium text-white/92">{moon.name}</span>
                             <span className="mt-1 block text-[13px] text-white/62">
                                 {moon.documents === 0
@@ -982,6 +982,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                                     : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}
                             </span>
                         </span>
+                        <span className="uv2-moon-name">{moon.name}</span>
                     </span>
                 </span>
             ))}

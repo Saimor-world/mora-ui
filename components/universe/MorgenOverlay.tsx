@@ -291,7 +291,7 @@ export function MorgenOverlay() {
       </div>
 
       {!answering && (
-        <header key={returned} style={{ opacity: paneOpen ? 0 : 1, visibility: paneOpen ? "hidden" : "visible", transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-16 max-w-[560px] sm:left-12'} data-testid="uv2-greeting">
+        <header key={returned} style={{ opacity: paneOpen || detailOpen ? 0 : 1, visibility: paneOpen || detailOpen ? "hidden" : "visible", pointerEvents: paneOpen || detailOpen ? "none" : undefined, transition: `opacity .6s ${UV.easeOut}` }} className={wide ? 'absolute left-24 top-[12vh] w-[440px]' : 'absolute left-6 right-6 top-16 max-w-[560px] sm:left-12'} data-testid="uv2-greeting">
           <p style={{ ...TYPE.meta, color: UV.gold, animation: `uv2in .6s ${ease} ${delay}s both` }} data-testid="uv2-eyebrow">{eyebrow}</p>
           <h1 data-testid="uv2-greeting-title" className={`${wide ? 'mt-6' : 'mt-3'} whitespace-pre-line`}
             style={{ ...TYPE.display, fontSize: wide ? 64 : 40, color: night ? UV.c(0.75) : UV.cream, animation: `uv2in .6s ${ease} ${delay + 0.08}s both` }}>{greet}</h1>

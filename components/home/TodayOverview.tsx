@@ -222,7 +222,7 @@ export function TodayOverview() {
     const allOff = !isLoading && live.length === 0;
     const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 13, letterSpacing: '0.08em', textTransform: 'uppercase' };
     return (
-      <section className="mt-8 sm:mt-16" data-testid="uv2-today">
+      <section className="mt-16" data-testid="uv2-today">
         <p style={{ ...M, color: '#D6A848' }}>Heute</p>
         {allOff ? (
           <button type="button" onClick={openIntegrations} data-testid="uv2-today-calm"

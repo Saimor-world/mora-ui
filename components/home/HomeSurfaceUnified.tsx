@@ -355,8 +355,8 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
     <div {...surfaceMarker(SAIMOR_SURFACES.home)} data-testid="uv2-home"
-      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pt-10 antialiased sm:px-10 sm:pt-[8vh] lg:px-24"
-      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', paddingBottom: 'calc(14rem + env(safe-area-inset-bottom, 0px))', background: 'linear-gradient(180deg, rgba(40,54,52,.42) 0%, rgba(28,42,44,.32) 48%, rgba(16,26,28,.88) 100%), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
+      className="pointer-events-auto absolute inset-0 overflow-y-auto px-6 pt-[8vh] antialiased sm:px-10 lg:px-24"
+      style={{ fontFamily: 'Inter, -apple-system, system-ui, sans-serif', color: '#F7F4E9', paddingBottom: 'calc(11rem + env(safe-area-inset-bottom, 0px))', background: 'linear-gradient(90deg, rgba(18,32,36,.28), rgba(18,32,36,.08)), url(/universe/deep-space-warm.jpg) 70% 30%/cover' }}>
       <div className="uv2-grain" aria-hidden />
       <main className="relative w-full max-w-[1120px]">
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
