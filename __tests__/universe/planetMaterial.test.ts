@@ -1,4 +1,4 @@
-import { aeroPalette, glassHue, planetMaterial, planetMaterialKey } from '@/components/universe/PlanetSphere';
+import { aeroOrbPaint, aeroPalette, glassHue, planetMaterial, planetMaterialKey } from '@/components/universe/PlanetSphere';
 
 const AREAS: Array<[string, string]> = [
   ['Wissen', 'wissen'],
@@ -45,8 +45,20 @@ describe('Universe Glass – Bereichsfarben', () => {
 
   it('Aero-Palette folgt aero.html', () => {
     expect(aeroPalette('Wissen').c).toBe('#8b5cf6');
+    expect(aeroPalette('Markt').c).toBe('#e23ca8');
     expect(aeroPalette('Finanzen').c).toBe('#f2b51d');
+    expect(aeroPalette('Werkstatt').c).toBe('#f08a1c');
     expect(aeroPalette('Betrieb').c).toBe('#f06a8a');
+    expect(aeroPalette('R&D').c).toBe('#2fbf5a');
+    expect(aeroPalette('Wache').c).toBe('#14b3b0');
     expect(aeroPalette('Post & Termine').c).toBe('#3b82f6');
+  });
+
+  it('Aero-Orbs tragen die Konzeptfarbe direkt im Verlauf', () => {
+    const paint = aeroOrbPaint('Werkstatt');
+    expect(String(paint.backgroundImage)).toContain('#f08a1c');
+    expect(String(paint.backgroundImage)).toContain('#ffc27a');
+    expect(String(paint.backgroundColor)).toBe('#f08a1c');
+    expect(String(aeroOrbPaint('Betrieb').backgroundImage)).toContain('#f06a8a');
   });
 });

@@ -371,21 +371,32 @@ export function aeroPalette(name: string) {
   return AERO[planetMaterialKey(name)] || AERO.default;
 }
 
-function AeroOrb({ name, selected, quiet }: { name: string; selected: boolean; quiet: boolean }) {
+/** Inline paint from aero.html / fokus.html — colours cannot be stolen by a parent `--c`. */
+export function aeroOrbPaint(name: string, selected = false): React.CSSProperties {
   const p = aeroPalette(name);
+  const sh = `${p.c}99`;
+  return {
+    ['--uv2-aero-c' as string]: p.c,
+    ['--uv2-aero-c2' as string]: p.c2,
+    ['--uv2-aero-c3' as string]: p.c3,
+    ['--uv2-aero-sh' as string]: sh,
+    backgroundColor: p.c,
+    backgroundImage: `radial-gradient(circle at 50% 115%, rgba(255,255,255,.75) 0, transparent 45%), radial-gradient(circle at 50% 45%, ${p.c2} 0, ${p.c} 60%, ${p.c3} 100%)`,
+    boxShadow: selected
+      ? `inset 0 -8px 20px rgba(255,255,255,.38), inset 0 6px 14px rgba(0,0,0,.12), 0 16px 28px -8px ${sh}, 0 0 36px -4px ${sh}`
+      : `inset 0 -8px 20px rgba(255,255,255,.35), inset 0 6px 14px rgba(0,0,0,.18), 0 14px 26px -8px ${sh}, 0 0 30px -4px ${sh}`,
+  } as React.CSSProperties;
+}
+
+function AeroOrb({ name, selected, quiet }: { name: string; selected: boolean; quiet: boolean }) {
   return (
     <span
       className="uv2-aero-orb absolute inset-0"
       data-pstyle="aero"
+      data-aero={planetMaterialKey(name)}
       data-selected={selected ? '' : undefined}
       data-quiet={quiet ? '' : undefined}
-      style={{
-        ['--uv2-aero-c' as string]: p.c,
-        ['--uv2-aero-c2' as string]: p.c2,
-        ['--uv2-aero-c3' as string]: p.c3,
-        ['--uv2-aero-sh' as string]: `${p.c}aa`,
-        backgroundColor: p.c,
-      } as React.CSSProperties}
+      style={aeroOrbPaint(name, selected)}
     />
   );
 }

@@ -186,17 +186,18 @@ html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory
   text-shadow: none !important;
 }
 
-/* aero.html glass orbs — specular, coloured shadow, less candy than the mock. */
+/* aero.html glass orbs — area colours, specular cap, coloured contact shadow. */
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-aero-orb {
   border-radius: 50%;
+  isolation: isolate;
   background:
     radial-gradient(circle at 50% 115%, rgba(255,255,255,.75) 0, transparent 45%),
-    radial-gradient(circle at 50% 45%, var(--uv2-aero-c2) 0, var(--uv2-aero-c) 55%, var(--uv2-aero-c3) 100%);
+    radial-gradient(circle at 50% 45%, var(--uv2-aero-c2) 0, var(--uv2-aero-c) 60%, var(--uv2-aero-c3) 100%);
   box-shadow:
     inset 0 -8px 20px rgba(255,255,255,.35),
-    inset 0 6px 14px rgba(0,0,0,.14),
+    inset 0 6px 14px rgba(0,0,0,.18),
     0 14px 26px -8px var(--uv2-aero-sh),
-    0 0 28px -4px var(--uv2-aero-sh);
+    0 0 30px -4px var(--uv2-aero-sh);
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-aero-orb::before {
   content: "";
@@ -238,4 +239,27 @@ html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind]:hover .uv2-planet
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind]:focus-visible .uv2-planet,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][aria-pressed="true"] .uv2-planet {
   filter: none !important;
+}
+
+/* Overview: every Aero orb keeps its area colour. Dark-mode attention
+   desaturation (mora-focus / sleeping / ruhig) turns orange and rose to mud. */
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind],
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind],
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind]:not([data-mora-lit]) {
+  opacity: 1 !important;
+  filter: none !important;
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane][data-uv2-zoom] [data-planet-kind],
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][data-planet-state="seed"] .uv2-planet {
+  filter: none !important;
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][data-planet-state="sleeping"],
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind][data-planet-state="seed"] {
+  opacity: 1;
+}
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-grain {
+  opacity: 0;
 }

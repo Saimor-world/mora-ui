@@ -79,6 +79,8 @@ html[data-uv2="on"][data-uv2-immersive="on"] body::after { right: 6px; }
 
 /* ---- Vibe §5: Fokus = Licht, gentle pulse instead of gold connecting line ---- */
 html[data-uv2="on"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind]:not([data-mora-lit]) { opacity: .45; filter: saturate(.5) brightness(.8); transition: opacity .8s ease, filter .8s ease; }
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind],
+html[data-uv2="on"][data-uv2-theme="light"] [data-uv2-plane][data-mora-focus="on"] [data-planet-kind]:not([data-mora-lit]) { opacity: 1 !important; filter: none !important; }
 html[data-uv2="on"] [data-uv2-plane] [data-mora-lit] [data-planet-glow], html[data-uv2="on"] [data-uv2-plane] [data-mora-lit] { filter: none !important; opacity: 1 !important; }
 /* Gentle pulsing glow on the target planet where MÔRA is working (replaces the gold connecting line) */
 html[data-uv2="on"] [data-uv2-plane] [data-mora-lit]::after { 
