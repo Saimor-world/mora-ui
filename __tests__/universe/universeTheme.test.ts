@@ -42,6 +42,14 @@ describe('MÔRAs Sitz', () => {
         expect(moraIsAway(getMoraPresence())).toBe(true);
         setMoraPresence({ state: 'working', target: 'system:finanzen', seat: 'home' });
         expect(moraIsAway(getMoraPresence())).toBe(true);
+        setMoraPresence({ state: 'needs', target: 'system:finanzen', seat: 'home' });
+        expect(moraIsAway(getMoraPresence())).toBe(false);
+    });
+    it('bleibt weg, bis der Sitz sie nach Hause ruft', () => {
+        setMoraPresence({ state: 'calm', seat: 'away' });
+        expect(moraIsAway()).toBe(true);
+        setMoraPresence({ state: 'calm', target: null, seat: 'home' });
+        expect(moraIsAway()).toBe(false);
     });
 });
 

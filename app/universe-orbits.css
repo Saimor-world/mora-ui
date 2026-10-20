@@ -477,3 +477,20 @@ html[data-uv2="on"] [data-testid="planet-detail"] {
 .uv2-mora__thread circle {
   fill: rgba(214,168,72,.75);
 }
+
+/* Light Aero: ink on sky. Must beat cream captions in this file. */
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-shell .saimor-territory-name,
+html[data-uv2="on"][data-uv2-theme="light"] :is([data-planet-kind="domain"], [data-planet-kind="cluster"]) .saimor-territory-name,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-name {
+  color: #14201e !important;
+  text-shadow: 0 1px 8px rgba(255,255,255,0.78);
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-shell .uv2-planet-caption,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-caption,
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-meta {
+  color: rgba(20,32,30,0.72) !important;
+  text-shadow: 0 1px 8px rgba(255,255,255,0.7);
+}
+html[data-uv2="on"][data-uv2-theme="light"] [aria-pressed="true"] .saimor-territory-name {
+  color: #8a6418 !important;
+}

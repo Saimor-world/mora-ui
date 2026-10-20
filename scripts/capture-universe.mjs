@@ -320,7 +320,13 @@ async function main() {
   await page.evaluate((seat) => {
     window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', seat } }));
   }, moraSeat);
-  await page.waitForTimeout(400);
+  await page.waitForSelector('[data-testid="uv2-mora-seat"]', { timeout: 8000 });
+  if (moraSeat === 'home') {
+    await page.waitForSelector('[data-testid="uv2-mora-crystal"]', { timeout: 8000 });
+  } else {
+    await page.waitForSelector('[data-testid="uv2-mora-empty"]', { timeout: 8000 });
+  }
+  await page.waitForTimeout(600);
 
   if (process.env.CLICK_PLANET) {
     const planetName = process.env.CLICK_PLANET;
@@ -348,14 +354,17 @@ async function main() {
   if (crop) {
     clip = await page.evaluate(() => {
       const seat = document.querySelector('[data-testid="uv2-mora-seat"]');
-      const planets = [...document.querySelectorAll('[data-planet-kind] .saimor-territory-body')].slice(0, 3);
+      const wanted = ['Finanzen', 'Werkstatt', 'Post & Termine'];
+      const planets = wanted
+        .map((n) => document.querySelector(`[data-mora-label="${n}"] .saimor-territory-body`))
+        .filter(Boolean);
       const nodes = [seat, ...planets].filter(Boolean);
       if (!nodes.length) return null;
       const rects = nodes.map((n) => n.getBoundingClientRect());
-      const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - 48);
-      const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - 36);
-      const right = Math.max(...rects.map((r) => r.right)) + 48;
-      const bottom = Math.max(...rects.map((r) => r.bottom)) + 64;
+      const left = Math.max(0, Math.min(...rects.map((r) => r.left)) - 56);
+      const top = Math.max(0, Math.min(...rects.map((r) => r.top)) - 48);
+      const right = Math.max(...rects.map((r) => r.right)) + 56;
+      const bottom = Math.max(...rects.map((r) => r.bottom)) + 72;
       return { x: Math.round(left), y: Math.round(top), width: Math.round(right - left), height: Math.round(bottom - top) };
     });
     console.log('Crop clip', clip);

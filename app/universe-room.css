@@ -150,3 +150,12 @@ html[data-uv2="on"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor
 html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"], html[data-uv2="on"] [data-planet-kind][data-planet-state="seed"] { opacity: .62; }
 html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind][data-planet-state="sleeping"] .saimor-territory-name, html[data-uv2="on"][data-uv2-pstyle] [data-planet-kind][data-planet-state="seed"] .saimor-territory-name { font-size: 13px !important; color: rgba(255,250,240,.7) !important; }
 html[data-uv2="on"] [data-planet-kind] .uv2-planet-meta { color: rgba(247,244,233,.7) !important; }
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind] .saimor-territory-name,
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-planet-kind][data-planet-state="sleeping"] .saimor-territory-name,
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-planet-kind][data-planet-state="seed"] .saimor-territory-name {
+  color: #14201e !important;
+  text-shadow: 0 1px 8px rgba(255,255,255,0.78);
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-meta {
+  color: rgba(20,32,30,0.72) !important;
+}

@@ -31,7 +31,10 @@ export function UniverseAmbientField({ lens, selected }: Props) {
             {light ? (
                 <>
                     <div className="absolute inset-0" style={{
-                        background: 'radial-gradient(ellipse at 50% 18%, rgba(255,252,246,0.95) 0%, rgba(214,228,232,0.9) 38%, rgba(186,210,214,0.92) 100%)',
+                        background: 'radial-gradient(ellipse at 50% 8%, rgba(255,255,252,1) 0%, rgba(232,242,244,0.96) 28%, rgba(210,228,232,0.94) 62%, rgba(186,210,214,0.92) 100%)',
+                    }} />
+                    <div className="absolute inset-0" style={{
+                        background: 'linear-gradient(180deg, rgba(255,255,255,0.28) 0%, transparent 26%, rgba(170,196,200,0.12) 100%)',
                     }} />
                     <motion.div
                         className="absolute left-1/2 top-[42%] h-[70vh] max-h-[720px] w-[70vh] max-w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"

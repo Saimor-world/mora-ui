@@ -15,7 +15,7 @@ let doneTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function moraIsAway(p: MoraPresence = current): boolean {
     if (p.seat === 'away') return true;
-    if (p.target && (p.state === 'working' || p.state === 'needs' || p.state === 'thinking')) return true;
+    if (p.target && (p.state === 'working' || p.state === 'thinking')) return true;
     return false;
 }
 

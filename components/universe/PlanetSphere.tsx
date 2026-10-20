@@ -32,11 +32,11 @@ const MATERIALS: Record<string, Material> = {
   finanzen: { day: '#e8d09a', mid: '#c9a050', night: '#3a2a12', fx: 0.35, fy: 9, oct: 3, relief: 0.45, atmo: '247,226,180', feature: 'bands' },
   post: { day: '#8fb4ea', mid: '#3d6cb4', night: '#0e1a30', fx: 2.4, fy: 2.4, oct: 4, relief: 0.4, atmo: '186,214,245', feature: 'clouds' },
   werkstatt: { day: '#e0aa6a', mid: '#c47a30', night: '#2a1808', fx: 3.2, fy: 3.2, oct: 5, relief: 0.5, atmo: '250,214,170', feature: 'craters' },
-  wissen: { day: '#c8b4e6', mid: '#7a5aaf', night: '#1a1230', fx: 1.6, fy: 3.4, oct: 4, relief: 0.42, atmo: '220,205,245', feature: 'veins' },
+  wissen: { day: '#c49aee', mid: '#6a3cb8', night: '#1a0e32', fx: 1.6, fy: 3.4, oct: 4, relief: 0.42, atmo: '214,188,245', feature: 'veins' },
   wache: { day: '#7fd4c8', mid: '#2f8a80', night: '#0a221f', fx: 0.8, fy: 6, oct: 3, relief: 0.35, atmo: '186,236,228', feature: 'clouds' },
-  markt: { day: '#e090b8', mid: '#b04a86', night: '#2a1020', fx: 1.4, fy: 2.8, oct: 4, relief: 0.4, atmo: '245,196,220', feature: 'swirl' },
-  betrieb: { day: '#f0c4bc', mid: '#c07878', night: '#2a1216', fx: 0.5, fy: 7, oct: 3, relief: 0.38, atmo: '246,210,214', feature: 'bands' },
-  rd: { day: '#a8d090', mid: '#5a9450', night: '#122014', fx: 2.8, fy: 2.2, oct: 5, relief: 0.42, atmo: '200,232,190', feature: 'clouds' },
+  markt: { day: '#e070b4', mid: '#b03a86', night: '#2a1020', fx: 1.4, fy: 2.8, oct: 4, relief: 0.4, atmo: '245,186,220', feature: 'swirl' },
+  betrieb: { day: '#e8a0a8', mid: '#c06070', night: '#2a1016', fx: 0.5, fy: 7, oct: 3, relief: 0.38, atmo: '246,196,206', feature: 'bands' },
+  rd: { day: '#98d078', mid: '#4a9448', night: '#102014', fx: 2.8, fy: 2.2, oct: 5, relief: 0.42, atmo: '190,232,176', feature: 'clouds' },
   default: { day: '#d9d3c2', mid: '#6b6656', night: '#0e0d0a', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '247,244,233' },
 };
 
@@ -74,7 +74,8 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
 
 export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false, lit }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping'; /** Richtung zur Sonne (Bogenmaß, Bildschirm) – schaltet die echte Kugelschattierung ein */ lit?: number }) {
   const uid = useId().replace(/:/g, '');
-  const m = archetypeMaterial(archetype) || planetMaterial(name);
+  const named = planetMaterial(name);
+  const m = named.feature ? named : (archetypeMaterial(archetype) || named);
   const pstyle = usePixelStyle();
   const ringW = size * 1.9;
   const ringH = size * 0.42;
@@ -449,27 +450,30 @@ function WorldSphere({ size, lit, hue, seed, quiet, feature, day, night, atmo, s
 
       let col: number[];
       if (aero) {
-        const marble = mix(mix(h, [248, 250, 252], 0.18), dayRgb, 0.78 + relief * 0.16);
-        const k = Math.min(1, 0.28 + 0.72 * term * (0.4 + 0.6 * dif) + relief * 0.14);
-        col = mix(mix(dayRgb, [232, 236, 238], 0.12), marble, k);
-        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 48) * 0.72;
-        const fres = Math.pow(1 - z, 2.4);
-        col = mix(col, [255, 252, 248], Math.min(1, spec + fres * Math.max(0, ndl + 0.2) * 0.45));
-        col = mix(col, h, fres * 0.18);
-        const inner = Math.pow(z, 2.2) * 0.16;
-        col = mix(col, mix(h, [255, 255, 255], 0.35), inner);
+        const vein = Math.pow(1 - Math.abs(n1 * 2 - 1), 8);
+        const swirl = n2 * 0.22 + relief * 0.18;
+        const glass = mix(mix(h, [255, 255, 255], 0.16), dayRgb, 0.72);
+        col = mix(glass, mix(h, [236, 244, 246], 0.28), 0.22 + swirl);
+        col = mix(col, mix(h, [255, 250, 240], 0.35), vein * 0.4);
+        const k = 0.38 + 0.52 * term * (0.42 + 0.58 * Math.pow(dif, 0.9));
+        col = mix(mix(h, [198, 210, 214], 0.22), col, k);
+        col = mix(col, mix(h, [255, 255, 255], 0.42), Math.pow(z, 3.2) * 0.18);
+        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 86) * 0.38;
+        col = mix(col, [255, 246, 224], spec);
+        const fres = Math.pow(1 - z, 2.15);
+        col = mix(col, mix(h, [255, 255, 255], 0.12), fres * 0.32);
       } else {
-        const litCol = mix(dayRgb, h, 0.08);
-        const k = Math.min(1, Math.max(0, term * (0.22 + 0.78 * Math.pow(dif, 0.8)) + relief * 0.2));
-        col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.45), k * 2) : mix(mix(nightRgb, litCol, 0.45), litCol, (k - 0.5) * 2);
-        if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.55), Math.min(0.55, relief));
-        if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [236, 220, 255], 0.4), Math.min(0.7, relief));
+        const litCol = mix(dayRgb, h, 0.22);
+        const k = Math.min(1, Math.max(0, term * (0.18 + 0.82 * Math.pow(dif, 0.78)) + relief * 0.18));
+        col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.55), k * 2) : mix(mix(nightRgb, litCol, 0.55), litCol, (k - 0.5) * 2);
+        if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.4), Math.min(0.45, relief));
+        if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [214, 176, 255], 0.25), Math.min(0.55, relief));
         const fres = Math.pow(1 - z, 2.6);
         const rimLit = fres * Math.max(0, ndl + 0.22) * (selected ? 1.15 : 0.9);
-        col = mix(col, mix(atmoRgb, [255, 248, 230], 0.25), Math.min(0.7, rimLit));
-        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 70) * 0.28;
+        col = mix(col, mix(atmoRgb, [255, 248, 230], 0.18), Math.min(0.62, rimLit));
+        const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 78) * 0.22;
         col = mix(col, [255, 246, 220], spec);
-        const nightA = (1 - term) * 0.55;
+        const nightA = (1 - term) * 0.4;
         col = mix(col, nightRgb, nightA);
       }
 

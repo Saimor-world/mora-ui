@@ -35,4 +35,11 @@ describe('Universe Glass – Bereichsfarben', () => {
       }
     }
   });
+
+  it('Wissen bleibt violett und Betrieb bleibt rose, nicht mondgrau', () => {
+    const wissen = glassHue('Wissen');
+    const betrieb = glassHue('Betrieb');
+    expect(wissen[2]).toBeGreaterThan(wissen[1] + 24);
+    expect(betrieb[0]).toBeGreaterThan(betrieb[1] + 12);
+  });
 });
