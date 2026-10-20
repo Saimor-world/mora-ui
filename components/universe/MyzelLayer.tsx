@@ -55,7 +55,12 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
         const build = () => {
             const pr = plane.getBoundingClientRect();
             // Leinwand reicht nach unten bis zum Dock, damit der Faden am Stein beginnen kann.
-            const stoneEl = document.querySelector<HTMLElement>('[data-mora-orb] button, [data-mora-orb]');
+            const originSel = presence.place === 'seat'
+                ? '[data-testid="uv2-mora-seat"]'
+                : presence.place === 'planet' && presence.target
+                    ? `[data-uv2-planet="${CSS.escape(presence.target)}"] .saimor-territory-body, [data-uv2-planet="${CSS.escape(presence.target)}"]`
+                    : '[data-testid="uv2-mora-dock-slot"], [data-mora-orb] button, [data-mora-orb]';
+            const stoneEl = document.querySelector<HTMLElement>(originSel);
             const sr = stoneEl?.getBoundingClientRect();
             const sx = pr.width ? plane.offsetWidth / pr.width : 1; // Ebene kann skaliert sein
             const extraBottom = sr ? Math.max(0, (sr.bottom - pr.bottom) * sx + 24) : 0;
@@ -142,7 +147,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
         const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
         return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [key, targetId, focusId]);
+    }, [key, targetId, focusId, presence.place, presence.target]);
 
     return <canvas ref={ref} className="uv2-myzel" data-working={working && targetId ? '' : undefined} aria-hidden="true" />;
 }

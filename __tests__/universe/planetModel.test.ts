@@ -1,4 +1,4 @@
-import { placeUniverse, planetDiameter, bodyMeta, departmentIdOf, glyphFor, type UniverseModel } from '@/lib/universe/planetModel';
+import { placeUniverse, planetDiameter, bodyMeta, departmentIdOf, glyphFor, ORBIT, ORBIT_RINGS, type UniverseModel } from '@/lib/universe/planetModel';
 import { Orbit, Wallet } from 'lucide-react';
 
 const look = (a: string, g: string, seed = 1) => ({ archetype: a, hue: 40, glyph: g, seed });
@@ -24,6 +24,17 @@ describe('Planeten-Modell UI', () => {
     expect(planetDiameter('XL', 'active', 'system')).toBe(planetDiameter('L', 'active', 'system'));
     expect(bodyMeta(sys('markt', 0, 'seed') as any, null)).toBe('verbinden');
     expect(bodyMeta(dom('a') as any, null)).toBe('1 Bereich · 2 Dokumente');
+  });
+  it('zeichnet drei Bahnen, Systeme innen, Domänen außen', () => {
+    expect(ORBIT_RINGS).toEqual([ORBIT.innerRx, ORBIT.midRx, ORBIT.outerRx]);
+    expect(ORBIT_RINGS).toHaveLength(3);
+    const m = model([sys('finanzen', 0), sys('post', 90), sys('wissen', 180), sys('wache', 270), dom('markt'), dom('rd'), dom('betrieb'), dom('werkstatt')]);
+    const placed = placeUniverse(m);
+    const d = (p: { x: number; y: number }) => Math.hypot(p.x - 50, (p.y - 50) / ORBIT.aspect);
+    const systems = placed.filter((p) => p.kind === 'system').map(d);
+    const domains = placed.filter((p) => p.kind !== 'system').map(d);
+    expect(Math.max(...systems)).toBeLessThanOrEqual(ORBIT.midRx + 0.6);
+    expect(Math.min(...domains)).toBeGreaterThanOrEqual(ORBIT.midRx - 0.6);
   });
   it('Zeichen aus dem Katalog, nie das Standard-Gebäude', () => {
     expect(glyphFor('wallet')).toBe(Wallet);

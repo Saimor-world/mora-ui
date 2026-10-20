@@ -8,9 +8,9 @@ import type { OrbState as OrbStateValue } from '@/lib/api/awarenessClient';
 
 interface OrbStoreState {
   orbState: OrbStateValue;
-  /** MÔRAs sichtbarer Zustand (hört zu, denkt, arbeitet, fertig, braucht dich) – nur Licht um den Jadestein. */
-  moraPresence: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; target?: string | null; seat?: 'home' | 'away' };
-  setMoraPresence(p: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; target?: string | null; seat?: 'home' | 'away' }): void;
+  /** MÔRAs eine Präsenz: Zustand + Ort (seat | dock | planet). */
+  moraPresence: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; place?: 'seat' | 'dock' | 'planet'; target?: string | null; seat?: 'home' | 'away' };
+  setMoraPresence(p: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; place?: 'seat' | 'dock' | 'planet'; target?: string | null; seat?: 'home' | 'away' }): void;
   speculativeState: OrbStateValue | undefined;
   speculativeUntil: number | undefined;
   lastAnswerSource: 'memory' | 'context' | 'inference' | null;
@@ -37,7 +37,7 @@ let mindLoopInitialized = false;
 
 export const useOrbStore = create<OrbStoreState>((set, get) => ({
   orbState: 'idle',
-  moraPresence: { state: 'calm', seat: 'home' },
+  moraPresence: { state: 'calm', place: 'dock', seat: 'away' },
   setMoraPresence: (p) => set({ moraPresence: p }),
   speculativeState: undefined,
   speculativeUntil: undefined,

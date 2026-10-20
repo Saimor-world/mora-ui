@@ -8,6 +8,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { getAppManifest } from '@/lib/apps/appRegistry';
 import type { AppCategory } from '@/lib/apps/types';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 const APP_CATEGORY_LABELS: Record<AppCategory, string> = {
     core: 'Kern',
@@ -564,9 +565,11 @@ export const GlassPanel: React.FC<GlassPanelProps> = ({
                                             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
                                         </button>
                                     )}
+                                    {!(isUniverseV2Enabled() && paneType === 'chat') && (
                                     <div className="pane-app-mark" aria-hidden="true">
                                         <span />
                                     </div>
+                                    )}
                                     <div className="pane-title-copy">
                                         {title && (
                                             typeof title === 'string' ? (

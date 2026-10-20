@@ -9,6 +9,8 @@
  */
 
 import React from 'react';
+import { MoraLook } from '@/components/universe/MoraLook';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 interface PlasmaOrbProps {
     color: string;
@@ -55,7 +57,10 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({ color, state, size = 120, 
                     animation: `pulse ${pulse} ease-in-out infinite`,
                 }}
             />
-            {/* eslint-disable-next-line @next/next/no-img-element -- static brand asset rendered at many small sizes */}
+            {isUniverseV2Enabled() ? (
+                <MoraLook size={size} testid="uv2-mora-plasma-look" />
+            ) : (
+            /* eslint-disable-next-line @next/next/no-img-element -- static brand asset rendered at many small sizes */
             <img
                 src="/brand/mora-stone-v1.png"
                 alt=""
@@ -65,6 +70,7 @@ export const PlasmaOrb: React.FC<PlasmaOrbProps> = ({ color, state, size = 120, 
                 className="relative h-full w-full pointer-events-none"
                 style={{ filter: `drop-shadow(0 ${Math.max(2, Math.round(size * 0.06))}px ${Math.max(4, Math.round(size * 0.16))}px rgba(0,0,0,0.45))` }}
             />
+            )}
             {/* State tint inside the gold ring (not for idle - pure jade). */}
             {active && (
                 <div

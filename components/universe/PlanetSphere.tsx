@@ -381,10 +381,10 @@ export function aeroOrbPaint(name: string, selected = false): React.CSSPropertie
     ['--uv2-aero-c3' as string]: p.c3,
     ['--uv2-aero-sh' as string]: sh,
     backgroundColor: p.c,
-    backgroundImage: `radial-gradient(circle at 50% 115%, rgba(255,255,255,.75) 0, transparent 45%), radial-gradient(circle at 50% 45%, ${p.c2} 0, ${p.c} 60%, ${p.c3} 100%)`,
+    backgroundImage: `radial-gradient(circle at 28% 22%, rgba(255,255,255,.92) 0, rgba(255,255,255,.18) 22%, transparent 48%), radial-gradient(circle at 38% 32%, ${p.c2} 0, ${p.c} 58%, ${p.c3} 100%)`,
     boxShadow: selected
-      ? `inset 0 -8px 20px rgba(255,255,255,.38), inset 0 6px 14px rgba(0,0,0,.12), 0 16px 28px -8px ${sh}, 0 0 36px -4px ${sh}`
-      : `inset 0 -8px 20px rgba(255,255,255,.35), inset 0 6px 14px rgba(0,0,0,.18), 0 14px 26px -8px ${sh}, 0 0 30px -4px ${sh}`,
+      ? `inset 0 -10px 18px rgba(255,255,255,.28), inset 8px 10px 16px rgba(0,0,0,.12), 0 16px 28px -8px ${sh}, 0 10px 22px -6px ${sh}`
+      : `inset 0 -10px 18px rgba(255,255,255,.25), inset 8px 10px 16px rgba(0,0,0,.14), 0 14px 26px -8px ${sh}, 0 10px 20px -6px ${sh}`,
   } as React.CSSProperties;
 }
 

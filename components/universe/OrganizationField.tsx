@@ -15,7 +15,7 @@ import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
-import { ORBIT, orbitRxOf } from '@/lib/universe/planetModel';
+import { ORBIT, ORBIT_RINGS } from '@/lib/universe/planetModel';
 import '@/app/universe-orbits.css';
 import { MoraCore } from '@/components/universe/MoraCore';
 import type { PlanetChip } from '@/lib/universe/planetModel';
@@ -355,10 +355,9 @@ export function OrganizationField({
                 {territories.some((t) => t.model) && (
                     // Eine saubere Bahn je Planet; der Planet sitzt mittig darauf.
                     <svg className="uv2-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                        {territories.filter((t) => t.model).map((t) => {
-                            const rx = orbitRxOf(t.x, t.y);
-                            return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} data-hover={t.id === hoverId || undefined} />;
-                        })}
+                        {ORBIT_RINGS.map((rx) => (
+                            <ellipse key={rx} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} />
+                        ))}
                     </svg>
                 )}
                 {territories.some((t) => t.model) && (
@@ -543,7 +542,7 @@ function Territory({
     const model = territory.model;
     const quiet = model && (model.state === 'sleeping' || model.state === 'seed');
     const today = !!model?.chips?.some((c: any) => c.tone && c.tone !== 'calm');
-    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.24 : 1.08) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+        const size = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.1 : 1) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.

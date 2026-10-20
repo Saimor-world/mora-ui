@@ -10,7 +10,9 @@ const base = `http://localhost:${port}`;
 const empty = process.env.EMPTY === '1';
 const stayHome = process.env.HOME === '1';
 const theme = process.env.THEME === 'light' ? 'light' : 'dark';
-const moraSeat = process.env.MORA_SEAT === 'away' ? 'away' : 'home';
+const moraPlace = process.env.MORA_PLACE === 'seat' || process.env.MORA_PLACE === 'planet' || process.env.MORA_PLACE === 'dock'
+  ? process.env.MORA_PLACE
+  : (process.env.MORA_SEAT === 'home' ? 'seat' : 'dock');
 const crop = process.env.CROP === '1';
 
 const FIXTURE_PATH = process.env.FIXTURE || './fixtures/universe-demo.json';
@@ -181,7 +183,7 @@ const H = +(process.env.H || 900);
 const DPR = +(process.env.DPR || 2);
 
 async function main() {
-  console.log(`Capturing Universe at ${base} → ${name}.png (${W}x${H})${empty ? ' [empty]' : ''}${stayHome ? ' [home]' : ''} [${theme}/${moraSeat}${crop ? '/crop' : ''}]`);
+  console.log(`Capturing Universe at ${base} → ${name}.png (${W}x${H})${empty ? ' [empty]' : ''}${stayHome ? ' [home]' : ''} [${theme}/${moraPlace}${crop ? '/crop' : ''}]`);
 
   const browser = await chromium.launch({
     executablePath: '/usr/local/bin/google-chrome',
@@ -317,19 +319,16 @@ async function main() {
   console.log(`Found ${planets.length} planets:`, planets.map((p) => `${p.label}${p.caption ? ' · ' + p.caption : ''}`).join(', '));
 
   await page.evaluate((t) => { document.documentElement.dataset.uv2Theme = t; }, theme);
-  await page.evaluate((seat) => {
-    window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', seat } }));
-  }, moraSeat);
   await page.waitForSelector('[data-testid="uv2-mora-seat"]', { timeout: 8000 });
-  if (moraSeat === 'home') {
-    await page.waitForSelector('[data-testid="uv2-mora-crystal"]', { timeout: 8000 });
-  } else {
-    await page.waitForSelector('[data-testid="uv2-mora-empty"]', { timeout: 8000 });
-  }
-  await page.waitForTimeout(600);
+  await page.waitForSelector('[data-testid="uv2-mora-dock-slot"]', { timeout: 8000 });
 
-  if (process.env.CLICK_PLANET) {
-    const planetName = process.env.CLICK_PLANET;
+  const planetName = process.env.CLICK_PLANET || (moraPlace === 'planet' ? 'Finanzen' : '');
+  if (moraPlace !== 'planet') {
+    await page.evaluate((place) => {
+      window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', place } }));
+    }, moraPlace);
+  }
+  if (planetName) {
     console.log(`Clicking planet: ${planetName}`);
     try {
       await page.locator(`[data-planet-kind][data-mora-label="${planetName}"]`).first().click({ force: true });
@@ -338,6 +337,18 @@ async function main() {
       console.log('Could not click planet:', e.message);
     }
   }
+
+  if (moraPlace === 'seat') {
+    await page.waitForSelector('[data-testid="uv2-mora-figure"][data-mora-place="seat"]', { timeout: 8000 });
+    await page.waitForSelector('[data-testid="uv2-mora-crystal"]', { timeout: 8000 });
+  } else if (moraPlace === 'dock') {
+    await page.waitForSelector('[data-testid="uv2-mora-figure"][data-mora-place="dock"]', { timeout: 8000 });
+    await page.waitForSelector('[data-testid="uv2-mora-empty"]', { timeout: 8000 });
+  } else {
+    await page.waitForSelector('[data-testid="uv2-mora-figure"][data-mora-place="planet"]', { timeout: 8000 });
+    await page.waitForSelector('[data-testid="uv2-mora-empty"]', { timeout: 8000 });
+  }
+  await page.waitForTimeout(600);
 
   await page.mouse.move(W / 2, 70);
   await page.waitForTimeout(600);

@@ -78,9 +78,18 @@ export interface PlacedBody {
   cluster: ModelCluster | null;
 }
 
-/** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
- *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
-export const ORBIT = { innerRx: 17, outerRx: 45, aspect: 0.92 } as const;
+/** Drei weiche Bahnen. Innen bleibt frei für MÔRAs Sitz inkl. Name darunter. */
+export const ORBIT = { innerRx: 32, midRx: 39.5, outerRx: 47, aspect: 0.92 } as const;
+export const ORBIT_RINGS = [ORBIT.innerRx, ORBIT.midRx, ORBIT.outerRx] as const;
+
+function orbitRingOf(kind: PlacedBody['kind'], indexInKind: number, kindCount: number): 0 | 1 | 2 {
+  if (kind === 'system') {
+    const innerSlots = Math.max(1, Math.ceil(kindCount * 0.4));
+    return indexInKind < innerSlots ? 0 : 1;
+  }
+  const midSpill = Math.max(0, Math.floor(kindCount * 0.25));
+  return indexInKind < midSpill ? 1 : 2;
+}
 
 function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
 
@@ -96,7 +105,14 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     ...outer.map((o) => ({ key: o.key, kind: (o.cluster ? 'cluster' : 'domain') as 'cluster' | 'domain', label: o.planet?.label ?? o.cluster!.label, planet: o.planet, cluster: o.cluster })),
   ];
   const n = all.length;
-  const rxOf = (i: number) => (n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx);
+  let sysI = 0, outerI = 0;
+  const sysN = all.filter((b) => b.kind === 'system').length;
+  const outerN = n - sysN;
+  const ringOf = all.map((b) => {
+    if (b.kind === 'system') return orbitRingOf('system', sysI++, sysN);
+    return orbitRingOf(b.kind, outerI++, outerN);
+  });
+  const rxOf = (i: number) => ORBIT_RINGS[ringOf[i] ?? 1];
   const at = (i: number, slot: number) => {
     const rx = rxOf(i), rad = ((slot * (360 / Math.max(1, n)) - 90) * Math.PI) / 180;
     return { x: 50 + rx * Math.cos(rad), y: 50 + rx * ORBIT.aspect * Math.sin(rad) };

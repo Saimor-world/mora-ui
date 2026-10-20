@@ -363,7 +363,7 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
             {/* Eine Navigation: Orte oben, Werkzeuge im Dock. Hier nur MÔRAs Präsenz. */}
-            <div data-testid="uv2-home-actions" aria-hidden><PresenceOrb /></div>
+            <div data-testid="uv2-home-actions" aria-hidden />
           </div>
           <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
             {greeting}{firstName ? `, ${firstName}.` : '.'}

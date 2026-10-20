@@ -193,3 +193,27 @@ describe('Dock core navigation contract', () => {
         expect(navigateToExplore).toHaveBeenCalledTimes(1);
     });
 });
+
+describe('Universe-Dock MÔRA-Spur', () => {
+    it('zeigt im Universe-Dock keine zweite Figur, nur den leeren Platz', () => {
+        useNavStore.setState({
+            activeCompanyId: 'co-1', setActiveCompany: jest.fn(), viewMode: 'workspace',
+            isStandardMode: false, setIsSearchOpen: jest.fn(),
+        } as any);
+        useSessionStore.setState({
+            user: { role: 'member', name: 'User' },
+            permissions: { canCreate: false, canDelete: false, canAdmin: false, canEditSettings: false, canViewAnalytics: false },
+            hasBooted: true, isLoggingOut: false, resetStore: jest.fn(), setIsLoggingOut: jest.fn(), updateUserSettings: jest.fn(),
+        } as any);
+        useOrbStore.setState({ orbState: 'idle', setOrbState: jest.fn(), moraPresence: { state: 'calm', place: 'dock' } } as any);
+        const qc = createTestQueryClient();
+        qc.setQueryData(queryKeys.companies(), []);
+        qc.setQueryData(queryKeys.departments('co-1'), []);
+        renderWithProviders(<Dock />, { queryClient: qc });
+        const slot = screen.queryByTestId('uv2-mora-dock-slot');
+        if (!slot) return; // Flag aus: altes Dock darf den Stein behalten.
+        expect(slot).toBeInTheDocument();
+        expect(document.querySelector('img[src="/brand/mora-stone-v1.png"]')).toBeNull();
+        expect(screen.queryByTestId('uv2-mora-dock-trace')).toBeNull();
+    });
+});

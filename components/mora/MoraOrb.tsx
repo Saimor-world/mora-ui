@@ -2,6 +2,8 @@
 
 import { useOrbStore } from '@/lib/store/orbStore';
 import { MoraFace } from '@/components/mora/MoraFace';
+import { MoraLook } from '@/components/universe/MoraLook';
+import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import React, { useEffect, useState, useRef } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -129,6 +131,10 @@ export function MoraOrb({
                 whileHover={{ scale: 1.06, boxShadow: `0 20px 70px rgba(0,0,0,0.6), 0 0 ${glowIntensity + 26}px ${color}80` }}
                 whileTap={{ scale: 0.96 }}
             >
+                {isUniverseV2Enabled() ? (
+                    <MoraLook size={sz.stone} testid="uv2-mora-orb-look" />
+                ) : (
+                    <>
                 <Image
                     src="/brand/mora-stone-v1.png"
                     alt="MÔRA"
@@ -140,6 +146,8 @@ export function MoraOrb({
                     className="h-full w-full select-none pointer-events-none"
                 />
                 <MoraFace size={sz.stone} />
+                    </>
+                )}
 
                 {/* State tint inside the gold ring (not for idle - pure jade). */}
                 {state !== 'idle' && (

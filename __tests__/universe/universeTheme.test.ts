@@ -5,7 +5,7 @@ import {
     saveUniverseThemePref,
     UNIVERSE_THEME_KEY,
 } from '@/lib/universe/universeTheme';
-import { moraIsAway, setMoraPresence, getMoraPresence } from '@/lib/universe/moraPresence';
+import { flyMora, moraIsAway, setMoraPresence, getMoraPresence, resetMoraPresence } from '@/lib/universe/moraPresence';
 import { planetMaterial } from '@/components/universe/PlanetSphere';
 
 describe('Universe-Thema', () => {
@@ -33,22 +33,24 @@ describe('Universe-Thema', () => {
 
 describe('MÔRAs Sitz', () => {
     beforeEach(() => {
-        setMoraPresence({ state: 'calm', target: null, seat: 'home' });
+        resetMoraPresence();
     });
-    it('ist zu Hause ruhig und weg im Dock', () => {
-        setMoraPresence({ state: 'calm', seat: 'home' });
+    it('startet im Dock und kommt nur per Flug nach Hause', () => {
+        expect(getMoraPresence().place).toBe('dock');
+        expect(moraIsAway()).toBe(true);
+        flyMora('seat');
         expect(moraIsAway(getMoraPresence())).toBe(false);
-        setMoraPresence({ state: 'calm', seat: 'away' });
-        expect(moraIsAway(getMoraPresence())).toBe(true);
-        setMoraPresence({ state: 'working', target: 'system:finanzen', seat: 'home' });
-        expect(moraIsAway(getMoraPresence())).toBe(true);
-        setMoraPresence({ state: 'needs', target: 'system:finanzen', seat: 'home' });
-        expect(moraIsAway(getMoraPresence())).toBe(false);
+        flyMora('dock');
+        expect(moraIsAway()).toBe(true);
+        setMoraPresence({ state: 'needs', target: 'system:finanzen', place: 'seat' });
+        expect(moraIsAway()).toBe(false);
+        flyMora('planet', { target: 'system:finanzen' });
+        expect(moraIsAway()).toBe(true);
     });
     it('bleibt weg, bis der Sitz sie nach Hause ruft', () => {
-        setMoraPresence({ state: 'calm', seat: 'away' });
+        flyMora('dock');
         expect(moraIsAway()).toBe(true);
-        setMoraPresence({ state: 'calm', target: null, seat: 'home' });
+        flyMora('seat', { target: null });
         expect(moraIsAway()).toBe(false);
     });
 });

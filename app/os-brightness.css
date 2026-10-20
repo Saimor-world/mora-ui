@@ -18,7 +18,7 @@ html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [d
   color: #23384c !important;
   text-shadow: none;
 }
-html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #a77a12 !important; }
+html[data-uv2="on"][data-uv2-theme="light"][data-uv2-pstyle] [data-uv2-plane] [data-planet-kind][data-uv2-today] .saimor-territory-name { color: #23384c !important; }
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .saimor-territory-shell .uv2-planet-caption,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-caption,
 html[data-uv2="on"][data-uv2-theme="light"] [data-planet-kind] .uv2-planet-meta {

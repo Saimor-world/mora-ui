@@ -116,6 +116,7 @@ const MyceliumOverlay = dynamic(
 
 // UI Components
 import { Dock } from '@/components/mora/Dock';
+import { MoraPresenceLayer } from '@/components/universe/MoraPresenceLayer';
 import { MoraGreetingBubble } from '@/components/mora/MoraGreetingBubble';
 import { FirstRunTour } from '@/components/onboarding/FirstRunTour';
 import { useMoraSpeaks } from '@/lib/queries/useMoraSpeaks';
@@ -893,6 +894,8 @@ export const MoraShell: React.FC = () => {
 
             {/* Dock (Bottom Navigation) — stays visible during voice overlay for push-to-talk */}
             {!hasFullscreenPane && <Dock />}
+            {/* Eine MÔRA: fliegt zwischen Sitz, Dock und Planet. */}
+            <MoraPresenceLayer />
 
             {/* MÔRA product tour — ambient intro near orb; greeting deferred until tour dismissed */}
             {!hasFullscreenPane && !isAmbientRoomOpen && activeMode !== 'public_playground' && <FirstRunTour />}

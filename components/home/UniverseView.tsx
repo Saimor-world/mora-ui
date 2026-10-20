@@ -16,6 +16,7 @@ import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { UniverseLinks } from '@/components/universe/UniverseLinks';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { flyMora, getMoraPresence } from '@/lib/universe/moraPresence';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
@@ -675,7 +676,12 @@ export default function UniverseView() {
                 territories={fieldTerritories}
                 signals={signals}
                 selectedId={selectedTerritoryId}
-                onSelect={setSelectedTerritoryId}
+                onSelect={(id) => {
+                    setSelectedTerritoryId(id);
+                    if (!isUniverseV2Enabled()) return;
+                    if (id) flyMora('planet', { target: id });
+                    else if (getMoraPresence().place === 'planet') flyMora('dock');
+                }}
                 onOpen={openBody}
                 attentionId={attention?.targetId ?? null}
                 onOpenMoon={(folderId, folderName) => {
@@ -733,18 +739,21 @@ export default function UniverseView() {
                         return false;
                     }
                 }}
-                onAskMora={(territory) => openPane({
-                    id: 'chat-universe-' + territory.id,
-                    type: 'chat',
-                    title: 'Môra',
-                    size: { width: 520, height: 640 },
-                    data: {
-                        initialPrompt:
-                            'Ordne die Abteilung ' + territory.name + ' in ' + organizationName +
-                            ' ein. Nutze nur den sichtbaren Organisationskontext, benenne fehlende Daten ausdrücklich ' +
-                            'und schlage den nächsten sinnvollen Schritt vor.',
-                    },
-                })}
+                onAskMora={(territory) => {
+                    if (isUniverseV2Enabled()) flyMora('dock', { target: territory.id });
+                    openPane({
+                        id: 'chat-universe-' + territory.id,
+                        type: 'chat',
+                        title: 'MÔRA',
+                        size: { width: 520, height: 640 },
+                        data: {
+                            initialPrompt:
+                                'Ordne die Abteilung ' + territory.name + ' in ' + organizationName +
+                                ' ein. Nutze nur den sichtbaren Organisationskontext, benenne fehlende Daten ausdrücklich ' +
+                                'und schlage den nächsten sinnvollen Schritt vor.',
+                        },
+                    });
+                }}
             />
 
             <AnimatePresence>

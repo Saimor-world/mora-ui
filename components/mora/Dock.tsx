@@ -17,6 +17,7 @@ import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { MoraFace } from '@/components/mora/MoraFace';
+import { flyMora } from '@/lib/universe/moraPresence';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
@@ -555,6 +556,7 @@ export const Dock = () => {
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
     const moraPresence = useOrbStore((s) => s.moraPresence?.state ?? "calm");
+    const moraPlace = useOrbStore((s) => s.moraPresence?.place ?? 'dock');
     const user = useSessionStore((s) => s.user);
     const { data: companies = [], refetch: refetchCompanies } = useCompanies({ includeDemo: true });
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
@@ -752,6 +754,13 @@ export const Dock = () => {
             default: break;
         }
     }, [navigateToCore, openPane]);
+
+    useEffect(() => {
+        if (!v2) return;
+        const onOpen = () => handleDockClick('chat');
+        window.addEventListener('uv2:open-chat', onOpen);
+        return () => window.removeEventListener('uv2:open-chat', onOpen);
+    }, [v2, handleDockClick]);
 
     const handleTaskbarActivate = useCallback((pane: DockPane) => {
         if (pane.minimized) {
@@ -1431,8 +1440,8 @@ export const Dock = () => {
             <div className="relative w-full max-w-[1480px] mx-auto pointer-events-auto">
                 {!isStandardMode && (
                     <>
-                        <div className="pointer-events-none absolute inset-x-[7%] bottom-[-14px] h-px bg-gradient-to-r from-transparent via-cyan-200/20 to-transparent" />
-                        <div className="pointer-events-none absolute inset-x-[15%] bottom-[-26px] h-16 rounded-full bg-cyan-300/[0.055] blur-[18px]" />
+                        <div className="uv2-dock-night-fx pointer-events-none absolute inset-x-[7%] bottom-[-14px] h-px bg-gradient-to-r from-transparent via-cyan-200/20 to-transparent" />
+                        <div className="uv2-dock-night-fx pointer-events-none absolute inset-x-[15%] bottom-[-26px] h-16 rounded-full bg-cyan-300/[0.055] blur-[18px]" />
                     </>
                 )}
                 <AnimatePresence>
@@ -1483,6 +1492,7 @@ export const Dock = () => {
 
                             <div
                                 data-testid="dock"
+                                data-uv2-dock={v2 ? '' : undefined}
                                 className={`relative mx-auto flex w-fit max-w-[calc(100vw-1rem)] flex-nowrap items-center justify-center gap-1 overflow-visible rounded-full px-2 py-1.5 transition-all sm:gap-3 sm:px-4 sm:py-2 ${
                                     isStandardMode
                                         ? 'bg-white border border-gray-200 shadow-[0_8px_30px_rgba(0,0,0,0.06)]'
@@ -1499,14 +1509,14 @@ export const Dock = () => {
                                 {!isStandardMode && (
                                     <>
                                         <div
-                                            className="pointer-events-none absolute inset-[1px] rounded-full opacity-40 animate-[pulse_6s_infinite]"
+                                            className="uv2-dock-night-fx pointer-events-none absolute inset-[1px] rounded-full opacity-40 animate-[pulse_6s_infinite]"
                                             style={{
                                                 background: 'linear-gradient(90deg, rgba(125,224,255,0.04) 1px, transparent 1px), linear-gradient(180deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
                                                 backgroundSize: '32px 32px',
                                             }}
                                         />
                                         <div
-                                            className="absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none opacity-70"
+                                            className="uv2-dock-night-fx absolute inset-x-8 top-0 h-[1.5px] rounded-full pointer-events-none opacity-70"
                                             style={{
                                                 background: `linear-gradient(90deg, transparent 10%, var(--scene-accent), var(--scene-aura), transparent 90%)`,
                                                 transition: 'background 1.2s ease',
@@ -1750,6 +1760,23 @@ export const Dock = () => {
                                     )}
 
                                     {activeMode !== 'public_playground' && (
+                                        v2 ? (
+                                            <div className="flex items-center shrink-0" data-mora-orb data-mora-presence={moraPresence} data-mora-place={moraPlace}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { flyMora('dock'); handleDockClick('chat'); }}
+                                                    data-mora-home="true"
+                                                    data-testid="uv2-mora-dock-slot"
+                                                    className="uv2-mora-dock-slot"
+                                                    aria-label={moraPlace === 'dock' ? 'Mit MÔRA sprechen' : 'Frag MÔRA'}
+                                                    title="Frag MÔRA"
+                                                >
+                                                    {moraPlace !== 'dock' && (
+                                                        <span className="uv2-mora-dock-trace" data-testid="uv2-mora-dock-trace">Frag MÔRA</span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        ) : (
                                         <div className="flex items-center shrink-0" data-mora-orb data-mora-presence={moraPresence}>
                                             <button
                                                 onClick={() => handleDockClick('chat')}
@@ -1782,9 +1809,7 @@ export const Dock = () => {
                                                         }}
                                                     />
                                                 )}
-                                                {/* Zustand nur als Licht um den Stein (Regel 14.09.: der Stein selbst bleibt unverändert). */}
                                                 <span aria-hidden className="mora-stone-light pointer-events-none absolute inset-[-7px] rounded-full" />
-                                                {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
                                                 {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset in the always-visible dock */}
                                                 <img
                                                     src="/brand/mora-stone-v1.png"
@@ -1798,6 +1823,7 @@ export const Dock = () => {
                                                 {!isStandardMode && <MoraFace size={40} arcsOnGreet={false} />}
                                             </button>
                                         </div>
+                                        )
                                     )}
                                 </div>
                 </div>
