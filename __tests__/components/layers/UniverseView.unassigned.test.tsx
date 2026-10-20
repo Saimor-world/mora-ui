@@ -19,7 +19,15 @@ jest.mock('@/lib/api/nightwatchClient', () => ({
 }));
 
 jest.mock('@/lib/hooks/useCommunicationLiveData', () => ({
-    useCommunicationLiveData: () => ({ mailPreview: [], calendarPreview: [], feedPreview: [] }),
+    useCommunicationLiveData: () => ({ mailPreview: [], calendarPreview: [], feedPreview: [], mailStatus: 'ok', calendarStatus: 'ok' }),
+}));
+
+jest.mock('@/lib/os/useScopedToday', () => ({
+    useScopedToday: () => ({ snapshot: null, loading: false, refreshing: false, loadError: null, refresh: jest.fn() }),
+}));
+
+jest.mock('@/components/universe/UniverseSpaceField', () => ({
+    UniverseSpaceField: () => null,
 }));
 
 jest.mock('framer-motion', () => {

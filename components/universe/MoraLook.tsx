@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useState } from 'react';
 import type { MoraState } from '@/lib/universe/moraPresence';
+import { MoraFace, type FaceState } from '@/components/mora/MoraFace';
 
 export type MoraLookMode = 'light' | 'dark';
 
@@ -13,13 +14,14 @@ const LIGHT = {
     blush: '#ffb4c0',
     shadow: 'rgba(16,70,48,0.18)',
 };
-const DARK = {
-    core: ['#c8f8e8', '#2f8f74', '#145246', '#0a2420', '#030c0a'] as const,
-    caustic: ['#ffe9b8', '#d6a848', '#1a3d30'] as const,
-    rimDark: '#04120e',
-    eye: '#061510',
-    blush: '#c47888',
-    shadow: 'rgba(0,0,0,0.45)',
+
+const STATE_TO_FACE: Record<MoraState, FaceState> = {
+    calm: 'rest',
+    listening: 'listen',
+    thinking: 'think',
+    working: 'work',
+    done: 'done',
+    needs: 'need',
 };
 
 function useUv2Look(): MoraLookMode {
@@ -35,8 +37,9 @@ function useUv2Look(): MoraLookMode {
 }
 
 /**
- * Ein Körper, zwei Modi: Licht = Jadkristall, Dunkel = Nachtform.
- * Nur MoraPresenceLayer darf sie auf dem Universe-Desktop zeichnen.
+ * Ein Körper, zwei Modi: Licht = Jadkristall. Dunkel = der etablierte
+ * Stein mit Augen (mora-stone-v1 + MoraFace). Nur MoraPresenceLayer
+ * zeichnet sie auf dem Universe-Desktop.
  */
 export function MoraLook({
     state = 'calm',
@@ -52,7 +55,7 @@ export function MoraLook({
     const uid = useId().replace(/:/g, '');
     const auto = useUv2Look();
     const mode = forced ?? auto;
-    const p = mode === 'light' ? LIGHT : DARK;
+    const p = LIGHT;
     const [reduce, setReduce] = useState(false);
     useEffect(() => {
         if (typeof window.matchMedia !== 'function') return;
@@ -63,11 +66,34 @@ export function MoraLook({
         return () => mq.removeEventListener('change', f);
     }, []);
 
+    if (mode === 'dark') {
+        return (
+            <span
+                className="uv2-mora-crystal uv2-mora-stone"
+                data-testid={testid}
+                data-mora-look="dark"
+                data-face-state={state}
+                data-reduce={reduce ? '' : undefined}
+                style={{ width: size, height: size }}
+            >
+                <img
+                    src="/brand/mora-stone-v1.png"
+                    alt=""
+                    width={size}
+                    height={size}
+                    draggable={false}
+                    data-testid="uv2-mora-stone"
+                />
+                <MoraFace size={size} state={STATE_TO_FACE[state] ?? 'rest'} arcsOnGreet={size >= 72} />
+            </span>
+        );
+    }
+
     return (
         <span
             className="uv2-mora-crystal"
             data-testid={testid}
-            data-mora-look={mode}
+            data-mora-look="light"
             data-face-state={state}
             data-reduce={reduce ? '' : undefined}
             style={{ width: size, height: size }}

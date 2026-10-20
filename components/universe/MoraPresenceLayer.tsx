@@ -5,6 +5,8 @@ import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { useMoraPresence, type MoraPlace } from '@/lib/universe/moraPresence';
 import { useNavStore } from '@/lib/store/navStore';
 import { MoraLook } from '@/components/universe/MoraLook';
+import { MoraNudges } from '@/components/universe/MoraNudges';
+import { useMoraNudgeFeed } from '@/lib/universe/moraNudgeFeed';
 
 type Anchor = { x: number; y: number; size: number };
 
@@ -43,6 +45,7 @@ function measure(place: MoraPlace, target?: string | null): Anchor | null {
 export function MoraPresenceLayer() {
     const v2 = isUniverseV2Enabled();
     const presence = useMoraPresence();
+    const feed = useMoraNudgeFeed();
     const voiceOpen = useNavStore((s) => s.voiceOverlayOpen);
     const [anchor, setAnchor] = useState<Anchor | null>(null);
 
@@ -71,21 +74,36 @@ export function MoraPresenceLayer() {
     if (!v2 || voiceOpen) return null;
 
     return (
-        <div className="uv2-mora-presence" data-testid="uv2-mora-presence" data-mora-place={presence.place} aria-hidden>
+        <div
+            className="uv2-mora-presence"
+            data-testid="uv2-mora-presence"
+            data-mora-place={presence.place}
+            style={anchor ? {
+                ['--mora-x' as string]: String(anchor.x),
+                ['--mora-y' as string]: String(anchor.y),
+                ['--mora-size' as string]: `${anchor.size}px`,
+            } : undefined}
+        >
             {anchor && (
                 <div
                     className="uv2-mora-figure"
                     data-testid="uv2-mora-figure"
                     data-mora-place={presence.place}
                     data-mora-state={presence.state}
-                    style={{
-                        ['--mora-x' as string]: String(anchor.x),
-                        ['--mora-y' as string]: String(anchor.y),
-                        ['--mora-size' as string]: `${anchor.size}px`,
-                    }}
+                    aria-hidden
                 >
                     <MoraLook state={presence.state} size={anchor.size} />
                 </div>
+            )}
+            {anchor && (
+                <MoraNudges
+                    mail={feed.mail || []}
+                    calendar={feed.calendar || []}
+                    incidents={feed.incidents || []}
+                    openTasks={feed.openTasks}
+                    dueToday={feed.dueToday}
+                    openInvoices={feed.openInvoices}
+                />
             )}
         </div>
     );

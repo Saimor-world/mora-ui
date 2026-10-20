@@ -46,6 +46,9 @@ import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
 import { placeUniverse, planetDiameter, bodyMeta, bodyChips, bodyCaption, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { overlayUniversePlanets, overlayTruth, type LivePlanetInput } from '@/lib/universe/livePlanetSources';
+import { setMoraNudgeFeed } from '@/lib/universe/moraNudgeFeed';
+import { useScopedToday } from '@/lib/os/useScopedToday';
 
 const EMPTY_ITEMS: any[] = [];
 
@@ -117,6 +120,7 @@ export default function UniverseView() {
     const [business, setBusiness] = useState<BusinessSummary>({ monthlyRevenueMinor: 0, currency: null, activeCount: 0, providers: [] });
     const [selectedTerritoryId, setSelectedTerritoryId] = useState<string | null>(null);
     const { mailPreview, calendarPreview, feedPreview, mailStatus, calendarStatus } = useCommunicationLiveData();
+    const { snapshot: today } = useScopedToday({ backgroundRefresh: true });
 
     useEffect(() => {
         if (!effectiveCompanyId) {
@@ -399,11 +403,43 @@ export default function UniverseView() {
     // Planeten-Modell v1: eine Wahrheit aus CORE /v3/universe. Systemplaneten (Finanzen, Post,
     // Wissen, Wache, Werkstatt …) sind immer da – notfalls als Keim; Abteilungen außen, viele als Cluster.
     const { data: universeModel } = useUniverseModel(effectiveCompanyId);
+    const liveInput = useMemo<LivePlanetInput>(() => {
+        const openIncidents = nightwatchIncidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase())).length;
+        return {
+            mailCount: today?.mail.inbox_loaded ?? (mailStatus === 'ok' ? mailPreview.length : null),
+            mailStatus: today?.mail.status ?? (mailStatus === 'ok' ? 'ok' : mailStatus === 'unavailable' ? 'unavailable' : mailStatus === 'loading' ? 'loading' : null),
+            calendarCount: today?.calendar.count ?? (calendarStatus === 'ok' ? calendarPreview.length : null),
+            calendarStatus: today?.calendar.status ?? (calendarStatus === 'ok' ? 'ok' : calendarStatus === 'unavailable' ? 'unavailable' : null),
+            openTasks: today?.tasks.counts.open ?? null,
+            tasksStatus: today?.tasks.status ?? null,
+            openIncidents: today?.nightwatch.open_incidents ?? openIncidents,
+            nightwatchStatus: today?.nightwatch.status ?? 'ok',
+            feedCount: feedPreview.length ? feedPreview.length : null,
+            tenantCount: business.activeCount || null,
+            docsByCapability: Object.fromEntries(
+                Object.entries(metrics).map(([id, m]) => [id, m.nodes]),
+            ),
+        };
+    }, [today, mailStatus, calendarStatus, mailPreview.length, calendarPreview.length, nightwatchIncidents, feedPreview.length, business.activeCount, metrics]);
+    const liveModel = useMemo(() => {
+        if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return null;
+        return { ...universeModel, planets: overlayUniversePlanets(universeModel.planets, liveInput) };
+    }, [universeModel, liveInput]);
+    useEffect(() => {
+        setMoraNudgeFeed({
+            mail: mailPreview,
+            calendar: calendarPreview,
+            incidents: nightwatchIncidents,
+            openTasks: today?.tasks.counts.open ?? undefined,
+            dueToday: today?.tasks.due_today,
+            openInvoices: Number(liveModel?.planets.find((p) => p.capability === 'finanzen')?.counts?.open_invoices ?? 0) || undefined,
+        });
+    }, [mailPreview, calendarPreview, nightwatchIncidents, today, liveModel]);
     const fieldTerritories = useMemo<OrganizationTerritory[]>(() => {
-        if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return territories;
+        if (!liveModel || !Array.isArray(liveModel.planets) || liveModel.planets.length === 0) return territories;
         const byDept = new Map(territories.map((t) => [t.id, t]));
-        const demo = universeModel.company?.sector === 'demo';
-        return placeUniverse(universeModel).map((body) => {
+        const demo = liveModel.company?.sector === 'demo';
+        return placeUniverse(liveModel).map((body) => {
             const p = body.planet; const c = body.cluster;
             const look = (p || c)!.look;
             const deptId = p ? departmentIdOf(p.key) : null;
@@ -413,10 +449,11 @@ export default function UniverseView() {
                 kind: body.kind, archetype: look.archetype, glyph: look.glyph, seed: look.seed,
                 diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
                 meta: bodyMeta(p, c), caption: bodyCaption(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
+                truth: overlayTruth(p),
             } as OrganizationTerritory['model'];
             if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
             const moons = c
-                ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || universeModel.planets.find((x) => x.key === k)?.label || '' }))
+                ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || liveModel.planets.find((x) => x.key === k)?.label || '' }))
                 : (p?.moons || []).map((m: any) => ({ id: m.department_id || m.key, name: SOURCE_LABEL[m.label] || m.label, documents: Number(m.docs ?? 0) }));
             return {
                 id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
@@ -425,11 +462,11 @@ export default function UniverseView() {
                 metricSource: 'live', access: 'open', model,
             } as OrganizationTerritory;
         });
-    }, [universeModel, territories]);
+    }, [liveModel, territories]);
     const openBody = (id: string) => {
-        if (id.startsWith('system:')) {
-            const pane = SYSTEM_PANES[id.slice(7)];
-            if (pane) openPane(pane as Parameters<typeof openPane>[0]);
+        const cap = id.startsWith('system:') ? id.slice(7) : id.startsWith('sys:') ? id.slice(4) : '';
+        if (cap && SYSTEM_PANES[cap]) {
+            openPane(SYSTEM_PANES[cap] as Parameters<typeof openPane>[0]);
             return;
         }
         if (id.startsWith('cluster:')) {

@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import type { UniverseLens } from './OrganizationField';
 import type { UniverseTheme } from '@/lib/universe/universeTheme';
+import { UniverseSpaceField } from '@/components/universe/UniverseSpaceField';
 
 interface Props {
     lens: UniverseLens;
@@ -15,7 +16,6 @@ interface Props {
  * Light is a soft Aero sky. Layout stays the same; only the air changes.
  */
 export function UniverseAmbientField({ lens, selected }: Props) {
-    const reducedMotion = useReducedMotion();
     const [theme, setTheme] = useState<UniverseTheme>('dark');
     useEffect(() => {
         const read = () => setTheme(document.documentElement.dataset.uv2Theme === 'light' ? 'light' : 'dark');
@@ -38,28 +38,21 @@ export function UniverseAmbientField({ lens, selected }: Props) {
                 </>
             ) : (
                 <>
-                    <motion.div
-                        className="absolute -inset-[3%] bg-cover bg-center"
+                    <div
+                        className="absolute inset-0 bg-cover bg-center"
                         style={{
                             backgroundImage: 'url(/universe/deep-space-warm.jpg)',
-                            filter: 'brightness(0.72) saturate(1.15) hue-rotate(-12deg) contrast(1.08)',
+                            filter: 'brightness(0.55) saturate(1.2) hue-rotate(-8deg) contrast(1.12)',
                         }}
-                        animate={reducedMotion ? undefined : { scale: [1, 1.02, 1], x: [0, -8, 0], y: [0, 5, 0] }}
-                        transition={{ duration: 120, repeat: Infinity, ease: 'easeInOut' }}
                     />
                     <div className="absolute inset-0" style={{
-                        background: 'radial-gradient(ellipse at 50% 48%, rgba(8,18,16,0.18) 0%, rgba(5,7,6,0.42) 58%, rgba(5,7,6,0.72) 100%)',
+                        background: 'radial-gradient(ellipse at 50% 48%, rgba(5,10,9,0.22) 0%, rgba(5,7,6,0.55) 62%, rgba(3,4,5,0.82) 100%)',
                     }} />
-                    <motion.div
-                        className="absolute left-1/2 top-1/2 h-[58vh] max-h-[560px] w-[58vh] max-w-[560px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[110px]"
-                        style={{ background: 'radial-gradient(circle, rgba(46,140,110,0.22), rgba(214,168,72,0.08) 46%, transparent 68%)' }}
-                        animate={reducedMotion ? undefined : { scale: [1, 1.08, 1], opacity: [0.55, 0.85, 0.55] }}
-                        transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
-                    />
+                    <UniverseSpaceField />
                     <div className="absolute inset-0" style={{
                         background: lens === 'relations'
-                            ? 'radial-gradient(ellipse at 55% 40%, rgba(214,168,72,0.06), transparent 50%)'
-                            : 'radial-gradient(ellipse at 80% 18%, rgba(64,160,130,0.08), transparent 48%)',
+                            ? 'radial-gradient(ellipse at 55% 40%, rgba(214,168,72,0.05), transparent 50%)'
+                            : 'radial-gradient(ellipse at 80% 18%, rgba(46,140,110,0.06), transparent 48%)',
                     }} />
                 </>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { attentionScores, attentionDiameter, attentionLevel } from '@/lib/universe/autonomy';
-import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
+import { PlanetSphere, AmbientMoons, moonBackground, HEADER_LIGHT } from './PlanetSphere';
 import { glyphFor } from '@/lib/universe/planetModel';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
@@ -49,6 +49,7 @@ export interface OrganizationTerritory {
         brightness: number;
         meta: string;
         caption?: string;
+        truth?: 'live' | 'model' | 'disconnected';
         glow?: { level: string; reason: string } | null;
         demo?: boolean;
         chips?: PlanetChip[];
@@ -567,7 +568,7 @@ function Territory({
         '--territory-drift': (16 + (drift % 9)) + 's',
         '--territory-phase': '-' + ((drift >>> 4) % 13) + 's',
         // Licht kommt von der Mitte (MÔRAs Licht): Terminator und Randlicht drehen sich zu ihr.
-        '--uv2-lit': (Math.atan2(50 - territory.y, 50 - territory.x) * 180 / Math.PI + 135).toFixed(1) + 'deg',
+        '--uv2-lit': ((isUniverseV2Enabled() ? HEADER_LIGHT : Math.atan2(50 - territory.y, 50 - territory.x)) * 180 / Math.PI + 135).toFixed(1) + 'deg',
     } as CSSProperties;
 
     return (
@@ -623,9 +624,9 @@ function Territory({
                 className="saimor-territory-body absolute inset-0 block"
             >
                 {model && territory.access !== 'locked' ? (
-                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
+                    <PlanetSphere lit={isUniverseV2Enabled() ? HEADER_LIGHT : Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
                 ) : isUniverseV2Enabled() && territory.access !== 'locked' ? (
-                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
+                    <PlanetSphere lit={HEADER_LIGHT} name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
                 <span
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
@@ -654,7 +655,7 @@ function Territory({
             </span>
             <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
             {model?.caption ? (
-                <span className="uv2-planet-caption mt-1 block text-[13px] leading-[18px] tabular-nums text-[#F7F4E9]/88">
+                <span className="uv2-planet-caption mt-1 block text-[13px] leading-[18px] tabular-nums text-[#F7F4E9]/88" data-uv2-truth={model.truth || undefined}>
                     {model.caption}
                 </span>
             ) : null}
@@ -877,6 +878,7 @@ function RelationLegend({ strands }: { strands: RelationStrand[] }) {
  */
 function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: { orbitals: Orbitals; accent: string; selected: boolean; onOpenMoon: (folderId: string, folderName: string) => void; planetName?: string }) {
     const v2 = isUniverseV2Enabled() && Boolean(planetName);
+    if (v2) return null;
     if (orbitals.moons.length === 0 && orbitals.stars.length === 0) return null;
 
     return (

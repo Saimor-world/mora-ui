@@ -117,11 +117,11 @@ html[data-uv2="on"] [data-uv2-zoom] .uv2-myzel { opacity: .35; }
 /* Licht von der Mitte: Terminator + feines Randlicht drehen sich zur Sonne */
 html[data-uv2="on"] [data-planet-kind] .uv2-sun { rotate: var(--uv2-lit, 0deg); }
 html[data-uv2="on"] [data-planet-kind] .uv2-sun::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 1.5px 1.5px 2px rgba(255,238,205,.42), inset 4px 4px 9px rgba(255,214,150,.10); }
-html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: contrast(1.06) saturate(.85); }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: contrast(1.08) saturate(1.12); }
 /* Dokument-Sterne und Mondlichter nur bei Zeigen/Fokus – Übersicht bleibt sauber */
 html[data-uv2="on"] [data-planet-kind] .saimor-doc-star { opacity: 0 !important; transition: opacity .5s ease; }
 html[data-uv2="on"] [data-planet-kind]:is(:hover, :focus-visible, [aria-pressed="true"]) .saimor-doc-star { opacity: .55 !important; }
-html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not(:hover):not([aria-pressed="true"]) .group\/moon { opacity: .55; filter: saturate(.4); transition: opacity .5s; }
+html[data-uv2="on"] [data-uv2-plane] .saimor-moon-orbit { display: none !important; }
 /* HUD-Chips: kurze echte Zahlen, sauber gesetzt */
 .uv2-hud__label { bottom: calc(100% + 30px) !important; font-size: 13px !important; letter-spacing: .02em; }
 .uv2-hud__chips { position: absolute; left: 50%; bottom: calc(100% + 6px); translate: -50% 0; display: flex; gap: 4px; white-space: nowrap; }
@@ -137,9 +137,9 @@ html[data-uv2="on"] [data-uv2-plane]:not([data-uv2-zoom]) [data-planet-kind]:not
 
 /* ---- hd42: Planeten mit eigenem Material – keine Entsättigung mehr, Schattierung kommt aus der Kugel ---- */
 html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { filter: none !important; }
-html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: saturate(1.05) contrast(1.04) !important; }
-html[data-uv2="on"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet, html[data-uv2="on"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet { filter: saturate(.95) brightness(.95) !important; opacity: 1; }
-html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet { filter: saturate(.7) brightness(.82) !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet { filter: saturate(1.14) contrast(1.06) !important; }
+html[data-uv2="on"] [data-uv2-attn="ruhig"] [data-planet-kind] .uv2-planet, html[data-uv2="on"] [data-planet-kind][data-uv2-attn="ruhig"] .uv2-planet { filter: saturate(1.02) brightness(.96) !important; opacity: 1; }
+html[data-uv2="on"] [data-planet-kind][data-planet-state="sleeping"] .uv2-planet { filter: saturate(.88) brightness(.88) !important; }
 @media (max-width: 1023px) { html[data-uv2="on"] .uv2-hud__chips { scale: 1.35; transform-origin: bottom center; } }
 
 /* Pixel-Varianten: gemeinsame Saimôr-Hand */

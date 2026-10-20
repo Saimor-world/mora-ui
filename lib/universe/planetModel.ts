@@ -207,7 +207,10 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
         if (n('open_invoices')) out.push({ label: 'offen', value: n('open_invoices'), tone: 'open' });
         else if (n('transactions_14d')) out.push({ label: 'Buchungen · 14 Tage', value: n('transactions_14d'), tone: 'calm' });
         break;
-      case 'post': if (n('mails')) out.push({ label: 'neu', value: n('mails'), tone: 'open' }); break;
+      case 'post':
+        if (n('mails')) out.push({ label: 'neu', value: n('mails'), tone: 'open' });
+        else if (n('events')) out.push({ label: n('events') === 1 ? 'Termin' : 'Termine', value: n('events'), tone: 'open' });
+        break;
       case 'wissen': if (n('docs')) out.push({ label: 'Dok', value: n('docs'), tone: 'calm' }); break;
       case 'wache': out.push(n('open_incidents') ? { label: n('open_incidents') === 1 ? 'Vorfall' : 'Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
       case 'werkstatt': if (n('open_tasks')) out.push({ label: n('open_tasks') === 1 ? 'Aufgabe' : 'Aufgaben', value: n('open_tasks'), tone: 'open' }); break;

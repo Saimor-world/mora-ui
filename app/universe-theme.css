@@ -68,12 +68,16 @@ html[data-uv2="on"] .uv2-mora-afterglow {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   translate: -50% -50%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(180,255,220,0.55) 0%, rgba(214,168,72,0.28) 42%, transparent 72%);
-  filter: blur(0.2px);
+  background: transparent;
+  border: 1.5px solid rgba(225,189,98,.62);
+  box-shadow:
+    0 0 18px 6px rgba(225,189,98,.28),
+    inset 0 0 12px rgba(225,189,98,.16);
+  filter: none;
 }
 html[data-uv2="on"] .uv2-mora[data-mora-seat="empty"] .uv2-mora-crystal,
 html[data-uv2="on"] .uv2-mora .uv2-mora-crystal {
@@ -147,7 +151,7 @@ html[data-uv2="on"] .uv2-center-halo {
   height: 220px;
   translate: -50% -50%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(214,168,72,0.10) 0%, rgba(46,140,110,0.07) 40%, transparent 70%);
+  background: radial-gradient(circle, rgba(214,168,72,0.12) 0%, rgba(214,168,72,0.04) 42%, transparent 70%);
   pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -223,7 +227,7 @@ html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-seat-glow {
     0 14px 22px rgba(80,60,20,.14);
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-center-halo {
-  background: radial-gradient(circle, rgba(214,168,72,0.16) 0%, rgba(160,210,190,0.10) 42%, transparent 70%);
+  background: radial-gradient(circle, rgba(214,168,72,0.16) 0%, rgba(214,168,72,0.05) 42%, transparent 70%);
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-orbits ellipse {
   stroke: rgba(120,160,190,.2);
@@ -358,4 +362,97 @@ html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-dock-trace {
 }
 html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-figure {
   filter: drop-shadow(0 10px 14px rgba(16, 70, 48, .22));
+}
+html[data-uv2="on"][data-uv2-theme="dark"] .uv2-mora-figure {
+  filter: drop-shadow(0 10px 18px rgba(0,0,0,.55));
+}
+html[data-uv2="on"] .uv2-mora-stone {
+  position: relative;
+  display: block;
+}
+html[data-uv2="on"] .uv2-mora-stone img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+html[data-uv2="on"] .uv2-mora-stone .mora-face {
+  position: absolute;
+  inset: 0;
+}
+
+html[data-uv2="on"][data-uv2-theme="light"] [data-testid="uv2-room"] button {
+  background: linear-gradient(180deg, rgba(255,255,255,.78), rgba(232,240,246,.52)) !important;
+  color: #3a5268 !important;
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,.95), 0 8px 18px rgba(80,110,140,.14) !important;
+  backdrop-filter: blur(22px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(160%) !important;
+}
+html[data-uv2="on"][data-uv2-theme="light"] [data-testid="uv2-room"] button[aria-pressed="true"],
+html[data-uv2="on"][data-uv2-theme="light"] [data-testid="uv2-mora-toggle"] {
+  color: #9a7428 !important;
+  box-shadow: inset 0 0 0 0.5px rgba(214,168,72,.55), 0 8px 18px rgba(180,140,50,.12) !important;
+}
+
+html[data-uv2="on"] .uv2-mora-nudges {
+  position: absolute;
+  left: calc(var(--mora-x) * 1px + 28px);
+  top: calc(var(--mora-y) * 1px - 10px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(280px, 42vw);
+  pointer-events: auto;
+  z-index: 2;
+}
+html[data-uv2="on"] .uv2-mora-nudge {
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(18,22,20,.78), rgba(10,14,12,.7));
+  box-shadow: inset 0 0 0 0.5px rgba(247,244,233,.16), 0 12px 28px rgba(0,0,0,.35);
+  backdrop-filter: blur(22px) saturate(140%);
+  color: #f4efe2;
+}
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-nudge {
+  background: linear-gradient(180deg, rgba(255,255,255,.82), rgba(236,244,248,.7));
+  color: #1a2a36;
+  box-shadow: inset 0 0 0 0.5px rgba(255,255,255,.95), 0 10px 22px rgba(80,110,140,.16);
+}
+html[data-uv2="on"] .uv2-mora-nudge__title {
+  margin: 0;
+  font: 600 12.5px/1.3 Inter, system-ui, sans-serif;
+}
+html[data-uv2="on"] .uv2-mora-nudge__detail {
+  margin: 4px 0 8px;
+  font: 400 11.5px/1.4 Inter, system-ui, sans-serif;
+  opacity: .78;
+}
+html[data-uv2="on"] .uv2-mora-nudge__row {
+  display: flex;
+  gap: 8px;
+}
+html[data-uv2="on"] .uv2-mora-nudge__ok,
+html[data-uv2="on"] .uv2-mora-nudge__skip {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 600 11px/1 Inter, system-ui, sans-serif;
+  cursor: pointer;
+}
+html[data-uv2="on"] .uv2-mora-nudge__ok {
+  background: #d6a848;
+  color: #1a1408;
+}
+html[data-uv2="on"] .uv2-mora-nudge__skip {
+  background: transparent;
+  color: inherit;
+  opacity: .7;
+}
+html[data-uv2="on"][data-mora-place="dock"] .uv2-mora-nudges {
+  left: auto;
+  right: 18px;
+  top: auto;
+  bottom: 92px;
+  translate: none;
 }

@@ -9,7 +9,8 @@
  * Nur der aktuelle Ort trägt sie. Die anderen zeigen die leere Spur:
  * Sitz = Goldring + Nachglimmen, Dock = stilles Feld „Frag MÔRA“.
  * needs/glow bewegen sie nicht. Ein Flug = dasselbe Element, reduced-motion
- * springt. Lichtmodus = Jadkristall, Dunkelmodus = Nachtform.
+ * springt. Lichtmodus = Jadkristall. Dunkelmodus = Stein mit Augen.
+ * Proaktive Flüge nur über moraProactivity (klare Auslöser), nie stilles Senden.
  */
 import { useSyncExternalStore } from 'react';
 import { useOrbStore } from '@/lib/store/orbStore';

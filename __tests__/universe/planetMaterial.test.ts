@@ -22,7 +22,9 @@ describe('Universe Glass – Bereichsfarben', () => {
       const hue = glassHue(name);
       expect(day.startsWith('#')).toBe(true);
       expect(hue).toHaveLength(3);
-      expect(hue.every((c) => c >= 90 && c <= 245)).toBe(true);
+      const chroma = Math.max(...hue) - Math.min(...hue);
+      expect(chroma).toBeGreaterThan(36);
+      expect(hue.every((c) => c >= 0 && c <= 255)).toBe(true);
     }
   });
 

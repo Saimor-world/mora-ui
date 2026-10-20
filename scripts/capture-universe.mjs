@@ -1,7 +1,7 @@
 // Universe screenshot capture with mocked data
 // Usage: node scripts/capture-universe.mjs [port] [output-name]
 import { chromium } from '@playwright/test';
-import { readFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync, copyFileSync, writeFileSync } from 'node:fs';
 
 const [,, portArg, nameArg] = process.argv;
 const port = portArg || '3003';
@@ -64,8 +64,9 @@ const profile = {
   scope_source: 'screenshot-harness',
 };
 
-const todayIso = '2026-10-19';
-const asOf = '2026-10-19T08:00:00+00:00';
+const harnessNow = new Date();
+const todayIso = harnessNow.toISOString().slice(0, 10);
+const asOf = harnessNow.toISOString();
 const sourceMeta = {
   source: 'harness',
   scope: { level: 'company', tenant_id: 'tenant-saimor-hq', user_id: 'owner', company_id: company.id },
@@ -75,14 +76,17 @@ const sourceMeta = {
   stale_after_seconds: 300,
 };
 
+const inTen = new Date(harnessNow.getTime() + 10 * 60 * 1000);
+const inTenTime = inTen.toISOString().slice(11, 16);
+const mailOld = new Date(harnessNow.getTime() - 18 * 60 * 60 * 1000).toISOString();
 const mails = empty ? [] : [
-  { id: 's1', subject: 'Anfrage: Produktdemo', from_addr: 'kunde@beispiel.de', snippet: 'Passt Donnerstag?', date: '2026-10-19T14:30:00Z', from: 'kunde@beispiel.de' },
-  { id: 's2', subject: 'RE: Quartalsbericht', from_addr: 'partner@firma.de', snippet: 'Zahlen liegen bei.', date: '2026-10-19T13:15:00Z', from: 'partner@firma.de' },
-  { id: 's3', subject: 'Rechnung #2847', from_addr: 'buchhaltung@lieferant.de', snippet: 'Bitte prüfen.', date: '2026-10-19T11:00:00Z', from: 'buchhaltung@lieferant.de' },
-  { id: 's4', subject: 'Team-Update KW42', from_addr: 'team@saimor.world', snippet: 'Standup um 09:30', date: '2026-10-19T09:00:00Z', from: 'team@saimor.world' },
+  { id: 's1', subject: 'Anfrage: Produktdemo', from_addr: 'kunde@beispiel.de', snippet: 'Passt Donnerstag?', date: mailOld, from: 'kunde@beispiel.de' },
+  { id: 's2', subject: 'RE: Quartalsbericht', from_addr: 'partner@firma.de', snippet: 'Zahlen liegen bei.', date: new Date(harnessNow.getTime() - 2 * 3600000).toISOString(), from: 'partner@firma.de' },
+  { id: 's3', subject: 'Rechnung #2847', from_addr: 'buchhaltung@lieferant.de', snippet: 'Bitte prüfen.', date: new Date(harnessNow.getTime() - 4 * 3600000).toISOString(), from: 'buchhaltung@lieferant.de' },
+  { id: 's4', subject: 'Team-Update KW42', from_addr: 'team@saimor.world', snippet: 'Standup um 09:30', date: new Date(harnessNow.getTime() - 5 * 3600000).toISOString(), from: 'team@saimor.world' },
 ];
 const events = empty ? [] : [
-  { id: 'c1', title: 'Standup', date: todayIso, time: '09:30', duration: 15, start_date: todayIso },
+  { id: 'c1', title: 'Standup', date: inTen.toISOString(), time: inTenTime, duration: 15, start_date: todayIso },
   { id: 'c2', title: 'Kundengespräch: Demo', date: todayIso, time: '14:00', duration: 60, location: 'Call', start_date: todayIso },
 ];
 const feeds = empty ? [] : [
@@ -191,11 +195,14 @@ async function main() {
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
 
+  const outDir = '/opt/cursor/artifacts/screenshots';
+  if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
   const ctx = await browser.newContext({
     viewport: { width: W, height: H },
     deviceScaleFactor: DPR,
     timezoneId: 'Europe/Berlin',
     locale: 'de-DE',
+    recordVideo: process.env.RECORD === '1' ? { dir: outDir, size: { width: W, height: H } } : undefined,
   });
 
   await ctx.addInitScript(() => {
@@ -348,13 +355,32 @@ async function main() {
     await page.waitForSelector('[data-testid="uv2-mora-figure"][data-mora-place="planet"]', { timeout: 8000 });
     await page.waitForSelector('[data-testid="uv2-mora-empty"]', { timeout: 8000 });
   }
-  await page.waitForTimeout(600);
+  if (theme === 'dark') {
+    await page.waitForSelector('[data-testid="uv2-mora-stone"]', { timeout: 8000 });
+    await page.waitForSelector('[data-testid="uv2-space-field"]', { timeout: 8000 });
+  } else {
+    await page.waitForSelector('[data-mora-look="light"]', { timeout: 8000 });
+  }
+  await page.waitForTimeout(900);
+
+  let fps = 0;
+  if (theme === 'dark') {
+    fps = await page.evaluate(async () => {
+      const start = performance.now();
+      let last = 0;
+      while (performance.now() - start < 1200) {
+        last = window.__uv2Fps || Number(document.querySelector('[data-testid="uv2-space-field"]')?.dataset.uv2Fps || 0);
+        await new Promise((r) => requestAnimationFrame(r));
+      }
+      return last;
+    });
+    console.log(`FPS (dark space field): ${fps}`);
+    writeFileSync(`${outDir}/${name}.fps.txt`, String(fps));
+  }
 
   await page.mouse.move(W / 2, 70);
   await page.waitForTimeout(600);
 
-  const outDir = '/opt/cursor/artifacts/screenshots';
-  if (!existsSync(outDir)) mkdirSync(outDir, { recursive: true });
   const outPath = `${outDir}/${name}.png`;
   await Promise.race([
     page.evaluate(() => (document.fonts && document.fonts.ready) || Promise.resolve()),
@@ -381,9 +407,25 @@ async function main() {
     console.log('Crop clip', clip);
   }
 
-  await page.screenshot({ path: outPath, timeout: 60000, animations: 'disabled', clip: clip || undefined });
-  console.log(`Screenshot saved to ${outPath}`);
+  await page.screenshot({ path: outPath, timeout: 60000, animations: theme === 'dark' ? 'allow' : 'disabled', clip: clip || undefined });
+  console.log(`Screenshot saved to ${outPath}${fps ? ` [fps=${fps}]` : ''}`);
+
+  if (process.env.RECORD === '1') {
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', place: 'seat' } })));
+    await page.waitForTimeout(900);
+    await page.locator('[data-planet-kind][data-mora-label="Finanzen"]').first().click({ force: true }).catch(() => {});
+    await page.waitForTimeout(2200);
+    await page.evaluate(() => window.dispatchEvent(new CustomEvent('mora:presence', { detail: { state: 'calm', place: 'dock' } })));
+    await page.waitForTimeout(1200);
+  }
+  const video = process.env.RECORD === '1' ? page.video() : null;
   await browser.close();
+  if (video) {
+    const vpath = await video.path();
+    const dest = `${outDir}/${name}.webm`;
+    try { copyFileSync(vpath, dest); console.log('Video saved to', dest); }
+    catch (e) { console.log('Video saved to', vpath, e.message); }
+  }
   return outPath;
 }
 

@@ -27,17 +27,20 @@ type Material = {
   feature?: 'clouds' | 'bands' | 'craters' | 'swirl' | 'veins';
 };
 
+/** Website-header key light: top-left, shared by every dark planet. */
+export const HEADER_LIGHT = Math.atan2(-0.55, -0.72);
+
 const MATERIALS: Record<string, Material> = {
-  // Refined Universe Glass tints — distinct, pastel, never grey. Match Verteilung bars.
-  finanzen: { day: '#e8d09a', mid: '#c9a050', night: '#3a2a12', fx: 0.35, fy: 9, oct: 3, relief: 0.45, atmo: '247,226,180', feature: 'bands' },
-  post: { day: '#8fb4ea', mid: '#3d6cb4', night: '#0e1a30', fx: 2.4, fy: 2.4, oct: 4, relief: 0.4, atmo: '186,214,245', feature: 'clouds' },
-  werkstatt: { day: '#e0aa6a', mid: '#c47a30', night: '#2a1808', fx: 3.2, fy: 3.2, oct: 5, relief: 0.5, atmo: '250,214,170', feature: 'craters' },
-  wissen: { day: '#c49aee', mid: '#6a3cb8', night: '#1a0e32', fx: 1.6, fy: 3.4, oct: 4, relief: 0.42, atmo: '214,188,245', feature: 'veins' },
-  wache: { day: '#7fd4c8', mid: '#2f8a80', night: '#0a221f', fx: 0.8, fy: 6, oct: 3, relief: 0.35, atmo: '186,236,228', feature: 'clouds' },
-  markt: { day: '#e070b4', mid: '#b03a86', night: '#2a1020', fx: 1.4, fy: 2.8, oct: 4, relief: 0.4, atmo: '245,186,220', feature: 'swirl' },
-  betrieb: { day: '#e8a0a8', mid: '#c06070', night: '#2a1016', fx: 0.5, fy: 7, oct: 3, relief: 0.38, atmo: '246,196,206', feature: 'bands' },
-  rd: { day: '#98d078', mid: '#4a9448', night: '#102014', fx: 2.8, fy: 2.2, oct: 5, relief: 0.42, atmo: '190,232,176', feature: 'clouds' },
-  default: { day: '#d9d3c2', mid: '#6b6656', night: '#0e0d0a', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '247,244,233' },
+  // Dark-universe real planets: saturated area colour, deep night side, not beige.
+  finanzen: { day: '#d4a32a', mid: '#8a6414', night: '#1c1406', fx: 0.28, fy: 11, oct: 3, relief: 0.52, atmo: '232,196,110', feature: 'bands', ring: true },
+  post: { day: '#3a78d6', mid: '#1c4a96', night: '#061018', fx: 2.2, fy: 2.4, oct: 4, relief: 0.46, atmo: '150,190,240', feature: 'clouds' },
+  werkstatt: { day: '#c45a22', mid: '#8a3410', night: '#160804', fx: 3.4, fy: 3.2, oct: 5, relief: 0.58, atmo: '240,170,110', feature: 'craters' },
+  wissen: { day: '#7a46d4', mid: '#4a2490', night: '#0e061c', fx: 1.5, fy: 3.2, oct: 4, relief: 0.48, atmo: '186,154,240', feature: 'veins' },
+  wache: { day: '#1aa8a0', mid: '#0c6a68', night: '#041412', fx: 0.7, fy: 6.2, oct: 3, relief: 0.4, atmo: '140,228,220', feature: 'clouds' },
+  markt: { day: '#d42a86', mid: '#8a1860', night: '#14040e', fx: 1.3, fy: 2.6, oct: 4, relief: 0.46, atmo: '240,150,200', feature: 'swirl' },
+  betrieb: { day: '#d44a68', mid: '#8a2438', night: '#16060a', fx: 0.45, fy: 7.2, oct: 3, relief: 0.44, atmo: '240,170,186', feature: 'bands' },
+  rd: { day: '#2aaa48', mid: '#146828', night: '#06140a', fx: 2.6, fy: 2.1, oct: 5, relief: 0.5, atmo: '150,220,150', feature: 'clouds' },
+  default: { day: '#6a7a88', mid: '#3a4650', night: '#080a0c', fx: 2, fy: 3, oct: 4, relief: 0.45, atmo: '180,196,210' },
 };
 
 /** Planeten-Modell v1: Archetypen vom Server — Farbe folgt dem Bereich, nicht dem Gesteinsnamen. */
@@ -448,7 +451,7 @@ function WorldSphere({ name, size, lit, hue, seed, quiet, feature, day, night, a
 }) {
   const ref = React.useRef<HTMLCanvasElement>(null);
   const mode = useThemeAttr();
-  const h: number[] = quiet ? mix(hue, [236, 232, 224], 0.08) : hue;
+  const h: number[] = quiet ? mix(hue, hex(night), 0.12) : hue;
   const dayRgb = hex(day);
   const nightRgb = hex(night);
   const atmoRgb = atmo.split(',').map(Number) as [number, number, number];
@@ -466,7 +469,7 @@ function WorldSphere({ name, size, lit, hue, seed, quiet, feature, day, night, a
     if (hit) { c.putImageData(hit, 0, 0); drawRim(); return; }
 
     const img = c.createImageData(W, W); const d = img.data;
-    const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.58;
+    const lx0 = Math.cos(lit), ly0 = Math.sin(lit), lz0 = 0.42;
     const ll = Math.hypot(lx0, ly0, lz0); const lx = lx0 / ll, ly = ly0 / ll, lz = lz0 / ll;
     const hx = lx, hy = ly, hz = lz + 1; const hl = Math.hypot(hx, hy, hz);
     const r = W / 2;
@@ -497,17 +500,17 @@ function WorldSphere({ name, size, lit, hue, seed, quiet, feature, day, night, a
         relief = (n1 - 0.5) * 0.28 + Math.sin(lon * 3 + lat * 5 + n2) * 0.08;
       }
 
-      const litCol = mix(dayRgb, h, 0.22);
-      const k = Math.min(1, Math.max(0, term * (0.18 + 0.82 * Math.pow(dif, 0.78)) + relief * 0.18));
-      let col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.55), k * 2) : mix(mix(nightRgb, litCol, 0.55), litCol, (k - 0.5) * 2);
-      if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(h, [255, 252, 245], 0.4), Math.min(0.45, relief));
-      if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [214, 176, 255], 0.25), Math.min(0.55, relief));
-      const fres = Math.pow(1 - z, 2.6);
-      const rimLit = fres * Math.max(0, ndl + 0.22) * (selected ? 1.15 : 0.9);
-      col = mix(col, mix(atmoRgb, [255, 248, 230], 0.18), Math.min(0.62, rimLit));
-      const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 78) * 0.22;
-      col = mix(col, [255, 246, 220], spec);
-      const nightA = (1 - term) * 0.4;
+      const litCol = mix(dayRgb, h, 0.06);
+      const k = Math.min(1, Math.max(0, term * (0.12 + 0.88 * Math.pow(dif, 0.72)) + relief * 0.16));
+      let col = k < 0.5 ? mix(nightRgb, mix(nightRgb, litCol, 0.62), k * 2) : mix(mix(nightRgb, litCol, 0.62), litCol, (k - 0.5) * 2);
+      if (feature === 'clouds' && relief > 0.08) col = mix(col, mix(atmoRgb, [236, 244, 252], 0.35), Math.min(0.4, relief));
+      if (feature === 'veins' && relief > 0.2) col = mix(col, mix(h, [220, 190, 255], 0.2), Math.min(0.5, relief));
+      const fres = Math.pow(1 - z, 2.4);
+      const rimLit = fres * Math.max(0, ndl + 0.28) * (selected ? 1.2 : 1);
+      col = mix(col, atmoRgb, Math.min(0.58, rimLit));
+      const spec = Math.pow(Math.max(0, (u * hx + v * hy + z * hz) / hl), 70) * 0.18;
+      col = mix(col, mix(atmoRgb, [255, 246, 220], 0.35), spec);
+      const nightA = (1 - term) * 0.22;
       col = mix(col, nightRgb, nightA);
 
       const edge = Math.min(1, (1 - Math.sqrt(q)) * r * 1.55);
