@@ -7,68 +7,56 @@
  * - One accent: Gold (#D6A848)
  * - Type: Cormorant Garamond serif for headlines, Inter sans for body
  * - Cards: Subtle hairline borders, no competing glows
- * - Brighter, airier feel with cream tones on dark ink
  *
- * This surface renders for:
- * - activeMode === 'visitor' (website security check entry)
- * - activeMode === 'private_preview' (demo tenant preview)
+ * Preview / visitor Home owns its own in-flow welcome hint so nothing
+ * floats over content. The 20-day note lives on the Vorschau pill.
  */
 
 import React, { useEffect, useState } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { ArrowRight, Shield, Sparkles, Timer } from 'lucide-react';
+import {
+    ArrowRight,
+    CalendarDays,
+    CheckCircle2,
+    LayoutGrid,
+    ListTodo,
+    Shield,
+    X,
+} from 'lucide-react';
 import { useWebsiteEntryContext } from '@/lib/hooks/useWebsiteEntryContext';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { useNavStore } from '@/lib/store/navStore';
 import { UV2_FONTS_HREF } from '@/lib/universe/tokens';
+import {
+    isProductTourDismissed,
+    markProductTourDismissed,
+} from '@/lib/onboarding/productTourStore';
 
 const UV2_TOKENS = {
     gold: '#D6A848',
     goldRgb: '214,168,72',
     cream: '#F7F4E9',
     creamRgb: '247,244,233',
-    ink: '#050706',
-    ink2: '#070B0C',
     hairline: 'rgba(247,244,233,0.09)',
-    border: 'rgba(164,190,182,0.22)',
 };
 
 const SERIF = '"Cormorant Garamond", Georgia, serif';
 const SANS = 'Inter, -apple-system, system-ui, sans-serif';
+
+/** Dock bar (~72px) + bottom-4 (16px) + 24px gap, plus safe-area. */
+const HOME_BOTTOM_PAD = 'calc(env(safe-area-inset-bottom, 0px) + 88px + 24px)';
+
+const DEMO_TODAY = [
+    { key: 'tasks', label: 'Aufgaben', value: '3 offen', detail: 'Heute in Simple Coffee' },
+    { key: 'events', label: 'Termine', value: '2 Termine', detail: 'Nächster in 40 Minuten' },
+    { key: 'approval', label: 'Freigabe', value: '1 Freigabe', detail: 'Wartet auf dich' },
+] as const;
 
 function timeGreeting(hour: number): string {
     if (hour < 5) return 'Gute Nacht';
     if (hour < 11) return 'Guten Morgen';
     if (hour < 18) return 'Guten Tag';
     return 'Guten Abend';
-}
-
-function MoraStone() {
-    return (
-        <div className="relative h-14 w-14 shrink-0" aria-hidden>
-            <motion.div
-                className="absolute inset-[-6px] rounded-full blur-md"
-                style={{ background: `rgba(${UV2_TOKENS.goldRgb}, 0.12)` }}
-                animate={{ scale: [0.94, 1.08, 0.94], opacity: [0.45, 0.8, 0.45] }}
-                transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
-            />
-            <motion.div
-                className="absolute inset-0"
-                animate={{ scale: [1, 1.03, 1] }}
-                transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
-            >
-                <Image
-                    src="/brand/mora-stone-v1.png"
-                    alt=""
-                    width={56}
-                    height={56}
-                    draggable={false}
-                    className="h-full w-full select-none drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]"
-                />
-            </motion.div>
-        </div>
-    );
 }
 
 type CardProps = {
@@ -108,6 +96,62 @@ function Label({ children }: { children: React.ReactNode }) {
     );
 }
 
+function PreviewWelcomeHint({ onDismiss }: { onDismiss: () => void }) {
+    return (
+        <div
+            data-testid="preview-welcome-hint"
+            className="mt-6 rounded-xl p-4"
+            style={{
+                background: 'rgba(7,11,12,0.65)',
+                border: '0.5px solid rgba(214,168,72,0.28)',
+            }}
+        >
+            <div className="flex items-start gap-3">
+                <div
+                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                    style={{
+                        background: 'rgba(214,168,72,0.12)',
+                        border: '0.5px solid rgba(214,168,72,0.28)',
+                    }}
+                >
+                    <LayoutGrid size={14} style={{ color: UV2_TOKENS.gold }} strokeWidth={1.6} />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p
+                        style={{
+                            fontSize: 12,
+                            fontWeight: 500,
+                            letterSpacing: '0.06em',
+                            color: UV2_TOKENS.gold,
+                        }}
+                    >
+                        MÔRA · Dein Home
+                    </p>
+                    <p
+                        className="mt-1"
+                        style={{
+                            fontSize: 13,
+                            lineHeight: 1.5,
+                            color: `rgba(${UV2_TOKENS.creamRgb}, 0.72)`,
+                        }}
+                    >
+                        Signale, der Tag und der nächste Schritt — unten liegt das Dock.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={onDismiss}
+                    aria-label="Hinweis schließen"
+                    className="shrink-0 rounded p-1"
+                    style={{ color: `rgba(${UV2_TOKENS.creamRgb}, 0.4)` }}
+                >
+                    <X size={14} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
 export function VisitorHomeSurface() {
     const context = useWebsiteEntryContext();
     const { data: companies = [] } = useCompanies({ includeDemo: true });
@@ -116,6 +160,8 @@ export function VisitorHomeSurface() {
     const guidedDemoCompany = companies.find((c) => c.is_demo && c.name === 'Simple Coffee Group');
 
     const [now, setNow] = useState<Date | null>(null);
+    const [hintVisible, setHintVisible] = useState(false);
+
     useEffect(() => {
         if (document.getElementById('uv2-fonts')) return;
         const link = document.createElement('link');
@@ -129,6 +175,9 @@ export function VisitorHomeSurface() {
         update();
         const timer = window.setInterval(update, 30_000);
         return () => window.clearInterval(timer);
+    }, []);
+    useEffect(() => {
+        setHintVisible(!isProductTourDismissed());
     }, []);
 
     const greeting = now ? timeGreeting(now.getHours()) : 'Willkommen';
@@ -144,12 +193,17 @@ export function VisitorHomeSurface() {
     const hasRealScore = context?.score !== undefined && context?.score !== null;
     const score = hasRealScore ? context.score : null;
     const tasks = context?.tasks ?? [];
-    const expiresLabel = '20 Tage Preview';
+    const todayIcon = { tasks: ListTodo, events: CalendarDays, approval: CheckCircle2 };
 
     const openGuidedDemo = () => {
         if (!guidedDemoCompany) return;
         setActiveCompany(guidedDemoCompany.id);
         navigateToExplore();
+    };
+
+    const dismissHint = () => {
+        markProductTourDismissed();
+        setHintVisible(false);
     };
 
     const ease = [0.22, 1, 0.36, 1] as const;
@@ -162,9 +216,10 @@ export function VisitorHomeSurface() {
                 fontFamily: SANS,
                 color: UV2_TOKENS.cream,
                 paddingTop: 'max(env(safe-area-inset-top, 0px), 24px)',
-                paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 120px), 140px)',
+                paddingBottom: HOME_BOTTOM_PAD,
                 paddingLeft: 'max(env(safe-area-inset-left, 0px), 24px)',
                 paddingRight: 'max(env(safe-area-inset-right, 0px), 24px)',
+                scrollPaddingBottom: HOME_BOTTOM_PAD,
             }}
         >
             <div className="uv2-grain" aria-hidden />
@@ -175,21 +230,18 @@ export function VisitorHomeSurface() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease, delay: 0.15 }}
                 >
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <p
-                            style={{
-                                fontFamily: SANS,
-                                fontSize: 12,
-                                fontWeight: 500,
-                                letterSpacing: '0.08em',
-                                textTransform: 'uppercase',
-                                color: UV2_TOKENS.gold,
-                            }}
-                        >
-                            {dateLabel.replace(',', ' ·')}{timeLabel ? ` · ${timeLabel}` : ''}
-                        </p>
-                        <MoraStone />
-                    </div>
+                    <p
+                        style={{
+                            fontFamily: SANS,
+                            fontSize: 12,
+                            fontWeight: 500,
+                            letterSpacing: '0.08em',
+                            textTransform: 'uppercase',
+                            color: UV2_TOKENS.gold,
+                        }}
+                    >
+                        {dateLabel.replace(',', ' ·')}{timeLabel ? ` · ${timeLabel}` : ''}
+                    </p>
 
                     <h1
                         className="mt-6"
@@ -218,6 +270,8 @@ export function VisitorHomeSurface() {
                         <span style={{ color: UV2_TOKENS.gold }}>{companyName}</span>.
                         {domain ? ` ${domain}` : ''}
                     </p>
+
+                    {hintVisible ? <PreviewWelcomeHint onDismiss={dismissHint} /> : null}
                 </motion.section>
 
                 <motion.section
@@ -226,10 +280,64 @@ export function VisitorHomeSurface() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, ease, delay: 0.3 }}
                 >
-                    <Label>Heute</Label>
+                    <div className="flex items-baseline gap-3">
+                        <Label>Heute</Label>
+                        <span
+                            style={{
+                                fontSize: 12,
+                                color: `rgba(${UV2_TOKENS.creamRgb}, 0.45)`,
+                            }}
+                        >
+                            Beispiel · Simple Coffee
+                        </span>
+                    </div>
 
-                    <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        {hasRealScore ? (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                        {DEMO_TODAY.map((item) => {
+                            const Icon = todayIcon[item.key];
+                            return (
+                                <Card key={item.key}>
+                                    <div className="flex items-center gap-2">
+                                        <Icon size={16} style={{ color: UV2_TOKENS.gold }} />
+                                        <span
+                                            style={{
+                                                fontSize: 12,
+                                                fontWeight: 500,
+                                                letterSpacing: '0.06em',
+                                                textTransform: 'uppercase',
+                                                color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
+                                            }}
+                                        >
+                                            {item.label}
+                                        </span>
+                                    </div>
+                                    <p
+                                        className="mt-2"
+                                        style={{
+                                            fontFamily: SERIF,
+                                            fontSize: 22,
+                                            fontWeight: 400,
+                                            color: UV2_TOKENS.cream,
+                                        }}
+                                    >
+                                        {item.value}
+                                    </p>
+                                    <p
+                                        className="mt-1"
+                                        style={{
+                                            fontSize: 13,
+                                            color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
+                                        }}
+                                    >
+                                        {item.detail}
+                                    </p>
+                                </Card>
+                            );
+                        })}
+                    </div>
+
+                    {hasRealScore ? (
+                        <div className="mt-4">
                             <Card>
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
@@ -292,51 +400,13 @@ export function VisitorHomeSurface() {
                                     </div>
                                 </div>
                             </Card>
-                        ) : null}
-
-                        <Card>
-                            <div className="flex items-center gap-2">
-                                <Timer size={16} style={{ color: UV2_TOKENS.gold }} />
-                                <span
-                                    style={{
-                                        fontSize: 12,
-                                        fontWeight: 500,
-                                        letterSpacing: '0.06em',
-                                        textTransform: 'uppercase',
-                                        color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
-                                    }}
-                                >
-                                    Vorschau-Raum
-                                </span>
-                            </div>
-                            <p
-                                className="mt-2"
-                                style={{
-                                    fontFamily: SERIF,
-                                    fontSize: 22,
-                                    fontWeight: 400,
-                                    color: UV2_TOKENS.cream,
-                                }}
-                            >
-                                {expiresLabel}
-                            </p>
-                            <p
-                                className="mt-1"
-                                style={{
-                                    fontSize: 13,
-                                    color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
-                                }}
-                            >
-                                Deine Daten bleiben getrennt und laufen automatisch ab.
-                            </p>
-                        </Card>
-                    </div>
+                        </div>
+                    ) : null}
 
                     {tasks.length > 0 && (
                         <div className="mt-4">
                             <Card>
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Sparkles size={16} style={{ color: UV2_TOKENS.gold }} />
+                                <div className="mb-3 flex items-center gap-2">
                                     <span
                                         style={{
                                             fontSize: 12,
@@ -370,7 +440,7 @@ export function VisitorHomeSurface() {
                                             <span
                                                 className="shrink-0 rounded px-2 py-0.5"
                                                 style={{
-                                                    fontSize: 11,
+                                                    fontSize: 12,
                                                     fontWeight: 500,
                                                     letterSpacing: '0.04em',
                                                     textTransform: 'uppercase',
@@ -424,7 +494,7 @@ export function VisitorHomeSurface() {
                                             color: `rgba(${UV2_TOKENS.creamRgb}, 0.45)`,
                                         }}
                                     >
-                                        Demo-Workspace
+                                        Demo-Arbeitsbereich
                                     </p>
                                     <p
                                         className="mt-1"
@@ -445,7 +515,7 @@ export function VisitorHomeSurface() {
                                             color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
                                         }}
                                     >
-                                        Erkunde ein voll eingerichtetes SAIMÔR OS mit echten Beispieldaten.
+                                        Ein voll eingerichtetes SAIMÔR OS mit echten Beispieldaten.
                                     </p>
                                 </div>
                                 <ArrowRight
@@ -487,7 +557,7 @@ export function VisitorHomeSurface() {
                                             color: UV2_TOKENS.cream,
                                         }}
                                     >
-                                        Topographie erkunden
+                                        Universe öffnen
                                     </p>
                                     <p
                                         className="mt-2"
@@ -497,7 +567,7 @@ export function VisitorHomeSurface() {
                                             color: `rgba(${UV2_TOKENS.creamRgb}, 0.55)`,
                                         }}
                                     >
-                                        Sieh die Organisation als lebendige Struktur im Raum.
+                                        Deine Organisation als Raum.
                                     </p>
                                 </div>
                                 <ArrowRight
@@ -509,20 +579,6 @@ export function VisitorHomeSurface() {
                         </button>
                     </div>
                 </motion.section>
-
-                <motion.p
-                    className="mt-10"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.6, ease, delay: 0.6 }}
-                    style={{
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        color: `rgba(${UV2_TOKENS.creamRgb}, 0.38)`,
-                    }}
-                >
-                    Demo-Daten zeigen nur das Muster der Simple Coffee Group. Daten aus deinem Check bleiben getrennt und laufen nach 20 Tagen automatisch ab.
-                </motion.p>
             </main>
         </div>
     );

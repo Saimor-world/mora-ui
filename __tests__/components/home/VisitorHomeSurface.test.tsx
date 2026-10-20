@@ -47,6 +47,7 @@ jest.mock('framer-motion', () => {
 
 beforeEach(() => {
     jest.clearAllMocks();
+    localStorage.clear();
     useNavStore.setState({ activeCompanyId: 'company-acme', coreMode: 'home' } as any);
 });
 
@@ -57,6 +58,9 @@ it('renders the unified preview home with UV2 design tokens', () => {
     expect(screen.getByText('Acme GmbH')).toBeInTheDocument();
     expect(screen.getByText('Score 64')).toBeInTheDocument();
     expect(screen.getByText('CSP setzen')).toBeInTheDocument();
+    expect(screen.getByText('3 offen')).toBeInTheDocument();
+    expect(screen.getByText('2 Termine')).toBeInTheDocument();
+    expect(screen.getByText('1 Freigabe')).toBeInTheDocument();
 });
 
 it('opens the tenant-scoped Simple Coffee demo', async () => {
@@ -69,10 +73,15 @@ it('opens the tenant-scoped Simple Coffee demo', async () => {
     expect(useNavStore.getState().coreMode).toBe('explore');
 });
 
+it('renders the welcome hint in the document flow', () => {
+    render(<VisitorHomeSurface />);
+    expect(screen.getByTestId('preview-welcome-hint')).toBeInTheDocument();
+});
+
 it('navigates to Universe explore mode', async () => {
     render(<VisitorHomeSurface />);
 
-    const universeButton = screen.getByRole('button', { name: /Topographie erkunden/i });
+    const universeButton = screen.getByRole('button', { name: /Universe öffnen/i });
     await userEvent.click(universeButton);
 
     expect(useNavStore.getState().coreMode).toBe('explore');

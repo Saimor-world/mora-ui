@@ -62,10 +62,10 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
         shortText = 'Private Testumgebung';
     } else if (activeMode === 'private_preview') {
         badgeText = ownerReturnAvailable ? 'Kunden-Vorschau' : 'Vorschau';
-        shortText = ownerReturnAvailable ? 'Isolierter Tenant' : 'Endet in 20 Tagen';
+        shortText = ownerReturnAvailable ? 'Isolierter Tenant' : '20 Tage';
     } else if (activeMode === 'visitor') {
         badgeText = 'Vorschau';
-        shortText = 'Personalisierte Ansicht';
+        shortText = '20 Tage';
     }
 
     return (
@@ -78,6 +78,11 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
         >
             <div
                 className="flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl"
+                title={
+                    activeMode === 'private_preview' || activeMode === 'visitor'
+                        ? '20 Tage Vorschau. Daten bleiben getrennt und laufen automatisch ab.'
+                        : undefined
+                }
                 style={{
                     background: 'rgba(7,11,12,0.75)',
                     border: `0.5px solid rgba(214,168,72,0.35)`,
@@ -104,7 +109,11 @@ export const ModeIndicatorBanner: React.FC<{ activeMode: 'real_hq' | 'public_pla
                     {badgeText}
                 </span>
                 <span
-                    className="hidden sm:inline text-[11px]"
+                    className={
+                        activeMode === 'private_preview' || activeMode === 'visitor'
+                            ? 'text-[11px]'
+                            : 'hidden sm:inline text-[11px]'
+                    }
                     style={{ color: 'rgba(247,244,233,0.55)' }}
                 >
                     · {shortText}

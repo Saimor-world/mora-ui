@@ -25,7 +25,7 @@ describe('ModeIndicatorBanner', () => {
 
   it('explains the visitor mode context', () => {
     render(<ModeIndicatorBanner activeMode="visitor" />);
-    expect(screen.getByText(/Personalisierte Ansicht/i)).toBeInTheDocument();
+    expect(screen.getByText(/20 Tage/i)).toBeInTheDocument();
   });
 
   it('offers a verified return path for owner customer previews', async () => {

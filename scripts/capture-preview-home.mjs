@@ -139,17 +139,9 @@ async function captureViewport(browser, { name, width, height }) {
   await page.goto(`${BASE_URL}/home`, { waitUntil: 'domcontentloaded', timeout: 60_000 });
 
   const surface = page.locator('[data-testid="visitor-home-surface"]');
-  const legacyScore = page.getByText('Security Check Ergebnis');
-  const greeting = page.getByText(/Guten |Willkommen|Dein Dossier|Vorschau-Raum|Simple Coffee/);
-  await Promise.race([
-    surface.waitFor({ state: 'visible', timeout: 25_000 }).catch(() => null),
-    legacyScore.waitFor({ state: 'visible', timeout: 25_000 }).catch(() => null),
-    greeting.first().waitFor({ state: 'visible', timeout: 25_000 }),
-  ]);
-
-  // Tour appears after ~2.2s on demo/preview paths.
-  await page.waitForTimeout(2800);
-  await page.waitForTimeout(400);
+  await surface.waitFor({ state: 'visible', timeout: 25_000 });
+  await page.getByText(/Guten |Willkommen/).first().waitFor({ state: 'visible', timeout: 10_000 });
+  await page.waitForTimeout(800);
 
   const file = path.join(OUT_DIR, `preview-home-${LABEL}-${name}.png`);
   await page.screenshot({ path: file, fullPage: false });

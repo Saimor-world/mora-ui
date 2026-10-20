@@ -40,7 +40,7 @@ const HOME_STEPS: TourStep[] = [
         id: 'universe',
         icon: Compass,
         title: 'Universe',
-        voice: 'Bereiche und Verbindungen als Topographie.',
+        voice: 'Bereiche und Verbindungen als Raum.',
         target: { selector: '[data-testid="universe-toggle"]', offsetY: -8 },
         accent: 'rgba(214,168,72,0.70)',
     },
@@ -96,6 +96,8 @@ function resolveAppearDelay(activeMode: string): number {
 }
 
 function shouldAutoShowTour(activeMode: string): boolean {
+    // Preview Home owns its own in-flow hint — never overlay that surface.
+    if (activeMode === 'visitor' || activeMode === 'private_preview') return false;
     return isDemoEntryPath(activeMode);
 }
 
@@ -160,7 +162,7 @@ export const FirstRunTour: React.FC = () => {
             setDismissed(false);
             setStepIdx(0);
             setDontShowAgain(false);
-            if (coreMode === 'home') {
+            if (coreMode === 'home' && activeMode !== 'visitor' && activeMode !== 'private_preview') {
                 setActive(true);
                 markTourSeenThisSession();
             }
@@ -172,7 +174,7 @@ export const FirstRunTour: React.FC = () => {
             window.removeEventListener(PRODUCT_TOUR_STATE_EVENT, onStateChange);
             window.removeEventListener(PRODUCT_TOUR_RESTART_EVENT, onRestart);
         };
-    }, [coreMode, userSettings]);
+    }, [activeMode, coreMode, userSettings]);
 
     useEffect(() => {
         if (dismissed) return;
@@ -225,6 +227,7 @@ export const FirstRunTour: React.FC = () => {
 
     if (dismissed) return null;
     if (coreMode !== 'home') return null;
+    if (activeMode === 'visitor' || activeMode === 'private_preview') return null;
     if (!active) return null;
 
     const step = steps[stepIdx];

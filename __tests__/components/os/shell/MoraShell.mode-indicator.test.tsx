@@ -217,6 +217,6 @@ describe('MoraShell mode indicator banner', () => {
         seedShellStores('private_preview');
         renderWithProviders(<MoraShell />);
         expect(screen.getByText(/^Vorschau$/i)).toBeInTheDocument();
-        expect(screen.getByText(/Endet in 20 Tagen/i)).toBeInTheDocument();
+        expect(screen.getByText(/20 Tage/i)).toBeInTheDocument();
     });
 });
