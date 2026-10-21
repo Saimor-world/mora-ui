@@ -83,8 +83,8 @@ describe('OrganizationField: die beiden Linsen', () => {
         const dashed = paths.filter((path) => path.getAttribute('stroke-dasharray'));
 
         expect(dashed).toHaveLength(1);
-        expect(screen.getByText(/1 belegt/)).toBeInTheDocument();
-        expect(screen.getByText(/1 nur vermutet/)).toBeInTheDocument();
+        expect(screen.getByText(/1 Zusammenhänge belegt/)).toBeInTheDocument();
+        expect(screen.getByText(/1 von MÔRA vermutet/)).toBeInTheDocument();
     });
 
     // Frueher stand hier: "sagt es ausdruecklich, wenn nichts nachweisbar

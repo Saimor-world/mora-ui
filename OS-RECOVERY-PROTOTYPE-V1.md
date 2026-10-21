@@ -1,0 +1,574 @@
+# OS Recovery Prototype V1 – SAIMÔR OS
+
+Branch `grok/os-recovery-prototype-v1` · Basis `main @ a053dd39` (Merge #100; am 07.10.2026 ~09:45 Berlin neu geprüft, main hat sich seit dem Audit **nicht** bewegt) · Stand 07.10.2026 (Berlin) · **Nicht gemergt, nicht deployed.**
+
+> „Ein ruhiges Cockpit für ein Unternehmen, mit MÔRA als Bedienung.“ – Klarheit im Wandel.
+
+## 1 Ausgangslage
+Audit `STAND-NULL-SAIMOR-OS.md`: mora-ui technisch gesund (tsc 0, Lint 0/1, Jest 255/1.469, Build grün), aber 29 Apps, ~114k LOC, Shell = MoraShell+Dock+Spotlight+NotificationCenter+MemorySidebar (~5.900 Z.) mit Wissen über jede App, Design-Tokens kaum genutzt, Finance v2 auf main aber **nicht verdrahtet** (`AppLoader` lud nur `apps/finance`), Live-CORE ohne `/v3/finance/profit-center` und `/capital-policy`.
+
+## 2 Adressierte Probleme
+| Audit-Befund | Antwort im Prototyp |
+|---|---|
+| Sprawl / keine IA | 6 Hauptflächen + Labs/System, alle 29 alten Apps eingeordnet (Tabelle §5) |
+| Shell kennt jede App | Shell rendert nur aus Feature-Manifesten (`features/registry.ts`) |
+| K1 Finance v2 toter Code | `finance-v2` im AppLoader/Registry registriert, in Finance eingebettet |
+| K2 CORE-Verträge fehlen live | Contract-Adapter: 404 → klarer „nicht verfügbar“-Zustand, niemals „Verbunden“ |
+| Design-System nominell | `lib/design/osTokens.ts` → `--os-*` CSS-Variablen; 13 Primitive; 0 harte Farben im neuen Code |
+| Uneinheitliche Zustände | 8 gemeinsame Zustände (`components/os-kit/States.tsx`) |
+| State-Zersplitterung | neue Regeln (§9): Server = React Query, UI = Zustand, keine Persistenz |
+| K8 lokal ohne CORE nicht klickbar | lokale Vorschau (`NEXT_PUBLIC_OS_PREVIEW=local`, nur localhost) |
+
+## 3 Architektur
+```
+app/os/page.tsx            Route /os (Flag-gesteuert), legacy "/" unverändert
+components/os-shell/       OsShell (Rail, Topbar, Bottom-Bar mobil, MÔRA-Panel), CommandPalette, NotificationTray, FeatureBoundary
+components/os-kit/         Primitive + Zustände + os-kit.css (nur var(--os-*))
+lib/design/osTokens.ts     Tokens (Farbe, Abstand, Radius, Typo, Motion, Layout) → CSS-Variablen
+lib/os-prototype/          flags, shellStore (UI), notifications (Bus), legacyApps (Platzierung + openLegacyApp), coreFailure, useCoreHealth
+features/
+  types.ts registry.ts     FeatureManifest + manifest-getriebene Registry/Navigation
+  today|mora|finance|post|knowledge|settings|labs/
+    manifest.ts            id, title, icon, slot, order, permissions, flag, visibility, mobile, load() (lazy), mora.{contextLabel,suggestions}, legacyApps
+    index.tsx              Entry (Surface)
+    data/                  React-Query-Hooks/Adapter (nur bestehende Clients)
+    ui/                    Feature-UI
+```
+Schichtung: **Shell → Navigation (aus Manifesten) → Command/MÔRA → Notification-Service → Feature-Manifeste**. Ein Feature hinzufügen = Ordner + Manifest + Eintrag in `FEATURE_MANIFESTS`; die Shell ändert sich nicht. Jedes Feature hängt in einer `FeatureBoundary` (ein kaputter Bereich reißt die Shell nicht mit) und wird per `React.lazy` geladen. Deep-Links: `/os#finance`, `/os#knowledge` … (unbekannt/verboten → Heute).
+Alte Apps öffnen sich als klassische Pane über der neuen Shell (`openLegacyApp()` → `paneStore.openPane` → bestehender `PaneManager`/`AppLoader`, inkl. dessen Rollenprüfung).
+
+## 4 Fähigkeiten erhalten (wiederverwendet statt dupliziert)
+| Fähigkeit | wiederverwendet aus |
+|---|---|
+| Finance v2 komplett (State/Flow/Treasury/Capital, Profit Center, Sources, XRPL Watch Lab) | `apps/finance-v2` – neu extrahiert: `FinanceV2Workspace` (pane-unabhängig), Default-Export = GlassPanel-Hülle wie bisher |
+| Finance-Daten | `lib/queries/useFinanceStateFlow`, `useFinanceProfitCenter` |
+| Heute-Tagesbild | `lib/os/useScopedToday` + `lib/api/todayClient` (`/v3/today`, Scope-Prüfung) |
+| MÔRA-Chat | `lib/api/moraAgentClient` (`POST /v3/chat`, inkl. `buildChatContext`) – derselbe Client wie Chat/Dock |
+| Suche | `lib/api/searchClient.searchGlobal` (wie Spotlight/Search-App) |
+| Memory | `lib/queries/useMemories` (wie MemorySidebar) |
+| Post | dieselben Verträge wie Mail/Kalender-Apps (`/v3/mail/messages`, `/v3/calendar/events`) |
+| Verbindungen | Vertrag + Typen aus `lib/hooks/useIntegrationsOverview` (`/v3/integrations/overview`) |
+| Rechte | `sessionStore.permissions` / `ROLE_PERMISSIONS` |
+| Semantik-Farben | `lib/design/tokens.ts` (`semanticColor`) – osTokens baut darauf auf |
+| Fenster/Apps | `PaneManager`, `AppLoader` (inkl. Rollen-Gate), `appRegistry` |
+
+## 5 Neu eingeordnet (alte App → neue Fläche)
+| alte App(s) | neue Fläche | wie |
+|---|---|---|
+| chat, Dock-Chat, Spotlight-„Frag MÔRA“ | **MÔRA** | globales Panel (Desktop rechts, Mobil Bottom-Sheet) + Seite; Chat-App als „klassisch öffnen“ |
+| Spotlight | **Command-Palette** (⌘K) | Bereiche, alle alten Apps, „MÔRA fragen“, CORE-Suche |
+| HomeSurface/HomeCockpit, TodayOverview | **Heute** | Aufmerksamkeit, Termine, Finance-Signal, offene Arbeit, Neues, MÔRA-Hinweise |
+| finance-v2 | **Finance** | eingebettet |
+| finance (alt) | Labs › **Legacy** | als Fenster |
+| finder, meine-dateien, search, document, notes, MemorySidebar | **Wissen** | eine Suche + Erinnerungen + „Quellen“ (öffnen alte Apps) |
+| mail, calendar | **Post** | Überblick + „Postfach/Kalender öffnen“ |
+| settings, integrations | **Einstellungen** | Konto · Identität · Verbindungen · Berechtigungen · System; alte Settings „klassisch“ |
+| scanner, nightwatch, lagefeld, codex, canvas, grid, website-dossier, timeline, feeds | Labs › **Labor** | als Fenster |
+| work, tasks, action-center, work-session | Labs › **Arbeit** (offene Arbeit zusätzlich in Heute) | als Fenster |
+| terminal, team, users, apps | Labs › **System** | als Fenster, Rollen-Gate bleibt |
+| NotificationCenter | **Notification-Service** (`lib/os-prototype/notifications`) + Tray | minimal, sitzungsflüchtig |
+| Universe/Spaces/DepartmentLayer/AmbientRoom/Planet/Dock | **klassische Oberfläche `/`** (Link in Rail, Labs, „Mehr“) | unverändert |
+
+## 6 Labs / System
+`/os#labs` listet **jede** alte App in fünf Gruppen (Labor, Arbeit, System, Legacy, „in neue Bereiche eingeordnet“) mit „Öffnen“ und ggf. „Zu <Bereich>“. Rollenpflichtige Apps (codex, users, terminal) zeigen „Rolle nötig“; der AppLoader blockt sie weiterhin. Test `legacy-reachability` erzwingt: jede ID aus `APP_MAP` hat genau eine Platzierung und öffnet als Pane.
+
+## 7 Legacy (weiter bestehend)
+- `/` mit MoraShell, Dock, Spotlight, Universe, Spaces, Ambient – **unverändert**.
+- Alle 28 bisherigen App-IDs + neu `finance-v2` im `AppLoader`; `apps/finance` unverändert; alte Launcher sehen `finance-v2` nicht (`launcherHidden`).
+- `/tunnel`, `/playground`, `/home` unverändert. Keine Stores umgeschrieben.
+
+## 8 Finance
+**Verdrahtung:** `apps/finance-v2/index.tsx` → `export function FinanceV2Workspace({ initialSection, hideSectionNav })` (Inhalt 1:1 aus dem Pane extrahiert) + Default-Export (GlassPanel) unverändert im Verhalten. Registrierung `finance-v2` in `AppLoader`, `appRegistry` (launcherHidden), `surfaceRegistry` (Tier `app`). `features/finance` lädt den Workspace lazy und steuert ihn über Tabs: Überblick (state) · Cashflow (flow) · Profit Center (capital) · Treasury & Quellen (treasury) · Capital · XRPL read-only (capital).
+**Contract-Adapter** (`features/finance/data/contracts.ts`): prüft mit den bestehenden Hooks `/v3/finance/state`, `/profit-center`, `/capital-policy`. Zustände: verfügbar · fehlt im laufenden CORE (404) · CORE nicht erreichbar · keine bestätigte Sitzung · kein Zugriff · CORE-Fehler · nicht geprüft (keine Sitzung/kein Unternehmen). Tab „Profit Center“ wird bei fehlendem Vertrag **durch einen klaren Nicht-verfügbar-Zustand ersetzt** statt halb zu rendern. Der Text „Verbunden“ erscheint im neuen Code nicht (Test). Ohne Sitzung: keine Zahlen, auch keine Beispielzahlen.
+**CORE-Vertragsstatus heute (07.10.2026, 10:09 Berlin, unauth. GET auf hq.saimor.world):** `/v3/finance/state` 401 (vorhanden) · `/records` 401 · `/sources` 401 · `/connections` 401 · `/mora-context` 401 · `/accounts` 405 · **`/profit-center` 404** · **`/capital-policy` 404** · Kontrolle `/v3/doesnotexist` 404. CORE `/health`: healthy, production, build **b564c995** (06.10. 12:52 Berlin) – unverändert seit Audit.
+**Standard „gebaut → integriert → sichtbar → verifiziert → alte Variante geklärt“:**
+| Schritt | Stand |
+|---|---|
+| gebaut | ja (PRs #95/#99/#100) |
+| integriert | ja, auf diesem Branch (AppLoader + Feature) |
+| sichtbar | ja unter `/os#finance` (Prototyp-Flag) |
+| verifiziert | lokal: Unit-/Integrationstests + E2E ohne CORE. **Mit echter Sitzung/echtem CORE: nicht verifiziert.** |
+| alte Variante geklärt | `finance` → Labs › Legacy; Löschen erst nach Live-Verifikation |
+**Offen für Deploy/Verify:** (1) saimor-core main (mit #80/#87 → profit-center/capital-policy) deployen, (2) UI-Build mit `NEXT_PUBLIC_OS_PROTOTYPE=1` in Staging, (3) mit Owner-Sitzung alle drei Verträge „verfügbar“ sehen, (4) dann `finance` im Legacy-Shell durch `finance-v2` ersetzen, (5) `lib/finance/xrplProvider.ts` (zweite XRPL-Wahrheit) entfernen.
+
+## 9 MÔRA
+- **Global erreichbar:** Topbar-Button, ⌘J, mobil zentral in der Bottom-Bar (Sheet); auf der MÔRA-Seite als Vollansicht. Eine Implementierung: `features/mora/ui/MoraConsole.tsx`.
+- **Kontextbewusst:** liest `activeFeatureId` + `surfaceContext` (z. B. „Finance · Profit Center“), zeigt ihn an und gibt ihn als `route_path`/`pane_id` an `/v3/chat` (zusätzlich zum bestehenden `buildChatContext`). Vorschläge kommen aus dem Manifest des aktiven Bereichs.
+- **Arbeits-/Tool-Status:** CORE erreichbar/nicht, „denkt nach / bereit / fehlgeschlagen“, Hinweis „nur mit Bestätigung“.
+- **Erklärbare Vorschläge** (`data/proposals.ts`): Navigation/Fenster öffnen = reversibel, mit Begründung, erst auf Klick. Alles mit Außenwirkung (senden, löschen, zahlen, signieren, minten …) = nicht reversibel → Bestätigungsdialog; im Prototyp wird **nichts** an CORE übergeben.
+- Command-Palette übergibt Text an MÔRA nur als Entwurf; Absenden bleibt beim Menschen.
+- Grenzen: keine Streaming-Antworten, keine Tool-Traces (bleiben in Chat-App; PR #89), keine ConfirmationCard-Ausführung.
+
+## 10 State-Regeln (für neuen Code)
+- Server-State **nur React Query** (alle `features/*/data`), Query-Keys unter `['os', …]` bzw. bestehende Finance-Keys.
+- UI-State **nur Zustand**: `useOsShellStore` (aktiver Bereich, MÔRA offen, Palette, Kontext, Entwurf), `useMoraConversation` (flüchtig), `useOsNotifications` (flüchtig).
+- **Keine** localStorage-Nutzung im neuen Code; Navigation über URL-Hash.
+- Alte Stores unangetastet. Ausnahme bewusst: `useScopedToday` (bestehend, useState-basiert) wiederverwendet statt dupliziert.
+
+## 11 Design-System
+`lib/design/osTokens.ts`: Farben (canvas, surface, hairline, text-Stufen, accent, aura, focus), Abstände 0–16, Radien, Typo (display/title/body/meta/eyebrow), Motion, Layout (Rail, MÔRA-Breite, Bottom-Bar) + Semantik-Töne aus `tokens.ts` → `osCssVariables()` am Shell-Root. `components/os-kit`: **Text (Typography), Stack (Spacing), ResponsiveGrid (Layout), Divider, Surface, Panel, Button, Input, NavItem, Status, Dialog, StateView/Loading/Empty/ErrorState/FailureState, SampleTag**. Harte Farben: einzig in `osTokens.ts`; `rg '#hex|rgba(' features components/os-shell components/os-kit lib/os-prototype app/os` → 0 Treffer. Mobile: < 900 px → Bottom-Bar (Heute, MÔRA, Finance, Post, Wissen, Mehr), MÔRA als Sheet, einspaltige Raster. Atmosphäre: ruhiger zweifacher Aura-Verlauf statt 3D-Universe (Universe bleibt unter `/`; künftig als Manifest-Flag `atmosphere-universe` denkbar).
+
+## 12 Gemeinsame Zustände
+`loading · empty · error · offline · backend_unavailable · permission_denied · not_configured · feature_unavailable` (+ `FailureState` mappt `classifyCoreFailure`: 401→nicht angemeldet, 403→kein Zugriff, 404/405→Vertrag fehlt, 502–504/Netz→offline, sonst Fehler). Heute/Post/Wissen unterscheiden „leer“ von „unbekannt“.
+
+## 13 Tests (Box, Node v20.19.2, 07.10.2026)
+| Schritt | Ergebnis |
+|---|---|
+| `npm ci` | 909 Pakete, Exit 0 (1 min 12 s) |
+| `npm run verify:types` (tsconfig.verify) | 0 Fehler (22 s) |
+| `npx tsc --noEmit` (voll) | 0 Fehler (21 s) |
+| `npm run lint` | 0 Fehler, 1 Warnung (bestehend: `HomeSurface.tsx:870`) |
+| `npx jest --ci` | **262/262 Suites, 1.519/1.519 Tests** (vorher 255/1.469; +7 Suites/+50 Tests; 1 bestehender Test angepasst: Registry-Länge 28→29 wegen `finance-v2`) |
+| `next build` (ohne Flags = Produktionsdefault) | Exit 0, `/os` 21,4 kB (157 kB First Load), `/` unverändert 44,3 kB, Middleware 55,6 kB |
+| `next build` mit `NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local` | Exit 0 |
+| Playwright `e2e/os-prototype.spec.ts` (Chrome, gegen Preview-Build) | **10/10 grün** (7 Flächen ohne Page-Errors, Finance ohne „Verbunden“, Legacy-Pane aus Labs, Mobil Bottom-Bar + MÔRA-Sheet) |
+Neue Tests: `__tests__/features/{registry,legacy-reachability,finance-integration}`, `__tests__/components/os-shell/OsShell`, `__tests__/components/os-kit/states`, `__tests__/lib/os-prototype/flags-proposals`, `__tests__/middleware.os-preview`.
+
+## 14 Screenshots
+`/workspace/os-recovery-v1/shots/` (lokale Vorschau, ohne CORE, keine echten Daten): `os-{d,m}-{today,mora,finance,knowledge,post,settings,labs}.png`, `os-{d,m}-mora-panel-over-finance.png`, `os-{d,m}-command-palette.png`, `os-m-more-sheet.png`, `os-d-labs-legacy-pane-open.png`, `compare-d-finance-old-pane.png` vs `compare-d-finance-v2-pane.png`, `legacy-{d,m}-root.png` (alte Oberfläche ohne Sitzung = Login-Portal; die alte Innen-Navigation ist ohne CORE-Sitzung nicht erreichbar – Vergleich alt/neu der Navigation siehe Audit-Screenshots bzw. mit Sitzung nachholen). Heute zeigt in der Vorschau klar markierte **Beispieldaten** (`example.com`, „Beispiel: …“).
+
+## 15 Start lokal
+```bash
+cd mora-ui && git checkout grok/os-recovery-prototype-v1 && npm ci
+# Vorschau ohne CORE (nur localhost):
+NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local npm run build && npm start
+# → http://localhost:3000/os   (Deep-Links: /os#finance, /os#knowledge, /os#labs …)
+# Dev-Modus:
+NEXT_PUBLIC_OS_PROTOTYPE=1 NEXT_PUBLIC_OS_PREVIEW=local npm run dev
+# Mit echtem CORE (Sitzung nötig, keine Vorschau):
+NEXT_PUBLIC_OS_PROTOTYPE=1 SAIMOR_CORE_URL=<core> npm run dev
+# E2E: BASE_URL=http://localhost:3000 npx playwright test e2e/os-prototype.spec.ts
+```
+Ohne `NEXT_PUBLIC_OS_PROTOTYPE`/`NEXT_PUBLIC_OS_PREVIEW` zeigt `/os` nur „nicht aktiviert“; die Werte werden beim Build eingebrannt. Vorschau greift zusätzlich nur bei Hostname localhost/127.0.0.1 (Client **und** Middleware). Ohne Vorschau verlangt die Middleware für `/os` wie für jede Seite eine CORE-Sitzung.
+
+## 16 Bekannte Grenzen
+- Mit echter CORE-Sitzung **nicht** getestet (kein Account genutzt); Finance-Einbettung, Post, Wissen, Settings mit Live-Daten n.v.
+- MÔRA: keine Streams/Tool-Traces/Provider-Wahl; Vorschläge regelbasiert (Schlüsselwörter), nicht vom Modell.
+- Post zeigt nur Listen; Lesen/Antworten/Termine anlegen über alte Apps. Mail-Triage (#54) nicht übernommen.
+- Wissen: Treffer öffnen das alte Dokument-Fenster; keine Vorschau, keine Ordnernavigation.
+- Notification-Service flüchtig, nicht mit Realtime/NotificationCenter verbunden.
+- Alte Apps als Pane über der neuen Shell nutzen ihr altes Styling (GlassPanel), auch Finance v2 innen (eigene harte Farben, bestehend).
+- Capital-Tab rendert `CapitalProfitCenter` mit; dessen eigener Fehlerzustand greift, wenn profit-center fehlt.
+- Root-Layout ist `"use client"` und mountet PaneManager auch auf `/os` (gewollt, für Legacy-Panes).
+
+## 17 Nicht angefasst
+saimor-core (privat; Token weiterhin ohne Leserecht, kein Klon), YORI-Repo, Produktion/Deploy/Caddy/.env/Secrets, Wallet/XRPL/Treasury (nur Anzeige, kein Sign/Mint/Offer), ORIGIN #001–#110, offene PRs/Branches, alte Apps/Stores/Datenmodelle (nichts gelöscht), Legacy-Shell `/`, `WelcomeScreen`, `widgets/registry`, Root-Müll (Caddyfile-Varianten usw.).
+
+## 18 Risiken vor Merge
+1. `/os` darf in Produktion nur mit bewusstem Flag gebaut werden; `NEXT_PUBLIC_OS_PREVIEW=local` **nie** in Deploy-Env (Middleware-Ausnahme greift zwar nur auf localhost, trotzdem Policy: Deploy-Check auf diese Variable).
+2. Finance-Tab Profit Center bricht nicht, ist aber live bis zum Core-Deploy „nicht verfügbar“.
+3. `FinanceV2Workspace`-Extraktion ändert `apps/finance-v2/index.tsx` strukturell (Einrückung; Logik gleich, Tests grün) – Konfliktpotenzial mit offenem PR #97 (Revolut-Consent), Rebase nötig.
+4. `appRegistry`-Länge 29: Tools/Tour (#88), die über die Registry iterieren, sehen `finance-v2` (launcherHidden).
+5. Zwei Shells parallel → Doppelpflege, bis entschieden ist, ob `/os` `/` ersetzt.
+
+## 19 Prototype V2 – empfohlene Schritte
+1. Core main deployen, dann Finance mit Owner-Sitzung verifizieren → `finance` alt aus Legacy-Shell entfernen (eigener PR).
+2. Build-SHA der UI sichtbar machen (Settings › System hat Platz dafür) + Staging-Deploy von `/os`.
+3. MÔRA: Streaming (`useMoraStream`) und Tool-Traces (#89) in `MoraConsole`, ConfirmationCard als Ausführungsweg für „prepare“-Vorschläge.
+4. Post: Mail-Triage (#54) als `features/post/ui`, Lesen/Antworten im Panel statt altem Fenster.
+5. Wissen: Finder-Kern (Ordnerbaum, Vorschau) aus `apps/finder` (3.128 Z.) in `features/knowledge/ui` extrahieren.
+6. Heute: Nightwatch-/Aufgaben-Aktionen inline; Realtime → Notification-Service.
+7. ESLint-Regel „keine Hex/rgba außerhalb Tokens“ für `features/**`, `components/os-*`.
+8. Entscheidung Universe als `atmosphere-universe`-Flag (lazy, ruhig) – Seele behalten, Navigation nicht.
+9. Danach: `/` → `/os` umstellen, Legacy-Shell hinter Flag.
+
+## 20 Production Truth (heute geprüft)
+Methode: nur öffentliche HTTP GET (`curl`, 07.10.2026 10:09 Berlin) auf hq.saimor.world, ohne Login. `/` 200 · `/login` 200 · `/os` 307 (Middleware-Redirect ohne Sitzung; ob `/os` existiert, ist live nicht ableitbar – Branch ist nicht deployed) · `/api/core/health` 200 healthy, production, build `b564c995` · v3: `finance/state` 401, `finance/records` 401, `finance/sources` 401, `finance/connections` 401, `finance/mora-context` 401, `finance/accounts` 405, **`finance/profit-center` 404**, **`finance/capital-policy` 404**, `today` 401, `chat` 405 (nur POST), `memory/list` 401, `mail/messages` 401, `calendar/events` 401, `integrations/overview` 401, `search/keyword` 405 (nur POST), Kontrolle `doesnotexist` 404 → v3 ist live geladen (kein Totalausfall K4), Finance-Profit-Center-Verträge fehlen weiterhin.
+SSH (`~/.ssh/grokbot_saimor`): **nicht genutzt** – Host-Key für hq.saimor.world unbekannt (strict checking), Verbindung hätte eine Änderung (Key akzeptieren) erfordert → gemäß Vorgabe übersprungen.
+
+## 21 Gefundene direkte Agent-Kopplungen in der UI
+| Agent | Fundstellen (mora-ui main) | Art |
+|---|---|---|
+| Larry | `lib/api/larryClient.ts` (`/v3/larry/artifacts`), `lib/queries/useLarryArtifacts.ts`, `components/widgets/registry.tsx` (Larry-Artefakt-Widget), `components/os/shell/MoraShell.tsx:551` (`onOpenLarry`), `lib/api/statsClient.ts`, 15 Dateien gesamt | direkter Daten-Client + Shell-Aktion |
+| Nightwatch | `lib/api/nightwatchClient.ts` (`/v3/nightwatch/incidents`, `/monitors`), `apps/nightwatch`, `lib/openflow/nightwatch.ts`, Home-Komponenten; 51 Dateien | eigene App + Heute-Signal (über `/v3/today`) |
+| OpenClaw | `lib/estate.ts:9`, `lib/openflow/presentation.ts:14-17` (nur Platzhalter/Copy-Filter) | Benennung, kein Client |
+| n8n | `lib/config.ts:17-22` (Webhook-Konfig `n8nEmailDigest` …), `lib/connectors.ts`, `lib/workflowStore.ts` | Konfig/Typen, in App-Code nicht referenziert |
+| Hermes | 0 Treffer | – |
+Der Prototyp fügt **keine** neue Agent-Kopplung hinzu; MÔRA spricht nur `/v3/chat`.
+
+## 22 Privatsphäre
+Diff-Suche nach Pilot-/Kundennamen, gesperrtem Connector-Begriff und Token-/Key-Mustern (`ghp_`, `github_pat`, `sk-…`, `BEGIN … KEY`, Seeds) → 0 Treffer. Beispieldaten generisch (`example.com/.org`).
+
+## 23 V1.1 Universe & Atmosphäre
+
+Rückmeldung Marius: Universe, Hintergrundbild und Vibe bleiben – nur besser. Und: das volle Universe gibt es nur **im Universe**; alle anderen Flächen bekommen denselben Vibe, aber deutlich ruhiger.
+
+**Zwei Atmosphären-Modi (Manifest-Feld `atmosphere`, Default `calm`):**
+
+| Modus | Flächen | Was zu sehen ist |
+|---|---|---|
+| `calm` | Heute, MÔRA, Finance, Post, Wissen, Einstellungen, Labs | `ShellStaticBackdrop` + dasselbe `deep-space-warm.jpg`, stark weichgezeichnet und abgedunkelt (Filter aus `osAtmosphere.calm`), kräftiger Schleier. **Keine Sterne, keine Bewegung.** Inhalt steht vorn. |
+| `universe` | Universe (`#universe`) | Dimmung fällt weg (Bild in voller Stärke, `UniverseAmbientField` aus `UniverseView`), `MoraLivingBackground` (gedämpft), `RitualSceneStyler muted`; `StarField` und `TemporalAtmosphere` werden **per Idle lazy** nachgeladen. |
+
+- Übergang: weiche CSS-Transition (900 ms) auf Filter/Opacity von Bild, Schleier und Ebenen – mit `prefers-reduced-motion` **ohne** Animation (Sprung).
+- Bewegung (`StarField`/`TemporalAtmosphere`) nur, wenn `useAmbientCapability` es erlaubt (kein reduced-motion, kein Save-Data) **und** Viewport ≥ 900 px. Mobil: statisches Bild mit Schleier.
+- Umsetzung: `components/os-shell/OsAtmosphere.tsx`, Shell setzt `data-atmosphere` am Root.
+
+**Wiederverwendet (keine Kopien):** `ShellStaticBackdrop` (→ `WorldSurface`), `MoraLivingBackground`, `StarField`, `TemporalAtmosphere`, `RitualSceneStyler`, `useAmbientCapability`, `UniverseView` (inkl. `UniverseAmbientField`, `OrganizationField`, Observatory/Ticker), Assets `public/universe/deep-space-warm.jpg`, `public/brand/mora-stone-v1.png`.
+
+**Neu / verbessert:**
+- Universe als eigener **Ort**: 2.-Ebene-Navigation „Universe“ (`#universe`, Mobil unter „Mehr“) – die 6 Hauptflächen bleiben. Feature `features/universe` rendert die echte `UniverseView` unter einer schmalen Intro-Leiste (kein Überlappen mehr mit „Woraus Organisation besteht“).
+- Karte auf Heute: „Den Raum deines Unternehmens betreten“ → führt ins Universe.
+- `MoraStone` (os-kit) aus `mora-stone-v1.png` mit Halo und Denk-Zustand – in Sidebar, Topbar, Mobil-Leiste und Konsole (ersetzt den CSS-Orb).
+- Alle Flächen als ruhiges Glas (Blur, Sättigung, Kante, Innenlicht), Sidebar mit Schleier-Verlauf, Display-Schrift leichter/größer (38 px / 300), Marke gesperrt (`.os-brand`, 0.34em).
+- Alle Farben aus `osTokens` (`glass*`, `veil*`, `railVeil*`, `stoneHalo*`, `osAtmosphere`); `os-kit.css` enthält kein rgba/hex.
+
+**Zwei Bugfixes in Legacy (wirken auch in der klassischen Oberfläche):**
+1. `lib/store/universeFieldStore.ts`: `setField`/`clearField` schreiben nur bei echter Änderung (vorher neues Array/Objekt bei jedem Messen → alle Leser rerendern).
+2. `components/home/UniverseView.tsx`: setzt `statsMap`/`folderMoons` ohne Firma nicht mehr bei jedem Lauf auf ein neues `{}` – das war zusammen mit (1) die Render-Schleife (React #185) auf `/#universe` ohne Sitzung.
+
+**Tests V1.1:** `__tests__/components/os-shell/OsUniverse.test.tsx` (Layer ruhig auf Heute, voll im Universe, Heute → Universe, Deep-Link, Nav), `__tests__/components/os-kit/MoraStone.test.tsx`, `__tests__/lib/universeFieldStore.test.ts`; Playwright: Universe-Fläche, Atmosphären-Modi, Heute → Universe ohne Page-Errors.
+
+**Screenshots:** `shots-v1.1/` – `os-{d,m}-{today,mora,finance,knowledge,post,settings,labs,universe}.png`, `os-d-universe-reduced-motion.png`, `compare-d-today-v1-vs-v1.1.png` (V1 flach | V1.1 Heute | V1.1 Universe).
+
+**Grenzen V1.1:** Universe ohne CORE-Sitzung leer (nur Raum + Platzhalter-Kacheln der Legacy-View); Übergang nicht auf schwachen Geräten gemessen; `TemporalAtmosphere` ist bewusst stark gedämpft (soft-light, 14 %), weil sie sonst das Foto überstrahlt.
+
+## 24 V1.2 Universe-Experience
+
+Rückmeldung Marius zu V1.1: „Wo sind die Planeten, die ganze Logik, die ganze Experience dahinter?“ Ohne CORE-Sitzung zeigte die eingebettete Legacy-`UniverseView` nur Überschrift und zwei Kacheln, weil ihre Planeten ausschließlich aus CORE-Abteilungen entstehen.
+
+**Neu: `/os#universe` hat zwei Ansichten desselben Raums**
+
+1. **Landschaft** (Standard, neu): die OS-Bereiche als Planeten um **MÔRA als Kern**.
+   - Innerer Ring: Heute (Aufgaben & Termine), Post, Finance. Äußerer Ring: Wissen, Spaces, Verbindungen, Labs & System.
+   - Geneigte Umlaufbahnen mit Tiefe (vorne größer, hinten kleiner), sanfte Bahnbewegung (innen im Uhrzeigersinn, außen langsamer dagegen). Sie pausiert beim Hover, im Fokus, bei verstecktem Tab und mit `prefers-reduced-motion`.
+   - Planeten als ruhige Kugeln (Licht-Kern → Körper → Terminator, Atmosphärenring), Größe nach Substanz, Satelliten-Monde, Signalpunkt (warn/info). Die Farben kommen aus `osTokens.planet*`.
+   - **Stränge** mit dem Beleg-Modell aus `OrganizationField`/`lib/universe/types`: *belegt* (MÔRA → Planet mit Signal, fließend) und *vermutet* (gepunktet, z. B. Post ↔ Finance, wenn Betreffe „Rechnung/Beleg“ enthalten). Ohne Beleg wird kein Strang gezeichnet.
+   - **Hover:** Glühen, Bahn hält an, unter dem Namen steht das Signal.
+   - **Fokus/Zoom:** Klick zoomt die Kamera auf den Planeten. Die anderen treten zurück, die Monde erscheinen mit Namen auf eigener Bahn, und ein Glas-Detailpanel (Desktop rechts, Mobil als Sheet) zeigt Rolle, Kennzahlen, Signale, Monde, Stränge, **„Bereich öffnen“** (→ passende /os-Fläche; Spaces → Organisationsfeld) und „MÔRA fragen“. Esc oder ✕ führt zurück.
+   - **MÔRA-Aufmerksamkeit:** Die Pille „MÔRA schaut auf …“ wählt den wichtigsten Planeten (Warnung vor Info) und fokussiert ihn per Klick. Ein Klick auf den Kern öffnet MÔRA mit Kontext.
+   - Mobil: rundere Bahnen, kleinere Planeten, Rollen erst im Fokus, Detail als Sheet. Der Raum bleibt räumlich.
+   - Daten: `features/universe/data/useLandscape.ts` über **bestehende Hooks** (`useScopedToday`, `useFinanceSignal`, `useDepartments`, `useRecentMemories`, `useConnectionsOverview`, `LEGACY_APP_PLACEMENT`). In der lokalen Vorschau ohne Sitzung kommen klar markierte Beispieldaten (`Beispiel`-Badge, generische Inhalte). **Finance ist nie Beispiel**: ohne CORE steht dort „nicht belegt“ samt Vertragsstand. Ohne Daten ist ein Planet „unbekannt“ (entsättigt), nicht leer.
+   - Modell rein und testbar: `features/universe/data/landscape.ts`.
+2. **Organisationsfeld** (Legacy, unverändert eingebettet): die echte `UniverseView`.
+
+**Was aus dem Legacy-Universe zurück ist**
+
+| Legacy-Fähigkeit | Status V1.2 | Wo |
+|---|---|---|
+| Planeten für Abteilungen, Größe nach Substanz (`territoryDiameter`) | ✅ unverändert im Organisationsfeld; neu: Planeten für OS-Bereiche, Größe nach Substanz | Organisationsfeld / Landschaft |
+| Monde (Spaces/Ordner, `groupFoldersByDepartment`, `buildOrbitals`) | ✅ Legacy unverändert; Landschaft: Monde je Planet (Termine, Betreffe, Bereiche, Erinnerungen …) | beide |
+| Umlaufbahnen / Bewegung | ✅ neu gebaut (geneigte Ringe, Tiefe, Pause bei Hover/Fokus/reduced-motion) | Landschaft |
+| Verbindungen mit Beleg (`buildRelationStrands`, assigned/inferred) | ✅ gleiches Beleg-Modell, auf OS-Bereiche übertragen | Landschaft |
+| Fokus/Auswahl eines Planeten + Detail | ✅ Kamera-Zoom + Glas-Detailpanel + „Bereich öffnen“ | Landschaft |
+| MÔRA im Feld (`CursorAgent`, `chooseMoraAttention`) | ✅ Legacy unverändert; neu: MÔRA als Kern + Aufmerksamkeits-Pille | beide |
+| Signale (Mail, Kalender, Feed, Nightwatch) | ✅ Legacy-Observatory unverändert; Landschaft: Signalpunkte aus Tagesbild/Finance/Verbindungen | beide |
+| Observatory / Horizont / Wirtschaft / Nightwatch-Kacheln | ✅ unverändert | Organisationsfeld |
+| Fall-Capture (Gegenstand auf Planet ablegen → `intakeIntoDepartment`) | ✅ unverändert, nur mit Sitzung | Organisationsfeld |
+| In Abteilung (`DeptSpaceMap`) / Ordner im Finder öffnen | ✅ unverändert | Organisationsfeld |
+| „MÔRA fragen“ zu einem Planeten | ✅ beide (Landschaft → MÔRA-Panel der Shell) | beide |
+| Atmosphäre (Foto, Sterne, Tageszeit, Szene) | ✅ aus V1.1 | Shell |
+| Ticker (`buildTickerItems`) | ⚠️ nicht in der Landschaft; die Aufmerksamkeits-Pille erfüllt den Zweck ruhiger, ein Laufband widerspricht „ruhiges Cockpit“ | – |
+| Substanz-Balken (`buildSubstanceBars`) | ⚠️ nur im Organisationsfeld (Observatory); in der Landschaft zeigen Planetengröße und Detail-Kennzahlen dasselbe | Organisationsfeld |
+| Hover-Verweilzeiten (`hoverTiming`), Interaktionszonen (`interactionZones`) | ⚠️ nicht übernommen: Die Landschaft hat keine Widget-Spalten, mit denen Hover kollidiert. Stattdessen pausiert die Bahn beim Hover | – |
+| Mycelium/NeuralGrid/Fabric-Layout, semantische Ähnlichkeitskanten | ❌ nicht übernommen: experimentell, in der klassischen Shell ebenfalls ausgegraut; Kanten ohne Beleg widersprechen dem Beleg-Prinzip | Legacy (`/`) |
+| Onboarding/Ritual-Szenen (`RitualSceneStyler`) | ✅ Szenenfarbe gedämpft (V1.1). ❌ eigener Universe-Onboarding-Rundgang (QuickTips) nicht übernommen, weil er an MoraShell gebunden ist; der Einstieg kommt jetzt über die Heute-Karte und die Aufmerksamkeits-Pille | – |
+
+**Tests V1.2:** `__tests__/features/universe/landscape.test.ts` (Bereich → Ziel, Beispiel-Kennzeichnung, Finance nie Beispiel, Stränge nur mit Beleg, unbekannt ≠ leer, Aufmerksamkeit), `__tests__/features/universe/UniverseLandscape.test.tsx` (Kern, 7 Planeten, Bahnen, Stränge, Fokus → Detail → Bereich öffnen, Esc, reduced-motion), `OsUniverse.test.tsx` angepasst (Landschaft als Standard, Organisationsfeld-Ansicht = Legacy-View). Playwright: Landschaft Desktop (Fokus → Detail → `#post`) und Mobil mit reduced-motion.
+
+**Screenshots:** `shots-v1.2/os-{d,m}-universe-{overview,planet-hover,planet-focused,detail-panel,organisationsfeld}.png`.
+
+**Grenzen V1.2:** Mit echter CORE-Sitzung nicht verifiziert (die Hooks sind dieselben wie auf Heute/Wissen/Einstellungen). Spaces-Monde mit Sitzung = Abteilungsnamen, noch keine Ordner. Planeten-Positionen sind fest (Winkel je Bereich), kein Drag. Das Organisationsfeld bleibt ohne Sitzung leer, und das ist Absicht: Es zeigt nur echte Abteilungen.
+
+## 25 V1.3 Am Original orientiert
+
+Feedback von Marius: „Ich habe ein Dock etc. in meinem OS. Orientiere dich an MEINEM und mach es nur besser. Es sieht aus wie jede andere App (0815). Die alten Planeten waren besser. Der MÔRA-Teil ist super. Schau dir die Demodaten in meinem OS genauer an.“
+
+### 25.1 Was im bestehenden OS gefunden wurde
+- **Dock** (`components/mora/Dock.tsx`, Export `Dock`, 1733 Zeilen): schwebende Kapsel unten (`fixed bottom-4`, `rounded-full`, `backdrop-blur-3xl`), Verlauf `rgba(12,26,34,.55) → rgba(10,13,28,.45) → rgba(2,7,10,.6)`, Szenen-Rand, tiefer Schatten mit Akzent-Glow, pulsierendes 32-px-Raster, Akzentlinie oben. Links Werkzeuge (Suche, Control Center, Sprache, Musik), Trenner, Mitte die Apps (`MagneticDockIcon`, Hover-Vergrößerung `scale-110`), rechts Fokus, Mitteilungen, Sitzung, Firmenwechsel und der MÔRA-Stein (40 px, `/brand/mora-stone-v1.png`, smaragdgrüner Ring). Icons 48 px rund, `text-cyan-50/64`, aktiv `bg-cyan-400/16` mit Cyan-Rand, violette Badges, schwarzer Tooltip mit Titel, Beschreibung und Kürzel, grüner Aktiv-Punkt. Einträge aus `getCoreDockItems` (Heute, Arbeit, MÔRA, Universe, Einstellungen).
+- **Shell-Layout**: Vollbild-Universe als Desktop, Fenster (Panes) darüber, das Dock als einzige Hauptnavigation, keine Seitenleiste.
+- **Planeten** (`components/universe/OrganizationField.tsx`): Abteilungen als Planeten (Radialverlauf im Akzent, dunkler Kern, `Building2`-Symbol mit Glow), Ordner als Monde auf Umlaufbahnen, Dokument-Sterne, Signal-Abzeichen, Name und Kennzahlen darunter, Überschrift „Woraus {Firma} besteht“, Beziehungsfäden „belegt / nur vermutet“. Dazu `UniverseAmbientField` und `UniverseObservatory` (Verteilung, Horizont mit Mail, Kalender und Feed, Wirtschaft, Wache).
+- **Demo**: `public_demo`-Profil „Beispielsystem“, `ensureGuidedDemoCompany(pack)`, Demo-Packs `coffee` (Simple Coffee Group) und `mittelstand`. Inhalte in saimor-core `core/services/demo_content_packs.py` und `demo_isolation.py`: 7 Abteilungen, Ordner, 16 Dokumente, 4 Aufgaben, 5 MÔRA-Beobachtungen (Mindloop), 4 Mails, 3 Termine, Feed-Quellen. **Keine Finanzwerte** im Coffee-Pack.
+
+### 25.2 Was V1.3 daraus macht
+- **Marius' Dock ist die Hauptnavigation.** `OsDock` nutzt das jetzt exportierte Legacy-`CapsuleDockIcon` (einzige Änderung in `Dock.tsx`: `export`) und dieselbe Kapsel, dasselbe Raster und dieselbe Akzentlinie, als Tokens in `osTokens` (`dock*`). Aufbau wie im Original: links Suche und Mitteilungen, Mitte die Orte, rechts die klassische Oberfläche und der MÔRA-Stein mit Smaragdring (Klick öffnet das Panel, Doppelklick öffnet den MÔRA-Ort). Die generische Seitenleiste und die mobile Leiste sind entfernt. Mobil gibt es dasselbe Dock mit Heute, Finance, Post, Wissen, „Mehr“ und dem Stein.
+- **Original-Planeten**: Das Universe startet im Organisationsfeld. Mit Sitzung erscheint die echte `UniverseView`. In der lokalen Vorschau rendern dieselben Komponenten (`UniverseAmbientField`, `UniverseObservatory`, `OrganizationField`) mit dem Demo-Paket. Neu ist nur der MÔRA-Kern aus V1.2 in der Feldmitte und die Aufmerksamkeits-Pille („MÔRA schaut auf Store San Francisco …“, Beispiel). Die V1.2-Landschaft ist als zweite Linse „OS-Bereiche“ verfügbar.
+- **Demo-Daten überall**: `lib/os-prototype/demoPack.ts` spiegelt den Coffee-Pack mit Quellenangabe. Sie speisen:
+  - Heute: Aufgaben, Termine, Mails
+  - Post: die 4 Mails, die 3 Termine
+  - Wissen: Dokumentenliste mit lokaler Suche, „Was MÔRA bemerkt hat“ aus dem Mindloop
+  - Universe: Planeten, Monde, Signale, Observatorium
+  - OS-Bereiche
+  
+  Jede dieser Flächen trägt den Hinweis „Beispiel“. **Finance bleibt ohne Zahl** (das Demo-Paket definiert keine), und das Observatorium zeigt „Noch kein Umsatz“.
+- Unverändert: der MÔRA-Kern, die Pille und der Stein, die ruhige und die volle Atmosphäre, YORI getrennt, kein Schreiben (Fallen-Ablage meldet in der Vorschau ehrlich `false`).
+
+### 25.3 Tests und Belege
+- Unit-Tests `__tests__/features/universe/demoUniverse.test.ts`, Shell- und Universe-Tests auf Dock und Organisationsfeld umgestellt. e2e: Dock als Navigation (Desktop und mobil), Original-Feld mit Demo-Paket, MÔRA-Kern, Beispiel, Finance ohne €.
+- Screenshots `shots-v1.3/`: `os-{d,m}-*.png`, `sbs-d-dock.png`, `sbs-d-universe.png`, `sbs-d-today.png`, `sbs-m-*.png`, `os-d-dock-crop.png`.
+- **Grenze:** Das Legacy-OS hinter dem Login lässt sich ohne CORE-Sitzung nicht vollständig aufnehmen. Der lokale Demo-Fallback (`demo/demo123`) funktioniert nur im Dev-Modus und braucht danach CORE. Die Vergleiche zeigen deshalb den Legacy-Einstieg ohne CORE sowie die V1.1/V1.2-Stände. Die Legacy-Dock-Werte sind aus dem Code übernommen.
+
+### 25.4 V1.3.1 Universe-Fixes (Marius: „buggy“)
+- **Fäden**: In der Vorschau starten alle Fäden am MÔRA-Kern (Feldmitte) und enden in den Planetenmitten. Sie werden auf das Feld beschnitten und gehen nicht mehr zu den Seitenkarten. Das läuft über die Opt-in-Props `strandOrigin` und `centerSlot` am Original-`OrganizationField` sowie einen optionalen Parameter in `buildRelationStrands`; ohne diese Angaben verhält sich die Legacy-Ansicht wie bisher. Die Positionen sind Prozentwerte im gemessenen Feld und folgen deshalb jeder Größenänderung.
+- **Legende** liegt oben, unter der Überschrift oder rechts oben, nicht mehr auf den Planeten.
+- **Planeten**: `vivid` gibt kräftigere Akzentverläufe, einen sichtbaren Ring, ein helles Gebäude-Symbol und hellere Beschriftungen, auch mobil. Es gibt keine Abdunklung durch die Aufmerksamkeit mehr; die Pille zeigt sie weiterhin.
+- **Layout**: Ellipse um den Kern ab einer Höhe von 820 px, darunter vermessene feste Positionen. Das Observatorium erscheint erst ab 1440×860, damit das Feld nie eingeklemmt wird. Bei flachen Fenstern entfallen die Überschrift und die Kennzahlzeile.
+- **Dock** ist immer voll sichtbar; das Universe endet über dem Dock.
+- **e2e** bei 1024×640, 1280×800, 1440×900 und 390×844: keine überlappenden Boxen (Planet, Name, Kennzahl, Abzeichen, Kern, Legende, Pille, Intro, Seitenkarten, Dock, Kopfzeile), alle Fäden innerhalb des Feldes, Dock im Viewport, auf allen Flächen endet der Inhalt über dem Dock. Screenshots in `shots-v1.3.1/`.
+
+## 26. V1.4 „Kommandozentrale“
+
+**Zielgeräte:** Desktop/Laptop und iPad (ab 768 px). Unter 768 px erscheint nur ein ruhiger Hinweis („am besten auf Desktop/Tablet“), es gibt kein eigenes Phone-Layout und keine Phone-Tests.
+**Getestete Größen:** 1024x768, 1280x800, 1440x900, 1180x820 und 820x1180 (Playwright: 36 Tests, Kollisions- und Fadenprüfung je Größe).
+
+### 26.1 Kommandozentrale
+- **Befehlspalette (⌘/Strg K):** springt zu Orten, Planeten und Dokumenten, MÔRA fragen. Startzustand wie die Legacy-Suche: Schnellsuche-Chips plus ein Raster der Abteilungen.
+- **Tastenkürzel:** 1–9 für das Dock, M für MÔRA, U für Universe, C für das Control Center, Strg⇧F für Focus, ? für die Übersicht und Esc zum Schließen.
+- **MÔRA-Lagebild auf Heute:** 3 Prioritäten aus den Demo-Beobachtungen. Ein Klick fokussiert den Planeten.
+- **Planeten-Fokus:** öffnet ein Glas-Detailpanel mit Dokumenten, Aufgaben und Signalen der Abteilung, dazu „In Wissen/Post öffnen“ und „MÔRA fragen“. Der Fokus liegt jetzt im Store und übersteht auch ein Neu-Mounten der Fläche.
+- **iPad:** Hit-Areas ≥ 44 px (`pointer: coarse`) und keine Hover-Abhängigkeit.
+
+### 26.2 Echtes Legacy-OS per Dev-Login erkundet
+Ablauf: `lib/auth/devLogin.ts` (nur bei `NODE_ENV=development`) ruft `/api/auth/core-login` auf, das an CORE weiterleitet. Deshalb lief ein lokaler saimor-core: `ENVIRONMENT=development`, SQLite, Port 8081, PYTHONPATH=Repo-Root und `core/`. Er legt beim Start die „Simple Coffee Group“ an. Dazu kam ein lokaler Wegwerf-Nutzer `demo@saimor.io` im Tenant `tenant-demo` in der lokalen SQLite. Die Legacy-UI lief über `next dev` auf Port 3001, weil der CORE-CORS-Dev-Origin 3001 erlaubt. Keine Produktion, keine Secrets. Screens liegen unter `shots-v1.4/legacy/`.
+
+**Übernommen und verbessert:**
+| Legacy | /os V1.4 |
+|---|---|
+| Kontext-Kapsel (Lokale Instanz · Organisation · Demo · Home/Universe) | `ContextCapsule`: echte Schalter Heute/Universe; schrumpft kollisionsfrei (e2e-geprüft) |
+| Uhr-Pille „15:33 · MÔRA · BUILD“ | `ContextClock`: Szene nach Tageszeit, zeigt im Focus die Restzeit, öffnet das Control Center |
+| Control Center (Live-Kontext, Szene, Laufzeit, Sprungziele) | `ControlCenter` (Dock und Taste C): ehrlicher CORE-Status, Focus-Start, große Touch-Ziele |
+| Focus Mode (Strg⇧F, 25 min) | Strg⇧F bzw. Control Center, Countdown in der Uhr-Pille |
+| Home „Heute · Aktuell“ (Kalender/Mail/Aufgaben/Nightwatch) | 4 klickbare Karten aus dem Demo-Paket, Nightwatch live ehrlich „Unbekannt“ |
+| Home „Weiter“-Launcher | 5 Sprungkarten (Universe, Arbeit, Mail, Kalender, Dateien) |
+| MÔRA-Orb neben „Guten Tag.“ | MoraStone im Hero |
+| Suche: Quick Searches + Abteilungen | Palette-Startzustand |
+| MÔRA-Fenster: Tabs Chat/Erinnerungen/Signale, Live-Signale mit Explain/Navigate | Tabs auf der MÔRA-Fläche; Signale mit Kennzahlen, „Erklären“ (nur Entwurf) und „Navigieren“ (direkt Planet + Detail) |
+| MÔRA-Startvorschläge („Zeig mir Management“, „Was gibt es Neues?“ …) | übernommen |
+| Post: Absender-Avatar | Avatar plus „Mit MÔRA“ je Mail (Entwurf, nichts wird gesendet) |
+| Meine Dateien: Ablageorte Gerät/Privat/Workspace/Cloud | Wissen-Kacheln: Workspace = Demo-Dokumente, sonst ehrlich „—“ bzw. „nicht verbunden“ |
+| Universe-Seitenkarten (Verteilung, Horizont, Wirtschaft, Wache) | schon seit V1.3 aus dem Original; ab 1280 Breite sichtbar |
+
+Noch nicht übernommen: Ambient-Audio/Musik, Sprache (Mikrofon), Community Wall, Kunden-Vorschauen/Administration, Kalender-Fäden (YORI) und das Aufräumen-Bündel im Postfach.
+
+### 26.3 Qualitätspass je Fläche
+- **Heute:** Hero mit MÔRA-Stein, Aktuell-Karten, Lagebild, Weiter-Launcher, konsistente Glas-Karten und Hover-/Fokus-Zustände.
+- **MÔRA:** Tabs, Signale, ehrliche Leerzustände (Erinnerungen und Signale ohne CORE).
+- **Universe:** kollisionsfreie Planeten-Layouts für alle 5 Größen (im Browser vermessen), Fokus übersteht Remounts, Detailpanel.
+- **Post:** Avatare, „Mit MÔRA“, Beispiel-Badges.
+- **Wissen:** Ablageorte, Vorbelegung der Suche aus Palette und Planet.
+- **Finance:** unverändert ehrlich, keine erfundenen Zahlen (kein Umsatz ohne belegten Vertrag).
+- **Einstellungen/Labs:** Abstand zum Dock und zur Topbar e2e-geprüft.
+- **Shell:** Topbar-Kollisionstest, nur Tokens im CSS (kein rgba/hex).
+
+Vergleiche: `shots-v1.4/compare-<fläche>.png` (V1.3.1 → V1.4 bei 1280x800) und `shots-v1.4/compare-legacy-*.png` (echtes Legacy-OS → /os).
+
+## 27. V1.5 – Look, Phasen, Ambient, Briefing, Ruhendes Inventar
+
+### 27.1 Hintergrund & Look
+- Kosmos übernimmt den helleren Legacy-Home-Hintergrund (ShellStaticBackdrop, MoraLivingBackground, RitualSceneStyler) auf allen /os-Flächen; Glas heller (0.30), Schleier entfernt.
+- Einstellungen → „Darstellung“: **Kosmos** (Atmosphäre) vs **Klar** (nüchtern, ohne Foto/Blur/Raster). Gleiche Funktionen, lokal gespeichert (`saimor_os_look`).
+
+### 27.2 Vier Tagesphasen
+- Flow (Morgen) · Build (Tag) · Lounge (Abend) · Nacht, automatisch nach Uhrzeit (legacy `ritualMode`), Override in Einstellungen (`saimor_os_phase_override`) und per `?phase=&look=` für Screenshots.
+- `osPhaseVariables()` färbt Akzent, Aura, Glas, Fokus; Universe erhält zusätzlich einen Phasen-Tint.
+- Ambient: `public/ambient/{flow,build,lounge,night}.mp3`, 48-s-Loops, selbst synthetisiert (numpy/scipy, kein fremdes Material). **Platzhalterqualität** – gleiche Dateinamen ersetzen genügt. Standard AUS, Schalter in Einstellungen und Control Center, Start nur nach Nutzerklick (Autoplay-Ablehnung → Schalter zurück), Reduced Motion: kein Fade, leiser.
+
+### 27.3 Morgenbriefing
+- Erscheint nur, wenn `/v3/connections` mindestens eine verbundene Quelle meldet und `/v3/briefing` nicht degradiert ist.
+- Sonst ehrlich: „Briefing startet, sobald Quellen angebunden sind“, Quellenliste, aufklappbare, klar markierte Beispiel-Vorschau. (Legacy `useDailyBriefing` täuschte bei Fehlern „Normalbetrieb“ vor – nicht übernommen.)
+
+### 27.4 Universe-UX-Kritik (Sicht Mittelstand-Kunde) & Fixes
+| Befund | Fix |
+|---|---|
+| Unklar, was die Kugeln bedeuten | H1 „Simple Coffee Group – deine Abteilungen“ + Erklärzeile |
+| Fachjargon (Linsen, Substanz, Relationen) | „Abteilungen/Arbeitsbereiche“, „Dokumente je Abteilung“, „belegt / von MÔRA vermutet“ |
+| Kein klarer nächster Schritt | Pill „Nächster Schritt: … Ansehen →“, Button „Abteilung hinzufügen“ |
+| Doppelte Überschriften, Zeilen zu lang bei 1280 | Feld-H1 entfernt, Meta/Pill gekürzt unter 1440 px |
+| Grammatik (1 Bereiche) | korrekte Singular/Plural |
+| Rechte Spalte ohne Ordnung | Eyebrows Demnächst / Umsatz / Systemstatus |
+
+### 27.5 Ruhendes Inventar (mora-ui + saimor-core)
+| Teil | Zustand | Urteil |
+|---|---|---|
+| `/v3/connections` | kein UI-Aufruf | **lohnt** – integriert (Briefing-Quellen) |
+| `/v3/briefing` + useDailyBriefing | nur Hook, fälscht Fehlerzustand | **verbessern** – integriert, ehrlich |
+| Memory pending/approve/reject (memoryClient) | nie angezeigt | **lohnt** – integriert in MÔRA → Erinnerungen |
+| CalendarContinuity / `/v3/continuity` | ohne Route | **lohnt** – Post (live), Demo ehrliche Karte |
+| DepartmentWizard | ohne Route | **lohnt** – Universe „Abteilung hinzufügen“ (Demo gesperrt) |
+| Ritual-Szenen, AmbientVoicePill-Idee | halb verdrahtet | **lohnt** – Phasen + Ambient |
+| QuickMemoryInput | kaputter Import (`learnInsight`) | verbessern – Funktion in MoraMemories |
+| MoraThoughtStream (`/v3/agency/thoughts`) | ungenutzt | verbessern – später als Agenten-Feed |
+| HomeSurface (1459 Z.), MemoryWidget, InsightCard, CompanyOrbit, SpaceTileGrid | ersetzt durch /os | verbessern/abbauen – Muster übernommen |
+| SpatialMindfield, IntelligencePlayfield, SynthesisPanel, SemanticLinesRenderer, semanticStore/-Similarity | Experimente | vorerst weglassen |
+| Layers (DeepSpace/Moon/Planet/Folder), EstateMorphDeck, OrbMessageEffect | Effektstudien | vorerst weglassen |
+| SecurityCheckPlaygroundLogin, devToken, coreSessionGuard | Dev-Werkzeug | weglassen (nicht in Produkt) |
+| workflowStore (n8n), connectors, useLocalAI | halb gebaut | verbessern – nach Connector-Backend |
+| firstRunStore, MoraHint, LockedPlanetTooltip, CognitionBadge, MemoryBadge | klein, ungenutzt | verbessern – für Onboarding V1.6 |
+| dockStore, ThoughtBubbleContext, nodeInteractions, openLagefeldPane, signalFlow, lagefeld/fixtures | Altzustand | weglassen (durch Shell-Store ersetzt) |
+| `/v3/mise`, `/v3/blockchain`, `/v3/earth(/verwaltung)` | ohne UI | vorerst weglassen |
+
+### 27.6 Tests
+tsc 0 · lint 0 Fehler · Jest 268 Suites / 1542 Tests grün · Playwright 39/39 (1024x768, 1280x800, 1440x900, 1180x820, 820x1180) · Screens `shots-v1.5/` (70, inkl. 4 Phasen × Kosmos/Klar, Legacy-Vergleiche).
+
+### 27.7 V1.5.1 – Klar mit Phasenfarbe, Begrüßung folgt Phase
+- Klar zeigt pro Phase einen dezenten Ton: Hintergrund-Verlauf (Flow Petrol-Grün, Build Stahlblau, Lounge warmes Braun, Nacht Indigo), getönte deckende Karten, Kartenränder in Phasenfarbe (20 %), Akzent der Phase. Weiterhin ohne Foto/Blur; Text hell auf dunkel (Kontrast ≥ 4.5:1).
+- Begrüßung auf Heute folgt einem gesetzten Phasen-Override (Flow „Guten Morgen“, Build „Guten Tag“, Lounge/Nacht „Guten Abend“), sonst Uhrzeit.
+- Screens: `shots-v1.5.1/` inkl. `phases-klar-grid.png`.
+
+## 28. V1.6 – Onboarding, Agenten-Feed, Quellen, Kontrast
+
+### 28.1 Ruhiges Onboarding
+- `components/os-shell/OsOnboarding.tsx`, `lib/os-prototype/onboarding.ts`. Baut auf dem Legacy-`firstRunStore` auf (gleiche Schlüssel `saimor_product_tour_dismissed` / Restart-Event), dadurch stimmen klassische Oberfläche und /os überein.
+- 4 Schritte: Darstellung (Look + Phase) → Firma & Abteilungen (nur lokal, `saimor_os_onboarding_org`, nichts an CORE) → erste Quelle (ehrlicher Status aus `/v3/connections`, ohne Sitzung klarer Hinweis) → kurze Tour (Dock wird hervorgehoben, Universe, ⌘K).
+- Überspringen jederzeit (auch Esc), erneut starten: Einstellungen › „Einführung erneut starten“. Für Screenshots `?onboarding=off`.
+- Aus Legacy übernommen und überarbeitet: `MoraHint` → `os-kit/Hint` (Tokens statt fester Farben, role="note"), `MemoryBadge` → `CountBadge`.
+
+### 28.2 Agenten-Feed
+- `features/mora/ui/AgentFeed.tsx` aus dem routenlosen Legacy-`MoraThoughtStream`. Quelle `GET /v3/agency/thoughts` (Cognition-Log des Mandanten).
+- Verbessert: Liste statt rotierender Zeile, React-Query-Polling 30 s, ehrlicher Leerzustand, toleriert CORE-Zeitstempel „+00:00Z“, deutsche Labels.
+- Auf Heute (3 Einträge, kompakt) und in MÔRA › Agenten. Demo-Einträge tragen „Beispiel“.
+- Lokal verifiziert: echte Suchanfragen am lokalen CORE erscheinen als „Anfrage · Suche · vor n min“.
+
+### 28.3 Quellen-Seite (Einstellungen › Quellen)
+- `features/settings/ui/SourcesPanel.tsx`, `lib/os-prototype/useSources.ts`. Liste und Status 1:1 aus `/v3/connections` (Kalender, Google Drive, SharePoint, Nextcloud, E-Mail, Notion, MailerLite, Calendly, Stripe, PayPal) mit Status verbunden / bereit / Server-Einrichtung fehlt.
+- „Verbinden“ nutzt die vorhandenen CORE-Flows `POST /v3/connections/{provider}/connect` (OAuth-Start bzw. Zugangsdaten-Prüfung). Freigeschaltet nur, wenn Seite **und** CORE-URL auf localhost zeigen. Zugangsdaten werden nicht im Browser gespeichert, Felder nach dem Senden geleert. Fehler von CORE werden wörtlich gezeigt (z. B. „Google Calendar OAuth not configured“, „Notion rejected the token“).
+- Demo-Konten: CORE liefert bewusst keine Quellen – die Seite sagt das so.
+- Briefing nutzt denselben Hook. **Fehler aus V1.5 behoben:** das Briefing las das v3-Envelope doppelt (`data.data.connections`) und konnte live nie erscheinen.
+- **Fehler behoben:** /os hat die CORE-Sitzung nie selbst geladen (nur über „/“). `OsSessionBoot` liest jetzt das Profil (ohne Weiterleitungen/Logout).
+
+### 28.4 Kontrast (gemessen)
+- Werkzeug: `contrast-pixels.mjs` + `contrast-analyze.py` (im Zip). Liest Textfarbe inkl. Alpha/Opacity, rendert die Seite ohne Text und misst den echten Hintergrund pixelgenau (schlechtester Wert aus Median/10./90. Perzentil). Grenze 4.5:1, große Schrift 3:1. axe-core allein meldete wegen Verläufen/Glas fast alles als „incomplete“.
+- 8 Flächen × 4 Phasen × Kosmos/Klar bei 1440×900, ca. 3 200 Textstellen pro Lauf.
+- Vorher: 1 262 Unterschreitungen (Klar 125 je Phase, Kosmos bis 205). **Danach: 0 von 3 200** (alle Phasen, beide Looks; Bericht `shots-v1.6/contrast-report.json`).
+- Fixes: `textMuted` 0.62→0.82, `textFaint` 0.40→0.70; Kosmos: Schleier hinter Inhaltsspalte und Topbar, gedämpfte Texte als „muted“; Status/Beispiel/⌘-Plaketten deckend unterlegt; Universe-Widgets heller.
+- **Legacy-Fehler gefunden:** Tailwind-Klassen wie `bg-[#071522]/92` oder `text-white/48` (Opacity außerhalb der Skala) wurden nie erzeugt → Universe-Panels waren durchsichtig. 36 Stellen auf `/[0.92]`-Syntax umgestellt.
+
+### 28.5 PR #101 „unstable“
+- Ursache war kein Code: Die PR wurde Sekunden nach dem Push aktualisiert, während CI noch lief (pending ⇒ „unstable“). Alle CI-Läufe (lint, verify:types, critical-flow, os-smoke, Jest, Build) und Vercel waren grün, danach `mergeable_state: clean`. CI-Schritte zusätzlich lokal nachgefahren: grün.
+
+### 28.6 Tests
+tsc 0 · lint 0 Fehler · Jest 269 Suites / 1547 Tests · Playwright 42/42 (inkl. Onboarding, Agenten-Feed, Quellen ohne Sitzung; Viewports 1024×768, 1280×800, 1440×900, 1180×820, 820×1180) · Privacy-Grep 0 · Screens `shots-v1.6/`.
+
+## 29. V1.7 – Andockstation (Quellen-Redesign)
+
+Anlass: Marius' Urteil zu V1.6 – Quellen-Seite und Onboarding-Schritt „zu generisch, überladen, zu viele Infotext-Felder“. Umgesetzt wurde **nur** der Redesign-Brief aus `docs/UEBERGABE-ASTRA.md` §4.3, mit Marius' Freigabe vom 07.10.2026 abends.
+
+### 29.1 Idee
+Quellen sind **Stationen**, die an die **Abteilungs-Planeten** andocken, die sie speisen. MÔRA sitzt als Kern in der Mitte (wie im Universe). Status 1:1 aus `GET /v3/connections`, Andocken über `POST /v3/connections/{provider}/connect`. Beides gibt es in CORE schon, im Prototyp **nur gegen einen lokalen CORE** (`isLocalCore()`).
+
+### 29.2 Was man sieht
+- **Szene** (`features/settings/ui/SourceDock.tsx`, Logik `lib/os-prototype/sourceDock.ts`):
+  - innere Bahn mit Planeten: echte Abteilungen aus `/v3/departments`, sonst die eigenen aus dem Onboarding (nur lokal), ohne Sitzung das Demo-Paket;
+  - äußerer Andock-Ring mit freien Stationen;
+  - angedockte Stationen leuchten seitlich an ihrem Planeten, mit Faden;
+  - die gewählte Station zeigt die Anflugbahn.
+- **Zuordnung:** per Schlagwort im Abteilungsnamen, z. B. Kalender → Management, Mail → Vertrieb, Dateien → Wissen/Tech, Zahlungen → Finanzen. Ohne Treffer dockt die Station am Firmenkern an. Das ist **reine Darstellung**, CORE speichert keine Zuordnung.
+- **Eine Aktion:** MÔRA nennt mit genau einem Satz die nächste sinnvolle Station, z. B. „Mit dem Kalender startet dein Morgenbriefing.“, dazu ein Knopf „… andocken“.
+- **Progressive Disclosure:**
+  - sichtbar sind Kalender, Mail, Dateien und alles bereits Angedockte;
+  - Werkzeuge, Zahlungen und Admin-Fälle liegen hinter „Weitere Stationen“;
+  - Admin-Fälle („Server-Einrichtung fehlt“) erscheinen nur als Kontur, ohne Knopf, mit dem Satz „Diese Station richtet ein Admin auf dem Server ein.“
+- **Freigabe-Schleuse:** vor dem Andocken drei Zeilen mit Icon: was hereinkommt, wo es andockt, „MÔRA handelt nur nach deiner Bestätigung“. Erst danach erscheinen die Zugangsfelder (`field_schema`, Hinweis eingeklappt) bzw. der OAuth-Start.
+- **Erstes Signal:** nach dem Andocken „{Station} speist jetzt {Planet}.“ und ein Signal aus `/v3/briefing`. Ist das Briefing „degraded“ oder leer, steht dort ehrlich „Kommt mit dem ersten Abgleich.“ Dazu der Knopf „Zu Heute“.
+- **Fehler:** MÔRA übersetzt den CORE-Fehler in einen nächsten Schritt (abgelehnt, nicht erreichbar, Admin). Der Originaltext bleibt unter „Details von CORE“.
+- **Ohne Sitzung / Demo-Konto:** Beispiel-Szene mit „Beispiel“-Plakette, Legende (angedockt/bereit) und einem Satz. Kein toter Textkasten.
+- **Looks:**
+  - Kosmos ist ein Raumfenster mit Sternen, Glühen und pulsierendem Halo;
+  - Klar ist dieselbe Szene als Orbital-Instrument: deckend, Fadenkreuz, ohne Glühen;
+  - Phasenfarben über `--os-accent`/`--os-aura`;
+  - neue Farbwerte als Tokens `--os-station-*` in `osTokens.ts`; `os-kit.css` bleibt ohne rgba/hex.
+- **Lesbarkeit:** Die Schrift in der Szene bleibt in echten Pixeln gleich groß (ResizeObserver → `--station-k`). Die Labels haben einen Halo. Bei schmalem Rahmen (unter 800 px, z. B. iPad hoch) liegt die Karte unter der Szene.
+
+### 29.3 Onboarding
+Schritt 3 heißt jetzt „Erste Station andocken“ und nutzt dieselbe Andockstation in kompakter Form. Die gerade eingegebenen Abteilungen erscheinen sofort als Planeten. Der Link „Zu Einstellungen › Quellen“, eine Sackgasse, ist weg.
+
+### 29.4 Alte Variante aufgelöst
+- `SourcesPanel` (Liste) und der Tab **„Verbindungen“** sind entfernt, ebenso `useConnections.ts` (`/v3/integrations/overview`).
+- Der alte Deep-Link `?section=connections` führt auf Quellen.
+- Der Universe-Planet „Verbindungen“ heißt „Quellen“ und liest `/v3/connections`.
+- Die Texte in Control Center, Heute, Manifest und Labs sind angepasst.
+- Die Chips im Morgenbriefing zeigen keine Admin-Zustände mehr.
+
+### 29.5 Verifikation
+- tsc 0 · lint 0 Fehler (nur die alte HomeSurface-Warnung).
+- Jest 271 Suites / 1557 Tests, neu: `__tests__/os-v17` mit Logik- und Komponententests (Fluss Freigabe → Felder → angedockt → erstes Signal, Fehlerübersetzung, Admin-Kontur, nie verbinden ohne lokalen CORE).
+- Playwright 48/48. Neu: Ehrlichkeit ohne Sitzung, Deep-Link, und je Größe 1024×768, 1280×800, 1440×900, 1180×820, 820×1180 keine überlappenden Labels, alles in der Szene, Karte frei, Schrift ≥ 9 px.
+- Kontrast: Das Skript misst jetzt auch SVG-Text (`fill`, Größe × viewBox-Skalierung). Ergebnis 0 von 1 720 (Quellen, Einstellungen, Heute, Universe × 4 Phasen × 2 Looks) bzw. 0 von 1 096 nach dem Token-Umbau.
+- Live am lokalen CORE:
+  - die Station-Liste kommt aus CORE;
+  - die Freigabe für Google Kalender liefert „OAuth not configured“, übersetzt in den Admin-Satz;
+  - Notion mit falschem Token liefert „Zugangsdaten abgelehnt“, das Original steht unter Details.
+- Der Zustand „angedockt“ ist **nur als Testaufnahme mit gemockter CORE-Antwort** belegt (`shots-v1.7/nachher/mock-*`), weil es lokal noch keine echte Quelle gibt.
+- Screens: `shots-v1.7/vorher` (V1.6) und `shots-v1.7/nachher`.
+
+### 29.6 Offen
+- **Erste echte lokale Quelle** (z. B. Nextcloud-Testinstanz oder IMAP-Testkonto), damit „angedockt“ und das Briefing echt werden.
+- **Abdocken** fehlt im UI. CORE-Endpunkt prüfen, nur lokal.
+- Die Zuordnung Station → Planet ist heuristisch. Später ggf. vom Nutzer wählbar und in CORE gespeichert, mit Bestätigung.
+- OAuth-Rückkehr (`return_to`) ist mit einem echten Provider noch nicht getestet.
+
+## 30. V1.8 – Erste echte lokale Quelle (E-Mail)
+
+Anlass: Astra hatte festgestellt, dass der Mail-Dialog nur Gmail, Outlook und Yahoo kennt und es keinen lokalen Test-Server gibt. Außerdem speicherte „Verbinden“ nur die Zugangsdaten, und ein Abruffehler sah aus wie ein leeres Postfach. Ziel: eine echte lokale Quelle Ende zu Ende, damit „Angedockt“ nicht nur gemockt belegt ist.
+
+### 30.1 Ablauf (echt, lokal)
+1. **IMAP-Test-Server** (`saimor-core/scripts/dev_local_imap/server.py`, dev-only):
+   - lauscht nur auf `127.0.0.1:3143`, Postfach nur lesbar;
+   - liefert 5 synthetische deutsche Mails (Rechnung, Terminvorschlag, Frist, Anfrage, Newsletter), Domains `*.example.test`, nur Rollennamen;
+   - die Zugangsdaten kommen nur aus der Umgebung.
+2. **CORE** (nur lokal, als Patch, siehe 30.4): Anbieter `local_test` gibt es nur bei `ENVIRONMENT=development` **und** `SAIMOR_DEV_LOCAL_IMAP=1`, mit festem Host `127.0.0.1`. Verbinden heißt jetzt:
+   - **erst abrufen,**
+   - **dann speichern,**
+   - **dann aus CORE zurücklesen und bestätigen.**
+
+   Antwort: `{status: "connected", confirmed: true, fetched, verified_at, dev_only}`. Ein Fehler gibt 400 mit deutscher Meldung zurück, gespeichert wird dabei nichts.
+3. **Andockstation:**
+   - Die Station „E-Mail“ bietet im Dev-Modus „Lokaler Test-Server (nur Entwicklung)“ an.
+   - Während des Abrufs steht dort: „MÔRA ruft das Postfach ab. Angedockt ist es erst, wenn der Abruf klappt.“
+   - **„Angedockt“ erscheint nur bei `connected` + `confirmed`.** Eine fehlende Antwort (CORE weg, `corePost` liefert `null`) war vorher still ein Erfolg und ist jetzt ein Fehler.
+   - Erstes Signal ist die neueste echte Test-Mail (Betreff, Absender, Zeit), dazu die Kopfzeile der Zusammenfassung mit den Plaketten „regelbasiert“ und „Test-Server · nur Entwicklung“.
+4. **Heute:**
+   - Das Morgenbriefing zeigt die **regelbasierte MÔRA-Zusammenfassung** aus `GET /v3/connections/mail/summary`: Gruppen (Fristen, Rechnungen, Termine, Anfragen, ohne Regel), jede Zeile ein Quellverweis (Betreff · Absender · Zeit, `data-message-id`).
+   - Darüber steht ehrlich: „Ein KI-Briefing liefert CORE gerade nicht.“ Der lokale CORE hat keinen KI-Anbieter (`/v3/briefing` bleibt degradiert).
+   - „Heute · Aktuell › Mail“ und „Neue Informationen“ lesen live über `/v3/today` per IMAP.
+
+### 30.2 Ehrliche Zustände
+- **Fehler ≠ leer:**
+  - CORE: `ImapEmailSourceAdapter.list_threads` wirft `ImapFetchError` statt `[]`.
+  - UI: Heute zeigt bei gestopptem Server „Mail · Unbekannt · Postfach konnte gerade nicht gelesen werden.“ und „Post gerade nicht verfügbar“ statt „Nichts Neues“.
+- Falsches Passwort zeigt „Die Zugangsdaten wurden abgelehnt“ plus „Nichts wurde angedockt oder gespeichert. Ein Fehler ist kein leeres Postfach.“ Die Station bleibt „bereit“.
+- Server nicht erreichbar zeigt „Der Dienst war nicht erreichbar“, ebenfalls ohne gespeicherten Eintrag.
+- Leeres Postfach (Abruf ok, 0 Mails) zeigt „im Posteingang liegen keine Nachrichten“ und „wirklich leer“. Das ist ein eigener Zustand.
+- Gespeicherte, aber nie geprüfte Zugangsdaten gelten **nicht** mehr als verbunden („noch nicht durch einen Abruf bestätigt“).
+
+### 30.3 Dateien (mora-ui)
+- neu `lib/os-prototype/mailSummary.ts` (Typen, `useMailSummary`, `checkConnectResult`, `newestRef`, `senderName`);
+- neu `features/today/ui/MailSummary.tsx` (`MailSummaryView`, Varianten `full` und `signal`);
+- geändert `features/settings/ui/SourceDock.tsx` (bestätigtes Andocken, Abruf-Zustand, Mail-Signal, Info mit CORE-Detail);
+- geändert `lib/os-prototype/sourceDock.ts` (Übersetzungen für die deutschen CORE-Meldungen);
+- geändert `features/today/ui/MoraBriefing.tsx` und `features/today/index.tsx` (Mail-Karte: Fehler ist nie „Nichts Neues“);
+- geändert `os-kit.css` (`.os-mail-*`; Kartentext in „Heute · Aktuell“ von faint auf muted, weil der Live-Zustand 4,4 : 1 hatte);
+- neu `e2e/os-live-mail.spec.ts` und `__tests__/os-v18/*`.
+
+### 30.4 saimor-core (nicht gepusht)
+Die CORE-Änderungen liegen als Patch `saimor-core-v18-local-imap.patch` mit README daneben. Inhalt:
+- `ImapFetchError`;
+- `services/mail_verified_connect_service.py`;
+- `connections.py` (verifiziertes Verbinden, `GET /mail/summary`, `local_test` nur im Dev-Modus);
+- Test-Server;
+- 15 pytest-Tests.
+
+Keine Schema-Migration: Alles liegt in `config_json` der bestehenden Integration.
+
+### 30.5 Verifikation
+- tsc 0 · lint 0 Fehler.
+- Jest 274 Suites / 1 571 Tests.
+- Neu `__tests__/os-v18`: 3 Dateien, 14 Tests (Bestätigung nötig, `null` ist Fehler, Übersetzungen, Signal und Zusammenfassung, leer ≠ Fehler, 409).
+- CORE pytest: neu 15/15. Die ganze Suite `tests/` ist grün (1 373), `core/tests` hat 199 grün und 1 Fehler, der schon auf `main` besteht (`test_mise_openclaw_bridge`, unabhängig). Der Patch ließ sich auf einem sauberen `main`-Checkout anwenden und testen.
+- Playwright:
+  - **live** `e2e/os-live-mail.spec.ts` gegen den lokalen CORE und den Test-Server, 3/3: falsches Passwort, echtes Andocken bis Heute, gestoppter Server. Die Zugangsdaten kommen nur aus der Umgebung, ohne sie wird übersprungen;
+  - Vorschau-Suite `e2e/os-prototype.spec.ts` 48/48.
+- Kontrast:
+  - live mit Sitzung (Heute und Quellen × 4 Phasen × 2 Looks): 0 von 672;
+  - Vorschau (Heute, Quellen, Einstellungen × 4 × 2): 0 von 1 096. Das Datum in Heute steht jetzt in voller Textfarbe, vorher 4,3 : 1 über hellem Bildbereich.
+- Screens: `shots-v1.8/vorher` (Stand V1.7: nur Gmail/Outlook/Yahoo, „angedockt“ nur gemockt) und `shots-v1.8/nachher`:
+  - 01–10 echter Ablauf in Kosmos und Klar;
+  - 11–13 Fehlerzustände;
+  - dazu 1024×768 und 820×1180.
+
+### 30.6 Grenzen / offen
+- Nur gegen den **lokalen Test-Server** geprüft, nicht gegen echte Anbieter.
+- Die Zusammenfassung nutzt den beim Verbinden gespeicherten Abruf (bis 20 Mails). Ein Re-Sync, der ihn auffrischt, fehlt noch. Heute liest live.
+- Die Zusammenfassung ist bewusst regelbasiert (Stichwörter), keine KI.
+- Bestehende, nie verifizierte echte Mail-Zugänge erscheinen nach dem CORE-Patch als „bereit“, bis sie einmal neu verbunden werden. Das muss vor einem Deploy kommuniziert werden.
+- Abdocken im UI fehlt weiterhin. Die e2e-Tests setzen den lokalen Testeintrag über `DELETE /v3/integrations/mail` zurück, das deaktiviert ihn nur im lokalen SQLite.
