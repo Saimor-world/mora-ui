@@ -46,6 +46,8 @@ import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
 import { scopeUniverseModel } from '@/lib/universe/access';
 import { placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { buildLivePlanetInput, overlayUniversePlanets } from '@/lib/universe/livePlanetSources';
+import { useScopedToday } from '@/lib/os/useScopedToday';
 import { resolveMoonTarget } from '@/lib/universe/navigation';
 import { toast } from 'sonner';
 
@@ -404,11 +406,23 @@ export default function UniverseView() {
     const { data: universeSnapshot } = useUniverseModel(effectiveCompanyId);
     const departmentAccess = useMemo(() => new Map(accessibleDepartments.map(department => [String(department.id), department.universeAccess])), [accessibleDepartments]);
     const universeModel = useMemo(() => universeSnapshot ? scopeUniverseModel(universeSnapshot, departmentAccess) : null, [universeSnapshot, departmentAccess]);
+    // Live totals overlay CORE's planet counts only where a source answered with a
+    // real total. Preview samples (mail/feed previews) and failed reads never
+    // replace a number; then the CORE /v3/universe count stays.
+    const { snapshot: today } = useScopedToday({ backgroundRefresh: true });
+    const liveInput = useMemo(
+        () => buildLivePlanetInput({ today, mailStatus, activeTenants: business.activeCount, metrics }),
+        [today, mailStatus, business.activeCount, metrics],
+    );
+    const liveModel = useMemo(() => {
+        if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return universeModel;
+        return { ...universeModel, planets: overlayUniversePlanets(universeModel.planets, liveInput) };
+    }, [universeModel, liveInput]);
     const fieldTerritories = useMemo<OrganizationTerritory[]>(() => {
-        if (!universeModel || !Array.isArray(universeModel.planets) || universeModel.planets.length === 0) return territories;
+        if (!liveModel || !Array.isArray(liveModel.planets) || liveModel.planets.length === 0) return territories;
         const byDept = new Map(territories.map((t) => [t.id, t]));
-        const demo = universeModel.company?.sector === 'demo';
-        return placeUniverse(universeModel).map((body) => {
+        const demo = liveModel.company?.sector === 'demo';
+        return placeUniverse(liveModel).map((body) => {
             const p = body.planet; const c = body.cluster;
             const look = (p || c)!.look;
             const deptId = p ? p.department_id || departmentIdOf(p.key) : null;
@@ -421,7 +435,7 @@ export default function UniverseView() {
             } as OrganizationTerritory['model'];
             if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
             const moons = c
-                ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || universeModel.planets.find((x) => x.key === k)?.label || '' }))
+                ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || liveModel.planets.find((x) => x.key === k)?.label || '' }))
                 : (p?.moons || []).map((m: any) => ({ id: m.department_id || m.key, name: SOURCE_LABEL[m.label] || m.label, documents: Number(m.docs ?? 0) }));
             return {
                 id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
@@ -430,7 +444,7 @@ export default function UniverseView() {
                 metricSource: 'live', access: deptId ? departmentAccess.get(deptId) ?? 'locked' : 'open', model,
             } as OrganizationTerritory;
         });
-    }, [universeModel, territories, departmentAccess]);
+    }, [liveModel, territories, departmentAccess]);
     const moonContext = useMemo(() => {
         const departmentIds = new Set(accessibleDepartments.filter(department => department.universeAccess === 'open').map(department => String(department.id)));
         const spaceDepartments: Record<string, string> = {};
