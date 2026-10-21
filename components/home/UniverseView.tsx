@@ -45,7 +45,7 @@ import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
 import { scopeUniverseModel } from '@/lib/universe/access';
-import { placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { placeOnOrbits, placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
 import { buildLivePlanetInput, overlayUniversePlanets } from '@/lib/universe/livePlanetSources';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { resolveMoonTarget } from '@/lib/universe/navigation';
@@ -360,7 +360,8 @@ export default function UniverseView() {
     // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
     const normalizedDepartments = useMemo(() => {
         if (!isUniverseV2Enabled()) return positionedDepartments;
-        return normalizeUniverseLayout(positionedDepartments);
+        // v2: auch ohne CORE-Modell echte Bahnen in verschiedenen Abständen (gleiche Logik wie placeUniverse).
+        return placeOnOrbits(positionedDepartments.map((d) => ({ ...d, id: String(d.id) })));
     }, [positionedDepartments]);
 
     const territories = useMemo<OrganizationTerritory[]>(
@@ -429,7 +430,7 @@ export default function UniverseView() {
             const base = deptId ? byDept.get(deptId) : undefined;
             const state = p ? p.state : 'active';
             const model = {
-                kind: body.kind, archetype: look.archetype, glyph: look.glyph, seed: look.seed,
+                kind: body.kind, category: p?.domain_type ?? c?.domain_type ?? (body.kind === 'system' ? body.id.replace(/^system:/, '') : null), archetype: look.archetype, glyph: look.glyph, seed: look.seed,
                 diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
                 meta: bodyMeta(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
             } as OrganizationTerritory['model'];

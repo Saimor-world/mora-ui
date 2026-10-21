@@ -7,7 +7,7 @@
  * darüber auf, und die Arbeit liegt auf einer einzigen Glasfläche.
  * Keine Türkis-Welt, keine Randkacheln, keine Null-Zähler. Leeres ist ehrlicher Nebel.
  */
-import { planetMaterial, moonBackground } from './PlanetSphere';
+import { planetMaterial, moonBackground, matteTone } from './PlanetSphere';
 import { UV, TYPE } from '@/lib/universe/tokens';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
@@ -104,6 +104,10 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
   const name = dept?.name || 'Planet';
   const glow = getDeptStyle(name, dept?.color).glow;
   const mat = planetMaterial(name);
+  const mt = matteTone(name);
+  const mrgb = (c: number[], a = 1) => `rgba(${c.join(',')},${a})`;
+  // deckend abgedunkelt (matt, kein Durchscheinen des Nebels)
+  const mdim = (c: number[], k: number) => `rgb(${c.map((v) => Math.round(7 + (v - 7) * k)).join(',')})`;
   const slots = moonSlots(Math.min(spaces.length, 7));
   const incidents = incidentPanels.filter((p: any) => p && p.state !== 'resolved');
   const ease = MOTION.ease.out;
@@ -117,14 +121,15 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       {/* Der Horizont: die Oberfläche dieses Planeten */}
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)',
-          background: `radial-gradient(circle at 50% 0%, ${mat.mid}66 0%, ${mat.night} 9%, #060606 34%)`,
-          boxShadow: `0 -1px 0 rgba(${mat.atmo},0.6), 0 -6px 24px rgba(${mat.atmo},0.16), 0 -40px 120px rgba(${mat.atmo},0.08), inset 0 22px 60px rgba(${mat.atmo},0.10)` }} />
+          // matte Keramik wie die Planeten: sanft von oben beleuchtet, keine Glut
+          background: `radial-gradient(circle at 50% 0%, ${mdim(mt.base, 0.62)} 0%, ${mdim(mt.base, 0.48)} 3%, ${mdim(mt.shade, 0.7)} 10%, #07080c 26%)`,
+          boxShadow: `0 -1px 0 ${mrgb(mt.light, 0.55)}` }} data-uv2-premium="" />
       {/* Oberflächenstruktur des Materials, nur am Horizont sichtbar */}
       <div className="pointer-events-none absolute left-1/2 overflow-hidden rounded-full" aria-hidden
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)', maskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', WebkitMaskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', opacity: 0.55, mixBlendMode: 'overlay' }}>
         <svg width="100%" height="100%" preserveAspectRatio="none"><filter id="uv2-hz-noise"><feTurbulence type="fractalNoise" baseFrequency={`${mat.fx / 900} ${mat.fy / 900}`} numOctaves={mat.oct} seed={7} /><feColorMatrix type="saturate" values="0" /></filter><rect width="100%" height="100%" filter="url(#uv2-hz-noise)" /></svg>
       </div>
-      <div className="pointer-events-none absolute inset-x-0" style={{ top: 'calc(74vh - 140px)', height: 160, background: 'radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,210,150,0.10), transparent 70%)' }} />
+      <div className="pointer-events-none absolute inset-x-0" style={{ top: 'calc(74vh - 140px)', height: 160, background: 'radial-gradient(ellipse 60% 100% at 50% 100%, rgba(255,210,150,0.04), transparent 70%)' }} />
 
       {/* Bereiche als Monde über dem Horizont */}
       {slots.map((s, i) => {
