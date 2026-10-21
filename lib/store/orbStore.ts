@@ -9,7 +9,7 @@ import type { OrbState as OrbStateValue } from '@/lib/api/awarenessClient';
 interface OrbStoreState {
   orbState: OrbStateValue;
   /** MÔRAs sichtbarer Zustand (hört zu, denkt, arbeitet, fertig, braucht dich) – nur Licht um den Jadestein. */
-  moraPresence: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; target?: string | null };
+  moraPresence: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; target?: string | null; place?: 'seat' | 'dock' | 'planet' };
   setMoraPresence(p: { state: 'calm' | 'listening' | 'thinking' | 'working' | 'done' | 'needs'; target?: string | null }): void;
   speculativeState: OrbStateValue | undefined;
   speculativeUntil: number | undefined;

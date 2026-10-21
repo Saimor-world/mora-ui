@@ -88,3 +88,34 @@ html[data-uv2="on"] [data-testid="planet-detail"] { animation: uv2CardIn .35s ea
 .uv2-orbits path.uv2-orbit-back { stroke-opacity: .55; stroke-dasharray: 1 5; }
 .uv2-orbits path.uv2-orbit-front { stroke-opacity: 1; }
 .uv2-orbits path[data-hover], .uv2-orbits path[data-selected] { stroke-dasharray: none; }
+
+/* ── Eine MÔRA (Nacht 22.10., Basis #138 68e15942): ein Körper, Sitz Mitte / Dock / Planet ── */
+html[data-uv2="on"] .uv2-mora-presence { position: fixed; inset: 0; pointer-events: none; z-index: 760; }
+html[data-uv2="on"] .uv2-mora-figure {
+  position: absolute; left: 0; top: 0;
+  width: var(--mora-size, 96px); height: var(--mora-size, 96px);
+  translate: calc(var(--mora-x) * 1px - 50%) calc(var(--mora-y) * 1px - 50%);
+  transition: translate .72s cubic-bezier(0.22, 1, 0.36, 1), width .72s cubic-bezier(0.22, 1, 0.36, 1), height .72s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: translate, width, height;
+  filter: drop-shadow(0 10px 16px rgba(16, 70, 48, .4));
+}
+html[data-uv2="on"] .uv2-mora-figure .uv2-mora-crystal { position: relative; left: auto; top: auto; width: 100%; height: 100%; translate: none; display: block; filter: none; }
+html[data-uv2="on"] .uv2-mora-dock-slot {
+  position: relative; width: 44px; height: 44px; border-radius: 999px;
+  border: 1px dashed rgba(214, 168, 72, .5);
+  background: radial-gradient(circle, rgba(214, 168, 72, .14), transparent 72%);
+  color: inherit; cursor: pointer; padding: 0;
+}
+html[data-uv2="on"][data-mora-place="dock"] .uv2-mora-dock-slot { border-style: solid; border-color: rgba(214, 168, 72, .28); background: transparent; }
+html[data-uv2="on"] .uv2-mora-dock-trace {
+  position: absolute; left: 50%; top: 50%; translate: -50% -50%;
+  font: 500 9px/1 Inter, system-ui, sans-serif; letter-spacing: .08em; text-transform: uppercase;
+  white-space: nowrap; color: rgba(247, 244, 233, .72); pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-uv2="on"] .uv2-mora-figure { transition: none !important; }
+}
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-dock-slot { border-color: rgba(180, 140, 50, .45); background: radial-gradient(circle, rgba(225, 189, 98, .18), transparent 72%); }
+html[data-uv2="on"][data-uv2-theme="light"][data-mora-place="dock"] .uv2-mora-dock-slot { border-color: rgba(180, 140, 50, .28); background: transparent; }
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-dock-trace { color: #4f6a80; }
+html[data-uv2="on"][data-uv2-theme="light"] .uv2-mora-figure { filter: drop-shadow(0 10px 14px rgba(16, 70, 48, .22)); }

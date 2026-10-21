@@ -44,7 +44,7 @@ function kindForTool(tool: string): ToolTraceKind {
     if (t.includes('search')) return 'searched';
     if (t.startsWith('read') || t === 'get_node' || t.includes('read_')) return 'read';
     if (t.includes('relation') || t.includes('compare') || t.includes('resonance')) return 'compared';
-    if (t.includes('work_session') || t.includes('plan')) return 'planned';
+    if (t.includes('work_session') || t.includes('plan') || t.includes('propose')) return 'planned';
     if (
         t.includes('create') || t.includes('update') || t.includes('move') ||
         t.includes('rename') || t.includes('delete') || t === 'navigate'
@@ -69,6 +69,8 @@ function sanitizeDetail(value: unknown): string | undefined {
 
 function detailFor(params?: Record<string, any>): string | undefined {
     if (!params) return undefined;
+    // proposeUniverse: nur die Anzahl, nie die Inhalte des Gesprächs.
+    if (Array.isArray(params.areas)) return `${params.areas.length} Bereiche vorgeschlagen`;
     for (const key of SAFE_DETAIL_KEYS) {
         if (key in params) {
             const d = sanitizeDetail(params[key]);

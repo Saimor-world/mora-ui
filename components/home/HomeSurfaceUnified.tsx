@@ -25,6 +25,7 @@ import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/s
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { businessTerm, usesInternalVocabulary } from '@/lib/os/businessLanguage';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 
 type OpenTarget = {
@@ -156,6 +157,7 @@ export const HomeSurfaceUnified: React.FC = () => {
   const openPane = usePaneStore((state) => state.openPane);
   const setCoreMode = useNavStore((state) => state.setCoreMode);
   const user = useSessionStore((state) => state.user);
+  const internalVocab = usesInternalVocabulary(user);
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -326,7 +328,7 @@ export const HomeSurfaceUnified: React.FC = () => {
             </h2>
           </div>
           <div className="grid gap-3 md:grid-cols-2">
-            {SECONDARY_AREAS.map((area) => (
+            {SECONDARY_AREAS.map((area) => ({ ...area, title: businessTerm(area.title, internalVocab) })).map((area) => (
               <AreaButton key={area.id} area={area} onOpen={open} compact />
             ))}
           </div>
@@ -352,7 +354,8 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
   const [ask, setAsk] = useState('');
   const ease = [0.22, 1, 0.36, 1] as const;
   const dateLabel = now ? now.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
-  const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS];
+  const internalVocab = usesInternalVocabulary(useSessionStore((state) => state.user));
+  const areas = [...PRIMARY_AREAS, ...SECONDARY_AREAS].map((a) => ({ ...a, title: businessTerm(a.title, internalVocab) }));
   const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
   const time = now ? now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : '';
   return (
@@ -364,8 +367,8 @@ function HomeV2({ greeting, firstName, now, onOpen, onSearch, onSettings, onMora
         <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease, delay: 0.25 }}>
           <div className="flex flex-wrap items-center justify-between gap-4">
             <p style={{ ...M, color: '#D6A848' }}>{dateLabel.replace(',', ' ·')}{time ? ` · ${time}` : ''}</p>
-            {/* Eine Navigation: Orte oben, Werkzeuge im Dock. Hier nur MÔRAs Präsenz. */}
-            <div data-testid="uv2-home-actions" aria-hidden><PresenceOrb /></div>
+            {/* Eine MÔRA: ihr Körper lebt in MoraPresenceLayer (Mitte/Dock/Planet), nicht hier. */}
+            <div data-testid="uv2-home-actions" aria-hidden />
           </div>
           <h1 className="mt-6 text-[44px] sm:text-[64px]" data-x="" style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', lineHeight: 1.02, fontWeight: 400, letterSpacing: '-0.025em' }}>
             {greeting}{firstName ? `, ${firstName}.` : '.'}

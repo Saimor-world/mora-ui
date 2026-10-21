@@ -12,6 +12,8 @@ import { coreGet } from '@/lib/api/http';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { CAMERA, MOTION, playZoomTone } from '@/lib/universe/motion';
 import { useNavStore } from '@/lib/store/navStore';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { firstNameOf } from '@/lib/os/businessLanguage';
 import type { MoraMode } from '@/lib/mora/moraModes';
 import { approve, approveLabel, canApprove, type ApproveOutcome } from '@/lib/universe/approve';
 import { ModePicker, MoraSpaceAnswer, useMoraSpace } from '@/components/universe/MoraSpaceAnswer';
@@ -45,7 +47,7 @@ const TINT: Record<DayPhase, string> = {
   nacht: 'linear-gradient(to bottom, rgba(2,4,14,0.42), rgba(2,4,14,0.30))',
 };
 const GREETING: Record<DayPhase, string> = {
-  morgen: 'Guten Morgen, Marius.', tag: 'Ein ruhiger Tag.', abend: 'Guten Abend, Marius.', nacht: 'Die Wache hält Licht.',
+  morgen: 'Guten Morgen{name}.', tag: 'Ein ruhiger Tag.', abend: 'Guten Abend{name}.', nacht: 'Gute Nacht{name}.',
 };
 
 // Keine Beispielinhalte im HQ: „Heute“ kommt nur aus CORE /v3/mora/today (auch lokal).
@@ -89,6 +91,7 @@ export function assignToPlanets<T extends { title: string; source: string; area?
 }
 
 export function MorgenOverlay() {
+  const sessionFirstName = firstNameOf(useSessionStore((state) => state.user));
   const [phase, setPhase] = useState<DayPhase>('morgen');
   const [demo, setDemo] = useState(false);
   const [today, setToday] = useState<Today | 'nebel' | null>(null);
@@ -244,7 +247,7 @@ export function MorgenOverlay() {
     morgen: n ? `${n === 1 ? 'Eine Sache ist' : `${['', '', 'Zwei', 'Drei', 'Drei'][n]} Dinge sind`} heute wichtig.${proposal ? ' Eine wartet auf dich.' : ''}` : 'Nichts drängt heute.',
     tag: n ? 'Nur was sich bewegt, leuchtet.' : 'Alles ruhig.',
     abend: 'Der Tag legt sich. Was offen ist, wartet bis morgen.',
-    nacht: 'Alles ruht. Nur die Wache bleibt wach.',
+    nacht: 'Alles ruht bis morgen.',
   };
   const ease = UV.easeOut;
   const wide = vw >= 1100;
@@ -256,7 +259,8 @@ export function MorgenOverlay() {
   const hot = hover !== null ? usable[slots[hover] ?? -1]?.name : null;
   const sel = (nm: string) => `[data-mora-label="${nm.replace(/"/g, '')}"]`;
   const eyebrow = `${dateEyebrow(now)} · ${now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}`;
-  const greet = GREETING[phase].replace(/, /, ',\n');
+  // Name aus der Sitzung statt fest „Marius“ (Kundentest 21.10.).
+  const greet = GREETING[phase].replace('{name}', sessionFirstName ? `, ${sessionFirstName}` : '').replace(/, /, ',\n');
   const delay = returned ? 0.7 : 0;
 
   return (

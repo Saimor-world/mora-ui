@@ -17,6 +17,7 @@ import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
 import { MoraFace } from '@/components/mora/MoraFace';
+import { flyMora } from '@/lib/universe/moraPresence';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
@@ -555,6 +556,7 @@ export const Dock = () => {
     const navigateToFolder = useNavStore((s) => s.navigateToFolder);
     const orbState = useOrbStore((s) => s.orbState);
     const moraPresence = useOrbStore((s) => s.moraPresence?.state ?? "calm");
+    const moraPlace = useOrbStore((s) => s.moraPresence?.place ?? 'dock');
     const user = useSessionStore((s) => s.user);
     const { data: companies = [], refetch: refetchCompanies } = useCompanies({ includeDemo: true });
     const activeCompanyId = useNavStore((s) => s.activeCompanyId);
@@ -1749,7 +1751,25 @@ export const Dock = () => {
                                         </div>
                                     )}
 
-                                    {activeMode !== 'public_playground' && (
+                                    {activeMode !== 'public_playground' && v2 && (
+                                        // Eine MÔRA: im Dock nur der Sitzplatz; der Körper wird von MoraPresenceLayer gezeichnet.
+                                        <div className="flex items-center shrink-0" data-mora-orb data-mora-presence={moraPresence} data-mora-place={moraPlace}>
+                                            <button
+                                                type="button"
+                                                onClick={() => { flyMora('dock'); handleDockClick('chat'); }}
+                                                data-mora-home="true"
+                                                data-testid="uv2-mora-dock-slot"
+                                                className="uv2-mora-dock-slot"
+                                                aria-label={moraPlace === 'dock' ? 'Mit MÔRA sprechen' : 'Frag MÔRA'}
+                                                title="Frag MÔRA"
+                                            >
+                                                {moraPlace !== 'dock' && (
+                                                    <span className="uv2-mora-dock-trace" data-testid="uv2-mora-dock-trace">Frag</span>
+                                                )}
+                                            </button>
+                                        </div>
+                                    )}
+                                    {activeMode !== 'public_playground' && !v2 && (
                                         <div className="flex items-center shrink-0" data-mora-orb data-mora-presence={moraPresence}>
                                             <button
                                                 onClick={() => handleDockClick('chat')}
