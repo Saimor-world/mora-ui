@@ -11,9 +11,10 @@
  */
 import React, { useId } from 'react';
 
-export type PlanetDirection = 'matte' | 'keramik' | 'atlas' | 'mineral';
+export type PlanetDirection = 'matte' | 'keramik' | 'atlas' | 'mineral' | 'mixed';
+export type StyledDirection = 'keramik' | 'atlas' | 'mineral';
 export const PLANET_DIRECTION_DEFAULT: PlanetDirection = 'matte';
-const DIRS: PlanetDirection[] = ['matte', 'keramik', 'atlas', 'mineral'];
+const DIRS: PlanetDirection[] = ['matte', 'keramik', 'atlas', 'mineral', 'mixed'];
 const isDir = (v: unknown): v is PlanetDirection => DIRS.includes(v as PlanetDirection);
 
 export function usePlanetDirection(): PlanetDirection {
@@ -23,9 +24,49 @@ export function usePlanetDirection(): PlanetDirection {
   return d;
 }
 
+
+/* ── Stil-Regel für den gemischten Kosmos ('mixed') ───────────────────────────
+ * Jeder Planet bekommt die Richtung, die zu seinem Wesen passt:
+ *
+ *  | Richtung | Wesen                                  | Beispiele                                              |
+ *  |----------|----------------------------------------|--------------------------------------------------------|
+ *  | atlas    | Wissen, Strategie, Ordnung, Nachweise  | Wissen, Strategie, Recht, Archiv, Planung, Rezepte,    |
+ *  |          |                                        | Portfolio, Qualität, Schulung, Leitung, Fristen        |
+ *  | keramik  | Menschen, Handwerk, Kunden, Hands-on   | Personal, Werkstatt, Vertrieb, Service, Kunden, Laden, |
+ *  |          |                                        | Termine, Buchungen, Studio, Küche, Floristik, Design   |
+ *  | mineral  | Geld, Daten, Systeme, Fluss            | Finanzen, Kasse, Operations, Lager, Einkauf,           |
+ *  |          |                                        | Bestellungen, Markt, Marketing, Social, IT, Post       |
+ *
+ * Reihenfolge: 1) explizite Kategorie (CORE domain_type / System-Planet-Key)
+ *              2) Stichwort im Namen (DE+EN, inkl. Kleinbetrieb)  3) deterministischer Hash (gleichverteilt).
+ */
+export const CATEGORY_DIRECTION: Record<string, StyledDirection> = {
+  // CORE DOMAIN_TYPES
+  management: 'atlas', research: 'atlas',
+  hr: 'keramik', sales: 'keramik', service: 'keramik', store: 'keramik', product: 'keramik', community: 'keramik',
+  finance: 'mineral', ops: 'mineral', intelligence: 'mineral', tech: 'mineral', marketing: 'mineral', growth: 'mineral',
+  // CORE System-Planeten
+  wissen: 'atlas', wache: 'atlas', werkstatt: 'keramik', menschen: 'keramik', finanzen: 'mineral', markt: 'mineral', post: 'mineral',
+};
+// geordnet: spezifisch vor allgemein (z. B. "Buchhaltung" vor "Buchungen", "Kassenbuch" vor "Buch")
+export const KEYWORD_DIRECTION: [RegExp, StyledDirection][] = [
+  [/buchhalt|bookkeep|accounting|kasse|kassen|cash|\bpos\b|zahlung|payment|rechnung|invoice|lohn|payroll|steuer|\btax|controlling|budget|finanz|financ|geld|money|umsatz|revenue/, 'mineral'],
+  [/wissen|knowledge|strateg|recht|legal|vertr[aä]g|contract|archiv|archive|dokument|document|akte|planung|planning|roadmap|forschung|research|r&d|leitung|management|geschäftsf|geschaeftsf|vorstand|compliance|datenschutz|privacy|haccp|hygiene|rezept|recipe|satzung|richtlin|policy|portfolio|qualit|quality|schulung|training|academy|lernen|frist|deadline|wiki|handbuch|manual/, 'atlas'],
+  [/lager|inventory|stock|einkauf|purchas|beschaffung|procure|bestell|order|lieferung|liefer|delivery|versand|shipping|logistik|logistic|operations|\bops\b|betrieb|daten|\bdata|analy|intelligence|insight|report|\bit\b|tech|system|software|server|marketing|social|instagram|tiktok|online|website|\bweb|seo|\bads\b|newsletter|growth|wachstum|markt|market|\bpost\b|mail|inbox/, 'mineral'],
+  [/personal|\bhr\b|people|team|mitarbeit|staff|crew|kunde|customer|client|service|support|vertrieb|sales|verkauf|werkstatt|workshop|atelier|studio|montage|handwerk|craft|produkt|product|laden|store|shop|filiale|caf[eé]|k[üu]che|kitchen|\bbar\b|theke|termin|appointment|buchung|booking|reserv|empfang|reception|tattoo|nail|n[äa]gel|beauty|kosmetik|friseur|salon|florist|blumen|flower|design|kreation|creative|gestalt|community|event|gäste|guest|pflege|care/, 'keramik'],
+];
+const STYLED: StyledDirection[] = ['keramik', 'atlas', 'mineral'];
+export function directionFor(name: string, category?: string | null): StyledDirection {
+  const cat = (category || '').toLowerCase().replace(/^system:/, '');
+  if (cat && CATEGORY_DIRECTION[cat]) return CATEGORY_DIRECTION[cat];
+  const n = (name || '').toLowerCase();
+  for (const [re, d] of KEYWORD_DIRECTION) if (re.test(n)) return d;
+  return STYLED[hash(n) % 3];
+}
+
 type RGB = [number, number, number];
 type Tone = { base: RGB; light: RGB; shade: RGB; detail: RGB };
-const PALETTES: Record<Exclude<PlanetDirection, 'matte'>, Record<string, Tone>> = {
+const PALETTES: Record<StyledDirection, Record<string, Tone>> = {
   keramik: {
     sand: { base: [212, 184, 146], light: [236, 216, 184], shade: [96, 76, 56], detail: [246, 232, 206] },
     terracotta: { base: [190, 112, 88], light: [220, 150, 124], shade: [84, 42, 32], detail: [236, 196, 172] },
@@ -62,12 +103,18 @@ function hash(s: string): number { let h = 2166136261; for (let i = 0; i < s.len
 function rng(seed: number) { let a = seed || 1; return () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
 const c = (x: RGB, a = 1) => `rgba(${x[0]},${x[1]},${x[2]},${a})`;
 
-export function PlanetDirectionBody({ size, lit, name, dir }: { size: number; lit?: number; name: string; dir: Exclude<PlanetDirection, 'matte'> }) {
+export function PlanetDirectionBody({ size, lit, name, dir: requested, category }: { size: number; lit?: number; name: string; dir: Exclude<PlanetDirection, 'matte'>; category?: string | null }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
+  const mixed = requested === 'mixed';
+  const dir: StyledDirection = mixed ? directionFor(name, category) : requested;
   const pal = PALETTES[dir];
   const keys = Object.keys(pal);
   const idx = slot(name);
-  const t = pal[keys[idx]];
+  // gemischter Kosmos: alle Paletten 14 % zu einem gemeinsamen warmen Grau ziehen, damit drei Richtungen eine Familie bleiben
+  const H: RGB = [128, 122, 112];
+  const harm = (x: RGB): RGB => (mixed ? (x.map((v, i) => Math.round(v * 0.86 + H[i] * 0.14)) as RGB) : x);
+  const t0 = pal[keys[idx]];
+  const t: Tone = { base: harm(t0.base), light: harm(t0.light), shade: harm(t0.shade), detail: harm(t0.detail) };
   const h = hash(name);
   const r = rng(h);
   const a = lit ?? (-135 * Math.PI) / 180;
@@ -80,7 +127,7 @@ export function PlanetDirectionBody({ size, lit, name, dir }: { size: number; li
   const defs: React.ReactNode[] = [
     <clipPath key="clip" id={id('clip')}><circle cx="50" cy="50" r="50" /></clipPath>,
     <radialGradient key="body" id={id('body')} cx={`${lx}%`} cy={`${ly}%`} r="78%"><stop offset="0" stopColor={c(t.light)} /><stop offset="0.45" stopColor={c(t.base)} /><stop offset="1" stopColor={c(t.shade)} /></radialGradient>,
-    <linearGradient key="term" id={id('term')} gradientUnits="userSpaceOnUse" x1={tx1} y1={ty1} x2={tx2} y2={ty2}><stop offset="0.42" stopColor="#000" stopOpacity="0" /><stop offset="0.72" stopColor="#000" stopOpacity={dir === 'atlas' ? 0.25 : 0.38} /><stop offset="1" stopColor="#000" stopOpacity={dir === 'atlas' ? 0.5 : 0.7} /></linearGradient>,
+    <linearGradient key="term" id={id('term')} gradientUnits="userSpaceOnUse" x1={tx1} y1={ty1} x2={tx2} y2={ty2}><stop offset="0.42" stopColor="#000" stopOpacity="0" /><stop offset="0.72" stopColor="#000" stopOpacity={mixed ? 0.32 : dir === 'atlas' ? 0.25 : 0.38} /><stop offset="1" stopColor="#000" stopOpacity={mixed ? 0.62 : dir === 'atlas' ? 0.5 : 0.7} /></linearGradient>,
   ];
   const layers: React.ReactNode[] = [];
   const before: React.ReactNode[] = [];
@@ -156,7 +203,7 @@ export function PlanetDirectionBody({ size, lit, name, dir }: { size: number; li
   }
 
   return (
-    <span className="uv2-pl" aria-hidden data-uv2-direction={dir} style={{ ['--uv2-pl-edge' as any]: t.light.join(',') }}>
+    <span className="uv2-pl" aria-hidden data-uv2-direction={dir} data-uv2-mixed={mixed || undefined} style={{ ['--uv2-pl-edge' as any]: t.light.join(',') }}>
       <svg className="uv2-pl-body" viewBox="0 0 100 100" width={size} height={size} style={{ overflow: 'visible', borderRadius: 0 }}>
         <defs>{defs}</defs>
         {before}

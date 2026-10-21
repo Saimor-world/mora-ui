@@ -429,7 +429,7 @@ export default function UniverseView() {
             const base = deptId ? byDept.get(deptId) : undefined;
             const state = p ? p.state : 'active';
             const model = {
-                kind: body.kind, archetype: look.archetype, glyph: look.glyph, seed: look.seed,
+                kind: body.kind, category: p?.domain_type ?? c?.domain_type ?? (body.kind === 'system' ? body.id.replace(/^system:/, '') : null), archetype: look.archetype, glyph: look.glyph, seed: look.seed,
                 diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
                 meta: bodyMeta(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
             } as OrganizationTerritory['model'];

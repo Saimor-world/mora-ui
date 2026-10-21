@@ -71,7 +71,7 @@ export function planetMaterialKey(name: string): keyof typeof MATERIALS {
   return 'default';
 }
 
-export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false, lit }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping'; /** Richtung zur Sonne (Bogenmaß, Bildschirm) – schaltet die echte Kugelschattierung ein */ lit?: number }) {
+export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Glyph, archetype, dim = false, lit, category }: { name: string; size: number; selected?: boolean; seed?: number; glyph?: React.ComponentType<any>; archetype?: string | null; dim?: boolean | 'seed' | 'sleeping'; /** Wesen des Planeten (CORE domain_type oder System-Key) – steuert die Stil-Richtung im gemischten Kosmos */ category?: string | null; /** Richtung zur Sonne (Bogenmaß, Bildschirm) – schaltet die echte Kugelschattierung ein */ lit?: number }) {
   const uid = useId().replace(/:/g, '');
   const m = archetypeMaterial(archetype) || planetMaterial(name);
   const pstyle = usePixelStyle();
@@ -151,7 +151,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
 
       {/* Premium-Licht (stilisiert): weicher Terminator zur Mitte, feines Randlicht,
           leise Innenglut und ein Hauch Bänder. Reine CSS-Verläufe, kein Blur-Stapel. */}
-      {pstyle === 'M' && <PremiumLight size={size} lit={lit} name={name} />}
+      {pstyle === 'M' && <PremiumLight size={size} lit={lit} name={name} category={category} />}
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
       {pstyle === null && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
@@ -463,9 +463,9 @@ export function matteTone(name: string): MatteTone {
 // feines Korn: einmal erzeugtes SVG-Rauschen als Daten-URL, statisch (kein Blend, keine Animation)
 const GRAIN = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.55 0'/></filter><rect width='120' height='120' filter='url(%23g)'/></svg>\")";
 
-function PremiumLight({ size, lit, name }: { size: number; lit?: number; name: string }) {
+function PremiumLight({ size, lit, name, category }: { size: number; lit?: number; name: string; category?: string | null }) {
   const dir = usePlanetDirection();
-  if (dir !== 'matte') return <PlanetDirectionBody size={size} lit={lit} name={name} dir={dir} />;
+  if (dir !== 'matte') return <PlanetDirectionBody size={size} lit={lit} name={name} dir={dir} category={category} />;
   const a = lit ?? (-135 * Math.PI) / 180;
   const dx = Math.cos(a), dy = Math.sin(a);
   const deg = (a * 180) / Math.PI + 90;

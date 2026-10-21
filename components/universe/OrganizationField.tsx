@@ -41,6 +41,8 @@ export interface OrganizationTerritory {
     /** Planeten-Modell v1 (CORE /v3/universe): wenn gesetzt, bestimmt der Server Aussehen, Größe und Zustand. */
     model?: {
         kind: 'system' | 'domain' | 'cluster';
+        /** CORE domain_type bzw. System-Key – Wesen des Planeten */
+        category?: string | null;
         archetype: string;
         glyph: string;
         seed: number;
@@ -634,7 +636,7 @@ function Territory({
                 style={{ width: 'var(--territory-size)', height: 'var(--territory-size)' }}
             >
                 {model && territory.access !== 'locked' ? (
-                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
+                    <PlanetSphere lit={Math.atan2(50 - territory.y, 50 - territory.x)} name={territory.name} size={size} selected={selected} seed={model.seed % 9973} glyph={glyphFor(model.glyph)} archetype={model.archetype} category={model.category} dim={model.state === 'seed' ? 'seed' : model.state === 'sleeping' ? 'sleeping' : false} />
                 ) : isUniverseV2Enabled() && territory.access !== 'locked' ? (
                     <PlanetSphere name={territory.name} size={size} selected={selected} seed={drift} glyph={planetGlyph(territory.name)} />
                 ) : (
