@@ -81,9 +81,9 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
     <span className="uv2-planet absolute inset-0 block" data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
       {/* Ring hinten (hinter dem Körper) */}
       {m.ring && (
-        <svg className="pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.22)`} strokeWidth={0.75} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.1)`} strokeWidth={2.5} />
+        <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.16)`} strokeWidth={0.6} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.06)`} strokeWidth={1.6} />
         </svg>
       )}
 
@@ -149,14 +149,17 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
         </>)}
       </span>}
 
+      {/* Premium-Licht (stilisiert): weicher Terminator zur Mitte, feines Randlicht,
+          leise Innenglut und ein Hauch Bänder. Reine CSS-Verläufe, kein Blur-Stapel. */}
+      {pstyle != null && <PremiumLight size={size} lit={lit} tone={areaHue(name, archetype)} bands={m.feature === 'bands' || m.ring === true} />}
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
       {pstyle === null && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
-        <svg className="pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible', clipPath: 'inset(50% 0 0 0)' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.5)`} strokeWidth={0.75} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.16)`} strokeWidth={2.5} />
+        <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible', clipPath: 'inset(50% 0 0 0)' }}>
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.42)`} strokeWidth={0.6} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.1)`} strokeWidth={1.6} />
         </svg>
       )}
 
@@ -434,4 +437,31 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
     {matte && <span className="pointer-events-none absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 32% 28%, rgba(247,244,233,.13), rgba(${h.join(',')},.08) 55%, transparent 82%)`, boxShadow: `inset 0 0 ${size * 0.18}px rgba(${h.join(',')},.22)` }} />}
     <canvas ref={ref} className="absolute inset-0 h-full w-full rounded-full" data-pstyle={matte ? 'M' : 'J'} />
   </>);
+}
+
+/**
+ * Stilisiertes Premium-Licht über jedem Planetenkörper. Das Licht kommt aus der
+ * Mitte des Universums (lit = Richtung zur Mitte, Bogenmaß). Alles sind
+ * Verläufe und eine inset-Schattenkante: billig auf schwachen GPUs, kein Blur.
+ */
+function PremiumLight({ size, lit, tone, bands }: { size: number; lit?: number; tone: [number, number, number]; bands: boolean }) {
+  const a = lit ?? (-135 * Math.PI) / 180;
+  const dx = Math.cos(a), dy = Math.sin(a);
+  const deg = (a * 180) / Math.PI + 90; // CSS-Winkel: 0deg = nach oben
+  const c = tone.join(',');
+  const lite = tone.map((v) => Math.round(v + (255 - v) * 0.55)).join(',');
+  const lx = 50 + dx * 24, ly = 50 + dy * 24;
+  return (
+    <span className="uv2-pl" aria-hidden style={{ ['--uv2-pl-tone' as any]: c, ['--uv2-pl-lite' as any]: lite }}>
+      <span className="uv2-pl-atmo" style={{ boxShadow: `0 0 ${Math.round(size * 0.22)}px rgba(${c},0.14)` }} />
+      <span className="uv2-pl-body" style={{
+        background:
+          // feine Bänder liefert schon die Oberfläche (Worker); hier nur ein Hauch Glanzband
+          (bands ? `linear-gradient(166deg, rgba(${lite},0) 38%, rgba(${lite},0.07) 46%, rgba(${lite},0) 54%),` : '') +
+          `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.20) 0%, rgba(${c},0.08) 34%, rgba(${c},0) 58%),` +
+          `linear-gradient(${deg}deg, rgba(0,0,0,0) 44%, rgba(6,8,16,0.26) 68%, rgba(6,8,16,0.46) 100%)`,
+        boxShadow: `inset ${(-dx * size * 0.05).toFixed(1)}px ${(-dy * size * 0.05).toFixed(1)}px ${(size * 0.07).toFixed(1)}px -${(size * 0.01).toFixed(1)}px rgba(${lite},0.55), inset 0 0 0 0.5px rgba(${lite},0.16)`,
+      }} />
+    </span>
+  );
 }

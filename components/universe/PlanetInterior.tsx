@@ -117,8 +117,9 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       {/* Der Horizont: die Oberfläche dieses Planeten */}
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)',
-          background: `radial-gradient(circle at 50% 0%, ${mat.mid}66 0%, ${mat.night} 9%, #060606 34%)`,
-          boxShadow: `0 -1px 0 rgba(${mat.atmo},0.6), 0 -6px 24px rgba(${mat.atmo},0.16), 0 -40px 120px rgba(${mat.atmo},0.08), inset 0 22px 60px rgba(${mat.atmo},0.10)` }} />
+          // Premium-Licht wie bei den Planeten: Licht von oben-mittig, weicher Terminator, feines Randlicht.
+          background: `radial-gradient(ellipse 22% 3% at 50% 0%, rgba(${mat.atmo},0.20) 0%, rgba(${mat.atmo},0) 100%), radial-gradient(circle at 50% 0%, ${mat.mid}55 0%, ${mat.night} 8%, #05070b 30%)`,
+          boxShadow: `0 -0.5px 0 rgba(${mat.atmo},0.78), 0 -4px 14px rgba(${mat.atmo},0.14), 0 -30px 90px rgba(${mat.atmo},0.07), inset 0 14px 36px rgba(${mat.atmo},0.12)` }} data-uv2-premium="" />
       {/* Oberflächenstruktur des Materials, nur am Horizont sichtbar */}
       <div className="pointer-events-none absolute left-1/2 overflow-hidden rounded-full" aria-hidden
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)', maskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', WebkitMaskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', opacity: 0.55, mixBlendMode: 'overlay' }}>

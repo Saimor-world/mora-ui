@@ -11,6 +11,7 @@ import { UV2_FONTS_HREF } from "@/lib/universe/tokens";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 import './os-brightness.css';
+import './universe-premium.css';
 import { useNavStore } from "@/lib/store/navStore";
 import { useSessionStore } from "@/lib/store/sessionStore";
 import { setFocus, updateOrbFromSystemState } from "@/lib/mora/awarenessController";

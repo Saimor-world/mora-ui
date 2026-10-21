@@ -1,0 +1,40 @@
+/* Universe Premium (grok/universe-premium): stilisiert, nicht fotoreal.
+   Nur Feinschliff an Planeten, Nebel, Beschriftung und Hover – kein Layout. */
+
+/* Planetenlicht (siehe PremiumLight in PlanetSphere.tsx) */
+.uv2-pl { position: absolute; inset: 0; pointer-events: none; }
+.uv2-pl-body { position: absolute; inset: 0; border-radius: 50%; }
+.uv2-pl-atmo { position: absolute; inset: 0; border-radius: 50%; opacity: .75;
+  transition: opacity .5s cubic-bezier(.22,1,.36,1), box-shadow .5s cubic-bezier(.22,1,.36,1); }
+
+/* Kein dunkler Halo / gestrichelter Ring mehr um den Körper */
+html[data-uv2=on] [data-uv2-nosource] .uv2-planet::after { display: none; }
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body::after { display: none; }
+
+/* Finanzen-Ring: zart, hinten hinter dem Körper */
+html[data-uv2-pstyle] .uv2-planet svg.uv2-planet-ring ellipse { stroke: rgba(236,214,160,.34); }
+html[data-uv2-pstyle] .uv2-planet svg.uv2-planet-ring:first-child ellipse { stroke: rgba(236,214,160,.14); }
+
+/* Hover/Auswahl: sanft größer, Rand heller, weiche Glut */
+html[data-uv2="on"] [data-planet-kind] .saimor-territory-body { transition: scale .55s cubic-bezier(.22,1,.36,1); }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) .saimor-territory-body { scale: 1.045; }
+html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,[aria-pressed="true"]) .uv2-pl-atmo { opacity: 1; box-shadow: 0 0 calc(var(--territory-size, 80px) * .32) rgba(var(--uv2-pl-tone),.26), 0 0 0 .5px rgba(var(--uv2-pl-lite),.38) !important; }
+html[data-uv2="on"] [data-planet-kind] .uv2-planet > span:last-child[style*="border"] { opacity: .5; }
+html[data-uv2="on"] [data-planet-kind]:focus-visible .uv2-pl-atmo { box-shadow: 0 0 0 1.5px rgba(214,168,72,.7) !important; }
+
+/* Beschriftung: ruhiger, kontrastreicher, gleiche Position */
+html[data-uv2="on"][data-uv2-pstyle] body [data-uv2-plane] [data-planet-kind] .saimor-territory-name {
+  font-size: 11px !important; letter-spacing: .2em !important; font-weight: 500 !important;
+  color: rgba(247,244,233,.9) !important; text-shadow: 0 1px 2px rgba(0,0,0,.6), 0 0 14px rgba(4,6,12,.9);
+  transition: color .4s ease;
+}
+html[data-uv2="on"][data-uv2-pstyle] body [data-uv2-plane] [data-planet-kind]:is(:hover,:focus-visible) .saimor-territory-name { color: #fffaf0 !important; }
+html[data-uv2="on"][data-uv2-pstyle] body [data-uv2-plane] [data-planet-kind][aria-pressed="true"] .saimor-territory-name { color: #e9c77e !important; }
+
+/* Nebel: leicht beruhigt (dunkler Rand), Planeten führen */
+.uv2-cosmos-calm { background: radial-gradient(ellipse 70% 62% at 50% 46%, rgba(5,7,12,0) 0%, rgba(5,7,12,.08) 55%, rgba(5,7,12,.32) 100%), rgba(8,10,18,.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-uv2="on"] [data-planet-kind] .saimor-territory-body, .uv2-pl-atmo { transition: none !important; }
+  html[data-uv2="on"] [data-planet-kind]:is(:hover,:focus-visible,:focus-within,[aria-pressed="true"]) .saimor-territory-body { scale: 1; }
+}

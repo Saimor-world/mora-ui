@@ -27,6 +27,8 @@ export function CosmosBackdrop() {
       </div>
       <div data-cosmos-light-layer className="absolute inset-0" style={{ background: 'radial-gradient(ellipse at 50% 48%, rgba(174,205,192,.09), rgba(224,207,178,.04) 55%, rgba(3,6,10,.12))' }} />
       <canvas ref={canvas} className="uv2-cosmos-composite absolute" data-testid="uv2-composed-cosmos" data-ready={ready ? 'true' : 'false'} style={{ visibility: ready ? 'visible' : 'hidden' }} />
+      {/* Ruhe: leichte Vignette, damit die Planeten führen; Nebel bleibt. */}
+      <div className="uv2-cosmos-calm absolute inset-0" data-testid="uv2-cosmos-calm" />
       <div className="uv2-cosmos-breath uv2-cosmos-breath--near absolute" style={{ background: `radial-gradient(ellipse, ${scene.accent}, transparent 68%)` }} />
       <div className="uv2-cosmos-breath uv2-cosmos-breath--far absolute" style={{ background: `radial-gradient(ellipse, ${scene.aura}, transparent 68%)` }} />
     </div>
