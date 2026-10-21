@@ -1,5 +1,7 @@
 'use client';
 
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { businessTerm, usesInternalVocabulary } from '@/lib/os/businessLanguage';
 import React, { useMemo } from 'react';
 import { CalendarContinuity } from './CalendarContinuity';
 import { ArrowUpRight, CalendarDays, ListTodo, Mail, Radar, RefreshCw, type LucideIcon } from 'lucide-react';
@@ -111,6 +113,7 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
 export function TodayOverview() {
   const openPane = usePaneStore((state) => state.openPane);
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
+  const internalVocab = usesInternalVocabulary(useSessionStore((state) => state.user));
   const openIntegrations = () => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } });
 
   const calendarCopy = useMemo<TodayCopy>(() => {
@@ -211,12 +214,16 @@ export function TodayOverview() {
                 : 'nicht verfügbar';
 
   if (isUniverseV2Enabled()) {
-    const sources: { key: string; label: string; icon: LucideIcon; copy: TodayCopy; open: () => void; connectable?: boolean }[] = [
+    const all: { key: string; label: string; icon: LucideIcon; copy: TodayCopy; open: () => void; connectable?: boolean }[] = [
+      { key: 'tasks', label: 'Aufgaben', icon: ListTodo, copy: taskCopy, open: () => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } }) },
       { key: 'calendar', label: 'Kalender', icon: CalendarDays, copy: calendarCopy, connectable: true, open: () => openPane({ id: 'calendar-main', type: 'calendar', title: 'Kalender', size: { width: 1080, height: 760 } }) },
       { key: 'mail', label: 'Post', icon: Mail, copy: mailCopy, connectable: true, open: () => openPane({ id: 'mail-main', type: 'mail', title: 'Mail', size: { width: 1080, height: 760 } }) },
-      { key: 'tasks', label: 'Aufgaben', icon: ListTodo, copy: taskCopy, open: () => openPane({ id: 'tasks-main', type: 'tasks', title: 'Aufgaben', size: { width: 1080, height: 760 } }) },
-      { key: 'watch', label: 'Wache', icon: Radar, copy: nightwatchCopy, open: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }) },
+      { key: 'watch', label: businessTerm('Wache', internalVocab), icon: Radar, copy: nightwatchCopy, open: () => openPane({ id: 'nightwatch-main', type: 'nightwatch', title: 'Nightwatch', size: { width: 1100, height: 760 } }) },
     ];
+    // Was heute ansteht zuerst; nicht verbundene Quellen nicht als Kachel (Kundentest 21.10.),
+    // sondern als eine leise Zeile. Die Systemwache sehen Kundenfirmen nur, wenn etwas offen ist.
+    const notConnected = all.filter((x) => x.connectable && x.copy.reconnect);
+    const sources = all.filter((x) => !notConnected.includes(x) && (x.key !== 'watch' || internalVocab || x.copy.attention));
     const fog = sources.filter((x) => x.copy.unavailable);
     const isLoading = loading && !snapshot;
     const M: React.CSSProperties = { fontFamily: 'Inter, -apple-system, system-ui, sans-serif', fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase' };
@@ -249,6 +256,11 @@ export function TodayOverview() {
             );
           })}
         </div>
+        {notConnected.length > 0 && !isLoading && (
+          <button type="button" onClick={openIntegrations} data-testid="uv2-today-connect" className="mt-4 text-[15px] font-light transition-colors hover:text-white" style={{ color: 'rgba(247,244,233,.6)' }}>
+            {notConnected.map((x) => x.label).join(' und ')} verbinden ›
+          </button>
+        )}
         {fog.length > 0 && !isLoading && (
           <div className="mt-4 flex items-center gap-6" data-testid="uv2-today-fog">
             <button type="button" disabled={refreshing} onClick={() => void refresh(false)} className="text-[15px] font-light transition-colors hover:text-white disabled:opacity-60" style={{ color: 'rgba(247,244,233,.6)' }}>

@@ -129,7 +129,8 @@ beforeEach(() => {
 });
 
 describe('TodayOverview Universe V2 source truth', () => {
-  beforeEach(() => { mockUniverseV2 = true; });
+  beforeEach(() => { mockUniverseV2 = true; window.localStorage.setItem('saimor-vocab', 'intern'); });
+  afterEach(() => { window.localStorage.removeItem('saimor-vocab'); });
 
   it('shows loading and prevents connection setup while a response is pending', async () => {
     const pending = deferred<TodaySnapshot | null>();
@@ -167,11 +168,22 @@ describe('TodayOverview Universe V2 source truth', () => {
     snapshot.mail.items = [];
     (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snapshot);
     render(<TodayOverview />);
-    await screen.findByText('Nicht verbunden');
-    fireEvent.click(screen.getByTestId('uv2-today-mail'));
+    // Kundentest 21.10.: keine Kachel „Nicht verbunden“, sondern eine leise Zeile.
+    const connect = await screen.findByTestId('uv2-today-connect');
+    expect(screen.queryByTestId('uv2-today-mail')).toBeNull();
+    expect(connect).toHaveTextContent('Post verbinden');
+    fireEvent.click(connect);
     expect(mockOpenPane).toHaveBeenCalledWith(expect.objectContaining({ type: 'integrations' }));
     fireEvent.click(screen.getByTestId('uv2-today-tasks'));
     expect(mockOpenPane).toHaveBeenLastCalledWith(expect.objectContaining({ type: 'tasks' }));
+  });
+
+  it('shows customer companies plain language and no idle system watch', async () => {
+    window.localStorage.setItem('saimor-vocab', 'klar');
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snapshotFor('company-a', 'Alles da'));
+    render(<TodayOverview />);
+    await screen.findByTestId('uv2-today-tasks');
+    expect(screen.queryByText('Wache')).toBeNull();
   });
 });
 

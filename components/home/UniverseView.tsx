@@ -16,6 +16,7 @@ import { UniverseAmbientField } from '@/components/universe/UniverseAmbientField
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import { UniverseLinks } from '@/components/universe/UniverseLinks';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { flyMora, getMoraPresence } from '@/lib/universe/moraPresence';
 import { usePaneStore } from '@/lib/store/paneStore';
 import {
     fetchDepartmentStats,
@@ -719,7 +720,13 @@ export default function UniverseView() {
                 territories={fieldTerritories}
                 signals={signals}
                 selectedId={selectedTerritoryId}
-                onSelect={setSelectedTerritoryId}
+                onSelect={(id) => {
+                    setSelectedTerritoryId(id);
+                    if (!isUniverseV2Enabled()) return;
+                    // Planet gewählt → MÔRA schwebt dorthin; abgewählt → zurück in die Mitte.
+                    if (id) flyMora('planet', { target: id });
+                    else if (getMoraPresence().place === 'planet') flyMora('seat');
+                }}
                 onOpen={openBody}
                 attentionId={attention?.targetId ?? null}
                 onOpenMoon={openMoon}

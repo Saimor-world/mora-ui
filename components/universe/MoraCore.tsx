@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
+import { flyMora, getMoraPresence, useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
 
 /**
  * Ruhiges Licht in der Mitte des Systems – keine Figur, keine Sätze.
@@ -10,6 +10,12 @@ import { useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
  */
 export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; y: number; needs: boolean }> }) {
     const presence = useMoraPresence();
+    // Kontext-Regel: Universe-Übersicht offen → MÔRA sitzt in der Mitte; verlässt man sie → Dock.
+    useEffect(() => {
+        if (getMoraPresence().place === 'dock') flyMora('seat');
+        return () => { if (getMoraPresence().place !== 'dock') flyMora('dock'); };
+    }, []);
+    const home = presence.place === 'seat';
     let state: MoraState = presence.state;
     let targetId = presence.target ?? null;
     if (state === 'calm') {
@@ -45,13 +51,13 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
     }, [threadOn]);
 
     return (
-        <div className="uv2-mora" data-mora-state="calm" aria-hidden="true">
+        <div className="uv2-mora" data-mora-state={state} data-mora-seat={home ? 'home' : 'empty'} data-mora-place={presence.place} aria-hidden="true">
             {threadOn && target && from && (
                 <svg className="uv2-mora__thread" viewBox="0 0 100 100" preserveAspectRatio="none">
                     {state === 'done' && <circle cx={target.x} cy={target.y} r="2.2" />}
                 </svg>
             )}
-            <span className="uv2-mora__core">
+            <span className="uv2-mora__core" data-testid="uv2-mora-seat" style={{ opacity: home ? 0.55 : 1 }}>
                 <span className="uv2-mora__halo" />
                 <span className="uv2-mora__light" />
             </span>
