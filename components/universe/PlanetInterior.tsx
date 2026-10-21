@@ -118,8 +118,13 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)',
           // Premium-Licht wie bei den Planeten: Licht von oben-mittig, weicher Terminator, feines Randlicht.
-          background: `radial-gradient(ellipse 22% 3% at 50% 0%, rgba(${mat.atmo},0.20) 0%, rgba(${mat.atmo},0) 100%), radial-gradient(circle at 50% 0%, ${mat.mid}55 0%, ${mat.night} 8%, #05070b 30%)`,
-          boxShadow: `0 -0.5px 0 rgba(${mat.atmo},0.78), 0 -4px 14px rgba(${mat.atmo},0.14), 0 -30px 90px rgba(${mat.atmo},0.07), inset 0 14px 36px rgba(${mat.atmo},0.12)` }} data-uv2-premium="" />
+          background: `radial-gradient(ellipse 26% 2.4% at 50% 0%, rgba(${mat.atmo},0.42) 0%, rgba(${mat.atmo},0) 100%), radial-gradient(ellipse 40% 9% at 50% 0%, ${mat.mid}aa 0%, ${mat.mid}00 100%), radial-gradient(circle at 50% 0%, ${mat.mid}66 0%, ${mat.night} 9%, #05070b 30%)`,
+          boxShadow: `0 -1px 0 rgba(${mat.atmo},0.95), 0 -3px 10px rgba(${mat.atmo},0.42), 0 -22px 64px rgba(${mat.atmo},0.20), 0 -80px 180px rgba(${mat.atmo},0.09), inset 0 3px 6px rgba(${mat.atmo},0.35), inset 0 18px 44px rgba(${mat.atmo},0.16)` }} data-uv2-premium="" />
+      {/* Premium-Randlicht: leuchtende Atmosphärenkante, ein radialer Verlauf, kein Blur */}
+      <div className="pointer-events-none absolute left-1/2 rounded-full" aria-hidden data-testid="uv2-horizon-rim"
+        style={{ width: '252vw', height: '252vw', top: 'calc(74vh - 6vw)', transform: 'translateX(-50%)',
+          background: `radial-gradient(circle closest-side, rgba(${mat.atmo},0) 93.5%, rgba(${mat.atmo},0.10) 94.8%, rgba(${mat.atmo},0.85) 95.24%, rgba(${mat.atmo},0.32) 95.6%, rgba(${mat.atmo},0.12) 96.6%, rgba(${mat.atmo},0.04) 98%, rgba(${mat.atmo},0) 99.6%)`,
+          maskImage: 'linear-gradient(90deg, transparent 22%, #000 42%, #000 58%, transparent 78%)', WebkitMaskImage: 'linear-gradient(90deg, transparent 22%, #000 42%, #000 58%, transparent 78%)' }} />
       {/* Oberflächenstruktur des Materials, nur am Horizont sichtbar */}
       <div className="pointer-events-none absolute left-1/2 overflow-hidden rounded-full" aria-hidden
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)', maskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', WebkitMaskImage: 'radial-gradient(circle at 50% 0%, #000 0%, rgba(0,0,0,0.6) 6%, transparent 16%)', opacity: 0.55, mixBlendMode: 'overlay' }}>

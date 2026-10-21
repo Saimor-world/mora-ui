@@ -78,12 +78,12 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
-    <span className="uv2-planet absolute inset-0 block" data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
+    <span className="uv2-planet absolute inset-0 block" style={{ transform: `scale(${(0.9 + (Math.abs(seed) % 5) * 0.05).toFixed(2)})` }} data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
       {/* Ring hinten (hinter dem Körper) */}
       {m.ring && (
         <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.16)`} strokeWidth={0.6} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.06)`} strokeWidth={1.6} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: `rgba(${m.atmo},0.30)`, strokeWidth: 0.8 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: `rgba(${m.atmo},0.12)`, strokeWidth: 3 }} />
         </svg>
       )}
 
@@ -158,8 +158,8 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
         <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible', clipPath: 'inset(50% 0 0 0)' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" stroke={`rgba(${m.atmo},0.42)`} strokeWidth={0.6} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" stroke={`rgba(${m.atmo},0.1)`} strokeWidth={1.6} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: `rgba(${m.atmo},0.85)`, strokeWidth: 1 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: `rgba(${m.atmo},0.28)`, strokeWidth: 3 }} />
         </svg>
       )}
 
@@ -448,19 +448,31 @@ function PremiumLight({ size, lit, tone, bands }: { size: number; lit?: number; 
   const a = lit ?? (-135 * Math.PI) / 180;
   const dx = Math.cos(a), dy = Math.sin(a);
   const deg = (a * 180) / Math.PI + 90; // CSS-Winkel: 0deg = nach oben
-  const c = tone.join(',');
-  const lite = tone.map((v) => Math.round(v + (255 - v) * 0.55)).join(',');
-  const lx = 50 + dx * 24, ly = 50 + dy * 24;
+  // Juwelton: Farbton etwas satter und heller als die Grundfarbe, nie schlammig.
+  const max = Math.max(...tone), min = Math.min(...tone);
+  const jewel = tone.map((v) => Math.round(Math.min(255, min + (v - min) * 1.35 + (255 - max) * 0.25)));
+  const c = jewel.join(',');
+  const lite = jewel.map((v) => Math.round(v + (255 - v) * 0.6)).join(',');
+  const lx = 50 + dx * 26, ly = 50 + dy * 26;
+  const sx = 50 + dx * 30, sy = 50 + dy * 30;
   return (
     <span className="uv2-pl" aria-hidden style={{ ['--uv2-pl-tone' as any]: c, ['--uv2-pl-lite' as any]: lite }}>
-      <span className="uv2-pl-atmo" style={{ boxShadow: `0 0 ${Math.round(size * 0.22)}px rgba(${c},0.14)` }} />
+      {/* Atmosphärensaum außerhalb der Kugel: ein einziger radialer Verlauf, kein Blur */}
+      <span className="uv2-pl-halo" style={{ background: `radial-gradient(circle closest-side at 50% 50%, rgba(${c},0) 60%, rgba(${lite},0.30) 64.5%, rgba(${c},0.16) 71%, rgba(${c},0.05) 82%, rgba(${c},0) 96%)` }} />
+      {/* Farbe: Juwelton über der Oberfläche (soft-light) */}
+      <span className="uv2-pl-tint" style={{ background: `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.85) 0%, rgba(${c},0.75) 45%, rgba(${c},0.55) 100%)` }} />
       <span className="uv2-pl-body" style={{
         background:
-          // feine Bänder liefert schon die Oberfläche (Worker); hier nur ein Hauch Glanzband
-          (bands ? `linear-gradient(166deg, rgba(${lite},0) 38%, rgba(${lite},0.07) 46%, rgba(${lite},0) 54%),` : '') +
-          `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.20) 0%, rgba(${c},0.08) 34%, rgba(${c},0) 58%),` +
-          `linear-gradient(${deg}deg, rgba(0,0,0,0) 44%, rgba(6,8,16,0.26) 68%, rgba(6,8,16,0.46) 100%)`,
-        boxShadow: `inset ${(-dx * size * 0.05).toFixed(1)}px ${(-dy * size * 0.05).toFixed(1)}px ${(size * 0.07).toFixed(1)}px -${(size * 0.01).toFixed(1)}px rgba(${lite},0.55), inset 0 0 0 0.5px rgba(${lite},0.16)`,
+          // feines Glanzlicht
+          `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.18) 5%, rgba(255,255,255,0) 11%),` +
+          (bands ? `linear-gradient(166deg, rgba(${lite},0) 34%, rgba(${lite},0.12) 44%, rgba(0,0,0,0.08) 52%, rgba(${lite},0.08) 60%, rgba(${lite},0) 68%),` : '') +
+          `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.30) 0%, rgba(${c},0.10) 36%, rgba(${c},0) 60%),` +
+          // weicher Terminator zur Mitte
+          `linear-gradient(${deg}deg, rgba(0,0,0,0) 40%, rgba(5,6,14,0.38) 62%, rgba(5,6,14,0.66) 86%, rgba(5,6,14,0.78) 100%)`,
+      }} />
+      {/* leuchtendes Randlicht auf der Lichtseite + feine Kante */}
+      <span className="uv2-pl-rim" style={{
+        boxShadow: `inset ${(-dx * size * 0.075).toFixed(1)}px ${(-dy * size * 0.075).toFixed(1)}px ${(size * 0.09).toFixed(1)}px -${(size * 0.02).toFixed(1)}px rgba(${lite},0.95), inset 0 0 0 1px rgba(${lite},0.22), inset ${(dx * size * 0.05).toFixed(1)}px ${(dy * size * 0.05).toFixed(1)}px ${(size * 0.08).toFixed(1)}px -${(size * 0.03).toFixed(1)}px rgba(${c},0.45)`,
       }} />
     </span>
   );
