@@ -106,6 +106,8 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
   const mat = planetMaterial(name);
   const mt = matteTone(name);
   const mrgb = (c: number[], a = 1) => `rgba(${c.join(',')},${a})`;
+  // deckend abgedunkelt (matt, kein Durchscheinen des Nebels)
+  const mdim = (c: number[], k: number) => `rgb(${c.map((v) => Math.round(7 + (v - 7) * k)).join(',')})`;
   const slots = moonSlots(Math.min(spaces.length, 7));
   const incidents = incidentPanels.filter((p: any) => p && p.state !== 'resolved');
   const ease = MOTION.ease.out;
@@ -120,7 +122,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       <div className="pointer-events-none absolute left-1/2 rounded-full" data-testid="uv2-horizon"
         style={{ width: '240vw', height: '240vw', top: '74vh', transform: 'translateX(-50%)',
           // matte Keramik wie die Planeten: sanft von oben beleuchtet, keine Glut
-          background: `radial-gradient(circle at 50% 0%, ${mrgb(mt.light, 0.62)} 0%, ${mrgb(mt.base, 0.6)} 3%, ${mrgb(mt.shade, 0.85)} 11%, #07080c 28%)`,
+          background: `radial-gradient(circle at 50% 0%, ${mdim(mt.base, 0.62)} 0%, ${mdim(mt.base, 0.48)} 3%, ${mdim(mt.shade, 0.7)} 10%, #07080c 26%)`,
           boxShadow: `0 -1px 0 ${mrgb(mt.light, 0.55)}` }} data-uv2-premium="" />
       {/* Oberflächenstruktur des Materials, nur am Horizont sichtbar */}
       <div className="pointer-events-none absolute left-1/2 overflow-hidden rounded-full" aria-hidden

@@ -12,7 +12,6 @@
  *  5. Orbitring: haarfeine, geneigte Ellipse (vorne über, hinten unter dem Körper)
  */
 import React, { useId } from 'react';
-import { TexturedSphere } from './TexturedSphere';
 
 type Material = {
   /** Tag-, Mittel-, Nachtton */
@@ -88,7 +87,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
       )}
 
       {/* Körper */}
-      {pstyle === undefined ? <span className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 36% 30%, ${m.mid}, ${m.night})` }} /> : pstyle === 'M' && lit != null ? <TexturedSphere name={name} archetype={archetype} size={size} lit={lit} hue={areaHue(name, archetype)} seed={seed} quiet={!!dim} /> : pstyle === 'J' && lit != null ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={false} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
+      {pstyle === undefined ? <span className="absolute inset-0 rounded-full" style={{ background: `radial-gradient(circle at 36% 30%, ${m.mid}, ${m.night})` }} /> : pstyle === 'M' ? null /* matte Keramik: PremiumLight zeichnet den Körper direkt – kein Oberflächen-Canvas/Worker mehr darunter */ : pstyle === 'J' && lit != null ? <JewelSphere size={size} lit={lit} hue={areaHue(name, archetype)} matte={false} seed={seed} quiet={!!dim} /> : pstyle && lit != null ? <PixelSphere size={size} lit={lit} tint={m.day} variant={pstyle} seed={seed} /> : <span className="absolute inset-0 overflow-hidden rounded-full" style={{ background: m.night, boxShadow: `0 ${size * 0.18}px ${size * 0.5}px rgba(0,0,0,0.55)` }}>
         <svg className="uv2-planet-surface absolute inset-0 h-full" width="200%" viewBox="0 0 200 100" preserveAspectRatio="none" style={{ ['--uv2-rot' as any]: `${60 + (seed % 40)}s` }}>
           <defs>
             <filter id={`n${uid}`} x="0" y="0" width="100%" height="100%">
@@ -151,7 +150,7 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
 
       {/* Premium-Licht (stilisiert): weicher Terminator zur Mitte, feines Randlicht,
           leise Innenglut und ein Hauch Bänder. Reine CSS-Verläufe, kein Blur-Stapel. */}
-      {pstyle != null && <PremiumLight size={size} lit={lit} name={name} />}
+      {pstyle === 'M' && <PremiumLight size={size} lit={lit} name={name} />}
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
       {pstyle === null && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
