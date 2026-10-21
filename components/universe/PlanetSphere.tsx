@@ -11,6 +11,7 @@
  *  4. Atmosphärensaum: feine helle Sichel auf der Lichtseite, kein Glow-Klumpen
  *  5. Orbitring: haarfeine, geneigte Ellipse (vorne über, hinten unter dem Körper)
  */
+import { PlanetDirectionBody, usePlanetDirection } from './PlanetDirections';
 import React, { useId } from 'react';
 
 type Material = {
@@ -463,6 +464,8 @@ export function matteTone(name: string): MatteTone {
 const GRAIN = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.55 0'/></filter><rect width='120' height='120' filter='url(%23g)'/></svg>\")";
 
 function PremiumLight({ size, lit, name }: { size: number; lit?: number; name: string }) {
+  const dir = usePlanetDirection();
+  if (dir !== 'matte') return <PlanetDirectionBody size={size} lit={lit} name={name} dir={dir} />;
   const a = lit ?? (-135 * Math.PI) / 180;
   const dx = Math.cos(a), dy = Math.sin(a);
   const deg = (a * 180) / Math.PI + 90;
@@ -470,7 +473,7 @@ function PremiumLight({ size, lit, name }: { size: number; lit?: number; name: s
   const rgb = (c: number[], al = 1) => `rgba(${c.join(',')},${al})`;
   const lx = 50 + dx * 30, ly = 50 + dy * 30;
   return (
-    <span className="uv2-pl" aria-hidden style={{ ['--uv2-pl-edge' as any]: t.light.join(',') }}>
+    <span className="uv2-pl" aria-hidden data-uv2-direction="matte" style={{ ['--uv2-pl-edge' as any]: t.light.join(',') }}>
       <span className="uv2-pl-body" style={{
         backgroundImage:
           `${GRAIN},` +
