@@ -72,6 +72,18 @@ interface Props {
     onOpenMoon: (folderId: string, folderName: string) => void;
     /** Worauf Môra gerade schaut - erzeugt die Blickhierarchie im Feld. */
     attentionId?: string | null;
+    /** Opt-in (OS-Prototyp): Faeden starten hier statt an den Feldraendern
+     *  und werden auf das Feld beschnitten. */
+    strandOrigin?: { x: number; y: number };
+    /** Opt-in: Inhalt genau in der Feldmitte (z. B. der MÔRA-Kern). */
+    centerSlot?: React.ReactNode;
+    /** Opt-in: Klassen fuer Kopf, Feld und Legende, wenn das Feld in einen
+     *  anderen Rahmen (Shell mit Dock) eingebettet ist. */
+    frame?: { header?: string; field?: string; legend?: string; mobile?: string };
+    /** Opt-in: hellere Planeten (staerkere Akzentverlaeufe, lesbare Symbole). */
+    vivid?: boolean;
+    /** Opt-in: eigenes Detailpanel statt des eingebauten (OS-Prototyp). */
+    renderDetail?: (territory: OrganizationTerritory) => React.ReactNode;
 }
 
 const metricLabel: Record<OrganizationTerritory['metricSource'], string> = {
@@ -108,6 +120,11 @@ export function OrganizationField({
     onFile,
     onOpenMoon,
     attentionId = null,
+    strandOrigin,
+    centerSlot,
+    frame,
+    vivid = false,
+    renderDetail,
 }: Props) {
     const selected = useMemo(
         () => territories.find((item) => item.id === selectedId) ?? null,
@@ -118,8 +135,8 @@ export function OrganizationField({
         [selected, signals],
     );
     const strands = useMemo(
-        () => lens === 'relations' ? buildRelationStrands(signals, territories) : [],
-        [lens, signals, territories],
+        () => lens === 'relations' ? buildRelationStrands(signals, territories, strandOrigin) : [],
+        [lens, signals, territories, strandOrigin],
     );
 
     // Das Feld misst sich selbst und veroeffentlicht, wo seine Bereiche
@@ -312,7 +329,7 @@ export function OrganizationField({
                 Untertitel-Block links im 620px-Kopf kleben, waehrend sein Text
                 zentriert war: er sass sichtbar neben der Mitte der Ueberschrift
                 und brach in drei ausgefranste Zeilen. */}
-            <header className="pointer-events-none absolute left-1/2 top-[120px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center">
+            <header className={frame?.header ?? "pointer-events-none absolute left-1/2 top-[120px] z-30 w-[min(620px,calc(100%-2rem))] -translate-x-1/2 text-center"}>
                 {/* Ein Feld, ein Titel. Frueher wechselte die Ueberschrift mit
                     der Linse ("Woraus X besteht" / "Was nachweislich
                     zusammenhaengt") - seit die beiden Linsen zu einem Feld
@@ -361,7 +378,8 @@ export function OrganizationField({
                 onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
-                className="absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"
+                className={frame?.field ?? "absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"}
+                data-testid="organization-field-box"
             >
                 {territories.some((t) => t.model) && (
                     // Eine saubere Bahn je Planet; der Planet sitzt mittig darauf.
@@ -380,7 +398,8 @@ export function OrganizationField({
                         planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y, needs: !!t.model?.glow }))}
                     />
                 )}
-                <RelationLayer strands={strands} selectedId={selectedId} />
+                <RelationLayer strands={strands} selectedId={selectedId} clip={Boolean(strandOrigin)} />
+                {centerSlot ? <div className="absolute left-1/2 top-1/2 z-[8] -translate-x-1/2 -translate-y-1/2">{centerSlot}</div> : null}
                 {territories.map((territory) => (
                     <Territory
                         key={territory.id}
@@ -391,6 +410,7 @@ export function OrganizationField({
                         lens={lens}
                         selected={territory.id === selectedId}
                         fieldScale={fieldScale}
+                        vivid={vivid}
                         emphasis={emphasisFor({ id: territory.id, attentionId, selectedId })}
                         onSelect={onSelect}
                         onOpenMoon={onOpenMoon}
@@ -407,12 +427,12 @@ export function OrganizationField({
                 </nav>
             )}
             {lens === 'relations' && !(isUniverseV2Enabled() && selectedSignals.length === 0) && (
-                <div className="pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block">
+                <div className={frame?.legend ?? "pointer-events-none absolute bottom-24 left-1/2 z-30 hidden -translate-x-1/2 lg:block"} data-testid="relation-legend">
                     <RelationLegend strands={strands} />
                 </div>
             )}
 
-            <div className={isUniverseV2Enabled() ? 'absolute inset-x-0 bottom-[168px] z-20 overflow-x-auto px-4 lg:hidden' : 'absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden'} data-testid="mobile-territories" style={isUniverseV2Enabled() ? { scrollbarWidth: 'none' } : undefined}>
+            <div className={frame?.mobile ?? (isUniverseV2Enabled() ? 'absolute inset-x-0 bottom-[168px] z-20 overflow-x-auto px-4 lg:hidden' : 'absolute inset-x-0 bottom-24 top-[220px] z-20 overflow-y-auto px-5 pb-8 lg:hidden')} data-testid="mobile-territories" style={isUniverseV2Enabled() ? { scrollbarWidth: 'none' } : undefined}>
                 <div className={isUniverseV2Enabled() ? 'mx-auto flex w-max gap-1' : 'grid grid-cols-2 gap-x-4 gap-y-9'}>
                     {territories.map((territory) => (
                         <MobileTerritory
@@ -421,12 +441,14 @@ export function OrganizationField({
                             signals={signals.filter((signal) => signal.targetId === territory.id)}
                             selected={territory.id === selectedId}
                             onSelect={onSelect}
+                            vivid={vivid}
                         />
                     ))}
                 </div>
             </div>
 
-            {selected && (
+            {selected && renderDetail ? renderDetail(selected) : null}
+            {selected && !renderDetail && (
                 <aside data-testid="planet-detail" style={isUniverseV2Enabled() ? { background: 'rgba(22,24,30,0.58)', backdropFilter: 'blur(40px) saturate(160%)', WebkitBackdropFilter: 'blur(40px) saturate(160%)', borderColor: 'transparent', borderRadius: 20, boxShadow: 'inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 20px 50px rgba(0,0,0,0.45)' } : undefined} className="absolute inset-x-4 bottom-20 z-50 rounded-[28px] border border-white/12 bg-[#07131f]/88 p-5 text-white shadow-[0_30px_100px_rgba(0,0,0,0.58)] backdrop-blur-xl lg:inset-x-auto lg:bottom-24 lg:right-8 lg:w-[370px] lg:p-6">
                     <button
                         type="button"
@@ -507,6 +529,7 @@ function Territory({
     lens,
     selected,
     fieldScale = 1,
+    vivid = false,
     emphasis,
     onSelect,
     onOpenMoon,
@@ -520,6 +543,7 @@ function Territory({
     lens: UniverseLens;
     selected: boolean;
     fieldScale?: number;
+    vivid?: boolean;
     emphasis: { opacity: number; scale: number };
     onSelect: (id: string | null) => void;
     onOpenMoon: (folderId: string, folderName: string) => void;
@@ -615,21 +639,24 @@ function Territory({
                     className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full"
                     style={{
                         color: accent,
-                        background:
-                            'radial-gradient(circle at 33% 27%, ' + accent + '66, ' + accent + '1f 38%, transparent 64%),' +
-                            'radial-gradient(circle at 64% 80%, rgba(0,0,0,0.5), transparent 56%),' +
-                            'linear-gradient(158deg, rgba(15,34,55,0.96), rgba(4,11,20,0.98))',
+                        background: vivid
+                            ? 'radial-gradient(circle at 33% 27%, ' + accent + 'c0, ' + accent + '4d 40%, transparent 70%),' +
+                              'radial-gradient(circle at 66% 82%, rgba(0,0,0,0.38), transparent 58%),' +
+                              'linear-gradient(158deg, rgba(26,56,84,0.96), rgba(8,20,34,0.98))'
+                            : 'radial-gradient(circle at 33% 27%, ' + accent + '66, ' + accent + '1f 38%, transparent 64%),' +
+                              'radial-gradient(circle at 64% 80%, rgba(0,0,0,0.5), transparent 56%),' +
+                              'linear-gradient(158deg, rgba(15,34,55,0.96), rgba(4,11,20,0.98))',
                         boxShadow:
                             'inset 0 1px 1px rgba(255,255,255,0.18),' +
                             'inset 0 -24px 44px rgba(0,0,0,0.5),' +
-                            'inset 0 0 0 1px ' + accent + (selected ? '7a' : '4d') + ',' +
+                            'inset 0 0 0 1px ' + accent + (selected ? '7a' : vivid ? '99' : '4d') + ',' +
                             '0 18px 46px rgba(0,0,0,0.5),' +
-                            '0 0 ' + (selected ? '64px' : '38px') + ' ' + accent + (selected ? '5c' : '2e'),
+                            '0 0 ' + (selected ? '64px' : vivid ? '46px' : '38px') + ' ' + accent + (selected ? '5c' : vivid ? '66' : '2e'),
                     }}
                 >
                     {territory.access === 'locked'
                         ? <Lock size={Math.round(size * 0.2)} strokeWidth={1.3} className="relative opacity-70" />
-                        : (() => { const Glyph = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <Glyph size={Math.round(size * 0.24)} strokeWidth={1.3} className="relative" style={{ filter: 'drop-shadow(0 0 10px ' + accent + '55)' }} />; })()}
+                        : (() => { const Glyph = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <Glyph size={Math.round(size * (vivid ? 0.3 : 0.24))} strokeWidth={vivid ? 1.6 : 1.3} className="relative" style={{ color: vivid ? '#f2fbff' : undefined, filter: 'drop-shadow(0 0 ' + (vivid ? '8px ' + accent : '10px ' + accent + '55') + ')' }} />; })()}
                 </span>
                 )}
 
@@ -642,7 +669,7 @@ function Territory({
                 Die Kreise wurden am Rand abgeschnitten. Jetzt haengen sie am
                 Button, der nicht clippt, und zaehlen statt zu streuen. */}
             {lens === 'relations' && signals.length > 0 && (
-                <span className="pointer-events-none absolute -top-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[#08121e]/96 px-2 py-1 shadow-[0_6px_20px_rgba(0,0,0,0.45)]">
+                <span data-territory-badge className="pointer-events-none absolute -top-1 left-1/2 flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/12 bg-[#08121e]/96 px-2 py-1 shadow-[0_6px_20px_rgba(0,0,0,0.45)]">
                     {Array.from(new Set(signals.map((signal) => signal.kind))).slice(0, 4).map((kind) => (
                         <span key={kind} style={{ color: signalTone[kind].stroke }} title={signalTone[kind].label}>
                             {signalTone[kind].icon}
@@ -651,23 +678,23 @@ function Territory({
                     <span className="text-[9px] font-semibold tabular-nums text-white/62">{signals.length}</span>
                 </span>
             )}
-            <span className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
+            <span data-territory-label className="saimor-territory-name mt-3 block text-sm font-medium tracking-[-0.01em] text-white/88">{territory.name}</span>
             {model ? (
                 model.meta ? (
-                    <span className={'uv2-planet-meta mt-1.5 block text-[12px] leading-[16px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>
+                    <span data-territory-meta className={'uv2-planet-meta mt-1.5 block text-[12px] leading-[16px] tabular-nums ' + (model.state === 'seed' ? 'text-[#D6A848]/80' : 'text-[#F7F4E9]/55')}>
                         {model.meta}
                     </span>
                 ) : null
             ) : isUniverseV2Enabled() ? (
                 // v2: Meta nur, wenn es etwas zu zählen gibt – null ist Rauschen. Normale Schreibweise, 11px.
                 (territory.spaces > 0 || territory.documents > 0) && (
-                    <span className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">
+                    <span data-territory-meta className="uv2-planet-meta mt-2 block font-mono text-[10px] leading-[14px] tracking-[0.08em] tabular-nums text-[#F7F4E9]/45">
                         {[territory.spaces > 0 && `${territory.spaces} ${territory.spaces === 1 ? 'Bereich' : 'Bereiche'}`,
                           territory.documents > 0 && `${territory.documents} ${territory.documents === 1 ? 'Dokument' : 'Dokumente'}`].filter(Boolean).join(' · ')}
                     </span>
                 )
             ) : (
-            <span className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
+            <span data-territory-meta className="mt-1 flex items-center justify-center gap-2 text-[9px] uppercase tracking-[0.14em] text-white/34">
                 <span>{territory.spaces} {territory.spaces === 1 ? 'Bereich' : 'Bereiche'}</span>
                 <span className="h-0.5 w-0.5 rounded-full bg-white/30" />
                 <span>{territory.documents} {territory.documents === 1 ? 'Dokument' : 'Dokumente'}</span>
@@ -713,11 +740,13 @@ function MobileTerritory({
     signals,
     selected,
     onSelect,
+    vivid = false,
 }: {
     territory: OrganizationTerritory;
     signals: UniverseSignal[];
     selected: boolean;
     onSelect: (id: string | null) => void;
+    vivid?: boolean;
 }) {
     const accent = territory.color || '#67e8f9';
     return (
@@ -733,11 +762,13 @@ function MobileTerritory({
                 className={'saimor-territory-body relative flex items-center justify-center rounded-full border border-white/10 ' + (isUniverseV2Enabled() ? 'h-16 w-16' : 'h-24 w-24')}
                 style={{
                     color: accent,
-                    background: 'radial-gradient(circle at 38% 30%, ' + accent + '30, transparent 38%), rgba(3,13,24,0.75)',
-                    boxShadow: '0 0 36px ' + accent + '22',
+                    background: vivid
+                        ? 'radial-gradient(circle at 33% 27%, ' + accent + 'c0, ' + accent + '4d 40%, transparent 70%), linear-gradient(158deg, rgba(26,56,84,0.96), rgba(8,20,34,0.98))'
+                        : 'radial-gradient(circle at 38% 30%, ' + accent + '30, transparent 38%), rgba(3,13,24,0.75)',
+                    boxShadow: vivid ? 'inset 0 0 0 1px ' + accent + '99, 0 0 40px ' + accent + '55' : '0 0 36px ' + accent + '22',
                 }}
             >
-                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : (() => { const G = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <G size={isUniverseV2Enabled() ? 18 : 23} strokeWidth={1.2} />; })()}
+                {territory.access === 'locked' ? <Lock size={22} strokeWidth={1.2} /> : (() => { const G = isUniverseV2Enabled() ? planetGlyph(territory.name) : Building2; return <G size={vivid ? 28 : isUniverseV2Enabled() ? 18 : 23} strokeWidth={vivid ? 1.6 : 1.2} style={vivid ? { color: '#f2fbff', filter: 'drop-shadow(0 0 8px ' + accent + ')' } : undefined} />; })()}
                 {signals.length > 0 && (
                     <span className="absolute -right-1 top-2 flex h-6 min-w-6 items-center justify-center rounded-full border border-amber-100/25 bg-slate-950 px-1.5 text-[9px] text-amber-200">
                         {signals.length}
@@ -764,12 +795,13 @@ function MobileTerritory({
  * darum preserveAspectRatio="none" - die Linie soll den Planeten treffen,
  * nicht ihre Form behalten. vectorEffect haelt die Strichstaerke konstant.
  */
-function RelationLayer({ strands, selectedId }: { strands: RelationStrand[]; selectedId: string | null }) {
+function RelationLayer({ strands, selectedId, clip = false }: { strands: RelationStrand[]; selectedId: string | null; clip?: boolean }) {
     if (strands.length === 0) return null;
 
     return (
         <svg
-            className="pointer-events-none absolute inset-0 z-[6] h-full w-full overflow-visible"
+            className={'pointer-events-none absolute inset-0 z-[6] h-full w-full ' + (clip ? 'overflow-hidden' : 'overflow-visible')}
+            data-testid="relation-layer"
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             aria-hidden="true"
