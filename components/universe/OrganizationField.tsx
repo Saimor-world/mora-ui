@@ -15,7 +15,7 @@ import type { FieldAnchor } from '@/lib/universe/anchors';
 import { computeFallTarget, decodeFallPayload, FALL_PAYLOAD_MIME, type FallSource } from '@/lib/universe/fall';
 import { FallCapture, type FallState } from '@/components/universe/FallCapture';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
-import { ORBIT, orbitRxOf } from '@/lib/universe/planetModel';
+import { ORBIT, orbitRxOf, orbitDepth } from '@/lib/universe/planetModel';
 import '@/app/universe-orbits.css';
 import { MoraCore } from '@/components/universe/MoraCore';
 import type { PlanetChip } from '@/lib/universe/planetModel';
@@ -383,19 +383,26 @@ export function OrganizationField({
                 className={frame?.field ?? "absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"}
                 data-testid="organization-field-box"
             >
-                {territories.some((t) => t.model) && (
-                    // Eine saubere Bahn je Planet; der Planet sitzt mittig darauf.
+                {isUniverseV2Enabled() && territories.length > 0 && (
+                    // Eine Bahn je Planet, geneigt (Perspektive): hinterer Bogen zart, vorderer Bogen etwas klarer.
                     <svg className="uv2-orbits" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-                        {territories.filter((t) => t.model).map((t) => {
+                        {territories.map((t) => {
                             const rx = orbitRxOf(t.x, t.y);
-                            return <ellipse key={t.id} cx="50" cy="50" rx={rx} ry={rx * ORBIT.aspect} data-kind={t.model?.kind} data-selected={t.id === selectedId || undefined} data-hover={t.id === hoverId || undefined} />;
+                            const ry = rx * ORBIT.aspect;
+                            const flags = { 'data-kind': t.model?.kind, 'data-selected': t.id === selectedId || undefined, 'data-hover': t.id === hoverId || undefined };
+                            return (
+                                <g key={t.id}>
+                                    <path className="uv2-orbit-back" d={`M ${50 - rx} 50 A ${rx} ${ry} 0 0 1 ${50 + rx} 50`} {...flags} />
+                                    <path className="uv2-orbit-front" d={`M ${50 + rx} 50 A ${rx} ${ry} 0 0 1 ${50 - rx} 50`} {...flags} />
+                                </g>
+                            );
                         })}
                     </svg>
                 )}
                 {territories.some((t) => t.model) && (
                     <MyzelLayer planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y }))} focusId={hoverId || selectedId} />
                 )}
-                {territories.some((t) => t.model) && (
+                {isUniverseV2Enabled() && territories.length > 0 && (
                     <MoraCore
                         planets={territories.filter((t) => t.model).map((t) => ({ id: t.id, x: t.x, y: t.y, needs: !!t.model?.glow }))}
                     />
@@ -580,6 +587,8 @@ function Territory({
         '--territory-drift': (16 + (drift % 9)) + 's',
         '--territory-phase': '-' + ((drift >>> 4) % 13) + 's',
         // Licht kommt von der Mitte (MÔRAs Licht): Terminator und Randlicht drehen sich zu ihr.
+        // Tiefe auf der geneigten Bahn: vorne größer/heller/davor, hinten kleiner/weicher/dahinter.
+        '--uv2-depth': v2 ? orbitDepth(territory.x, territory.y).toFixed(3) : undefined,
         '--uv2-lit': (Math.atan2(50 - territory.y, 50 - territory.x) * 180 / Math.PI + 135).toFixed(1) + 'deg',
     } as CSSProperties;
 
@@ -605,8 +614,11 @@ function Territory({
                 // v2 (matte Keramik): zurücktreten durch Abdunkeln statt Durchsichtigkeit –
                 // halbtransparente Planeten liessen Sterne durchscheinen und wirkten billig.
                 opacity: isUniverseV2Enabled() ? 1 : emphasis.opacity,
-                filter: isUniverseV2Enabled() && emphasis.opacity < 1 ? 'brightness(' + (0.5 + 0.5 * emphasis.opacity).toFixed(2) + ')' : undefined,
-                transform: 'translate(-50%, -50%) scale(' + emphasis.scale + ')',
+                filter: isUniverseV2Enabled()
+                    ? 'brightness(' + ((emphasis.opacity < 1 ? 0.5 + 0.5 * emphasis.opacity : 1) * (0.72 + 0.32 * orbitDepth(territory.x, territory.y))).toFixed(3) + ')' + (orbitDepth(territory.x, territory.y) < 0.3 ? ' saturate(0.85)' : '')
+                    : undefined,
+                transform: 'translate(-50%, -50%) scale(' + (emphasis.scale * (isUniverseV2Enabled() ? 0.78 + 0.36 * orbitDepth(territory.x, territory.y) : 1)).toFixed(3) + ')',
+                zIndex: isUniverseV2Enabled() && !selected ? 10 + Math.round(orbitDepth(territory.x, territory.y) * 8) : undefined,
             }}
             aria-pressed={selected}
             aria-label={territory.name + ' auswählen'}

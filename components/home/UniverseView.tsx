@@ -45,7 +45,7 @@ import { buildSubstanceBars } from '@/lib/universe/substanceChart';
 import { UniverseTicker } from '@/components/universe/UniverseTicker';
 import { useUniverseModel } from '@/lib/queries/useUniverseModel';
 import { scopeUniverseModel } from '@/lib/universe/access';
-import { placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
+import { placeOnOrbits, placeUniverse, planetDiameter, bodyMeta, bodyChips, departmentIdOf, SYSTEM_PANES } from '@/lib/universe/planetModel';
 import { buildLivePlanetInput, overlayUniversePlanets } from '@/lib/universe/livePlanetSources';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { resolveMoonTarget } from '@/lib/universe/navigation';
@@ -360,7 +360,8 @@ export default function UniverseView() {
     // relativ zueinander bleibt, nur auf 12–88 % / 8–92 % normiert.
     const normalizedDepartments = useMemo(() => {
         if (!isUniverseV2Enabled()) return positionedDepartments;
-        return normalizeUniverseLayout(positionedDepartments);
+        // v2: auch ohne CORE-Modell echte Bahnen in verschiedenen Abständen (gleiche Logik wie placeUniverse).
+        return placeOnOrbits(positionedDepartments.map((d) => ({ ...d, id: String(d.id) })));
     }, [positionedDepartments]);
 
     const territories = useMemo<OrganizationTerritory[]>(

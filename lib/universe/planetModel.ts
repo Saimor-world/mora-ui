@@ -80,7 +80,29 @@ export interface PlacedBody {
 
 /** Eine Bahn je Planet (wie ein echtes Sonnensystem): konzentrische Ellipsen in % der Feldfläche.
  *  Innen die Systemplaneten (Katalogreihenfolge), außen Bereiche/Cluster. */
-export const ORBIT = { innerRx: 17, outerRx: 45, aspect: 0.92 } as const;
+export const ORBIT = { innerRx: 19, outerRx: 47, aspect: 0.62 } as const;
+
+/** Bahnradius je Index: Abstände wachsen nach außen (wie Erde → Jupiter), nicht gleichmäßig. */
+export function orbitRadius(i: number, n: number): number {
+  if (n <= 1) return ORBIT.innerRx + 8;
+  const t = i / (n - 1);
+  return ORBIT.innerRx + (ORBIT.outerRx - ORBIT.innerRx) * Math.pow(t, 0.72);
+}
+
+/** Tiefe 0 (hinten, oben auf der geneigten Bahn) … 1 (vorne, unten). */
+export function orbitDepth(x: number, y: number): number {
+  const rx = orbitRxOf(x, y);
+  if (rx < 0.01) return 0.5;
+  return Math.max(0, Math.min(1, ((y - 50) / (rx * ORBIT.aspect) + 1) / 2));
+}
+
+/** Gleiche Bahnlogik für Körper ohne CORE-Modell (Fallback-Abteilungen). */
+export function placeOnOrbits<T extends { id: string }>(items: T[]): (T & { x: number; y: number })[] {
+  const m = { planets: items.map((it, i) => ({ key: it.id, kind: 'system', label: it.id, angle: i })) as unknown as ModelPlanet[], clusters: [] } as unknown as UniverseModel;
+  const placed = placeUniverse(m);
+  const byId = new Map(placed.map((b) => [b.id, b]));
+  return items.map((it) => ({ ...it, x: byId.get(it.id)!.x, y: byId.get(it.id)!.y }));
+}
 
 function gcd(a: number, b: number): number { return b ? gcd(b, a % b) : a; }
 
@@ -96,7 +118,7 @@ export function placeUniverse(model: UniverseModel): PlacedBody[] {
     ...outer.map((o) => ({ key: o.key, kind: (o.cluster ? 'cluster' : 'domain') as 'cluster' | 'domain', label: o.planet?.label ?? o.cluster!.label, planet: o.planet, cluster: o.cluster })),
   ];
   const n = all.length;
-  const rxOf = (i: number) => (n > 1 ? ORBIT.innerRx + (i * (ORBIT.outerRx - ORBIT.innerRx)) / (n - 1) : ORBIT.innerRx);
+  const rxOf = (i: number) => orbitRadius(i, n);
   const at = (i: number, slot: number) => {
     const rx = rxOf(i), rad = ((slot * (360 / Math.max(1, n)) - 90) * Math.PI) / 180;
     return { x: 50 + rx * Math.cos(rad), y: 50 + rx * ORBIT.aspect * Math.sin(rad) };
