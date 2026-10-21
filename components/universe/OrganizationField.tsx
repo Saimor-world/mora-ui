@@ -600,7 +600,10 @@ function Territory({
                 // Aufmerksamkeit braucht, tritt hervor - der Rest tritt
                 // zurueck, bleibt aber lesbar. Liegt nichts an, ist alles
                 // gleich (siehe lib/universe/emphasis.ts).
-                opacity: emphasis.opacity,
+                // v2 (matte Keramik): zurücktreten durch Abdunkeln statt Durchsichtigkeit –
+                // halbtransparente Planeten liessen Sterne durchscheinen und wirkten billig.
+                opacity: isUniverseV2Enabled() ? 1 : emphasis.opacity,
+                filter: isUniverseV2Enabled() && emphasis.opacity < 1 ? 'brightness(' + (0.5 + 0.5 * emphasis.opacity).toFixed(2) + ')' : undefined,
                 transform: 'translate(-50%, -50%) scale(' + emphasis.scale + ')',
             }}
             aria-pressed={selected}

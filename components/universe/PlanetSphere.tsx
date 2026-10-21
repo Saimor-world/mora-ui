@@ -78,12 +78,12 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
   const ringW = size * 1.9;
   const ringH = size * 0.42;
   return (
-    <span className="uv2-planet absolute inset-0 block" style={{ transform: `scale(${(0.9 + (Math.abs(seed) % 5) * 0.05).toFixed(2)})` }} data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
+    <span className="uv2-planet absolute inset-0 block" style={{ transform: `scale(${(0.92 + (Math.abs(seed) % 5) * 0.04).toFixed(2)})` }} data-planet-material={archetype || planetMaterialKey(name)} data-planet-dim={dim ? '' : undefined} aria-hidden>
       {/* Ring hinten (hinter dem Körper) */}
       {m.ring && (
         <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: `rgba(${m.atmo},0.30)`, strokeWidth: 0.8 }} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: `rgba(${m.atmo},0.12)`, strokeWidth: 3 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: 'rgba(214,220,228,0.22)', strokeWidth: 0.6 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: 'rgba(214,220,228,0)', strokeWidth: 0 }} />
         </svg>
       )}
 
@@ -151,15 +151,15 @@ export function PlanetSphere({ name, size, selected = false, seed = 1, glyph: Gl
 
       {/* Premium-Licht (stilisiert): weicher Terminator zur Mitte, feines Randlicht,
           leise Innenglut und ein Hauch Bänder. Reine CSS-Verläufe, kein Blur-Stapel. */}
-      {pstyle != null && <PremiumLight size={size} lit={lit} tone={areaHue(name, archetype)} bands={m.feature === 'bands' || m.ring === true} />}
+      {pstyle != null && <PremiumLight size={size} lit={lit} name={name} />}
       {/* Äußerer Atmosphärenschein – sehr leise, nur Lichtseite */}
       {pstyle === null && <span className="pointer-events-none absolute rounded-full" style={{ inset: -size * 0.06, background: `radial-gradient(circle at ${lit == null ? '34% 30%' : `${50 + Math.cos(lit) * 22}% ${50 + Math.sin(lit) * 22}%`}, rgba(${m.atmo},${selected ? 0.2 : 0.11}) 0%, rgba(${m.atmo},0) 62%)`, filter: 'blur(2px)' }} />}
 
       {/* Ring vorne (über dem Körper, nur untere Hälfte) */}
       {m.ring && (
         <svg className="uv2-planet-ring pointer-events-none absolute left-1/2 top-1/2" width={ringW} height={ringH} style={{ transform: 'translate(-50%,-50%) rotate(-14deg)', overflow: 'visible', clipPath: 'inset(50% 0 0 0)' }}>
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: `rgba(${m.atmo},0.85)`, strokeWidth: 1 }} />
-          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: `rgba(${m.atmo},0.28)`, strokeWidth: 3 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 1} ry={ringH / 2 - 1} fill="none" style={{ stroke: 'rgba(222,228,236,0.62)', strokeWidth: 0.6 }} />
+          <ellipse cx={ringW / 2} cy={ringH / 2} rx={ringW / 2 - 7} ry={ringH / 2 - 4} fill="none" style={{ stroke: 'rgba(214,220,228,0)', strokeWidth: 0 }} />
         </svg>
       )}
 
@@ -439,40 +439,49 @@ function JewelSphere({ size, lit, hue, matte, seed, quiet }: { size: number; lit
   </>);
 }
 
-/**
- * Stilisiertes Premium-Licht über jedem Planetenkörper. Das Licht kommt aus der
- * Mitte des Universums (lit = Richtung zur Mitte, Bogenmaß). Alles sind
- * Verläufe und eine inset-Schattenkante: billig auf schwachen GPUs, kein Blur.
- */
-function PremiumLight({ size, lit, tone, bands }: { size: number; lit?: number; tone: [number, number, number]; bands: boolean }) {
+/* ─── Matte Keramik (Konzept Marius 21.10.): gedämpfte Töne, sanfte einseitige
+   Schattierung, haarfeine Lichtkante, kein Glanz, kein Glow. ─── */
+export type MatteTone = { base: [number, number, number]; light: [number, number, number]; shade: [number, number, number] };
+const MATTE: Record<string, MatteTone> = {
+  sand: { base: [214, 186, 146], light: [236, 214, 178], shade: [92, 74, 54] },
+  slate: { base: [138, 150, 166], light: [178, 189, 203], shade: [52, 58, 70] },
+  sage: { base: [150, 162, 138], light: [186, 196, 174], shade: [58, 66, 54] },
+  plum: { base: [134, 104, 124], light: [170, 140, 160], shade: [52, 38, 50] },
+  terracotta: { base: [196, 120, 98], light: [222, 156, 132], shade: [86, 46, 36] },
+};
+const MATTE_KEYS = ['sand', 'slate', 'sage', 'plum', 'terracotta'] as const;
+export function matteTone(name: string): MatteTone {
+  const n = (name || '').toLowerCase();
+  if (/finanz|finance|geld|buchhalt|wirtschaft/.test(n)) return MATTE.slate;
+  if (/vertrieb|sales|markt\b|verkauf/.test(n)) return MATTE.terracotta;
+  if (/personal|hr|people|team/.test(n)) return MATTE.sand;
+  if (/marketing|growth|wachstum|wissen|knowledge/.test(n)) return MATTE.sage;
+  if (/operations|betrieb|ops|werkstatt|wache/.test(n)) return MATTE.plum;
+  let h = 0; for (let i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+  return MATTE[MATTE_KEYS[h % MATTE_KEYS.length]];
+}
+// feines Korn: einmal erzeugtes SVG-Rauschen als Daten-URL, statisch (kein Blend, keine Animation)
+const GRAIN = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.55 0'/></filter><rect width='120' height='120' filter='url(%23g)'/></svg>\")";
+
+function PremiumLight({ size, lit, name }: { size: number; lit?: number; name: string }) {
   const a = lit ?? (-135 * Math.PI) / 180;
   const dx = Math.cos(a), dy = Math.sin(a);
-  const deg = (a * 180) / Math.PI + 90; // CSS-Winkel: 0deg = nach oben
-  // Juwelton: Farbton etwas satter und heller als die Grundfarbe, nie schlammig.
-  const max = Math.max(...tone), min = Math.min(...tone);
-  const jewel = tone.map((v) => Math.round(Math.min(255, min + (v - min) * 1.35 + (255 - max) * 0.25)));
-  const c = jewel.join(',');
-  const lite = jewel.map((v) => Math.round(v + (255 - v) * 0.6)).join(',');
-  const lx = 50 + dx * 26, ly = 50 + dy * 26;
-  const sx = 50 + dx * 30, sy = 50 + dy * 30;
+  const deg = (a * 180) / Math.PI + 90;
+  const t = matteTone(name);
+  const rgb = (c: number[], al = 1) => `rgba(${c.join(',')},${al})`;
+  const lx = 50 + dx * 30, ly = 50 + dy * 30;
   return (
-    <span className="uv2-pl" aria-hidden style={{ ['--uv2-pl-tone' as any]: c, ['--uv2-pl-lite' as any]: lite }}>
-      {/* Atmosphärensaum außerhalb der Kugel: ein einziger radialer Verlauf, kein Blur */}
-      <span className="uv2-pl-halo" style={{ background: `radial-gradient(circle closest-side at 50% 50%, rgba(${c},0) 60%, rgba(${lite},0.30) 64.5%, rgba(${c},0.16) 71%, rgba(${c},0.05) 82%, rgba(${c},0) 96%)` }} />
-      {/* Farbe: Juwelton über der Oberfläche (soft-light) */}
-      <span className="uv2-pl-tint" style={{ background: `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.85) 0%, rgba(${c},0.75) 45%, rgba(${c},0.55) 100%)` }} />
+    <span className="uv2-pl" aria-hidden style={{ ['--uv2-pl-edge' as any]: t.light.join(',') }}>
       <span className="uv2-pl-body" style={{
-        background:
-          // feines Glanzlicht
-          `radial-gradient(circle at ${sx}% ${sy}%, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.18) 5%, rgba(255,255,255,0) 11%),` +
-          (bands ? `linear-gradient(166deg, rgba(${lite},0) 34%, rgba(${lite},0.12) 44%, rgba(0,0,0,0.08) 52%, rgba(${lite},0.08) 60%, rgba(${lite},0) 68%),` : '') +
-          `radial-gradient(circle at ${lx}% ${ly}%, rgba(${lite},0.30) 0%, rgba(${c},0.10) 36%, rgba(${c},0) 60%),` +
-          // weicher Terminator zur Mitte
-          `linear-gradient(${deg}deg, rgba(0,0,0,0) 40%, rgba(5,6,14,0.38) 62%, rgba(5,6,14,0.66) 86%, rgba(5,6,14,0.78) 100%)`,
+        backgroundImage:
+          `${GRAIN},` +
+          `linear-gradient(${deg}deg, rgba(0,0,0,0) 38%, ${rgb(t.shade, 0.42)} 64%, ${rgb(t.shade, 0.82)} 100%),` +
+          `radial-gradient(circle at ${lx}% ${ly}%, ${rgb(t.light)} 0%, ${rgb(t.base)} 42%, ${rgb(t.shade)} 96%)`,
+        backgroundSize: '120px 120px, 100% 100%, 100% 100%',
+        opacity: 1,
       }} />
-      {/* leuchtendes Randlicht auf der Lichtseite + feine Kante */}
       <span className="uv2-pl-rim" style={{
-        boxShadow: `inset ${(-dx * size * 0.075).toFixed(1)}px ${(-dy * size * 0.075).toFixed(1)}px ${(size * 0.09).toFixed(1)}px -${(size * 0.02).toFixed(1)}px rgba(${lite},0.95), inset 0 0 0 1px rgba(${lite},0.22), inset ${(dx * size * 0.05).toFixed(1)}px ${(dy * size * 0.05).toFixed(1)}px ${(size * 0.08).toFixed(1)}px -${(size * 0.03).toFixed(1)}px rgba(${c},0.45)`,
+        boxShadow: `inset ${(-dx * 1.2).toFixed(2)}px ${(-dy * 1.2).toFixed(2)}px 0 0 ${rgb(t.light.map((v) => Math.min(255, v + 18)), 0.7)}`,
       }} />
     </span>
   );
