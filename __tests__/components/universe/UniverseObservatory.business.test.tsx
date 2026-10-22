@@ -2,6 +2,11 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { UniverseObservatory } from '@/components/universe/UniverseObservatory';
 import type { BusinessSummary } from '@/lib/business/mrr';
+import { setSaimorSession, clearSession } from '@/__tests__/sessionFixtures';
+
+// These cases show SAIMÔR's own view; customers never see these internal cards.
+beforeEach(() => setSaimorSession());
+afterEach(() => clearSession());
 
 const noop = () => undefined;
 

@@ -13,7 +13,8 @@ describe('UniverseLandscape', () => {
     const { container } = render(<UniverseLandscape landscape={landscape} sample onOpenArea={jest.fn()} onAskMora={jest.fn()} />);
     expect(screen.getByTestId('universe-core')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-planet]')).toHaveLength(7);
-    expect(container.querySelectorAll('ellipse')).toHaveLength(2);
+    // Only the orbit ellipses; MÔRA's eyes are ellipses too.
+    expect(container.querySelectorAll('ellipse.os-ulx__orbit')).toHaveLength(2);
     expect(container.querySelector('[data-strand="post-finance"]')).toHaveAttribute('data-evidence', 'inferred');
     expect(screen.getByTestId('universe-attention')).toHaveTextContent('Heute');
   });

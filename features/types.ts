@@ -26,6 +26,8 @@ export interface FeatureManifest {
   order: number;
   /** Roles that may see the feature. Undefined = every authenticated role. */
   permissions?: AppRole[];
+  /** Only for SAIMÔR's own organization (lib/auth/organization), never for a customer company. */
+  internalOnly?: boolean;
   /** Required NEXT_PUBLIC_OS_FLAGS entry. Undefined = always on. */
   flag?: string;
   /** 'nav' = visible in navigation; 'palette' = only via command palette / deep link. */
@@ -51,4 +53,6 @@ export interface FeatureVisibilityContext {
   flags: Set<string>;
   /** Local preview without session: role checks are skipped (all data reads still fail closed). */
   preview?: boolean;
+  /** Session belongs to SAIMÔR's own organization. Missing means not internal. */
+  internal?: boolean;
 }

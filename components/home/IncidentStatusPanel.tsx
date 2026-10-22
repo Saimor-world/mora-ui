@@ -4,6 +4,7 @@ import React from 'react';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
 import { TONES, toneForPriority, priorityFromSeverityLabel } from '@/lib/ui/status';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 function isVerifiedIncidentPanel(panel: IncidentStatusPanelData): boolean {
   return Boolean(
@@ -29,7 +30,9 @@ function formatTimestamp(value?: string) {
 }
 
 export function IncidentStatusPanel({ panel }: { panel: IncidentStatusPanelData }) {
-  if (!isVerifiedIncidentPanel(panel)) return null;
+  // Nightwatch incidents are SAIMÔR-internal; customer companies never see this card.
+  const internal = useIsSaimorInternal();
+  if (!internal || !isVerifiedIncidentPanel(panel)) return null;
 
   const priority = priorityFromSeverityLabel(panel.payload.severity);
   const tone = TONES[toneForPriority(priority)];

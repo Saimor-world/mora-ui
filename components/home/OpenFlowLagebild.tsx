@@ -8,6 +8,7 @@ import type { ConnectorStatus, OpenFlowLagebild as Lagebild, OpenFlowSignal } fr
 import { TONES, toneForPriority } from '@/lib/ui/status';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 import { isRuntimeInfrastructurePlaceholder } from '@/lib/openflow/presentation';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 interface OpenFlowLagebildProps {
   view: Lagebild;
@@ -259,6 +260,9 @@ function MoraOrientation({
 }
 
 export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLagebildProps) {
+  // Incident panels are SAIMÔR-internal. For customers the list is empty here, so the
+  // calm empty sentence shows instead of a gap.
+  const internal = useIsSaimorInternal();
   // The headline is shown once, big. Everything below excludes it (and attention
   // is not repeated inside "changed") — one signal, one place.
   const headlineId = view.headline?.id;
@@ -269,7 +273,7 @@ export function OpenFlowLagebild({ view, onOpenPane, onGoExplore }: OpenFlowLage
     .slice(0, 3);
   const nextSteps = view.nextSteps.filter((s) => s.id !== headlineId).slice(0, 2);
   const incidentPanels = view.panels?.incidentStatus?.slice(0, 2) ?? [];
-  const visibleIncidentPanels = incidentPanels.filter(isVisibleIncidentPanel);
+  const visibleIncidentPanels = internal ? incidentPanels.filter(isVisibleIncidentPanel) : [];
   const hiddenPlaceholders = view.truthState?.hiddenPlaceholders ?? [];
   const runtimeUnknown = Boolean(view.truthState?.runtimeUnknown);
   const connectorHandshakeUnknown = Boolean(view.truthState?.connectorHandshakeUnknown);

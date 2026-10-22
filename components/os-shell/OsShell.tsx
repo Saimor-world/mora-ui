@@ -24,6 +24,7 @@ import { OsDock } from './OsDock';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -45,7 +46,8 @@ export function OsShell({ preview }: { preview: boolean }) {
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
   const flags = useMemo(() => enabledFeatureFlags(), []);
-  const ctx = useMemo(() => ({ role, flags, preview }), [role, flags, preview]);
+  const internal = useIsSaimorInternal();
+  const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
   const nav = useMemo(() => navigationModel(ctx), [ctx]);
   const visible = useMemo(() => visibleFeatures(ctx), [ctx]);
 
