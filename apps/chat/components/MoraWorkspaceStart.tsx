@@ -10,7 +10,8 @@ function sourceLabel(source: TodaySourceMeta | undefined, fallback: string): str
   if (source.status === 'disconnected') return 'Verbindung getrennt';
   if (source.status === 'unavailable') return 'Gerade nicht verfügbar';
   if (source.status === 'stale' || (Date.now() - Date.parse(source.as_of)) / 1000 > source.stale_after_seconds) return 'Stand veraltet';
-  if (source.status === 'partial' || !source.complete) return 'Nur ein Teilstand verfügbar';
+  if (source.status === 'not_synced') return 'Noch nicht abgeglichen';
+  if (!source.complete) return 'Noch kein vollständiger Stand';
   return fallback;
 }
 

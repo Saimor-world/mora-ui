@@ -25,6 +25,7 @@ function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date())
 
 function SourceState({ status, label }: { status: TodaySourceStatus; label: string }) {
   if (status === 'disconnected') return <StateView compact kind="not_configured" title={`${label} nicht verbunden`} copy="Docke die Quelle unter Einstellungen › Quellen an." />;
+  if (status === 'not_synced') return <StateView compact kind="backend_unavailable" title={`${label} noch nicht abgeglichen`} copy="CORE gleicht diese Quelle im Hintergrund ab. Noch kein Stand – das heißt nicht, dass nichts da ist." />;
   if (status === 'unavailable') return <StateView compact kind="backend_unavailable" title={`${label} gerade nicht verfügbar`} copy="CORE konnte diese Quelle nicht lesen. Das heißt nicht, dass nichts da ist." />;
   return null;
 }
@@ -133,7 +134,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <ResponsiveGrid columns={2}>
             <Section icon={<CalendarDays size={14} />} title="Termine heute" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
               <SourceState status={snapshot.calendar.status} label="Kalender" />
-              {(snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'partial' || snapshot.calendar.status === 'stale') && (
+              {(snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'stale') && (
                 snapshot.calendar.events.length === 0 ? <Text>Keine Termine heute.</Text> : (
                   <div className="os-list">
                     {snapshot.calendar.events.slice(0, 4).map((e) => (

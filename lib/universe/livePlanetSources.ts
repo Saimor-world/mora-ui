@@ -77,7 +77,7 @@ export const PLANET_SOURCE_TRUTH: Record<string, { truth: PlanetTruth; apis: str
 
 function readable(status?: string | null): boolean {
   if (!status) return false;
-  return status === 'ok' || status === 'empty' || status === 'partial' || status === 'stale';
+  return status === 'ok' || status === 'empty' || status === 'stale';
 }
 
 function n(value: number | null | undefined): number | null {

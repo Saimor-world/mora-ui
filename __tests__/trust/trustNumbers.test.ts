@@ -6,7 +6,7 @@ import { buildLivePlanetInput, overlayLivePlanet } from '@/lib/universe/livePlan
 import { bodyChips, bodyMeta, type ModelPlanet } from '@/lib/universe/planetModel';
 import type { TodaySnapshot } from '@/lib/api/todayClient';
 import { mailFilterLabels, parseMailCounts } from '@/lib/mail/mailCounts';
-import { mailCountDetail } from '@/components/home/TodayOverview';
+import { mailCountDetail, syncTimeLabel } from '@/components/home/TodayOverview';
 import { moonCaption } from '@/components/universe/OrganizationField';
 import { buildOrbitals } from '@/lib/universe/orbitals';
 import { setupHeadline } from '@/apps/settings/WorkspaceControlTab';
@@ -75,5 +75,14 @@ describe('Einstellungen', () => {
   it('nennt Schritte und den offenen Schritt', () => {
     expect(setupHeadline(2, 4, 'Organisation')).toBe('2 von 4 Schritten erledigt – offen: Organisation');
     expect(setupHeadline(4, 4)).toBe('Dein System ist startklar.');
+  });
+});
+
+describe('Abgleich statt "teilweise"', () => {
+  it('nennt die Uhrzeit des letzten Abgleichs in Berliner Zeit', () => {
+    const now = new Date('2026-10-22T09:30:00Z');
+    expect(syncTimeLabel('2026-10-22T07:42:00Z', now)).toBe('um 09:42');
+    expect(syncTimeLabel('2026-10-21T07:42:00Z', now)).toBe('am 21.10. um 09:42');
+    expect(syncTimeLabel(null, now)).toBeNull();
   });
 });

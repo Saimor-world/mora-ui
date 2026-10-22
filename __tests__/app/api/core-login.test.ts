@@ -106,10 +106,11 @@ describe('/api/auth/core-login', () => {
         });
     });
 
-    it('returns a local demo fallback when Core is unavailable and the dev flag is enabled', async () => {
+    it('never logs in with a built-in demo password when Core is unavailable', async () => {
         process.env.SAIMOR_ENABLE_LOCAL_DEMO_FALLBACK = '1';
         process.env = { ...process.env, NODE_ENV: 'development' };
         global.fetch = jest.fn().mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:8081')) as any;
+        jest.spyOn(console, 'error').mockImplementation(() => {});
         jest.spyOn(console, 'warn').mockImplementation(() => {});
 
         const response = await POST(new Request('http://localhost/api/auth/core-login', {
@@ -117,13 +118,8 @@ describe('/api/auth/core-login', () => {
             body: JSON.stringify({ email: 'demo@saimor.io', password: 'demo123' }),
         }) as any);
 
-        expect(response.status).toBe(200);
-        await expect(response.json()).resolves.toMatchObject({
-            success: true,
-            role: 'demo',
-            tenant_id: 'tenant-demo',
-            auth_type: 'local_demo_fallback',
-        });
+        expect(response.status).not.toBe(200);
+        await expect(response.json()).resolves.toMatchObject({ success: false });
     });
 
     it('returns service unavailable for non-demo credentials when Core is unavailable', async () => {

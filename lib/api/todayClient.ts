@@ -4,7 +4,7 @@ export type TodaySourceStatus =
   | 'ok'
   | 'empty'
   | 'disconnected'
-  | 'partial'
+  | 'not_synced'
   | 'unavailable'
   | 'stale';
 export type TodayStatus = 'ok' | 'degraded' | 'unknown';
@@ -25,6 +25,8 @@ export type TodaySourceMeta = {
   complete: boolean;
   as_of: string;
   stale_after_seconds: number;
+  /** Letzter erfolgreicher Abgleich (Hintergrund-Job in CORE). null = noch nie abgeglichen. */
+  last_synced_at?: string | null;
 };
 
 export type TodayMailItem = {
@@ -109,7 +111,7 @@ const SOURCE_STATES = new Set<TodaySourceStatus>([
   'ok',
   'empty',
   'disconnected',
-  'partial',
+  'not_synced',
   'unavailable',
   'stale',
 ]);
