@@ -15,6 +15,7 @@ import {
   KNOWN_ACCOUNTS,
   ORIGIN_NFT,
 } from '@/lib/finance';
+import { requireFinanceOwner } from '@/lib/auth/financeOwnerGuard';
 
 const XRPL_ADDRESS_RE = /^r[1-9A-HJ-NP-Za-km-z]{24,34}$/;
 const SNAPSHOT_FILE_PATH = path.join(os.tmpdir(), 'saimor-finance-xrpl-snapshot.json');
@@ -41,6 +42,9 @@ async function savePersistedSnapshot(snapshot: FinanceSnapshot): Promise<void> {
 }
 
 export async function GET(request: NextRequest) {
+  const denied = await requireFinanceOwner(request);
+  if (denied) return denied;
+
   const address = request.nextUrl.searchParams.get('address')?.trim() || '';
   const mode = request.nextUrl.searchParams.get('mode') || 'single';
 
