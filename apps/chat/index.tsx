@@ -24,7 +24,7 @@ import { GLASS_SHEET_PRESENTATION } from '@/lib/os/glassSheet';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { readMoraWorkspaceIntent, currentMoraIdentityKey } from '@/lib/os/openMoraWorkspace';
 import { currentMailDraftScope, useMailDraftStore, type MailReplyTarget } from '@/lib/mail/mailDraft';
-import { MoraFace } from '@/components/mora/MoraFace';
+import { MoraStone } from '@/components/mora/MoraStone';
 import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat/intent';
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
 import { toToolTrace, type ToolTraceStep } from '@/lib/chat/toolTrace';
@@ -1159,7 +1159,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                     ? 'bg-[#0078D4]'
                     : 'bg-gradient-to-br from-violet-400 to-cyan-500'
                     }`}>
-                    {uv2() ? <><img src="/brand/mora-stone-v1.png" alt="" width={40} height={40} draggable={false} /><MoraFace size={40} state={isLoading || isStreaming || isFrameStreaming ? 'think' : undefined} /></> : <Sparkles className="w-5 h-5 text-white" />}
+                    {uv2() ? <MoraStone size={40} thinking={isLoading || isStreaming || isFrameStreaming} /> : <Sparkles className="w-5 h-5 text-white" />}
                 </div>
                 <div>
                     <h3 className={`font-medium ${isStandardMode ? 'text-[#1F1F1F]' : 'text-white'
