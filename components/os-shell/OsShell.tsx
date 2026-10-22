@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
-import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
+import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -22,7 +22,6 @@ import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock, PHONE_DOCK_IDS } from './OsDock';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
-import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
@@ -149,10 +148,9 @@ export function OsShell({ preview }: { preview: boolean }) {
 
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
-            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text><span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status></span>{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
-            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} />
+            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text></Stack>
+            {/* Lea-Look: keine CORE-Plakette, keine E-Mail/Rolle, keine Uhr, keine Kapsel – der Kopf bleibt ruhig. */}
             <Stack direction="row" gap={1} align="center">
-              <ContextClock />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
