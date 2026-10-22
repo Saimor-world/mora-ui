@@ -73,9 +73,10 @@ const APP_MAP: Record<string, React.ComponentType<AppProps>> = {
   mail:            dynamic(() => import('@/apps/mail'),          { ssr: false, loading: () => <AppSkeleton /> }),
   feeds:           dynamic(() => import('@/apps/feeds'),         { ssr: false, loading: () => <AppSkeleton /> }),
   'website-dossier': dynamic(() => import('@/apps/website-dossier'), { ssr: false, loading: () => <AppSkeleton /> }),
-  finance:         dynamic(() => import('@/apps/finance'),       { ssr: false, loading: () => <AppSkeleton /> }),
-  // Finance v2 (Profit Center, CORE Treasury, Sources, XRPL Watch Lab). Wired 2026-10 for the OS prototype;
-  // the legacy shell keeps `finance` until CORE serves /v3/finance/profit-center + capital-policy live.
+  // `finance` (launcher "Saimôr Finance – nur Owner") loads Finance v2, which carries the owner gate.
+  // The old ungated apps/finance was removed (owner-only decision 19.10.2026).
+  finance:         dynamic(() => import('@/apps/finance-v2'),    { ssr: false, loading: () => <AppSkeleton /> }),
+  // Finance v2 (Profit Center, CORE Treasury, Sources, XRPL Watch Lab), also reachable via the OS prototype.
   'finance-v2':    dynamic(() => import('@/apps/finance-v2'),    { ssr: false, loading: () => <AppSkeleton /> }),
 };
 

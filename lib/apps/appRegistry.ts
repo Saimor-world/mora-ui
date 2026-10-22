@@ -51,7 +51,7 @@ export const APP_REGISTRY: AppManifest[] = [
   {
     id: 'finance',
     name: 'Saimôr Finance',
-    description: 'Einnahmen, Ausgaben und Kontostände – nur lesend, nur Owner',
+    description: 'Einnahmen, Ausgaben und Kontostände – nur lesend, nur Owner (Finance v2)',
     icon: 'Activity',
     color: 'green',
     category: 'core',
