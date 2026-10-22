@@ -52,6 +52,8 @@ type CoreRequestOptions = {
     throwAuthErrors?: boolean; // Opt-in: preserve 401/403 as CoreError instead of collapsing them to null.
     preserveEnvelope?: boolean; // Opt-in for callers that need v3 receipt/meta alongside data.
     headers?: Record<string, string>;
+    /** Abbruch nach n ms (z. B. Sitzungsprüfung). Ein Timeout gilt wie ein Netzfehler: null. */
+    timeoutMs?: number;
 };
 
 export function readCookie(name: string): string | null {
@@ -130,12 +132,19 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
     let response: Response;
     try {
         const url = `${getCoreBaseUrl()}${path}`;
-        response = await fetch(url, {
-            method: options.method ?? 'GET',
-            headers,
-            body: options.body ? JSON.stringify(options.body) : undefined,
-            credentials: 'include',
-        });
+        const controller = options.timeoutMs && typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timer = controller ? setTimeout(() => controller.abort(), options.timeoutMs) : null;
+        try {
+            response = await fetch(url, {
+                method: options.method ?? 'GET',
+                headers,
+                body: options.body ? JSON.stringify(options.body) : undefined,
+                credentials: 'include',
+                ...(controller ? { signal: controller.signal } : {}),
+            });
+        } finally {
+            if (timer) clearTimeout(timer);
+        }
     } catch (err: any) {
         // Network error - return null silently
         return null;
@@ -214,7 +223,7 @@ export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'm
     // wuerde aus der Beschleunigung eine stille Veraltung.
     // Auth-strict and tolerant callers intentionally use different keys so a
     // shared in-flight promise cannot change another caller's error semantics.
-    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}`;
+    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}|${options.timeoutMs ?? ''}`;
     return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 

@@ -433,10 +433,21 @@ export default function UniverseView() {
                 diameter: planetDiameter((p || c)!.size, state, body.kind), state, brightness: p ? p.brightness : 0.8,
                 meta: bodyMeta(p, c), chips: bodyChips(p, c), glow: p?.glow ?? null, demo,
             } as OrganizationTerritory['model'];
-            if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model };
+            // Eine Definition "Dokument": die Zahl kommt aus CORE (p.counts.docs), nicht aus der zweiten Stats-Zählung.
+            if (base) return { ...base, x: body.x, y: body.y, name: p!.label, model, documents: Number(p?.counts?.docs ?? base.documents ?? 0) };
             const moons = c
                 ? c.members.map((k) => ({ id: departmentIdOf(k) || k, name: byDept.get(departmentIdOf(k) || '')?.name || liveModel.planets.find((x) => x.key === k)?.label || '' }))
-                : (p?.moons || []).map((m: any) => ({ id: m.department_id || m.key, name: SOURCE_LABEL[m.label] || m.label, documents: Number(m.docs ?? 0) }));
+                : (p?.moons || []).map((m: any) => {
+                    // Quellen-Monde: Zahl nur aus CORE (item_count nach erfolgreichem Sync).
+                    const isSource = String(m.key || '').startsWith('source:');
+                    const known = typeof m.docs === 'number';
+                    return {
+                        id: m.department_id || m.key, name: SOURCE_LABEL[m.label] || m.label,
+                        documents: known ? m.docs : 0,
+                        reading: isSource && m.status === 'syncing',
+                        countUnknown: isSource && !known,
+                    };
+                });
             return {
                 id: deptId || body.id, name: body.label, description: null, color: null, x: body.x, y: body.y,
                 spaces: c ? c.members.length : Number(p?.counts?.spaces ?? 0), folders: 0,

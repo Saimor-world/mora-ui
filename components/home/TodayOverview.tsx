@@ -108,6 +108,16 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
   return sourceStateCopy(label, 'unavailable');
 }
 
+/** Die eine Mail-Zahl aus CORE – dieselbe wie im Universe und in Post. */
+export function mailCountDetail(unread: number | null | undefined, total: number | null | undefined): string {
+  if (typeof unread === 'number') {
+    const head = unread === 1 ? '1 ungelesen' : `${unread} ungelesen`;
+    return typeof total === 'number' ? `${head} · ${total} im Posteingang` : head;
+  }
+  if (typeof total === 'number') return `${total} im Posteingang`;
+  return 'Zahl wird gelesen …';
+}
+
 export function TodayOverview() {
   const openPane = usePaneStore((state) => state.openPane);
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
@@ -116,7 +126,15 @@ export function TodayOverview() {
   const calendarCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
-      return { value: 'Heute frei', detail: 'Keine weiteren Termine für heute.' };
+      // "frei" klang nach "nichts zu tun" – Termine und Aufgaben sind verschiedene Dinge.
+      const overdue = snapshot.tasks?.counts?.overdue;
+      return {
+        value: 'Keine Termine heute',
+        detail: typeof overdue === 'number' && overdue > 0
+          ? `Aber ${overdue} Aufgabe${overdue === 1 ? '' : 'n'} überfällig.`
+          : 'Keine weiteren Termine für heute.',
+        attention: typeof overdue === 'number' && overdue > 0 ? true : undefined,
+      };
     }
     if (snapshot.calendar.status !== 'ok') return sourceStateCopy('Kalender', snapshot.calendar.status);
     if (typeof snapshot.calendar.count !== 'number') return sourceStateCopy('Kalender', 'unavailable');
@@ -139,7 +157,10 @@ export function TodayOverview() {
   const mailCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);
     if (snapshot.mail.status === 'empty') {
-      return { value: 'Posteingang ruhig', detail: 'Keine Mail im zuletzt geladenen Ausschnitt.' };
+      return {
+        value: 'Posteingang ruhig',
+        detail: snapshot.mail.total === 0 ? 'Keine Mail im Posteingang.' : 'Keine Mail im zuletzt geladenen Ausschnitt.',
+      };
     }
     if (snapshot.mail.status !== 'ok') return sourceStateCopy('Mail', snapshot.mail.status);
     if (typeof snapshot.mail.inbox_loaded !== 'number') return sourceStateCopy('Mail', 'unavailable');
@@ -148,9 +169,7 @@ export function TodayOverview() {
     if (!latest) return sourceStateCopy('Mail', 'partial');
     return {
       value: latest.subject || 'Neue Mail',
-      detail: snapshot.mail.inbox_loaded === 1
-        ? '1 zuletzt geladene Nachricht.'
-        : `${snapshot.mail.inbox_loaded} zuletzt geladene Nachrichten.`,
+      detail: mailCountDetail(snapshot.mail.unread_count, snapshot.mail.total),
     };
   }, [loadError, loading, snapshot]);
 

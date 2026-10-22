@@ -75,6 +75,9 @@ export type TodaySnapshot = {
   };
   mail: TodaySourceMeta & {
     inbox_loaded: number | null;
+    /** Die eine Mail-Zahl aus CORE (nur dieser User). null = Quelle kann es nicht sagen. */
+    unread_count?: number | null;
+    total?: number | null;
     sample_limit: number;
     items: TodayMailItem[];
   };
@@ -181,6 +184,8 @@ export function parseTodaySnapshot(value: unknown): TodaySnapshot | null {
     return null;
   }
   if (!readableCountIsValid(mail.status, mail.inbox_loaded)) return null;
+  if (mail.unread_count !== undefined && !isNullableNumber(mail.unread_count)) return null;
+  if (mail.total !== undefined && !isNullableNumber(mail.total)) return null;
 
   if (
     typeof calendar.date !== 'string' ||

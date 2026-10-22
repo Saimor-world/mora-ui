@@ -31,6 +31,8 @@ import {
     saveWebsiteEntryContext,
 } from '@/lib/websiteEntryStorage';
 
+export const SESSION_CHECK_TIMEOUT_MS = 3000;
+
 interface WelcomeScreenProps {
     onAuthenticated: () => void;
 }
@@ -317,7 +319,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
             // erkennung (24–72h): validate token silently, fall back to password on any failure
             let serverValid = false;
             try {
-                const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true });
+                // 3 s wie die Middleware (coreSessionGuard): hängt CORE, bleibt das Passwortfeld nutzbar.
+                const serverSession = await coreGet('/v3/auth/session', { skipAuth: true, isOptional: true, timeoutMs: SESSION_CHECK_TIMEOUT_MS });
                 if (cancelled) return;
                 if (serverSession?.user_id) {
                     serverValid = true;
@@ -514,11 +517,8 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                 return { response, data };
             };
 
-            let { response, data } = await attemptCoreLogin(loginPassword);
-            const isDemoLogin = loginEmail.toLowerCase().startsWith('demo') || loginEmail.toLowerCase().includes('demo');
-            if ((!response.ok || !data?.success) && isDemoLogin && loginPassword === 'demo') {
-                ({ response, data } = await attemptCoreLogin('demo123'));
-            }
+            // Kein automatischer Zweitversuch mit einem bekannten Standardpasswort im Client.
+            const { response, data } = await attemptCoreLogin(loginPassword);
             if (!response.ok || !data?.success) {
                 throw new Error(data?.detail || data?.message || "Ungültige Zugangsdaten");
             }
