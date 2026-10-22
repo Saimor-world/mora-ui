@@ -54,7 +54,7 @@ function availabilityLabel(snapshot: TodaySnapshot | null) {
   if (status === 'ok') return 'Aktuell';
   if (status === 'empty') return 'Keine offenen Aufgaben';
   if (status === 'stale') return 'Stand veraltet';
-  if (status === 'partial') return 'Teilweise verfügbar';
+  if (status === 'not_synced') return 'Noch nicht abgeglichen';
   if (status === 'disconnected') return 'Nicht verbunden';
   return 'Nicht verfügbar';
 }

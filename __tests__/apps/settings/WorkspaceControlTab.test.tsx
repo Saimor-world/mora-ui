@@ -47,7 +47,7 @@ describe('WorkspaceControlTab', () => {
     expect(screen.getByText('5 Plätze')).toBeInTheDocument();
     expect(screen.getByText('3/5 verbunden')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Kalender einrichten/i })).toBeInTheDocument();
-    expect(screen.getByText('3 von 4 Ebenen bereit')).toBeInTheDocument();
+    expect(screen.getByText(/^3 von 4 Schritten erledigt – offen: /)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /Dienste verbinden/i }));
     expect(openIntegrations).toHaveBeenCalledTimes(1);
   });
@@ -87,7 +87,7 @@ describe('WorkspaceControlTab', () => {
     mockAccess.mockReturnValue({ data: { onboarding: null }, isLoading: false, isFetching: false, refetch: jest.fn() });
     mockCatalog.mockReturnValue({ data: {} });
     render(<WorkspaceControlTab onOpenIntegrations={jest.fn()} />);
-    expect(screen.getByText(/Ebenen bereit/)).toBeInTheDocument();
+    expect(screen.getByText(/Schritten erledigt/)).toBeInTheDocument();
   });
 
   it('keeps umlauts intact in visible copy', () => {

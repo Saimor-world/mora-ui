@@ -62,9 +62,10 @@ describe('Live planet input', () => {
     expect(overlayLivePlanet(planet('wache', { open_incidents: 3 }), input).counts.open_incidents).toBe(3);
   });
 
-  it('uses the inbox count only when the mail read was complete', () => {
+  it('uses only the server mail total, never the loaded sample', () => {
     expect(buildLivePlanetInput({ today: today({ complete: false, inbox_loaded: 25 }) }).mailCount).toBeNull();
-    expect(buildLivePlanetInput({ today: today({ complete: true, inbox_loaded: 25 }) }).mailCount).toBe(25);
+    expect(buildLivePlanetInput({ today: today({ complete: true, inbox_loaded: 25 }) }).mailCount).toBeNull();
+    expect(buildLivePlanetInput({ today: { ...today({ complete: true, inbox_loaded: 5 }), mail: { status: 'ok', complete: true, inbox_loaded: 5, total: 25 } } as unknown as TodaySnapshot }).mailCount).toBe(25);
     const partial = buildLivePlanetInput({ today: today({ complete: false, inbox_loaded: 25 }) });
     expect(overlayLivePlanet(planet('post', { mails: 40 }), partial).counts.mails).toBe(40);
   });

@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
       redirect: "manual",
     });
   } catch (error) {
-    const fallback = buildLocalDemoLoginFallback(body);
-    if (fallback) return fallback;
     const publicHealthy = await probePublicCoreHealth();
     console.error("[core-login] Core auth proxy failed:", error, { publicHealthy });
     return NextResponse.json(
@@ -60,41 +58,4 @@ export async function POST(request: NextRequest) {
   }
 
   return response;
-}
-
-function buildLocalDemoLoginFallback(rawBody: string) {
-  if (process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test") return null;
-  if (process.env.SAIMOR_ENABLE_LOCAL_DEMO_FALLBACK !== "1") return null;
-
-  try {
-    const payload = JSON.parse(rawBody);
-    const email = String(payload?.email || "").trim().toLowerCase();
-    const password = String(payload?.password || "");
-    const isDemo = email === "demo" || email === "demo@saimor.io";
-    if (!isDemo || password !== "demo123") return null;
-
-    const response = NextResponse.json(
-      {
-        success: true,
-        user_id: "local-demo-user",
-        email: "demo@saimor.io",
-        role: "demo",
-        tenant_id: "tenant-demo",
-        auth_type: "local_demo_fallback",
-        scope: "local-preview",
-        message: "Lokaler Demo-Fallback aktiv, weil Mora Core nicht erreichbar ist.",
-      },
-      {
-        status: 200,
-        headers: { "cache-control": "no-store" },
-      }
-    );
-    response.headers.set(
-      "set-cookie",
-      "mora_session=local_demo_fallback; Path=/; Max-Age=604800; SameSite=Lax"
-    );
-    return response;
-  } catch {
-    return null;
-  }
 }

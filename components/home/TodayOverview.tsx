@@ -49,7 +49,19 @@ function TodayCard({ eyebrow, value, detail, icon: Icon, onClick, unavailable, a
 
 type TodayCopy = { value: string; detail: string; unavailable?: boolean; attention?: boolean; reconnect?: boolean };
 
-function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = false): TodayCopy {
+/** "um 09:42" bzw. "am 21.10. um 09:42" – Uhrzeit des letzten Abgleichs, Europe/Berlin. */
+export function syncTimeLabel(iso?: string | null, now: Date = new Date()): string | null {
+  if (!iso) return null;
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const tz = 'Europe/Berlin';
+  const time = at.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: tz });
+  const day = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', timeZone: tz });
+  return day(at) === day(now) ? `um ${time}` : `am ${day(at)} um ${time}`;
+}
+
+function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = false, lastSyncedAt?: string | null): TodayCopy {
+  const synced = syncTimeLabel(lastSyncedAt);
   if (loading && !status) {
     return {
       value: 'Wird geladen',
@@ -67,16 +79,17 @@ function sourceStateCopy(label: string, status?: TodaySourceStatus, loading = fa
         unavailable: true,
         reconnect: true,
       };
-    case 'partial':
+    case 'not_synced':
+      // Ehrlich: CORE hat diese Quelle im Hintergrund noch nie erfolgreich abgeglichen.
       return {
-        value: 'Teilweise verfügbar',
-        detail: `${label} konnte nur teilweise geladen werden.`,
-        attention: true,
+        value: 'Noch nicht abgeglichen',
+        detail: synced ? `Letzter Abgleich ${synced}.` : `${label} wird im Hintergrund abgeglichen – noch kein Stand.`,
+        unavailable: true,
       };
     case 'stale':
       return {
         value: 'Stand veraltet',
-        detail: `${label} sollte aktualisiert werden.`,
+        detail: synced ? `Zuletzt abgeglichen ${synced}.` : `${label} sollte aktualisiert werden.`,
         attention: true,
       };
     case 'unavailable':
@@ -108,6 +121,16 @@ function topLevelStateCopy(label: string, error: TodayLoadError, loading: boolea
   return sourceStateCopy(label, 'unavailable');
 }
 
+/** Die eine Mail-Zahl aus CORE – dieselbe wie im Universe und in Post. */
+export function mailCountDetail(unread: number | null | undefined, total: number | null | undefined): string {
+  if (typeof unread === 'number') {
+    const head = unread === 1 ? '1 ungelesen' : `${unread} ungelesen`;
+    return typeof total === 'number' ? `${head} · ${total} im Posteingang` : head;
+  }
+  if (typeof total === 'number') return `${total} im Posteingang`;
+  return 'Zahl wird gelesen …';
+}
+
 export function TodayOverview() {
   const openPane = usePaneStore((state) => state.openPane);
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
@@ -116,9 +139,17 @@ export function TodayOverview() {
   const calendarCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
-      return { value: 'Heute frei', detail: 'Keine weiteren Termine für heute.' };
+      // "frei" klang nach "nichts zu tun" – Termine und Aufgaben sind verschiedene Dinge.
+      const overdue = snapshot.tasks?.counts?.overdue;
+      return {
+        value: 'Keine Termine heute',
+        detail: typeof overdue === 'number' && overdue > 0
+          ? `Aber ${overdue} Aufgabe${overdue === 1 ? '' : 'n'} überfällig.`
+          : 'Keine weiteren Termine für heute.',
+        attention: typeof overdue === 'number' && overdue > 0 ? true : undefined,
+      };
     }
-    if (snapshot.calendar.status !== 'ok') return sourceStateCopy('Kalender', snapshot.calendar.status);
+    if (snapshot.calendar.status !== 'ok') return sourceStateCopy('Kalender', snapshot.calendar.status, false, snapshot.calendar.last_synced_at);
     if (typeof snapshot.calendar.count !== 'number') return sourceStateCopy('Kalender', 'unavailable');
 
     const next = snapshot.calendar.next_event;
@@ -139,18 +170,21 @@ export function TodayOverview() {
   const mailCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);
     if (snapshot.mail.status === 'empty') {
-      return { value: 'Posteingang ruhig', detail: 'Keine Mail im zuletzt geladenen Ausschnitt.' };
+      return {
+        value: 'Posteingang ruhig',
+        detail: snapshot.mail.total === 0 ? 'Keine Mail im Posteingang.' : 'Keine Mail im zuletzt geladenen Ausschnitt.',
+      };
     }
-    if (snapshot.mail.status !== 'ok') return sourceStateCopy('Mail', snapshot.mail.status);
+    if (snapshot.mail.status !== 'ok') return sourceStateCopy('Mail', snapshot.mail.status, false, snapshot.mail.last_synced_at);
     if (typeof snapshot.mail.inbox_loaded !== 'number') return sourceStateCopy('Mail', 'unavailable');
 
     const latest = snapshot.mail.items[0];
-    if (!latest) return sourceStateCopy('Mail', 'partial');
+    if (!latest) {
+      return { value: 'Post', detail: mailCountDetail(snapshot.mail.unread_count, snapshot.mail.total) };
+    }
     return {
       value: latest.subject || 'Neue Mail',
-      detail: snapshot.mail.inbox_loaded === 1
-        ? '1 zuletzt geladene Nachricht.'
-        : `${snapshot.mail.inbox_loaded} zuletzt geladene Nachrichten.`,
+      detail: mailCountDetail(snapshot.mail.unread_count, snapshot.mail.total),
     };
   }, [loadError, loading, snapshot]);
 
@@ -159,7 +193,7 @@ export function TodayOverview() {
     if (snapshot.tasks.status === 'empty') {
       return { value: 'Nichts offen', detail: 'Keine offenen gemeinsamen Aufgaben dieser Organisation.' };
     }
-    if (snapshot.tasks.status !== 'ok') return sourceStateCopy('Gemeinsame Aufgaben', snapshot.tasks.status);
+    if (snapshot.tasks.status !== 'ok') return sourceStateCopy('Gemeinsame Aufgaben', snapshot.tasks.status, false, snapshot.tasks.last_synced_at);
 
     const { due_today: due, overdue, open } = snapshot.tasks.counts;
     if (typeof due !== 'number' || typeof overdue !== 'number' || typeof open !== 'number') {
@@ -183,7 +217,7 @@ export function TodayOverview() {
     if (snapshot.nightwatch.status === 'empty') {
       return { value: 'Alles ruhig', detail: 'Keine offenen Vorfälle.' };
     }
-    if (snapshot.nightwatch.status !== 'ok') return sourceStateCopy('Nightwatch', snapshot.nightwatch.status);
+    if (snapshot.nightwatch.status !== 'ok') return sourceStateCopy('Nightwatch', snapshot.nightwatch.status, false, snapshot.nightwatch.last_synced_at);
     if (typeof snapshot.nightwatch.open_incidents !== 'number') return sourceStateCopy('Nightwatch', 'unavailable');
 
     const open = snapshot.nightwatch.open_incidents;
@@ -207,7 +241,7 @@ export function TodayOverview() {
             : snapshot.status === 'ok'
               ? 'aktuell'
               : snapshot.status === 'degraded'
-                ? 'teilweise'
+                ? 'nicht alles abgeglichen'
                 : 'nicht verfügbar';
 
   if (isUniverseV2Enabled()) {

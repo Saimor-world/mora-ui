@@ -11,6 +11,8 @@ export type PlanetTruth = 'live' | 'model' | 'disconnected';
 
 export type LivePlanetInput = {
   mailCount?: number | null;
+  /** Ungelesen aus CORE (today.mail.unread_count) – dieselbe Zahl wie Home und Post. */
+  mailUnread?: number | null;
   mailStatus?: 'ok' | 'empty' | 'disconnected' | 'unavailable' | 'loading' | 'idle' | string | null;
   calendarCount?: number | null;
   calendarStatus?: 'ok' | 'empty' | 'disconnected' | 'unavailable' | 'loading' | 'idle' | string | null;
@@ -75,7 +77,7 @@ export const PLANET_SOURCE_TRUTH: Record<string, { truth: PlanetTruth; apis: str
 
 function readable(status?: string | null): boolean {
   if (!status) return false;
-  return status === 'ok' || status === 'empty' || status === 'partial' || status === 'stale';
+  return status === 'ok' || status === 'empty' || status === 'stale';
 }
 
 function n(value: number | null | undefined): number | null {
@@ -96,6 +98,10 @@ export function overlayLivePlanet(planet: ModelPlanet, live: LivePlanetInput): M
   if (cap === 'post') {
     if (readable(live.mailStatus) && n(live.mailCount) != null) {
       counts.mails = n(live.mailCount)!;
+      usedLive = true;
+    }
+    if (readable(live.mailStatus) && n(live.mailUnread) != null) {
+      counts.unread = n(live.mailUnread)!;
       usedLive = true;
     }
     if (readable(live.calendarStatus) && n(live.calendarCount) != null) {
@@ -159,8 +165,9 @@ export function buildLivePlanetInput({
   metrics?: Record<string, { nodes: number; source: string }>;
 }): LivePlanetInput {
   return {
-    // inbox_loaded is only a total when the mail read was complete.
-    mailCount: today?.mail.complete ? today.mail.inbox_loaded : null,
+    // Nur die Server-Zahl (total/unread_count). Die Stichprobe inbox_loaded ist nie eine Gesamtzahl.
+    mailCount: typeof today?.mail.total === 'number' ? today.mail.total : null,
+    mailUnread: typeof today?.mail.unread_count === 'number' ? today.mail.unread_count : null,
     mailStatus: today?.mail.status ?? (mailStatus === 'unavailable' ? 'unavailable' : null),
     calendarCount: today?.calendar.count ?? null,
     calendarStatus: today?.calendar.status ?? null,

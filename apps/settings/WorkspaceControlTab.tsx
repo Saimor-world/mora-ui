@@ -8,6 +8,12 @@ import { isPaddleCheckoutConfigured, openWorkspaceCheckout } from '@/lib/billing
 import { ESTATE } from '@/lib/estate';
 import { useCommunicationSurface } from '@/lib/hooks/useCommunicationSurface';
 
+/** "2 von 4 Schritten – offen: Organisation". Schritte, nicht Ebenen; Quellen sind nur einer davon. */
+export function setupHeadline(ready: number, total: number, openLabel?: string): string {
+  if (ready >= total) return 'Dein System ist startklar.';
+  return ready + ' von ' + total + ' Schritten erledigt' + (openLabel ? ' – offen: ' + openLabel : '');
+}
+
 export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations: () => void }) {
   const [checkoutPlan, setCheckoutPlan] = useState<string | null>(null);
   const access = useWorkspaceAccess();
@@ -51,7 +57,7 @@ export function WorkspaceControlTab({ onOpenIntegrations }: { onOpenIntegrations
     {!snapshot && !access.isLoading && <div className="rounded-2xl border border-amber-300/15 bg-amber-400/[0.05] p-4 text-sm text-amber-100/70">Der Status konnte gerade nicht bestätigt werden. Wir zeigen lieber nichts als falsche Werte.</div>}
     <section className="relative overflow-hidden rounded-[26px] border border-emerald-300/15 bg-[radial-gradient(circle_at_85%_15%,rgba(34,211,238,0.10),transparent_38%),linear-gradient(145deg,rgba(4,30,24,0.48),rgba(2,10,11,0.35))] p-5">
       <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div><p className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/50">Einrichtung</p><h4 className="mt-2 text-2xl font-light text-white">{readyLaunchSteps === launchSteps.length ? 'Dein System ist startklar.' : readyLaunchSteps + ' von ' + launchSteps.length + ' Ebenen bereit'}</h4><p className="mt-2 max-w-xl text-sm leading-relaxed text-white/48">{nextLaunchStep ? 'Nächster sinnvoller Schritt: ' + nextLaunchStep.label + '. ' + nextLaunchStep.detail + '.' : 'Zugang, Organisation, Quellen und Betrieb sind bestätigt.'}</p></div>
+        <div><p className="text-[10px] uppercase tracking-[0.22em] text-emerald-200/50">Einrichtung</p><h4 className="mt-2 text-2xl font-light text-white">{readyLaunchSteps === launchSteps.length ? 'Dein System ist startklar.' : setupHeadline(readyLaunchSteps, launchSteps.length, nextLaunchStep?.label)}</h4><p className="mt-2 max-w-xl text-sm leading-relaxed text-white/48">{nextLaunchStep ? 'Nächster sinnvoller Schritt: ' + nextLaunchStep.label + '. ' + nextLaunchStep.detail + '.' : 'Zugang, Organisation, Quellen und Betrieb sind bestätigt.'}</p></div>
         {nextLaunchStep?.action && <button type="button" onClick={nextLaunchStep.action} className="rounded-2xl border border-emerald-200/20 bg-emerald-300/[0.10] px-5 py-3 text-sm font-medium text-emerald-50 hover:bg-emerald-300/[0.16]">{nextLaunchStep.label} öffnen</button>}
       </div>
       <div className="relative mt-5 grid gap-2 md:grid-cols-4">{launchSteps.map((step, index) => <button type="button" key={step.label} onClick={step.action} disabled={!step.action} className="rounded-2xl border border-white/[0.07] bg-black/15 p-3 text-left disabled:cursor-default"><div className="flex items-center justify-between"><span className="text-[10px] uppercase tracking-[0.14em] text-white/45">0{index + 1}</span><span className={'h-2 w-2 rounded-full ' + (step.ready ? 'bg-emerald-400' : 'bg-amber-300/60')} /></div><strong className="mt-3 block text-sm font-medium text-white/78">{step.label}</strong><span className="mt-1 block text-[10px] leading-relaxed text-white/34">{step.detail}</span></button>)}</div>

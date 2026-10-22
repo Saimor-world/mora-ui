@@ -19,6 +19,7 @@ import { MailTriagePanel } from '@/components/mail/MailTriagePanel';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { toast } from 'sonner';
 import { coreGet, corePost } from '@/lib/api/coreClient';
+import { mailFilterLabels, parseMailCounts, type MailCounts } from '@/lib/mail/mailCounts';
 import { CoreError, normalizeList } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -91,6 +92,7 @@ export default function MailApp({ paneId }: AppProps) {
     const { mailPreview } = useCommunicationLiveData();
 
     const [mails, setMails] = useState<MailObject[]>([]);
+    const [mailCounts, setMailCounts] = useState<MailCounts | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [viewingMail, setViewingMail] = useState<MailObject | null>(null);
@@ -122,8 +124,12 @@ export default function MailApp({ paneId }: AppProps) {
         setLoading(true);
         setError(null);
         try {
-            const response = await coreGet('/v3/mail/messages');
+            const [response, countsRaw] = await Promise.all([
+                coreGet('/v3/mail/messages'),
+                coreGet('/v3/mail/counts', { isOptional: true }).catch(() => null),
+            ]);
             if (request !== listRequest.current) return;
+            setMailCounts(parseMailCounts(countsRaw));
             const fetchedMails = normalizeList<MailObject>(response, ['messages', 'emails', 'mail', 'items', 'data']);
             setMails(fetchedMails);
             setLoadedAt(new Date());
@@ -459,8 +465,8 @@ export default function MailApp({ paneId }: AppProps) {
                         <div data-uv2-keep="" data-testid="mail-v2-bar">
                             <div className="uv2-ftool">
                                 <Segmented value={uvFilter} onChange={(v) => setUvFilter(v)} label="Filter" options={[
-                                    { id: 'all', label: `Alle ${mails.length}`, icon: <Inbox /> },
-                                    { id: 'unread', label: `Ungelesen ${unread}`, icon: <Mail /> },
+                                    { id: 'all', label: mailFilterLabels(mailCounts, mails.length, unread).all, icon: <Inbox /> },
+                                    { id: 'unread', label: mailFilterLabels(mailCounts, mails.length, unread).unread, icon: <Mail /> },
                                 ]} />
                                 <span style={{ flex: 1 }} />
                                 <button type="button" className="uv2-pill" data-testid="mail-v2-newest" onClick={() => void openMail(mails[0])}><Mail />Neueste</button>

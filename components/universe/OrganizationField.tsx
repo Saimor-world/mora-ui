@@ -35,7 +35,7 @@ export interface OrganizationTerritory {
     documents: number;
     /** Die echten Bereiche dieser Abteilung - jeder wird ein Mond. Zahl
      *  allein (spaces) reicht dafuer nicht: ein Mond traegt einen Namen. */
-    spaceList?: { id: string; name: string }[];
+    spaceList?: { id: string; name: string; documents?: number; reading?: boolean; countUnknown?: boolean }[];
     metricSource: 'live' | 'derived' | 'missing';
     access: 'open' | 'locked';
     /** Planeten-Modell v1 (CORE /v3/universe): wenn gesetzt, bestimmt der Server Aussehen, Größe und Zustand. */
@@ -107,6 +107,15 @@ const signalTone: Record<UniverseSignal['kind'], { stroke: string; icon: React.R
         nightwatch: { ...signalToneLegacy.nightwatch, stroke: '#E0876A' },
     }
     : signalToneLegacy;
+
+
+/** Mond-Beschriftung: Zahl nur aus CORE; verbunden ohne Zahl heißt "wird gelesen", nie "leer". */
+export function moonCaption(moon: { documents: number; reading?: boolean; countUnknown?: boolean }): string {
+    if (moon.reading) return 'verbunden · wird gelesen';
+    if (moon.countUnknown) return 'verbunden';
+    if (moon.documents === 0) return 'noch leer';
+    return moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente');
+}
 
 export function OrganizationField({
     lens,
@@ -478,7 +487,7 @@ export function OrganizationField({
                         <TruthValue icon={<Radio size={13} />} value={selectedSignals.length} label="Signale" />
                     </div>
                     )}
-                    {lens === 'relations' && (
+                    {lens === 'relations' && selectedSignals.length > 0 && (
                         <div className="mt-5 space-y-2">
                             {selectedSignals.length === 0 ? (
                                 <div className="rounded-2xl border border-dashed border-white/12 px-4 py-3 text-xs leading-relaxed text-white/38">
@@ -991,9 +1000,7 @@ function OrbitalSystem({ orbitals, accent, selected, onOpenMoon, planetName }: {
                         <span className="pointer-events-none absolute left-1/2 top-full z-20 mt-2.5 -translate-x-1/2 whitespace-nowrap rounded-xl border border-white/10 bg-[#08121e]/97 px-3 py-2 text-left opacity-0 shadow-[0_8px_26px_rgba(0,0,0,0.6)] transition-opacity duration-200 group-hover/moon:opacity-100 group-focus-within/moon:opacity-100">
                             <span className="block text-[11px] font-medium text-white/92">{moon.name}</span>
                             <span className="mt-1 block text-[9px] uppercase tracking-[0.13em] text-white/45">
-                                {moon.documents === 0
-                                    ? 'noch leer'
-                                    : moon.documents + (moon.documents === 1 ? ' Dokument' : ' Dokumente')}
+                                {moonCaption(moon)}
                             </span>
                         </span>
                     </span>

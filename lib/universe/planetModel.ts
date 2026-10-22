@@ -162,12 +162,14 @@ export function bodyMeta(p: ModelPlanet | null, c: ModelCluster | null): string 
   } else {
     const cap = p.capability;
     if (cap === 'wissen' && n('docs')) parts.push(`${n('docs')} Dokumente`);
-    if (cap === 'post' && n('mails')) parts.push(`${n('mails')} Mails`);
+    if (cap === 'post' && typeof p.counts?.unread === 'number') parts.push(`${n('unread')} ungelesen`);
+    else if (cap === 'post' && n('mails')) parts.push(`${n('mails')} Mails`);
     if (cap === 'wache') parts.push(n('open_incidents') ? `${n('open_incidents')} offen` : 'ruhig');
     if (cap === 'werkstatt' && n('open_tasks')) parts.push(`${n('open_tasks')} offene Aufgaben`);
     if (cap === 'betrieb' && p.counts?.tenants) parts.push(`${p.counts.tenants} Tenants`);
     const connected = (p.sources || []).filter((s) => s.status === 'connected').map((s) => s.label || s.type);
     if (!parts.length && connected.length) parts.push(connected.slice(0, 2).join(' · '));
+    if (!parts.length && (p.sources || []).some((s) => s.status === 'syncing')) parts.push('verbunden · wird gelesen');
   }
   if (p.state === 'sleeping') parts.push('ruht');
   return parts.join(' · ');
@@ -188,7 +190,11 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
   } else {
     switch (p.capability) {
       case 'finanzen': if (n('transactions_14d')) out.push({ label: 'Buchungen · 14 Tage', value: n('transactions_14d'), tone: 'calm' }); break;
-      case 'post': if (n('mails')) out.push({ label: 'Mails im Eingang', value: n('mails'), tone: 'open' }); break;
+      case 'post':
+        // Eine Zahl: ungelesen aus CORE (dieselbe wie Home und Post); sonst Gesamtzahl im Eingang.
+        if (typeof p.counts?.unread === 'number') out.push({ label: 'ungelesen', value: n('unread'), tone: n('unread') ? 'open' : 'calm' });
+        else if (n('mails')) out.push({ label: 'Mails im Eingang', value: n('mails'), tone: 'open' });
+        break;
       case 'wissen': if (n('docs')) out.push({ label: 'Dokumente', value: n('docs'), tone: 'calm' }); break;
       case 'wache': out.push(n('open_incidents') ? { label: 'offene Vorfälle', value: n('open_incidents'), tone: 'need' } : { label: 'keine Vorfälle', tone: 'calm' }); break;
       case 'werkstatt': if (n('open_tasks')) out.push({ label: 'offene Aufgaben', value: n('open_tasks'), tone: 'open' }); break;
@@ -199,8 +205,11 @@ export function bodyChips(p: ModelPlanet | null, c: ModelCluster | null): Planet
         break;
       }
     }
+    // "verbunden" erst nach erfolgreichem Sync (CORE); eingeschaltet ohne Sync = "wird gelesen".
     const connected = (p.sources || []).filter((s) => s.status === 'connected').length;
     if (connected) out.push({ label: connected === 1 ? 'Quelle verbunden' : 'Quellen verbunden', value: connected, tone: 'calm' });
+    const reading = (p.sources || []).filter((s) => s.status === 'syncing').length;
+    if (reading) out.push({ label: reading === 1 ? 'Quelle wird gelesen' : 'Quellen werden gelesen', value: reading, tone: 'calm' });
   }
   if (p.state === 'sleeping') out.push({ label: 'ruht', tone: 'calm' });
   return out.slice(0, 4);

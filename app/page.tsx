@@ -56,7 +56,6 @@ function RootPageContent() {
     const { data: session, status } = useRuntimeSession();
 
     const [showLockScreen, setShowLockScreen] = useState(false);
-    const [allowWelcomeFallback, setAllowWelcomeFallback] = useState(false);
 
     const buildEntryTarget = () => {
         const entryParams = new URLSearchParams();
@@ -67,19 +66,6 @@ function RootPageContent() {
         const query = entryParams.toString();
         return query ? `/entry?${query}` : '/entry';
     };
-
-    useEffect(() => {
-        if (status !== 'loading') {
-            setAllowWelcomeFallback(false);
-            return;
-        }
-
-        const timeout = window.setTimeout(() => {
-            setAllowWelcomeFallback(true);
-        }, 800);
-
-        return () => window.clearTimeout(timeout);
-    }, [status]);
 
     // Root entry must not auto-forward into the app.
     // A valid session should surface as an explicit "continue session" choice,
@@ -124,10 +110,8 @@ function RootPageContent() {
     // Calculate user name from session for Lock Screen
     const userName = session?.user?.email?.split('@')[0] || 'User';
 
-    // Show loading while session check happens
-    if (status === 'loading' && !allowWelcomeFallback) {
-        return <EntryLoading />;
-    }
+    // Kein Warten auf die Sitzungsprüfung: Login sofort zeigen, Prüfung läuft im Hintergrund
+    // (WelcomeScreen, max. 3 s). Früher blieb hier bis zu ~20 s ein Ladebildschirm stehen.
 
     return (
         <div className="relative w-full h-screen bg-[#0d0921] overflow-hidden font-sans">

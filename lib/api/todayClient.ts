@@ -4,7 +4,7 @@ export type TodaySourceStatus =
   | 'ok'
   | 'empty'
   | 'disconnected'
-  | 'partial'
+  | 'not_synced'
   | 'unavailable'
   | 'stale';
 export type TodayStatus = 'ok' | 'degraded' | 'unknown';
@@ -25,6 +25,8 @@ export type TodaySourceMeta = {
   complete: boolean;
   as_of: string;
   stale_after_seconds: number;
+  /** Letzter erfolgreicher Abgleich (Hintergrund-Job in CORE). null = noch nie abgeglichen. */
+  last_synced_at?: string | null;
 };
 
 export type TodayMailItem = {
@@ -75,6 +77,9 @@ export type TodaySnapshot = {
   };
   mail: TodaySourceMeta & {
     inbox_loaded: number | null;
+    /** Die eine Mail-Zahl aus CORE (nur dieser User). null = Quelle kann es nicht sagen. */
+    unread_count?: number | null;
+    total?: number | null;
     sample_limit: number;
     items: TodayMailItem[];
   };
@@ -106,7 +111,7 @@ const SOURCE_STATES = new Set<TodaySourceStatus>([
   'ok',
   'empty',
   'disconnected',
-  'partial',
+  'not_synced',
   'unavailable',
   'stale',
 ]);
@@ -181,6 +186,8 @@ export function parseTodaySnapshot(value: unknown): TodaySnapshot | null {
     return null;
   }
   if (!readableCountIsValid(mail.status, mail.inbox_loaded)) return null;
+  if (mail.unread_count !== undefined && !isNullableNumber(mail.unread_count)) return null;
+  if (mail.total !== undefined && !isNullableNumber(mail.total)) return null;
 
   if (
     typeof calendar.date !== 'string' ||

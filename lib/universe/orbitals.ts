@@ -24,6 +24,10 @@ export interface OrbitalSpace {
     name: string;
     /** Echte Dokumentzahl des Ordners, falls bekannt. */
     documents?: number;
+    /** Quelle verbunden, aber CORE hat noch keine Zahl: "wird gelesen" statt "leer". */
+    reading?: boolean;
+    /** Verbunden, aber CORE liefert (noch) keine Zahl – nie als 0 anzeigen. */
+    countUnknown?: boolean;
     /** Wann zuletzt angefasst - wird zur Helligkeit. */
     updatedAt?: string | null;
 }
@@ -43,6 +47,9 @@ export interface Moon {
     name: string;
     /** Wieviel wirklich drin liegt - 0 heisst leer, nicht unbekannt. */
     documents: number;
+    reading?: boolean;
+    /** Verbunden, aber CORE liefert (noch) keine Zahl – nie als 0 anzeigen. */
+    countUnknown?: boolean;
     /** 0..1 - wie frisch, als Helligkeit statt als Zahl am Objekt. */
     freshness: number;
     /** Der zuletzt angefasste Mond dieses Planeten - traegt Ring und Namen
@@ -122,6 +129,8 @@ export function buildOrbitals({ id, diameter, spaces, documentCount }: OrbitalIn
             id: space.id,
             name: space.name,
             documents: Math.max(0, space.documents ?? 0),
+            reading: Boolean(space.reading),
+            countUnknown: Boolean(space.countUnknown),
             freshness: freshnessOf(space.updatedAt),
             updatedAt: space.updatedAt ?? null,
             angle: angleOffset + index * step,
