@@ -29,7 +29,15 @@ describe('OsShell navigation', () => {
   beforeEach(() => {
     window.location.hash = '';
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
-    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
+    // SAIMÔR's own organization: sees Labs. The customer case is tested below.
+    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
+  });
+
+  it('hides Labs & System from a customer company', async () => {
+    useSessionStore.setState({ user: { id: 'u2', name: 'Lea', role: 'owner', tenant_id: 'tenant-beispiel-lea' } as any });
+    renderShell();
+    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    expect(within(nav).queryByRole('button', { name: 'Labs & System' })).toBeNull();
   });
 
   it('renders the six primary surfaces and Labs from manifests', async () => {

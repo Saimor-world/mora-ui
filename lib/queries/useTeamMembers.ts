@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/coreClient';
 import { realtime } from '@/lib/api/realtimeClient';
 import { queryKeys, STALE_TIMES } from './queryKeys';
+import { realName } from '@/lib/auth/displayName';
 
 export type TeamMemberPresence = {
     id: string;
@@ -16,7 +17,7 @@ function mapTeamMembers(raw: unknown): TeamMemberPresence[] {
     if (!Array.isArray(raw)) return [];
     return raw.map((u: any) => {
         const email = String(u.email || '');
-        const name = String(u.name || u.full_name || (email ? email.split('@')[0] : 'Mitglied'));
+        const name = realName(u.name || u.full_name, email) || 'Mitglied';
         return {
             id: String(u.id || email || name),
             name,

@@ -10,6 +10,7 @@ import { authLogout } from '@/lib/api/coreClient';
 import { ssoLogin } from '@/lib/api/authClient';
 import { clearClientSessionArtifacts } from '@/lib/auth/sessionLifecycle';
 import { useRuntimeSession } from '@/lib/auth/runtimeSession';
+import { realName } from '@/lib/auth/displayName';
 
 function EntryLoading({ delayed = false }: { delayed?: boolean }) {
     return (
@@ -108,7 +109,7 @@ function RootPageContent() {
     };
 
     // Calculate user name from session for Lock Screen
-    const userName = session?.user?.email?.split('@')[0] || 'User';
+    const userName = realName(session?.user?.name, session?.user?.email) || 'Willkommen zurück';
 
     // Kein Warten auf die Sitzungsprüfung: Login sofort zeigen, Prüfung läuft im Hintergrund
     // (WelcomeScreen, max. 3 s). Früher blieb hier bis zu ~20 s ein Ladebildschirm stehen.

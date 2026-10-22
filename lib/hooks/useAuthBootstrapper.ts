@@ -20,6 +20,7 @@ import {
 import type { UserProfile } from '@/lib/api/authClient';
 import type { User, UserRole } from '@/lib/types/mora';
 import { resolveCompanySelection } from '@/lib/auth/companySelection';
+import { displayName } from '@/lib/auth/displayName';
 
 // ---------------------------------------------------------------------------
 // Type mapping: UserProfile (authClient) → User (sessionStore)
@@ -28,7 +29,8 @@ import { resolveCompanySelection } from '@/lib/auth/companySelection';
 export function mapProfileToUser(profile: UserProfile): User {
     return {
         id: profile.user_id,
-        name: profile.full_name ?? profile.email ?? 'Unknown',
+        // Never the email address as a name (part 9): real name, else Inhaberin/Mitglied.
+        name: displayName({ name: profile.full_name, email: profile.email, role: profile.role }),
         email: profile.email,
         role: profile.role as UserRole,
         tenant_id: profile.tenant_id,

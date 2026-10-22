@@ -131,6 +131,8 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
                 ))}
               </div>
             </div>
+            {/* Example departments only in the session-less preview, never in a customer company. */}
+            {demo ? (
             <div>
               <Text variant="eyebrow" className="mb-2">Abteilungen</Text>
               <div className="os-palette-home__planets">
@@ -142,6 +144,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
                 ))}
               </div>
             </div>
+            ) : null}
           </div>
         ) : null}
         <div className="max-h-[56vh] overflow-y-auto p-2" role="listbox" aria-label="Ergebnisse">
