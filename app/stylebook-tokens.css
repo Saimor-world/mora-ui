@@ -116,7 +116,7 @@
 .sb-nav__btn:hover { color: var(--sb-text); border-color: var(--sb-line-hover); }
 .sb-nav__btn[aria-current="page"], .sb-nav__mora[aria-pressed="true"] { background: var(--sb-card); color: var(--sb-text); }
 .sb-nav__btn:focus-visible, .sb-nav__tool:focus-visible { outline: 2px solid var(--sb-jade); outline-offset: 3px; }
-.sb-nav__label { max-width: 72px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-nav__label { white-space: nowrap; }
 .sb-nav__tool {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   width: 56px; height: 56px; border-radius: var(--sb-radius-pill); color: var(--sb-grey);

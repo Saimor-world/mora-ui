@@ -22,6 +22,21 @@ describe('SAIMÔR-internal things stay hidden from customer companies', () => {
     expect(resolveFeatureId('labs', saimor)).toBe('labs');
   });
 
+  it('hides Finance and the classic surface from customers', () => {
+    const ids = (ctx: typeof customer) => Object.values(navigationModel(ctx)).flat().map((m) => m.id);
+    expect(ids(customer)).not.toContain('finance');
+    expect(ids(saimor)).toContain('finance');
+    expect(resolveFeatureId('finance', customer)).toBe('today');
+    const { OsDock } = require('@/components/os-shell/OsDock');
+    const noop = () => undefined;
+    const p = { items: [], activeId: 'today', moraOpen: false, unread: 0, onNavigate: noop, onSearch: noop, onControl: noop, controlOpen: false, onNotifications: noop, onMora: noop };
+    const { unmount } = render(<OsDock {...p} />);
+    expect(screen.queryByTestId('legacy-shell-link')).not.toBeInTheDocument();
+    unmount();
+    render(<OsDock {...p} showLegacy />);
+    expect(screen.getByTestId('legacy-shell-link')).toBeInTheDocument();
+  });
+
   it('shows customers only overview and cashflow in finance, no treasury, XRPL or profit center', () => {
     expect(visibleFinanceTabs(false).map((t) => t.id)).toEqual(['overview', 'cashflow']);
     expect(visibleFinanceTabs(true).map((t) => t.id)).toEqual(['overview', 'cashflow', 'profit', 'treasury', 'capital']);

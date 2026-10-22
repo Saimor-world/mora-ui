@@ -181,6 +181,7 @@ export function OsShell({ preview }: { preview: boolean }) {
 
         <OsDock
           items={dockItems}
+          showLegacy={internal}
           activeId={active.id}
           moraOpen={moraOpen}
           onNavigate={(id) => { if (typeof window !== 'undefined' && window.innerWidth < 900) setMoraOpen(false); navigate(id); }}
@@ -199,7 +200,7 @@ export function OsShell({ preview }: { preview: boolean }) {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}
-                <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link>
+                {internal && <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link>}
               </Stack>
             </div>
           </div>
@@ -212,6 +213,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         features={visible}
+        showLegacy={internal}
         navigate={navigate}
         askMora={askMora}
         searchEnabled={online && !preview}

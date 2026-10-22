@@ -19,7 +19,7 @@ function renderDock(over: Partial<React.ComponentProps<typeof OsDock>> = {}) {
     onNavigate: jest.fn(), onSearch: jest.fn(), onNotifications: jest.fn(), onMora: jest.fn(),
     ...over,
   };
-  render(<OsDock {...props} />);
+  render(<OsDock {...props} showLegacy />);
   return props;
 }
 

@@ -23,6 +23,7 @@ export const PHONE_DOCK_IDS = ['today', 'post', 'knowledge', 'universe'] as cons
 export interface OsDockProps {
   items: FeatureManifest[];
   activeId: string;
+  showLegacy?: boolean;
   moraOpen: boolean;
   unread?: number;
   onNavigate: (id: string) => void;
@@ -41,7 +42,10 @@ export function phoneSlotFor(id: string, available: string[]): number | null {
   return [1, 2, 4, 5][index] ?? null;
 }
 
-export function OsDock({ items, activeId, moraOpen, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora }: OsDockProps) {
+/** Kurze Rail-Beschriftungen, damit nichts abgeschnitten wird. */
+export const RAIL_LABEL: Record<string, string> = { settings: 'Optionen' };
+
+export function OsDock({ items, activeId, moraOpen, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, showLegacy = false }: OsDockProps) {
   const ids = items.map((m) => m.id);
   return (
     <nav className="sb-nav" aria-label="Hauptnavigation" data-testid="os-dock">
@@ -75,7 +79,7 @@ export function OsDock({ items, activeId, moraOpen, unread, onNavigate, onSearch
                 onClick={() => onNavigate(m.id)}
               >
                 <Icon size={22} strokeWidth={1.6} aria-hidden />
-                <span className="sb-nav__label" aria-hidden>{m.title}</span>
+                <span className="sb-nav__label" aria-hidden>{RAIL_LABEL[m.id] ?? m.title}</span>
               </button>
             </span>
           );
@@ -90,7 +94,7 @@ export function OsDock({ items, activeId, moraOpen, unread, onNavigate, onSearch
             <Bell size={20} strokeWidth={1.6} aria-hidden />
             {unread ? <span className="sb-badge">{unread}</span> : null}
           </button>
-          <Link href="/" className="sb-nav__tool sb-press" aria-label="Klassische Oberfläche" title="Klassische Oberfläche" data-testid="legacy-shell-link"><LayoutGrid size={20} strokeWidth={1.6} aria-hidden /></Link>
+          {showLegacy && <Link href="/" className="sb-nav__tool sb-press" aria-label="Klassische Oberfläche" title="Klassische Oberfläche" data-testid="legacy-shell-link"><LayoutGrid size={20} strokeWidth={1.6} aria-hidden /></Link>}
         </div>
       </div>
     </nav>
