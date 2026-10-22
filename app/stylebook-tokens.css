@@ -1,0 +1,107 @@
+/*
+ * Stylebook 22.10.2026 — CSS side of lib/design/tokens.ts (`stylebook`).
+ * Matte, 8-px grid, four type steps. Values must match the TS tokens;
+ * __tests__/design/stylebookTokens.test.ts checks that.
+ * No glass blur, no glow, no nebula behind content.
+ */
+:root {
+  --sb-ground: #141614;
+  --sb-card: #1c1f1c;
+  --sb-surface-3: #232723;
+  --sb-line: #2b302b;
+  --sb-line-hover: #41473f;
+  --sb-text: #ebe7de;
+  --sb-grey: #a9a69c;
+  --sb-jade: #6f8f78;
+  --sb-sage: #9fb39a;
+  --sb-sand: #c9b89a;
+  --sb-clay: #b08a74;
+  --sb-stone: #8d9196;
+
+  --sb-space-1: 8px;
+  --sb-space-2: 16px;
+  --sb-space-3: 24px;
+  --sb-space-4: 32px;
+  --sb-space-6: 48px;
+  --sb-page-margin: 48px;
+
+  --sb-radius-card: 16px;
+  --sb-radius-focus: 24px;
+  --sb-radius-pill: 999px;
+  --sb-touch: 56px;
+
+  --sb-fast: 160ms;
+  --sb-panel: 350ms;
+  --sb-ease: cubic-bezier(.2,.8,.2,1);
+
+  --sb-display-size: 32px;
+  --sb-display-line: 40px;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --sb-page-margin: 24px;
+    --sb-display-size: 28px;
+    --sb-display-line: 36px;
+  }
+}
+
+/* ---- Type: four steps ---- */
+.sb-meta { font-size: 12px; line-height: 16px; letter-spacing: .06em; text-transform: uppercase; color: var(--sb-grey); }
+.sb-text { font-size: 15px; line-height: 24px; color: var(--sb-text); }
+.sb-title { font-size: 20px; line-height: 28px; font-weight: 500; color: var(--sb-text); }
+.sb-display { font-size: var(--sb-display-size); line-height: var(--sb-display-line); font-weight: 400; color: var(--sb-text); }
+.sb-mora-text { color: var(--sb-sage); }
+
+/* ---- Surfaces ---- */
+.sb-card {
+  background: var(--sb-card);
+  border: 1px solid var(--sb-line);
+  border-radius: var(--sb-radius-card);
+  padding: var(--sb-space-2);
+}
+.sb-card--focus { border-radius: var(--sb-radius-focus); padding: var(--sb-space-3); }
+
+.sb-pill {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--sb-space-1);
+  min-height: var(--sb-touch); padding: 0 var(--sb-space-3);
+  border-radius: var(--sb-radius-pill);
+  background: var(--sb-surface-3); border: 1px solid var(--sb-line);
+  color: var(--sb-text); font-size: 15px; line-height: 24px;
+}
+.sb-pill--primary { background: var(--sb-jade); border-color: var(--sb-jade); color: #0f1410; font-weight: 600; }
+
+.sb-badge {
+  position: absolute; top: -4px; right: -4px;
+  min-width: 22px; height: 22px; padding: 0 8px;
+  border-radius: 11px; background: var(--sb-ground); border: 1px solid var(--sb-line);
+  font-size: 12px; line-height: 20px; font-weight: 600; text-align: center; color: var(--sb-sand);
+}
+
+/* ---- States: hover lifts the border, press shrinks, focus gets a jade ring ---- */
+.sb-card, .sb-pill, .sb-press {
+  transition: transform var(--sb-fast) ease, border-color var(--sb-fast) ease,
+    background-color var(--sb-fast) ease, opacity var(--sb-fast) ease;
+}
+.sb-pill:hover, .sb-press:hover, button.sb-card:hover, a.sb-card:hover { border-color: var(--sb-line-hover); }
+.sb-pill--primary:hover { background: #7d9d86; border-color: #7d9d86; }
+.sb-pill:active, .sb-press:active, button.sb-card:active, a.sb-card:active { transform: scale(.97); }
+.sb-pill:focus-visible, .sb-press:focus-visible, .sb-card:focus-visible {
+  outline: 2px solid var(--sb-jade); outline-offset: 3px;
+}
+
+.sb-panel { transition: transform var(--sb-panel) var(--sb-ease), opacity var(--sb-panel) var(--sb-ease); }
+
+/* ---- MÔRA (components/mora/MoraStone.tsx) ---- */
+.sb-mora { display: inline-block; flex: none; transform-origin: 50% 50%; animation: sbMoraBreathe 6s ease-in-out infinite; }
+.sb-mora__eye { transform-box: fill-box; transform-origin: center; animation: sbMoraBlink 7s infinite; }
+.sb-mora[data-state="thinking"] .sb-mora__eyes { transform: translateY(-1.5px); }
+.sb-mora[data-selected="true"] { outline: 2px solid var(--sb-jade); outline-offset: 3px; border-radius: 50%; }
+@keyframes sbMoraBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.03); } }
+@keyframes sbMoraBlink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .sb-mora, .sb-mora__eye { animation: none !important; }
+  .sb-card, .sb-pill, .sb-press, .sb-panel { transition: none !important; }
+  .sb-pill:active, .sb-press:active, button.sb-card:active, a.sb-card:active { transform: none; }
+}

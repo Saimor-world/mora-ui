@@ -185,3 +185,63 @@ export const elevation = {
     /** Inset top highlight (glass edge). */
     glassEdge: 'inset 0 1px 0 rgba(255,255,255,0.06)',
 } as const;
+
+// ─── Stylebook 22.10.2026 ─────────────────────────────────────────────────────
+// The look Marius decided on 22.10.2026 (matte, 8-px grid, four type steps).
+// This is the one source for every surface built or changed from now on; the
+// exports above are legacy and get migrated surface by surface.
+// app/stylebook-tokens.css mirrors these values as CSS variables; a test keeps
+// both in sync.
+
+export const stylebook = {
+    /** Spacing: only these steps. */
+    space: [8, 16, 24, 32, 48] as const,
+    pageMargin: { desktop: 48, phone: 24 },
+    /** Four type steps, nothing else. Sizes and line heights in px. */
+    type: {
+        meta: { size: 12, line: 16, tracking: '.06em', uppercase: true },
+        text: { size: 15, line: 24 },
+        title: { size: 20, line: 28 },
+        display: { desktop: { size: 32, line: 40 }, phone: { size: 28, line: 36 } },
+    },
+    color: {
+        ground: '#141614',
+        card: '#1c1f1c',
+        surface3: '#232723',
+        line: '#2b302b',
+        lineHover: '#41473f',
+        text: '#ebe7de',
+        grey: '#a9a69c',
+        /** Action and selection. */
+        jade: '#6f8f78',
+        /** MÔRA's text. */
+        sage: '#9fb39a',
+        sand: '#c9b89a',
+        /** Gaps and warnings. */
+        clay: '#b08a74',
+        stone: '#8d9196',
+    },
+    radius: { card: 16, focus: 24, pill: 999 },
+    /** Minimum touch target. */
+    touch: 56,
+    motion: { fast: 160, panel: 350, easing: 'cubic-bezier(.2,.8,.2,1)', press: 0.97 },
+    focusRing: { width: 2, offset: 3, color: '#6f8f78' },
+    /** MÔRA: round jade stone, light top left, oval dark eyes. */
+    mora: {
+        light: '#9fbea6',
+        mid: '#5f8169',
+        deep: '#2f4536',
+        rim: '#86a58e',
+        eye: '#16201a',
+        minSize: 24,
+        maxSize: 96,
+        blinkSeconds: 7,
+        breatheSeconds: 6,
+        breatheScale: 1.03,
+    },
+} as const;
+
+/** CSS variable name for a stylebook color, e.g. stylebookVar('jade') → 'var(--sb-jade)'. */
+export function stylebookVar(color: keyof typeof stylebook.color): string {
+    return `var(--sb-${color.replace(/[A-Z0-9]/g, (c) => '-' + c.toLowerCase())})`;
+}
