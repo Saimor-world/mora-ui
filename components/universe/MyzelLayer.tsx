@@ -62,13 +62,17 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             const sx = pr.width ? plane.offsetWidth / pr.width : 1; // Ebene kann skaliert sein
             const extraBottom = sr ? Math.max(0, (sr.bottom - pr.bottom) * sx + 24) : 0;
             ox = 0; oy = 0; W = plane.offsetWidth; H = plane.offsetHeight + extraBottom;
+            // A 0-px plane (first phone layout pass, hidden tab) gives a 0-px canvas, and
+            // drawImage on it throws "width or height of 0". Wait for the ResizeObserver.
+            if (!W || !H || !plane.offsetWidth || !plane.offsetHeight) return;
             dpr = Math.min(2, window.devicePixelRatio || 1);
             host.style.height = H + 'px'; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
             const P = (p: { x: number; y: number }): Pt => [p.x / 100 * plane.offsetWidth, p.y / 100 * plane.offsetHeight];
             const sun: Pt = [0.5 * plane.offsetWidth, 0.5 * plane.offsetHeight];
             const stone: Pt | null = sr ? [(sr.left + sr.width / 2 - pr.left) * sx, (sr.top + sr.height / 2 - pr.top) * sx] : null;
             net = document.createElement('canvas'); net.width = cv.width; net.height = cv.height;
-            const c = net.getContext('2d')!; c.scale(dpr, dpr); c.lineCap = 'round';
+            const c = net.getContext('2d'); if (!c) return;
+            c.scale(dpr, dpr); c.lineCap = 'round';
             const R = rng(42);
             const dim = targetId ? 0.45 : 1; dimNow = dim;
             c.shadowColor = `rgba(${J},0.24)`; c.shadowBlur = 2;
@@ -134,6 +138,7 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
             }
             const lines = cv.getContext('2d'); if (!lines) return;
             lines.setTransform(1, 0, 0, 1, 0, 0); lines.clearRect(0, 0, cv.width, cv.height);
+            if (!net.width || !net.height) return;
             lines.drawImage(net, 0, 0);
             // The dust shares the static network image. Only six tiny glints breathe:
             // animating three mostly empty room-sized textures still costs full-area blending.
@@ -148,9 +153,14 @@ export function MyzelLayer({ planets, focusId = null }: { planets: Array<{ id: s
         build();
         let rt = 0;
         const onResize = () => { window.clearTimeout(rt); rt = window.setTimeout(build, 200); };
-        window.addEventListener('resize', onResize);
+        // The plane can change size without a window resize (phone rotation, dock, panels).
+        const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(onResize) : null;
+        if (ro) ro.observe(plane); else window.addEventListener('resize', onResize);
         const t2 = focusId ? 0 : window.setTimeout(build, 900); // nach dem Einschweben neu messen
-        return () => { window.removeEventListener('resize', onResize); window.clearTimeout(rt); window.clearTimeout(t2); };
+        return () => {
+            if (ro) ro.disconnect(); else window.removeEventListener('resize', onResize);
+            window.clearTimeout(rt); window.clearTimeout(t2);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [key, targetId, focusId]);
 
