@@ -10,7 +10,7 @@
  * - unknown tools map to a neutral "other" — we never invent an action
  */
 
-export type ToolTraceKind = 'searched' | 'read' | 'compared' | 'planned' | 'acted' | 'failed' | 'other';
+export type ToolTraceKind = 'searched' | 'read' | 'compared' | 'planned' | 'consulted' | 'acted' | 'failed' | 'other';
 
 export interface ToolTraceStep {
     kind: ToolTraceKind;
@@ -31,6 +31,7 @@ const LABELS: Record<ToolTraceKind, string> = {
     read: 'Gelesen',
     compared: 'Verglichen',
     planned: 'Geplant',
+    consulted: 'Rat gefragt',
     acted: 'Gehandelt',
     failed: 'Nicht abgeschlossen',
     other: 'Werkzeug genutzt',
@@ -39,6 +40,7 @@ const LABELS: Record<ToolTraceKind, string> = {
 /** Map a concrete tool name to a coarse, user-safe category. */
 function kindForTool(tool: string): ToolTraceKind {
     const t = (tool || '').toLowerCase();
+    if (t === 'convene_council') return 'consulted';
     if (t.includes('search')) return 'searched';
     if (t.startsWith('read') || t === 'get_node' || t.includes('read_')) return 'read';
     if (t.includes('relation') || t.includes('compare') || t.includes('resonance')) return 'compared';

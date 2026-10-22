@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Search, BookOpen, GitCompare, ListChecks, Sparkles, AlertTriangle, Wrench, ChevronRight, ChevronDown, type LucideIcon } from 'lucide-react';
+import { Search, BookOpen, GitCompare, ListChecks, Sparkles, AlertTriangle, Wrench, Users, ChevronRight, ChevronDown, type LucideIcon } from 'lucide-react';
 import type { ToolTraceKind, ToolTraceStep } from '@/lib/chat/toolTrace';
 import { TONES } from '@/lib/ui/status';
 
@@ -10,6 +10,7 @@ const ICONS: Record<ToolTraceKind, LucideIcon> = {
     read: BookOpen,
     compared: GitCompare,
     planned: ListChecks,
+    consulted: Users,
     acted: Sparkles,
     failed: AlertTriangle,
     other: Wrench,
