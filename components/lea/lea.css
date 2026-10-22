@@ -1,0 +1,131 @@
+/* Lea-Look (stylebook 22.10.2026): 4 Schriftgrößen 12/15/20/32, Abstände 8/16/24/32/48, Radius 16/24. */
+.lea-eyebrow { font-size: 12px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--sb-grey); margin: 0 0 8px; }
+.lea-title { font-size: 20px; line-height: 28px; font-weight: 500; color: var(--sb-text); margin: 0; letter-spacing: -0.01em; }
+.lea-title--xl { font-size: 32px; line-height: 40px; }
+.lea-lead { font-size: 15px; line-height: 24px; color: var(--sb-grey); margin: 8px 0 0; max-width: 56ch; }
+.lea-meta { font-size: 12px; line-height: 16px; color: var(--sb-grey); margin: 0; }
+.lea-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.lea-card { background: color-mix(in srgb, var(--sb-card) 92%, transparent); border: 1px solid var(--sb-line); border-radius: var(--sb-radius-card); padding: 16px; }
+.lea-btn { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 16px; border-radius: var(--sb-radius-pill); font-size: 15px; line-height: 20px; color: var(--sb-text); border: 1px solid var(--sb-line); background: var(--sb-surface-3); cursor: pointer; transition: border-color var(--sb-fast) var(--sb-ease), background var(--sb-fast) var(--sb-ease); white-space: nowrap; }
+.lea-btn:hover { border-color: var(--sb-line-hover); }
+.lea-btn:focus-visible, .lea-planet:focus-visible, .lea-mini-uni:focus-visible { outline: 2px solid var(--sb-jade); outline-offset: 3px; }
+.lea-btn--jade { background: var(--sb-jade); border-color: var(--sb-jade); color: #10140f; font-weight: 500; }
+.lea-btn--jade:hover { background: #7d9d86; }
+.lea-btn--quiet { background: transparent; }
+
+/* ---------- Home ---------- */
+.lea-home { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
+.lea-home__main { display: flex; flex-direction: column; gap: 32px; min-width: 0; }
+.lea-home__side { display: flex; flex-direction: column; gap: 16px; }
+.lea-home__pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.lea-day { position: relative; padding: 16px 16px 32px; border: 1px solid var(--sb-line); border-radius: var(--sb-radius-card); background: color-mix(in srgb, var(--sb-card) 80%, transparent); }
+.lea-day__track { position: relative; height: 56px; }
+.lea-slot { position: absolute; top: 0; min-width: 88px; height: 56px; padding: 8px 12px; border-radius: 12px; background: #2a2620; border: 1px solid #3a342b; display: flex; flex-direction: column; justify-content: center; overflow: hidden; min-width: 0; }
+.lea-slot[data-past] { background: transparent; border-color: var(--sb-line); opacity: .62; }
+.lea-slot[data-next] { background: #22332a; border-color: var(--sb-jade); }
+.lea-slot__t { font-size: 15px; line-height: 20px; color: var(--sb-text); }
+.lea-slot__n { font-size: 12px; line-height: 16px; color: var(--sb-grey); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lea-day__scale { position: absolute; left: 16px; right: 16px; bottom: 8px; height: 16px; }
+.lea-day__scale span { position: absolute; transform: translateX(-50%); font-size: 12px; line-height: 16px; color: var(--sb-grey); opacity: .7; }
+.lea-next { padding: 24px; }
+.lea-next__time { font-size: 32px; line-height: 40px; color: var(--sb-text); margin: 0; }
+.lea-next__who { font-size: 20px; line-height: 28px; color: var(--sb-text); margin: 0 0 8px; }
+.lea-todo { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lea-todo__row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.lea-todo__t { display: block; font-size: 15px; line-height: 20px; color: var(--sb-text); }
+.lea-todo__m { display: block; font-size: 12px; line-height: 16px; color: var(--sb-grey); margin-top: 2px; }
+.lea-mini-uni { display: flex; flex-direction: column; gap: 8px; text-align: left; cursor: pointer; width: 100%; }
+.lea-mini-uni:hover { border-color: var(--sb-line-hover); }
+.lea-mini-uni__head { display: flex; justify-content: space-between; align-items: baseline; }
+.lea-mini-uni__head .lea-eyebrow { margin: 0; }
+.lea-mini-uni__field { position: relative; height: 150px; }
+.lea-mini-uni__orbit { position: absolute; left: 50%; top: 50%; border: 1px solid #3a3f39; border-radius: 50%; transform: translate(-50%, -50%); }
+.lea-mini-uni__orbit--a { width: 60%; height: 52%; }
+.lea-mini-uni__orbit--b { width: 86%; height: 80%; }
+.lea-mini-uni__mora { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.lea-mini-uni__p { position: absolute; width: 24px; height: 24px; border-radius: 50%; transform: translate(-50%, -50%); }
+.lea-week { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.lea-week li { display: grid; grid-template-columns: 24px 1fr 16px; gap: 8px; align-items: center; font-size: 12px; color: var(--sb-grey); }
+.lea-week__bar { height: 6px; background: var(--sb-surface-3); border-radius: 999px; overflow: hidden; }
+.lea-week__bar span { display: block; height: 100%; background: var(--sb-sand); border-radius: 999px; }
+.lea-week li[data-today] .lea-week__bar span { background: var(--sb-jade); }
+.lea-week li[data-today] { color: var(--sb-text); }
+.lea-week__n { text-align: right; color: var(--sb-text); }
+.lea-mora-note { display: flex; gap: 16px; align-items: center; }
+.lea-mora-note p { margin: 0; font-size: 15px; line-height: 20px; color: var(--sb-text); }
+@media (max-width: 1100px) { .lea-home { grid-template-columns: 1fr; } .lea-home__side { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); } }
+@media (max-width: 767px) {
+  .lea-home { gap: 24px; }
+  .lea-home__main { gap: 24px; }
+  .lea-home__pair { grid-template-columns: 1fr; }
+  .lea-home__side { display: flex; }
+  .lea-title--xl { font-size: 32px; line-height: 40px; }
+  .lea-day { overflow-x: auto; }
+  .lea-day__track, .lea-day__scale { min-width: 560px; }
+  .lea-day__scale { right: auto; width: 560px; }
+}
+
+/* ---------- Universe ---------- */
+.lea-universe { position: relative; z-index: 5; display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--sb-text); }
+.lea-universe__head { position: absolute; z-index: 60; left: 0; top: 0; max-width: 360px; pointer-events: none; }
+.lea-universe__head .lea-btn { pointer-events: auto; margin-top: 16px; }
+.lea-universe__field { position: relative; flex: 1; min-height: 520px; }
+.lea-universe__orbits { position: absolute; inset: 0; pointer-events: none; }
+.lea-universe__orbits ellipse { fill: none; stroke: rgba(235, 231, 222, .14); stroke-width: 1; }
+.lea-universe__mora { position: absolute; transform: translate(-50%, -50%); z-index: 30; }
+.lea-planet { position: absolute; transform: translate(-50%, -50%); background: none; border: 0; padding: 0; cursor: pointer; border-radius: 50%; }
+.lea-planet__body { display: block; border-radius: 50%; box-shadow: inset -10px -14px 28px rgba(0, 0, 0, .28); transition: transform var(--sb-panel) var(--sb-ease); }
+.lea-planet:hover .lea-planet__body { transform: scale(1.04); }
+.lea-planet__label { position: absolute; left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; white-space: nowrap; pointer-events: none; }
+.lea-planet__name { font-size: 15px; line-height: 20px; color: var(--sb-text); text-shadow: 0 1px 8px rgba(0, 0, 0, .7); }
+.lea-planet__meta { font-size: 12px; line-height: 16px; color: var(--sb-grey); text-shadow: 0 1px 8px rgba(0, 0, 0, .7); }
+@media (max-width: 767px) {
+  .lea-universe__head { position: relative; max-width: none; }
+  .lea-universe__head .lea-btn { display: none; }
+  .lea-universe__field { min-height: 480px; }
+  .lea-planet__name { font-size: 12px; line-height: 16px; }
+}
+
+/* ---------- Planet innen (P3) ---------- */
+.lea-inside { position: relative; z-index: 5; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 48px; align-content: start; min-height: 100%; padding-bottom: 260px; color: var(--sb-text); overflow: hidden; }
+.lea-inside__main { max-width: 520px; display: flex; flex-direction: column; gap: 24px; }
+.lea-inside__main > .lea-eyebrow { margin-bottom: -16px; }
+.lea-inside__main .lea-lead { margin-top: -16px; }
+.lea-crumbs { display: flex; align-items: center; gap: 8px; font-size: 15px; color: var(--sb-text); }
+.lea-crumbs__link { color: var(--sb-grey); background: none; border: 0; cursor: pointer; padding: 0; font-size: 15px; }
+.lea-crumbs__link:hover { color: var(--sb-text); }
+.lea-crumbs__close { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; font-size: 12px; color: var(--sb-grey); border: 1px solid var(--sb-line); border-radius: 8px; padding: 2px 8px; background: none; cursor: pointer; }
+.lea-list { list-style: none; margin: 0; padding: 0; }
+.lea-list__row { display: grid; grid-template-columns: 32px 1fr auto; gap: 8px; align-items: baseline; padding: 12px 0; border-bottom: 1px solid var(--sb-line); font-size: 15px; }
+.lea-list__n { font-size: 12px; color: var(--sb-grey); }
+.lea-list__when { font-size: 12px; color: var(--sb-grey); }
+.lea-inside__live { align-self: start; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.lea-inside__live .lea-eyebrow { margin: 0; }
+.lea-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 8px; }
+.lea-stat { background: var(--sb-surface-3); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.lea-stat__v { font-size: 20px; line-height: 28px; }
+.lea-stat__l { font-size: 12px; line-height: 16px; color: var(--sb-grey); }
+.lea-mini { list-style: none; margin: 0; padding: 0; }
+.lea-mini li { display: flex; flex-direction: column; padding: 12px 0; border-top: 1px solid var(--sb-line); }
+.lea-mini__t { font-size: 15px; line-height: 20px; }
+.lea-mini__m { font-size: 12px; line-height: 16px; color: var(--sb-grey); }
+.lea-inside__moons { position: absolute; left: 0; right: 0; bottom: 120px; display: flex; justify-content: center; gap: 48px; z-index: 2; flex-wrap: wrap; }
+.lea-moon { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.lea-moon__body { width: 64px; height: 64px; border-radius: 50%; box-shadow: inset -6px -8px 16px rgba(0, 0, 0, .3); }
+.lea-moon__label { font-size: 12px; line-height: 16px; color: var(--sb-text); max-width: 120px; text-align: center; }
+.lea-moon__meta { font-size: 12px; line-height: 16px; color: var(--sb-grey); margin-top: -6px; }
+.lea-inside__horizon { position: absolute; left: -10%; right: -10%; bottom: -380px; height: 480px; border-radius: 50%; border-top: 1px solid rgba(235, 231, 222, .18); z-index: 1; pointer-events: none; }
+@media (max-width: 1023px) {
+  .lea-inside { grid-template-columns: 1fr; gap: 24px; padding-bottom: 220px; }
+  .lea-inside__moons { gap: 24px; bottom: 96px; }
+  .lea-moon__body { width: 48px; height: 48px; }
+}
+
+/* Abstand zur Shell im Universe (dort hat der Inhalt kein Padding) */
+.lea-universe, .lea-inside { padding-left: 48px; padding-right: 48px; padding-top: 24px; }
+.lea-universe__head { left: 48px; top: 24px; }
+.lea-universe { padding-bottom: 24px; }
+@media (max-width: 899px) {
+  .lea-universe, .lea-inside { padding-left: 16px; padding-right: 16px; padding-top: 16px; }
+  .lea-universe__head { left: auto; top: auto; }
+}

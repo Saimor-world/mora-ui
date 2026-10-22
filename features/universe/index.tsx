@@ -10,6 +10,8 @@ import type { FeatureSurfaceProps } from '../types';
 import { useLandscape } from './data/useLandscape';
 import { UniverseLandscape } from './ui/UniverseLandscape';
 import { DemoOrganizationUniverse } from './ui/DemoOrganizationUniverse';
+import { LeaUniverse } from '@/components/lea/LeaUniverse';
+import { useWorld } from '@/lib/lea/useWorld';
 
 type Lens = 'landscape' | 'organization';
 
@@ -30,6 +32,17 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
   const companyId = useNavStore((s) => s.activeCompanyId);
   const [wizard, setWizard] = React.useState(false);
   const openArea = (target: string) => (target === 'universe:organization' ? setLens('organization') : navigate(target));
+
+  const world = useWorld();
+  const companyName = useSessionStore((st) => st.user?.active_company_name ?? null);
+  if (world.enabled) {
+    return (
+      <div className="os-universe os-universe--lea" data-testid="feature-universe" data-lens="organization">
+        {wizard && companyId ? <DepartmentWizard isOpen onClose={() => setWizard(false)} companyId={companyId} /> : null}
+        <LeaUniverse planets={world.planets} companyName={companyName} onAddDepartment={() => setWizard(true)} />
+      </div>
+    );
+  }
 
   return (
     <div className="os-universe" data-testid="feature-universe" data-lens={lens}>
