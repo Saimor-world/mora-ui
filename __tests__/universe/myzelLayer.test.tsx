@@ -25,7 +25,7 @@ describe('MyzelLayer', () => {
     jest.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(400);
     jest.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300);
     const ctx = fakeContext();
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(ctx as unknown as CanvasRenderingContext2D);
+    (jest.spyOn(HTMLCanvasElement.prototype, 'getContext') as jest.SpyInstance).mockReturnValue(ctx);
 
     render(<div><MyzelLayer planets={planets} /></div>);
 
@@ -38,7 +38,7 @@ describe('MyzelLayer', () => {
   it('survives a browser without a 2d context', () => {
     jest.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(400);
     jest.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(300);
-    jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+    (jest.spyOn(HTMLCanvasElement.prototype, 'getContext') as jest.SpyInstance).mockReturnValue(null);
 
     expect(() => render(<div><MyzelLayer planets={planets} /></div>)).not.toThrow();
   });

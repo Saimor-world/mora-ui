@@ -8,6 +8,8 @@
  * Keine Türkis-Welt, keine Randkacheln, keine Null-Zähler. Leeres ist ehrlicher Nebel.
  */
 import { planetMaterial, moonBackground } from './PlanetSphere';
+import { moonSize } from '@/lib/universe/stylebookPlanets';
+import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { UV, TYPE } from '@/lib/universe/tokens';
 import { WIDGET_REGISTRY } from '@/components/widgets/registry';
 import type { WidgetContext } from '@/lib/widgets/types';
@@ -101,6 +103,15 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
     walk(root);
     return out.sort((a, b) => String(b.updated_at || '').localeCompare(String(a.updated_at || '')));
   }, [tree, activeDepartmentId]);
+  // Documents per space: a moon's size follows what it holds (stylebook moonSize).
+  const docsPerSpace = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const count = (n: any): number => (n?.type === 'node' ? 1 : 0) + (n?.children || []).reduce((sum: number, c: any) => sum + count(c), 0);
+    const visit = (n: any) => { if (!n) return; if (n.type === 'space') counts[n.id] = count(n); (n.children || []).forEach(visit); };
+    (Array.isArray(tree) ? tree : []).forEach(visit);
+    return counts;
+  }, [tree]);
+  const phone = useIsPhone();
   const name = dept?.name || 'Planet';
   const glow = getDeptStyle(name, dept?.color).glow;
   const mat = planetMaterial(name);
@@ -129,13 +140,14 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       {/* Bereiche als Monde über dem Horizont */}
       {slots.map((s, i) => {
         const sp: any = spaces[i];
+        const moonPx = moonSize(docsPerSpace[sp.id] ?? 0, phone ? 'phone' : 'desktop');
         return (
           <motion.button key={sp.id} type="button" onClick={() => navigateToSpace(sp.id)} data-testid="uv2-moon"
             className="group absolute flex -translate-x-1/2 flex-col items-center"
             style={{ left: `${s.x * 100}%`, top: `calc(74vh - ${70 + s.lift * 70}px)` }}
             {...(reduced ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.6, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 + i * 0.12 } })}>
             <span className="block rounded-full transition-transform duration-300 group-hover:scale-110"
-              style={{ width: s.size, height: s.size, background: moonBackground(name, 0.7), boxShadow: 'none' }} />
+              style={{ width: moonPx, height: moonPx, background: moonBackground(name, 0.7), boxShadow: 'none' }} />
             <span className="mt-3 max-w-[140px] truncate group-hover:text-white" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.6), textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
           </motion.button>
         );

@@ -2,6 +2,7 @@
 
 import { attentionScores, attentionDiameter, attentionLevel } from '@/lib/universe/autonomy';
 import { PlanetSphere, AmbientMoons, moonBackground } from './PlanetSphere';
+import { depthZ, universePlanetSize } from '@/lib/universe/stylebookPlanets';
 import { glyphFor } from '@/lib/universe/planetModel';
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { ArrowUpRight, BookOpen, Building2, CalendarDays, FileText, Hammer, Lock, Mail, Radio, Rss, ShieldCheck, Sparkles, Wallet, X } from 'lucide-react';
@@ -387,7 +388,8 @@ export function OrganizationField({
                 onPointerLeave={() => setHoverId(null)}
                 onDragOver={handleFieldDragOver}
                 onDrop={handleFieldDrop}
-                className={frame?.field ?? "absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]"}
+                // isolate: the planets' depth order (z 10–110) stays inside the field, under panels and legend.
+                className={(frame?.field ?? "absolute bottom-24 left-[168px] right-[168px] top-[210px] hidden lg:block xl:left-[285px] xl:right-[285px]") + ' isolate'}
                 data-testid="organization-field-box"
             >
                 {territories.some((t) => t.model) && (
@@ -562,7 +564,9 @@ function Territory({
     const model = territory.model;
     const quiet = model && (model.state === 'sleeping' || model.state === 'seed');
     const today = !!model?.chips?.some((c: any) => c.tone && c.tone !== 'calm');
-    const size = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.24 : 1.08) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    const rawSize = Math.round((model ? model.diameter * (quiet ? 0.6 : today ? 1.24 : 1.08) : v2 ? attentionDiameter(attention, anySignal) : territoryDiameter(territory)) * fieldScale);
+    // Stylebook 22.10.: planets from the CORE planet model are 58–72 px in the universe.
+    const size = model ? universePlanetSize(rawSize) : rawSize;
     const attnLevel = attentionLevel(attention, anySignal);
     // Monde = echte Bereiche, Sterne = echte Dokumente. Beides kommt aus
     // dem, was CORE wirklich liefert - nichts davon ist Zierde.
@@ -584,6 +588,8 @@ function Territory({
         top: territory.y + '%',
         '--territory-accent': accent,
         '--territory-size': size + 'px',
+        // Depth order: planets further down (closer) sit above those behind; the chosen one on top.
+        zIndex: selected ? 200 : depthZ(territory.y),
         '--territory-drift': (16 + (drift % 9)) + 's',
         '--territory-phase': '-' + ((drift >>> 4) % 13) + 's',
         // Licht kommt von der Mitte (MÔRAs Licht): Terminator und Randlicht drehen sich zu ihr.
@@ -601,7 +607,7 @@ function Territory({
             data-planet-glow={model?.glow ? model.glow.level : undefined}
             data-uv2-attn={v2 ? attnLevel : undefined}
             data-uv2-nosource={v2 && territory.metricSource === 'missing' ? '' : undefined}
-            className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none ' +
+            className={'group absolute z-10 text-center transition-all duration-700 focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#6f8f78] ' +
                 (selected ? 'z-30' : 'hover:z-20')}
             style={{
                 ...style,
