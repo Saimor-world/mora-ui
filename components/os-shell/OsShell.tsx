@@ -72,10 +72,19 @@ export function OsShell({ preview }: { preview: boolean }) {
 
   useEffect(() => {
     setActiveFeature(resolveFeatureId(readHash(), ctx));
-    const onHash = () => setActiveFeature(resolveFeatureId(readHash(), ctx));
+    const onHash = () => { setActiveFeature(resolveFeatureId(readHash(), ctx)); setMoreOpen(false); };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, [ctx, setActiveFeature]);
+
+  // "Mehr" is a phone sheet; on the computer every place is in the rail.
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const computer = window.matchMedia('(min-width: 768px)');
+    const onChange = () => { if (computer.matches) setMoreOpen(false); };
+    computer.addEventListener?.('change', onChange);
+    return () => computer.removeEventListener?.('change', onChange);
+  }, []);
 
   const dockItems = useMemo(() => [...nav.primary, ...nav.secondary].filter((m) => m.id !== 'mora'), [nav]);
   // Phone: what does not fit into the five dock slots is reached through "Mehr".
@@ -151,7 +160,7 @@ export function OsShell({ preview }: { preview: boolean }) {
               <Button variant="ghost" size="sm" className="sb-phone-only" icon={<MoreHorizontal size={16} />} aria-expanded={moreOpen} aria-haspopup="dialog" onClick={() => setMoreOpen((v) => !v)} data-testid="os-more">
                 Mehr
               </Button>
-              <Button size="sm" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
+              <Button size="sm" className="sb-desktop-only" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>

@@ -40,6 +40,17 @@ describe('OsShell navigation', () => {
     expect(within(nav).queryByRole('button', { name: 'Labs & System' })).toBeNull();
   });
 
+  it('phone "Mehr" lists only the places outside the dock and closes on navigation', async () => {
+    renderShell();
+    fireEvent.click(screen.getByTestId('os-more'));
+    const sheet = screen.getByTestId('os-more-sheet');
+    expect(within(sheet).getByText('Finance')).toBeInTheDocument();
+    for (const docked of ['Heute', 'Post', 'Universe']) expect(within(sheet).queryByText(docked)).toBeNull();
+    expect(screen.queryByText(/am besten auf Desktop/)).toBeNull();
+    act(() => { window.location.hash = '#finance'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
+    await waitFor(() => expect(screen.queryByTestId('os-more-sheet')).toBeNull());
+  });
+
   it('renders the six primary surfaces and Labs from manifests', async () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });

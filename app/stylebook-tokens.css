@@ -150,5 +150,7 @@
 }
 .sb-phone-only.sb-phone-only { display: none; }
 @media (max-width: 767px) { .sb-phone-only.sb-phone-only { display: inline-flex; } }
+/* On the phone MÔRA lives in the dock; the top bar keeps only search, messages and "Mehr". */
+@media (max-width: 767px) { .sb-desktop-only.sb-desktop-only, .os-shell__topbar .os-context { display: none; } }
 /* Onboarding tour step 3 points at the navigation. */
 .sb-nav[data-tour-spot] .sb-nav__inner { outline: 2px solid var(--sb-jade); outline-offset: -3px; }
