@@ -340,10 +340,6 @@
   .os-legacy-universe [data-testid^='territory-'] { padding: 8px; }
 }
 /* Unter 768 px: ruhiger Hinweis statt eigener Handy-Layouts. */
-.os-small-notice { display: none; }
-@media (max-width: 767px) {
-  .os-small-notice { display: block; position: relative; z-index: 90; padding: var(--os-space-2) var(--os-space-4); font-size: var(--os-type-meta-size); color: var(--os-text-muted); background: var(--os-glass-strong); border-bottom: 1px solid var(--os-hairline); text-align: center; }
-}
 
 /* V1.4 – aus dem Legacy-OS übernommen: Kontext-Kapsel + Uhr-Pille */
 .os-context { display: flex; align-items: center; gap: var(--os-space-2); min-width: 0; overflow: hidden; flex: 0 1 auto; }

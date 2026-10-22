@@ -1,23 +1,29 @@
 'use client';
 import Link from 'next/link';
 import React from 'react';
-import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
-import { CapsuleDockIcon } from '@/components/mora/Dock';
+import { Bell, LayoutGrid, Search, Sparkles } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
 
 /**
- * V1.3 – Marius' Dock als Hauptnavigation. Kapsel, Icons, Tooltips und
- * Aktiv-Zustand kommen direkt aus dem Legacy-Dock (components/mora/Dock.tsx,
- * exportiertes CapsuleDockIcon). Aufbau wie dort: links Werkzeuge, Trenner,
- * Mitte die Orte, rechts der MÔRA-Stein.
+ * Main navigation, stylebook 22.10.2026 (Bauauftrag part 6).
+ *
+ * Computer (>= 768 px): a 96-px rail on the left, the same on every screen:
+ * MÔRA on top, the places below, tools at the bottom.
+ * Phone: a dock with exactly five slots: Heute, two places, MÔRA raised in the
+ * middle, Universe. Everything else lives behind "Mehr" in the top bar.
+ * The phone is a full device; there is no "better on desktop" hint any more.
+ *
+ * Slots 2 and 4 are fixed places for now (Post & Termine, Wissen). In the decided
+ * design they are the company's own departments (e.g. Termine, Kundinnen); that
+ * becomes data-driven with the home screens (part 4).
  */
+export const PHONE_DOCK_IDS = ['today', 'post', 'knowledge', 'universe'] as const;
+
 export interface OsDockProps {
   items: FeatureManifest[];
-  mobileItems: FeatureManifest[];
   activeId: string;
   moraOpen: boolean;
-  moreActive: boolean;
   unread?: number;
   onNavigate: (id: string) => void;
   onSearch: () => void;
@@ -25,41 +31,66 @@ export interface OsDockProps {
   controlOpen?: boolean;
   onNotifications: () => void;
   onMora: () => void;
-  onMore: () => void;
 }
 
-export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore }: OsDockProps) {
-  const onMobile = new Set(mobileItems.map((m) => m.id));
-  const icon = (m: FeatureManifest, i: number) => (
-    <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
-      <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} shortcut={i < 9 ? String(i + 1) : null} active={m.id === activeId} isStandardMode={false} onClick={() => onNavigate(m.id)}>
-        {m.id === activeId ? <span className="os-dock__dot" aria-hidden /> : null}
-      </CapsuleDockIcon>
-    </span>
-  );
+/** Which phone slot a place takes (1, 2, 4, 5), or none: then it is reached through "Mehr". */
+export function phoneSlotFor(id: string, available: string[]): number | null {
+  const ordered = PHONE_DOCK_IDS.filter((dockId) => available.includes(dockId));
+  const index = ordered.indexOf(id as (typeof PHONE_DOCK_IDS)[number]);
+  if (index < 0) return null;
+  return [1, 2, 4, 5][index] ?? null;
+}
+
+export function OsDock({ items, activeId, moraOpen, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora }: OsDockProps) {
+  const ids = items.map((m) => m.id);
   return (
-    <nav className="os-dock" aria-label="Hauptnavigation" data-testid="os-dock">
-      <div className="os-dock__capsule" data-testid="dock">
-        <span className="os-dock__grid" aria-hidden />
-        <span className="os-dock__line" aria-hidden />
-        <div className="os-dock__group os-dock__group--tools">
-          <CapsuleDockIcon icon={Search} label="Suche" description="Orte, Befehle, MÔRA" shortcut="⌘K" isStandardMode={false} onClick={onSearch} />
-          {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
-          <CapsuleDockIcon icon={Bell} label="Mitteilungen" description="Was hereingekommen ist" isStandardMode={false} badge={unread} onClick={onNotifications} />
-        </div>
-        <span className="os-dock__divider" aria-hidden />
-        <div className="os-dock__group os-dock__group--apps">
-          {items.map((m, i) => icon(m, i))}
-          <span className="os-dock__item os-dock__item--mobile">
-            <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
-          </span>
-        </div>
-        <span className="os-dock__divider" aria-hidden />
-        <div className="os-dock__group os-dock__group--right">
-          <Link href="/" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link>
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
-            <MoraStone size={34} halo={moraOpen} />
+    <nav className="sb-nav" aria-label="Hauptnavigation" data-testid="os-dock">
+      <div className="sb-nav__inner" data-testid="dock">
+        <button
+          type="button"
+          className="sb-nav__btn sb-nav__mora sb-press"
+          aria-pressed={moraOpen}
+          aria-label="MÔRA"
+          title="MÔRA · M"
+          onClick={onMora}
+          onDoubleClick={() => onNavigate('mora')}
+          data-testid="dock-mora"
+        >
+          <MoraStone size={40} halo={moraOpen} className="sb-nav__stone" />
+          <span className="sb-nav__label" aria-hidden>MÔRA</span>
+        </button>
+
+        {items.map((m, i) => {
+          const Icon = m.icon;
+          const active = m.id === activeId;
+          const slot = phoneSlotFor(m.id, ids);
+          return (
+            <span key={m.id} className="sb-nav__slot" data-feature={m.id} data-active={active ? 'true' : undefined} data-phone-slot={slot ?? undefined}>
+              <button
+                type="button"
+                className="sb-nav__btn sb-press"
+                aria-label={m.title}
+                aria-current={active ? 'page' : undefined}
+                title={i < 9 ? `${m.title} · ${i + 1}` : m.title}
+                onClick={() => onNavigate(m.id)}
+              >
+                <Icon size={22} strokeWidth={1.6} aria-hidden />
+                <span className="sb-nav__label" aria-hidden>{m.title}</span>
+              </button>
+            </span>
+          );
+        })}
+
+        <div className="sb-nav__tools">
+          <button type="button" className="sb-nav__tool sb-press" aria-label="Suche" title="Suche · ⌘K" onClick={onSearch}><Search size={20} strokeWidth={1.6} aria-hidden /></button>
+          {onControl ? (
+            <button type="button" className="sb-nav__tool sb-press" aria-label="Control Center" aria-pressed={controlOpen} title="Control Center · C" onClick={onControl}><Sparkles size={20} strokeWidth={1.6} aria-hidden /></button>
+          ) : null}
+          <button type="button" className="sb-nav__tool sb-press" aria-label="Mitteilungen" title="Mitteilungen" onClick={onNotifications}>
+            <Bell size={20} strokeWidth={1.6} aria-hidden />
+            {unread ? <span className="sb-badge">{unread}</span> : null}
           </button>
+          <Link href="/" className="sb-nav__tool sb-press" aria-label="Klassische Oberfläche" title="Klassische Oberfläche" data-testid="legacy-shell-link"><LayoutGrid size={20} strokeWidth={1.6} aria-hidden /></Link>
         </div>
       </div>
     </nav>
