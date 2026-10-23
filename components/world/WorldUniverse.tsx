@@ -14,7 +14,10 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, counts, sources = null, onOpenSource }: {
+/** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
+const ASK_RESERVE_PHONE = 84;
+
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource }: {
   /** Doppelklick: direkt hineinzoomen. */
   onZoomPlanet?: (id: string) => void;
   /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
@@ -25,6 +28,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   moraState?: 'idle' | 'thinking' | 'speaking';
   /** Kamerafahrt: das Universe zoomt auf diesen Planeten, bevor er sich öffnet. */
   zoomTo?: string | null;
+  /** Platz rechts für das Fokus-Panel: das Universe rückt nach links und wird etwas kleiner. */
+  shift?: number;
   /** Quellen-Ring (Systemplaneten aus /v3/universe): verbunden oder noch leer. */
   sources?: HorizonSource[] | null;
   onOpenSource?: (key: string) => void;
@@ -62,7 +67,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   }, []);
 
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: size.height, weights: planets.map((p) => p.weight), phone }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : 0)), weights: planets.map((p) => p.weight), phone }) : null),
     [size.width, size.height, planets, phone],
   );
 
@@ -116,6 +121,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
     ? { transformOrigin: `${zoomPt.x}px ${zoomPt.y}px`, transform: 'scale(2.6)', opacity: 0, filter: 'blur(2px)' }
+    : shift ? { transform: `translateX(${-shift}px) scale(${(0.84 * zoom).toFixed(3)})` }
     : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
 
   return (

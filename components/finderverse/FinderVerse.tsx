@@ -83,7 +83,9 @@ export function FinderVerse(p: FinderVerseProps) {
     ...stars.map((s) => ({ type: 'star' as const, id: s.id, name: s.name, kind: kindLabel(s.kind), modified: s.modified, hint: s.hint, star: s })),
   ], [moon, planet.moons, stars]);
 
-  const goMoon = (id: string) => { setDir('in'); setMoonId(id); setSelected(null); setFocusIdx(0); };
+  // Kamera wie beim Planeten-Zoom: Ursprung ist der angeklickte Mond, zurück fährt sie zu ihm hinaus.
+  const [origin, setOrigin] = useState('50% 50%');
+  const goMoon = (id: string, at?: string) => { if (at) setOrigin(at); setDir('in'); setMoonId(id); setSelected(null); setFocusIdx(0); };
   const goUp = () => { if (moonId) { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } else p.onClose(); };
 
   useEffect(() => {
@@ -168,7 +170,7 @@ export function FinderVerse(p: FinderVerseProps) {
       <div className="fv-body">
         <section className="fv-stage" aria-label={centerName}>
           {view === 'universe' ? (
-            <div key={levelKey} className="fv-orbit" data-dir={dir} data-testid="fv-orbit">
+            <div key={levelKey} className="fv-orbit" data-dir={dir} style={{ transformOrigin: origin }} data-testid="fv-orbit">
               <svg className="fv-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
                 <ellipse cx="50" cy="50" rx="34" ry="30" />
                 {stars.length ? <ellipse cx="50" cy="50" rx="45" ry="42" /> : null}
@@ -182,7 +184,7 @@ export function FinderVerse(p: FinderVerseProps) {
               {ring.map((m, i) => {
                 const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
                 return (
-                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}>
+                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id, `${50 + Math.cos(a) * 34}% ${50 + Math.sin(a) * 30}%`)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}>
                     <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}><span className="wd-badge" aria-hidden>{m.count}</span></WorldPlanetSphere>
                     <span className="fv-moon__name">{m.name}</span>
                   </button>

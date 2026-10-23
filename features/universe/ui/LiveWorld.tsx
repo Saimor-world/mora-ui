@@ -198,6 +198,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         pulseIds={pulseIds}
         moraState={moraState}
         zoomTo={zoomTo}
+        shift={selected && !phone ? 190 : 0}
         activeId={activeId}
         counts={counts}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}

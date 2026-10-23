@@ -5,7 +5,7 @@
  */
 
 /* ── Universe ─────────────────────────────────────────────────────────── */
-.wd-universe { position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 420px; overflow: hidden; }
+.wd-universe { position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 420px; overflow: hidden; overflow: clip; }
 .wd-universe[data-hidden='true'] { visibility: hidden; }
 .wd-orbits { position: absolute; inset: 0; pointer-events: none; }
 .wd-orbits ellipse { fill: none; stroke: var(--sv-orbit); stroke-width: 1; }
@@ -152,10 +152,10 @@
 .fv-back:focus-visible, .fv-toggle button:focus-visible, .fv-btn:focus-visible, .fv-action:focus-visible, .fv-moon:focus-visible, .fv-star:focus-visible, .fv-row:focus-visible, .fv-crumbs button:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 3px; }
 .fv-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; padding: 0 28px 24px; }
 .fv-stage { position: relative; min-height: 0; overflow: hidden; border-radius: 28px; }
-.fv-orbit { position: absolute; inset: 0; animation: fv-zoom-in .55s cubic-bezier(.22, 1, .36, 1) both; }
+.fv-orbit { position: absolute; inset: 0; animation: fv-zoom-in .52s cubic-bezier(.65, 0, .35, 1) both; will-change: transform; }
 .fv-orbit[data-dir='out'], .fv-list[data-dir='out'] { animation-name: fv-zoom-out; }
-@keyframes fv-zoom-in { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: none; } }
-@keyframes fv-zoom-out { from { opacity: 0; transform: scale(1.25); } to { opacity: 1; transform: none; } }
+@keyframes fv-zoom-in { from { opacity: 0; transform: scale(.38); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes fv-zoom-out { from { opacity: 0; transform: scale(2.6); filter: blur(2px); } to { opacity: 1; transform: none; filter: none; } }
 @media (prefers-reduced-motion: reduce) { .fv-orbit, .fv-list { animation: none !important; } }
 .fv-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
 .fv-lines ellipse { fill: none; stroke: var(--sv-orbit); stroke-width: .15; vector-effect: non-scaling-stroke; }
@@ -327,6 +327,7 @@
 .wd-reply__close { flex: 0 0 44px; background: none !important; }
 .wd-ask[data-phone='true'], .wd-universe[data-phone='true'] ~ .wd-ask { left: 8px; right: 8px; width: auto; transform: none; bottom: 88px; }
 .wd-universe[data-phone='true'] .wd-mora { animation: none; }
+@media (prefers-reduced-motion: reduce) { .fv-orbit, .fv-list { animation: none !important; } }
 @media (prefers-reduced-motion: reduce) {
   .wd-mora, .wd-link-pulse, .wd-focus, .wd-reply { animation: none !important; }
   .wd-parallax, .wd-zoomwrap { transition: none !important; transform: none; }
