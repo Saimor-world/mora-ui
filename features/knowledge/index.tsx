@@ -3,22 +3,20 @@ import { useWorld } from '@/lib/lea/useWorld';
 import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import type { Star } from '@/lib/lea/finder';
 import React, { useDeferredValue, useMemo, useState } from 'react';
-import { BookOpen, Brain, FileText, Folder, FolderHeart, NotebookPen, Search } from 'lucide-react';
+import { BookOpen, Brain, Folder, FolderHeart, NotebookPen } from 'lucide-react';
 import { Button, SampleTag, FailureState, Input, Loading, ResponsiveGrid, Stack, StateView, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
-import { legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useKnowledgeSearch, useRecentMemories } from './data/useKnowledge';
 import { DEMO_COMPANY_NAME, DEMO_MINDLOOP, demoAllDocuments } from '@/lib/os-prototype/demoPack';
 
-export const KNOWLEDGE_SOURCES: Array<{ appId: string; icon: React.ReactNode; copy: string }> = [
-  { appId: 'finder', icon: <Folder size={16} />, copy: 'Ordner, Räume und Dateien des Unternehmens.' },
-  { appId: 'meine-dateien', icon: <FolderHeart size={16} />, copy: 'Deine persönlichen Dateien.' },
-  { appId: 'notes', icon: <NotebookPen size={16} />, copy: 'Schnelle Notizen.' },
-  { appId: 'document', icon: <FileText size={16} />, copy: 'Dokumente lesen und bearbeiten.' },
-  { appId: 'search', icon: <Search size={16} />, copy: 'Erweiterte Suche mit Filtern.' },
+export const KNOWLEDGE_SOURCES: Array<{ appId: string; icon: React.ReactNode; title: string; copy: string }> = [
+  { appId: 'finder', icon: <Folder size={16} />, title: 'Studio-Ordner', copy: 'Was das ganze Studio teilt – nach Bereichen geordnet.' },
+  { appId: 'meine-dateien', icon: <FolderHeart size={16} />, title: 'Deine Ablage', copy: 'Was nur du siehst.' },
+  { appId: 'notes', icon: <NotebookPen size={16} />, title: 'Notizen', copy: 'Kurz festgehalten, z. B. nach einem Termin.' },
 ];
 
 export default function KnowledgeSurface({ navigate, preview }: FeatureSurfaceProps) {
@@ -155,7 +153,7 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
             <Surface key={s.appId} interactive padding={4} onClick={() => openLegacyApp(s.appId)} data-legacy-app={s.appId}>
               <Stack direction="row" gap={3} align="center">
                 <span className="os-tone-accent" aria-hidden>{s.icon}</span>
-                <Stack gap={0}><Text tone="default">{legacyAppName(s.appId)}</Text><Text variant="meta">{s.copy}</Text></Stack>
+                <Stack gap={0}><Text tone="default">{s.title}</Text><Text variant="meta">{s.copy}</Text></Stack>
               </Stack>
             </Surface>
           ))}

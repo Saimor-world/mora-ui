@@ -78,7 +78,7 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
             <li key={`${t.ts || 'demo'}-${i}`} className="os-agent-feed__item">
               <span className="os-agent-feed__dot" aria-hidden />
               <div className="min-w-0">
-                <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', SOURCE_LABEL[t.signal_source || ''] || t.signal_source, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
+                <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', SOURCE_LABEL[t.signal_source || ''] || null, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
                 <Text tone="default" className={compact ? 'truncate' : undefined}>{thoughtDe(t.thought)}</Text>
                 {!compact && t.latent_intent ? <Text variant="meta">Absicht: {INTENT_LABEL[t.latent_intent] || t.latent_intent}</Text> : null}
               </div>

@@ -339,7 +339,7 @@
 }
 
 /* Phase 6 – Fokus-Panel passt sich dem Inhalt an, nichts schaut darunter hervor. */
-.wd-focus:not([data-phone='true']) { bottom: auto; max-height: calc(100% - 172px); overflow-y: auto; padding-bottom: 28px; -webkit-mask-image: linear-gradient(#000 calc(100% - 32px), transparent); mask-image: linear-gradient(#000 calc(100% - 32px), transparent); }
+.wd-focus:not([data-phone='true']) { bottom: auto; max-height: calc(100vh - 110px); overflow-y: auto; overscroll-behavior: contain; }
 .wd-universe:has(.wd-focus) .wd-horizon { display: none; }
 
 /* Phase 6 – Tippflächen ≥ 44px auf Touch und Handy, OS-weit. */

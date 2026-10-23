@@ -42,7 +42,7 @@ describe('PhoneHome (V4)', () => {
     expect(stone).toHaveAttribute('data-face', 'true');
     expect(stone.querySelector('img')?.getAttribute('src')).toBe('/brand/mora-stone-v1.png');
     expect(screen.getAllByRole('button', { name: /MÔRA/ })).toHaveLength(1);
-    expect(screen.getByTestId('phone-home-strip')).toHaveTextContent('Sophie Beispielhaft-Langname-Doppelname');
+    expect(screen.queryByTestId('phone-home-strip')).toBeNull();
     const onlyToday = screen.getByTestId('day-tasks');
     expect(within(onlyToday).getByText(/überfällig seit/)).toBeInTheDocument();
     expect(within(onlyToday).getByText('heute fällig')).toBeInTheDocument();

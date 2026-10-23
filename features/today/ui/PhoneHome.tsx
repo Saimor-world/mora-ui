@@ -45,26 +45,7 @@ export function PhoneHome({ greeting, firstName, navigate, onAskMora }: {
       {world.loading ? <Loading lines={3} label="Dein Tag wird geladen" /> : null}
       {world.failed ? <StateView compact kind="offline" title="Dein Tag ist gerade nicht lesbar" copy="CORE hat nichts geliefert. Angezeigt wird nichts, was nicht belegt ist." /> : null}
 
-      {day.today.length ? (
-        <section aria-label="Termine heute">
-          <p className="wd-eyebrow">Termine heute</p>
-          <div className="wd-strip mt-2" data-testid="phone-home-strip">
-            {day.today.map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                className="wd-chip"
-                data-past={(e.time ?? '23:59') < time ? 'true' : 'false'}
-                data-next={day.next?.id === e.id ? 'true' : 'false'}
-                onClick={() => navigate('post')}
-              >
-                <b>{e.time ?? 'ganztägig'}</b>
-                <span>{personOf(e.title)}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* Termine stehen genau einmal da: im Tagesplan darunter. */}
 
       {!world.loading && !world.failed ? <DayPanel compact onAskMora={onAskMora} /> : null}
 
