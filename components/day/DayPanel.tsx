@@ -132,7 +132,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
 
       <button type="button" className="dy-say" onClick={() => onAskMora('Was steht heute an, und was sollte ich zuerst tun?')} data-testid="day-mora">
         <MoraStone size={40} />
-        <span>„{day.sentence}“</span>
+        <span>„{day.ahead ?? day.sentence}“</span>
       </button>
 
       {toast ? (

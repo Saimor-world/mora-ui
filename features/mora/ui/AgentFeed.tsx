@@ -38,7 +38,7 @@ export function parseThoughtTime(ts?: string): Date | null {
 
 /** CORE protokolliert teils englisch („Scanning index for exact match“). Kund:innen sehen deutsche Sätze. */
 const THOUGHT_DE: Array<[RegExp, string]> = [
-  [/scann?ing index|exact match|searching/i, 'Sucht in deinen Bereichen nach einem passenden Eintrag.'],
+  [/scann?ing index|exact match|searching/i, 'Hat für dich in deinen Bereichen nach dem passenden Eintrag gesucht.'],
   [/reading|parsing|ingest/i, 'Liest neue Einträge ein.'],
   [/detect|signal/i, 'Hat ein neues Signal erkannt.'],
   [/summari[sz]/i, 'Fasst zusammen, was sich verändert hat.'],
@@ -72,15 +72,18 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
     : !items.length ? <Empty compact title={live ? 'Noch keine Agenten-Aktivität' : 'Agenten-Feed braucht eine CORE-Sitzung'} copy={live ? 'Sobald MÔRA sucht, Bereiche liest oder Signale erkennt, erscheint es hier – mit Quelle und Zeit.' : 'Ohne Sitzung zeigt SAIMÔR keine Aktivität an.'} />
     : (
       <ol className="os-agent-feed" data-testid="agent-feed-list">
-        {items.map((t, i) => {
-          const d = parseThoughtTime(t.ts);
+        {groupThoughts(items).map((g, i) => {
+          const d = parseThoughtTime(g.last.ts);
+          const label = TYPE_LABEL[g.last.type || ''] || g.last.type || 'Aktivität';
+          const head = g.count > 1 ? `${g.count} ${PLURAL[label] || label}` : label;
+          const when = sample ? null : g.count > 1 ? `zuletzt ${ago(d)}` : ago(d);
           return (
-            <li key={`${t.ts || 'demo'}-${i}`} className="os-agent-feed__item">
+            <li key={`${g.last.ts || 'demo'}-${i}`} className="os-agent-feed__item" data-count={g.count}>
               <span className="os-agent-feed__dot" aria-hidden />
               <div className="min-w-0">
-                <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', SOURCE_LABEL[t.signal_source || ''] || null, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
-                <Text tone="default" className={compact ? 'truncate' : undefined}>{thoughtDe(t.thought)}</Text>
-                {!compact && t.latent_intent ? <Text variant="meta">Absicht: {INTENT_LABEL[t.latent_intent] || t.latent_intent}</Text> : null}
+                <Text variant="meta">{[head, SOURCE_LABEL[g.last.signal_source || ''] || null, when].filter(Boolean).join(' · ')}</Text>
+                <Text tone="default" className={compact ? 'truncate' : undefined}>{g.text}</Text>
+                {!compact && g.last.latent_intent ? <Text variant="meta">Absicht: {INTENT_LABEL[g.last.latent_intent] || g.last.latent_intent}</Text> : null}
               </div>
             </li>
           );
@@ -97,4 +100,18 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
       {body}
     </Surface>
   );
+}
+
+const PLURAL: Record<string, string> = { Anfrage: 'Anfragen', Suche: 'Suchen', Aktion: 'Aktionen', Signal: 'Signale', Bereich: 'Bereiche', Wahrnehmung: 'Wahrnehmungen', 'Überlegung': 'Überlegungen', 'Aktivität': 'Aktivitäten' };
+
+/** Gleiche Gedanken (gleicher Typ, gleicher Text) zu einer Zeile bündeln, neuester zuerst. */
+export function groupThoughts(items: AgentThought[]): { text: string; count: number; last: AgentThought }[] {
+  const out: { text: string; count: number; last: AgentThought }[] = [];
+  for (const t of items) {
+    const text = thoughtDe(t.thought);
+    const hit = out.find((g) => g.text === text && (g.last.type || '') === (t.type || ''));
+    if (hit) { hit.count += 1; if (String(t.ts || '') > String(hit.last.ts || '')) hit.last = t; }
+    else out.push({ text, count: 1, last: t });
+  }
+  return out;
 }

@@ -35,7 +35,7 @@ describe('parseDayCommand', () => {
 
 describe('thoughtDe', () => {
   it('übersetzt englische CORE-Logs, lässt Deutsches stehen', () => {
-    expect(thoughtDe('Scanning index for exact match')).toMatch(/Sucht/);
+    expect(thoughtDe('Scanning index for exact match')).toMatch(/gesucht/);
     expect(thoughtDe('Neue Datei in Material erkannt')).toBe('Neue Datei in Material erkannt');
   });
 });

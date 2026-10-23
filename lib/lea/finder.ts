@@ -97,7 +97,7 @@ export function buildFinder(input: { departments: FDept[]; unassigned?: FSpace[]
     const owner = spaceOwner[f.space_id];
     if (!owner) continue;
     const stars = (starsByFolder[f.id] ?? []).sort((a, b) => a.name.localeCompare(b.name, 'de'));
-    (moonsByPlanet[owner] ||= []).push({ id: f.id, name: f.name || 'Ordner', spaceId: f.space_id, spaceName: spaceName[f.space_id], stars, count: Math.max(stars.length, f.node_count ?? 0), modified: f.updated_at ?? null });
+    (moonsByPlanet[owner] ||= []).push({ id: f.id, name: folderLabel(f), spaceId: f.space_id, spaceName: spaceName[f.space_id], stars, count: Math.max(stars.length, f.node_count ?? 0), modified: f.updated_at ?? null });
   }
 
   const planets: FPlanet[] = depts.map((d) => {
@@ -129,4 +129,14 @@ export function formatModified(iso?: string | null): string {
   const d = new Date(iso.endsWith('Z') || /[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);
   if (Number.isNaN(d.getTime())) return '–';
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+/** Nur Anzeige: CORE-Systemordner bekommen deutsche Namen. Daten bleiben unverändert. */
+const SYSTEM_FOLDER_DE: Record<string, { desc: RegExp; label: string }> = {
+  Calendar: { desc: /calendar events/i, label: 'Kalender' },
+};
+export function folderLabel(f: { name?: string | null; description?: string | null }): string {
+  const name = f.name || 'Ordner';
+  const sys = SYSTEM_FOLDER_DE[name];
+  return sys && sys.desc.test(f.description ?? '') ? sys.label : name;
 }

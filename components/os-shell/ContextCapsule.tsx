@@ -10,14 +10,13 @@ import { usePhase } from '@/lib/os-prototype/usePhase';
  * Demo · Home/Universe) und die Uhr-Pille mit MÔRA-Szene. Verbessert: echte
  * Schalter statt Deko, Focus-Restzeit direkt in der Pille, Tastatur-erreichbar.
  */
-export function ContextCapsule({ activeId, navigate, org, demo }: { activeId: string; navigate: (id: string) => void; org: string; demo: boolean }) {
+export function ContextCapsule({ activeId, navigate, org, demo, internal = false }: { activeId: string; navigate: (id: string) => void; org: string; demo: boolean; internal?: boolean }) {
   return (
     <div className="os-context" data-testid="context-capsule">
       <div className="os-context__capsule">
-        <span className="os-context__chip">Lokale Instanz</span>
+        {internal ? <span className="os-context__chip">Lokale Instanz</span> : null}
         <span className="os-context__org">{org}</span>
         {demo ? <span className="os-context__demo">Demo</span> : null}
-        <span className="os-context__scope">Organisation</span>
         <span className="os-context__seg" role="group" aria-label="Ebene">
           <button type="button" aria-pressed={activeId === 'today'} onClick={() => navigate('today')}><Home size={12} aria-hidden /> Heute</button>
           <button type="button" aria-pressed={activeId === 'universe'} onClick={() => navigate('universe')}><Compass size={12} aria-hidden /> Universe</button>

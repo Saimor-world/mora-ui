@@ -20,7 +20,7 @@ const input = {
   ],
   now,
 };
-const day: LiveDay = { running: null, stale: null, next: null, minutesToNext: null, open: [], doneToday: [], doneTodayEvents: false, tomorrow: [], sentence: '' };
+const day: LiveDay = { running: null, stale: null, next: null, minutesToNext: null, open: [], doneToday: [], doneTodayEvents: false, tomorrow: [], sentence: '', ahead: null };
 
 describe('buildFinder (Finder = Universe)', () => {
   const planets = buildFinder(input);

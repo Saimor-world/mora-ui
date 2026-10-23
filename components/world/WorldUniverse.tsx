@@ -203,8 +203,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             aria-label={`${planet.name} öffnen · ${planet.meta}`}
             data-testid={`world-planet-${planet.id}`}
           >
-            {planet.orbit ? <PlanetOrbit orbit={planet.orbit} size={slot?.size ?? 60} phone={phone} /> : null}
-            <WorldPlanetSphere tone={planet.tone} size={slot?.size ?? 60}>
+            {planet.orbit ? <PlanetOrbit orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
+            <WorldPlanetSphere tone={planet.tone} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
             </WorldPlanetSphere>
             <span className="wd-label">

@@ -11,6 +11,8 @@ export interface LiveDay {
   running: WorldEvent | null;
   /** Heute geplant, Zeit vorbei, aber nicht abgeschlossen. */
   stale: WorldEvent | null;
+  /** Was nach dem offenen Termin kommt (für die Tageskarte). */
+  ahead: string | null;
   next: WorldEvent | null;
   minutesToNext: number | null;
   open: LiveTask[];
@@ -62,7 +64,16 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   else if (open.length) sentence = `Heute kommt niemand mehr. Offen: ${openNames.join(' und ')}.`;
   else sentence = tomorrow.length ? 'Heute ist alles erledigt. Morgen steht schon etwas drin.' : 'Heute ist alles erledigt. Magst du morgen planen?';
   const doneTodayEvents = today.length > 0 && today.every((e) => phaseOf(e, phases) === 'erledigt');
-  return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, sentence };
+  // Ergänzt die Termin-Karte statt sie zu wiederholen: was danach kommt.
+  let ahead: string | null = null;
+  if (stale && !running) {
+    const parts: string[] = [];
+    if (next && next.date === iso) parts.push(`Um ${next.time ?? ''} kommt ${personOf(next.title)}.`.replace(/\s+/g, ' '));
+    if (next && next.date === tomorrowIso) parts.push(`Morgen${next.time ? ` um ${next.time}` : ''} kommt ${personOf(next.title)}.`);
+    else if (next && next.date > iso && next.date !== tomorrowIso) parts.push(`Nächster Termin: ${shortDate(next.date)}${next.time ? `, ${next.time}` : ''}.`);
+    ahead = parts.length ? `Nach dem Abschluss: ${parts.join(' ')}` : tomorrow.length ? 'Nach dem Abschluss ist heute nichts mehr im Kalender. Für morgen steht schon etwas an.' : 'Nach dem Abschluss ist dein Tag frei – magst du morgen planen?';
+  }
+  return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, sentence, ahead };
 }
 
 /** Kurze Zeile für einen Termin-Planeten im Universe. */
