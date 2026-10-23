@@ -3,11 +3,6 @@ import { fireEvent, render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { OpenFlowLagebild } from '@/components/home/OpenFlowLagebild';
 import type { OpenFlowLagebild as Lagebild } from '@/lib/openflow/types';
-import { setSaimorSession, clearSession } from '@/__tests__/sessionFixtures';
-
-// These cases show SAIMÔR's own view; customers never see these internal cards.
-beforeEach(() => setSaimorSession());
-afterEach(() => clearSession());
 
 const view: Lagebild = {
   headline: null,

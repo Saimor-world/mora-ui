@@ -16,7 +16,7 @@ import { useTree } from '@/lib/queries/useTree';
 import { useFolders } from '@/lib/queries/useFolders';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOrbStore } from '@/lib/store/orbStore';
-import { MoraStone } from '@/components/mora/MoraStone';
+import { MoraFace } from '@/components/mora/MoraFace';
 import { useCompanies } from '@/lib/queries/useCompanies';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { useWorkSessionStore } from '@/lib/store/workSessionStore';
@@ -1754,15 +1754,48 @@ export const Dock = () => {
                                             <button
                                                 onClick={() => handleDockClick('chat')}
                                                 data-mora-home="true"
-                                                className={`relative h-10 w-10 rounded-full overflow-visible transition-all duration-200 active:scale-[0.97] group ${
+                                                className={`relative h-10 w-10 rounded-full overflow-visible transition-all duration-200 hover:scale-105 active:scale-95 group ${
                                                     isStandardMode ? 'bg-white shadow-md' : 'bg-transparent'
                                                 }`}
                                                 title="Mora öffnen"
+                                                style={!isStandardMode ? { filter: `drop-shadow(0 0 12px ${accent}20)` } : {}}
                                             >
-                                                {/* MÔRA: the one stylebook stone (22.10.2026). Matte, no glow; state stays readable via data-orb-state. */}
-                                                <span className="relative flex h-full w-full items-center justify-center" data-orb-state={orbState}>
-                                                    <MoraStone size={40} label="MÔRA" />
-                                                </span>
+                                                {!isStandardMode && (
+                                                    <>
+                                                        <div
+                                                            className="absolute inset-[-6px] rounded-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                                            style={{
+                                                                background: `radial-gradient(circle at 35% 30%, ${accent}30 0%, transparent 64%)`,
+                                                                filter: 'blur(12px)',
+                                                            }}
+                                                        />
+                                                        <div className="absolute inset-[-3px] rounded-full border border-emerald-400/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                                                        <div className="absolute inset-[2px] rounded-full border border-white/10 pointer-events-none" />
+                                                    </>
+                                                )}
+                                                <div className={`absolute inset-0 rounded-full border ${isStandardMode ? 'border-[#0078D4]/30' : 'border-emerald-400/25'}`} />
+                                                {!isStandardMode && (
+                                                    <div
+                                                        className="absolute inset-[3px] rounded-full pointer-events-none"
+                                                        style={{
+                                                            background: 'radial-gradient(120% 100% at 30% 20%, rgba(255,255,255,0.15) 0%, transparent 24%), radial-gradient(90% 90% at 70% 78%, rgba(0,0,0,0.25) 0%, transparent 35%)',
+                                                        }}
+                                                    />
+                                                )}
+                                                {/* Zustand nur als Licht um den Stein (Regel 14.09.: der Stein selbst bleibt unverändert). */}
+                                                <span aria-hidden className="mora-stone-light pointer-events-none absolute inset-[-7px] rounded-full" />
+                                                {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
+                                                {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset in the always-visible dock */}
+                                                <img
+                                                    src="/brand/mora-stone-v1.png"
+                                                    alt=""
+                                                    width={40}
+                                                    height={40}
+                                                    draggable={false}
+                                                    data-orb-state={orbState}
+                                                    className="relative h-full w-full select-none pointer-events-none"
+                                                />
+                                                {!isStandardMode && <MoraFace size={40} arcsOnGreet={false} />}
                                             </button>
                                         </div>
                                     )}

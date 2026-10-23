@@ -165,9 +165,8 @@ test.describe('OS prototype (/os, local preview)', () => {
       expect(r.over).toEqual([]);
       expect(r.out).toEqual([]);
       if (r.desktop) expect(r.strands).toBeGreaterThan(0);
-      // Stylebook 22.10: from 768 px the navigation is a full-height rail on the left.
-      expect(r.dockTop).toBeGreaterThanOrEqual(0);
-      expect(r.dockBottom).toBeLessThanOrEqual(r.vh);
+      expect(r.dockTop).toBeGreaterThan(0);
+      expect(r.dockBottom).toBeLessThanOrEqual(r.vh - 4);
       await ctx.close();
     });
   }
@@ -187,17 +186,11 @@ test.describe('OS prototype (/os, local preview)', () => {
           const d = document.querySelector('[data-testid="dock"]')!.getBoundingClientRect();
           const t = document.querySelector('.os-shell__topbar')!.getBoundingClientRect();
           const f = document.querySelector(`[data-testid="feature-${fid}"]`)!.getBoundingClientRect();
-          return { dockTop: d.top, dockBottom: d.bottom, dockRight: d.right, vh: innerHeight, topbarLeft: t.left, topbarBottom: t.bottom, featureLeft: f.left, featureBottom: f.bottom, rail: d.height > d.width };
+          return { dockTop: d.top, dockBottom: d.bottom, vh: innerHeight, topbarBottom: t.bottom, featureBottom: f.bottom };
         }, id);
-        expect(r.dockBottom, id).toBeLessThanOrEqual(r.vh);
-        if (r.rail) {
-          // Rail on the left: topbar and content start right of it.
-          expect(r.topbarLeft, id).toBeGreaterThanOrEqual(r.dockRight - 1);
-          expect(r.featureLeft, id).toBeGreaterThanOrEqual(r.dockRight - 1);
-        } else {
-          expect(r.dockTop, id).toBeGreaterThan(r.topbarBottom);
-          expect(r.featureBottom, id).toBeLessThanOrEqual(r.dockTop + 1);
-        }
+        expect(r.dockBottom, id).toBeLessThanOrEqual(r.vh - 4);
+        expect(r.dockTop, id).toBeGreaterThan(r.topbarBottom);
+        expect(r.featureBottom, id).toBeLessThanOrEqual(r.dockTop + 1);
       }
       await ctx.close();
     });
@@ -254,19 +247,12 @@ test.describe('OS prototype (/os, local preview)', () => {
     await expect(page.getByTestId('knowledge-demo-docs')).toContainText('employee_handbook.pdf');
   });
 
-  test('Stylebook 22.10: the phone is a full device – five-slot dock, MÔRA in the middle, the rest under "Mehr"', async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
+  test('V1.4: below 768 px a calm desktop/tablet hint, no dedicated phone layout', async ({ page }) => {
+    await page.setViewportSize({ width: 600, height: 900 });
     await page.goto('/os#today');
-    await expect(page.getByText('am besten auf Desktop')).toHaveCount(0);
-    const dock = page.getByTestId('os-dock');
-    await expect(dock.getByTestId('dock-mora')).toBeVisible();
-    for (const name of ['Heute', 'Universe']) await expect(dock.getByRole('button', { name, exact: true })).toBeVisible();
-    await expect(dock.getByRole('button', { name: 'Finance', exact: true })).toBeHidden();
-    await page.getByTestId('os-more').click();
-    await expect(page.getByTestId('os-more-sheet')).toContainText('Finance');
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await expect(page.getByTestId('os-more')).toBeHidden();
-    await expect(dock.getByRole('button', { name: 'Finance', exact: true })).toBeVisible();
+    await expect(page.getByTestId('os-small-notice')).toBeVisible();
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await expect(page.getByTestId('os-small-notice')).toBeHidden();
   });
   test('V1.4 legacy: Kontext-Kapsel, Control Center (C), Focus Mode, Heute-Karten, Palette-Start', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });

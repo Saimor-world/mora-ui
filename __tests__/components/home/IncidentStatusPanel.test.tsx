@@ -3,11 +3,6 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { IncidentStatusPanel } from '@/components/home/IncidentStatusPanel';
 import type { IncidentStatusPanel as IncidentStatusPanelData } from '@/lib/panel/types';
-import { setSaimorSession, setCustomerSession, clearSession } from '@/__tests__/sessionFixtures';
-
-// These cases show SAIMÔR's own view; customers never see these internal cards.
-beforeEach(() => setSaimorSession());
-afterEach(() => clearSession());
 
 const panel = (overrides: Partial<IncidentStatusPanelData> = {}): IncidentStatusPanelData => ({
   id: 'incident-status-n1',
@@ -40,12 +35,6 @@ const panel = (overrides: Partial<IncidentStatusPanelData> = {}): IncidentStatus
 });
 
 describe('IncidentStatusPanel', () => {
-  it('shows nothing to a customer company, even for a verified Nightwatch incident', () => {
-    setCustomerSession();
-    const { container } = render(<IncidentStatusPanel panel={panel()} />);
-    expect(container).toBeEmptyDOMElement();
-  });
-
   it('renders a verified incident_status panel from Nightwatch evidence', () => {
     render(<IncidentStatusPanel panel={panel()} />);
 

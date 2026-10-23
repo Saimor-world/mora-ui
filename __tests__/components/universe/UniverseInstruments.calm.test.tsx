@@ -20,8 +20,8 @@ it('keeps source failures visible instead of reporting a quiet inbox', () => {
   expect(screen.queryByText('Posteingang ruhig')).not.toBeInTheDocument();
 });
 
-it('expands system details when there is an open incident (SAIMÔR-internal view)', () => {
-  const { container } = render(<UniverseInstruments {...props} internal openIncidents={[{ id: 'test-incident', title: 'Testvorfall', status: 'open' } as never]} />);
+it('expands system details when there is an open incident', () => {
+  const { container } = render(<UniverseInstruments {...props} openIncidents={[{ id: 'test-incident', title: 'Testvorfall', status: 'open' } as never]} />);
   expect(container.querySelector('details')).toHaveAttribute('open');
   expect(screen.getByText('Testvorfall')).toBeInTheDocument();
 });

@@ -10,7 +10,6 @@ import type { BusinessSummary } from '@/lib/business/mrr';
 import type { SubstanceBar } from '@/lib/universe/substanceChart';
 import { SubstanceWidget } from '@/components/universe/SubstanceWidget';
 import { UniverseInstruments, LageSignals } from '@/components/universe/UniverseInstruments';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 interface Props {
     mail: MailPreviewItem[];
@@ -121,11 +120,7 @@ function BusinessInstrument({ business }: { business: BusinessSummary }) {
 
 export function UniverseObservatory(props: Props) {
     const v2 = isUniverseV2Enabled();
-    // Wache (Nightwatch) and Wirtschaft (Paddle) are SAIMÔR-internal: a customer company
-    // never sees them, not even as "ruhig" or "noch kein Umsatz".
-    const internal = useIsSaimorInternal();
-    const incidents = internal ? props.incidents : [];
-    const openIncidents = incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
+    const openIncidents = props.incidents.filter((item) => !['resolved', 'closed', 'dismissed'].includes(String(item.status || 'open').toLowerCase()));
     // Zwei Fehler steckten in der Wurzelzeile darunter:
     //  1. `xl:block` liess die Kacheln zwischen 1024 und 1279px ersatzlos
     //     verschwinden - genau in der Breite, in der das Feld selbst seit dem
@@ -169,20 +164,16 @@ export function UniverseObservatory(props: Props) {
                         drag={props.feed[0] ? { kind: 'rss', text: props.feed[0].summary || '' } : null}
                     />
                 </Instrument></>)}
-                {props.territoryCount > 0 || props.documentCount > 0 ? (
-                    <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
-                        <Sparkles size={11} className="text-cyan-200/44" />
-                        <span>{props.territoryCount} {props.territoryCount === 1 ? 'Bereich' : 'Bereiche'}</span>
-                        <span className="h-1 w-1 rounded-full bg-white/20" />
-                        <span>{props.documentCount} {props.documentCount === 1 ? 'Dokument' : 'Dokumente'}</span>
-                    </div>
-                ) : (
-                    <p className="px-2 text-[12px] text-white/40" data-testid="universe-empty-counts">Noch keine Bereiche angelegt.</p>
-                )}
+                <div className="flex items-center gap-3 px-2 text-[9px] uppercase tracking-[0.16em] text-white/27">
+                    <Sparkles size={11} className="text-cyan-200/44" />
+                    <span>{props.territoryCount} Bereiche</span>
+                    <span className="h-1 w-1 rounded-full bg-white/20" />
+                    <span>{props.documentCount} Dokumente</span>
+                </div>
             </div>
             <div data-uv2-col="right" className={(v2 ? 'uv2-col-right ' : 'absolute bottom-28 right-7 w-[255px] space-y-3 ') + (props.selected ? 'pointer-events-none' : 'pointer-events-auto')}>
-                {v2 && <UniverseInstruments {...props} incidents={incidents} openIncidents={openIncidents} internal={internal} />}
-                {!v2 && internal && (<><BusinessInstrument business={props.business} />
+                {v2 && <UniverseInstruments {...props} openIncidents={openIncidents} />}
+                {!v2 && (<><BusinessInstrument business={props.business} />
                 <Instrument eyebrow="Wache" title="Nightwatch" accent={openIncidents.length ? 'amber' : 'cyan'}>
                     <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="group w-full text-left">
                         <div className="flex items-center justify-between">

@@ -117,17 +117,14 @@ export function UniverseInstruments(props: {
     business: BusinessSummary; substanceBars: SubstanceBar[];
     onSelectTerritory: (id: string) => void;
     onOpenMail: () => void; onOpenCalendar: () => void; onOpenFeed: () => void; onOpenNightwatch: () => void; onOpenIntegrations?: () => void;
-    /** SAIMÔR's own organization (lib/auth/organization). Wache and Wirtschaft are internal; customers never see them. */
-    internal?: boolean;
 }) {
-    const internal = props.internal === true;
     const cal = props.calendar[0];
     const mail = props.mail[0];
     const feed = props.feed[0];
     const days = incidentDays(props.incidents);
     const peak = Math.max(1, ...days.map((d) => d.open + d.closed));
     const total14 = days.reduce((n, d) => n + d.open + d.closed, 0);
-    const open = internal ? props.openIncidents.length : 0;
+    const open = props.openIncidents.length;
     const b = props.business;
     const amount = b.activeCount > 0 && b.currency
         ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: b.currency, maximumFractionDigits: 0 }).format(b.monthlyRevenueMinor / 100)
@@ -150,7 +147,6 @@ export function UniverseInstruments(props: {
                 <summary><span>Bereiche &amp; System</span><span aria-hidden className="uv2-details-plus">+</span></summary>
             <SubstanceWidget bars={props.substanceBars} onSelect={props.onSelectTerritory} />
 
-            {internal && (<>
             <Block id="wache" label="Wache · 14 Tage" aside={open ? <><CountUp value={open} /> offen</> : 'ruhig'}>
                 <button type="button" onClick={props.onOpenNightwatch} data-mora-label="Nightwatch" className="block w-full text-left" data-testid="uv2-wache-timeline">
                     {/* Wenige echte Daten sind der Normalfall: eine ruhige Grundlinie mit
@@ -175,7 +171,6 @@ export function UniverseInstruments(props: {
             <Block id="wirtschaft" label="Wirtschaft" aside={amount ? `${b.activeCount} Abo${b.activeCount === 1 ? '' : 's'}` : 'Paddle bereit'}>
                 <p className="uv2-inst-text">{amount ? <>Monatlich <span className="uv2-inst-figure">{amount}</span></> : 'Noch kein Umsatz – das erste Abo erscheint hier.'}</p>
             </Block>
-            </>)}
             {!feed && <button type="button" className="uv2-inst-row" onClick={props.onOpenFeed}><span className="uv2-inst-text">Feed öffnen</span></button>}
             </details>
         </div>
@@ -222,7 +217,7 @@ export function LageSignals(props: {
         <div className="uv2-instruments uv2-lage-left" data-testid="uv2-lage-signale">
             <section data-uv2-instrument="signale" data-empty={list.length === 0 || undefined} className="uv2-inst">
                 <header className="flex items-baseline justify-between gap-3">
-                    <p className="uv2-inst-label">Signale</p>{list.length > 0 && <span className="uv2-inst-aside">{list.length}</span>}
+                    <p className="uv2-inst-label">Signale</p><span className="uv2-inst-aside">{list.length}</span>
                 </header>
                 {list.length === 0 && <p className="uv2-inst-text mt-2">Gerade kommt nichts herein.</p>}
                 {list.map((x, i) => (

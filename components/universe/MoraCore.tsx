@@ -2,12 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 import { useMoraPresence, type MoraState } from '@/lib/universe/moraPresence';
-import { MoraStone } from '@/components/mora/MoraStone';
 
 /**
- * MÔRA in der Mitte des Systems (Stylebook 22.10.2026): der eine Jadestein, matt, ohne Halo.
- * Die Logik bleibt: Von ihr läuft der Faden zum Planeten, an dem sie arbeitet, und dieser
- * Planet wird hervorgehoben (data-mora-lit).
+ * Ruhiges Licht in der Mitte des Systems – keine Figur, keine Sätze.
+ * MÔRA selbst ist der Jadestein im Dock; von dort läuft ihr goldener Faden zum Planeten,
+ * an dem sie arbeitet, und dieser Planet wird hell (Fokus = Licht).
  */
 export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; y: number; needs: boolean }> }) {
     const presence = useMoraPresence();
@@ -52,8 +51,9 @@ export function MoraCore({ planets }: { planets: Array<{ id: string; x: number; 
                     {state === 'done' && <circle cx={target.x} cy={target.y} r="2.2" />}
                 </svg>
             )}
-            <span className="uv2-mora__core flex items-center justify-center">
-                <MoraStone size={56} thinking={state === 'thinking'} />
+            <span className="uv2-mora__core">
+                <span className="uv2-mora__halo" />
+                <span className="uv2-mora__light" />
             </span>
         </div>
     );

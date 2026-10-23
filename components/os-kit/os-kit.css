@@ -156,6 +156,11 @@
 @media (prefers-reduced-motion: reduce) { .os-universe-card::before { transition: none; } .os-universe-card:hover::before { transform: none; } }
 
 /* MÔRA stone */
+.os-mora-stone { position: relative; display: inline-flex; flex: none; border-radius: 50%; }
+.os-mora-stone img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; position: relative; z-index: 1; }
+.os-mora-stone--halo::before { content: ''; position: absolute; inset: -35%; border-radius: 50%; background: radial-gradient(circle, var(--os-stone-halo), transparent 68%); }
+.os-mora-stone--thinking::before { background: radial-gradient(circle, var(--os-stone-halo-thinking), transparent 68%); animation: os-breathe 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .os-mora-stone--thinking::before { animation: none; } }
 
 /* ── V1.2 Universe-Experience ───────────────────────────────────────────── */
 .os-ulx { position: relative; width: 100%; height: 100%; overflow: hidden; }
@@ -340,6 +345,10 @@
   .os-legacy-universe [data-testid^='territory-'] { padding: 8px; }
 }
 /* Unter 768 px: ruhiger Hinweis statt eigener Handy-Layouts. */
+.os-small-notice { display: none; }
+@media (max-width: 767px) {
+  .os-small-notice { display: block; position: relative; z-index: 90; padding: var(--os-space-2) var(--os-space-4); font-size: var(--os-type-meta-size); color: var(--os-text-muted); background: var(--os-glass-strong); border-bottom: 1px solid var(--os-hairline); text-align: center; }
+}
 
 /* V1.4 – aus dem Legacy-OS übernommen: Kontext-Kapsel + Uhr-Pille */
 .os-context { display: flex; align-items: center; gap: var(--os-space-2); min-width: 0; overflow: hidden; flex: 0 1 auto; }
@@ -530,6 +539,7 @@
 .os-station-focus { padding: var(--os-space-5); border-radius: var(--os-radius-lg); background: var(--os-glass-strong); border: 1px solid var(--os-hairline); display: flex; flex-direction: column; justify-content: center; }
 .os-station--compact .os-station-focus { background: transparent; border: 0; padding: 0; }
 .os-station-line { display: flex; gap: 10px; align-items: flex-start; color: var(--os-text); font-size: var(--os-type-body-size); line-height: 1.5; }
+.os-station-line > .os-mora-stone { flex: none; }
 .os-station-actions { display: flex; flex-wrap: wrap; gap: var(--os-space-2); margin-top: var(--os-space-4); }
 .os-station-consent { list-style: none; margin: var(--os-space-3) 0 0; padding: 0; display: grid; gap: 10px; }
 .os-station-consent li { display: flex; gap: 10px; align-items: center; color: var(--os-text); font-size: var(--os-type-meta-size); }

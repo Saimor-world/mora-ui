@@ -17,7 +17,6 @@ import { Sparkles, X } from 'lucide-react';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { isProductTourDismissed } from '@/lib/onboarding/productTourStore';
-import { firstName as realFirstName } from '@/lib/auth/displayName';
 
 const STORAGE_KEY = 'saimor_mora_greeted_v1';
 const APPEAR_DELAY_MS = 1500;
@@ -57,8 +56,11 @@ export const MoraGreetingBubble: React.FC = () => {
         }
     };
 
-    // A real first name or none: never the local part of the email address.
-    const firstName = realFirstName(user) || null;
+    const firstName = (() => {
+        if (!user?.email) return null;
+        const local = user.email.split('@')[0];
+        return local.charAt(0).toUpperCase() + local.slice(1);
+    })();
 
     if (activeMode === 'public_playground') return null;
 

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 import { TodayOverview } from '@/components/home/TodayOverview';
-import { MoraStone } from '@/components/mora/MoraStone';
+import { MoraFace } from '@/components/mora/MoraFace';
 import { openMoraWorkspace } from '@/lib/os/openMoraWorkspace';
 import { surfaceMarker, SAIMOR_PRODUCT_LABEL, SAIMOR_SURFACES } from '@/lib/os/surfaceContract';
 import { useNavStore } from '@/lib/store/navStore';
@@ -107,9 +107,26 @@ function timeGreeting(hour: number) {
   return 'Guten Abend';
 }
 
-/** MÔRA on the home hero: the one stylebook stone. */
+/** MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb). */
 function PresenceOrb() {
-  return <MoraStone size={56} />;
+  return (
+    <div className="relative h-14 w-14 shrink-0" aria-hidden>
+      <motion.div
+        className="absolute inset-[-6px] rounded-full bg-emerald-300/10 blur-md"
+        animate={{ scale: [0.94, 1.08, 0.94], opacity: [0.45, 0.8, 0.45] }}
+        transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <motion.div
+        className="absolute inset-0"
+        animate={{ scale: [1, 1.03, 1] }}
+        transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset on the home hero */}
+        <img src="/brand/mora-stone-v1.png" alt="" width={56} height={56} draggable={false} className="h-full w-full select-none drop-shadow-[0_6px_18px_rgba(0,0,0,0.45)]" />
+        <MoraFace size={56} />
+      </motion.div>
+    </div>
+  );
 }
 
 function AreaButton({ area, onOpen, compact = false }: { area: Area; onOpen: (area: Area) => void; compact?: boolean }) {

@@ -2,11 +2,6 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { DepartmentLayer } from '@/components/layers/DepartmentLayer';
 import type { IncidentStatusPanel } from '@/lib/panel/types';
-import { setSaimorSession, clearSession } from '@/__tests__/sessionFixtures';
-
-// These cases show SAIMÔR's own view; customers never see these internal cards.
-beforeEach(() => setSaimorSession());
-afterEach(() => clearSession());
 
 const mockNavigateToSpace = jest.fn();
 const mockSetActiveSpace = jest.fn();

@@ -2,11 +2,6 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { DepartmentView } from '@/components/home/DepartmentView';
 import type { IncidentStatusPanel } from '@/lib/panel/types';
-import { setSaimorSession, clearSession } from '@/__tests__/sessionFixtures';
-
-// These cases show SAIMÔR's own view; customers never see these internal cards.
-beforeEach(() => setSaimorSession());
-afterEach(() => clearSession());
 
 const panel = (overrides: Partial<IncidentStatusPanel> = {}): IncidentStatusPanel => ({
   id: 'incident-status-incident-1',

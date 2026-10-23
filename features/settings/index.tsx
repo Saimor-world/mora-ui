@@ -62,7 +62,7 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
 
       <Surface padding={5}>
         {section === 'account' && (user ? (
-          <div className="os-list"><Row label="Name" value={user.name} /><Row label="E-Mail" value={user.email || '—'} /><Row label="Rolle" value={({ owner: 'Inhaberin', admin: 'Verwaltung', member: 'Mitglied', viewer: 'Lesezugriff' } as Record<string, string>)[String(user.role)] ?? user.role} /></div>
+          <div className="os-list"><Row label="Name" value={user.name} /><Row label="E-Mail" value={user.email || '—'} /><Row label="Rolle" value={user.role} /></div>
         ) : <FailureState kind="unauthenticated" compact />)}
 
         {section === 'identity' && (user ? (

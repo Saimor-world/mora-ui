@@ -1,7 +1,6 @@
 ﻿"use client";
 
 import React, { useState, useEffect } from 'react';
-import { MoraStone } from '@/components/mora/MoraStone';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { LogIn, Database, ChevronRight, Clock, Zap, Building2, User, Sparkles } from 'lucide-react';
 import { MoraOrb } from '@/components/mora/MoraOrb';
@@ -882,10 +881,22 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ onAuthenticated })
                                     } : { duration: 0.4 }}
                                     className="absolute inset-0 w-40 h-40 -translate-x-1/2 -translate-y-1/2 left-1/2 top-1/2 rounded-full border border-mora-gold/20"
                                 />
-                                {/* MÔRA: the one stylebook stone (22.10.2026), matte, no glow. */}
-                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                                    <MoraStone size={80} label="MÔRA" still={!ambientMotionEnabled} />
-                                </div>
+                                {/* MÔRA - the jade stone from the Saimôr sigil (same artwork as MoraOrb) */}
+                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-gradient-radial from-emerald-400/30 to-emerald-600/5 blur-md" />
+                                <motion.div
+                                    className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20"
+                                    animate={ambientMotionEnabled ? {
+                                        scale: [1, 1.04, 1],
+                                    } : { scale: 1 }}
+                                    transition={ambientMotionEnabled ? {
+                                        duration: 4,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    } : { duration: 0.4 }}
+                                >
+                                    {/* eslint-disable-next-line @next/next/no-img-element -- small static brand asset, loaded eagerly on the first screen */}
+                                    <img src="/brand/mora-stone-v1.png" alt="MÔRA" width={80} height={80} className="h-full w-full select-none drop-shadow-[0_8px_24px_rgba(0,0,0,0.45)]" draggable={false} />
+                                </motion.div>
                             </div>
 
                             {/* Title Section with Better Typography */}

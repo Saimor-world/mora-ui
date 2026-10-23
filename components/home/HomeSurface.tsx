@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { MoraStone } from '@/components/mora/MoraStone';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Activity, CalendarDays, ExternalLink, Globe, Lock, LogOut, Mail, MessageSquare, Mic, Sparkles, Users, Wrench } from 'lucide-react';
 import { useNavStore } from '@/lib/store/navStore';
@@ -101,9 +101,24 @@ interface SuggestionItem {
 
 // ─── MÔRA Orb ────────────────────────────────────────────────────────────────
 
-/** MÔRA, small: the one stylebook stone. */
+/** MÔRA as the jade stone from the Saimôr sigil (same artwork as MoraOrb). */
 function MoraOrbSmall() {
-    return <MoraStone size={40} label="MÔRA" />;
+    return (
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+            <motion.div
+                className="absolute inset-0 rounded-full bg-emerald-400/16"
+                animate={{ scale: [1, 1.7, 1], opacity: [0.45, 0, 0.45] }}
+                transition={{ duration: 3.4, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.div
+                className="relative z-10 h-9 w-9"
+                animate={{ scale: [1, 1.04, 1] }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            >
+                <Image src="/brand/mora-stone-v1.png" alt="MÔRA" width={72} height={72} className="h-full w-full select-none" draggable={false} />
+            </motion.div>
+        </div>
+    );
 }
 
 // ─── component ───────────────────────────────────────────────────────────────

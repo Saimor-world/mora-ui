@@ -38,8 +38,7 @@ export function ControlCenter({ onClose, navigate, online, org, demo }: { onClos
             <Text variant="eyebrow">Live-Kontext</Text>
             <Text variant="title" as="div" className="mt-2">{org}</Text>
             <Text className="mt-1">Diese lokale Instanz arbeitet mit genau einer aktiven Organisation. Von hier gehst du direkt in Abteilungen und Struktur.</Text>
-            {/* Example counts only in the session-less preview; a real company never sees café numbers. */}
-            {demo ? <div className="os-cc__pills"><span>{DEMO_DEPARTMENTS.length} Abteilungen</span><span>{DEMO_DEPARTMENTS.reduce((n, d) => n + demoDocumentCount(d), 0)} Dokumente</span><span>Beispiel</span></div> : null}
+            <div className="os-cc__pills"><span>{DEMO_DEPARTMENTS.length} Abteilungen</span><span>{DEMO_DEPARTMENTS.reduce((n, d) => n + demoDocumentCount(d), 0)} Dokumente</span>{demo ? <span>Beispiel</span> : null}</div>
           </section>
           <section className="os-cc__card">
             <Text variant="eyebrow">Szene · auto</Text>

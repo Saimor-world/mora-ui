@@ -1,8 +1,9 @@
 'use client';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
-import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Text } from '@/components/os-kit';
+import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -20,10 +21,10 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
-import { OsDock, PHONE_DOCK_IDS } from './OsDock';
+import { OsDock } from './OsDock';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
+import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
 function lazyFor(m: FeatureManifest) {
@@ -71,23 +72,12 @@ export function OsShell({ preview }: { preview: boolean }) {
 
   useEffect(() => {
     setActiveFeature(resolveFeatureId(readHash(), ctx));
-    const onHash = () => { setActiveFeature(resolveFeatureId(readHash(), ctx)); setMoreOpen(false); };
+    const onHash = () => setActiveFeature(resolveFeatureId(readHash(), ctx));
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, [ctx, setActiveFeature]);
 
-  // "Mehr" is a phone sheet; on the computer every place is in the rail.
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const computer = window.matchMedia('(min-width: 768px)');
-    const onChange = () => { if (computer.matches) setMoreOpen(false); };
-    computer.addEventListener?.('change', onChange);
-    return () => computer.removeEventListener?.('change', onChange);
-  }, []);
-
   const dockItems = useMemo(() => [...nav.primary, ...nav.secondary].filter((m) => m.id !== 'mora'), [nav]);
-  // Phone: what does not fit into the five dock slots is reached through "Mehr".
-  const moreItems = useMemo(() => dockItems.filter((m) => !(PHONE_DOCK_IDS as readonly string[]).includes(m.id)), [dockItems]);
   const shortcutsOpen = useOsShellStore((s) => s.shortcutsOpen);
   const setShortcutsOpen = useOsShellStore((s) => s.setShortcutsOpen);
 
@@ -143,22 +133,21 @@ export function OsShell({ preview }: { preview: boolean }) {
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
+      <div className="os-small-notice" role="note" data-testid="os-small-notice">SAIMÔR ist eine Kommandozentrale – am besten auf Desktop, Laptop oder Tablet (ab 768 px).</div>
       <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} look={look} />
 
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
-            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text></Stack>
-            {/* Lea-Look: keine CORE-Plakette, keine E-Mail/Rolle, keine Uhr, keine Kapsel – der Kopf bleibt ruhig. */}
+            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text><span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status></span>{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
+            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} />
             <Stack direction="row" gap={1} align="center">
+              <ContextClock />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
-              <Button variant="ghost" size="sm" className="sb-phone-only" icon={<MoreHorizontal size={16} />} aria-expanded={moreOpen} aria-haspopup="dialog" onClick={() => setMoreOpen((v) => !v)} data-testid="os-more">
-                Mehr
-              </Button>
-              <Button size="sm" className="sb-desktop-only" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
+              <Button size="sm" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>
@@ -182,21 +171,24 @@ export function OsShell({ preview }: { preview: boolean }) {
         <OsDock
           items={dockItems}
           showLegacy={internal}
+          mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
           activeId={active.id}
           moraOpen={moraOpen}
+          moreActive={moreOpen || nav.mobileMore.some((m) => m.id === active.id)}
           onNavigate={(id) => { if (typeof window !== 'undefined' && window.innerWidth < 900) setMoraOpen(false); navigate(id); }}
           onSearch={() => setPaletteOpen(true)}
           onControl={() => useOsShellStore.getState().setControlOpen(!controlOpen)}
           controlOpen={controlOpen}
           onNotifications={() => setTrayOpen((v) => !v)}
           onMora={() => setMoraOpen(!moraOpen)}
+          onMore={() => setMoreOpen((v) => !v)}
         />
 
         {moreOpen ? (
           <div className="os-dialog-backdrop" style={{ alignItems: 'flex-end', padding: 0 }} onMouseDown={(e) => e.target === e.currentTarget && setMoreOpen(false)}>
-            <div className="os-dialog" role="dialog" aria-label="Weitere Bereiche" data-testid="os-more-sheet" style={{ width: '100%', borderRadius: 'var(--sb-radius-focus) var(--sb-radius-focus) 0 0', paddingBottom: 'calc(var(--os-dock-space) + var(--sb-space-2))' }}>
+            <div className="os-dialog" role="dialog" aria-label="Weitere Bereiche" style={{ width: '100%', borderRadius: 'var(--os-radius-xl) var(--os-radius-xl) 0 0', paddingBottom: 'calc(var(--os-bottom-bar) + var(--os-space-4))' }}>
               <Stack gap={1}>
-                {moreItems.map((m) => {
+                {[...nav.mobileMore, ...nav.mobileBar.filter((m) => m.id === 'mora')].map((m) => {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}

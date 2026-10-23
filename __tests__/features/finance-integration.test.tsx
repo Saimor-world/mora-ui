@@ -1,11 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { CoreError } from '@/lib/api/http';
-import { setSaimorSession, clearSession } from '@/__tests__/sessionFixtures';
-
-// These cases show SAIMÔR's own view; customers never see these internal cards.
-beforeEach(() => setSaimorSession());
-afterEach(() => clearSession());
 
 jest.mock('next/dynamic', () => () => {
   const Stub = (props: any) => <div data-testid="finance-v2-workspace" data-section={props.initialSection} data-hide-nav={String(Boolean(props.hideSectionNav))} />;

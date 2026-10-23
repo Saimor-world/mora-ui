@@ -7,7 +7,6 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useFinanceContracts, type ContractState, type FinanceContract } from './data/contracts';
 import { ContractStrip } from './ui/ContractStrip';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 // Finance v2 workspace (apps/finance-v2), lazily loaded — the real module, not a copy.
 const FinanceV2Workspace = dynamic(
@@ -24,16 +23,6 @@ export const FINANCE_TABS: Array<{ id: FinanceTab; label: string; section: 'stat
   { id: 'treasury', label: 'Treasury & Quellen', section: 'treasury', requires: ['state'] },
   { id: 'capital', label: 'Capital · XRPL (read-only)', section: 'capital', requires: ['state'] },
 ];
-
-/**
- * SAIMÔR-internal tabs: Treasury, XRPL capital and the Profit Center (its `capital`
- * section also shows the XRPL Watch Lab). Customer companies never see them.
- */
-export const INTERNAL_FINANCE_TABS: ReadonlySet<FinanceTab> = new Set<FinanceTab>(['profit', 'treasury', 'capital']);
-
-export function visibleFinanceTabs(internal: boolean) {
-  return internal ? FINANCE_TABS : FINANCE_TABS.filter((t) => !INTERNAL_FINANCE_TABS.has(t.id));
-}
 
 /** First blocking contract for a tab, if any. */
 export function blockingContract(tab: FinanceTab, contracts: FinanceContract[]): FinanceContract | null {
@@ -57,10 +46,7 @@ function stateForContract(state: ContractState) {
 
 export default function FinanceSurface({ preview }: FeatureSurfaceProps) {
   const { contracts, hasSession } = useFinanceContracts();
-  const internal = useIsSaimorInternal();
-  const tabs = visibleFinanceTabs(internal);
-  const [chosenTab, setTab] = useState<FinanceTab>('overview');
-  const tab: FinanceTab = tabs.some((t) => t.id === chosenTab) ? chosenTab : 'overview';
+  const [tab, setTab] = useState<FinanceTab>('overview');
   const setSurfaceContext = useOsShellStore((s) => s.setSurfaceContext);
   const def = FINANCE_TABS.find((t) => t.id === tab)!;
   const blocker = blockingContract(tab, contracts);
@@ -73,14 +59,13 @@ export default function FinanceSurface({ preview }: FeatureSurfaceProps) {
         <Text variant="eyebrow">Finance</Text>
         <Text variant="display" className="mt-2">Belegt, nicht geschätzt.</Text>
         <Text className="mt-2 max-w-2xl">
-          {internal
-            ? 'Cashflow, Profit Center, Treasury und Quellen aus CORE. Kapital und XRPL bleiben reine Anzeige – hier wird nichts signiert, gehandelt oder bewegt.'
-            : 'Einnahmen und Ausgaben deiner Firma aus CORE. Hier wird nur angezeigt, nichts bewegt.'}
+          Cashflow, Profit Center, Treasury und Quellen aus CORE. Kapital und XRPL bleiben reine Anzeige –
+          hier wird nichts signiert, gehandelt oder bewegt.
         </Text>
       </header>
 
       <div className="os-tabs" role="tablist" aria-label="Finance-Bereiche">
-        {tabs.map((t) => (
+        {FINANCE_TABS.map((t) => (
           <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} className="os-tab" onClick={() => setTab(t.id)}>{t.label}</button>
         ))}
       </div>
@@ -104,13 +89,11 @@ export default function FinanceSurface({ preview }: FeatureSurfaceProps) {
 
       <ContractStrip contracts={contracts} />
 
-      {internal && (
-        <Stack direction="row" gap={3} align="center" wrap>
-          <Text variant="meta">Die alte Capital-App (hartkodierte Konten) bleibt unter Labs › Legacy erreichbar.</Text>
-          <Button size="sm" variant="ghost" onClick={() => openLegacyApp('finance')}>Alte Finance öffnen</Button>
-          <Button size="sm" variant="ghost" onClick={() => openLegacyApp('finance-v2')}>Finance v2 als Fenster</Button>
-        </Stack>
-      )}
+      <Stack direction="row" gap={3} align="center" wrap>
+        <Text variant="meta">Die alte Capital-App (hartkodierte Konten) bleibt unter Labs › Legacy erreichbar.</Text>
+        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('finance')}>Alte Finance öffnen</Button>
+        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('finance-v2')}>Finance v2 als Fenster</Button>
+      </Stack>
     </div>
   );
 }

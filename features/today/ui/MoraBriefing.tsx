@@ -73,10 +73,9 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
           </div>
           <Stack direction="row" gap={2} className="mt-3">
             {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
-            {/* The café example is only for the session-less preview, never inside a customer company. */}
-            {!live ? <Button size="sm" variant="ghost" onClick={() => setPreview((v) => !v)} data-testid="briefing-preview-toggle">{preview ? 'Vorschau schließen' : 'So sähe es aus (Beispiel)'}</Button> : null}
+            <Button size="sm" variant="ghost" onClick={() => setPreview((v) => !v)} data-testid="briefing-preview-toggle">{preview ? 'Vorschau schließen' : 'So sähe es aus (Beispiel)'}</Button>
           </Stack>
-          {preview && !live ? (
+          {preview ? (
             <div className="os-briefing-demo mt-3" data-testid="briefing-demo">
               <Stack direction="row" gap={2} align="center" className="mb-2"><MoraStone size={20} /><Text variant="eyebrow">Beispiel · Simple Coffee Group</Text></Stack>
               <ul>{demoBriefing().map((l) => <li key={l}>{l}</li>)}</ul>

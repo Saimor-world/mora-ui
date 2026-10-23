@@ -20,6 +20,9 @@ import { OsShell } from '@/components/os-shell/OsShell';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
+// These navigation tests show the SAIMÔR view; customer hiding is covered in internalVisibility.test.tsx.
+jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => true }));
+
 function renderShell(preview = false) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={qc}><OsShell preview={preview} /></QueryClientProvider>);
@@ -29,26 +32,7 @@ describe('OsShell navigation', () => {
   beforeEach(() => {
     window.location.hash = '';
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
-    // SAIMÔR's own organization: sees Labs. The customer case is tested below.
-    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
-  });
-
-  it('hides Labs & System from a customer company', async () => {
-    useSessionStore.setState({ user: { id: 'u2', name: 'Lea', role: 'owner', tenant_id: 'tenant-beispiel-lea' } as any });
-    renderShell();
-    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
-    expect(within(nav).queryByRole('button', { name: 'Labs & System' })).toBeNull();
-  });
-
-  it('phone "Mehr" lists only the places outside the dock and closes on navigation', async () => {
-    renderShell();
-    fireEvent.click(screen.getByTestId('os-more'));
-    const sheet = screen.getByTestId('os-more-sheet');
-    expect(within(sheet).getByText('Finance')).toBeInTheDocument();
-    for (const docked of ['Heute', 'Post', 'Universe']) expect(within(sheet).queryByText(docked)).toBeNull();
-    expect(screen.queryByText(/am besten auf Desktop/)).toBeNull();
-    act(() => { window.location.hash = '#finance'; window.dispatchEvent(new HashChangeEvent('hashchange')); });
-    await waitFor(() => expect(screen.queryByTestId('os-more-sheet')).toBeNull());
+    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
   });
 
   it('renders the six primary surfaces and Labs from manifests', async () => {
