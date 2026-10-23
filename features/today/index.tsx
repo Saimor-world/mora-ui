@@ -16,6 +16,7 @@ import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
 import { PhoneHome } from './ui/PhoneHome';
+import { DayPanel } from '@/components/day/DayPanel';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import { firstName } from '@/lib/auth/displayName';
@@ -82,6 +83,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
       </header>
+
+      {hasSession && !preview ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
 
       <MoraBriefing live={!preview && hasSession} navigate={navigate} />
 

@@ -50,6 +50,7 @@ export function LiveWorld({ onAskMora, onAddDepartment }: { onAskMora: (text: st
         hidden={Boolean(open)}
         onOpenPlanet={setOpenId}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
+        moraLine={world.day.sentence}
       />
       {open && world.companyId ? (
         <PlanetWindow

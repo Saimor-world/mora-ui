@@ -25,7 +25,7 @@ export interface WorldPlanet {
   moons: WorldMoon[];
 }
 
-const isCalendarDept = (d: WorldDepartment) => /termin|kalender|buchung/i.test(`${d.slug ?? ''} ${d.name}`);
+export const isCalendarDept = (d: WorldDepartment) => /termin|kalender|buchung/i.test(`${d.slug ?? ''} ${d.name}`);
 
 export function localISO(date = new Date()): string {
   const p = (n: number) => String(n).padStart(2, '0');

@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { buildWorld, type WorldDepartment, type WorldEvent, type WorldTask } from './world';
+import { useDayStore } from './dayStore';
+import { buildLiveDay, calendarMeta } from './live';
+import { buildWorld, isCalendarDept, type WorldDepartment, type WorldEvent, type WorldTask } from './world';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
   if (Array.isArray(raw)) return raw as T[];
@@ -38,16 +40,24 @@ export function useWorld() {
     staleTime: 30_000,
     queryFn: async () => list<WorldTask>(await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['tasks', 'items']),
   });
-  const planets = useMemo(
-    () => buildWorld({ departments: tree.data ?? [], events: events.data ?? [] }),
-    [tree.data, events.data],
-  );
+  const phases = useDayStore((s) => s.phases);
+  const day = useMemo(() => buildLiveDay(events.data ?? [], tasks.data ?? [], phases), [events.data, tasks.data, phases]);
+  // Live: was Lea heute tut („ist da“, abgeschlossen), steht sofort am Termin-Planeten.
+  const planets = useMemo(() => {
+    const live = calendarMeta(day);
+    const depts = tree.data ?? [];
+    return buildWorld({ departments: depts, events: events.data ?? [] }).map((p) => {
+      const d = depts.find((x) => x.id === p.id);
+      return live && d && isCalendarDept(d) ? { ...p, meta: live } : p;
+    });
+  }, [tree.data, events.data, day]);
   return {
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,
     companyId,
     planets,
+    day,
     events: events.data ?? [],
     tasks: tasks.data ?? [],
   };

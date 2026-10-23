@@ -13,7 +13,8 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine }: {
+  moraLine?: string;
   planets: WorldPlanet[];
   phone: boolean;
   /** Ein Planet ist offen: das Universe bleibt stehen, aber unsichtbar dahinter. */
@@ -99,6 +100,11 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           data-testid="world-mora"
         >
           <MoraStone size={layout.mora} halo />
+        </button>
+      ) : null}
+      {layout && moraLine ? (
+        <button type="button" className="wd-mora-line" style={{ left: layout.cx, top: layout.cy + layout.mora / 2 + 14, zIndex: 11 + Math.round(layout.cy) }} onClick={onMora} data-testid="world-mora-line">
+          {moraLine}
         </button>
       ) : null}
 

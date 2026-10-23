@@ -1,10 +1,11 @@
 'use client';
 import React, { useMemo } from 'react';
 import { Loading, MoraStone, StateView } from '@/components/os-kit';
+import { DayPanel } from '@/components/day/DayPanel';
 import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
 import { useWorld } from '@/lib/lea/useWorld';
-import { buildDay, daySentence, inMinutes, personOf, serviceOf } from '@/lib/lea/day';
-import { hm, localISO, shortDate } from '@/lib/lea/world';
+import { buildDay, daySentence, personOf } from '@/lib/lea/day';
+import { hm } from '@/lib/lea/world';
 
 /**
  * Handy-Home V4: MÔRAs Satz und ein Knopf, die Termine von heute als Streifen zum
@@ -65,27 +66,7 @@ export function PhoneHome({ greeting, firstName, navigate, onAskMora }: {
         </section>
       ) : null}
 
-      {day.next ? (
-        <section className="wd-card" aria-label="Als Nächstes" data-testid="phone-home-next">
-          <p className="wd-eyebrow">Als Nächstes{day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ''}</p>
-          <p className="wd-card__title">{day.next.time ? `${day.next.time} ` : ''}{personOf(day.next.title)}</p>
-          <p className="wd-card__meta">{[day.next.date !== localISO(now) ? `am ${shortDate(day.next.date)}` : '', serviceOf(day.next.title), day.next.duration ? `${day.next.duration} Min` : ''].filter(Boolean).join(' · ') || 'Termin'}</p>
-        </section>
-      ) : null}
-
-      {day.onlyToday.length ? (
-        <section aria-label="Nur heute" data-testid="phone-home-today">
-          <p className="wd-eyebrow">Nur heute</p>
-          <div className="wd-list">
-            {day.onlyToday.map((t) => (
-              <div key={t.id} className="wd-item" data-overdue={t.overdue ? 'true' : 'false'}>
-                <b>{t.title}</b>
-                <span>{t.meta}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {!world.loading && !world.failed ? <DayPanel compact onAskMora={onAskMora} /> : null}
 
       {world.planets.length ? (
         <section aria-label="Deine Planeten">
