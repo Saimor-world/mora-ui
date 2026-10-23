@@ -80,7 +80,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
-            : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
+            : 'Das Wichtigste von heute, ruhig zusammengeführt.'}
         </Text>
       </header>}
 

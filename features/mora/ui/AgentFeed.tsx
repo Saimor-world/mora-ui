@@ -36,6 +36,20 @@ export function parseThoughtTime(ts?: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+/** CORE protokolliert teils englisch („Scanning index for exact match“). Kund:innen sehen deutsche Sätze. */
+const THOUGHT_DE: Array<[RegExp, string]> = [
+  [/scann?ing index|exact match|searching/i, 'Sucht in deinen Bereichen nach einem passenden Eintrag.'],
+  [/reading|parsing|ingest/i, 'Liest neue Einträge ein.'],
+  [/detect|signal/i, 'Hat ein neues Signal erkannt.'],
+  [/summari[sz]/i, 'Fasst zusammen, was sich verändert hat.'],
+];
+export function thoughtDe(text?: string | null): string {
+  if (!text) return '—';
+  if (/[äöüß]|\b(der|die|das|und|ist|nicht|ein|eine)\b/i.test(text)) return text;
+  if (!/\b(the|for|ing|and|of|to|with|index|match)\b|ing\b/i.test(text)) return text;
+  return THOUGHT_DE.find(([re]) => re.test(text))?.[1] ?? 'Arbeitet im Hintergrund an deinen Daten.';
+}
+
 function ago(d: Date | null): string {
   if (!d) return '';
   const m = Math.max(0, Math.round((Date.now() - d.getTime()) / 60000));
@@ -65,7 +79,7 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
               <span className="os-agent-feed__dot" aria-hidden />
               <div className="min-w-0">
                 <Text variant="meta">{[TYPE_LABEL[t.type || ''] || t.type || 'Aktivität', SOURCE_LABEL[t.signal_source || ''] || t.signal_source, sample ? null : ago(d)].filter(Boolean).join(' · ')}</Text>
-                <Text tone="default" className={compact ? 'truncate' : undefined}>{t.thought || '—'}</Text>
+                <Text tone="default" className={compact ? 'truncate' : undefined}>{thoughtDe(t.thought)}</Text>
                 {!compact && t.latent_intent ? <Text variant="meta">Absicht: {INTENT_LABEL[t.latent_intent] || t.latent_intent}</Text> : null}
               </div>
             </li>

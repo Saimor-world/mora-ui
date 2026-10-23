@@ -14,7 +14,17 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine, activeId = null, counts, sources = null, onOpenSource }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, counts, sources = null, onOpenSource }: {
+  /** Doppelklick: direkt hineinzoomen. */
+  onZoomPlanet?: (id: string) => void;
+  /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
+  selectedId?: string | null;
+  /** Planeten, deren Linie zu MÔRA gerade pulsiert (etwas hat sich geändert). */
+  pulseIds?: string[];
+  /** MÔRA atmet ruhig, denkt (Antwort unterwegs) oder spricht. */
+  moraState?: 'idle' | 'thinking' | 'speaking';
+  /** Kamerafahrt: das Universe zoomt auf diesen Planeten, bevor er sich öffnet. */
+  zoomTo?: string | null;
   /** Quellen-Ring (Systemplaneten aus /v3/universe): verbunden oder noch leer. */
   sources?: HorizonSource[] | null;
   onOpenSource?: (key: string) => void;
@@ -91,17 +101,43 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 
   const hold = (on: boolean) => () => { paused.current = on; };
 
+  // Parallaxe: Sternenschichten folgen dem Zeiger ganz leicht (nur Desktop, nie bei „weniger Bewegung“).
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (reduced || phone || e.pointerType !== 'mouse') return;
+    const el = fieldRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--px', (((e.clientX - r.left) / r.width) - 0.5).toFixed(3));
+    el.style.setProperty('--py', (((e.clientY - r.top) / r.height) - 0.5).toFixed(3));
+  };
+
+  // Kamera: Ursprung auf den Zielplaneten, dann weich hinein (CSS-Transition auf .wd-zoomwrap).
+  const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
+  const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
+  const camera: React.CSSProperties | undefined = zoomPt
+    ? { transformOrigin: `${zoomPt.x}px ${zoomPt.y}px`, transform: 'scale(2.6)', opacity: 0, filter: 'blur(2px)' }
+    : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
+
   return (
-    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined}>
-      <div className="wd-zoomwrap" style={{ transform: zoom === 1 ? undefined : `scale(${zoom})` }} data-testid="world-zoomwrap">
+    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined}>
+      <div className="wd-parallax wd-parallax--far" aria-hidden />
+      <div className="wd-parallax wd-parallax--near" aria-hidden />
+      <div className="wd-zoomwrap" style={camera} data-testid="world-zoomwrap">
       {layout ? (
         <svg className="wd-orbits" width={size.width} height={size.height} aria-hidden>
           {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
           {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
           {layout.slots.map((slot, i) => {
             const pt = placeOnOrbit(layout, slot);
-            const active = planets[i]?.id === activeId;
-            return <line key={`l${i}`} className={active ? 'wd-link wd-link--active' : 'wd-link'} x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} />;
+            const id = planets[i]?.id;
+            const active = id === activeId || id === selectedId;
+            const pulse = id ? pulseIds?.includes(id) : false;
+            return (
+              <g key={`l${i}`}>
+                <line className={active ? 'wd-link wd-link--active' : 'wd-link'} x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} />
+                {pulse ? <line className="wd-link-pulse" x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} data-testid={`world-pulse-${id}`} /> : null}
+              </g>
+            );
           })}
           {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
@@ -125,12 +161,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         <button
           type="button"
           className="wd-mora"
+          data-state={moraState}
           style={{ left: layout.cx, top: layout.cy, width: layout.mora, height: layout.mora, zIndex: 10 + Math.round(layout.cy) }}
           onClick={onMora}
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
-          <MoraStone size={layout.mora} halo />
+          <MoraStone size={layout.mora} halo thinking={moraState === 'thinking'} />
         </button>
       ) : null}
       {layout && moraLine ? (
@@ -148,6 +185,9 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             type="button"
             className="wd-planet"
             data-active={planet.id === activeId ? 'true' : undefined}
+            data-selected={planet.id === selectedId ? 'true' : undefined}
+            aria-pressed={planet.id === selectedId}
+            onDoubleClick={onZoomPlanet ? () => onZoomPlanet(planet.id) : undefined}
             style={slot ? undefined : { visibility: 'hidden' }}
             onClick={() => onOpenPlanet(planet.id)}
             onPointerEnter={hold(true)}
@@ -174,7 +214,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         <>
           {counts ? (
             <div className="wd-counters" aria-label="Zähler">
-              <span className="wd-counter" data-testid="world-count-nodes">{counts.nodes} Knoten</span>
+              <span className="wd-counter" data-testid="world-count-nodes">{counts.nodes} Elemente</span>
               <span className="wd-counter" data-testid="world-count-edges">{counts.edges} Verbindungen</span>
             </div>
           ) : null}

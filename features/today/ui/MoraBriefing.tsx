@@ -61,7 +61,7 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
     <Surface padding={5} data-testid="mora-briefing">
       <Stack direction="row" align="center" justify="space-between" className="mb-3">
         <Stack direction="row" gap={2} align="center"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
-        {real || mailDocked ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : preview ? <SampleTag /> : null}
+        {real && connected.length ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : preview ? <SampleTag /> : null}
       </Stack>
       {real || mailDocked ? (
         <Stack gap={3}>

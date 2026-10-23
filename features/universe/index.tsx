@@ -45,7 +45,7 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
             <Text variant="meta">
               {lens === 'organization'
                 ? hasSession && !demo
-                  ? 'Jede Kugel ist eine Abteilung deines Betriebs, in der Mitte MÔRA. Tippe eine an, um hineinzugehen.'
+                  ? 'Wähle einen Bereich – Pfeiltasten, Enter zum Hineinzoomen, oder frag MÔRA unten.'
                   : 'Jede Kugel ist eine Abteilung. Klicke eine an, um Dokumente, Aufgaben und Hinweise zu sehen. Linien zeigen Zusammenhänge, die MÔRA gefunden hat.'
                 : landscape.sample
                   ? 'Lokale Vorschau: die OS-Bereiche um MÔRA, gespeist aus dem Demo-Paket.'

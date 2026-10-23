@@ -44,7 +44,12 @@ export function liveHints(planet: FPlanet, day: LiveDay): string[] {
   }
   const c = planetCounts(planet);
   if (!planet.moons.length) out.push('Noch keine Ordner. Lege den ersten an, dann kreist er hier als Mond.');
-  else out.push(`${c.folders} Ordner mit ${c.items} Einträgen.`);
+  else {
+    // Kein Wiederholen der Zahlen aus den Kacheln: lieber das zuletzt Geänderte nennen.
+    const last = planet.moons.flatMap((m) => m.stars.map((s) => ({ s, m }))).filter((x) => x.s.modified).sort((a, b) => String(b.s.modified).localeCompare(String(a.s.modified)))[0];
+    if (last) out.push(`Zuletzt geändert: ${last.s.name} in ${last.m.name}.`);
+    else if (!events.length) out.push(`${c.folders} Ordner, ${c.items} Einträge.`);
+  }
   return out.slice(0, 4);
 }
 

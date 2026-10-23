@@ -1,9 +1,15 @@
 'use client';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Mic, Send } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
+import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
+import { PlanetFocus } from '@/components/world/PlanetFocus';
+import type { DayCommand } from '@/lib/lea/moraCommands';
+import { useDayStore } from '@/lib/lea/dayStore';
+import { personOf } from '@/lib/lea/day';
+import { localISO } from '@/lib/lea/world';
+import { useReducedMotion } from 'framer-motion';
 import { FinderVerse } from '@/components/finderverse/FinderVerse';
 import { visiblePlanetIds, RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { useHorizonSources } from '@/lib/lea/useHorizonSources';
@@ -32,12 +38,113 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
   const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
-  const close = useCallback(() => setOpenId(null), []);
-  const openPlanet = useCallback((id: string) => { setOpenId(id); setActiveId(id); }, []);
+  const reduced = !!useReducedMotion();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [zoomTo, setZoomTo] = useState<string | null>(null);
+  const [moraState, setMoraState] = useState<MoraState>('idle');
+  const [pulseIds, setPulseIds] = useState<string[]>([]);
+  const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
+  const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
+  const close = useCallback(() => { setOpenId(null); setZoomTo(null); }, []);
+  /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
+  const openPlanet = useCallback((id: string) => {
+    clearTimeout(zoomTimer.current);
+    setActiveId(id); setSelectedId(id);
+    if (reduced) { setOpenId(id); return; }
+    setZoomTo(id);
+    zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 520);
+  }, [reduced]);
+  useEffect(() => () => clearTimeout(zoomTimer.current), []);
+  /** Erster Klick wählt (Fokus-Panel), zweiter Klick auf denselben Planeten zoomt hinein. */
+  const selectPlanet = useCallback((id: string) => { if (selectedId === id) openPlanet(id); else setSelectedId(id); }, [selectedId, openPlanet]);
+  const pulse = useCallback((id: string | null | undefined) => {
+    if (!id) return;
+    setPulseIds((l) => [...l.filter((x) => x !== id), id]);
+    setTimeout(() => setPulseIds((l) => l.filter((x) => x !== id)), 1800);
+  }, []);
+  // Ändert sich etwas an Aufgaben oder Terminstatus (auch von „Heute“ aus), pulsiert die Linie dorthin.
+  const phases = useDayStore((st) => st.phases);
+  const setPhase = useDayStore((st) => st.setPhase);
+  const calendarPlanetId = useMemo(() => world.finder.find((p) => p.moons.some((m) => m.stars.some((x) => x.kind === 'event')))?.id ?? null, [world.finder]);
+  const taskSig = world.tasks.map((t) => `${t.id}:${t.status}`).join('|');
+  const phaseSig = JSON.stringify(phases);
+  const seen = useRef<{ t: string; p: string } | null>(null);
+  useEffect(() => {
+    if (seen.current) {
+      if (seen.current.t !== taskSig) pulse(world.tasksPlanetId);
+      if (seen.current.p !== phaseSig) pulse(calendarPlanetId);
+    }
+    seen.current = { t: taskSig, p: phaseSig };
+  }, [taskSig, phaseSig, pulse, world.tasksPlanetId, calendarPlanetId]);
   const focusId = useOsShellStore((s) => s.universeFocus);
   useEffect(() => {
     if (focusId && world.finder.some((p) => p.id === focusId)) { openPlanet(focusId); useOsShellStore.getState().setUniverseFocus(null); }
   }, [focusId, world.finder, openPlanet]);
+  // Big-Picture-Tastatur: Pfeile wandern zwischen den Planeten, Enter zoomt, Esc geht zurück.
+  const order = useMemo(() => worldPlanets.map((p) => p.id), [worldPlanets]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement | null;
+      if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      if (open) { if (e.key === 'Escape' && !el?.closest('.fv-list, .fv-orbit')) { /* FinderVerse hat eigenes Esc */ } return; }
+      if (['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp'].includes(e.key) && order.length) {
+        e.preventDefault();
+        const i = selectedId ? order.indexOf(selectedId) : -1;
+        const step = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : -1;
+        const next = order[(i + step + order.length) % order.length] ?? order[0];
+        setSelectedId(next);
+        (document.querySelector(`[data-testid="world-planet-${next}"]`) as HTMLElement | null)?.focus({ preventScroll: true });
+      } else if (e.key === 'Enter' && selectedId && !el?.closest('button')) {
+        e.preventDefault(); openPlanet(selectedId);
+      } else if (e.key === 'Escape' && selectedId) {
+        setSelectedId(null);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [open, order, selectedId, openPlanet]);
+
+  // MÔRAs Tages-Sätze ausführen – über dieselben Aktionen wie „Heute“, immer mit Rückgängig.
+  const runCommand = useCallback(async (cmd: DayCommand): Promise<MoraReply> => {
+    switch (cmd.kind) {
+      case 'jump': setSelectedId(cmd.planetId); openPlanet(cmd.planetId); return { text: `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
+      case 'done': {
+        if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
+        const ok = await dayActions.setDone(cmd.task, true);
+        return ok ? { text: `Erledigt: ${cmd.task.title}.`, tone: 'action', undo: () => { void dayActions.setDone(cmd.task, false); } } : { text: 'Konnte nicht gespeichert werden. Bitte noch einmal.', tone: 'note' };
+      }
+      case 'reopen': {
+        const ok = await dayActions.setDone(cmd.task, false);
+        return ok ? { text: `Wieder offen: ${cmd.task.title}.`, tone: 'action' } : { text: 'Konnte nicht gespeichert werden.', tone: 'note' };
+      }
+      case 'arrived': {
+        const prev = phases[cmd.event.id] ?? 'geplant';
+        setPhase(cmd.event.id, 'laeuft');
+        return { text: `${personOf(cmd.event.title)} ist da. Ich halte dir den Rest fern.`, tone: 'action', undo: () => setPhase(cmd.event.id, prev) };
+      }
+      case 'finish': {
+        const prev = phases[cmd.event.id] ?? 'geplant';
+        setPhase(cmd.event.id, 'erledigt');
+        return { text: `Termin mit ${personOf(cmd.event.title)} abgeschlossen.`, tone: 'action', undo: () => setPhase(cmd.event.id, prev) };
+      }
+      case 'ambiguous': return { text: `Welche ${cmd.what} meinst du: ${cmd.options.slice(0, 3).join(' oder ')}?`, tone: 'note' };
+      case 'unknown-target': return { text: `„${cmd.what}“ finde ich in deinen Daten nicht.`, tone: 'note' };
+    }
+  }, [dayActions, openPlanet, phases, setPhase, role]);
+  const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events]);
+  const askCtx = useMemo(() => ({ tasks: world.tasks, todayEvents, planets: finderPlanets.map((p) => ({ id: p.id, name: p.name })), running: world.day.running, stale: world.day.stale }), [world.tasks, todayEvents, finderPlanets, world.day.running, world.day.stale]);
+  const dayContext = useMemo(() => ({
+    surface: 'universe',
+    today: localISO(),
+    selected_area: selected?.name ?? null,
+    day_sentence: world.day.sentence,
+    next_event: world.day.next ? { time: world.day.next.time, title: world.day.next.title, date: world.day.next.date } : null,
+    running_event: world.day.running?.title ?? null,
+    open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
+    areas: finderPlanets.map((p) => p.name),
+  }), [selected, world.day, finderPlanets]);
+
   const counts = useMemo(() => {
     const moons = finderPlanets.reduce((n, p) => n + p.moons.length, 0);
     const stars = finderPlanets.reduce((n, p) => n + p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0), 0);
@@ -85,21 +192,40 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         sources={companyView && !phone ? horizon.sources : null}
         onOpenSource={() => openLegacyApp('settings')}
         hidden={Boolean(open)}
-        onOpenPlanet={openPlanet}
+        onOpenPlanet={selectPlanet}
+        onZoomPlanet={openPlanet}
+        selectedId={selectedId}
+        pulseIds={pulseIds}
+        moraState={moraState}
+        zoomTo={zoomTo}
         activeId={activeId}
         counts={counts}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={world.day.sentence}
+        moraLine={moraState === 'idle' ? world.day.sentence : undefined}
       />
-      {!phone && !open ? <AskBar planets={finderPlanets.map((p) => ({ id: p.id, name: p.name }))} onAsk={onAskMora} onOpenPlanet={openPlanet} /> : null}
-      {!phone && !open ? (
+      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
+      {selected ? (
+        <PlanetFocus
+          planet={selected}
+          day={world.day}
+          phone={phone}
+          readOnly={role === 'member'}
+          onZoom={() => openPlanet(selected.id)}
+          onClose={() => setSelectedId(null)}
+          onAsk={onAskMora}
+          onTaskDone={(t) => { void dayActions.setDone(t, true); }}
+          onArrived={() => { if (world.day.next) setPhase(world.day.next.id, 'laeuft'); }}
+          onFinish={() => { const ev = world.day.running ?? world.day.stale; if (ev) setPhase(ev.id, 'erledigt'); }}
+        />
+      ) : null}
+      {!phone && !open && !selected ? (
         <aside className="wd-horizon" aria-label="Dein Horizont" data-testid="world-horizon">
           <p className="fv-eyebrow">Dein Horizont</p>
           <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-calendar">
             <span>Kalender</span>
             <b>{world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
-          <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) openPlanet(t.id); }} data-testid="horizon-tasks">
+          <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) setSelectedId(t.id); }} data-testid="horizon-tasks">
             <span>Aufgaben</span>
             <b>{world.day.open.length ? `${world.day.open.length} offen${world.day.open.some((t) => t.overdue) ? ` · ${world.day.open.filter((t) => t.overdue).length} überfällig` : ''}` : 'alles erledigt'}</b>
           </button>
@@ -120,7 +246,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             const n = p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0);
             const max = Math.max(1, ...finderPlanets.map((q) => q.stars.length + q.moons.reduce((m, x) => m + x.stars.length, 0)));
             return (
-              <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => openPlanet(p.id)} data-testid={`horizon-bar-${p.id}`}>
+              <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => setSelectedId(p.id)} data-testid={`horizon-bar-${p.id}`}>
                 <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b>{n}</b>
               </button>
             );
@@ -147,50 +273,5 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         />
       ) : null}
     </>
-  );
-}
-
-type SpeechCtor = new () => { lang: string; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
-
-/** Frag-Leiste unten im Universe: Text geht an MÔRA, „@“ schlägt Planeten vor, Mikro nur wenn der Browser Sprache kann. */
-function AskBar({ planets, onAsk, onOpenPlanet }: { planets: { id: string; name: string }[]; onAsk: (t: string) => void; onOpenPlanet: (id: string) => void }) {
-  const [text, setText] = useState('');
-  const [listening, setListening] = useState(false);
-  const Speech: SpeechCtor | null = typeof window === 'undefined' ? null
-    : ((window as unknown as { SpeechRecognition?: SpeechCtor; webkitSpeechRecognition?: SpeechCtor }).SpeechRecognition
-      ?? (window as unknown as { webkitSpeechRecognition?: SpeechCtor }).webkitSpeechRecognition ?? null);
-  const at = /@([^\s@]*)$/.exec(text);
-  const matches = at ? planets.filter((p) => p.name.toLowerCase().includes(at[1].toLowerCase())).slice(0, 5) : [];
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const t = text.trim();
-    if (!t) return;
-    setText('');
-    onAsk(t);
-  };
-  const listen = () => {
-    if (!Speech) return;
-    const rec = new Speech();
-    rec.lang = 'de-DE';
-    rec.onresult = (e) => setText((prev) => `${prev} ${e.results[0][0].transcript}`.trim());
-    rec.onend = () => setListening(false);
-    setListening(true);
-    rec.start();
-  };
-  return (
-    <div className="wd-ask" data-testid="world-ask">
-      {matches.length ? (
-        <ul className="wd-ask__list" role="listbox" aria-label="Planeten">
-          {matches.map((p) => (
-            <li key={p.id}><button type="button" role="option" aria-selected={false} onClick={() => { setText(''); onOpenPlanet(p.id); }}>@{p.name}</button></li>
-          ))}
-        </ul>
-      ) : null}
-      <form onSubmit={submit}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Frag MÔRA oder tippe @ für einen Bereich" aria-label="Frag MÔRA" data-testid="world-ask-input" />
-        {Speech ? <button type="button" onClick={listen} aria-pressed={listening} aria-label="Sprechen" data-testid="world-ask-mic"><Mic size={18} /></button> : null}
-        <button type="submit" aria-label="Senden" data-testid="world-ask-send"><Send size={18} /></button>
-      </form>
-    </div>
   );
 }
