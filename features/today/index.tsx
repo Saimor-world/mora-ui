@@ -15,6 +15,9 @@ import { deriveAttention, deriveHints } from './data/attention';
 import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
+import { LeaHome } from '@/components/lea/LeaHome';
+import { useWorld } from '@/lib/lea/useWorld';
+import { firstName as realFirstName } from '@/lib/auth/displayName';
 
 const PHASE_GREETING = { flow: 'Guten Morgen', build: 'Guten Tag', lounge: 'Guten Abend', night: 'Guten Abend' } as const;
 function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date()) {
@@ -52,6 +55,19 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  const world = useWorld();
+  const realName = useSessionStore((s) => { const n = realFirstName({ name: s.user?.name, email: s.user?.email }); return n === 'Inhaberin' || n === 'Mitglied' ? '' : n; });
+  if (world.enabled) {
+    const ask = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
+    return (
+      <div data-testid="feature-today">
+        {world.loading ? <Loading lines={4} /> : (
+          <LeaHome firstName={realName} events={world.events} tasks={world.tasks} planets={world.planets} onOpenUniverse={() => navigate('universe')} onOpenCalendar={() => openLegacyApp('calendar')} onAsk={ask} />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-today">

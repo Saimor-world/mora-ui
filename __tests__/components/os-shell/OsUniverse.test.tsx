@@ -20,6 +20,9 @@ import { OsShell } from '@/components/os-shell/OsShell';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
+// These navigation tests show the SAIMÔR view; customer hiding is covered in internalVisibility.test.tsx.
+jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => true }));
+
 function renderShell() {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(<QueryClientProvider client={qc}><OsShell preview /></QueryClientProvider>);

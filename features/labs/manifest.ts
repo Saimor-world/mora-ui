@@ -9,6 +9,8 @@ export const labsManifest: FeatureManifest = {
   slot: 'secondary',
   order: 90,
   visibility: 'nav',
+  // Labs holds Nightwatch, scanner, terminal and the legacy finance: SAIMÔR-internal.
+  internalOnly: true,
   mobile: 'more',
   load: () => import('./index'),
   mora: {

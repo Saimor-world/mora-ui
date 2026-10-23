@@ -10,6 +10,8 @@ export const financeManifest: FeatureManifest = {
   order: 30,
   // Owner/admin roles; demo + member are not shown company finance.
   permissions: ['system_owner', 'owner', 'admin', 'manager'],
+  // SAIMÔR-intern: Kund:innen sehen Finance nicht.
+  internalOnly: true,
   visibility: 'nav',
   mobile: 'bar',
   load: () => import('./index'),

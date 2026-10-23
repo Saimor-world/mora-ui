@@ -29,6 +29,8 @@ export interface CommandPaletteProps {
   searchEnabled: boolean;
   /** Lokale Vorschau: Planeten und Dokumente aus dem Demo-Paket (Beispiel). */
   demo?: boolean;
+  /** Klassische Apps nur für SAIMÔR intern. */
+  showLegacy?: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ export interface CommandPaletteProps {
  * every legacy app, "ask MÔRA", and CORE keyword search (same searchClient the
  * legacy Spotlight/Search app use).
  */
-export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false, showLegacy = false }: CommandPaletteProps) {
   const [q, setQ] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -80,7 +82,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
     if (trimmed) {
       out.push({ id: 'ask', group: 'MÔRA', label: `MÔRA fragen: „${trimmed}“`, icon: <Sparkles size={15} />, run: () => askMora(trimmed) });
     }
-    for (const e of LEGACY_APP_PLACEMENT) {
+    for (const e of showLegacy ? LEGACY_APP_PLACEMENT : []) {
       const name = legacyAppName(e.appId);
       if (n && match(name, e.appId, e.note)) {
         out.push({ id: `l-${e.appId}`, group: 'Klassische Apps', label: name, hint: e.note, icon: <AppWindow size={15} />, run: () => openLegacyApp(e.appId) });
@@ -92,7 +94,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       out.push({ id: `s-${nodeId || title}`, group: 'Inhalte', label: String(title), hint: r?.type, icon: <FileText size={15} />, run: () => nodeId && openLegacyApp('document', { nodeId }) });
     }
     return out;
-  }, [features, trimmed, search.data, navigate, askMora, demo]);
+  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy]);
 
   useEffect(() => { setIndex(0); }, [trimmed]);
   if (!open) return null;

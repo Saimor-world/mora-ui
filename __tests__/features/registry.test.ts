@@ -1,6 +1,7 @@
 import { FEATURE_MANIFESTS, DEFAULT_FEATURE_ID, getFeature, isFeatureVisible, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 
-const owner = { role: 'owner' as const, flags: new Set<string>() };
+// The owner inside SAIMÔR's own organization (sees Labs); the customer view is in internalVisibility.test.tsx.
+const owner = { role: 'owner' as const, flags: new Set<string>(), internal: true };
 
 describe('feature manifest registry', () => {
   it('has unique ids and complete manifests', () => {

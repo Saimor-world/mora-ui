@@ -28,6 +28,7 @@ export const DEFAULT_FEATURE_ID = 'today';
 export function isFeatureVisible(manifest: FeatureManifest, ctx: FeatureVisibilityContext): boolean {
   if (manifest.flag && !ctx.flags.has(manifest.flag)) return false;
   if (!ctx.preview && manifest.permissions && (!ctx.role || !manifest.permissions.includes(ctx.role))) return false;
+  if (!ctx.preview && manifest.internalOnly && ctx.internal !== true) return false;
   return true;
 }
 

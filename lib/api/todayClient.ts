@@ -5,6 +5,7 @@ export type TodaySourceStatus =
   | 'empty'
   | 'disconnected'
   | 'not_synced'
+  | 'partial'
   | 'unavailable'
   | 'stale';
 export type TodayStatus = 'ok' | 'degraded' | 'unknown';
@@ -112,6 +113,7 @@ const SOURCE_STATES = new Set<TodaySourceStatus>([
   'empty',
   'disconnected',
   'not_synced',
+  'partial',
   'unavailable',
   'stale',
 ]);

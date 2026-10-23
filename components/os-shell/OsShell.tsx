@@ -1,4 +1,5 @@
 'use client';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
@@ -45,7 +46,8 @@ export function OsShell({ preview }: { preview: boolean }) {
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
   const flags = useMemo(() => enabledFeatureFlags(), []);
-  const ctx = useMemo(() => ({ role, flags, preview }), [role, flags, preview]);
+  const internal = useIsSaimorInternal();
+  const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
   const nav = useMemo(() => navigationModel(ctx), [ctx]);
   const visible = useMemo(() => visibleFeatures(ctx), [ctx]);
 
@@ -168,6 +170,7 @@ export function OsShell({ preview }: { preview: boolean }) {
 
         <OsDock
           items={dockItems}
+          showLegacy={internal}
           mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
           activeId={active.id}
           moraOpen={moraOpen}
@@ -189,7 +192,7 @@ export function OsShell({ preview }: { preview: boolean }) {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}
-                <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link>
+                {internal && <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link>}
               </Stack>
             </div>
           </div>
@@ -202,6 +205,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         open={paletteOpen}
         onClose={() => setPaletteOpen(false)}
         features={visible}
+        showLegacy={internal}
         navigate={navigate}
         askMora={askMora}
         searchEnabled={online && !preview}
