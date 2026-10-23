@@ -16,6 +16,7 @@ import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
 import { PhoneHome } from './ui/PhoneHome';
+import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { DayPanel } from '@/components/day/DayPanel';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
@@ -55,6 +56,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const phone = useIsPhone();
   const internal = useIsSaimorInternal();
   const today = useScopedToday({ backgroundRefresh: true });
+  // Rollen-Vorschau: Abteilung/Mitglied sehen keine Firmen-Quellen (Mail, Feed, Agenten).
+  const { role } = useRolePreview();
+  const companyView = role === 'owner';
   const finance = useFinanceSignal();
   const sample = preview && !today.snapshot;
   const snapshot: TodaySnapshot | null = today.snapshot || (sample ? sampleTodaySnapshot() : null);
@@ -67,7 +71,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const askMoraPhone = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
 
   return (
-    <div className="flex flex-col gap-6" data-testid="feature-today">
+    <div className="flex flex-col gap-6" data-testid="feature-today" data-role={role}>
+      {hasSession && !preview ? <div className="flex flex-wrap items-center justify-end gap-3"><RolePreviewBanner /><RolePreviewToggle /></div> : null}
       {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
       {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
@@ -90,10 +95,10 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             {([
               ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
               // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
-              ['Mail', Mail,
+              ...(companyView ? [['Mail', Mail,
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
-                () => navigate('post')],
+                () => navigate('post')]] as const : []),
               ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
@@ -109,7 +114,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
       {sample ? <MoraLagebild navigate={navigate} /> : null}
 
-      <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact />
+      {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
@@ -192,7 +197,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               ) : null}
             </Section>
 
-            <Section icon={<Inbox size={14} />} title="Neue Informationen" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
+            {companyView ? <Section icon={<Inbox size={14} />} title="Neue Informationen" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
               <SourceState status={snapshot.mail.status} label="Post" />
               {snapshot.mail.items.length === 0 && snapshot.mail.status !== 'disconnected' && snapshot.mail.status !== 'unavailable' ? <Text>Nichts Neues.</Text> : (
                 <div className="os-list">
@@ -204,7 +209,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                   ))}
                 </div>
               )}
-            </Section>
+            </Section> : null}
           </ResponsiveGrid>
         </>
       ) : null}

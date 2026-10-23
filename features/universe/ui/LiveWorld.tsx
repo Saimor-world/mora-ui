@@ -4,10 +4,11 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Mic, Send } from 'lucide-react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
-import { FinderVerse, type RolePreview } from '@/components/finderverse/FinderVerse';
+import { FinderVerse } from '@/components/finderverse/FinderVerse';
+import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
+import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
-import { useSessionStore } from '@/lib/store/sessionStore';
 import type { Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
@@ -21,12 +22,21 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const phone = useIsPhone();
   const [openId, setOpenId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [role, setRole] = useState<RolePreview>('owner');
-  const userRole = useSessionStore((s) => String((s.user as { role?: string } | null)?.role ?? '').toLowerCase());
-  const canPreviewRoles = ['owner', 'admin', 'superadmin', 'inhaber'].includes(userRole);
+  const { role } = useRolePreview();
+  const companyView = role === 'owner';
+  const horizon = useHorizonSources(world.companyId, world.enabled && companyView);
   const finder = useFinderActions(world.companyId);
   const dayActions = useDayActions(world.companyId);
-  const open = world.finder.find((p) => p.id === openId) ?? null;
+  // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
+  const visibleIds = useMemo(() => {
+    if (companyView) return null;
+    const depts = world.finder.filter((p) => p.kind === 'department');
+    const mine = depts.find((p) => p.id === activeId) ?? depts[0];
+    return new Set([mine?.id, world.tasksPlanetId].filter(Boolean) as string[]);
+  }, [companyView, world.finder, world.tasksPlanetId, activeId]);
+  const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
+  const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
+  const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const close = useCallback(() => setOpenId(null), []);
   const openPlanet = useCallback((id: string) => { setOpenId(id); setActiveId(id); }, []);
   const focusId = useOsShellStore((s) => s.universeFocus);
@@ -34,11 +44,11 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     if (focusId && world.finder.some((p) => p.id === focusId)) { openPlanet(focusId); useOsShellStore.getState().setUniverseFocus(null); }
   }, [focusId, world.finder, openPlanet]);
   const counts = useMemo(() => {
-    const moons = world.finder.reduce((n, p) => n + p.moons.length, 0);
-    const stars = world.finder.reduce((n, p) => n + p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0), 0);
-    const planets = world.finder.length;
+    const moons = finderPlanets.reduce((n, p) => n + p.moons.length, 0);
+    const stars = finderPlanets.reduce((n, p) => n + p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0), 0);
+    const planets = finderPlanets.length;
     return { nodes: 1 + planets + moons + stars, edges: planets + moons + stars };
-  }, [world.finder]);
+  }, [finderPlanets]);
   const openStar = useCallback((star: Star) => {
     const meta = (star.raw as { metadata?: Record<string, unknown> } | undefined)?.metadata;
     if (meta?.companyFile) void downloadCompanyFile(star.id, star.name).catch(() => undefined);
@@ -75,8 +85,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   return (
     <>
       <WorldUniverse
-        planets={world.planets}
+        planets={worldPlanets}
         phone={phone}
+        sources={companyView && !phone ? horizon.sources : null}
+        onOpenSource={() => openLegacyApp('settings')}
         hidden={Boolean(open)}
         onOpenPlanet={openPlanet}
         activeId={activeId}
@@ -84,7 +96,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
         moraLine={world.day.sentence}
       />
-      {!phone && !open ? <AskBar planets={world.finder.map((p) => ({ id: p.id, name: p.name }))} onAsk={onAskMora} onOpenPlanet={openPlanet} /> : null}
+      {!phone && !open ? <AskBar planets={finderPlanets.map((p) => ({ id: p.id, name: p.name }))} onAsk={onAskMora} onOpenPlanet={openPlanet} /> : null}
       {!phone && !open ? (
         <aside className="wd-horizon" aria-label="Dein Horizont" data-testid="world-horizon">
           <p className="fv-eyebrow">Dein Horizont</p>
@@ -96,36 +108,40 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <span>Aufgaben</span>
             <b>{world.day.open.length ? `${world.day.open.length} offen${world.day.open.some((t) => t.overdue) ? ` · ${world.day.open.filter((t) => t.overdue).length} überfällig` : ''}` : 'alles erledigt'}</b>
           </button>
+          {companyView ? (
+            <>
+              <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
+                <span>Mail</span>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : 'Posteingang ruhig'}</b>
+              </button>
+              <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-feed">
+                <span>Feed</span>
+                <b>{!horizon.feed ? '…' : horizon.feed.status === 'unavailable' ? 'nicht lesbar' : horizon.feed.items[0] ? horizon.feed.items[0].title : 'keine neuen Feed-Signale'}</b>
+              </button>
+            </>
+          ) : null}
           <p className="fv-eyebrow" style={{ marginTop: 12 }}>Wo die Arbeit liegt</p>
-          {world.finder.map((p) => {
+          {finderPlanets.map((p) => {
             const n = p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0);
-            const max = Math.max(1, ...world.finder.map((q) => q.stars.length + q.moons.reduce((m, x) => m + x.stars.length, 0)));
+            const max = Math.max(1, ...finderPlanets.map((q) => q.stars.length + q.moons.reduce((m, x) => m + x.stars.length, 0)));
             return (
               <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => openPlanet(p.id)} data-testid={`horizon-bar-${p.id}`}>
                 <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b>{n}</b>
               </button>
             );
           })}
-          <p className="wd-horizon__foot">{world.finder.length} Bereiche · {counts.nodes - 1 - world.finder.length} Ordner und Einträge</p>
+          <p className="wd-horizon__foot">{finderPlanets.length} Bereiche · {counts.nodes - 1 - finderPlanets.length} Ordner und Einträge</p>
         </aside>
       ) : null}
-      {canPreviewRoles && !open && !phone ? (
-        <div className="absolute right-5 top-4 z-[900] flex items-center gap-2" data-testid="role-preview">
-          <span className="text-[12px] text-[rgba(235,231,222,.6)]">Vorschau (intern)</span>
-          <div className="wd-roles" role="group" aria-label="Rollen-Vorschau">
-            {([['owner', 'Inhaberin'], ['department', 'Abteilung'], ['member', 'Mitglied']] as const).map(([r, label]) => (
-              <button key={r} type="button" aria-pressed={role === r} onClick={() => setRole(r)} data-testid={`role-${r}`}>{label}</button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      {!open && !phone ? <RolePreviewToggle className="absolute right-5 top-4 z-[900]" /> : null}
+      {!open ? <div className="absolute left-1/2 top-4 z-[900] -translate-x-1/2"><RolePreviewBanner /></div> : null}
       {open ? (
         <FinderVerse
           key={open.id}
           planet={open}
           phone={phone}
           day={world.day}
-          role={canPreviewRoles ? role : 'owner'}
+          role={role}
           onClose={close}
           onAskMora={(q) => { close(); onAskMora(q); }}
           onOpenStar={openStar}

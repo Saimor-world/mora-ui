@@ -14,6 +14,10 @@ export interface WorldSpace { id: string; name: string; folder_count?: number; f
 export interface WorldDepartment { id: string; name: string; slug?: string; spaces?: WorldSpace[] }
 
 export interface WorldMoon { id: string; label: string; count: number }
+/** Kleiner Punkt im Netz: ein echter Eintrag (Datei, Notiz, Termin, Aufgabe). */
+export interface WorldDot { id: string; label: string; kind: string; overdue?: boolean; done?: boolean }
+/** Was sichtbar um einen Planeten kreist: Ordner (mit ihren Einträgen) und direkte Sterne (Aufgaben). */
+export interface WorldOrbit { moons: { id: string; label: string; stars: WorldDot[] }[]; stars: WorldDot[] }
 export interface WorldPlanet {
   id: string;
   name: string;
@@ -23,6 +27,7 @@ export interface WorldPlanet {
   /** Ruhige Zeile unter dem Namen. */
   meta: string;
   moons: WorldMoon[];
+  orbit?: WorldOrbit;
 }
 
 export const isCalendarDept = (d: WorldDepartment) => /termin|kalender|buchung/i.test(`${d.slug ?? ''} ${d.name}`);

@@ -93,7 +93,11 @@ export function useWorld() {
       if (cal && upcoming.length) meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       if (cal && live) meta = live;
       const weight = p.kind === 'tasks' ? p.stars.length : c.folders + c.items + (cal ? upcoming.length : 0);
-      return { id: p.id, name: p.name, tone: p.kind === 'department' ? matteTone(p.name, { count: weight }) : p.tone, weight, meta, moons: p.moons.map((m) => ({ id: m.id, label: m.name, count: m.count })) };
+      return { id: p.id, name: p.name, tone: p.kind === 'department' ? matteTone(p.name, { count: weight }) : p.tone, weight, meta, moons: p.moons.map((m) => ({ id: m.id, label: m.name, count: m.count })),
+        orbit: {
+          moons: p.moons.map((m) => ({ id: m.id, label: m.name, stars: m.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind })) })),
+          stars: p.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind, overdue: x.overdue, done: x.done })),
+        } };
     });
   }, [finder, tree.data, events.data, day]);
   return {

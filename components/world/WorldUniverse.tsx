@@ -2,7 +2,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { MoraStone } from '@/components/os-kit';
-import type { WorldPlanet } from '@/lib/lea/world';
+import type { WorldOrbit, WorldPlanet } from '@/lib/lea/world';
+import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { floatOffset, layoutOrbits, placeOnOrbit, type OrbitLayout } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 
@@ -13,7 +14,10 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine, activeId = null, counts }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine, activeId = null, counts, sources = null, onOpenSource }: {
+  /** Quellen-Ring (Systemplaneten aus /v3/universe): verbunden oder noch leer. */
+  sources?: HorizonSource[] | null;
+  onOpenSource?: (key: string) => void;
   moraLine?: string;
   /** Zuletzt geöffneter Planet: leuchtet und trägt „Aktiver Bereich“. */
   activeId?: string | null;
@@ -99,8 +103,24 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             const active = planets[i]?.id === activeId;
             return <line key={`l${i}`} className={active ? 'wd-link wd-link--active' : 'wd-link'} x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} />;
           })}
+          {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
+      {layout && sources?.length ? sources.map((src, i) => {
+        const ring = sourceRing(layout);
+        // Obere Hälfte des äußeren Rings, gleichmäßig von links nach rechts.
+        const a = Math.PI + (Math.PI * (i + 1)) / (sources.length + 1);
+        const x = layout.cx + Math.cos(a) * ring.rx;
+        const y = layout.cy + Math.sin(a) * ring.ry;
+        return (
+          <button key={src.key} type="button" className="wd-source" data-state={src.state} style={{ left: x, top: y }} onClick={() => onOpenSource?.(src.key)}
+            title={src.state === 'connected' ? `${src.label}: ${src.sources.join(', ')}` : `${src.label}: noch keine Quelle verbunden`} data-testid={`world-source-${src.key.replace('system:', '')}`}>
+            <i aria-hidden />
+            <span>{src.label}</span>
+            <small>{src.state === 'connected' ? 'verbunden' : 'noch leer'}</small>
+          </button>
+        );
+      }) : null}
 
       {layout ? (
         <button
@@ -138,6 +158,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             aria-label={`${planet.name} öffnen · ${planet.meta}`}
             data-testid={`world-planet-${planet.id}`}
           >
+            {planet.orbit ? <PlanetOrbit orbit={planet.orbit} size={slot?.size ?? 60} phone={phone} /> : null}
             <WorldPlanetSphere tone={planet.tone} size={slot?.size ?? 60}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
             </WorldPlanetSphere>
@@ -166,5 +187,69 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         </>
       ) : null}
     </div>
+  );
+}
+
+function sourceRing(layout: OrbitLayout) {
+  const outer = layout.rings[layout.rings.length - 1] ?? { rx: layout.cx * 0.6, ry: layout.cy * 0.5 };
+  return { rx: Math.min(layout.cx - 90, outer.rx * 1.22), ry: Math.min(layout.cy - 40, outer.ry * 1.3) };
+}
+
+const MAX_MOONS = 6;
+const MAX_STARS = 8;
+
+/**
+ * Sichtbares Netz um einen Planeten: seine echten Ordner als Monde, deren Einträge als
+ * Sternpunkte und direkte Sterne (Aufgaben) – jeweils mit feiner Leuchtlinie. Nur Anzeige,
+ * der Klick gehört dem Planeten. Mehr als Platz ist, steht als „+N“ da.
+ */
+export function PlanetOrbit({ orbit, size, phone }: { orbit: WorldOrbit; size: number; phone: boolean }) {
+  const moons = orbit.moons.slice(0, MAX_MOONS);
+  const stars = orbit.stars.slice(0, MAX_STARS);
+  if (!moons.length && !stars.length) return null;
+  const r0 = size / 2;
+  const moonR = r0 + (phone ? 22 : 34);
+  const starR = r0 + (phone ? 14 : 20);
+  const moonSize = phone ? 10 : 14;
+  const box = (moonR + 26) * 2;
+  const c = box / 2;
+  // Monde oben verteilt (Label darunter bleibt frei), Sterne gleichmäßig rundherum.
+  const moonAt = (i: number, n: number) => {
+    const a = -Math.PI / 2 + (n === 1 ? -0.7 : (-1.1 + (2.2 * i) / Math.max(1, n - 1)));
+    return { x: c + Math.cos(a) * moonR, y: c + Math.sin(a) * moonR, a };
+  };
+  const starAt = (i: number, n: number) => {
+    const a = -Math.PI / 2 + (2 * Math.PI * i) / n + 0.35;
+    return { x: c + Math.cos(a) * starR, y: c + Math.sin(a) * starR };
+  };
+  return (
+    <span className="wd-orbit" style={{ width: box, height: box, marginLeft: -box / 2, marginTop: -box / 2 }} aria-hidden data-testid="world-planet-orbit">
+      <svg width={box} height={box}>
+        {moons.map((m, i) => {
+          const p = moonAt(i, moons.length);
+          const sub = m.stars.slice(0, MAX_STARS);
+          return (
+            <g key={m.id}>
+              <line className="wd-sublink" x1={c + Math.cos(p.a) * r0} y1={c + Math.sin(p.a) * r0} x2={p.x} y2={p.y} />
+              {sub.map((st, j) => {
+                const b = p.a + (-0.9 + (1.8 * j) / Math.max(1, sub.length - 1)) * (sub.length > 1 ? 1 : 0);
+                const d = moonSize / 2 + (phone ? 7 : 10);
+                return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={p.x} y1={p.y} x2={p.x + Math.cos(b) * d} y2={p.y + Math.sin(b) * d} /><circle className="wd-stardot" data-kind={st.kind} cx={p.x + Math.cos(b) * d} cy={p.y + Math.sin(b) * d} r={phone ? 1.6 : 2.2} /></g>;
+              })}
+              <circle className="wd-moondot" cx={p.x} cy={p.y} r={moonSize / 2} />
+            </g>
+          );
+        })}
+        {stars.map((st, i) => {
+          const p = starAt(i, stars.length);
+          return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={c} y1={c} x2={p.x} y2={p.y} /><circle className="wd-stardot" data-kind={st.kind} data-overdue={st.overdue ? 'true' : undefined} data-done={st.done ? 'true' : undefined} cx={p.x} cy={p.y} r={phone ? 2.4 : 3.2} /></g>;
+        })}
+      </svg>
+      {!phone ? moons.map((m, i) => {
+        const p = moonAt(i, moons.length);
+        return <span key={m.id} className="wd-moonlabel" style={{ left: p.x, top: p.y - moonSize / 2 - 4 }}>{m.label}{m.stars.length ? ` · ${m.stars.length}` : ''}</span>;
+      }) : null}
+      {orbit.moons.length > MAX_MOONS ? <span className="wd-moremoons">+{orbit.moons.length - MAX_MOONS}</span> : null}
+    </span>
   );
 }
