@@ -53,3 +53,13 @@ describe('MoraStone', () => {
     expect(screen.getByTestId('mora-stone')).toHaveStyle({ animation: 'none' });
   });
 });
+
+describe('MoraStone centre size', () => {
+  it('lets only the Universe centre grow beyond 96 px', () => {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { clampMoraSize } = require('@/components/mora/MoraStone');
+    expect(clampMoraSize(150)).toBe(96);
+    expect(clampMoraSize(150, true)).toBe(150);
+    expect(clampMoraSize(400, true)).toBe(160);
+  });
+});

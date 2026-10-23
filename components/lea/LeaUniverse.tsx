@@ -29,8 +29,8 @@ function useSize<T extends HTMLElement>() {
 
 interface Placed { planet: WorldPlanet; x: number; y: number; d: number; depth: number; orbit: number }
 
-const MORA_DESKTOP = 120;
-const MORA_PHONE = 88;
+const MORA_DESKTOP = 150;
+const MORA_PHONE = 104;
 export const moraSize = (phone: boolean) => (phone ? MORA_PHONE : MORA_DESKTOP);
 
 /** Planeten auf 2–3 Ellipsen; vorne (unten) größer, hinten (oben) kleiner und gedämpft. Nie hinter MÔRA. */
@@ -55,7 +55,7 @@ export function placePlanets(planets: WorldPlanet[], width: number, height: numb
     let x = cx + rx * Math.cos(angle);
     let y = cy + ry * Math.sin(angle);
     const depth = (Math.sin(angle) + 1) / 2; // 0 hinten (oben), 1 vorne (unten)
-    const baseD = phone ? 54 + 16 * (planet.weight / maxW) : 80 + 26 * (planet.weight / maxW);
+    const baseD = phone ? 50 + 12 * (planet.weight / maxW) : 64 + 24 * (planet.weight / maxW);
     const d = Math.round(baseD * (0.84 + 0.16 * depth));
     // Abstand zu MÔRA sichern
     const min = moraSize(phone) / 2 + d / 2 + 28;
@@ -104,7 +104,7 @@ export function LeaUniverse({ planets, companyName, onAddDepartment }: { planets
               {layout.orbits.map((o, i) => <ellipse key={i} cx={size.width / 2} cy={size.height / 2} rx={o.rx} ry={o.ry} />)}
             </svg>
             <div className="lea-universe__mora" style={{ left: size.width / 2, top: size.height / 2 }}>
-              <MoraStone size={moraSize(size.width < 640)} label="MÔRA" />
+              <MoraStone size={moraSize(size.width < 640)} centre label="MÔRA" />
             </div>
             {layout.placed.map(({ planet, x, y, d, depth }) => (
               <button

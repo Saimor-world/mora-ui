@@ -18,6 +18,8 @@ import { stylebook } from '@/lib/design/tokens';
 export interface MoraStoneProps {
   /** Diameter in px, clamped to 24–96. */
   size?: number;
+  /** Universe centre only: MÔRA may grow to 160 px so it stays the largest body. */
+  centre?: boolean;
   /** MÔRA is working on something: eyes look slightly up. */
   thinking?: boolean;
   /** Selected/open state, drawn as the jade focus ring (no glow). */
@@ -31,13 +33,13 @@ export interface MoraStoneProps {
 
 const { mora } = stylebook;
 
-export function clampMoraSize(size: number | undefined): number {
+export function clampMoraSize(size: number | undefined, centre = false): number {
   const value = typeof size === 'number' && Number.isFinite(size) ? size : 40;
-  return Math.min(mora.maxSize, Math.max(mora.minSize, Math.round(value)));
+  return Math.min(centre ? 160 : mora.maxSize, Math.max(mora.minSize, Math.round(value)));
 }
 
-export function MoraStone({ size, thinking = false, halo = false, label, still = false, className }: MoraStoneProps) {
-  const px = clampMoraSize(size);
+export function MoraStone({ size, thinking = false, halo = false, label, still = false, className, centre = false }: MoraStoneProps) {
+  const px = clampMoraSize(size, centre);
   const gradientId = `sb-mora-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
 
   return (
