@@ -68,7 +68,7 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
           {real ? <Stack direction="row" gap={3} align="flex-start"><MoraStone size={28} /><Text>{brief.data!.text}</Text></Stack> : null}
           {mailDocked ? (
             <div data-testid="briefing-mail">
-              {!real ? <Text variant="meta" className="mb-2">Ein KI-Briefing liefert CORE gerade nicht. Das hier ist die regelbasierte Zusammenfassung deines Postfachs.</Text> : null}
+              {!real ? <Text variant="meta" className="mb-2">Kurz aus deinem Postfach:</Text> : null}
               <MailSummaryView enabled={mailDocked} variant="full" />
             </div>
           ) : null}

@@ -1,5 +1,8 @@
 'use client';
-import React, { useDeferredValue, useState } from 'react';
+import { useWorld } from '@/lib/lea/useWorld';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
+import type { Star } from '@/lib/lea/finder';
+import React, { useDeferredValue, useMemo, useState } from 'react';
 import { BookOpen, Brain, FileText, Folder, FolderHeart, NotebookPen, Search } from 'lucide-react';
 import { Button, SampleTag, FailureState, Input, Loading, ResponsiveGrid, Stack, StateView, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
@@ -30,6 +33,18 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
   const memories = useRecentMemories();
   const sample = Boolean(preview) && !hasSession;
   const demoDocs = demoAllDocuments();
+  const world = useWorld();
+  const showInUniverse = useUniverseFocus((s) => s.show);
+  const worldDocs = useMemo(() => {
+    const needle = deferred.trim().toLowerCase();
+    const out: { planetId: string; planetName: string; moonId: string; moonName: string; star: Star }[] = [];
+    for (const pl of world.finder) for (const m of pl.moons) for (const st of m.stars) {
+      if (st.kind === 'task' || st.kind === 'event') continue;
+      if (needle && !`${st.name} ${m.name} ${pl.name}`.toLowerCase().includes(needle)) continue;
+      out.push({ planetId: pl.id, planetName: pl.name, moonId: m.id, moonName: m.name, star: st });
+    }
+    return out;
+  }, [world.finder, deferred]);
   const q = deferred.trim().toLowerCase();
   const demoHits = q ? demoDocs.filter((d) => `${d.name} ${d.summary} ${d.department} ${d.folder} ${d.tags.join(' ')}`.toLowerCase().includes(q)) : demoDocs;
 
@@ -37,11 +52,34 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
     <div className="flex flex-col gap-6" data-testid="feature-knowledge">
       <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">Wissen</Text>{sample ? <SampleTag /> : null}</Stack>
-        <Text variant="display" className="mt-2">Hier weiß SAIMÔR Dinge.</Text>
+        <Text variant="display" className="mt-2">Was dein Studio weiß.</Text>
         <Text className="mt-2 max-w-2xl">Dateien, Notizen, Dokumente und das, was MÔRA sich gemerkt hat – mit einer Suche.</Text>
       </header>
 
       <Input label="Wissen durchsuchen" placeholder="Wonach suchst du?" value={query} onChange={(e) => setQuery(e.target.value)} />
+
+      {!sample && worldDocs.length ? (
+        <Surface padding={5} data-testid="knowledge-world-docs">
+          <Text variant="eyebrow" className="mb-1">In deinen Bereichen</Text>
+          <Text variant="meta" className="mb-3">Antippen zeigt das Dokument als Stern im Universe.</Text>
+          <div className="os-list">
+            {worldDocs.slice(0, 8).map((d) => (
+              <button key={d.star.id} type="button" className="os-list-row w-full text-left" data-testid={`knowledge-doc-${d.star.id}`}
+                onClick={() => { showInUniverse({ planetId: d.planetId, moonId: d.moonId, starId: d.star.id }); navigate('universe'); }}>
+                <Text tone="default" className="truncate">{d.star.name}</Text>
+                <Text variant="meta">{d.planetName} · {d.moonName}</Text>
+              </button>
+            ))}
+          </div>
+        </Surface>
+      ) : !sample && world.enabled && !world.loading && !deferred.trim() ? (
+        <Surface padding={5} data-testid="knowledge-world-empty">
+          <Text variant="eyebrow" className="mb-1">In deinen Bereichen</Text>
+          <Text tone="default">Noch keine Dokumente oder Notizen in deinen Bereichen.</Text>
+          <Text variant="meta" className="mt-1">Im Universe legst du sie direkt in einem Ordner an – dann findest du sie hier und als Stern.</Text>
+          <Button size="sm" variant="ghost" className="mt-3" onClick={() => navigate('universe')}>Zum Universe</Button>
+        </Surface>
+      ) : null}
 
       {search.active && !sample ? (
         <ResponsiveGrid columns={2}>

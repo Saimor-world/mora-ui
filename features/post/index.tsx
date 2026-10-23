@@ -1,4 +1,5 @@
 'use client';
+import { localISO, shortDate } from '@/lib/lea/world';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
@@ -39,7 +40,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const sample = Boolean(preview) && !hasSession;
   const liveInbox = usePostInbox();
   const liveCalendar = usePostCalendar();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localISO(new Date());
   // Lokale Vorschau: Demo-Paket „Simple Coffee Group“ (saimor-core demo_isolation.py), als Beispiel markiert.
   const inbox = sample ? demoQuery(DEMO_MAIL.map((m) => ({ id: m.id, subject: m.subject, from: m.from, snippet: m.snippet, read: m.read }))) : liveInbox;
   const calendar = sample ? demoQuery(DEMO_CALENDAR.map((e) => ({ id: e.id, title: e.title, date: today, time: e.time }))) : liveCalendar;
@@ -50,8 +51,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">Post</Text>{sample ? <SampleTag /> : null}</Stack>
         <Text variant="display" className="mt-2">Nachrichten und Termine.</Text>
         <Text className="mt-2 max-w-2xl">
-          Ein Ort für das, was hereinkommt und was ansteht. Antworten und Termine anlegen laufen vorerst über die
-          bestehenden Apps – MÔRA hilft beim Entwurf, senden tust du.
+          Was hereinkommt und was ansteht. MÔRA hilft beim Antworten – senden tust du.
         </Text>
       </header>
       <ResponsiveGrid columns={2}>
@@ -72,8 +72,8 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
             <div className="os-list">
-              {items.slice(0, 8).map((e) => (
-                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.date}{e.time ? ` · ${e.time}` : ''}</Text></div>
+              {items.filter((e) => !e.date || String(e.date) >= today).slice(0, 8).map((e) => (
+                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{postDate(String(e.date || ''), today)}{e.time ? ` · ${e.time} Uhr` : ''}</Text></div>
               ))}
             </div>
           )} />
@@ -88,4 +88,12 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
       ) : <CalendarContinuity />}
     </div>
   );
+}
+
+function postDate(iso: string, today: string): string {
+  if (!iso) return '';
+  if (iso.slice(0, 10) === today) return 'Heute';
+  const t = new Date(`${today}T12:00:00`); t.setDate(t.getDate() + 1);
+  if (iso.slice(0, 10) === localISO(t)) return 'Morgen';
+  return shortDate(iso.slice(0, 10));
 }

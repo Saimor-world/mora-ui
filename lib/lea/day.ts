@@ -47,7 +47,7 @@ export function buildDay(events: WorldEvent[], tasks: WorldTask[], now = new Dat
 export function daySentence(day: Day, now = new Date()): string {
   const left = day.today.filter((e) => (e.time ?? '23:59') >= hm(now)).length;
   if (!day.today.length) return day.next ? `Heute ist nichts eingetragen. Der nächste Termin ist am ${shortDate(day.next.date)}.` : 'Heute ist nichts eingetragen.';
-  if (!left) return `Die ${plural(day.today.length, 'Termin', 'Termine')} von heute sind vorbei.`;
+  if (!left) return day.today.length === 1 ? 'Dein Termin heute ist vorbei.' : `Alle ${day.today.length} Termine von heute sind vorbei.`;
   const next = day.next && day.next.date === localISO(now) ? ` Als Nächstes um ${day.next.time} ${personOf(day.next.title)}.` : '';
   return `Heute ${left === day.today.length ? plural(left, 'Termin', 'Termine') : `noch ${plural(left, 'Termin', 'Termine')}`}.${next}`;
 }

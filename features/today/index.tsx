@@ -121,7 +121,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <Stack gap={1} className="min-w-0">
             <Text variant="eyebrow">Universe</Text>
             <Text variant="title" as="div">Den Raum deines Unternehmens betreten</Text>
-            <Text variant="meta">Bereiche, Spaces und Zusammenhänge – als Landschaft statt als Liste.</Text>
+            <Text variant="meta">Bereiche, Ordner und Termine – als Raum statt als Liste.</Text>
           </Stack>
           <ArrowRight size={16} className="os-tone-accent" aria-hidden />
         </Stack>

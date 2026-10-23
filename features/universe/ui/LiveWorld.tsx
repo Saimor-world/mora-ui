@@ -1,4 +1,5 @@
 'use client';
+import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
@@ -27,6 +28,14 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const world = useWorld();
   const phone = useIsPhone();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [initial, setInitial] = useState<{ moonId?: string | null; starId?: string | null } | null>(null);
+  const takeTarget = useUniverseFocus((s) => s.take);
+  const pendingTarget = useUniverseFocus((s) => s.target);
+  useEffect(() => {
+    if (!pendingTarget) return;
+    const t = takeTarget();
+    if (t) { setInitial({ moonId: t.moonId, starId: t.starId }); setOpenId(t.planetId); }
+  }, [pendingTarget, takeTarget]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { role } = useRolePreview();
   const companyView = role === 'owner';
@@ -45,7 +54,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const [pulseIds, setPulseIds] = useState<string[]>([]);
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
-  const close = useCallback(() => { setOpenId(null); setZoomTo(null); }, []);
+  const close = useCallback(() => { setOpenId(null); setInitial(null); setZoomTo(null); }, []);
   /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
   const openPlanet = useCallback((id: string) => {
     clearTimeout(zoomTimer.current);
@@ -261,6 +270,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         <FinderVerse
           key={open.id}
           planet={open}
+          initialMoonId={initial?.moonId}
+          initialStarId={initial?.starId}
           phone={phone}
           day={world.day}
           role={role}

@@ -57,7 +57,7 @@ describe('OsShell navigation', () => {
     await screen.findByTestId('feature-post');
     act(() => { fireEvent.keyDown(window, { key: 'j', metaKey: true }); });
     const panel = await screen.findByTestId('mora-console-panel');
-    expect(panel).toHaveTextContent('Kontext: Post');
+    expect(panel).toHaveTextContent('Bei: Post');
     expect(panel).toHaveTextContent('nur mit Bestätigung');
   });
 

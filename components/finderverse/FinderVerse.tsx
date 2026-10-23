@@ -13,6 +13,9 @@ export type RolePreview = 'owner' | 'department' | 'member';
 const ICON: Record<StarKind, LucideIcon> = { event: Calendar, document: FileText, note: StickyNote, task: Circle, file: FileText, link: Link2, other: FileText };
 
 export interface FinderVerseProps {
+  /** Direkt in diesen Ordner springen und den Stern hervorheben (aus Wissen). */
+  initialMoonId?: string | null;
+  initialStarId?: string | null;
   planet: FPlanet;
   phone: boolean;
   day: LiveDay;
@@ -62,10 +65,10 @@ export function FinderVerse(p: FinderVerseProps) {
   const { planet, phone, day } = p;
   const role = p.role ?? 'owner';
   const readOnly = role === 'member';
-  const [moonId, setMoonId] = useState<string | null>(null);
+  const [moonId, setMoonId] = useState<string | null>(p.initialMoonId ?? null);
   const [view, setView] = useState<FinderView>('universe');
   const [dir, setDir] = useState<'in' | 'out'>('in');
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(p.initialStarId ?? null);
   const [form, setForm] = useState<null | 'folder' | 'note'>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);

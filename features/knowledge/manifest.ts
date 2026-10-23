@@ -4,7 +4,7 @@ import type { FeatureManifest } from '../types';
 export const knowledgeManifest: FeatureManifest = {
   id: 'knowledge',
   title: 'Wissen',
-  description: 'Hier weiß SAIMÔR Dinge – Dateien, Notizen, Erinnerungen, Suche.',
+  description: 'Dateien, Notizen und Erinnerungen – mit einer Suche.',
   icon: Library,
   slot: 'primary',
   order: 50,

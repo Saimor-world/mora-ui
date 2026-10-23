@@ -62,7 +62,7 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
 
       <Surface padding={5}>
         {section === 'account' && (user ? (
-          <div className="os-list"><Row label="Name" value={user.name} /><Row label="E-Mail" value={user.email || '—'} /><Row label="Rolle" value={user.role} /></div>
+          <div className="os-list"><Row label="Name" value={user.name} /><Row label="E-Mail" value={user.email || '—'} /><Row label="Rolle" value={roleDe(user.role)} /></div>
         ) : <FailureState kind="unauthenticated" compact />)}
 
         {section === 'identity' && (user ? (
@@ -84,7 +84,7 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
                 <div key={k} className="os-list-row"><Text>{PERMISSION_LABEL[k] || k}</Text><Status tone={v ? 'safe' : 'neutral'}>{v ? 'erlaubt' : 'nicht erlaubt'}</Status></div>
               ))}
             </div>
-            <Text variant="meta">Rechte kommen aus der Rolle in CORE. Rollenverwaltung: Labs & System › Benutzer / Team.</Text>
+            <Text variant="meta">Was du sehen und ändern darfst, hängt an deiner Rolle im Studio.</Text>
           </Stack>
         )}
 
@@ -101,9 +101,14 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
       </Surface>
 
       <Stack direction="row" gap={3} align="center" wrap>
-        <Text variant="meta">Alle bisherigen Einstellungen (Darstellung, Audio, SMTP, …) bleiben in der klassischen Ansicht.</Text>
-        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('settings')}>Alle Einstellungen (klassisch)</Button>
+        <Text variant="meta">Darstellung, Ton und Postausgang findest du unter „Weitere Einstellungen“.</Text>
+        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('settings')}>Weitere Einstellungen</Button>
       </Stack>
     </div>
   );
+}
+
+function roleDe(role?: string | null): string {
+  const r = String(role || '').toLowerCase();
+  return ({ owner: 'Inhaberin', admin: 'Verwaltung', manager: 'Leitung', member: 'Mitglied', viewer: 'Nur lesen' } as Record<string, string>)[r] || (role ? String(role) : '—');
 }
