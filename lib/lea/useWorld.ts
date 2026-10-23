@@ -2,11 +2,14 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { listCompanyFiles } from '@/lib/api/filesClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
 import { buildLiveDay, calendarMeta } from './live';
-import { buildWorld, isCalendarDept, type WorldDepartment, type WorldEvent, type WorldTask } from './world';
+import { isCalendarDept, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
+import { buildFinder, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
+import { matteTone } from '@/lib/universe/matteTone';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
   if (Array.isArray(raw)) return raw as T[];
@@ -26,7 +29,32 @@ export function useWorld() {
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<WorldDepartment>(await coreGet(`/v3/tree?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['departments']),
+    queryFn: async () => {
+      const raw = await coreGet(`/v3/tree?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true });
+      const unassigned = raw && typeof raw === 'object' && !Array.isArray(raw) ? list<FSpace>((raw as Record<string, unknown>).unassigned_spaces) : [];
+      return { departments: list<WorldDepartment>(raw, ['departments']), unassigned };
+    },
+  });
+  const folders = useQuery({
+    queryKey: ['lea-world', 'folders', companyId],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async () => list<FFolder>(await coreGet(`/v3/folders?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['folders']),
+  });
+  const nodes = useQuery({
+    queryKey: ['lea-world', 'nodes', companyId],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async () => list<FNode>(await coreGet(`/v3/nodes?company_id=${encodeURIComponent(companyId!)}&limit=500`, { isOptional: true }), ['nodes']),
+  });
+  // Hochgeladene Dateien (GET /v3/files) sind ebenfalls Sterne ihres Ordners; mit Knoten verknüpfte zählen dort.
+  const files = useQuery({
+    queryKey: ['lea-world', 'files', companyId],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async () => (await listCompanyFiles(companyId!).catch(() => []))
+      .filter((f) => f.folder_id && !f.linked_node_id)
+      .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
   });
   const events = useQuery({
     queryKey: ['lea-world', 'events', companyId],
@@ -42,21 +70,40 @@ export function useWorld() {
   });
   const phases = useDayStore((s) => s.phases);
   const day = useMemo(() => buildLiveDay(events.data ?? [], tasks.data ?? [], phases), [events.data, tasks.data, phases]);
+  // Finder = Universe: Abteilungen, Ordner (Monde), Inhalte (Sterne) und der Aufgaben-Planet.
+  const finder: FPlanet[] = useMemo(() => buildFinder({
+    departments: (tree.data?.departments ?? []) as never,
+    unassigned: tree.data?.unassigned ?? [],
+    folders: folders.data ?? [],
+    nodes: [...(nodes.data ?? []), ...(files.data ?? [])],
+    tasks: tasks.isSuccess ? tasks.data ?? [] : null,
+  }), [tree.data, folders.data, nodes.data, files.data, tasks.data, tasks.isSuccess]);
   // Live: was Lea heute tut („ist da“, abgeschlossen), steht sofort am Termin-Planeten.
-  const planets = useMemo(() => {
+  const planets: WorldPlanet[] = useMemo(() => {
     const live = calendarMeta(day);
-    const depts = tree.data ?? [];
-    return buildWorld({ departments: depts, events: events.data ?? [] }).map((p) => {
+    const depts = tree.data?.departments ?? [];
+    const upcoming = upcomingEvents(events.data ?? []);
+    return finder.map((p) => {
+      const c = planetCounts(p);
       const d = depts.find((x) => x.id === p.id);
-      return live && d && isCalendarDept(d) ? { ...p, meta: live } : p;
+      const cal = Boolean(d && isCalendarDept(d));
+      let meta = p.kind === 'tasks'
+        ? (c.open ? `${c.open} offen${c.overdue ? ` · ${c.overdue} überfällig` : ''}` : 'alles erledigt')
+        : p.moons.length ? plural(p.moons.length, 'Ordner', 'Ordner') : 'noch leer';
+      if (cal && upcoming.length) meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
+      if (cal && live) meta = live;
+      const weight = p.kind === 'tasks' ? p.stars.length : c.folders + c.items + (cal ? upcoming.length : 0);
+      return { id: p.id, name: p.name, tone: p.kind === 'department' ? matteTone(p.name, { count: weight }) : p.tone, weight, meta, moons: p.moons.map((m) => ({ id: m.id, label: m.name, count: m.count })) };
     });
-  }, [tree.data, events.data, day]);
+  }, [finder, tree.data, events.data, day]);
   return {
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,
     companyId,
     planets,
+    finder,
+    tasksPlanetId: TASKS_PLANET,
     day,
     events: events.data ?? [],
     tasks: tasks.data ?? [],

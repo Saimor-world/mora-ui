@@ -1,0 +1,268 @@
+'use client';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
+import { MoraStone } from '@/components/os-kit';
+import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
+import { formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
+import { matteTone } from '@/lib/universe/matteTone';
+import type { LiveDay } from '@/lib/lea/live';
+
+export type FinderView = 'universe' | 'list';
+export type RolePreview = 'owner' | 'department' | 'member';
+
+const ICON: Record<StarKind, LucideIcon> = { event: Calendar, document: FileText, note: StickyNote, task: Circle, file: FileText, link: Link2, other: FileText };
+
+export interface FinderVerseProps {
+  planet: FPlanet;
+  phone: boolean;
+  day: LiveDay;
+  role?: RolePreview;
+  onClose: () => void;
+  onAskMora: (q: string) => void;
+  onOpenStar: (star: Star) => void;
+  onToggleTask?: (star: Star) => void;
+  onCreateFolder: (name: string) => Promise<unknown>;
+  onCreateNote: (moonId: string, title: string) => Promise<unknown>;
+  onUpload: (moonId: string, file: File) => Promise<unknown>;
+}
+
+/** Live-Hinweise von MÔRA: nur belegte Sätze aus Leas Tag und dem Inhalt dieses Planeten. */
+export function liveHints(planet: FPlanet, day: LiveDay): string[] {
+  const out: string[] = [];
+  if (planet.kind === 'tasks') {
+    for (const s of planet.stars.filter((x) => x.overdue)) out.push(`${s.name}: ${s.hint}.`);
+    for (const s of planet.stars.filter((x) => !x.done && x.hint === 'heute fällig')) out.push(`${s.name} ist heute fällig.`);
+    if (day.doneToday.length) out.push(`Heute schon erledigt: ${day.doneToday.length}.`);
+    if (!out.length) out.push(planet.stars.length ? 'Nichts drängt gerade.' : 'Noch keine Aufgaben angelegt.');
+    return out.slice(0, 4);
+  }
+  const events = planet.moons.flatMap((m) => m.stars.filter((s) => s.kind === 'event'));
+  if (events.length) {
+    if (day.running) out.push(`${day.running.title} läuft gerade.`);
+    else if (day.next) out.push(`Als Nächstes: ${day.next.time ?? ''} ${day.next.title}`.replace(/\s+/g, ' ').trim() + '.');
+    if (day.doneTodayEvents) out.push('Alle heutigen Termine sind abgeschlossen.');
+  }
+  const c = planetCounts(planet);
+  if (!planet.moons.length) out.push('Noch keine Ordner. Lege den ersten an, dann kreist er hier als Mond.');
+  else out.push(`${c.folders} Ordner mit ${c.items} Einträgen.`);
+  return out.slice(0, 4);
+}
+
+/**
+ * Finder als Universe: Planet → Monde (Ordner) → Sterne (Inhalte). Zweite Ansicht derselben
+ * Daten: eine große, ruhige Liste im Stil von „Big Picture“ (Pfeiltasten, Enter, Rücktaste).
+ * Rechts der Fokus: Zahlen, Aktionen, Live-Hinweise von MÔRA.
+ */
+export function FinderVerse(p: FinderVerseProps) {
+  const { planet, phone, day } = p;
+  const role = p.role ?? 'owner';
+  const readOnly = role === 'member';
+  const [moonId, setMoonId] = useState<string | null>(null);
+  const [view, setView] = useState<FinderView>('universe');
+  const [dir, setDir] = useState<'in' | 'out'>('in');
+  const [selected, setSelected] = useState<string | null>(null);
+  const [form, setForm] = useState<null | 'folder' | 'note'>(null);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [focusIdx, setFocusIdx] = useState(0);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  const moon: Moon | null = planet.moons.find((m) => m.id === moonId) ?? null;
+  useEffect(() => { if (moonId && !moon) setMoonId(null); }, [moonId, moon]);
+  const stars: Star[] = moon ? moon.stars : planet.stars;
+  const rows = useMemo(() => [
+    ...(moon ? [] : planet.moons.map((m) => ({ type: 'moon' as const, id: m.id, name: m.name, kind: 'Ordner', modified: m.modified, hint: `${m.count} Einträge`, moon: m }))),
+    ...stars.map((s) => ({ type: 'star' as const, id: s.id, name: s.name, kind: kindLabel(s.kind), modified: s.modified, hint: s.hint, star: s })),
+  ], [moon, planet.moons, stars]);
+
+  const goMoon = (id: string) => { setDir('in'); setMoonId(id); setSelected(null); setFocusIdx(0); };
+  const goUp = () => { if (moonId) { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } else p.onClose(); };
+
+  useEffect(() => {
+    closeRef.current?.focus();
+  }, []);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) { if (e.key === 'Escape') setForm(null); return; }
+      if (e.key === 'Escape') { e.preventDefault(); goUp(); }
+      if (e.key === 'Backspace') { e.preventDefault(); goUp(); }
+      if (view === 'list' && rows.length) {
+        if (e.key === 'ArrowDown') { e.preventDefault(); setFocusIdx((i) => Math.min(rows.length - 1, i + 1)); }
+        if (e.key === 'ArrowUp') { e.preventDefault(); setFocusIdx((i) => Math.max(0, i - 1)); }
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+  useEffect(() => {
+    if (view !== 'list') return;
+    const el = listRef.current?.querySelectorAll<HTMLButtonElement>('.fv-row')[focusIdx];
+    el?.focus();
+  }, [focusIdx, view, rows.length]);
+
+  const openRow = (r: (typeof rows)[number]) => (r.type === 'moon' ? goMoon(r.id) : (setSelected(r.id), p.onOpenStar(r.star)));
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const v = text.trim();
+    if (!v || busy) return;
+    setBusy(true); setMsg(null);
+    try {
+      if (form === 'folder') { await p.onCreateFolder(v); setMsg(`Ordner „${v}“ angelegt.`); }
+      if (form === 'note' && moon) { await p.onCreateNote(moon.id, v); setMsg(`Notiz „${v}“ angelegt.`); }
+      setText(''); setForm(null);
+    } catch { setMsg('Das hat nicht geklappt. CORE hat abgelehnt.'); }
+    setBusy(false);
+  };
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f || !moon) return;
+    setBusy(true); setMsg(null);
+    try { await p.onUpload(moon.id, f); setMsg(`„${f.name}“ hochgeladen.`); } catch { setMsg('Hochladen hat nicht geklappt.'); }
+    setBusy(false);
+  };
+
+  const c = planetCounts(planet);
+  const tiles: Array<[string, number, string]> = planet.kind === 'tasks'
+    ? [['Offen', c.open, 'Aufgaben'], ['Überfällig', c.overdue, 'seit gestern oder länger']]
+    : moon
+      ? [['Einträge', moon.count, 'in diesem Ordner'], ['Notizen', moon.stars.filter((s) => s.kind === 'note').length, 'persönliche Notizen']]
+      : [['Ordner', c.folders, 'kreisen als Monde'], [c.events ? 'Termine' : 'Dokumente', c.events || c.docs, c.events ? 'im Kalender' : 'verlinkte Dokumente']];
+  const hints = liveHints(planet, day);
+  const canFolder = !readOnly && planet.kind !== 'tasks' && (planet.kind === 'department' || planet.spaces.length > 0) && !moon;
+  const canInside = !readOnly && Boolean(moon);
+  const moonTone = (m: Moon) => matteTone(m.name, { count: m.count });
+  const levelKey = `${planet.id}/${moonId ?? ''}`;
+  const centerName = moon ? moon.name : planet.name;
+  const ring = moon ? [] : planet.moons;
+  const sel = stars.find((s) => s.id === selected) ?? null;
+
+  return (
+    <div className="fv" role="dialog" aria-modal="true" aria-label={`Planet ${planet.name}`} data-testid="world-planet-window" data-view={view} data-phone={phone ? 'true' : 'false'}>
+      <header className="fv-top">
+        <button ref={closeRef} type="button" className="fv-back" onClick={goUp} data-testid={moonId ? 'fv-up' : 'world-planet-close'} aria-label={moonId ? `Zurück zu ${planet.name}` : 'Zurück zum Universe'}>
+          <ArrowLeft size={18} /> <span>{moonId ? planet.name : 'Universe'}</span>
+        </button>
+        <nav className="fv-crumbs" aria-label="Pfad" data-testid="fv-crumbs">
+          <button type="button" onClick={p.onClose}>Universe</button>
+          <span aria-hidden>›</span>
+          <button type="button" onClick={() => moonId && goUp()} aria-current={moonId ? undefined : 'page'}>{planet.name}</button>
+          {moon ? <><span aria-hidden>›</span><span aria-current="page">{moon.name}</span></> : null}
+        </nav>
+        <div className="fv-toggle" role="group" aria-label="Ansicht">
+          <button type="button" aria-pressed={view === 'universe'} onClick={() => setView('universe')} data-testid="fv-view-universe"><Orbit size={16} /> <span>Universe</span></button>
+          <button type="button" aria-pressed={view === 'list'} onClick={() => { setView('list'); setFocusIdx(0); }} data-testid="fv-view-list"><LayoutList size={16} /> <span>Liste</span></button>
+        </div>
+      </header>
+
+      <div className="fv-body">
+        <section className="fv-stage" aria-label={centerName}>
+          {view === 'universe' ? (
+            <div key={levelKey} className="fv-orbit" data-dir={dir} data-testid="fv-orbit">
+              <svg className="fv-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+                <ellipse cx="50" cy="50" rx="34" ry="30" />
+                {stars.length ? <ellipse cx="50" cy="50" rx="45" ry="42" /> : null}
+                {ring.map((m, i) => { const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2; return <line key={m.id} x1="50" y1="50" x2={50 + Math.cos(a) * 34} y2={50 + Math.sin(a) * 30} />; })}
+              </svg>
+              <div className="fv-center">
+                <WorldPlanetSphere tone={moon ? moonTone(moon) : planet.tone} size={phone ? 104 : 150} />
+                <span className="fv-center__name">{centerName}</span>
+                <span className="fv-center__meta">{moon ? `${moon.count} Einträge${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
+              </div>
+              {ring.map((m, i) => {
+                const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
+                return (
+                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}>
+                    <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}><span className="wd-badge" aria-hidden>{m.count}</span></WorldPlanetSphere>
+                    <span className="fv-moon__name">{m.name}</span>
+                  </button>
+                );
+              })}
+              {stars.slice(0, 24).map((s, i, arr) => {
+                const a = (i / arr.length) * Math.PI * 2 - Math.PI / 2 + (ring.length ? Math.PI / Math.max(arr.length, 2) : 0);
+                const rx = ring.length ? (phone ? 40 : 45) : (phone ? 27 : 36); const ry = ring.length ? 42 : 33;
+                return (
+                  <button key={s.id} type="button" className="fv-star" data-kind={s.kind} data-done={s.done ? 'true' : undefined} data-overdue={s.overdue ? 'true' : undefined} data-selected={selected === s.id ? 'true' : undefined}
+                    style={{ left: `${50 + Math.cos(a) * rx}%`, top: `${50 + Math.sin(a) * ry}%` }} onClick={() => setSelected(s.id)} data-testid={`fv-star-${s.id}`} aria-label={`${kindLabel(s.kind)} ${s.name}${s.hint ? ` · ${s.hint}` : ''}`}>
+                    <span className="fv-star__dot" aria-hidden />
+                    <span className="fv-star__name">{s.name}</span>
+                    {s.hint ? <span className="fv-star__hint">{s.hint}</span> : null}
+                  </button>
+                );
+              })}
+              {!ring.length && !stars.length ? (
+                <div className="fv-empty" data-testid="fv-empty">
+                  <p>{moon ? 'Dieser Ordner ist noch leer.' : planet.kind === 'tasks' ? 'Noch keine Aufgaben.' : `In ${planet.name} gibt es noch keine Ordner.`}</p>
+                  {canFolder ? <button type="button" className="fv-btn" onClick={() => setForm('folder')} data-testid="fv-empty-folder"><FolderPlus size={16} /> Ordner anlegen</button> : null}
+                  {canInside ? <button type="button" className="fv-btn" onClick={() => fileRef.current?.click()}><Upload size={16} /> Datei hochladen</button> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <div key={levelKey} className="fv-list" ref={listRef} data-dir={dir} data-testid="fv-list" role="list">
+              <div className="fv-list__head" aria-hidden><span>Typ</span><span>Name</span><span>Geändert</span></div>
+              {rows.map((r, i) => {
+                const Icon = r.type === 'moon' ? Folder : r.star.kind === 'task' && r.star.done ? CheckCircle2 : ICON[r.star.kind];
+                return (
+                  <button key={r.id} type="button" role="listitem" className="fv-row" data-focus={i === focusIdx ? 'true' : undefined} data-done={r.type === 'star' && r.star.done ? 'true' : undefined}
+                    onFocus={() => setFocusIdx(i)} onClick={() => openRow(r)} data-testid={`fv-row-${r.id}`}>
+                    <span className="fv-row__type"><Icon size={phone ? 18 : 22} /> <span>{r.kind}</span></span>
+                    <span className="fv-row__name">{r.name}{r.hint ? <small>{r.hint}</small> : null}</span>
+                    <span className="fv-row__date">{formatModified(r.modified)}</span>
+                  </button>
+                );
+              })}
+              {!rows.length ? <div className="fv-empty fv-empty--list" data-testid="fv-empty"><p>{moon ? 'Dieser Ordner ist noch leer.' : planet.kind === 'tasks' ? 'Noch keine Aufgaben.' : `In ${planet.name} gibt es noch keine Ordner.`}</p>{canFolder ? <button type="button" className="fv-btn" onClick={() => setForm('folder')}><FolderPlus size={16} /> Ordner anlegen</button> : null}</div> : null}
+              {!phone && rows.length ? <p className="fv-list__keys" aria-hidden>↑ ↓ wählen · Enter öffnen · ⌫ zurück</p> : null}
+            </div>
+          )}
+        </section>
+
+        <aside className="fv-focus" aria-label="Fokus" data-testid="fv-focus">
+          <p className="fv-eyebrow">{role === 'owner' ? 'Fokus' : role === 'department' ? 'Fokus · Abteilung' : 'Fokus · Mitglied (nur lesen)'}</p>
+          <h2 className="fv-focus__title">{centerName}</h2>
+          <div className="fv-tiles">
+            {tiles.map(([k, n, sub]) => <div key={k} className="fv-tile"><span className="fv-eyebrow">{k}</span><strong>{n}</strong><span>{sub}</span></div>)}
+          </div>
+          {sel ? (
+            <div className="fv-sel" data-testid="fv-selected">
+              <p className="fv-eyebrow">{kindLabel(sel.kind)}</p>
+              <p className="fv-sel__name">{sel.name}</p>
+              {sel.hint ? <p className="fv-sel__hint">{sel.hint}</p> : null}
+              <div className="fv-sel__actions">
+                {sel.kind === 'task' && p.onToggleTask && !readOnly ? <button type="button" className="fv-btn" onClick={() => p.onToggleTask?.(sel)} data-testid="fv-toggle-task">{sel.done ? 'Wieder öffnen' : 'Erledigt'}</button> : null}
+                {sel.kind !== 'task' ? <button type="button" className="fv-btn" onClick={() => p.onOpenStar(sel)} data-testid="fv-open-star">Öffnen</button> : null}
+                <button type="button" className="fv-btn fv-btn--ghost" onClick={() => p.onAskMora(`Was weißt du zu „${sel.name}“?`)}>MÔRA fragen</button>
+              </div>
+            </div>
+          ) : null}
+          <p className="fv-eyebrow">Aktionen</p>
+          <div className="fv-actions">
+            {canFolder ? <button type="button" className="fv-action" onClick={() => setForm('folder')} data-testid="fv-new-folder"><FolderPlus size={18} /><span><b>Ordner anlegen</b><small>wird ein neuer Mond</small></span></button> : null}
+            {canInside ? <button type="button" className="fv-action" onClick={() => setForm('note')} data-testid="fv-new-note"><StickyNote size={18} /><span><b>Notiz anlegen</b><small>wird ein Stern in {moon?.name}</small></span></button> : null}
+            {canInside ? <button type="button" className="fv-action" onClick={() => fileRef.current?.click()} data-testid="fv-upload"><Upload size={18} /><span><b>Datei hochladen</b><small>in {moon?.name}</small></span></button> : null}
+            <button type="button" className="fv-action" onClick={() => p.onAskMora(`Was ist in ${centerName} gerade wichtig?`)} data-testid="fv-ask"><Sparkles size={18} /><span><b>MÔRA fragen</b><small>Was ist hier gerade wichtig?</small></span></button>
+          </div>
+          {form ? (
+            <form className="fv-form" onSubmit={submit} data-testid="fv-form">
+              <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={form === 'folder' ? 'Name des Ordners' : 'Titel der Notiz'} aria-label={form === 'folder' ? 'Name des Ordners' : 'Titel der Notiz'} data-testid="fv-form-input" maxLength={120} />
+              <button type="submit" className="fv-btn" disabled={busy || !text.trim()}>{busy ? '…' : 'Anlegen'}</button>
+              <button type="button" className="fv-btn fv-btn--ghost" onClick={() => setForm(null)}>Abbrechen</button>
+            </form>
+          ) : null}
+          {msg ? <p className="fv-msg" role="status" data-testid="fv-msg">{msg}</p> : null}
+          <input ref={fileRef} type="file" hidden onChange={onFile} data-testid="fv-file" />
+          <p className="fv-eyebrow"><MoraStone size={14} /> Live-Hinweise</p>
+          <ul className="fv-hints" data-testid="fv-hints">{hints.map((h) => <li key={h}>{h}</li>)}</ul>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+export { TASKS_PLANET };

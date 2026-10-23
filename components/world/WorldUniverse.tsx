@@ -13,8 +13,12 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora, moraLine, activeId = null, counts }: {
   moraLine?: string;
+  /** Zuletzt geöffneter Planet: leuchtet und trägt „Aktiver Bereich“. */
+  activeId?: string | null;
+  /** Echte Zähler: Knoten (MÔRA, Planeten, Monde, Sterne) und Verbindungen. */
+  counts?: { nodes: number; edges: number };
   planets: WorldPlanet[];
   phone: boolean;
   /** Ein Planet ist offen: das Universe bleibt stehen, aber unsichtbar dahinter. */
@@ -27,6 +31,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const [size, setSize] = useState({ width: 0, height: 0 });
   const reduced = !!useReducedMotion();
   const paused = useRef(false);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const el = fieldRef.current;
@@ -84,9 +89,16 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 
   return (
     <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined}>
+      <div className="wd-zoomwrap" style={{ transform: zoom === 1 ? undefined : `scale(${zoom})` }} data-testid="world-zoomwrap">
       {layout ? (
         <svg className="wd-orbits" width={size.width} height={size.height} aria-hidden>
           {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
+          {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
+          {layout.slots.map((slot, i) => {
+            const pt = placeOnOrbit(layout, slot);
+            const active = planets[i]?.id === activeId;
+            return <line key={`l${i}`} className={active ? 'wd-link wd-link--active' : 'wd-link'} x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} />;
+          })}
         </svg>
       ) : null}
 
@@ -116,6 +128,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             ref={(el) => { planetRefs.current[i] = el; }}
             type="button"
             className="wd-planet"
+            data-active={planet.id === activeId ? 'true' : undefined}
             style={slot ? undefined : { visibility: 'hidden' }}
             onClick={() => onOpenPlanet(planet.id)}
             onPointerEnter={hold(true)}
@@ -132,9 +145,26 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
               <span className="wd-name">{planet.name}</span>
               <span className="wd-meta">{planet.meta}</span>
             </span>
+            {planet.id === activeId ? <span className="wd-active-tag" data-testid="world-active-tag">Aktiver Bereich</span> : null}
           </button>
         );
       })}
+      </div>
+      {layout && !phone ? (
+        <>
+          {counts ? (
+            <div className="wd-counters" aria-label="Zähler">
+              <span className="wd-counter" data-testid="world-count-nodes">{counts.nodes} Knoten</span>
+              <span className="wd-counter" data-testid="world-count-edges">{counts.edges} Verbindungen</span>
+            </div>
+          ) : null}
+          <div className="wd-zoom" role="group" aria-label="Zoom">
+            <button type="button" onClick={() => setZoom((z) => Math.min(1.6, +(z + 0.15).toFixed(2)))} aria-label="Näher heran" data-testid="world-zoom-in">+</button>
+            <button type="button" onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))} aria-label="Weiter weg" data-testid="world-zoom-out">−</button>
+            <button type="button" onClick={() => setZoom(1)} aria-label="Zentrieren" data-testid="world-recenter">◎</button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

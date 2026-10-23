@@ -62,19 +62,14 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
 
-  // Handy mit Sitzung: Home V4 aus echten Daten.
-  if (phone && hasSession && !preview) {
-    const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
-    return (
-      <div data-testid="feature-today">
-        <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMora} />
-      </div>
-    );
-  }
+  // Handy mit Sitzung: oben Home V4 aus echten Daten, darunter dieselben Widgets wie am Desktop (wie auf HQ).
+  const phoneHome = phone && hasSession && !preview;
+  const askMoraPhone = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-today">
-      <header>
+      {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
+      {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
         <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
@@ -82,9 +77,9 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
             : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
         </Text>
-      </header>
+      </header>}
 
-      {hasSession && !preview ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
+      {hasSession && !preview && !phoneHome ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
 
       <MoraBriefing live={!preview && hasSession} navigate={navigate} />
 

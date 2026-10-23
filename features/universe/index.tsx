@@ -64,7 +64,7 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
       <div className="os-universe__field" data-testid="universe-field">
         {lens === 'landscape'
           ? <UniverseLandscape landscape={landscape} sample={landscape.sample} onOpenArea={openArea} onAskMora={askMora} />
-          : demo ? <DemoOrganizationUniverse onOpenArea={openArea} onAskMora={askMora} /> : hasSession ? <LiveWorld onAskMora={askMora} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
+          : demo ? <DemoOrganizationUniverse onOpenArea={openArea} onAskMora={askMora} /> : hasSession ? <LiveWorld onAskMora={askMora} navigate={navigate} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
       </div>
     </div>
   );

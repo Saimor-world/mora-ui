@@ -8,10 +8,12 @@ import { Stack, Text, cx } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { searchGlobal } from '@/lib/api/searchClient';
+import { useWorld } from '@/lib/lea/useWorld';
+import { CalendarDays, CheckCircle2, Folder } from 'lucide-react';
 
 interface Item {
   id: string;
-  group: 'Bereiche' | 'MÔRA' | 'Planeten' | 'Dokumente' | 'Klassische Apps' | 'Inhalte';
+  group: 'Bereiche' | 'MÔRA' | 'Planeten' | 'Ordner' | 'Heute' | 'Dokumente' | 'Klassische Apps' | 'Inhalte';
   label: string;
   hint?: string;
   icon: React.ReactNode;
@@ -53,6 +55,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
     staleTime: 30_000,
   });
 
+  const world = useWorld();
   const items = useMemo<Item[]>(() => {
     const n = norm(trimmed);
     const match = (...values: Array<string | undefined>) => !n || values.some((v) => v && norm(v).includes(n));
@@ -79,6 +82,24 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         }
       }
     }
+    if (!demo) {
+      // Leas echte Planeten, Ordner und Einträge (Finder = Universe) und der Tag.
+      const focus = (planetId: string) => { useOsShellStore.getState().setUniverseFocus(planetId); navigate('universe'); };
+      for (const p of world.finder) {
+        if (match(p.name)) out.push({ id: `p-${p.id}`, group: 'Planeten', label: p.name, hint: 'Planet im Universe', icon: <Building2 size={15} />, run: () => focus(p.id) });
+        if (!n) continue;
+        for (const m of p.moons) {
+          if (match(m.name)) out.push({ id: `m-${m.id}`, group: 'Ordner', label: m.name, hint: `Ordner in ${p.name}`, icon: <Folder size={15} />, run: () => focus(p.id) });
+          for (const st of m.stars) if (match(st.name, st.hint)) out.push({ id: `st-${st.id}`, group: 'Ordner', label: st.name, hint: `${p.name} › ${m.name}${st.hint ? ` · ${st.hint}` : ''}`, icon: st.kind === 'event' ? <CalendarDays size={15} /> : <FileText size={15} />, run: () => (st.kind === 'event' ? focus(p.id) : openLegacyApp('document', { nodeId: st.id })) });
+        }
+      }
+      for (const t of world.day.open) {
+        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
+      }
+      for (const e of world.events) {
+        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${e.date}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });
+      }
+    }
     if (trimmed) {
       out.push({ id: 'ask', group: 'MÔRA', label: `MÔRA fragen: „${trimmed}“`, icon: <Sparkles size={15} />, run: () => askMora(trimmed) });
     }
@@ -94,7 +115,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       out.push({ id: `s-${nodeId || title}`, group: 'Inhalte', label: String(title), hint: r?.type, icon: <FileText size={15} />, run: () => nodeId && openLegacyApp('document', { nodeId }) });
     }
     return out;
-  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy]);
+  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy, world.finder, world.day.open, world.events, world.tasksPlanetId]);
 
   useEffect(() => { setIndex(0); }, [trimmed]);
   if (!open) return null;
