@@ -5,7 +5,7 @@ import { Mic, Send } from 'lucide-react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
 import { FinderVerse } from '@/components/finderverse/FinderVerse';
-import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
+import { visiblePlanetIds, RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
@@ -28,12 +28,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const finder = useFinderActions(world.companyId);
   const dayActions = useDayActions(world.companyId);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
-  const visibleIds = useMemo(() => {
-    if (companyView) return null;
-    const depts = world.finder.filter((p) => p.kind === 'department');
-    const mine = depts.find((p) => p.id === activeId) ?? depts[0];
-    return new Set([mine?.id, world.tasksPlanetId].filter(Boolean) as string[]);
-  }, [companyView, world.finder, world.tasksPlanetId, activeId]);
+  const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
   const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
   const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;

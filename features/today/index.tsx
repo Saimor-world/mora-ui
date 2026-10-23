@@ -86,7 +86,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
       {hasSession && !preview && !phoneHome ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
 
-      <MoraBriefing live={!preview && hasSession} navigate={navigate} />
+      <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">

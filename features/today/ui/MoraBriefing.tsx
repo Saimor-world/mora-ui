@@ -36,7 +36,7 @@ function demoBriefing(): string[] {
   ];
 }
 
-export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id: string) => void }) {
+export function MoraBriefing({ live, navigate, companyView = true }: { live: boolean; navigate?: (id: string) => void; companyView?: boolean }) {
   const [preview, setPreview] = useState(false);
   // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
   const conns = useSources(live);
@@ -45,6 +45,17 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
   const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready, staleTime: 60_000, retry: false });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
   const mailDocked = live && connected.some((c) => c.group === 'mail');
+
+  // Rollen-Vorschau: ohne Firmenblick keine Firmen-Quellen (Post, Feeds) im Briefing.
+  if (!companyView) {
+    return (
+      <Surface padding={5} data-testid="mora-briefing" data-scope="team">
+        <Stack direction="row" gap={2} align="center" className="mb-3"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
+        <Text data-testid="briefing-team">Dein Briefing umfasst deine Termine und Aufgaben oben.</Text>
+        <Text variant="meta" className="mt-1">Firmen-Quellen fasst MÔRA nur für die Inhaberin zusammen.</Text>
+      </Surface>
+    );
+  }
 
   return (
     <Surface padding={5} data-testid="mora-briefing">

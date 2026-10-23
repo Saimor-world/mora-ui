@@ -5,6 +5,17 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 export type RolePreview = 'owner' | 'department' | 'member';
 const OWNER_ROLES = ['owner', 'admin', 'superadmin', 'inhaber'];
+/** Sichtbare Planeten je Vorschau-Rolle: null = alles; sonst eine Abteilung (aktive, sonst erste) + Aufgaben. */
+export function visiblePlanetIds(role: RolePreview, planets: { id: string; kind?: string }[], activeId?: string | null, tasksPlanetId?: string | null): Set<string> | null {
+  if (role === 'owner') return null;
+  const depts = planets.filter((p) => p.kind === 'department');
+  const mine = depts.find((p) => p.id === activeId) ?? depts[0];
+  return new Set([mine?.id, tasksPlanetId].filter(Boolean) as string[]);
+}
+
+/** Echte Rolle → darf umschalten? */
+export function canPreviewRole(userRole: string): boolean { return OWNER_ROLES.includes(userRole.toLowerCase()); }
+
 export const ROLE_LABEL: Record<RolePreview, string> = { owner: 'Inhaberin', department: 'Abteilung', member: 'Mitglied' };
 
 /**
@@ -14,7 +25,7 @@ export const ROLE_LABEL: Record<RolePreview, string> = { owner: 'Inhaberin', dep
 export function useRolePreview(): { role: RolePreview; canPreview: boolean } {
   const userRole = useSessionStore((s) => String((s.user as { role?: string } | null)?.role ?? '').toLowerCase());
   const preview = useOsShellStore((s) => s.rolePreview);
-  const canPreview = OWNER_ROLES.includes(userRole);
+  const canPreview = canPreviewRole(userRole);
   return { role: canPreview ? preview : 'owner', canPreview };
 }
 

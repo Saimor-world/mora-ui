@@ -106,12 +106,10 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
-      {layout && sources?.length ? sources.map((src, i) => {
-        const ring = sourceRing(layout);
-        // Obere Hälfte des äußeren Rings, gleichmäßig von links nach rechts.
-        const a = Math.PI + (Math.PI * (i + 1)) / (sources.length + 1);
-        const x = layout.cx + Math.cos(a) * ring.rx;
-        const y = layout.cy + Math.sin(a) * ring.ry;
+      {layout && sources?.length ? (() => {
+        const pts = sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)));
+        return sources.map((src, i) => {
+        const { x, y } = pts[i];
         return (
           <button key={src.key} type="button" className="wd-source" data-state={src.state} style={{ left: x, top: y }} onClick={() => onOpenSource?.(src.key)}
             title={src.state === 'connected' ? `${src.label}: ${src.sources.join(', ')}` : `${src.label}: noch keine Quelle verbunden`} data-testid={`world-source-${src.key.replace('system:', '')}`}>
@@ -120,7 +118,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             <small>{src.state === 'connected' ? 'verbunden' : 'noch leer'}</small>
           </button>
         );
-      }) : null}
+      });
+      })() : null}
 
       {layout ? (
         <button
@@ -190,7 +189,29 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   );
 }
 
-function sourceRing(layout: OrbitLayout) {
+/**
+ * Positionen der Quellen auf der oberen Hälfte des äußeren Rings. Liegt ein Planet
+ * (samt Label) zu nah, rückt die Quelle seitlich aus – Beschriftungen überlappen nicht.
+ */
+export function sourcePositions(layout: OrbitLayout, n: number, planets: { x: number; y: number }[], minDist = 130) {
+  const ring = sourceRing(layout);
+  const at = (a: number) => ({ x: layout.cx + Math.cos(a) * ring.rx, y: layout.cy + Math.sin(a) * ring.ry });
+  const clear = (a: number) => planets.every((p) => Math.hypot(at(a).x - p.x, at(a).y - p.y) >= minDist);
+  const used: number[] = [];
+  return Array.from({ length: n }, (_, i) => {
+    const base = Math.PI + (Math.PI * (i + 1)) / (n + 1);
+    let best = base;
+    for (let step = 0; step <= 12; step++) {
+      const cands = step === 0 ? [base] : [base - step * 0.05, base + step * 0.05];
+      const hit = cands.find((a) => a > Math.PI * 1.04 && a < Math.PI * 1.96 && clear(a) && used.every((u) => Math.abs(u - a) > 0.3));
+      if (hit !== undefined) { best = hit; break; }
+    }
+    used.push(best);
+    return { ...at(best), angle: best };
+  });
+}
+
+export function sourceRing(layout: OrbitLayout) {
   const outer = layout.rings[layout.rings.length - 1] ?? { rx: layout.cx * 0.6, ry: layout.cy * 0.5 };
   return { rx: Math.min(layout.cx - 90, outer.rx * 1.22), ry: Math.min(layout.cy - 40, outer.ry * 1.3) };
 }
