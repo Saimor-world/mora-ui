@@ -294,3 +294,8 @@
 .wd-source:hover i { transform: scale(1.15); }
 .wd-role-banner { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; font-size: 12px; color: #f3e6c2; background: rgba(40, 32, 16, .78); border: 1px solid rgba(240, 214, 150, .35); }
 .wd-role-banner button { min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid rgba(240, 214, 150, .4); background: none; color: inherit; cursor: pointer; }
+
+/* Phase 3: Tap-Ziele ≥44px auf Touch-Geräten (Rollen-Vorschau, Banner, Abteilung hinzufügen). */
+@media (pointer: coarse), (max-width: 640px) {
+  .wd-roles button, .wd-role-banner button, [data-testid='universe-add-department'] { min-height: 44px; }
+}
