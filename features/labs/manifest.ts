@@ -8,6 +8,8 @@ export const labsManifest: FeatureManifest = {
   icon: FlaskConical,
   slot: 'secondary',
   order: 90,
+  // Labs holds Nightwatch, scanner, terminal and the legacy finance: SAIMÔR-internal.
+  internalOnly: true,
   visibility: 'nav',
   mobile: 'more',
   load: () => import('./index'),

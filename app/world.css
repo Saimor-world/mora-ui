@@ -1,0 +1,99 @@
+/*
+ * Universe und Handy-Home aus echten Daten (components/world, features/today/ui/PhoneHome).
+ * Matt, ruhig, ohne Glanz. Materialien: app/universe-materials.css (visual-v1).
+ * Texte werden nie abgeschnitten: sie umbrechen.
+ */
+
+/* ── Universe ─────────────────────────────────────────────────────────── */
+.wd-universe { position: relative; isolation: isolate; width: 100%; height: 100%; min-height: 420px; overflow: hidden; }
+.wd-universe[data-hidden='true'] { visibility: hidden; }
+.wd-orbits { position: absolute; inset: 0; pointer-events: none; }
+.wd-orbits ellipse { fill: none; stroke: var(--sv-orbit); stroke-width: 1; }
+.wd-mora { position: absolute; transform: translate(-50%, -50%); border: 0; padding: 0; background: none; border-radius: 50%; cursor: pointer; transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
+.wd-mora:hover { transform: translate(-50%, -50%) scale(1.03); }
+.wd-mora:active { transform: translate(-50%, -50%) scale(.97); }
+.wd-mora:focus-visible, .wd-planet:focus-visible, .wd-chip:focus-visible, .wd-row-planet:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 3px; }
+
+.wd-planet { position: absolute; left: 0; top: 0; display: block; border: 0; padding: 0; background: none; color: inherit; border-radius: 50%; cursor: pointer; will-change: transform; }
+/* Name unter dem Planeten; in der oberen Hälfte darüber, damit er nie zu MÔRA hin hängt. */
+.wd-label { position: absolute; left: 50%; top: calc(100% + 8px); transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; width: max-content; pointer-events: none; }
+.wd-planet[data-depth='back'] .wd-label { top: auto; bottom: calc(100% + 8px); }
+.wd-planet[data-depth='back'] .wd-sphere { filter: brightness(.9); }
+.wd-planet[data-depth='front'] .wd-sphere { box-shadow: 0 14px 22px -14px rgba(0, 0, 0, .55); }
+.wd-planet:hover .wd-sphere { filter: brightness(1.05); }
+.wd-planet:active .wd-sphere { transform: scale(.94); }
+.wd-sphere { position: relative; display: block; flex: none; }
+.wd-badge { position: absolute; right: -4px; top: -4px; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #ebe7de; background: #1c1f1c; border: 1px solid rgba(235, 231, 222, .18); }
+.wd-name { max-width: 132px; font-size: 15px; line-height: 20px; color: #f2eee5; text-align: center; overflow-wrap: anywhere; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+.wd-meta { max-width: 132px; font-size: 12px; line-height: 16px; color: rgba(235, 231, 222, .62); text-align: center; overflow-wrap: anywhere; text-shadow: 0 1px 8px rgba(0, 0, 0, .8); }
+.wd-universe[data-large='true'] .wd-name { max-width: 168px; font-size: 18px; line-height: 24px; }
+.wd-universe[data-large='true'] .wd-meta { max-width: 168px; font-size: 14px; line-height: 20px; }
+.wd-universe[data-large='true'] .wd-badge { min-width: 26px; height: 26px; font-size: 13px; }
+.wd-universe[data-phone='true'] .wd-name { max-width: 104px; font-size: 13px; line-height: 18px; }
+.wd-universe[data-phone='true'] .wd-meta { max-width: 104px; }
+
+/* Planet geöffnet: das Innere (components/universe/PlanetInterior) als Fenster über dem Universe. */
+.wd-interior { position: fixed; inset: 0; z-index: 75; background: linear-gradient(rgba(6, 8, 10, .35), rgba(6, 8, 10, .35)), url('/universe/deep-space-warm.jpg') center / cover; }
+.wd-interior__close { position: absolute; right: 24px; top: 24px; z-index: 5; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(235, 231, 222, .18); background: rgba(20, 22, 20, .72); color: #ebe7de; font-size: 15px; cursor: pointer; }
+.wd-interior__close:hover { border-color: rgba(235, 231, 222, .34); }
+.wd-interior__close:focus-visible { outline: 2px solid var(--sv-jade); outline-offset: 3px; }
+@media (max-width: 767px) { .wd-interior__close { right: 16px; top: 16px; } }
+
+/* ── Handy-Home V4 ───────────────────────────────────────────────────── */
+.wd-home { display: flex; flex-direction: column; gap: 24px; padding-bottom: 24px; }
+.wd-home__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.wd-home__date { font-size: 12px; line-height: 16px; color: rgba(235, 231, 222, .62); }
+.wd-home__sentence { font-size: 28px; line-height: 34px; font-weight: 500; color: #f2eee5; letter-spacing: -.01em; }
+.wd-home__sub { margin-top: 8px; font-size: 15px; line-height: 22px; color: rgba(235, 231, 222, .72); }
+.wd-home__cta { align-self: flex-start; min-height: 48px; padding: 0 24px; border-radius: 999px; border: 0; background: #6f8f78; color: #101410; font-size: 15px; font-weight: 600; cursor: pointer; transition: transform 160ms cubic-bezier(.2,.8,.2,1); }
+.wd-home__cta:active { transform: scale(.97); }
+.wd-home__cta:focus-visible { outline: 2px solid #9fb39a; outline-offset: 3px; }
+.wd-eyebrow { font-size: 12px; line-height: 16px; letter-spacing: .12em; text-transform: uppercase; color: rgba(235, 231, 222, .62); }
+
+.wd-strip { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.wd-strip::-webkit-scrollbar { display: none; }
+.wd-chip { flex: none; scroll-snap-align: start; display: flex; flex-direction: column; gap: 4px; min-width: 96px; max-width: 200px; padding: 16px; border-radius: 16px; border: 1px solid rgba(235, 231, 222, .12); background: rgba(28, 31, 28, .82); color: #ebe7de; text-align: left; }
+.wd-chip[data-past='true'] { opacity: .6; }
+.wd-chip[data-next='true'] { border-color: #6f8f78; }
+.wd-chip b { font-size: 15px; line-height: 20px; font-weight: 600; }
+.wd-chip span { font-size: 15px; line-height: 20px; overflow-wrap: anywhere; }
+
+.wd-card { padding: 24px; border-radius: 24px; border: 1px solid rgba(235, 231, 222, .12); background: rgba(28, 31, 28, .82); }
+.wd-card__title { margin-top: 8px; font-size: 20px; line-height: 26px; color: #f2eee5; overflow-wrap: anywhere; }
+.wd-card__meta { margin-top: 4px; font-size: 15px; line-height: 22px; color: rgba(235, 231, 222, .62); overflow-wrap: anywhere; }
+
+.wd-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.wd-item { display: flex; flex-direction: column; gap: 4px; padding: 16px; border-radius: 16px; border: 1px solid rgba(235, 231, 222, .12); background: rgba(28, 31, 28, .82); }
+.wd-item b { font-size: 15px; line-height: 20px; font-weight: 500; color: #f2eee5; overflow-wrap: anywhere; }
+.wd-item span { font-size: 12px; line-height: 16px; color: rgba(235, 231, 222, .62); }
+.wd-item[data-overdue='true'] span { color: #d9a48c; }
+
+.wd-row { display: flex; gap: 16px; overflow-x: auto; margin: 0 -16px; padding: 8px 16px; scrollbar-width: none; }
+.wd-row::-webkit-scrollbar { display: none; }
+.wd-row-planet { flex: none; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 64px; max-width: 96px; border: 0; padding: 0; background: none; color: #ebe7de; cursor: pointer; }
+.wd-row-planet span:last-child { font-size: 12px; line-height: 16px; text-align: center; overflow-wrap: anywhere; }
+.wd-row-planet:active .wd-sphere { transform: scale(.94); }
+
+/* ── Handy: Navigation bleibt (Tabs oben, Dock unten), passt aber auf 390 px ── */
+@media (max-width: 767px) {
+  /* Oben: Marke, Heute/Universe, Suche, Mitteilungen. Ort und MÔRA stehen schon im Tab bzw. im Dock. */
+  .os-shell__place, .os-shell__mora-toggle { display: none !important; }
+  .os-shell__topbar .os-context { overflow: visible; }
+  /* Unten: Suche und Mitteilungen sind oben, das Dock trägt Orte und MÔRA. */
+  .os-dock__group--tools, .os-dock__group--tools + .os-dock__divider { display: none !important; }
+  .wd-strip, .wd-row { scroll-padding-inline: 16px; }
+}
+/* Full HD (1920×1080) ist der Hauptfall: mehr Breite für Heute und die Orte. */
+@media (min-width: 1600px) {
+  .os-shell { --os-content-max: 1360px; }
+}
+
+/* MÔRA als Blatt von unten: endet über dem Dock, damit das Eingabefeld frei bleibt. */
+@media (max-width: 899px) {
+  .os-root .os-shell .os-shell__mora { bottom: var(--os-dock-space, 96px); height: calc(82dvh - var(--os-dock-space, 96px)); border-radius: var(--os-radius-xl); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-mora, .wd-home__cta { transition: none; }
+  .wd-planet { will-change: auto; }
+}

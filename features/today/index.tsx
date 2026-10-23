@@ -15,6 +15,10 @@ import { deriveAttention, deriveHints } from './data/attention';
 import { sampleTodaySnapshot } from './data/sample';
 import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
+import { PhoneHome } from './ui/PhoneHome';
+import { useIsPhone } from '@/lib/hooks/useIsPhone';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { firstName } from '@/lib/auth/displayName';
 
 const PHASE_GREETING = { flow: 'Guten Morgen', build: 'Guten Tag', lounge: 'Guten Abend', night: 'Guten Abend' } as const;
 function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date()) {
@@ -44,7 +48,11 @@ function Section({ icon, title, children, aside }: { icon: React.ReactNode; titl
 
 export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps) {
   const phaseOverride = useOsShellStore((s) => s.phaseOverride);
-  const userName = useSessionStore((s) => s.user?.name?.split(' ')[0] ?? null);
+  const user = useSessionStore((s) => s.user);
+  const userName = firstName(user) || null;
+  const hasSession = Boolean(user?.tenant_id);
+  const phone = useIsPhone();
+  const internal = useIsSaimorInternal();
   const today = useScopedToday({ backgroundRefresh: true });
   const finance = useFinanceSignal();
   const sample = preview && !today.snapshot;
@@ -52,6 +60,16 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+
+  // Handy mit Sitzung: Home V4 aus echten Daten.
+  if (phone && hasSession && !preview) {
+    const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
+    return (
+      <div data-testid="feature-today">
+        <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMora} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-today">
@@ -65,7 +83,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         </Text>
       </header>
 
-      <MoraBriefing live={!preview && Boolean(userName)} navigate={navigate} />
+      <MoraBriefing live={!preview && hasSession} navigate={navigate} />
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">
@@ -79,7 +97,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')],
               ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
-              ['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')],
+              // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
+              ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
               <button key={label} type="button" className="os-today-now__card" onClick={run} data-testid={`today-now-${label.split(' ')[0].toLowerCase()}`}>
                 <span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {label} <ArrowUpRight size={12} className="ml-auto" aria-hidden /></span>
@@ -92,7 +111,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
       {sample ? <MoraLagebild navigate={navigate} /> : null}
 
-      <AgentFeed live={!preview && Boolean(userName)} demo={Boolean(sample)} limit={3} compact />
+      <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact />
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
@@ -123,7 +142,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               <div className="os-list">
                 {attention.map((a) => (
                   <div key={a.id} className="os-list-row">
-                    <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
+                    <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
                     <Button size="sm" variant="ghost" onClick={() => (a.target === 'today' ? openLegacyApp('tasks') : navigate(a.target))}>Ansehen</Button>
                   </div>
                 ))}
@@ -138,14 +157,15 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.calendar.events.length === 0 ? <Text>Keine Termine heute.</Text> : (
                   <div className="os-list">
                     {snapshot.calendar.events.slice(0, 4).map((e) => (
-                      <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
+                      <div key={e.id} className="os-list-row"><Text tone="default" className="[overflow-wrap:anywhere]">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
                     ))}
                   </div>
                 )
               )}
             </Section>
 
-            <Section icon={<Wallet size={14} />} title="Finance-Signal" aside={<Button size="sm" variant="ghost" onClick={() => navigate('finance')}>Finance</Button>}>
+            {/* Finance ist SAIMÔR-intern (wie der Ort Finance selbst). */}
+            {internal || sample ? <Section icon={<Wallet size={14} />} title="Finance-Signal" aside={<Button size="sm" variant="ghost" onClick={() => navigate('finance')}>Finance</Button>}>
               {finance.kind === 'value' ? (
                 <Stack gap={1}>
                   <Text variant="meta">{finance.label}</Text>
@@ -161,7 +181,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                   <Status tone="warning">{CONTRACT_LABEL[finance.state]}</Status>
                 </Stack>
               )}
-            </Section>
+            </Section> : null}
 
             <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('tasks')}>Aufgaben</Button>}>
               <SourceState status={snapshot.tasks.status} label="Aufgaben" />
@@ -180,7 +200,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 <div className="os-list">
                   {snapshot.mail.items.slice(0, 3).map((m) => (
                     <div key={m.id} className="os-list-row">
-                      <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr}</Text></Stack>
+                      <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="[overflow-wrap:anywhere]">{m.from_addr}</Text></Stack>
                       {m.read === false ? <Status tone="info">neu</Status> : null}
                     </div>
                   ))}

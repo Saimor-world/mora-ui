@@ -16,6 +16,8 @@ export interface OsDockProps {
   items: FeatureManifest[];
   mobileItems: FeatureManifest[];
   activeId: string;
+  /** Link zur klassischen Oberfläche: nur SAIMÔR-intern (und in der lokalen Vorschau). */
+  showLegacy?: boolean;
   moraOpen: boolean;
   moreActive: boolean;
   unread?: number;
@@ -28,7 +30,7 @@ export interface OsDockProps {
   onMore: () => void;
 }
 
-export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore }: OsDockProps) {
+export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
   const onMobile = new Set(mobileItems.map((m) => m.id));
   const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
@@ -56,7 +58,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         </div>
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--right">
-          <Link href="/" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link>
+          {showLegacy ? <Link href="/" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
             <MoraStone size={34} halo={moraOpen} />
           </button>
