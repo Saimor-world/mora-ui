@@ -133,7 +133,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       <div className="wd-parallax wd-parallax--far" aria-hidden />
       <div className="wd-parallax wd-parallax--mid" aria-hidden />
       <div className="wd-parallax wd-parallax--near" aria-hidden />
-      {layout ? <div className="wd-galaxy" aria-hidden style={{ left: layout.cx, top: layout.cy }}><i /><b /></div> : null}
+      {layout ? <div className="wd-galaxy" aria-hidden style={{ left: layout.cx, top: layout.cy }}><i /><b /><em className="wd-neb wd-neb--a" /><em className="wd-neb wd-neb--b" /><em className="wd-neb wd-neb--c" /><s className="wd-dust" /></div> : null}
       {comet ? <span key={comet.id} className="wd-comet" aria-hidden data-testid="world-comet" title={`Neue Mail: ${comet.label}`} /> : null}
       <div className="wd-zoomwrap" style={camera} data-testid="world-zoomwrap">
       {layout ? (
