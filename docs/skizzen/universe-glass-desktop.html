@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Saimôr OS · Universe (Dunkles Glas, MÔRA-Licht, Galaxie)</title>
+  <link rel="stylesheet" href="../../app/world.css">
+  <style>
+    :root {
+      --bg-deep: #070a08;
+      --tx-main: #ebe7de;
+      --tx-muted: #8e9992;
+      --os-gold: #e2c478;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1440px;
+      height: 900px;
+      margin: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-deep);
+      color: var(--tx-main);
+      user-select: none;
+    }
+    .os-shell {
+      position: relative;
+      width: 1440px;
+      height: 900px;
+      background: radial-gradient(ellipse 90% 70% at 50% 45%, rgba(14, 22, 18, 0.72) 0%, #050706 85%), url('../../public/universe/deep-space-warm.jpg') center / cover;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation (Header wie im echten OS) */
+    .os-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 1000;
+      background: linear-gradient(180deg, rgba(7, 10, 8, 0.88) 0%, rgba(7, 10, 8, 0) 100%);
+      backdrop-filter: blur(8px);
+    }
+    .os-studio {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .os-brand {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      color: var(--os-gold);
+      text-transform: uppercase;
+    }
+    .os-badge {
+      font-size: 12px;
+      color: #9ec2a8;
+      background: rgba(111, 143, 120, 0.16);
+      border: 1px solid rgba(111, 143, 120, 0.28);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .os-nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .os-tab {
+      padding: 6px 14px;
+      font-size: 13px;
+      color: var(--tx-muted);
+      border-radius: 8px;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .os-tab.active {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.09);
+      font-weight: 500;
+    }
+    .os-status {
+      font-size: 13px;
+      color: var(--tx-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .os-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #7ae5af;
+      box-shadow: 0 0 8px #7ae5af;
+    }
+
+    /* Main Universe Stage */
+    .os-stage {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+    }
+
+    /* Bottom Dock & Mora Ask */
+    .os-dock-wrap {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+    }
+    .os-mora-sentence {
+      font-size: 13px;
+      color: #d8e5dc;
+      background: rgba(14, 20, 17, 0.85);
+      border: 1px solid rgba(226, 196, 120, 0.32);
+      padding: 6px 16px;
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+    .os-ask-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 480px;
+      height: 48px;
+      padding: 0 16px;
+      border-radius: 24px;
+      background: rgba(18, 26, 22, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+      font-size: 14px;
+      color: #ebe7de;
+    }
+    .os-ask-input {
+      flex: 1;
+      background: transparent;
+      border: 0;
+      color: inherit;
+      outline: 0;
+      font-size: 14px;
+    }
+    .os-ask-icon {
+      color: var(--os-gold);
+      font-size: 16px;
+    }
+
+    /* MÔRA Stein im Zentrum */
+    .mora-center-btn {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      border: 0;
+      background: transparent;
+      cursor: pointer;
+      z-index: 100;
+      display: grid;
+      place-items: center;
+    }
+    .mora-stone-img {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      box-shadow: 0 0 35px 6px rgba(158, 194, 168, 0.35), inset 0 0 0 1.5px rgba(226, 196, 120, 0.65);
+    }
+  </style>
+</head>
+<body>
+  <div class="os-shell">
+    
+    <!-- HEADER -->
+    <header class="os-header">
+      <div class="os-studio">
+        <span class="os-brand">SAIMÔR OS</span>
+        <span class="os-badge">Nagelstudio Lea</span>
+      </div>
+
+      <nav class="os-nav-tabs">
+        <button class="os-tab">Heute</button>
+        <button class="os-tab active">Universe</button>
+        <button class="os-tab">Post</button>
+        <button class="os-tab">Wissen</button>
+        <button class="os-tab">Einstellungen</button>
+      </nav>
+
+      <div class="os-status">
+        <span class="os-pulse-dot"></span>
+        <span>09:30 Michelle (Auffüllen)</span>
+      </div>
+    </header>
+
+    <!-- UNIVERSE STAGE -->
+    <main class="os-stage">
+      <div class="wd-universe" style="width: 1440px; height: 900px;" data-phone="false">
+        
+        <!-- Parallaxe & Nebel im Hintergrund (Türkis, Violett, Kupfer) -->
+        <div class="wd-parallax wd-parallax--far"></div>
+        <div class="wd-parallax wd-parallax--mid"></div>
+        <div class="wd-parallax wd-parallax--near"></div>
+        
+        <div class="wd-galaxy" style="left: 720px; top: 432px;">
+          <i></i>
+          <b></b>
+          <!-- Lebendiger Nebel: Türkis links oben, Violett rechts, Kupfer links unten -->
+          <em class="wd-neb wd-neb--a"></em>
+          <em class="wd-neb wd-neb--b"></em>
+          <em class="wd-neb wd-neb--c"></em>
+          <s class="wd-dust"></s>
+        </div>
+
+        <!-- Orbits & Verbindungslinien zu MÔRA -->
+        <svg class="wd-orbits" width="1440" height="900">
+          <ellipse cx="720" cy="432" rx="460" ry="245" />
+          <ellipse cx="720" cy="432" rx="310" ry="165" />
+          
+          <!-- Sanfte Lichtbahnen von MÔRA zu den Planeten -->
+          <!-- P1: Termine (rechts oben) -->
+          <path class="wd-link wd-link--active" d="M720,432 Q850,330 980,290" />
+          <!-- P2: Kundinnen (oben links) -->
+          <path class="wd-link" d="M720,432 Q590,320 480,270" />
+          <!-- P3: Betrieb (links Mitte, vor türkisem Nebel!) -->
+          <path class="wd-link" d="M720,432 Q460,420 310,440" />
+          <!-- P4: Material & Lager (unten links) -->
+          <path class="wd-link" d="M720,432 Q550,560 450,590" />
+          <!-- P5: Marketing (unten rechts) -->
+          <path class="wd-link" d="M720,432 Q850,570 940,580" />
+          <!-- P6: Finanzen (rechts Mitte) -->
+          <path class="wd-link" d="M720,432 Q960,430 1100,430" />
+        </svg>
+
+        <!-- ZENTRUM: MÔRA -->
+        <div class="mora-center-btn">
+          <img src="../../public/os-kit/mora-stone-v1.png" class="mora-stone-img" alt="MÔRA">
+        </div>
+
+        <!-- PLANET 1: Termine (Granat [356°, 36%]) · Aktiver Termin Michelle 09:30 -->
+        <div class="wd-planet" style="left: 980px; top: 290px; z-index: 8;" data-active="true">
+          <!-- traits: leuchtet bei Aktivität -->
+          <span class="wd-traits" style="--atmo: 0.95;">
+            <span class="wd-atmo" style="width: 76px; height: 76px; margin-left: -38px; margin-top: -38px;"></span>
+          </span>
+          <span class="wd-sphere planet--tone planet--glass" style="width: 76px; height: 76px;
+            --dx: 0.87; --dy: -0.48; --lx: 72%; --ly: 37%; --ox: 28%; --oy: 63%;
+            --g-core: hsla(356, 36%, 8%, 0.54); --g-mid: hsla(356, 36%, 26%, 0.30); --g-glow: hsla(356, 46%, 52%, 0.50); --g-hi: hsla(356, 28%, 94%, 0.75); --g-edge: hsla(356, 36%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">3</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Termine</span>
+            <span class="wd-meta">09:30 Michelle · 3 heute</span>
+          </span>
+          <span class="wd-active-tag">Aktiver Bereich</span>
+        </div>
+
+        <!-- PLANET 2: Kundinnen (Tiefblau [220°, 32%]) -->
+        <div class="wd-planet" style="left: 480px; top: 270px; z-index: 7;">
+          <span class="wd-sphere planet--tone planet--glass" style="width: 68px; height: 68px;
+            --dx: -0.83; --dy: -0.56; --lx: 28%; --ly: 35%; --ox: 72%; --oy: 65%;
+            --g-core: hsla(220, 32%, 8%, 0.54); --g-mid: hsla(220, 32%, 26%, 0.30); --g-glow: hsla(220, 42%, 52%, 0.50); --g-hi: hsla(220, 24%, 94%, 0.75); --g-edge: hsla(220, 32%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">42</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Kundinnen</span>
+            <span class="wd-meta">42 Stammkundinnen</span>
+          </span>
+        </div>
+
+        <!-- PLANET 3: Betrieb & Aufgaben (Kühles Violett [274°, 30%]) · Direkt vor dem türkisem Nebel wd-neb--a! -->
+        <!-- Beweis: Durch unsere farbstabile Tönung bleibt Betrieb satt Violett und wird NICHT türkis! -->
+        <div class="wd-planet" style="left: 310px; top: 440px; z-index: 9;">
+          <!-- traits: Polarlicht wegen überfälliger Aufgabe (Instagram Herbst-Designs 22.10.) + Spark für offene Aufgaben -->
+          <span class="wd-traits" style="--atmo: 0.6;">
+            <span class="wd-aurora" style="width: 82px; height: 82px; margin-left: -41px; margin-top: -41px;"></span>
+            <span class="wd-spark" style="transform: translate(44px, -15px);"></span>
+            <span class="wd-spark" style="transform: translate(-42px, 20px);"></span>
+          </span>
+          <span class="wd-sphere planet--tone planet--glass" style="width: 70px; height: 70px;
+            --dx: -1.0; --dy: 0.02; --lx: 24%; --ly: 50%; --ox: 76%; --oy: 50%;
+            --g-core: hsla(274, 30%, 8%, 0.54); --g-mid: hsla(274, 30%, 26%, 0.30); --g-glow: hsla(274, 40%, 54%, 0.50); --g-hi: hsla(274, 22%, 94%, 0.75); --g-edge: hsla(274, 30%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">2</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Betrieb</span>
+            <span class="wd-meta">1 überfällig · 2 Aufgaben</span>
+          </span>
+        </div>
+
+        <!-- PLANET 4: Material & Lager (Jade [160°, 28%]) · Aufgabe: Gel-Farbe Herbstrot nachbestellen -->
+        <div class="wd-planet" style="left: 450px; top: 590px; z-index: 6;">
+          <span class="wd-traits" style="--atmo: 0.4;">
+            <span class="wd-spark" style="transform: translate(25px, 32px);"></span>
+          </span>
+          <span class="wd-sphere planet--tone planet--glass" style="width: 64px; height: 64px;
+            --dx: -0.86; --dy: 0.51; --lx: 28%; --ly: 63%; --ox: 72%; --oy: 37%;
+            --g-core: hsla(160, 28%, 8%, 0.54); --g-mid: hsla(160, 28%, 26%, 0.30); --g-glow: hsla(160, 38%, 52%, 0.50); --g-hi: hsla(160, 20%, 94%, 0.75); --g-edge: hsla(160, 28%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">8</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Material & Lacke</span>
+            <span class="wd-meta">Gel-Farbe Herbstrot offen</span>
+          </span>
+        </div>
+
+        <!-- PLANET 5: Marketing (Rauch-Bernstein [36°, 32%]) -->
+        <div class="wd-planet" style="left: 940px; top: 580px; z-index: 6;">
+          <!-- Ordner-Ring -->
+          <span class="wd-traits">
+            <svg class="wd-ring" width="200" height="200" style="margin-left: -100px; margin-top: -100px;" viewBox="-100 -100 200 200">
+              <ellipse rx="48" ry="14" transform="rotate(-14)" stroke-width="1.2" />
+            </svg>
+          </span>
+          <span class="wd-sphere planet--tone planet--glass" style="width: 66px; height: 66px;
+            --dx: 0.83; --dy: 0.56; --lx: 72%; --ly: 64%; --ox: 28%; --oy: 36%;
+            --g-core: hsla(36, 32%, 8%, 0.54); --g-mid: hsla(36, 32%, 26%, 0.30); --g-glow: hsla(36, 42%, 52%, 0.50); --g-hi: hsla(36, 24%, 94%, 0.75); --g-edge: hsla(36, 32%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">5</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Marketing</span>
+            <span class="wd-meta">Instagram Herbst-Designs</span>
+          </span>
+        </div>
+
+        <!-- PLANET 6: Finanzen (Petrol [190°, 30%]) -->
+        <div class="wd-planet" style="left: 1100px; top: 430px; z-index: 8;">
+          <span class="wd-sphere planet--tone planet--glass" style="width: 68px; height: 68px;
+            --dx: 0.99; --dy: -0.01; --lx: 76%; --ly: 50%; --ox: 24%; --oy: 50%;
+            --g-core: hsla(190, 30%, 8%, 0.54); --g-mid: hsla(190, 30%, 26%, 0.30); --g-glow: hsla(190, 40%, 52%, 0.50); --g-hi: hsla(190, 22%, 94%, 0.75); --g-edge: hsla(190, 30%, 72%, 0.75);
+            --p-rim: rgba(226, 196, 120, 0.42);">
+            <span class="wd-badge">14</span>
+          </span>
+          <span class="wd-label">
+            <span class="wd-name">Finanzen</span>
+            <span class="wd-meta">Tagesabschluss bereit</span>
+          </span>
+        </div>
+
+        <!-- RECHTS: HORIZONT-LEISTE (Was heute zählt) -->
+        <aside class="wd-horizon" style="position: absolute; right: 28px; top: 88px; z-index: 50;">
+          <p class="fv-eyebrow">Dein Horizont · Studio Lea</p>
+          <div class="wd-horizon__row" style="background: rgba(18, 26, 22, 0.78); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;">
+            <span>Nächster Termin</span>
+            <b>09:30 Michelle (Auffüllen, 60 Min)</b>
+          </div>
+          <div class="wd-horizon__row" style="background: rgba(18, 26, 22, 0.78); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;">
+            <span>Aufgaben heute</span>
+            <b>Gel-Farbe Herbstrot nachbestellen</b>
+          </div>
+          <div class="wd-horizon__row" style="background: rgba(36, 18, 16, 0.78); border: 1px solid rgba(224, 122, 95, 0.4); border-radius: 8px; padding: 8px 12px; margin-bottom: 6px;">
+            <span style="color: #e07a5f;">Überfällig (22.10.)</span>
+            <b>Instagram: Herbst-Designs posten</b>
+          </div>
+        </aside>
+
+        <!-- LEGENDE (i) LINKS UNTEN -->
+        <details class="wd-legend" open style="left: 28px; bottom: 120px;">
+          <summary>i</summary>
+          <ul>
+            <li><i class="lg-ring"></i>Ring: je mehr Ordner, desto weiter</li>
+            <li><i class="lg-atmo"></i>Leuchten: Aktivität der letzten 7 Tage</li>
+            <li><i class="lg-aurora"></i>Polarlicht: überfällige Aufgaben</li>
+            <li><i class="lg-spark"></i>Funkeln: offene Aufgaben</li>
+            <li><i class="lg-comet"></i>Komet: neue Mail</li>
+          </ul>
+        </details>
+
+        <!-- ZÄHLER LINKS OBEN -->
+        <div class="wd-counters" style="left: 28px; top: 88px;">
+          <span class="wd-counter">6 Planeten</span>
+          <span class="wd-counter">74 Einträge</span>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- BOTTOM DOCK & MORA ASK -->
+    <div class="os-dock-wrap">
+      <div class="os-mora-sentence">
+        MÔRA: „Michelle kommt um 09:30 zum Auffüllen. Herbstrot-Lack sollte heute bestellt werden.“
+      </div>
+      <div class="os-ask-bar">
+        <span class="os-ask-icon">縁</span>
+        <input class="os-ask-input" type="text" placeholder="Frag MÔRA oder steuere dein Studio (@Bereich, Termin, Aufgabe) …" readonly>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

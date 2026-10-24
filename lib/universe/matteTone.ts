@@ -104,11 +104,11 @@ const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) %
  * über --lx/--ly). Töne: Granat, Tiefblau, Jade, Rauch-Bernstein, Petrol, Pflaumengrau (kühles Violett 270°, klar weg vom Granat 356°) – im Wechsel
  * warm/kühl, alle sehr dunkel und wenig gesättigt.
  */
-export const GLASS_TINTS: ReadonlyArray<[number, number]> = [[356, 38], [220, 32], [160, 28], [36, 32], [190, 30], [270, 16]];
+export const GLASS_TINTS: ReadonlyArray<[number, number]> = [[356, 36], [220, 32], [160, 28], [36, 32], [190, 30], [274, 30]];
 function glassVars(hue: number, sat: number): Record<string, string> {
   const a = (l: number, al: number, ds = 0) => `hsla(${hue}, ${sat + ds}%, ${l}%, ${al})`;
   return {
-    '--g-core': a(8, .42), '--g-mid': a(30, .14), '--g-glow': a(52, .4, 10), '--g-hi': a(90, .62, -10), '--g-edge': a(70, .7),
+    '--g-core': a(8, .54), '--g-mid': a(26, .30), '--g-glow': a(52, .50, 10), '--g-hi': a(94, .75, -8), '--g-edge': a(72, .75),
     '--p-hi': hsl(hue, sat, 44), '--p-base': hsl(hue, sat, 24), '--p-mid': hsl(hue, sat, 16), '--p-shadow': hsl(hue, sat, 9), '--p-deep': hsl(hue, sat, 5),
     '--m-hi': hsl(hue, sat, 50), '--m-base': hsl(hue, sat, 28), '--m-mid': hsl(hue, sat, 20), '--m-shadow': hsl(hue, sat, 12), '--m-deep': hsl(hue, sat, 6),
     '--h-edge': hsl(hue, sat, 46), '--h-top': hsl(hue, sat, 16), '--h-body': hsl(hue, sat, 9),
