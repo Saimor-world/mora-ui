@@ -8,5 +8,5 @@ export default defineConfig({
   testDir: './e2e/core-logic',
   workers: 1, retries: 0, timeout: 45_000,
   outputDir: 'test-results/core-logic',
-  use: { baseURL, browserName: 'chromium', viewport: { width: 1440, height: 900 }, timezoneId: 'Europe/Berlin', reducedMotion: 'reduce' },
+  use: { baseURL, browserName: 'chromium', viewport: { width: 1440, height: 900 }, timezoneId: 'Europe/Berlin', contextOptions: { reducedMotion: 'reduce' } },
 });
