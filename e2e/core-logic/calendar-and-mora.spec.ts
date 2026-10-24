@@ -17,34 +17,46 @@ async function setPhase(api: APIRequestContext, id: string, phase: string) {
 async function picture(page: Page, info: TestInfo, name: string) {
   await page.screenshot({ path: info.outputPath(`${sha}-${name}.png`), fullPage: false });
 }
-test.beforeEach(async ({ context, request, baseURL }) => {
+test.beforeEach(async ({ context, request, baseURL, page }) => {
   // Synthetic local session, never a production credential.
   await context.addCookies([{ name: 'mora_session', value: 'sess_local_core_contract', url: baseURL! }]);
   const profile = await (await request.get('/api/core/v3/auth/session')).json();
   expect(profile.tenant_id).toBe('tenant-beispiel-lea');
   expect(profile.active_company_id).toBe(company);
+  const calendar = await (await request.get(`/api/core/v3/calendar/events?company_id=${company}`)).json();
+  const date = calendar.events[0].date;
+  // A reproducible evening in the example calendar; timers keep running normally.
+  await page.clock.setFixedTime(new Date(`${date}T19:00:00Z`));
   await context.addInitScript(() => localStorage.setItem('saimor_product_tour_dismissed', '1'));
   for (const id of ['e1', 'e2', 'e3', 'e4']) await setPhase(request, id, id === 'e1' ? 'geplant' : 'erledigt');
 });
 
-test('Today confirms CORE, undo persists, and a second device reloads the same state', async ({ page, browser, request, baseURL }, info) => {
+test('Today confirms CORE and undo persists after reload', async ({ page, request }, info) => {
   await page.goto('/os#today');
   await page.getByTestId('day-finish-stale').click();
   await expect(page.getByTestId('day-toast')).toContainText('abgeschlossen');
   expect((await phases(request)).find(e => e.event_id === 'e1')?.phase).toBe('erledigt');
   await picture(page, info, 'today-1440');
+  await page.getByTestId('day-toast').getByRole('button', { name: 'Rückgängig' }).click();
+  await expect(page.getByTestId('day-finish-stale')).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId('day-finish-stale')).toBeVisible();
+});
+
+test('a second device loads the same completed state from CORE', async ({ page, browser, request, baseURL }) => {
+  await page.goto('/os#today');
+  await page.getByTestId('day-finish-stale').click();
+  await expect(page.getByTestId('day-toast')).toContainText('abgeschlossen');
+  expect((await phases(request)).find(e => e.event_id === 'e1')?.phase).toBe('erledigt');
   const second = await browser.newContext({ baseURL, timezoneId: 'Europe/Berlin' });
   try {
     await second.addCookies([{ name: 'mora_session', value: 'sess_local_core_contract', url: baseURL! }]);
     await second.addInitScript(() => localStorage.setItem('saimor_product_tour_dismissed', '1'));
     const other = await second.newPage();
+    await other.clock.setFixedTime(new Date(await page.evaluate(() => Date.now())));
     await other.goto('/os#today');
     await expect(other.getByTestId('day-panel')).toBeVisible();
     await expect(other.getByTestId('day-finish-stale')).toHaveCount(0);
-    await page.getByTestId('day-toast').getByRole('button', { name: 'Rückgängig' }).click();
-    await expect(page.getByTestId('day-finish-stale')).toBeVisible();
-    await other.reload();
-    await expect(other.getByTestId('day-finish-stale')).toBeVisible();
   } finally { await second.close(); }
 });
 

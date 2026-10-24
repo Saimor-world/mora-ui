@@ -24,4 +24,12 @@ Optionaler Modellanschluss (nur im Prozess des lokalen Nachbaus): `MORA_LOCAL_LL
 
 Risiko **B** (Sitzung, gespeicherte Aktionen, Modelltransport). UI-Commit zurücknehmen; kein Datenbankschema geändert. Lokale Beispieldaten bleiben außerhalb des Repos. Alten Browser-Cache absichtlich nicht wieder als Datenquelle aktivieren. Merge/Deploy und späterer echter Modelltest benötigen Marius' ausdrückliche Freigabe.
 
-Prüfergebnisse, Commit, Screenshots und unabhängige AI-Gegenprüfung werden vor dem Entwurfs-PR ergänzt. Status bis dahin **PREPARED**.
+## Prüfung und verbleibende Grenze
+
+- Vollständige UI-Suite: **326 Suites / 1.841 Tests bestanden**; `verify:types`, Lint, Critical-Flow-Gate und OS-Smoke erfolgreich. Produktionsbuild erfolgreich. Bestehende Lint-Warnungen außerhalb dieser Änderung bleiben bestehen.
+- Lokaler CORE-Adapter: **5 Tests bestanden**, einschließlich dauerhafter Speicherung, Versionskonflikt, standardmäßig ausgeschaltetem Modell, kontrollierter Providerantwort, sicherem Providerfehler und ungültigen Eingaben. Kein echtes Modell aufgerufen.
+- Unabhängige AI-Gegenprüfung: vier Grenzfälle gefunden und mit Regressionstests korrigiert (geteilte Anfrage über Sitzungswechsel, A→B→A, verspätete ältere Antwort, Rückgängig im falschen Kontext). Nachprüfung ohne verbleibenden blockierenden Befund. Die Session-Regression nutzt ausdrücklich den echten HTTP-Helfer, nicht nur eine API-Attrappe.
+- Browser-Testpaket vorbereitet: `playwright.core-logic.config.ts`, nur Loopback, synthetische Beispiel-Sitzung, fünf Fälle für bestätigtes Speichern, Rückgängig, zweites Gerät, Speicherfehler, Universe/Modellfehler und Handy-/Kundenansichten. **Noch nicht ausgeführt.**
+- Die automatische Aktionsprüfung hat den Start der zusätzlichen lokalen Next-Vorschau zweimal abgewiesen, auch nach Wechsel auf den regulären Anmeldeweg ohne anonymen Preview-Modus. Sie nennt keinen näheren Grund. Daher keine Screenshots oder erfolgreichen Klickdurchgänge dieses Branches behauptet; eine bereits freigegebene laufende Vorschau wird zur Prüfung benötigt.
+
+Status **PREPARED**, Browserprüfung und echter Modelltest offen. Der erfolgreich geprüfte Build verwendete `NEXT_PUBLIC_OS_PROTOTYPE=1` und den isolierten lokalen CORE, keinen anonymen Vorschau-Schalter. Der frühere lokale Buildversuch hatte einen Typfehler in der neuen Playwright-Konfiguration; dieser wurde korrigiert und der Build erfolgreich wiederholt.
