@@ -548,3 +548,11 @@
 .wd-planet[data-depth='front'] .wd-sphere.planet--tone { box-shadow: inset 0 0 0 1px var(--p-rim, transparent), 0 14px 22px -14px rgba(0, 0, 0, .55); }
 .th-scrim, .th-scrim * { font-family: var(--uv-sans, var(--font-sans, Inter, system-ui, sans-serif)); }
 .th-chip, [data-testid="horizon-unassigned"] span { white-space: nowrap; }
+
+/* Monde v2: matter Stein (Jade-Familie), feiner Goldrand, Jade-Schimmer nur bei offenen Aufgaben. */
+.wd-moondot, .wd-planet .wd-moondot { fill: url(#wd-moon-stone); stroke: rgba(226, 196, 120, .5); stroke-width: .8; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
+.wd-moondot[data-tasks='true'] { stroke: rgba(150, 225, 190, .7); filter: drop-shadow(0 0 4px rgba(120, 210, 170, .7)) drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
+/* Horizont: eine ruhige Zeile statt Versal-Label mit Umbruch. */
+.wd-horizon__row[data-testid="horizon-unassigned"] { flex-direction: row; justify-content: space-between; }
+.wd-horizon__row[data-testid="horizon-unassigned"] span { font-size: var(--os-type-small-size); letter-spacing: 0; text-transform: none; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wd-horizon__row[data-testid="horizon-unassigned"]::after { content: '›'; color: var(--wd-muted); }

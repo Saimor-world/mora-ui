@@ -15,7 +15,7 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
-const ASK_RESERVE_PHONE = 156; // Frag-MÔRA-Leiste + Dock liegen über dem unteren Feldrand (gemessen bei 390×844)
+const ASK_RESERVE_PHONE = 212; // Frag-MÔRA-Leiste + Dock + Zuordnen-Chip (44 px + Luft) liegen über dem unteren Feldrand (gemessen bei 390×844)
 /** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
 const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
 
@@ -310,6 +310,12 @@ export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbi
   return (
     <span className="wd-orbit" style={{ width: box, height: box, marginLeft: -box / 2, marginTop: -box / 2 }} aria-hidden data-testid="world-planet-orbit">
       <svg width={box} height={box}>
+        {/* Monde: dasselbe matte Steinmaterial wie die Planeten, eine Stufe dunkler, warmes Licht oben links. */}
+        <defs>
+          <radialGradient id="wd-moon-stone" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#7c9a84" /><stop offset="35%" stopColor="#3f6656" /><stop offset="75%" stopColor="#1d3a31" /><stop offset="100%" stopColor="#0c1c17" />
+          </radialGradient>
+        </defs>
         {moons.map((m, i) => {
           const p = moonAt(i, moons.length);
           const sub = m.stars.slice(0, MAX_STARS);
