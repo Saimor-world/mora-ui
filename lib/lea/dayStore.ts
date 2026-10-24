@@ -15,16 +15,24 @@ import { coreGet, corePut } from '@/lib/api/http';
 export type EventPhase = 'geplant' | 'laeuft' | 'erledigt';
 export type DaySync = 'idle' | 'core' | 'local';
 
-interface ServerItem { event_id: string; phase: EventPhase; version: number }
+interface ServerItem { event_id: string; phase: EventPhase; version: number; updated_at?: string | null; checked_in_at?: string | null }
+
+/** Ergebnis einer Änderung: `conflict` heißt, CORE hatte schon einen anderen Stand – der gilt jetzt. */
+export interface PhaseResult { phase: EventPhase; conflict: boolean }
+
+/** Zeitpunkt des Check-ins: eigenes Feld von CORE, sonst updated_at. */
+const sinceOf = (it: ServerItem): string | undefined => (it.phase === 'laeuft' ? (it.checked_in_at || it.updated_at || undefined) : undefined);
 
 interface DayState {
   companyId: string | null;
   phases: Record<string, EventPhase>;
   versions: Record<string, number>;
+  /** Seit wann ein Termin läuft (ISO), echter Check-in statt geplantem Start. */
+  since: Record<string, string>;
   /** Lokaler Stand je Firma, falls CORE nicht erreichbar ist. */
   cache: Record<string, Record<string, EventPhase>>;
   sync: DaySync;
-  setPhase(eventId: string, phase: EventPhase): Promise<void>;
+  setPhase(eventId: string, phase: EventPhase): Promise<PhaseResult>;
   loadCompany(companyId: string | null): Promise<void>;
 }
 
@@ -44,13 +52,14 @@ export const useDayStore = create<DayState>()(
       companyId: null,
       phases: {},
       versions: {},
+      since: {},
       cache: {},
       sync: 'idle',
 
       loadCompany: async (companyId) => {
         // Sitzungswechsel: nie den Stand einer anderen Firma zeigen.
         if (get().companyId !== companyId) {
-          set((s) => ({ companyId, phases: companyId ? { ...(s.cache[companyId] ?? {}) } : {}, versions: {}, sync: 'idle' }));
+          set((s) => ({ companyId, phases: companyId ? { ...(s.cache[companyId] ?? {}) } : {}, versions: {}, since: {}, sync: 'idle' }));
         }
         if (!companyId) return;
         try {
@@ -60,8 +69,12 @@ export const useDayStore = create<DayState>()(
           const items: ServerItem[] = raw?.items ?? raw?.data?.items ?? [];
           const phases: Record<string, EventPhase> = {};
           const versions: Record<string, number> = {};
-          for (const it of items) { phases[it.event_id] = it.phase; versions[it.event_id] = it.version; }
-          set((s) => ({ phases, versions, sync: 'core', cache: { ...s.cache, [companyId]: phases } }));
+          const since: Record<string, string> = {};
+          for (const it of items) {
+            phases[it.event_id] = it.phase; versions[it.event_id] = it.version;
+            const t = sinceOf(it); if (t) since[it.event_id] = t;
+          }
+          set((s) => ({ phases, versions, since, sync: 'core', cache: { ...s.cache, [companyId]: phases } }));
         } catch {
           set({ sync: 'local' });
         }
@@ -69,31 +82,38 @@ export const useDayStore = create<DayState>()(
 
       setPhase: async (eventId, phase) => {
         const companyId = get().companyId;
-        const apply = (p: EventPhase, version?: number) =>
+        const apply = (p: EventPhase, version?: number, at?: string) =>
           set((s) => {
             const phases = { ...s.phases, [eventId]: p };
             const versions = version === undefined ? s.versions : { ...s.versions, [eventId]: version };
-            return { phases, versions, cache: companyId ? { ...s.cache, [companyId]: phases } : s.cache };
+            const since = { ...s.since };
+            if (p === 'laeuft') since[eventId] = at ?? (s.phases[eventId] === 'laeuft' && s.since[eventId] ? s.since[eventId] : new Date().toISOString());
+            else delete since[eventId];
+            return { phases, versions, since, cache: companyId ? { ...s.cache, [companyId]: phases } : s.cache };
           });
+        const done: PhaseResult = { phase, conflict: false };
         apply(phase); // sofort sichtbar, auch offline
-        if (!companyId) return;
+        if (!companyId) return done;
         try {
           const res = await corePut(putPath(companyId, eventId), { phase, expected_version: get().versions[eventId] ?? 0 });
-          if (get().companyId !== companyId) return;
+          if (get().companyId !== companyId) return done;
           const item: ServerItem | undefined = res?.version ? res : res?.data;
-          if (!item?.version) { set({ sync: 'local' }); return; } // nicht gespeichert: bleibt lokal
-          apply(item.phase ?? phase, item.version);
+          if (!item?.version) { set({ sync: 'local' }); return done; } // nicht gespeichert: bleibt lokal
+          apply(item.phase ?? phase, item.version, sinceOf({ ...item, phase: item.phase ?? phase }));
           set({ sync: 'core' });
+          return { phase: item.phase ?? phase, conflict: false };
         } catch (err) {
-          if (get().companyId !== companyId) return;
+          if (get().companyId !== companyId) return done;
           const current = conflictCurrent(err);
           if (current !== undefined) {
             // Ein anderes Gerät war schneller: dessen Stand gilt.
-            if (current) apply(current.phase, current.version);
+            const adopted: EventPhase = current?.phase ?? 'geplant';
+            apply(adopted, current?.version, current ? sinceOf(current) : undefined);
             set({ sync: 'core' });
-            return;
+            return { phase: adopted, conflict: true };
           }
           set({ sync: 'local' });
+          return done;
         }
       },
     }),

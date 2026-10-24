@@ -18,6 +18,9 @@ import { MoraBriefing } from './ui/MoraBriefing';
 import { PhoneHome } from './ui/PhoneHome';
 import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { DayPanel } from '@/components/day/DayPanel';
+import { useWorld } from '@/lib/lea/useWorld';
+import { useDayStore } from '@/lib/lea/dayStore';
+import { nextOpenToday } from '@/lib/lea/day';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import { firstName } from '@/lib/auth/displayName';
@@ -65,6 +68,19 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
+  const world = useWorld();
+  const phases = useDayStore((s) => s.phases);
+  const openToday = useMemo(() => nextOpenToday(world.events, phases, new Date()), [world.events, phases]);
+  const calendarTile = (snap: TodaySnapshot): [string, string] => {
+    if (!preview && hasSession && openToday.total > 0) {
+      const n = openToday.next;
+      if (!n) return ['Alle Termine abgeschlossen', `${openToday.total} Termin${openToday.total === 1 ? '' : 'e'} heute, alle erledigt.`];
+      return [n.time ? `${n.time} · ${n.title}` : n.title, `${openToday.open} von ${openToday.total} Termin${openToday.total === 1 ? '' : 'en'} heute offen`];
+    }
+    const evs = snap.calendar.events;
+    return [evs[0]?.title ?? 'Heute frei', evs.length ? `${evs.length} Termin${evs.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.'];
+  };
 
   // Handy mit Sitzung: oben Home V4 aus echten Daten, darunter dieselben Widgets wie am Desktop (wie auf HQ).
   const phoneHome = phone && hasSession && !preview;
@@ -93,7 +109,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
           <Text variant="eyebrow" className="mb-2">Heute · Aktuell — das ist heute relevant</Text>
           <div className="os-today-now">
             {([
-              ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
+              ['Kalender', CalendarDays, ...calendarTile(snapshot), () => navigate('post')],
               // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
               ...(companyView ? [['Mail', Mail,
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',

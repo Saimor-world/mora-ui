@@ -2,7 +2,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Loading, MoraStone } from '@/components/os-kit';
 import { useWorld } from '@/lib/lea/useWorld';
-import { useDayStore } from '@/lib/lea/dayStore';
+import { useDayStore, type EventPhase } from '@/lib/lea/dayStore';
+
+/** Echte Check-in-Uhrzeit (HH:MM, lokal) aus dem gespeicherten Zeitpunkt. */
+export function sinceLabel(iso?: string): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+}
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { buildLiveDay } from '@/lib/lea/live';
 import { personOf, serviceOf, inMinutes } from '@/lib/lea/day';
@@ -18,6 +25,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
   const world = useWorld();
   const phases = useDayStore((s) => s.phases);
   const setPhase = useDayStore((s) => s.setPhase);
+  const since = useDayStore((s) => s.since);
   const actions = useDayActions(world.companyId ?? null);
   const [tick, setTick] = useState(0);
   useEffect(() => { const h = setInterval(() => setTick((n) => n + 1), 60_000); return () => clearInterval(h); }, []);
@@ -70,6 +78,16 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
     if (!ok) return say('Konnte nicht gespeichert werden. Bitte noch einmal.', undefined, 'error');
     say(value ? `Erledigt: ${t.title}` : `Wieder offen: ${t.title}`, value ? () => { void done(t, false); } : undefined);
   };
+  // Terminstatus ändern; der Toast nennt erst danach den Stand, der in CORE gilt.
+  const PHASE_TEXT: Record<EventPhase, string> = { geplant: 'wieder geplant', laeuft: 'läuft', erledigt: 'abgeschlossen' };
+  const change = async (id: string, title: string, phase: EventPhase, text: string, undoTo: EventPhase) => {
+    const res = await setPhase(id, phase);
+    if (res.conflict) {
+      say(`Schon auf einem anderen Gerät geändert: Termin mit ${personOf(title)} ${PHASE_TEXT[res.phase]}.`);
+      return;
+    }
+    say(text, () => { void setPhase(id, undoTo); });
+  };
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = draft.trim();
@@ -96,21 +114,21 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
             <p className="dy-eyebrow">Heute · {day.stale.time} · vorbei</p>
             <p className="dy-title">{personOf(day.stale.title)} {day.stale.duration ? <small>{day.stale.duration} Min</small> : null}</p>
             <p className="dy-meta">{serviceOf(day.stale.title) || 'Termin'} · noch nicht abgeschlossen</p>
-            <button type="button" className="dy-btn" data-testid="day-finish-stale" onClick={() => { const s = day.stale!; setPhase(s.id, 'erledigt'); say(`Termin mit ${personOf(s.title)} abgeschlossen.`, () => setPhase(s.id, 'geplant')); }}>Termin abschließen</button>
+            <button type="button" className="dy-btn" data-testid="day-finish-stale" onClick={() => { const s = day.stale!; void change(s.id, s.title, 'erledigt', `Termin mit ${personOf(s.title)} abgeschlossen.`, 'geplant'); }}>Termin abschließen</button>
           </div>
         ) : (
         <div className={`dy-card dy-next${day.running ? ' dy-next--live' : ''}`} data-testid="day-next">
           <p className="dy-eyebrow">
-            {day.running ? `Jetzt · seit ${day.running.time ?? ''}` : ev ? `Als Nächstes${isToday && day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ev.date !== localISO(now) ? ` · am ${shortDate(ev.date)}` : ''}` : 'Als Nächstes'}
+            {day.running ? `Jetzt · seit ${sinceLabel(since[day.running.id]) ?? day.running.time ?? ''}` : ev ? `Als Nächstes${isToday && day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ev.date !== localISO(now) ? ` · am ${shortDate(ev.date)}` : ''}` : 'Als Nächstes'}
           </p>
           {ev ? (
             <>
               <p className="dy-title">{ev.time && !day.running ? `${ev.time} ` : ''}{personOf(ev.title)} {day.running ? <small>läuft</small> : ev.duration ? <small>{ev.duration} Min</small> : null}</p>
               <p className="dy-meta">{serviceOf(ev.title) || 'Termin'}</p>
               {day.running ? (
-                <button type="button" className="dy-btn" data-testid="day-finish" onClick={() => { setPhase(day.running!.id, 'erledigt'); say(`Termin mit ${personOf(day.running!.title)} abgeschlossen.`, () => setPhase(day.running!.id, 'laeuft')); }}>Termin abschließen</button>
+                <button type="button" className="dy-btn" data-testid="day-finish" onClick={() => { const r = day.running!; void change(r.id, r.title, 'erledigt', `Termin mit ${personOf(r.title)} abgeschlossen.`, 'laeuft'); }}>Termin abschließen</button>
               ) : isToday ? (
-                <button type="button" className="dy-btn" data-testid="day-arrived" onClick={() => { setPhase(ev.id, 'laeuft'); say(`${personOf(ev.title)} ist da. Termin läuft.`, () => setPhase(ev.id, 'geplant')); }}>{personOf(ev.title)} ist da</button>
+                <button type="button" className="dy-btn" data-testid="day-arrived" onClick={() => { void change(ev.id, ev.title, 'laeuft', `${personOf(ev.title)} ist da. Termin läuft.`, 'geplant'); }}>{personOf(ev.title)} ist da</button>
               ) : null}
             </>
           ) : (

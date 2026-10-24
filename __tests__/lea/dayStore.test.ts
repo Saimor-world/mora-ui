@@ -14,7 +14,7 @@ const st = () => useDayStore.getState();
 beforeEach(() => {
   coreGet.mockReset();
   corePut.mockReset();
-  useDayStore.setState({ companyId: null, phases: {}, versions: {}, cache: {}, sync: 'idle' });
+  useDayStore.setState({ companyId: null, phases: {}, versions: {}, since: {}, cache: {}, sync: 'idle' });
 });
 
 describe('dayStore ↔ CORE', () => {
@@ -79,5 +79,26 @@ describe('dayStore ↔ CORE', () => {
     await pending;
     expect(st().companyId).toBeNull();
     expect(st().phases).toEqual({});
+  });
+
+  it('reports the adopted CORE state on a 409', async () => {
+    coreGet.mockResolvedValue({ items: [] });
+    await st().loadCompany('c1');
+    corePut.mockRejectedValue(new CoreError('veraltet', 409, { current: { event_id: 'e1', phase: 'erledigt', version: 4 } }));
+    await expect(st().setPhase('e1', 'laeuft')).resolves.toEqual({ phase: 'erledigt', conflict: true });
+    expect(st().phases.e1).toBe('erledigt');
+    expect(st().since.e1).toBeUndefined();
+  });
+
+  it('uses the real check-in time (checked_in_at, else updated_at), not the planned start', async () => {
+    coreGet.mockResolvedValue({ items: [
+      { event_id: 'a', phase: 'laeuft', version: 1, updated_at: '2026-10-24T12:28:00Z' },
+      { event_id: 'b', phase: 'laeuft', version: 1, updated_at: '2026-10-24T12:40:00Z', checked_in_at: '2026-10-24T12:05:00Z' },
+    ] });
+    await st().loadCompany('c1');
+    expect(st().since).toEqual({ a: '2026-10-24T12:28:00Z', b: '2026-10-24T12:05:00Z' });
+    corePut.mockResolvedValue({ event_id: 'c', phase: 'laeuft', version: 1, updated_at: '2026-10-24T12:30:00Z' });
+    await expect(st().setPhase('c', 'laeuft')).resolves.toEqual({ phase: 'laeuft', conflict: false });
+    expect(st().since.c).toBe('2026-10-24T12:30:00Z');
   });
 });

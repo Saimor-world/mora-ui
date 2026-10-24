@@ -58,3 +58,17 @@ export function inMinutes(min: number): string {
   const h = Math.floor(min / 60), m = min % 60;
   return m ? `in ${h} Std ${m} Min` : `in ${h} Std`;
 }
+
+/**
+ * Kalender-Kachel: heutige Termine ohne die abgeschlossenen; der nächste offene
+ * (ein laufender zählt als offen). Status kommt aus CORE (dayStore).
+ */
+export function nextOpenToday(
+  events: WorldEvent[],
+  phases: Record<string, 'geplant' | 'laeuft' | 'erledigt'>,
+  now = new Date(),
+): { next: WorldEvent | null; open: number; total: number } {
+  const today = todaysEvents(events, now);
+  const open = today.filter((e) => phases[e.id] !== 'erledigt');
+  return { next: open[0] ?? null, open: open.length, total: today.length };
+}
