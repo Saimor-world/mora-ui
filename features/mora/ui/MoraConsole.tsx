@@ -99,7 +99,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
         ) : (
           turns.map((t) => (
             <div key={t.id} className={cx('os-bubble', t.role === 'user' ? 'os-bubble--user' : 'os-bubble--mora')} data-role={t.role}>
-              {t.role === 'system' ? <Text variant="meta" tone="muted">{t.text}</Text> : t.text}
+              {t.role === 'system' ? <Text variant="meta" tone="muted">{t.text}</Text> : t.role === 'mora' ? renderBold(t.text) : t.text}
             </div>
           ))
         )}
@@ -148,4 +148,11 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
       </Dialog>
     </div>
   );
+}
+
+/** Nur **fett** aus MÔRAs Antwort umsetzen – kein HTML, kein weiteres Markdown. */
+export function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*([^*\n]+)\*\*/g);
+  if (parts.length === 1) return text;
+  return parts.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : <React.Fragment key={i}>{p}</React.Fragment>));
 }

@@ -1,4 +1,9 @@
 'use client';
+/** ISO-Datum (YYYY-MM-DD) → „24.10.2026“; alles andere bleibt unverändert. */
+export function formatDeDate(iso?: string | null): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso ?? '');
+}
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppWindow, Building2, CornerDownLeft, FileText, Search, Sparkles } from 'lucide-react';
@@ -80,7 +85,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
       }
       for (const e of world.events) {
-        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${e.date}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });
+        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${formatDeDate(e.date)}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });
       }
     }
     if (trimmed) {

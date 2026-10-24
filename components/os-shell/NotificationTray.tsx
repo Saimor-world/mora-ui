@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { Button, Stack, Status, Surface, Text } from '@/components/os-kit';
 import { useOsNotifications } from '@/lib/os-prototype/notifications';
@@ -27,8 +27,21 @@ export function NotificationTray({ onClose }: { onClose: () => void }) {
   const items = useOsNotifications((s) => s.items);
   const markAllRead = useOsNotifications((s) => s.markAllRead);
   const day = dayNotices(useWorld().day);
+  const ref = useRef<HTMLDivElement>(null);
+  // Schließt bei Escape und Klick daneben, damit das Panel nicht über anderen Flächen liegen bleibt.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      if (ref.current && t && !ref.current.contains(t) && !t.closest('[aria-label^="Hinweise"],[aria-label="Mitteilungen"]')) onClose();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('pointerdown', onDown); };
+  }, [onClose]);
   return (
-    <Surface variant="strong" padding={4} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))]" aria-label="Hinweise" style={{ background: 'var(--os-canvas-raised)' }}>
+    <div ref={ref} className="absolute right-4 top-14 z-[1200] w-[min(360px,calc(100vw-32px))]" data-testid="notification-tray">
+    <Surface variant="strong" padding={4} aria-label="Hinweise" style={{ background: 'var(--os-canvas-raised)' }}>
       <Stack direction="row" justify="space-between" align="center">
         <Text variant="eyebrow">Hinweise</Text>
         <Stack direction="row" gap={1}>
@@ -59,5 +72,6 @@ export function NotificationTray({ onClose }: { onClose: () => void }) {
         ))}
       </div>
     </Surface>
+    </div>
   );
 }

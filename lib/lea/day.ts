@@ -45,7 +45,9 @@ export function buildDay(events: WorldEvent[], tasks: WorldTask[], now = new Dat
 
 /** MÔRAs Satz für den Tag: nur was belegt ist. */
 export function daySentence(day: Day, now = new Date()): string {
-  const left = day.today.filter((e) => (e.time ?? '23:59') >= hm(now)).length;
+  // Ein Termin ist erst vorbei, wenn sein Ende (Start + Dauer, sonst 60 Min) erreicht ist.
+  const endOf = (e: WorldEvent) => { if (!e.time) return '23:59'; const [h, m] = e.time.split(':').map(Number); const t = Math.min(h * 60 + m + (e.duration ?? 60), 23 * 60 + 59); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  const left = day.today.filter((e) => endOf(e) > hm(now)).length;
   if (!day.today.length) return day.next ? `Heute ist nichts eingetragen. Der nächste Termin ist am ${shortDate(day.next.date)}.` : 'Heute ist nichts eingetragen.';
   if (!left) return day.today.length === 1 ? 'Dein Termin heute ist vorbei.' : `Alle ${day.today.length} Termine von heute sind vorbei.`;
   const next = day.next && day.next.date === localISO(now) ? ` Als Nächstes um ${day.next.time} ${personOf(day.next.title)}.` : '';

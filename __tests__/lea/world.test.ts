@@ -66,7 +66,7 @@ describe('the day', () => {
   });
 
   it('says only what the data supports', () => {
-    expect(daySentence(day, NOW)).toBe('Heute noch 1 Termin. Als Nächstes um 11:00 Mara Beispiel.');
+    expect(daySentence(day, NOW)).toBe('Heute 2 Termine. Als Nächstes um 11:00 Mara Beispiel.');
     expect(daySentence(buildDay([], [], NOW), NOW)).toBe('Heute ist nichts eingetragen.');
   });
 });

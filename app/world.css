@@ -441,8 +441,9 @@
   .os-root a[href], .os-root input:not([type='checkbox']):not([type='radio']):not([type='range']), .os-root select { min-height: 44px; }
   .os-root button[aria-label][class*='iconOnly'], .os-root .os-icon-btn { min-width: 44px; }
   .os-root input[type='range'] { min-height: 44px; padding: 14px 0; }
-  .os-root .dy-box { position: relative; }
-  .os-root .dy-box::after { content: ''; position: absolute; inset: -10px; }
+  /* Häkchen: Knopf selbst 44×44, sichtbares Kästchen bleibt 26px (transparenter Rand + inset-Linie). */
+  .os-root .dy-box { width: 44px; height: 44px; margin: -9px; border: 9px solid transparent; border-radius: 17px; background-clip: padding-box; box-shadow: inset 0 0 0 1.5px rgba(235, 231, 222, .45); }
+  .os-root .dy-box--on { background-color: var(--wd-jade); box-shadow: none; }
 }
 @media (pointer: coarse), (max-width: 640px) {
   .os-root button[aria-label='Senden'] { min-width: 44px; }

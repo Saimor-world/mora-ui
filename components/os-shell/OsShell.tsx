@@ -59,6 +59,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const paletteOpen = useOsShellStore((s) => s.paletteOpen);
   const setPaletteOpen = useOsShellStore((s) => s.setPaletteOpen);
   const [trayOpen, setTrayOpen] = useState(false);
+  const closeTray = useCallback(() => setTrayOpen(false), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const health = useCoreHealth();
 
@@ -158,7 +159,7 @@ export function OsShell({ preview }: { preview: boolean }) {
               </Button>
             </Stack>
           </div>
-          {trayOpen ? <NotificationTray onClose={() => setTrayOpen(false)} /> : null}
+          {trayOpen ? <NotificationTray onClose={closeTray} /> : null}
           <div className="os-shell__content">
             <FeatureBoundary featureId={active.id}>
               <Suspense fallback={<Loading label={`${active.title} wird geladen`} lines={5} />}>
