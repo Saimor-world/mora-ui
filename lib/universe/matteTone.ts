@@ -73,8 +73,13 @@ const FAMILY_SLOT: Record<MatteFamily, number> = { sand: 4, ton: 5, salbei: 3, s
  * Unterschiede nur in kleinen Farbschritten. Variante C ist Standard; A/B zum Vergleich
  * (localStorage „mora-planet-variant“).
  */
-type Variant = { hues: Array<[number, number]>; L: { hi: number; base: number; mid: number; shadow: number; deep: number }; warmHi: number; rim: string };
-export const PLANET_VARIANTS: Record<'A' | 'B' | 'C' | 'D', Variant> = {
+type Variant = { hues: Array<[number, number] | [number, number, number]>; L: { hi: number; base: number; mid: number; shadow: number; deep: number }; warmHi: number; rim: string };
+export const PLANET_VARIANTS: Record<'A' | 'B' | 'C' | 'D' | 'E', Variant> = {
+  // E (Standard, Marius + Partnerin 24.10.: D wirkte wie ein „Kindergartensystem“): EINE ruhige
+  // Familie für B2B – dunkler matter Stein, kühles schmales Band (150–212°), Sättigung 8–18 %.
+  // Planeten unterscheiden sich leise über Ton UND Helligkeit (3. Wert = Helligkeitsversatz,
+  // abwechselnd heller/dunkler). Einziger Akzent bleibt der Goldrand; kräftige Farbe nur für Status.
+  E: { hues: [[162, 18, 0], [206, 12, 2], [186, 18, -3], [176, 8, 4], [204, 11, -4], [150, 11, 3]], L: { hi: 56, base: 37, mid: 28, shadow: 14, deep: 7 }, warmHi: 0.25, rim: 'rgba(226, 196, 120, .48)' },
   // D (Standard, Marius 24.10. abends: „zu ähnlich, muss abwechselnd sein“): sechs klar
   // verschiedene Edelstein-Töne aus einer Welt – Jade, Kupfer, Schieferblau, Moos, Pflaume, Bernstein (Petrol fiel raus: neben Jade zu ähnlich).
   // Reihenfolge wechselt kühl/warm, damit Nachbarn kontrastieren. Gleiches Werteband, gleiches
@@ -88,8 +93,8 @@ export const PLANET_VARIANTS: Record<'A' | 'B' | 'C' | 'D', Variant> = {
   C: { hues: [[156, 28], [168, 26], [180, 24], [192, 22], [148, 24], [200, 20]], L: { hi: 58, base: 41, mid: 31, shadow: 16, deep: 8 }, warmHi: 0.45, rim: 'rgba(226, 196, 120, .42)' },
 };
 function currentVariant(): Variant {
-  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); if (v === 'A' || v === 'B' || v === 'C' || v === 'D') return PLANET_VARIANTS[v]; } catch { /* SSR */ }
-  return PLANET_VARIANTS.D;
+  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); if (v === 'A' || v === 'B' || v === 'C' || v === 'D' || v === 'E') return PLANET_VARIANTS[v]; } catch { /* SSR */ }
+  return PLANET_VARIANTS.E;
 }
 const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; };
 
@@ -99,11 +104,11 @@ export function matteTone(name: string, data: MatteData = {}, index?: number): M
   const V = currentVariant();
   const n = V.hues.length;
   const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
-  const [hue, sat] = V.hues[slot];
+  const [hue, sat, dL = 0] = V.hues[slot];
   const signal = Math.min(1, Math.log10(1 + (data.count ?? 0) + (data.activity ?? 0)) / 2);
   const lift = Math.round(signal * 3);
   const s = sat + lift;
-  const L = V.L;
+  const L = { hi: V.L.hi + dL, base: V.L.base + dL, mid: V.L.mid + dL, shadow: V.L.shadow + Math.round(dL / 2), deep: V.L.deep };
   const hiHue = mixHue(hue, 44, V.warmHi);
   const vars: Record<string, string> = {
     '--p-hi': hsl(hiHue, s + V.warmHi * 10, L.hi + lift), '--p-base': hsl(hue, s, L.base + lift), '--p-mid': hsl(hue, s, L.mid + lift),
