@@ -91,6 +91,10 @@ export function buildFinder(input: { departments: FDept[]; unassigned?: FSpace[]
     if (!n?.id || !n.folder_id) continue;
     (starsByFolder[n.folder_id] ||= []).push(nodeStar(n));
   }
+  // Eine Aufgabe mit Ordner ist ein Stern dieses Ordners (Mond), wie jedes andere Element.
+  const knownFolders = new Set(input.folders.map((f) => f.id));
+  const placed = (t: WorldTask) => Boolean((t as { folder_id?: string | null }).folder_id && knownFolders.has((t as { folder_id?: string }).folder_id!));
+  for (const t of input.tasks ?? []) if (placed(t)) (starsByFolder[(t as { folder_id: string }).folder_id] ||= []).push(taskStar(t, input.now));
   const moonsByPlanet: Record<string, Moon[]> = {};
   for (const f of input.folders) {
     if (!f?.id || !f.space_id) continue;
@@ -110,7 +114,7 @@ export function buildFinder(input: { departments: FDept[]; unassigned?: FSpace[]
     planets.push({ id: COLLECT_PLANET, name: 'Ohne Abteilung', kind: 'collect', tone: matteTone('Ohne Abteilung', { count: moons.length }), spaces: collect, moons, stars: [] });
   }
   if (input.tasks) {
-    const stars = input.tasks.map((t) => taskStar(t, input.now)).sort((a, b) => Number(a.done) - Number(b.done) || Number(b.overdue) - Number(a.overdue) || a.name.localeCompare(b.name, 'de'));
+    const stars = input.tasks.filter((t) => !placed(t)).map((t) => taskStar(t, input.now)).sort((a, b) => Number(a.done) - Number(b.done) || Number(b.overdue) - Number(a.overdue) || a.name.localeCompare(b.name, 'de'));
     planets.push({ id: TASKS_PLANET, name: 'Aufgaben', kind: 'tasks', tone: matteTone('Aufgaben', { count: stars.length }), spaces: [], moons: [], stars });
   }
   return planets;

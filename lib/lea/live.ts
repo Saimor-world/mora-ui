@@ -20,7 +20,25 @@ export interface LiveDay {
   /** Heute gab es Termine und alle sind abgeschlossen. */
   doneTodayEvents: boolean;
   tomorrow: WorldTask[];
+  /** Alle nicht erledigten Aufgaben (mit und ohne Datum). */
+  openTotal: number;
+  /** Eine Zeile für Planet, Horizont und MÔRA: heute fällig vs. offen. */
+  taskLine: string;
   sentence: string;
+}
+
+/** Eine Quelle der Wahrheit für Aufgaben-Zeilen: „heute fällig“ ist nicht „offen“. */
+export function taskLineOf(tasks: WorldTask[], now = new Date()): { line: string; due: number; dueToday: number; overdue: number; inProgress: number; openTotal: number } {
+  const iso = localISO(now);
+  const notDone = tasks.filter((x) => x.status !== 'done');
+  const overdue = notDone.filter((x) => x.due_date && x.due_date < iso).length;
+  const due = notDone.filter((x) => x.due_date && x.due_date <= iso).length;
+  const openTotal = notDone.length;
+  let line: string;
+  if (!openTotal) line = 'Alles erledigt';
+  else if (!due) line = `Heute nichts fällig · ${openTotal} offen`;
+  else line = `${due - overdue ? `${due - overdue} heute fällig` : ''}${due - overdue && overdue ? ' · ' : ''}${overdue ? `${overdue} überfällig` : ''} · ${openTotal} offen`;
+  return { line, due, dueToday: due - overdue, overdue, inProgress: notDone.filter((x) => x.status === 'in_progress').length, openTotal };
 }
 
 export function phaseOf(e: WorldEvent, phases: Record<string, EventPhase>): EventPhase {
@@ -56,12 +74,15 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   const doneToday = tasks.filter((x) => x.status === 'done' && x.due_date && x.due_date <= iso);
   const tomorrow = tasks.filter((x) => x.status !== 'done' && x.due_date === tomorrowIso);
 
+  const tl = taskLineOf(tasks, now);
+  const restLine = tl.openTotal ? ` Heute nichts fällig, ${tl.openTotal} offen.` : ' Sonst ist heute alles erledigt.';
   let sentence: string;
   const openNames = summarizeTitles(open.map((o) => o.task.title.split(':')[0]));
   if (stale && !running) sentence = `Der Termin mit ${personOf(stale.title)} um ${stale.time} ist noch nicht abgeschlossen.`;
   else if (running) sentence = `${personOf(running.title)} ist da. Ich halte dir den Rest fern, bis ihr fertig seid.`;
-  else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` Offen: ${plural(open.length, 'Aufgabe', 'Aufgaben')}.` : ' Sonst ist heute alles erledigt.'}`;
-  else if (open.length) sentence = `Heute kommt niemand mehr. Offen: ${openNames.join(' und ')}.`;
+  else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` Heute fällig: ${plural(open.length, 'Aufgabe', 'Aufgaben')}.` : restLine}`;
+  else if (open.length) sentence = `Heute kommt niemand mehr. Heute fällig: ${openNames.join(' und ')}.`;
+  else if (tl.openTotal) sentence = `Heute ist nichts fällig · ${plural(tl.openTotal, 'Aufgabe', 'Aufgaben')} offen.${tomorrow.length ? ' Morgen steht schon etwas drin.' : ''}`;
   else sentence = tomorrow.length ? 'Heute ist alles erledigt. Morgen steht schon etwas drin.' : 'Heute ist alles erledigt. Magst du morgen planen?';
   const doneTodayEvents = today.length > 0 && today.every((e) => phaseOf(e, phases) === 'erledigt');
   // Ergänzt die Termin-Karte statt sie zu wiederholen: was danach kommt.
@@ -73,7 +94,7 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
     else if (next && next.date > iso && next.date !== tomorrowIso) parts.push(`Nächster Termin: ${shortDate(next.date)}${next.time ? `, ${next.time}` : ''}.`);
     ahead = parts.length ? `Nach dem Abschluss: ${parts.join(' ')}` : tomorrow.length ? 'Nach dem Abschluss ist heute nichts mehr im Kalender. Für morgen steht schon etwas an.' : 'Nach dem Abschluss ist dein Tag frei – magst du morgen planen?';
   }
-  return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, sentence, ahead };
+  return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, openTotal: tl.openTotal, taskLine: tl.line, sentence, ahead };
 }
 
 /**

@@ -596,3 +596,20 @@
 .os-demo-banner { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: var(--os-content-max); margin: 8px auto 0; padding: 4px 12px; font-size: var(--os-type-meta-size); letter-spacing: .08em; color: var(--os-text-muted); }
 .os-demo-banner button { min-height: 32px; padding: 0 12px; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-pill); color: var(--os-text); }
 @media (max-width: 640px) { .os-status__btn, .os-demo-banner button { min-height: 44px; min-width: 44px; } }
+
+/* Handy: Universe-Kopf in einer Zeile, damit die Planeten Platz haben (über der Frag-MÔRA-Leiste). */
+@media (max-width: 640px) {
+  .os-universe__intro { padding: 8px 12px !important; }
+  .os-universe__intro .os-universe__eyebrow, .os-universe__intro .os-universe__hint { display: none; }
+  .os-universe__intro h1 { font-size: 15px; line-height: 20px; }
+  .os-universe__actions { flex-wrap: nowrap !important; gap: 6px !important; }
+  .os-universe__actions .os-tab, .os-universe__actions button { min-height: 44px; padding-inline: 12px; font-size: 13px; }
+}
+@media (max-width: 640px) {
+  .os-universe__intro h1 { display: none; }
+  .os-universe__intro .os-universe__actions { width: 100%; justify-content: space-between; }
+  .os-universe__lens { display: flex; flex-wrap: nowrap; }
+  .os-universe__actions .os-tab, .os-universe__actions button { white-space: nowrap; padding-inline: 10px; }
+}
+.os-universe__addshort { display: none; }
+@media (max-width: 640px) { .os-universe__addlong { display: none; } .os-universe__addshort { display: inline; } }

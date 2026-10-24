@@ -9,7 +9,7 @@
 import { matteTone, type MatteTone } from '@/lib/universe/matteTone';
 
 export interface WorldEvent { id: string; title: string; date: string; time?: string; duration?: number }
-export interface WorldTask { id: string; title: string; status: string; due_date?: string | null }
+export interface WorldTask { id: string; title: string; status: string; due_date?: string | null; folder_id?: string | null; company_id?: string | null }
 export interface WorldSpace { id: string; name: string; folder_count?: number; folders?: unknown[] }
 export interface WorldDepartment { id: string; name: string; slug?: string; spaces?: WorldSpace[] }
 

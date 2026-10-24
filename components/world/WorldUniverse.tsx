@@ -15,7 +15,7 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
-const ASK_RESERVE_PHONE = 84;
+const ASK_RESERVE_PHONE = 156; // Frag-MÔRA-Leiste + Dock liegen über dem unteren Feldrand (gemessen bei 390×844)
 /** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
 const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
 

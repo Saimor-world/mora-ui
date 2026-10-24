@@ -44,7 +44,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const dayActions = useDayActions(world.companyId);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
-  const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
+  // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
+  const placeIds = useMemo(() => new Set(world.planets.map((p) => p.id)), [world.planets]);
+  const finderPlanets = useMemo(() => world.finder.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
   const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const reduced = !!useReducedMotion();
@@ -151,6 +153,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     next_event: world.day.next ? { time: world.day.next.time, title: world.day.next.title, date: world.day.next.date } : null,
     running_event: world.day.running?.title ?? null,
     open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
+    task_line: world.day.taskLine,
     areas: finderPlanets.map((p) => p.name),
   }), [selected, world.day, finderPlanets]);
 
@@ -237,7 +240,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) setSelectedId(t.id); }} data-testid="horizon-tasks">
             <span>Aufgaben</span>
-            <b>{world.day.open.length ? `${world.day.open.length} offen${world.day.open.some((t) => t.overdue) ? ` · ${world.day.open.filter((t) => t.overdue).length} überfällig` : ''}` : 'alles erledigt'}</b>
+            <b>{world.day.taskLine}</b>
           </button>
           {companyView ? (
             <>

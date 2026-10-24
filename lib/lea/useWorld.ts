@@ -87,12 +87,15 @@ export function useWorld() {
     const live = calendarMeta(day);
     const depts = tree.data?.departments ?? [];
     const upcoming = upcomingEvents(events.data ?? []);
-    return finder.map((p, idx) => {
+    // Grammatik des Universe: Planeten sind nur Abteilungen (Orte). Aufgaben ohne Ordner und Termine sind
+    // keine Orte – sie stehen im Horizont und bei MÔRA. Eine reine Termin-Abteilung ohne Ordner ist eine Quelle.
+    const places = finder.filter((p) => p.kind !== 'tasks' && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
+    return places.map((p, idx) => {
       const c = planetCounts(p);
       const d = depts.find((x) => x.id === p.id);
       const cal = Boolean(d && isCalendarDept(d));
       let meta = p.kind === 'tasks'
-        ? (c.open ? `${c.open} offen${c.overdue ? ` · ${c.overdue} überfällig` : ''}` : 'alles erledigt')
+        ? day.taskLine
         : p.moons.length ? plural(p.moons.length, 'Ordner', 'Ordner') : 'noch leer';
       if (cal && upcoming.length) meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       if (cal && live) meta = live;

@@ -505,3 +505,5 @@
 .wd-source:hover, .wd-source:focus-visible { opacity: 1; }
 .wd-source:hover span, .wd-source:hover small, .wd-source:focus-visible span, .wd-source:focus-visible small { opacity: 1; }
 .wd-source[data-state='empty'] { opacity: .3; }
+/* Handy: Monde und Sterne erst am gewählten Planeten – sonst drängen sie sich in die Namen der Nachbarn. */
+.wd-universe[data-phone='true'] .wd-planet:not([data-selected='true']):not([data-active='true']):not(:focus-visible) .wd-orbit { display: none; }

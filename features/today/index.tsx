@@ -17,6 +17,7 @@ import { PhoneHome } from './ui/PhoneHome';
 import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { DayPanel } from '@/components/day/DayPanel';
 import { useWorld } from '@/lib/lea/useWorld';
+import { taskLineOf } from '@/lib/lea/live';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { nextOpenToday } from '@/lib/lea/day';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
@@ -68,6 +69,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
   // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
   const world = useWorld();
+  // Eine Quelle der Wahrheit: mit Sitzung zählen Heute, Universe, Horizont und MÔRA dieselben Aufgaben (taskLineOf).
+  const tc = world.enabled && !world.loading ? taskLineOf(world.tasks) : null;
   const phases = useDayStore((s) => s.phases);
   const openToday = useMemo(() => nextOpenToday(world.events, phases, new Date()), [world.events, phases]);
   const calendarTile = (snap: TodaySnapshot): [string, string] => {
@@ -113,7 +116,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')]] as const : []),
-              ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
+              ['Aufgaben · Organisation', ListTodo, tc ? tc.line : snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
@@ -203,7 +206,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               <SourceState status={snapshot.tasks.status} label="Aufgaben" />
               {snapshot.tasks.status !== 'disconnected' && snapshot.tasks.status !== 'unavailable' ? (
                 <Stack direction="row" gap={6} wrap>
-                  {([['Offen', snapshot.tasks.counts.open], ['In Arbeit', snapshot.tasks.counts.in_progress], ['Heute fällig', snapshot.tasks.counts.due_today], ['Überfällig', snapshot.tasks.counts.overdue]] as const).map(([l, v]) => (
+                  {((tc ? [['Offen', tc.openTotal], ['In Arbeit', tc.inProgress], ['Heute fällig', tc.dueToday], ['Überfällig', tc.overdue]] : [['Offen', snapshot.tasks.counts.open], ['In Arbeit', snapshot.tasks.counts.in_progress], ['Heute fällig', snapshot.tasks.counts.due_today], ['Überfällig', snapshot.tasks.counts.overdue]]) as ReadonlyArray<readonly [string, number | null]>).map(([l, v]) => (
                     <Stack key={l} gap={0}><Text variant="title" as="div">{v ?? '—'}</Text><Text variant="meta">{l}</Text></Stack>
                   ))}
                 </Stack>
