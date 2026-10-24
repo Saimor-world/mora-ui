@@ -66,16 +66,14 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
         <MoraStone size={34} thinking={send.isPending} />
         <div className="min-w-0 flex-1">
           <Text variant="title" as="h2">MÔRA</Text>
-          <Text variant="meta">Kontext: {contextLabel}{surfaceContext ? ` · ${surfaceContext}` : ''}</Text>
+          <Text variant="meta">{contextLabel === 'MÔRA' ? 'Deine Assistentin im Studio' : `Bei: ${contextLabel}`}{surfaceContext ? ` · ${surfaceContext}` : ''}</Text>
         </div>
         {onClose ? <Button variant="ghost" iconOnly aria-label="MÔRA schließen" icon={<X size={16} />} onClick={onClose} /> : null}
       </Stack>
 
       <Stack direction="row" gap={2} wrap className="mt-4" aria-label="MÔRA Status">
-        <Status tone={health.data?.state === 'online' ? 'safe' : 'warning'}>
-          CORE {health.isLoading ? 'prüft…' : health.data?.state === 'online' ? 'erreichbar' : 'nicht erreichbar'}
-        </Status>
-        <Status tone={workState.tone}>Arbeit: {workState.label}</Status>
+        {!health.isLoading && health.data?.state !== 'online' ? <Status tone="warning">gerade nicht erreichbar</Status> : null}
+        {send.isPending ? <Status tone={workState.tone}>{workState.label}</Status> : null}
         <Status tone="info" title="MÔRA führt nichts ohne deine Bestätigung aus">
           <ShieldCheck size={11} /> nur mit Bestätigung
         </Status>
@@ -85,7 +83,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
         {turns.length === 0 ? (
           <Stack gap={3}>
             <Text variant="body">
-              Frag mich etwas zu {contextLabel === 'MÔRA' ? 'deinem Unternehmen' : contextLabel}. Ich schlage vor – du entscheidest.
+              Frag mich etwas zu {contextLabel === 'MÔRA' ? 'deinem Tag' : contextLabel}. Ich schlage vor – du entscheidest.
             </Text>
             <Stack gap={2}>
               {(contextFeature?.mora.suggestions || []).map((s) => (
@@ -101,7 +99,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
         ) : (
           turns.map((t) => (
             <div key={t.id} className={cx('os-bubble', t.role === 'user' ? 'os-bubble--user' : 'os-bubble--mora')} data-role={t.role}>
-              {t.role === 'system' ? <Text variant="meta" tone="muted">{t.text}</Text> : t.text}
+              {t.role === 'system' ? <Text variant="meta" tone="muted">{t.text}</Text> : t.role === 'mora' ? renderBold(t.text) : t.text}
             </div>
           ))
         )}
@@ -150,4 +148,11 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
       </Dialog>
     </div>
   );
+}
+
+/** Nur **fett** aus MÔRAs Antwort umsetzen – kein HTML, kein weiteres Markdown. */
+export function renderBold(text: string): React.ReactNode {
+  const parts = text.split(/\*\*([^*\n]+)\*\*/g);
+  if (parts.length === 1) return text;
+  return parts.map((p, i) => (i % 2 ? <strong key={i}>{p}</strong> : <React.Fragment key={i}>{p}</React.Fragment>));
 }

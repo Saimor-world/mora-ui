@@ -6,3 +6,8 @@
 4. Turn Capital from wallet viewer into a unified asset/read model.
 5. Add MÔRA cross-surface context and receipts before any execution path.
 6. Migrate remaining legacy visuals gradually; do not remove the cosmic identity.
+
+## Regel (Marius, 24.10.2026): Handy = Begleit-App
+Auf dem Handy ist das OS nur Companion: Heute, Aufgaben, „Termin abschließen“, kurzer MÔRA-Chat.
+Kein volles Universe-Erlebnis am Handy. Noch nicht umgebaut – bei der nächsten Mobile-Runde
+Universe/Wissen/Finder auf dem Phone ausblenden bzw. auf Heute zurückführen.

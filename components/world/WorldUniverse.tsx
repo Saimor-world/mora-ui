@@ -2,7 +2,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { MoraStone } from '@/components/os-kit';
-import type { WorldPlanet } from '@/lib/lea/world';
+import type { WorldOrbit, WorldPlanet } from '@/lib/lea/world';
+import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { floatOffset, layoutOrbits, placeOnOrbit, type OrbitLayout } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 
@@ -13,7 +14,32 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  * über translate3d); Pause bei Zeiger oder Fokus, still bei „weniger Bewegung“.
  * Der Hintergrund bleibt das Universe-Bild der Shell.
  */
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onMora }: {
+/** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
+const ASK_RESERVE_PHONE = 84;
+/** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
+const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
+
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource }: {
+  /** Doppelklick: direkt hineinzoomen. */
+  onZoomPlanet?: (id: string) => void;
+  /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
+  selectedId?: string | null;
+  /** Planeten, deren Linie zu MÔRA gerade pulsiert (etwas hat sich geändert). */
+  pulseIds?: string[];
+  /** MÔRA atmet ruhig, denkt (Antwort unterwegs) oder spricht. */
+  moraState?: 'idle' | 'thinking' | 'speaking';
+  /** Kamerafahrt: das Universe zoomt auf diesen Planeten, bevor er sich öffnet. */
+  zoomTo?: string | null;
+  /** Platz rechts für das Fokus-Panel: das Universe rückt nach links und wird etwas kleiner. */
+  shift?: number;
+  /** Quellen-Ring (Systemplaneten aus /v3/universe): verbunden oder noch leer. */
+  sources?: HorizonSource[] | null;
+  onOpenSource?: (key: string) => void;
+  moraLine?: string;
+  /** Zuletzt geöffneter Planet: leuchtet und trägt „Aktiver Bereich“. */
+  activeId?: string | null;
+  /** Echte Zähler: Knoten (MÔRA, Planeten, Monde, Sterne) und Verbindungen. */
+  counts?: { nodes: number; edges: number };
   planets: WorldPlanet[];
   phone: boolean;
   /** Ein Planet ist offen: das Universe bleibt stehen, aber unsichtbar dahinter. */
@@ -26,6 +52,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const [size, setSize] = useState({ width: 0, height: 0 });
   const reduced = !!useReducedMotion();
   const paused = useRef(false);
+  const [zoom, setZoom] = useState(1);
 
   useEffect(() => {
     const el = fieldRef.current;
@@ -42,7 +69,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   }, []);
 
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: size.height, weights: planets.map((p) => p.weight), phone }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone }) : null),
     [size.width, size.height, planets, phone],
   );
 
@@ -81,24 +108,80 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 
   const hold = (on: boolean) => () => { paused.current = on; };
 
+  // Parallaxe: Sternenschichten folgen dem Zeiger ganz leicht (nur Desktop, nie bei „weniger Bewegung“).
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (reduced || phone || e.pointerType !== 'mouse') return;
+    const el = fieldRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    el.style.setProperty('--px', (((e.clientX - r.left) / r.width) - 0.5).toFixed(3));
+    el.style.setProperty('--py', (((e.clientY - r.top) / r.height) - 0.5).toFixed(3));
+  };
+
+  // Kamera: Ursprung auf den Zielplaneten, dann weich hinein (CSS-Transition auf .wd-zoomwrap).
+  const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
+  const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
+  const camera: React.CSSProperties | undefined = zoomPt
+    ? { transformOrigin: `${zoomPt.x}px ${zoomPt.y}px`, transform: 'scale(2.6)', opacity: 0, filter: 'blur(2px)' }
+    : shift ? { transform: `translateX(${-shift}px) scale(${(0.84 * zoom).toFixed(3)})` }
+    : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
+
   return (
-    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined}>
+    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined}>
+      <div className="wd-parallax wd-parallax--far" aria-hidden />
+      <div className="wd-parallax wd-parallax--near" aria-hidden />
+      <div className="wd-zoomwrap" style={camera} data-testid="world-zoomwrap">
       {layout ? (
         <svg className="wd-orbits" width={size.width} height={size.height} aria-hidden>
           {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
+          {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
+          {layout.slots.map((slot, i) => {
+            const pt = placeOnOrbit(layout, slot);
+            const id = planets[i]?.id;
+            const active = id === activeId || id === selectedId;
+            const pulse = id ? pulseIds?.includes(id) : false;
+            return (
+              <g key={`l${i}`}>
+                <line className={active ? 'wd-link wd-link--active' : 'wd-link'} x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} />
+                {pulse ? <line className="wd-link-pulse" x1={layout.cx} y1={layout.cy} x2={pt.x} y2={pt.y} data-testid={`world-pulse-${id}`} /> : null}
+              </g>
+            );
+          })}
+          {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
+      {layout && sources?.length ? (() => {
+        const pts = sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)));
+        return sources.map((src, i) => {
+        const { x, y } = pts[i];
+        return (
+          <button key={src.key} type="button" className="wd-source" data-state={src.state} style={{ left: x, top: y }} onClick={() => onOpenSource?.(src.key)}
+            title={src.state === 'connected' ? `${src.label}: ${src.sources.join(', ')}` : `${src.label}: noch keine Quelle verbunden`} data-testid={`world-source-${src.key.replace('system:', '')}`}>
+            <i aria-hidden />
+            <span>{src.label}</span>
+            <small>{src.state === 'connected' ? 'verbunden' : 'noch leer'}</small>
+          </button>
+        );
+      });
+      })() : null}
 
       {layout ? (
         <button
           type="button"
           className="wd-mora"
+          data-state={moraState}
           style={{ left: layout.cx, top: layout.cy, width: layout.mora, height: layout.mora, zIndex: 10 + Math.round(layout.cy) }}
           onClick={onMora}
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
-          <MoraStone size={layout.mora} halo />
+          <MoraStone size={layout.mora} halo thinking={moraState === 'thinking'} />
+        </button>
+      ) : null}
+      {layout && moraLine ? (
+        // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
+        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 92 }} onClick={onMora} data-testid="world-mora-line">
+          {moraLine}
         </button>
       ) : null}
 
@@ -110,6 +193,10 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             ref={(el) => { planetRefs.current[i] = el; }}
             type="button"
             className="wd-planet"
+            data-active={planet.id === activeId ? 'true' : undefined}
+            data-selected={planet.id === selectedId ? 'true' : undefined}
+            aria-pressed={planet.id === selectedId}
+            onDoubleClick={onZoomPlanet ? () => onZoomPlanet(planet.id) : undefined}
             style={slot ? undefined : { visibility: 'hidden' }}
             onClick={() => onOpenPlanet(planet.id)}
             onPointerEnter={hold(true)}
@@ -119,16 +206,127 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             aria-label={`${planet.name} öffnen · ${planet.meta}`}
             data-testid={`world-planet-${planet.id}`}
           >
-            <WorldPlanetSphere tone={planet.tone} size={slot?.size ?? 60}>
+            {planet.orbit ? <PlanetOrbit away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
+            <WorldPlanetSphere tone={planet.tone} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
             </WorldPlanetSphere>
             <span className="wd-label">
               <span className="wd-name">{planet.name}</span>
               <span className="wd-meta">{planet.meta}</span>
             </span>
+            {planet.id === activeId ? <span className="wd-active-tag" data-testid="world-active-tag">Aktiver Bereich</span> : null}
           </button>
         );
       })}
+      </div>
+      {layout && !phone ? (
+        <>
+          {counts ? (
+            <div className="wd-counters" aria-label="Zähler">
+              <span className="wd-counter" data-testid="world-count-nodes">{counts.nodes} Elemente</span>
+              <span className="wd-counter" data-testid="world-count-edges">{counts.edges} Verbindungen</span>
+            </div>
+          ) : null}
+          <div className="wd-zoom" role="group" aria-label="Zoom">
+            <button type="button" onClick={() => setZoom((z) => Math.min(1.6, +(z + 0.15).toFixed(2)))} aria-label="Näher heran" data-testid="world-zoom-in">+</button>
+            <button type="button" onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))} aria-label="Weiter weg" data-testid="world-zoom-out">−</button>
+            <button type="button" onClick={() => setZoom(1)} aria-label="Zentrieren" data-testid="world-recenter">◎</button>
+          </div>
+        </>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * Positionen der Quellen auf der oberen Hälfte des äußeren Rings. Liegt ein Planet
+ * (samt Label) zu nah, rückt die Quelle seitlich aus – Beschriftungen überlappen nicht.
+ */
+export function sourcePositions(layout: OrbitLayout, n: number, planets: { x: number; y: number }[], minDist = 130) {
+  const ring = sourceRing(layout);
+  const at = (a: number) => ({ x: layout.cx + Math.cos(a) * ring.rx, y: layout.cy + Math.sin(a) * ring.ry });
+  const clear = (a: number) => planets.every((p) => Math.hypot(at(a).x - p.x, at(a).y - p.y) >= minDist);
+  const used: number[] = [];
+  return Array.from({ length: n }, (_, i) => {
+    const base = Math.PI + (Math.PI * (i + 1)) / (n + 1);
+    let best = base;
+    for (let step = 0; step <= 12; step++) {
+      const cands = step === 0 ? [base] : [base - step * 0.05, base + step * 0.05];
+      const hit = cands.find((a) => a > Math.PI * 1.04 && a < Math.PI * 1.96 && clear(a) && used.every((u) => Math.abs(u - a) > 0.3));
+      if (hit !== undefined) { best = hit; break; }
+    }
+    used.push(best);
+    return { ...at(best), angle: best };
+  });
+}
+
+export function sourceRing(layout: OrbitLayout) {
+  const outer = layout.rings[layout.rings.length - 1] ?? { rx: layout.cx * 0.6, ry: layout.cy * 0.5 };
+  return { rx: Math.min(layout.cx - 90, outer.rx * 1.22), ry: Math.min(layout.cy - 40, outer.ry * 1.3) };
+}
+
+const MAX_MOONS = 6;
+const MAX_STARS = 8;
+
+/**
+ * Sichtbares Netz um einen Planeten: seine echten Ordner als Monde, deren Einträge als
+ * Sternpunkte und direkte Sterne (Aufgaben) – jeweils mit feiner Leuchtlinie. Nur Anzeige,
+ * der Klick gehört dem Planeten. Mehr als Platz ist, steht als „+N“ da.
+ */
+/** `away`: +1 liegt der Planet rechts der Mitte, −1 links – Monde rücken von der Verbindungslinie zur Mitte weg. */
+export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1 }) {
+  const moons = orbit.moons.slice(0, MAX_MOONS);
+  const stars = orbit.stars.slice(0, MAX_STARS);
+  if (!moons.length && !stars.length) return null;
+  const r0 = size / 2;
+  const moonR = r0 + (phone ? 22 : 34);
+  const starR = r0 + (phone ? 14 : 20);
+  const moonSize = phone ? 10 : 14;
+  const box = (moonR + 26) * 2;
+  const c = box / 2;
+  // Monde oben verteilt (Label darunter bleibt frei), Sterne gleichmäßig rundherum.
+  const moonAt = (i: number, n: number) => {
+    const a = -Math.PI / 2 + away * (n === 1 ? 0.7 : 0.4) + (n === 1 ? 0 : (-1.1 + (2.2 * i) / Math.max(1, n - 1)));
+    return { x: c + Math.cos(a) * moonR, y: c + Math.sin(a) * moonR, a };
+  };
+  // Sterne nur auf dem Bogen ohne Beschriftung: unten (wo das Label steht) bleibt ein Sektor frei,
+  // damit keine Leuchtlinie den Namen kreuzt.
+  const starAt = (i: number, n: number) => {
+    const gap = 1.3; // freier Sektor um die Label-Seite (rad)
+    const span = 2 * Math.PI - 2 * gap;
+    const a = Math.PI / 2 + gap + (n === 1 ? span / 2 : (span * i) / (n - 1));
+    return { x: c + Math.cos(a) * starR, y: c + Math.sin(a) * starR };
+  };
+  return (
+    <span className="wd-orbit" style={{ width: box, height: box, marginLeft: -box / 2, marginTop: -box / 2 }} aria-hidden data-testid="world-planet-orbit">
+      <svg width={box} height={box}>
+        {moons.map((m, i) => {
+          const p = moonAt(i, moons.length);
+          const sub = m.stars.slice(0, MAX_STARS);
+          return (
+            <g key={m.id}>
+              <line className="wd-sublink" x1={c + Math.cos(p.a) * r0} y1={c + Math.sin(p.a) * r0} x2={p.x} y2={p.y} />
+              {sub.map((st, j) => {
+                const b = p.a + (-0.9 + (1.8 * j) / Math.max(1, sub.length - 1)) * (sub.length > 1 ? 1 : 0);
+                const d = moonSize / 2 + (phone ? 7 : 10);
+                return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={p.x} y1={p.y} x2={p.x + Math.cos(b) * d} y2={p.y + Math.sin(b) * d} /><circle className="wd-stardot" data-kind={st.kind} cx={p.x + Math.cos(b) * d} cy={p.y + Math.sin(b) * d} r={phone ? 1.6 : 2.2} /></g>;
+              })}
+              <circle className="wd-moondot" cx={p.x} cy={p.y} r={moonSize / 2} />
+            </g>
+          );
+        })}
+        {stars.map((st, i) => {
+          const p = starAt(i, stars.length);
+          return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={c} y1={c} x2={p.x} y2={p.y} /><circle className="wd-stardot" data-kind={st.kind} data-overdue={st.overdue ? 'true' : undefined} data-done={st.done ? 'true' : undefined} cx={p.x} cy={p.y} r={phone ? 2.4 : 3.2} /></g>;
+        })}
+      </svg>
+      {!phone ? moons.map((m, i) => {
+        const p = moonAt(i, moons.length);
+        // Steht das Planeten-Label oben (hintere Bahn), wird das Netz gespiegelt (CSS) – das Mond-Label wandert dann unter den Punkt.
+        const vars = { left: p.x, '--mt': `${p.y - moonSize / 2 - 4}px`, '--mb': `${box - p.y + moonSize / 2 + 4}px` } as React.CSSProperties;
+        return <span key={m.id} className="wd-moonlabel" style={vars}>{m.label}{m.stars.length ? ` · ${m.stars.length}` : ''}</span>;
+      }) : null}
+      {orbit.moons.length > MAX_MOONS ? <span className="wd-moremoons">+{orbit.moons.length - MAX_MOONS}</span> : null}
+    </span>
   );
 }

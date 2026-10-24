@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchTodaySnapshot, type TodaySnapshot } from '@/lib/api/todayClient';
 import { CoreError } from '@/lib/api/http';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 
@@ -27,7 +28,9 @@ type SnapshotState = {
 };
 
 export function useScopedToday({ backgroundRefresh = false }: ScopedTodayOptions = {}) {
-  const activeCompanyId = useNavStore((state) => state.activeCompanyId);
+  const navCompanyId = useNavStore((state) => state.activeCompanyId);
+  const demoCompanyId = useDemoStore((state) => state.demoCompanyId);
+  const activeCompanyId = demoCompanyId || navCompanyId;
   const user = useSessionStore((state) => state.user);
   const sessionGeneration = useSessionStore((state) => state.sessionGeneration);
   const userId = user?.id ?? null;

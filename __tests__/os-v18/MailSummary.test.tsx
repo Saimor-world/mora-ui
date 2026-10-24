@@ -65,7 +65,7 @@ describe('V1.8 MailSummaryView', () => {
   it('409 from CORE means not verified', async () => {
     coreGet.mockRejectedValue(Object.assign(new Error('Kein verifiziert verbundenes Postfach.'), { status: 409 }));
     renderView({ enabled: true });
-    expect(await screen.findByTestId('mail-summary-error')).toHaveTextContent('Kein verifiziert verbundenes Postfach.');
+    expect(await screen.findByTestId('mail-summary-error')).toHaveTextContent('Noch kein Postfach verbunden.');
   });
 
   it('does not call CORE when disabled', () => {

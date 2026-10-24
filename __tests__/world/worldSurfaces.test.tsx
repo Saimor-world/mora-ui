@@ -23,8 +23,12 @@ jest.mock('@/lib/lea/useWorld', () => ({
     enabled: true, loading: false, failed: false, companyId: 'co-beispiel',
     planets: require('@/lib/lea/world').buildWorld({ departments, events }),
     events, tasks,
+    day: require('@/lib/lea/live').buildLiveDay(events, tasks, {}),
   }),
 }));
+const setDone = jest.fn().mockResolvedValue(true);
+const addForTomorrow = jest.fn().mockResolvedValue(true);
+jest.mock('@/lib/lea/useDayActions', () => ({ useDayActions: () => ({ setDone, addForTomorrow }) }));
 
 import { PhoneHome } from '@/features/today/ui/PhoneHome';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
@@ -38,14 +42,34 @@ describe('PhoneHome (V4)', () => {
     expect(stone).toHaveAttribute('data-face', 'true');
     expect(stone.querySelector('img')?.getAttribute('src')).toBe('/brand/mora-stone-v1.png');
     expect(screen.getAllByRole('button', { name: /MÔRA/ })).toHaveLength(1);
-    expect(screen.getByTestId('phone-home-strip')).toHaveTextContent('Sophie Beispielhaft-Langname-Doppelname');
-    const onlyToday = screen.getByTestId('phone-home-today');
+    expect(screen.queryByTestId('phone-home-strip')).toBeNull();
+    const onlyToday = screen.getByTestId('day-tasks');
     expect(within(onlyToday).getByText(/überfällig seit/)).toBeInTheDocument();
     expect(within(onlyToday).getByText('heute fällig')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Termine im Universe öffnen' }));
     expect(navigate).toHaveBeenCalledWith('universe');
     fireEvent.click(screen.getByTestId('phone-home-cta'));
     expect(ask).toHaveBeenCalled();
+  });
+});
+
+describe('DayPanel', () => {
+  it('ticks a task via CORE, offers undo, marks arrival and plans tomorrow', async () => {
+    const { DayPanel } = require('@/components/day/DayPanel');
+    const { useDayStore } = require('@/lib/lea/dayStore');
+    render(<DayPanel onAskMora={jest.fn()} />);
+    fireEvent.click(screen.getByTestId('day-tick-t2'));
+    await screen.findByText(/Erledigt: Rechnung schicken/);
+    expect(setDone).toHaveBeenCalledWith(expect.objectContaining({ id: 't2' }), true);
+    fireEvent.click(within(screen.getByTestId('day-toast')).getByText('Rückgängig'));
+    expect(setDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 't2' }), false);
+    fireEvent.click(screen.getByTestId('day-arrived'));
+    expect(useDayStore.getState().phases.e1).toBe('laeuft');
+    fireEvent.click(screen.getByTestId('day-plan'));
+    fireEvent.change(screen.getByTestId('day-tomorrow-input'), { target: { value: 'Beispiel morgen' } });
+    fireEvent.submit(screen.getByTestId('day-tomorrow-input').closest('form')!);
+    await screen.findByText('Für morgen notiert.');
+    expect(addForTomorrow).toHaveBeenCalledWith('Beispiel morgen');
   });
 });
 

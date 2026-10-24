@@ -7,6 +7,9 @@ import type { TodaySourceStatus } from '@/lib/api/todayClient';
 import { useScopedToday, type TodayLoadError } from '@/lib/os/useScopedToday';
 import { usePaneStore } from '@/lib/store/paneStore';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { useWorld } from '@/lib/lea/useWorld';
+import { useDayStore } from '@/lib/lea/dayStore';
+import { nextOpenToday } from '@/lib/lea/day';
 
 type TodayCardProps = {
   eyebrow: string;
@@ -136,7 +139,20 @@ export function TodayOverview() {
   const { snapshot, loading, refreshing, loadError, refresh } = useScopedToday({ backgroundRefresh: true });
   const openIntegrations = () => openPane({ id: 'settings-main', type: 'integrations', title: 'Integrationen', size: { width: 860, height: 680 } });
 
+  const world = useWorld();
+  const phases = useDayStore((s) => s.phases);
+  const openToday = useMemo(() => nextOpenToday(world.events ?? [], phases, new Date()), [world.events, phases]);
+
   const calendarCopy = useMemo<TodayCopy>(() => {
+    // Leas Termine mit Status aus CORE: abgeschlossene überspringen, den nächsten offenen zeigen.
+    if (openToday.total > 0) {
+      const n = openToday.next;
+      if (!n) return { value: 'Alle Termine abgeschlossen', detail: `${openToday.total} Termin${openToday.total === 1 ? '' : 'e'} heute, alle erledigt.` };
+      return {
+        value: n.time ? `${n.time} · ${n.title}` : n.title,
+        detail: `${openToday.open} von ${openToday.total} Termin${openToday.total === 1 ? '' : 'en'} heute offen`,
+      };
+    }
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
       // "frei" klang nach "nichts zu tun" – Termine und Aufgaben sind verschiedene Dinge.
@@ -165,7 +181,7 @@ export function TodayOverview() {
         ? next.location
         : `${snapshot.calendar.count} Termin${snapshot.calendar.count === 1 ? '' : 'e'} heute`,
     };
-  }, [loadError, loading, snapshot]);
+  }, [loadError, loading, snapshot, openToday]);
 
   const mailCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);

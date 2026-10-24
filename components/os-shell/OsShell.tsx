@@ -1,4 +1,5 @@
 'use client';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
@@ -21,7 +22,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
@@ -58,6 +59,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const paletteOpen = useOsShellStore((s) => s.paletteOpen);
   const setPaletteOpen = useOsShellStore((s) => s.setPaletteOpen);
   const [trayOpen, setTrayOpen] = useState(false);
+  const closeTray = useCallback(() => setTrayOpen(false), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const health = useCoreHealth();
 
@@ -109,12 +111,18 @@ export function OsShell({ preview }: { preview: boolean }) {
   const online = health.data?.state === 'online';
   const atmosphere = active.atmosphere ?? 'calm';
 
+  const activeDemo = useActiveCompanyIsDemo();
   const demoMode = preview && !userName;
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
   const look = mounted ? lookStored : 'kosmos';
   const localCompany = mounted ? readLocalOrg().company : '';
-  const org = demoMode ? 'Simple Coffee Group' : localCompany || 'Deine Organisation';
+  const sessionOrg = useSessionStore((s) => (s.user as { active_company_name?: string | null } | null)?.active_company_name ?? '');
+  const internalUser = useIsSaimorInternal();
+  const demoCompanyId = useDemoStore((s) => s.demoCompanyId);
+  const demoCompanies = useDemoCompanies(Boolean(demoCompanyId));
+  const demoName = demoCompanyId ? demoCompanies.find((c) => c.id === demoCompanyId)?.name : undefined;
+  const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Studio';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {
@@ -139,9 +147,9 @@ export function OsShell({ preview }: { preview: boolean }) {
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
             <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow" className="os-shell__place">{active.title}</Text>{/* Kund:innen sehen den CORE-Zustand nur, wenn etwas nicht stimmt. */}{internal || preview || (!health.isLoading && !online) ? <span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung'}</Status></span> : null}{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
-            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} />
+            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode || activeDemo} internal={internalUser} />
             <Stack direction="row" gap={1} align="center">
-              <ContextClock />
+              <ContextClock internal={internalUser} />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
@@ -151,7 +159,7 @@ export function OsShell({ preview }: { preview: boolean }) {
               </Button>
             </Stack>
           </div>
-          {trayOpen ? <NotificationTray onClose={() => setTrayOpen(false)} /> : null}
+          {trayOpen ? <NotificationTray onClose={closeTray} /> : null}
           <div className="os-shell__content">
             <FeatureBoundary featureId={active.id}>
               <Suspense fallback={<Loading label={`${active.title} wird geladen`} lines={5} />}>
@@ -198,7 +206,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
       </div>
 
-      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode} /> : null}
+      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}

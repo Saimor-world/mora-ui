@@ -10,8 +10,11 @@ import { TENANT_HQ, isSystemOwner } from '@/lib/constants/tenants';
  */
 export function isSaimorInternal(
     user: { role?: string | null; tenant_id?: string | null } | null | undefined,
+    opts: { activeCompanyIsDemo?: boolean } = {},
 ): boolean {
     if (!user) return false;
+    // Demo-Arbeitsbereich (is_demo-Firma, auch im HQ-Tenant): Kundenregeln, nie Finance/Labs/Wache.
+    if (opts.activeCompanyIsDemo) return false;
     if (isSystemOwner(user.role)) return true;
     return user.tenant_id === TENANT_HQ;
 }

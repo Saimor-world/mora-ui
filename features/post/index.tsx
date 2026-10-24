@@ -1,4 +1,5 @@
 'use client';
+import { localISO, shortDate } from '@/lib/lea/world';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
@@ -8,7 +9,6 @@ import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { DEMO_CALENDAR, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
@@ -32,17 +32,16 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
   return <>{render(q.data)}</>;
 }
 
-function demoQuery<T>(data: T[]) { return { isLoading: false, isError: false, error: null, data, refetch: () => undefined, fetchStatus: 'idle' as const }; }
 
 export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const sample = Boolean(preview) && !hasSession;
   const liveInbox = usePostInbox();
   const liveCalendar = usePostCalendar();
-  const today = new Date().toISOString().slice(0, 10);
-  // Lokale Vorschau: Demo-Paket „Simple Coffee Group“ (saimor-core demo_isolation.py), als Beispiel markiert.
-  const inbox = sample ? demoQuery(DEMO_MAIL.map((m) => ({ id: m.id, subject: m.subject, from: m.from, snippet: m.snippet, read: m.read }))) : liveInbox;
-  const calendar = sample ? demoQuery(DEMO_CALENDAR.map((e) => ({ id: e.id, title: e.title, date: today, time: e.time }))) : liveCalendar;
+  const today = localISO(new Date());
+  // Demos laufen über echte is_demo-Firmen in CORE – keine lokale Kopie mehr.
+  const inbox = liveInbox;
+  const calendar = liveCalendar;
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-post">
@@ -50,8 +49,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow">Post</Text>{sample ? <SampleTag /> : null}</Stack>
         <Text variant="display" className="mt-2">Nachrichten und Termine.</Text>
         <Text className="mt-2 max-w-2xl">
-          Ein Ort für das, was hereinkommt und was ansteht. Antworten und Termine anlegen laufen vorerst über die
-          bestehenden Apps – MÔRA hilft beim Entwurf, senden tust du.
+          Was hereinkommt und was ansteht. MÔRA hilft beim Antworten – senden tust du.
         </Text>
       </header>
       <ResponsiveGrid columns={2}>
@@ -72,8 +70,8 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
             <div className="os-list">
-              {items.slice(0, 8).map((e) => (
-                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.date}{e.time ? ` · ${e.time}` : ''}</Text></div>
+              {items.filter((e) => !e.date || String(e.date) >= today).slice(0, 8).map((e) => (
+                <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{postDate(String(e.date || ''), today)}{e.time ? ` · ${e.time} Uhr` : ''}</Text></div>
               ))}
             </div>
           )} />
@@ -85,7 +83,15 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           <Text variant="eyebrow">Kalender-Fäden</Text>
           <Text className="mt-2">Vorbereitungs-Aufgaben zu kommenden Terminen erscheinen hier, sobald ein Kalender verbunden ist. MÔRA schlägt vor, du bestätigst.</Text>
         </Surface>
-      ) : <CalendarContinuity />}
+      ) : <Surface padding={5} className="os-continuity" data-testid="post-continuity"><CalendarContinuity /></Surface>}
     </div>
   );
+}
+
+function postDate(iso: string, today: string): string {
+  if (!iso) return '';
+  if (iso.slice(0, 10) === today) return 'Heute';
+  const t = new Date(`${today}T12:00:00`); t.setDate(t.getDate() + 1);
+  if (iso.slice(0, 10) === localISO(t)) return 'Morgen';
+  return shortDate(iso.slice(0, 10));
 }

@@ -26,7 +26,7 @@ it("does not turn source failure into an empty calendar", async () => {
  const request = jest.fn().mockRejectedValue(new Error("Nicht verbunden"));
  render(<ContinuityPanel request={request} />);
  expect(await screen.findByText("Nicht verbunden")).toBeInTheDocument();
- expect(screen.queryByText(/Keine vorbereiteten Vorschläge/)).not.toBeInTheDocument();
+ expect(screen.queryByText(/noch nichts zur Vorbereitung/)).not.toBeInTheDocument();
 });
 it("clears the old confirmation after a conflict", async () => {
  const request = jest.fn().mockResolvedValueOnce([thread]).mockRejectedValueOnce(new Error("Vorschlag geändert"));
@@ -39,7 +39,7 @@ it("clears the old confirmation after a conflict", async () => {
 it("never scans automatically and reloads threads after an explicit scan", async () => {
  const request = jest.fn().mockResolvedValue([]);
  render(<ContinuityPanel request={request} />);
- await screen.findByText(/Keine vorbereiteten Vorschläge/);
+ await screen.findByText(/noch nichts zur Vorbereitung/);
  expect(request.mock.calls).toEqual([["list"]]);
  fireEvent.click(screen.getByRole("button",{name:"Kalender prüfen"}));
  await waitFor(()=>expect(request.mock.calls).toEqual([["list"],["scan"],["list"]]));

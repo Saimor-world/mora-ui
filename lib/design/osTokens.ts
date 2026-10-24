@@ -103,19 +103,26 @@ export const osAtmosphere = {
 export const osSpace = { 0: '0px', 1: '4px', 2: '8px', 3: '12px', 4: '16px', 5: '20px', 6: '24px', 8: '32px', 10: '40px', 12: '48px', 16: '64px' } as const;
 export type OsSpace = keyof typeof osSpace;
 
-export const osRadius = { sm: '10px', md: '14px', lg: '20px', xl: '28px', pill: '999px' } as const;
+// Eine Skala für das ganze OS (24.10.2026): kleine Flächen 12, Karten 16, große Karten 24, Blätter 28.
+export const osRadius = { sm: '12px', md: '16px', lg: '24px', xl: '28px', pill: '999px' } as const;
 
 export const osType = {
   family: "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif",
   display: { size: '38px', line: '1.1', weight: '300', tracking: '-0.03em' },
-  title: { size: '20px', line: '1.25', weight: '400', tracking: '-0.015em' },
+  // Schriftskala (24.10.2026, Full HD als Hauptfall): 12 · 14 · 15 · 17 · 20 · 24 · 38. Nichts unter 12 px.
+  section: { size: '24px', line: '1.25', weight: '400', tracking: '-0.015em' },
+  title: { size: '20px', line: '1.3', weight: '400', tracking: '-0.015em' },
+  large: { size: '17px', line: '1.4', weight: '400', tracking: '-0.005em' },
   brand: { size: '15px', line: '1.2', weight: '400', tracking: '0.34em' },
-  body: { size: '14px', line: '1.55', weight: '400', tracking: '0' },
-  meta: { size: '12px', line: '1.45', weight: '400', tracking: '0' },
-  eyebrow: { size: '10.5px', line: '1.3', weight: '500', tracking: '0.2em' },
+  body: { size: '15px', line: '1.5', weight: '400', tracking: '0' },
+  small: { size: '14px', line: '1.45', weight: '400', tracking: '0' },
+  meta: { size: '12px', line: '1.4', weight: '400', tracking: '0' },
+  eyebrow: { size: '12px', line: '1.3', weight: '500', tracking: '0.14em' },
 } as const;
 
-export const osMotion = { fast: '120ms', base: '200ms', slow: '360ms', ease: 'cubic-bezier(0.2, 0.8, 0.2, 1)' } as const;
+// Bewegung: kurz 160 ms (Hover, Druck), normal 240 ms (Panels, Zustände), langsam 360 ms,
+// Kamerafahrt 520 ms mit eigener Kurve. Eine Grundkurve für alles andere.
+export const osMotion = { fast: '160ms', base: '240ms', slow: '360ms', zoom: '520ms', ease: 'cubic-bezier(0.2, 0.8, 0.2, 1)', zoomEase: 'cubic-bezier(0.65, 0, 0.35, 1)' } as const;
 
 export const osLayout = { railWidth: '232px', moraWidth: '380px', bottomBar: '64px', dockSpace: '96px', contentMax: '1120px', mobileBreakpoint: 900 } as const;
 
@@ -128,7 +135,7 @@ export function osCssVariables(): Record<string, string> {
   for (const [k, v] of Object.entries(osSpace)) vars[`--os-space-${k}`] = v;
   for (const [k, v] of Object.entries(osRadius)) vars[`--os-radius-${k}`] = v;
   vars['--os-font'] = osType.family;
-  for (const key of ['display', 'title', 'body', 'meta', 'eyebrow'] as const) {
+  for (const key of ['display', 'section', 'title', 'large', 'body', 'small', 'meta', 'eyebrow'] as const) {
     const t = osType[key];
     vars[`--os-type-${key}-size`] = t.size;
     vars[`--os-type-${key}-line`] = t.line;

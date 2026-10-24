@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>FinderVerse · Gravitationsfeld (Richtung 1)</title>
+  <link rel="stylesheet" href="../../app/world.css">
+  <style>
+    :root {
+      --sv-jade: #6f8f78;
+      --sv-orbit: rgba(111, 143, 120, 0.25);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      width: 1440px;
+      height: 900px;
+      margin: 0;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0d0f0d;
+      color: #ebe7de;
+    }
+    .fv {
+      position: relative;
+      width: 1440px;
+      height: 900px;
+      background: radial-gradient(ellipse 90% 70% at 50% 40%, rgba(18, 28, 22, 0.65) 0%, #0d0f0d 75%), url('../../public/universe/deep-space-warm.jpg') center / cover;
+    }
+  </style>
+</head>
+<body>
+  <div class="fv" role="dialog" aria-modal="true" data-view="universe" data-phone="false">
+    
+    <!-- TOP BAR -->
+    <header class="fv-top">
+      <button type="button" class="fv-back">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <span>Universe</span>
+      </button>
+
+      <nav class="fv-crumbs" aria-label="Pfad">
+        <button type="button">Universe</button>
+        <span aria-hidden>›</span>
+        <span aria-current="page">Termine</span>
+      </nav>
+
+      <div class="fv-toggle" role="group" aria-label="Ansicht">
+        <button type="button" aria-pressed="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path></svg>
+          <span>Universe</span>
+        </button>
+        <button type="button" aria-pressed="false">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          <span>Liste</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- BODY: STAGE (GRAVITATIONSFELD) + FOKUS PANEL -->
+    <div class="fv-body">
+      
+      <section class="fv-stage" aria-label="Termine">
+        <div class="fv-orbit">
+          
+          <!-- NOBLE GRAVITATIONAL SVG WAVES & FILAMENTS -->
+          <svg class="fv-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
+            <defs>
+              <linearGradient id="fv-filament" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9ec2a8" stop-opacity="0.32" />
+                <stop offset="60%" stop-color="#6f8f78" stop-opacity="0.18" />
+                <stop offset="100%" stop-color="#c9b89a" stop-opacity="0.25" />
+              </linearGradient>
+            </defs>
+            
+            <!-- Innere Gravitationswelle (Monde) -->
+            <ellipse cx="50" cy="50" rx="28" ry="23" class="fv-orbit-wave fv-orbit-wave--moons" />
+            <!-- Äußere Gravitationswelle (Sterne) -->
+            <ellipse cx="50" cy="50" rx="45" ry="39" class="fv-orbit-wave fv-orbit-wave--stars" />
+            <!-- Kern-Resonanzwelle -->
+            <ellipse cx="50" cy="50" rx="19" ry="16" class="fv-orbit-wave fv-orbit-wave--core" />
+
+            <!-- Filamente zu den Monden -->
+            <line x1="50" y1="50" x2="28" y2="35" class="fv-filament" />
+            <line x1="50" y1="50" x2="72" y2="35" class="fv-filament" />
+            <line x1="50" y1="50" x2="50" y2="73" class="fv-filament" />
+
+            <!-- Aktiver Gravitationsfokus zum ausgewählten Stern Michelle -->
+            <line x1="50" y1="50" x2="18" y2="24" class="fv-filament fv-filament--active" />
+          </svg>
+
+          <!-- CENTER PLANET: TERMINE -->
+          <div class="fv-center">
+            <span class="wd-sphere" style="width:150px;height:150px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #dfd3be 0%, #c9b89a 38%, #7e6e55 82%, #32281a 100%);box-shadow:0 24px 50px rgba(0,0,0,0.65), 0 0 35px rgba(201, 184, 154, 0.2);"></span>
+            <span class="fv-center__name">Termine</span>
+            <span class="fv-center__meta">3 Ordner · 6 Termine heute</span>
+          </div>
+
+          <!-- MONDE (ORDNER) AUF INNERER GRAVITATIONSWELLE (rx: 28, ry: 23) -->
+          
+          <!-- Mond 1: Calendar / Tagesplan -->
+          <button type="button" class="fv-moon" style="left: 28%; top: 35%;">
+            <span class="wd-sphere" style="width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #ecdcc5, #7a6a52);box-shadow:0 12px 28px rgba(0,0,0,0.5);">
+              <span class="wd-badge">4</span>
+            </span>
+            <span class="fv-moon__name">Tagesplan</span>
+          </button>
+
+          <!-- Mond 2: Warteliste -->
+          <button type="button" class="fv-moon" style="left: 72%; top: 35%;">
+            <span class="wd-sphere" style="width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #cf9c82, #6f4c3a);box-shadow:0 12px 28px rgba(0,0,0,0.5);">
+              <span class="wd-badge">2</span>
+            </span>
+            <span class="fv-moon__name">Warteliste</span>
+          </button>
+
+          <!-- Mond 3: Vorbereitung & Notizen -->
+          <button type="button" class="fv-moon" style="left: 50%; top: 73%;">
+            <span class="wd-sphere" style="width:64px;height:64px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #b9d0b6, #576d54);box-shadow:0 12px 28px rgba(0,0,0,0.5);">
+              <span class="wd-badge">3</span>
+            </span>
+            <span class="fv-moon__name">Vorbereitung</span>
+          </button>
+
+          <!-- STERNE (INHALTE) AUF ÄUSSERER GRAVITATIONSWELLE (rx: 45, ry: 39) -->
+          <!-- Gestaffelt in die Zwischenräume der Monde, Richtungsanker verhindern jede Überlappung! -->
+
+          <!-- Stern 1: Michelle (Ausgewählt · Nächster Slot 09:30) -->
+          <button type="button" class="fv-star" data-kind="event" data-selected="true" data-label-pos="top" style="left: 18%; top: 24%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">09:30 Michelle W.</span>
+              <span class="fv-star__hint">Auffüllen · 60 Min</span>
+            </span>
+          </button>
+
+          <!-- Stern 2: Lara M. (11:00) -->
+          <button type="button" class="fv-star" data-kind="event" data-label-pos="top" style="left: 50%; top: 11%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">11:00 Lara M.</span>
+              <span class="fv-star__hint">Gel Neumodellage</span>
+            </span>
+          </button>
+
+          <!-- Stern 3: Jana R. (Warteliste) -->
+          <button type="button" class="fv-star" data-kind="note" data-label-pos="top" style="left: 82%; top: 24%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">Jana R. (Warteliste)</span>
+              <span class="fv-star__hint">Flexibel vormittags</span>
+            </span>
+          </button>
+
+          <!-- Stern 4: Emma S. (14:00) -->
+          <button type="button" class="fv-star" data-kind="event" data-label-pos="right" style="left: 95%; top: 50%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">14:00 Emma S.</span>
+              <span class="fv-star__hint">Auffüllen</span>
+            </span>
+          </button>
+
+          <!-- Stern 5: Aylin T. (15:30) -->
+          <button type="button" class="fv-star" data-kind="event" data-label-pos="bottom" style="left: 82%; top: 76%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">15:30 Aylin T.</span>
+              <span class="fv-star__hint">Pediküre & Lack</span>
+            </span>
+          </button>
+
+          <!-- Stern 6: Vorbereitung Gel-Farbe Herbstrot -->
+          <button type="button" class="fv-star" data-kind="task" data-label-pos="bottom" style="left: 28%; top: 82%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">Farbe bereitstellen</span>
+              <span class="fv-star__hint">Herbstrot für Michelle</span>
+            </span>
+          </button>
+
+          <!-- Stern 7: Sophie K. (Rückschau) -->
+          <button type="button" class="fv-star" data-kind="event" data-done="true" data-label-pos="left" style="left: 5%; top: 50%;">
+            <span class="fv-star__dot"></span>
+            <span class="fv-star__label-wrap">
+              <span class="fv-star__name">08:00 Sophie K.</span>
+              <span class="fv-star__hint">Abgeschlossen</span>
+            </span>
+          </button>
+
+        </div>
+      </section>
+
+      <!-- FOKUS PANEL RECHTS -->
+      <aside class="fv-focus" aria-label="Fokus">
+        <p class="fv-eyebrow">Fokus · Studio Lea</p>
+        <h2 class="fv-focus__title">Termine</h2>
+        
+        <div class="fv-tiles">
+          <div class="fv-tile">
+            <span class="fv-eyebrow">Heute</span>
+            <strong>6</strong>
+            <span>Termine aktiv</span>
+          </div>
+          <div class="fv-tile">
+            <span class="fv-eyebrow">Nächster</span>
+            <strong>09:30</strong>
+            <span>in 18 Minuten</span>
+          </div>
+        </div>
+
+        <!-- AUSGEWÄHLTER STERN -->
+        <div class="fv-sel">
+          <p class="fv-eyebrow">Ausgewählter Eintrag · Termin</p>
+          <p class="fv-sel__name">09:30 Michelle W. · Auffüllen</p>
+          <p class="fv-sel__hint">Dauer: 60 Min · Wunsch: Herbstrot / Nude</p>
+          <div class="fv-sel__actions">
+            <button type="button" class="fv-btn">Kundinnenkarte öffnen</button>
+            <button type="button" class="fv-btn fv-btn--ghost">MÔRA fragen</button>
+          </div>
+        </div>
+
+        <!-- MÔRA LIVE-HINWEIS -->
+        <div style="background:rgba(20,24,21,0.6);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:14px;display:flex;gap:12px;align-items:center;margin-top:auto">
+          <div style="width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#18221b;display:flex;align-items:center;justify-content:center">
+            <img src="../../public/brand/mora-stone-v1.png" alt="MÔRA" style="width:30px;height:30px;object-fit:contain">
+          </div>
+          <p style="font-size:12.5px;color:#d2e0d5;line-height:1.4">
+            „Michelle ist pünktlich. Die Gel-Farbe Herbstrot reicht noch für diesen Termin.“
+          </p>
+        </div>
+
+      </aside>
+
+    </div>
+
+  </div>
+</body>
+</html>

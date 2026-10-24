@@ -1,10 +1,11 @@
 'use client';
 import React, { useMemo } from 'react';
 import { Loading, MoraStone, StateView } from '@/components/os-kit';
+import { DayPanel } from '@/components/day/DayPanel';
 import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
 import { useWorld } from '@/lib/lea/useWorld';
-import { buildDay, daySentence, inMinutes, personOf, serviceOf } from '@/lib/lea/day';
-import { hm, localISO, shortDate } from '@/lib/lea/world';
+import { buildDay, daySentence, personOf } from '@/lib/lea/day';
+import { hm } from '@/lib/lea/world';
 
 /**
  * Handy-Home V4: MÔRAs Satz und ein Knopf, die Termine von heute als Streifen zum
@@ -44,48 +45,9 @@ export function PhoneHome({ greeting, firstName, navigate, onAskMora }: {
       {world.loading ? <Loading lines={3} label="Dein Tag wird geladen" /> : null}
       {world.failed ? <StateView compact kind="offline" title="Dein Tag ist gerade nicht lesbar" copy="CORE hat nichts geliefert. Angezeigt wird nichts, was nicht belegt ist." /> : null}
 
-      {day.today.length ? (
-        <section aria-label="Termine heute">
-          <p className="wd-eyebrow">Termine heute</p>
-          <div className="wd-strip mt-2" data-testid="phone-home-strip">
-            {day.today.map((e) => (
-              <button
-                key={e.id}
-                type="button"
-                className="wd-chip"
-                data-past={(e.time ?? '23:59') < time ? 'true' : 'false'}
-                data-next={day.next?.id === e.id ? 'true' : 'false'}
-                onClick={() => navigate('post')}
-              >
-                <b>{e.time ?? 'ganztägig'}</b>
-                <span>{personOf(e.title)}</span>
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* Termine stehen genau einmal da: im Tagesplan darunter. */}
 
-      {day.next ? (
-        <section className="wd-card" aria-label="Als Nächstes" data-testid="phone-home-next">
-          <p className="wd-eyebrow">Als Nächstes{day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ''}</p>
-          <p className="wd-card__title">{day.next.time ? `${day.next.time} ` : ''}{personOf(day.next.title)}</p>
-          <p className="wd-card__meta">{[day.next.date !== localISO(now) ? `am ${shortDate(day.next.date)}` : '', serviceOf(day.next.title), day.next.duration ? `${day.next.duration} Min` : ''].filter(Boolean).join(' · ') || 'Termin'}</p>
-        </section>
-      ) : null}
-
-      {day.onlyToday.length ? (
-        <section aria-label="Nur heute" data-testid="phone-home-today">
-          <p className="wd-eyebrow">Nur heute</p>
-          <div className="wd-list">
-            {day.onlyToday.map((t) => (
-              <div key={t.id} className="wd-item" data-overdue={t.overdue ? 'true' : 'false'}>
-                <b>{t.title}</b>
-                <span>{t.meta}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {!world.loading && !world.failed ? <DayPanel compact onAskMora={onAskMora} /> : null}
 
       {world.planets.length ? (
         <section aria-label="Deine Planeten">

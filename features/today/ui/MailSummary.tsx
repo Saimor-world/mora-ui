@@ -33,8 +33,8 @@ export function MailSummaryView({ enabled, variant = 'full' }: { enabled: boolea
     const notVerified = (q.error as { status?: number } | null)?.status === 409;
     return (
       <div className="os-mail-summary" data-testid="mail-summary-error" data-state="error">
-        <Text tone="default">{notVerified ? 'Kein verifiziert verbundenes Postfach.' : 'Die Zusammenfassung konnte gerade nicht geladen werden.'}</Text>
-        <Text variant="meta">{notVerified ? 'Erst ein erfolgreicher Abruf dockt das Postfach an.' : 'Das ist ein Fehler – kein leeres Postfach.'}</Text>
+        <Text tone="default">{notVerified ? 'Noch kein Postfach verbunden.' : 'Die Zusammenfassung konnte gerade nicht geladen werden.'}</Text>
+        <Text variant="meta">{notVerified ? 'Verbinde es in den Einstellungen – dann fasst MÔRA hier zusammen.' : 'Das ist ein Ladefehler, kein leeres Postfach.'}</Text>
       </div>
     );
   }
