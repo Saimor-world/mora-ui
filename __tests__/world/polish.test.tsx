@@ -19,7 +19,7 @@ const base = { enabled: true, loading: false, failed: false, companyId: 'co-beis
 
 describe('Gemeinsame Skala', () => {
   it('hat keine Schrift unter 12 px und eine Grundkurve für Bewegung', () => {
-    const sizes = Object.values(osType).filter((t): t is { size: string } => typeof t === 'object').map((t) => parseFloat(t.size));
+    const sizes = Object.values(osType).filter((t) => typeof t === "object").map((t) => parseFloat((t as { size: string }).size));
     expect(Math.min(...sizes)).toBeGreaterThanOrEqual(12);
     expect(osType.body.size).toBe('15px');
     expect(osRadius).toMatchObject({ sm: '12px', md: '16px', lg: '24px' });

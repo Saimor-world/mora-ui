@@ -17,7 +17,7 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
 const ASK_RESERVE_PHONE = 84;
 /** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
-const ASK_RESERVE_DESKTOP = 92;
+const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
 
 export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource }: {
   /** Doppelklick: direkt hineinzoomen. */
@@ -179,8 +179,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         </button>
       ) : null}
       {layout && moraLine ? (
-        // MÔRAs Satz oben mittig im Feld, außerhalb der Bahnen: er verdeckt nie einen Planeten.
-        <button type="button" className="wd-mora-line" style={{ left: layout.cx, top: 16 }} onClick={onMora} data-testid="world-mora-line">
+        // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
+        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 92 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
         </button>
       ) : null}
