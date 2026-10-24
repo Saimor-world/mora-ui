@@ -110,5 +110,5 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
 
 function roleDe(role?: string | null): string {
   const r = String(role || '').toLowerCase();
-  return ({ owner: 'Inhaberin', admin: 'Verwaltung', manager: 'Leitung', member: 'Mitglied', viewer: 'Nur lesen' } as Record<string, string>)[r] || (role ? String(role) : '—');
+  return ({ owner: 'Volle Rechte', admin: 'Verwaltung', manager: 'Leitung', member: 'Mitglied', viewer: 'Nur lesen' } as Record<string, string>)[r] || (role ? String(role) : '—');
 }

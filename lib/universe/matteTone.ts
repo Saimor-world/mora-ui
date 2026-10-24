@@ -48,25 +48,102 @@ export function matteFamily(name: string): MatteFamily | null {
   return null;
 }
 
-export function matteTone(name: string, data: MatteData = {}): MatteTone {
+/**
+ * Eine Saimôr-Palette für alle Planeten (Marius, 24.10.: „die Farben passen nicht zum Gesamtbild“).
+ * Abgeleitet vom MÔRA-Stein: Jade, Meer-Jade, tiefes Petrol, Salbei, Sandgold, warmer Stein.
+ * Gleiche Sättigung und gleiche Helligkeitsleiter – die Planeten unterscheiden sich, wirken aber
+ * wie aus einem Material. Bekannte Bereiche bekommen einen festen Platz in der Palette.
+ */
+export const SAIMOR_PALETTE: ReadonlyArray<{ id: string; hue: number; sat: number }> = [
+  { id: 'jade', hue: 158, sat: 20 },
+  { id: 'meerjade', hue: 172, sat: 18 },
+  { id: 'petrol', hue: 188, sat: 16 },
+  { id: 'salbei', hue: 128, sat: 14 },
+  { id: 'sandgold', hue: 42, sat: 22 },
+  { id: 'stein', hue: 30, sat: 12 },
+];
+const FAMILY_SLOT: Record<MatteFamily, number> = { sand: 4, ton: 5, salbei: 3, stein: 2 };
+
+/**
+ * Farbsystem v2 (Marius, 24.10.: „die Farben passen immer noch nicht“).
+ * Warum es biss: Helligkeit 66–80 machte die Planeten kreidig-pastell neben dem tiefen, satten
+ * MÔRA-Stein; dazu mischten sich kühle (Eis, Jade) und warme (Sand, Stein) Töne ohne gemeinsames Licht.
+ * Jetzt: EIN Material (tiefer, matter Stein wie MÔRA), EIN Werteband (dunkel, Grund ~40),
+ * gleiches warmes Schlüssellicht aus dem Nebel (Glanzlicht Richtung Gold), feiner Goldrand.
+ * Unterschiede nur in kleinen Farbschritten. Variante C ist Standard; A/B zum Vergleich
+ * (localStorage „mora-planet-variant“).
+ */
+type Variant = { hues: Array<[number, number] | [number, number, number]>; L: { hi: number; base: number; mid: number; shadow: number; deep: number }; warmHi: number; rim: string };
+export const PLANET_VARIANTS: Record<'A' | 'B' | 'C' | 'D' | 'E', Variant> = {
+  // E (Standard, Marius + Partnerin 24.10.: D wirkte wie ein „Kindergartensystem“): EINE ruhige
+  // Familie für B2B – dunkler matter Stein, kühles schmales Band (150–212°), Sättigung 8–18 %.
+  // Planeten unterscheiden sich leise über Ton UND Helligkeit (3. Wert = Helligkeitsversatz,
+  // abwechselnd heller/dunkler). Einziger Akzent bleibt der Goldrand; kräftige Farbe nur für Status.
+  E: { hues: [[162, 18, 0], [206, 12, 2], [186, 18, -3], [176, 8, 4], [204, 11, -4], [150, 11, 3]], L: { hi: 56, base: 37, mid: 28, shadow: 14, deep: 7 }, warmHi: 0.25, rim: 'rgba(226, 196, 120, .48)' },
+  // D (Standard, Marius 24.10. abends: „zu ähnlich, muss abwechselnd sein“): sechs klar
+  // verschiedene Edelstein-Töne aus einer Welt – Jade, Kupfer, Schieferblau, Moos, Pflaume, Bernstein (Petrol fiel raus: neben Jade zu ähnlich).
+  // Reihenfolge wechselt kühl/warm, damit Nachbarn kontrastieren. Gleiches Werteband, gleiches
+  // warmes Licht, gleicher Goldrand; Sättigung pro Ton so gewählt, dass alle gleich kräftig wirken.
+  D: { hues: [[158, 30], [24, 34], [214, 26], [100, 22], [318, 18], [40, 32]], L: { hi: 58, base: 40, mid: 30, shadow: 15, deep: 7 }, warmHi: 0.3, rim: 'rgba(226, 196, 120, .45)' },
+  // A: Jade-Monochrom, Goldrand
+  A: { hues: [[150, 30], [158, 30], [166, 28], [174, 28], [182, 26], [190, 26]], L: { hi: 54, base: 38, mid: 29, shadow: 15, deep: 7 }, warmHi: 0, rim: 'rgba(226, 196, 120, .55)' },
+  // B: Jade im Wechsel mit warmen Nebel-Komplementen (Kupfer/Bernstein), gleiches Werteband
+  B: { hues: [[162, 28], [26, 30], [178, 26], [36, 30], [192, 24], [16, 26]], L: { hi: 56, base: 40, mid: 30, shadow: 15, deep: 7 }, warmHi: 0, rim: 'rgba(226, 196, 120, .45)' },
+  // C: Jade → Meer → Petrol, warmes Glanzlicht aus dem Nebel, dünner Goldrand
+  C: { hues: [[156, 28], [168, 26], [180, 24], [192, 22], [148, 24], [200, 20]], L: { hi: 58, base: 41, mid: 31, shadow: 16, deep: 8 }, warmHi: 0.45, rim: 'rgba(226, 196, 120, .42)' },
+};
+function currentVariant(): Variant {
+  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); if (v === 'A' || v === 'B' || v === 'C' || v === 'D' || v === 'E') return PLANET_VARIANTS[v]; } catch { /* SSR */ }
+  return PLANET_VARIANTS.E;
+}
+const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; };
+
+/**
+ * Glas (Standard, Marius 24.10. 20:46: „eine Familie ist zu monoton“): Planeten sind dunkle,
+ * gedämpft getönte GLAS-Kugeln, nur beleuchtet. Licht kommt von MÔRA (Richtung setzt die Ansicht
+ * über --lx/--ly). Töne: Granat, Tiefblau, Jade, Rauch-Bernstein, Petrol, Pflaumengrau (kühles Violett 270°, klar weg vom Granat 356°) – im Wechsel
+ * warm/kühl, alle sehr dunkel und wenig gesättigt.
+ */
+export const GLASS_TINTS: ReadonlyArray<[number, number]> = [[356, 38], [220, 32], [160, 28], [36, 32], [190, 30], [270, 16]];
+function glassVars(hue: number, sat: number): Record<string, string> {
+  const a = (l: number, al: number, ds = 0) => `hsla(${hue}, ${sat + ds}%, ${l}%, ${al})`;
+  return {
+    '--g-core': a(8, .42), '--g-mid': a(30, .14), '--g-glow': a(52, .4, 10), '--g-hi': a(90, .62, -10), '--g-edge': a(70, .7),
+    '--p-hi': hsl(hue, sat, 44), '--p-base': hsl(hue, sat, 24), '--p-mid': hsl(hue, sat, 16), '--p-shadow': hsl(hue, sat, 9), '--p-deep': hsl(hue, sat, 5),
+    '--m-hi': hsl(hue, sat, 50), '--m-base': hsl(hue, sat, 28), '--m-mid': hsl(hue, sat, 20), '--m-shadow': hsl(hue, sat, 12), '--m-deep': hsl(hue, sat, 6),
+    '--h-edge': hsl(hue, sat, 46), '--h-top': hsl(hue, sat, 16), '--h-body': hsl(hue, sat, 9),
+    '--p-rim': 'rgba(226, 196, 120, .42)',
+  };
+}
+function glassOn(): boolean {
+  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); return !v || v === 'G'; } catch { return true; }
+}
+
+export function matteTone(name: string, data: MatteData = {}, index?: number): MatteTone {
   const fam = matteFamily(name);
-  if (fam) return { family: fam, className: `planet--${fam}`, vars: {} };
-
   const h = hash((name || '').trim().toLowerCase());
-  const [lo, hi] = BANDS[h % BANDS.length];
-  const hue = lo + ((h >>> 8) % (hi - lo + 1));
-  const sat = 10 + ((h >>> 16) % 15);
-  const signal = Math.min(1, Math.log10(1 + (data.count ?? 0) + (data.activity ?? 0)) / 2); // 0..1
-  const lift = Math.round(signal * 4);
+  if (glassOn()) {
+    const n = GLASS_TINTS.length;
+    const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
+    const [gh, gs] = GLASS_TINTS[slot];
+    return { family: 'tone', className: 'planet--tone planet--glass', vars: glassVars(gh, gs) };
+  }
+  const V = currentVariant();
+  const n = V.hues.length;
+  const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
+  const [hue, sat, dL = 0] = V.hues[slot];
+  const signal = Math.min(1, Math.log10(1 + (data.count ?? 0) + (data.activity ?? 0)) / 2);
+  const lift = Math.round(signal * 3);
   const s = sat + lift;
-
-  const L = { hi: 80, base: 66, mid: 52, shadow: 26, deep: 12 };
+  const L = { hi: V.L.hi + dL, base: V.L.base + dL, mid: V.L.mid + dL, shadow: V.L.shadow + Math.round(dL / 2), deep: V.L.deep };
+  const hiHue = mixHue(hue, 44, V.warmHi);
   const vars: Record<string, string> = {
-    '--p-hi': hsl(hue, s, L.hi + lift), '--p-base': hsl(hue, s, L.base + lift), '--p-mid': hsl(hue, s, L.mid + lift),
-    '--p-shadow': hsl(hue, Math.max(6, s - 4), L.shadow), '--p-deep': hsl(hue, Math.max(6, s - 6), L.deep),
-    '--m-hi': hsl(hue, s, L.hi + 6 + lift), '--m-base': hsl(hue, s, L.base + 6 + lift), '--m-mid': hsl(hue, s, L.mid + 6 + lift),
-    '--m-shadow': hsl(hue, Math.max(6, s - 4), L.shadow + 6), '--m-deep': hsl(hue, Math.max(6, s - 6), L.deep + 4),
-    '--h-edge': hsl(hue, s, 50), '--h-top': hsl(hue, Math.max(6, s - 4), 20), '--h-body': hsl(hue, Math.max(6, s - 6), 12),
+    '--p-hi': hsl(hiHue, s + V.warmHi * 10, L.hi + lift), '--p-base': hsl(hue, s, L.base + lift), '--p-mid': hsl(hue, s, L.mid + lift),
+    '--p-shadow': hsl(hue, Math.max(8, s - 6), L.shadow), '--p-deep': hsl(hue, Math.max(8, s - 8), L.deep),
+    '--m-hi': hsl(hiHue, s, L.hi + 8 + lift), '--m-base': hsl(hue, s, L.base + 8 + lift), '--m-mid': hsl(hue, s, L.mid + 8 + lift),
+    '--m-shadow': hsl(hue, Math.max(8, s - 6), L.shadow + 6), '--m-deep': hsl(hue, Math.max(8, s - 8), L.deep + 4),
+    '--h-edge': hsl(hue, s, 46), '--h-top': hsl(hue, Math.max(8, s - 4), 18), '--h-body': hsl(hue, Math.max(8, s - 6), 10),
+    '--p-rim': V.rim,
   };
   return { family: 'tone', className: 'planet--tone', vars };
 }

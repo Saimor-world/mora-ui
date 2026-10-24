@@ -9,7 +9,7 @@
 import { matteTone, type MatteTone } from '@/lib/universe/matteTone';
 
 export interface WorldEvent { id: string; title: string; date: string; time?: string; duration?: number }
-export interface WorldTask { id: string; title: string; status: string; due_date?: string | null }
+export interface WorldTask { id: string; title: string; status: string; due_date?: string | null; folder_id?: string | null; company_id?: string | null }
 export interface WorldSpace { id: string; name: string; folder_count?: number; folders?: unknown[] }
 export interface WorldDepartment { id: string; name: string; slug?: string; spaces?: WorldSpace[] }
 
@@ -28,6 +28,26 @@ export interface WorldPlanet {
   meta: string;
   moons: WorldMoon[];
   orbit?: WorldOrbit;
+  /** Besonderheiten aus echten Daten (Galaxie v1): Ring = Ordner, Leuchten = Aktivität, Polarlicht = Überfälliges. */
+  traits?: PlanetTraits;
+}
+export interface PlanetTraits { folders: number; activity: number; overdue: number; open: number; texture: 0 | 1 | 2 | 3 }
+
+/** Reine Funktion: Besonderheiten eines Planeten aus Ordnern, Einträgen und Aufgaben. */
+export function planetTraits(id: string, folderIds: string[], nodes: { folder_id?: string | null; created_at?: string | null; updated_at?: string | null }[], tasks: WorldTask[], now = new Date()): PlanetTraits {
+  const set = new Set(folderIds);
+  const week = now.getTime() - 7 * 864e5;
+  const today = localISO(now);
+  const recent = nodes.filter((n) => n.folder_id && set.has(n.folder_id) && Date.parse(n.updated_at || n.created_at || '') >= week).length;
+  const mine = tasks.filter((t) => t.folder_id && set.has(t.folder_id) && !/done|erledigt|closed|completed/i.test(t.status || ''));
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return {
+    folders: folderIds.length,
+    activity: Math.min(1, recent / 8),
+    overdue: mine.filter((t) => t.due_date && t.due_date.slice(0, 10) < today).length,
+    open: mine.length,
+    texture: (h % 4) as 0 | 1 | 2 | 3,
+  };
 }
 
 export const isCalendarDept = (d: WorldDepartment) => /termin|kalender|buchung/i.test(`${d.slug ?? ''} ${d.name}`);
@@ -69,7 +89,7 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
   const upcoming = upcomingEvents(input.events, input.now ?? new Date());
   return input.departments
     .filter((d) => d && d.id && d.name)
-    .map((d) => {
+    .map((d, idx) => {
       const spaces = d.spaces ?? [];
       const moons: WorldMoon[] = spaces.map((s) => ({ id: s.id, label: s.name, count: folderCount(s) }));
       let weight = spaces.length + moons.reduce((n, m) => n + m.count, 0);
@@ -78,6 +98,6 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
         weight += upcoming.length;
         meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       }
-      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }), weight, meta, moons };
+      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }, idx), weight, meta, moons };
     });
 }

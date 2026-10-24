@@ -108,7 +108,7 @@ export function AppLoader({ appId, paneId, initialData, onClose, onNavigate }: A
         <PaneWindow paneId={paneId} title={manifest.name}>
           <div className="flex h-full items-center justify-center" role="alert" data-testid={`app-access-denied-${appId}`}>
             <AppEmpty glyph={<ShieldAlert size={22} strokeWidth={1.25} />} title={`${manifest.name} ist geschützt.`}
-              text="Dieser Systembereich öffnet sich nur mit passender Rolle. Wenn du ihn brauchst, kann eine Inhaberin oder ein Admin ihn freigeben."
+              text="Dieser Systembereich öffnet sich nur mit passender Rolle. Wenn du ihn brauchst, kann jemand mit vollen Rechten ihn freigeben."
               action={{ label: 'Fenster schließen', onClick: () => usePaneStore.getState().removePane(paneId) }} />
           </div>
         </PaneWindow>

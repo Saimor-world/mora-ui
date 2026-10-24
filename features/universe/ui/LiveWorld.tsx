@@ -16,6 +16,7 @@ import { visiblePlanetIds, RolePreviewBanner, RolePreviewToggle, useRolePreview 
 import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
+import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
 import type { Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
@@ -42,9 +43,12 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const horizon = useHorizonSources(world.companyId, world.enabled && companyView);
   const finder = useFinderActions(world.companyId);
   const dayActions = useDayActions(world.companyId);
+  const [taskSheet, setTaskSheet] = React.useState(false);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
-  const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
+  // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
+  const placeIds = useMemo(() => new Set(world.planets.map((p) => p.id)), [world.planets]);
+  const finderPlanets = useMemo(() => world.finder.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
   const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const reduced = !!useReducedMotion();
@@ -151,6 +155,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     next_event: world.day.next ? { time: world.day.next.time, title: world.day.next.title, date: world.day.next.date } : null,
     running_event: world.day.running?.title ?? null,
     open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
+    task_line: world.day.taskLine,
     areas: finderPlanets.map((p) => p.name),
   }), [selected, world.day, finderPlanets]);
 
@@ -210,8 +215,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         shift={selected && !phone ? 190 : 0}
         activeId={activeId}
         counts={counts}
+        comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? world.day.sentence : undefined}
+        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
       {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
       {selected ? (
@@ -237,18 +243,16 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) setSelectedId(t.id); }} data-testid="horizon-tasks">
             <span>Aufgaben</span>
-            <b>{world.day.open.length ? `${world.day.open.length} offen${world.day.open.some((t) => t.overdue) ? ` · ${world.day.open.filter((t) => t.overdue).length} überfällig` : ''}` : 'alles erledigt'}</b>
+            <b>{world.day.taskLine}</b>
           </button>
+          <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />
           {companyView ? (
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
-                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : 'Posteingang ruhig'}</b>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>
-              <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-feed">
-                <span>Feed</span>
-                <b>{!horizon.feed ? '…' : horizon.feed.status === 'unavailable' ? 'nicht lesbar' : horizon.feed.items[0] ? horizon.feed.items[0].title : 'keine neuen Feed-Signale'}</b>
-              </button>
+              {/* Feed-Zeile entfernt (24.10.2026): allgemeine RSS-Einträge waren Rauschen; der Feed bleibt unter Post. */}
             </>
           ) : null}
           <p className="fv-eyebrow" style={{ marginTop: 12 }}>Wo die Arbeit liegt</p>
@@ -264,6 +268,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <p className="wd-horizon__foot">{finderPlanets.length} Bereiche · {counts.nodes - 1 - finderPlanets.length} Ordner und Einträge</p>
         </aside>
       ) : null}
+      {phone && !open && !selected ? <TaskHomeRow variant="chip" tasks={world.tasks} onOpen={() => setTaskSheet(true)} /> : null}
+      {taskSheet ? <TaskHomeSheet tasks={world.tasks} planets={finderPlanets} actions={dayActions} readOnly={role === 'member'} phone={phone} onClose={() => setTaskSheet(false)} /> : null}
       {!open && !phone ? <RolePreviewToggle className="absolute right-5 top-4 z-[900]" /> : null}
       {!open ? <div className="absolute left-1/2 top-4 z-[900] -translate-x-1/2"><RolePreviewBanner /></div> : null}
       {open ? (
@@ -286,4 +292,11 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       ) : null}
     </>
   );
+}
+
+
+/** Im Universum nur MÔRAs erster Satz, höchstens ~56 Zeichen – der Rest steht in „Heute“. */
+export function shortLine(s: string): string {
+  const first = (s || '').split(/(?<=[.!?])\s+/)[0].trim();
+  return first.length <= 56 ? first : `${first.slice(0, 54).replace(/[\s,·:]+\S*$/, '')} …`;
 }
