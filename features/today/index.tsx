@@ -12,8 +12,6 @@ import { useFinanceSignal } from '@/features/finance/data/useFinanceSignal';
 import { CONTRACT_LABEL } from '@/features/finance/data/contracts';
 import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
-import { sampleTodaySnapshot } from './data/sample';
-import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
 import { PhoneHome } from './ui/PhoneHome';
 import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
@@ -64,7 +62,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   const companyView = role === 'owner';
   const finance = useFinanceSignal();
   const sample = preview && !today.snapshot;
-  const snapshot: TodaySnapshot | null = today.snapshot || (sample ? sampleTodaySnapshot() : null);
+  const snapshot: TodaySnapshot | null = today.snapshot || null;
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -128,7 +126,6 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         </section>
       ) : null}
 
-      {sample ? <MoraLagebild navigate={navigate} /> : null}
 
       {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact /> : null}
 

@@ -1,4 +1,5 @@
 'use client';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
@@ -21,7 +22,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
-import { useIsSaimorInternal, useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
+import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
@@ -117,7 +118,10 @@ export function OsShell({ preview }: { preview: boolean }) {
   const localCompany = mounted ? readLocalOrg().company : '';
   const sessionOrg = useSessionStore((s) => (s.user as { active_company_name?: string | null } | null)?.active_company_name ?? '');
   const internalUser = useIsSaimorInternal();
-  const org = demoMode ? 'Simple Coffee Group' : sessionOrg || localCompany || 'Dein Studio';
+  const demoCompanyId = useDemoStore((s) => s.demoCompanyId);
+  const demoCompanies = useDemoCompanies(Boolean(demoCompanyId));
+  const demoName = demoCompanyId ? demoCompanies.find((c) => c.id === demoCompanyId)?.name : undefined;
+  const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Studio';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {
@@ -201,7 +205,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
       </div>
 
-      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode} /> : null}
+      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}

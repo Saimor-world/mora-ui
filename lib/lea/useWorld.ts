@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 import { listCompanyFiles } from '@/lib/api/filesClient';
+import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
@@ -19,10 +20,11 @@ function list<T>(raw: unknown, keys: string[] = []): T[] {
 
 /** Echte Daten für Home und Universe: Abteilungen (mit Bereichen), Termine, Aufgaben. Ohne Sitzung: nichts. */
 export function useWorld() {
+  const demoCompany = useDemoStore((s) => s.demoCompanyId);
   const navCompany = useNavStore((s) => s.activeCompanyId);
   const sessionCompany = useSessionStore((s) => (s.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
   // Die Firma der Sitzung zuerst: navStore kann noch eine alte Firma aus localStorage halten.
-  const companyId = sessionCompany || navCompany;
+  const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const enabled = hasSession && Boolean(companyId);
   const loadDayStatus = useDayStore((s) => s.loadCompany);

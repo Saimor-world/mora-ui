@@ -573,3 +573,10 @@
 .os-mail-ref__subject { color: var(--os-text); font-size: var(--os-type-meta-size); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .os-mail-ref__meta { color: var(--os-text-muted); font-size: var(--os-type-meta-size); }
 .os-station-signal .os-mail-ref__subject { white-space: normal; }
+
+/* Demo-Schalter (nur SAIMÔR-HQ) */
+.os-context__demoswitch select {
+  min-height: 32px; border-radius: 999px; padding: 0 10px; font-size: 12px;
+  background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18);
+}
+@media (max-width: 640px) { .os-context__demoswitch select { min-height: 44px; } }

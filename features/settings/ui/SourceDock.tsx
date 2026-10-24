@@ -7,7 +7,6 @@ import { coreGet, corePost } from '@/lib/api/http';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { checkConnectResult, type ConnectResult } from '@/lib/os-prototype/mailSummary';
 import { MailSummaryView } from '@/features/today/ui/MailSummary';
-import { DEMO_DEPARTMENTS } from '@/lib/os-prototype/demoPack';
 import { readLocalOrg } from '@/lib/os-prototype/onboarding';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { isLocalCore, useSources, type SourceEntry } from '@/lib/os-prototype/useSources';
@@ -49,7 +48,7 @@ function usePlanets(live: boolean, sample: boolean): DockPlanet[] {
     const real = !sample && Array.isArray(depts.data) ? depts.data : [];
     if (real.length) return real.slice(0, 6).map((d, i) => ({ id: d.id, name: d.name, color: d.color || PLANET_COLORS[i % PLANET_COLORS.length] }));
     if (own.length) return own;
-    return sample ? DEMO_DEPARTMENTS.slice(0, 6).map((d) => ({ id: d.id, name: d.name, color: d.color })) : [];
+    return [];
   }, [sample, depts.data]);
 }
 

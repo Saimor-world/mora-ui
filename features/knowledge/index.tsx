@@ -11,7 +11,6 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useKnowledgeSearch, useRecentMemories } from './data/useKnowledge';
-import { DEMO_COMPANY_NAME, DEMO_MINDLOOP, demoAllDocuments } from '@/lib/os-prototype/demoPack';
 
 export const KNOWLEDGE_SOURCES: Array<{ appId: string; icon: React.ReactNode; title: string; copy: string }> = [
   { appId: 'finder', icon: <Folder size={16} />, title: 'Studio-Ordner', copy: 'Was das ganze Studio teilt – nach Bereichen geordnet.' },
@@ -30,7 +29,6 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
   const search = useKnowledgeSearch(deferred);
   const memories = useRecentMemories();
   const sample = Boolean(preview) && !hasSession;
-  const demoDocs = demoAllDocuments();
   const world = useWorld();
   const showInUniverse = useUniverseFocus((s) => s.show);
   const worldDocs = useMemo(() => {
@@ -44,7 +42,6 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
     return out;
   }, [world.finder, deferred]);
   const q = deferred.trim().toLowerCase();
-  const demoHits = q ? demoDocs.filter((d) => `${d.name} ${d.summary} ${d.department} ${d.folder} ${d.tags.join(' ')}`.toLowerCase().includes(q)) : demoDocs;
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-knowledge">
@@ -105,31 +102,6 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
               : search.memory.data === null ? <StateView compact kind="offline" />
               : (search.memory.data?.length ?? 0) === 0 ? <StateView compact kind="empty" title="Nichts erinnert" />
               : <div className="os-list">{search.memory.data!.map((m) => <div key={m.id} className="os-list-row"><Text>{m.summary}</Text></div>)}</div>}
-          </Surface>
-        </ResponsiveGrid>
-      ) : null}
-
-      {sample ? (
-        <div className="os-mora-stats" data-testid="knowledge-storage" aria-label="Ablageorte">
-          {([['Gerät', '—'], ['Privat', '—'], ['Workspace', String(demoAllDocuments().length)], ['Cloud', 'nicht verbunden']] as const).map(([l, v]) => <div key={l}><b>{v}</b><span>{l}</span></div>)}
-        </div>
-      ) : null}
-
-      {sample ? (
-        <ResponsiveGrid columns={2}>
-          <Surface padding={5} data-testid="knowledge-demo-docs">
-            <Stack direction="row" justify="space-between" align="center" className="mb-3"><Text variant="eyebrow">{q ? `Treffer in ${DEMO_COMPANY_NAME}` : `Dokumente · ${DEMO_COMPANY_NAME}`}</Text><SampleTag /></Stack>
-            {demoHits.length === 0 ? <StateView compact kind="empty" title="Keine Treffer im Beispiel" /> : (
-              <div className="os-list">
-                {demoHits.slice(0, 10).map((d) => (
-                  <div key={d.name} className="os-list-row"><Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{d.name}</Text><Text variant="meta" className="truncate">{d.summary}</Text></Stack><Text variant="meta">{d.department}</Text></div>
-                ))}
-              </div>
-            )}
-          </Surface>
-          <Surface padding={5} data-testid="knowledge-demo-mora">
-            <Stack direction="row" justify="space-between" align="center" className="mb-3"><Stack direction="row" gap={2} align="center"><Brain size={14} className="os-tone-faint" /><Text variant="eyebrow">Was MÔRA bemerkt hat</Text></Stack><SampleTag /></Stack>
-            <div className="os-list">{DEMO_MINDLOOP.map((m) => <div key={m.id} className="os-list-row"><Stack gap={0} className="min-w-0"><Text tone="default">{m.title.replace(/^Môra:\s*/, '')}</Text><Text variant="meta">{m.message}</Text></Stack><Text variant="meta">vor {m.hoursAgo} h</Text></div>)}</div>
           </Surface>
         </ResponsiveGrid>
       ) : null}

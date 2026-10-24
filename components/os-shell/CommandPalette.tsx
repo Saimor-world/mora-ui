@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppWindow, Building2, CornerDownLeft, FileText, Search, Sparkles } from 'lucide-react';
-import { DEMO_DEPARTMENTS, demoAllDocuments } from '@/lib/os-prototype/demoPack';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { Stack, Text, cx } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
@@ -64,22 +63,6 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       if (match(f.title, f.description, ...(f.keywords || []))) {
         const Icon = f.icon;
         out.push({ id: `f-${f.id}`, group: 'Bereiche', label: f.title, hint: f.description, icon: <Icon size={15} />, run: () => navigate(f.id) });
-      }
-    }
-    if (demo) {
-      for (const d of DEMO_DEPARTMENTS) {
-        if (n && match(d.name, d.description)) {
-          out.push({ id: `p-${d.id}`, group: 'Planeten', label: d.name, hint: `Beispiel · Planet im Universe · ${d.description}`, icon: <Building2 size={15} />,
-            run: () => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); } });
-        }
-      }
-      if (n) {
-        for (const doc of demoAllDocuments()) {
-          if (match(doc.name, doc.summary, doc.department, ...doc.tags)) {
-            out.push({ id: `d-${doc.name}`, group: 'Dokumente', label: doc.name, hint: `Beispiel · ${doc.department} · ${doc.summary}`, icon: <FileText size={15} />,
-              run: () => { useOsShellStore.getState().setKnowledgeQuery(doc.name); navigate('knowledge'); } });
-          }
-        }
       }
     }
     if (!demo) {
@@ -151,17 +134,6 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
               <div className="os-palette-home__chips">
                 {['Alle Dateien', 'Budget', 'Onboarding', 'Kampagne'].map((c) => (
                   <button key={c} type="button" onClick={() => (c === 'Alle Dateien' ? (navigate('knowledge'), onClose()) : setQ(c))}>{c}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Text variant="eyebrow" className="mb-2">Abteilungen</Text>
-              <div className="os-palette-home__planets">
-                {DEMO_DEPARTMENTS.map((d) => (
-                  <button key={d.id} type="button" title={d.name} onClick={() => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); onClose(); }}>
-                    <span style={{ ['--planet' as string]: d.color }} aria-hidden><Building2 size={14} /></span>
-                    <em>{d.name}</em>
-                  </button>
                 ))}
               </div>
             </div>

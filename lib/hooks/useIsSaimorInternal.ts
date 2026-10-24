@@ -6,14 +6,14 @@ import { useContext } from 'react';
 import { QueryClient, QueryClientContext, useQuery } from '@tanstack/react-query';
 import { fetchCompanies } from '@/lib/api/orgClient';
 import { queryKeys, STALE_TIMES } from '@/lib/queries/queryKeys';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 
 // Ohne Provider (Tests, isolierte Renders) kein Wurf: eigener, leerer Client – dann gilt „keine Demo“.
 const standaloneClient = new QueryClient();
 
 /** True, wenn die aktive Firma ein is_demo-Arbeitsbereich ist (z. B. Coffee/Brandt im HQ-Tenant). */
 export function useActiveCompanyIsDemo(): boolean {
-    const user = useSessionStore((s) => s.user as { active_company_id?: string | null } | null);
-    const activeId = user?.active_company_id ?? null;
+    const activeId = useScopeCompanyId();
     const ctxClient = useContext(QueryClientContext);
     const { data } = useQuery(
         { queryKey: [...queryKeys.companies(), true], queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(activeId && ctxClient) },
@@ -27,4 +27,19 @@ export function useActiveCompanyIsDemo(): boolean {
 export function useIsSaimorInternal(): boolean {
     const activeCompanyIsDemo = useActiveCompanyIsDemo();
     return useSessionStore((state) => isSaimorInternal(state.user, { activeCompanyIsDemo }));
+}
+
+/** HQ-Zugang ohne Demo-Abzug: entscheidet nur, ob der Demo-Schalter erscheint. */
+export function useIsSaimorHq(): boolean {
+    return useSessionStore((state) => isSaimorInternal(state.user));
+}
+
+/** Alle is_demo-Firmen des Tenants (für den Demo-Schalter). */
+export function useDemoCompanies(enabled: boolean): { id: string; name: string }[] {
+    const ctxClient = useContext(QueryClientContext);
+    const { data } = useQuery(
+        { queryKey: [...queryKeys.companies(), true], queryFn: () => fetchCompanies(true), staleTime: STALE_TIMES.companies, refetchOnWindowFocus: false, enabled: Boolean(enabled && ctxClient) },
+        ctxClient ?? standaloneClient,
+    );
+    return Array.isArray(data) ? data.filter((c) => c.is_demo).map((c) => ({ id: c.id, name: c.name })) : [];
 }

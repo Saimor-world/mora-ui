@@ -1,4 +1,5 @@
 'use client';
+import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
 import React, { useState } from 'react';
@@ -9,7 +10,6 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useLandscape } from './data/useLandscape';
 import { UniverseLandscape } from './ui/UniverseLandscape';
-import { DemoOrganizationUniverse } from './ui/DemoOrganizationUniverse';
 import { LiveWorld } from './ui/LiveWorld';
 
 type Lens = 'landscape' | 'organization';
@@ -27,9 +27,10 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
   const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
   const hasSession = useSessionStore((st) => Boolean(st.user?.tenant_id));
   const demo = preview && !hasSession;
+  const demoCompany = useDemoStore((s) => s.demoCompanyId);
   const navCompany = useNavStore((s) => s.activeCompanyId);
   const sessionCompany = useSessionStore((st) => (st.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
-  const companyId = sessionCompany || navCompany;
+  const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
   const [wizard, setWizard] = React.useState(false);
   const openArea = (target: string) => (target === 'universe:organization' ? setLens('organization') : navigate(target));
 
@@ -64,7 +65,7 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
       <div className="os-universe__field" data-testid="universe-field">
         {lens === 'landscape'
           ? <UniverseLandscape landscape={landscape} sample={landscape.sample} onOpenArea={openArea} onAskMora={askMora} />
-          : demo ? <DemoOrganizationUniverse onOpenArea={openArea} onAskMora={askMora} /> : hasSession ? <LiveWorld onAskMora={askMora} navigate={navigate} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
+          : hasSession ? <LiveWorld onAskMora={askMora} navigate={navigate} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
       </div>
     </div>
   );

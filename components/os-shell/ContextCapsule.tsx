@@ -4,6 +4,29 @@ import { Compass, Home, Timer } from 'lucide-react';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { SCENES } from '@/lib/os-prototype/scene';
 import { usePhase } from '@/lib/os-prototype/usePhase';
+import { useDemoStore } from '@/lib/demo/demoStore';
+import { useDemoCompanies, useIsSaimorHq } from '@/lib/hooks/useIsSaimorInternal';
+
+/**
+ * Demo-Schalter nur für SAIMÔR-HQ: listet alle is_demo-Firmen aus CORE.
+ * Standard ist die echte SAIMÔR-Firma; die Wahl lebt nur in dieser Sitzung (sessionStorage).
+ */
+export function DemoSwitch() {
+  const hq = useIsSaimorHq();
+  const companies = useDemoCompanies(hq);
+  const current = useDemoStore((s) => s.demoCompanyId);
+  const setDemo = useDemoStore((s) => s.setDemoCompany);
+  if (!hq || (!companies.length && !current)) return null;
+  return (
+    <label className="os-context__demoswitch" data-testid="demo-switch">
+      <span className="sr-only">Demo wählen</span>
+      <select aria-label="Demo wählen" value={current ?? ''} onChange={(e) => setDemo(e.target.value || null)}>
+        <option value="">SAIMÔR (echt)</option>
+        {companies.map((c) => <option key={c.id} value={c.id}>Demo · {c.name}</option>)}
+      </select>
+    </label>
+  );
+}
 
 /**
  * Aus dem Legacy-OS übernommen: die Kontext-Kapsel oben (Instanz · Organisation ·
@@ -16,7 +39,8 @@ export function ContextCapsule({ activeId, navigate, org, demo, internal = false
       <div className="os-context__capsule">
         {internal ? <span className="os-context__chip">Lokale Instanz</span> : null}
         <span className="os-context__org">{org}</span>
-        {demo ? <span className="os-context__demo">Demo</span> : null}
+        {demo ? <span className="os-context__demo" data-testid="demo-badge">Demo</span> : null}
+        <DemoSwitch />
         <span className="os-context__seg" role="group" aria-label="Ebene">
           <button type="button" aria-pressed={activeId === 'today'} onClick={() => navigate('today')}><Home size={12} aria-hidden /> Heute</button>
           <button type="button" aria-pressed={activeId === 'universe'} onClick={() => navigate('universe')}><Compass size={12} aria-hidden /> Universe</button>

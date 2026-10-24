@@ -2,7 +2,7 @@
 import React from 'react';
 import { BookOpen, Compass, Home, MessageCircle, Settings, Timer, X, type LucideIcon } from 'lucide-react';
 import { Status, Text } from '@/components/os-kit';
-import { DEMO_DEPARTMENTS, demoDocumentCount } from '@/lib/os-prototype/demoPack';
+import { useWorld } from '@/lib/lea/useWorld';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { SCENES } from '@/lib/os-prototype/scene';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -15,6 +15,7 @@ import { usePhase } from '@/lib/os-prototype/usePhase';
  */
 export function ControlCenter({ onClose, navigate, online, org, demo }: { onClose: () => void; navigate: (id: string) => void; online: boolean; org: string; demo: boolean }) {
   const { phase } = usePhase();
+  const world = useWorld();
   const scene = SCENES.find((x) => x.id === phase) ?? SCENES[1];
   const focusUntil = useOsShellStore((s) => s.focusUntil);
   const audioOn = useOsShellStore((s) => s.audioOn);
@@ -38,7 +39,7 @@ export function ControlCenter({ onClose, navigate, online, org, demo }: { onClos
             <Text variant="eyebrow">Live-Kontext</Text>
             <Text variant="title" as="div" className="mt-2">{org}</Text>
             <Text className="mt-1">Diese lokale Instanz arbeitet mit genau einer aktiven Organisation. Von hier gehst du direkt in Abteilungen und Struktur.</Text>
-            <div className="os-cc__pills"><span>{DEMO_DEPARTMENTS.length} Abteilungen</span><span>{DEMO_DEPARTMENTS.reduce((n, d) => n + demoDocumentCount(d), 0)} Dokumente</span>{demo ? <span>Beispiel</span> : null}</div>
+            <div className="os-cc__pills">{world.enabled && !world.loading ? <span>{world.planets.length} Planeten</span> : null}{demo ? <span>Beispiel</span> : null}</div>
           </section>
           <section className="os-cc__card">
             <Text variant="eyebrow">Szene · auto</Text>

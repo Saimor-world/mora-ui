@@ -9,7 +9,6 @@ import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
 import { usePostCalendar, usePostInbox } from './data/usePost';
 import { useSessionStore } from '@/lib/store/sessionStore';
-import { DEMO_CALENDAR, DEMO_MAIL } from '@/lib/os-prototype/demoPack';
 import { CalendarContinuity } from '@/components/home/CalendarContinuity';
 
 function Column({ icon, title, action, children }: { icon: React.ReactNode; title: string; action: React.ReactNode; children: React.ReactNode }) {
@@ -33,7 +32,6 @@ function QueryBody<T>({ q, empty, render, subject }: { q: { isLoading: boolean; 
   return <>{render(q.data)}</>;
 }
 
-function demoQuery<T>(data: T[]) { return { isLoading: false, isError: false, error: null, data, refetch: () => undefined, fetchStatus: 'idle' as const }; }
 
 export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
@@ -41,9 +39,9 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
   const liveInbox = usePostInbox();
   const liveCalendar = usePostCalendar();
   const today = localISO(new Date());
-  // Lokale Vorschau: Demo-Paket „Simple Coffee Group“ (saimor-core demo_isolation.py), als Beispiel markiert.
-  const inbox = sample ? demoQuery(DEMO_MAIL.map((m) => ({ id: m.id, subject: m.subject, from: m.from, snippet: m.snippet, read: m.read }))) : liveInbox;
-  const calendar = sample ? demoQuery(DEMO_CALENDAR.map((e) => ({ id: e.id, title: e.title, date: today, time: e.time }))) : liveCalendar;
+  // Demos laufen über echte is_demo-Firmen in CORE – keine lokale Kopie mehr.
+  const inbox = liveInbox;
+  const calendar = liveCalendar;
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-post">
