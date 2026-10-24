@@ -516,10 +516,30 @@
 .wd-moondot { fill: rgba(207, 214, 207, .78); stroke: rgba(255, 255, 255, .22); filter: none; }
 .wd-moondot[data-tasks='true'] { fill: #bfe3cf; filter: drop-shadow(0 0 5px rgba(150, 225, 190, .75)); }
 .wd-stardot[data-kind='task'] { fill: #d9f2e4; filter: drop-shadow(0 0 4px rgba(150, 225, 190, .85)); }
-.wd-ohneort { display: flex; align-items: center; gap: 8px; min-height: 44px; }
-.wd-ohneort select { min-height: 44px; background: rgba(255,255,255,.04); color: inherit; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 0 8px; max-width: 180px; }
 /* Eine Schriftgröße für alle Namen – Tiefe zeigt die Kugel, nicht die Schrift (×0,85 ausgeglichen). */
 .wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%) scale(1.1765); transform-origin: 50% 100%; }
-.wd-taskhome-act { display: flex; gap: 8px; align-items: center; min-width: 0; }
-.wd-taskhome-act select, .wd-taskhome-act input { flex: 1 1 auto; min-width: 0; max-width: none; }
-.wd-taskhome-act button { flex: 0 0 auto; width: auto; min-height: 44px; padding: 0 12px; }
+
+/* Aufgaben-Ort: ruhiges Blatt (Desktop mittig, Handy von unten). */
+.th-scrim { position: fixed; inset: 0; z-index: 5000; display: flex; align-items: center; justify-content: center; background: rgba(4, 8, 7, .55); backdrop-filter: blur(6px); }
+.th-scrim[data-phone='true'] { align-items: flex-end; }
+.th-sheet { width: min(560px, calc(100vw - 32px)); max-height: min(72vh, 680px); display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 20px; background: rgba(18, 24, 22, .96); border: 1px solid rgba(255, 255, 255, .08); box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .8); color: var(--wd-text, #ebe7de); }
+.th-scrim[data-phone='true'] .th-sheet { width: 100vw; max-height: 82vh; border-radius: 20px 20px 0 0; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.th-head { display: flex; align-items: center; justify-content: space-between; }
+.th-head h2 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; margin: 0; }
+.th-close { width: 44px; height: 44px; border-radius: 22px; font-size: 22px; color: rgba(235, 231, 222, .7); }
+.th-close:hover { background: rgba(255, 255, 255, .06); }
+.th-new { display: flex; align-items: center; gap: 6px; padding: 4px 4px 4px 14px; border-radius: 14px; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .1); }
+.th-new:focus-within { border-color: rgba(150, 225, 190, .45); }
+.th-new input { flex: 1 1 auto; min-width: 0; min-height: 44px; background: transparent; border: 0; outline: 0; color: inherit; font-size: 15px; }
+.th-place { min-height: 44px; max-width: 46%; padding: 0 28px 0 12px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, .1); background: rgba(255, 255, 255, .05); color: inherit; font-size: 13px; text-overflow: ellipsis; }
+.th-place option, .th-place optgroup { background: #141a18; color: #ebe7de; }
+.th-add { width: 44px; height: 44px; flex: 0 0 44px; border-radius: 10px; background: rgba(150, 225, 190, .18); color: #d9f2e4; font-size: 16px; }
+.th-add:disabled { opacity: .35; }
+.th-note { margin: 0; font-size: 13px; color: rgba(190, 230, 210, .85); }
+.th-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.th-item { display: flex; align-items: center; gap: 12px; min-height: 52px; border-top: 1px solid rgba(255, 255, 255, .06); }
+.th-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.th-title small { color: rgba(235, 231, 222, .55); font-variant-numeric: tabular-nums; }
+.th-item .th-place { flex: 0 0 auto; max-width: 52%; color: rgba(235, 231, 222, .75); }
+.th-empty { padding: 16px 0; color: rgba(235, 231, 222, .6); font-size: 14px; }
+.th-chip { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom) + 228px); z-index: 900; min-height: 44px; padding: 0 16px; border-radius: 22px; background: rgba(18, 24, 22, .78); border: 1px solid rgba(150, 225, 190, .22); color: #d9f2e4; font-size: 14px; backdrop-filter: blur(8px); }

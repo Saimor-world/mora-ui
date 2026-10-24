@@ -119,11 +119,22 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
   // nicht kollisionsfrei passt, greifen mehrere Bahnen und der Koordinatenabstieg.
   if (n >= 2 && n <= (phone ? 7 : 8)) {
     const ry1 = phone ? outerRy * 0.92 : Math.min(outerRy, outerRx * TILT);
-    const ring1: OrbitRing = { rx: outerRx * (phone ? 1 : 0.96), ry: ry1, period: 120 };
-    for (let r = 0; r < 12; r++) {
-      const off = -Math.PI / 2 + (r * Math.PI) / (6 * n);
-      const even: OrbitLayout = { scale, cx, cy, mora, rings: [ring1], slots: sizes.map((size, i) => ({ ring: 0, angle: off + (2 * Math.PI * i) / n, size })) };
-      if (layoutOverlap(even, ropts, phone ? 0 : 6) === 0) return even;
+    // Organisch statt Sechseck: Gewicht zieht nach innen (bis 3 Bahnen, ±7 %), gleiche Gewichte
+    // wechseln sanft; dazu ein kleiner fester Winkelversatz je Planet. Größe folgt der Bahn leicht.
+    const order = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w || a.i - b.i);
+    const allSame = order.every((o) => o.w === order[0].w);
+    const level = new Array<number>(n);
+    order.forEach((o, rank) => { level[o.i] = allSame ? [1, 0, 2][o.i % 3] : Math.min(2, Math.floor((rank * 3) / n)); });
+    const fac = [0.9, 0.97, 1.04];
+    const ringsO: OrbitRing[] = fac.map((f, k) => ({ rx: outerRx * (phone ? 1 : 0.96) * f, ry: ry1 * f, period: 110 + k * 20 }));
+    const jitter = (i: number) => (((i * 7919) % 13) / 13 - 0.5) * 0.16;
+    const sizesO = sizes.map((sz, i) => Math.round(sz * [1.08, 1, 0.93][level[i]]));
+    for (const damp of [1, 0.6, 0.3, 0]) {
+      for (let r = 0; r < 12; r++) {
+        const off = -Math.PI / 2 + (r * Math.PI) / (6 * n);
+        const even: OrbitLayout = { scale, cx, cy, mora, rings: damp ? ringsO : [ringsO[1]], slots: sizesO.map((size, i) => ({ ring: damp ? level[i] : 0, angle: off + (2 * Math.PI * i) / n + jitter(i) * damp, size: damp ? size : sizes[i] })) };
+        if (layoutOverlap(even, ropts, phone ? 0 : 6) === 0) return even;
+      }
     }
   }
   let layout: OrbitLayout = { scale, cx, cy, mora, rings, slots };
