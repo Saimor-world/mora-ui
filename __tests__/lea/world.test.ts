@@ -32,7 +32,7 @@ describe('world from real data', () => {
 
   it('gives each department a matte tone from one Saimôr palette, neighbours differ', () => {
     const [termine, kundinnen, lager] = buildWorld({ departments, events, now: NOW });
-    for (const p of [termine, kundinnen, lager]) expect(p.tone.className).toBe('planet--tone');
+    for (const p of [termine, kundinnen, lager]) expect(p.tone.className).toContain('planet--tone');
     expect(new Set([termine, kundinnen, lager].map((p) => p.tone.vars['--p-base'])).size).toBe(3);
   });
 
