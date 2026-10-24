@@ -152,6 +152,79 @@ export function FinderVerse(p: FinderVerseProps) {
   const ring = moon ? [] : planet.moons;
   const sel = stars.find((s) => s.id === selected) ?? null;
 
+  // Richtung 1 Gravitationsfeld: Entzerren & Überlappungsschutz für Monde und Sterne
+  const layoutData = useMemo(() => {
+    const hasMoons = ring.length > 0;
+    const hasStars = stars.length > 0;
+
+    // Radien der Gravitationsbahnen
+    const moonRx = hasMoons && hasStars ? (phone ? 29 : 28) : (phone ? 33 : 34);
+    const moonRy = hasMoons && hasStars ? (phone ? 24 : 23) : (phone ? 27 : 28);
+
+    const moonItems = ring.map((m, i) => {
+      const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
+      return {
+        moon: m,
+        angle: a,
+        x: 50 + Math.cos(a) * moonRx,
+        y: 50 + Math.sin(a) * moonRy,
+      };
+    });
+
+    const starCount = Math.min(stars.length, 24);
+    const starItems = stars.slice(0, 24).map((s, i) => {
+      let a: number;
+      let rx: number;
+      let ry: number;
+
+      if (hasMoons) {
+        // Staffelung in die Zwischenräume der Monde
+        const baseOffset = Math.PI / Math.max(ring.length, 2);
+        a = (i / starCount) * Math.PI * 2 - Math.PI / 2 + baseOffset;
+        rx = phone ? 42 : 45;
+        ry = phone ? 36 : 39;
+      } else if (starCount <= 8) {
+        a = (i / starCount) * Math.PI * 2 - Math.PI / 2;
+        rx = phone ? 30 : 35;
+        ry = phone ? 25 : 29;
+      } else {
+        // Zwei konzentrische Gravitationswellen für viele Sterne
+        const isOuter = i % 2 === 1;
+        a = (i / starCount) * Math.PI * 2 - Math.PI / 2;
+        rx = isOuter ? (phone ? 42 : 44) : (phone ? 30 : 33);
+        ry = isOuter ? (phone ? 36 : 38) : (phone ? 25 : 27);
+      }
+
+      // Richtungsanker: Beschriftung wächst immer nach außen weg
+      const sin = Math.sin(a);
+      const cos = Math.cos(a);
+      let labelPos: 'top' | 'bottom' | 'left' | 'right';
+      if (sin < -0.38) labelPos = 'top';
+      else if (sin > 0.38) labelPos = 'bottom';
+      else labelPos = cos >= 0 ? 'right' : 'left';
+
+      return {
+        star: s,
+        angle: a,
+        x: 50 + Math.cos(a) * rx,
+        y: 50 + Math.sin(a) * ry,
+        labelPos,
+      };
+    });
+
+    return {
+      moonRx,
+      moonRy,
+      moonItems,
+      starItems,
+      starOuterRx: hasMoons ? (phone ? 42 : 45) : (starCount > 8 ? (phone ? 42 : 44) : (phone ? 30 : 35)),
+      starOuterRy: hasMoons ? (phone ? 36 : 39) : (starCount > 8 ? (phone ? 36 : 38) : (phone ? 25 : 29)),
+      hasInnerWave: hasMoons && hasStars,
+    };
+  }, [ring, stars, phone]);
+
+  const selectedStarItem = layoutData.starItems.find((item) => item.star.id === selected) ?? null;
+
   return (
     <div className="fv" role="dialog" aria-modal="true" aria-label={`Planet ${planet.name}`} data-testid="world-planet-window" data-view={view} data-phone={phone ? 'true' : 'false'}>
       <header className="fv-top">
@@ -175,36 +248,66 @@ export function FinderVerse(p: FinderVerseProps) {
           {view === 'universe' ? (
             <div key={levelKey} className="fv-orbit" data-dir={dir} style={{ transformOrigin: origin }} data-testid="fv-orbit">
               <svg className="fv-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
-                <ellipse cx="50" cy="50" rx="34" ry="30" />
-                {stars.length ? <ellipse cx="50" cy="50" rx="45" ry="42" /> : null}
-                {ring.map((m, i) => { const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2; return <line key={m.id} x1="50" y1="50" x2={50 + Math.cos(a) * 34} y2={50 + Math.sin(a) * 30} />; })}
+                <defs>
+                  <linearGradient id="fv-filament" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#9ec2a8" stopOpacity="0.32" />
+                    <stop offset="60%" stopColor="#6f8f78" stopOpacity="0.18" />
+                    <stop offset="100%" stopColor="#c9b89a" stopOpacity="0.25" />
+                  </linearGradient>
+                </defs>
+                {ring.length ? <ellipse cx="50" cy="50" rx={layoutData.moonRx} ry={layoutData.moonRy} className="fv-orbit-wave fv-orbit-wave--moons" /> : null}
+                {stars.length ? <ellipse cx="50" cy="50" rx={layoutData.starOuterRx} ry={layoutData.starOuterRy} className="fv-orbit-wave fv-orbit-wave--stars" /> : null}
+                {layoutData.hasInnerWave ? <ellipse cx="50" cy="50" rx="19" ry="16" className="fv-orbit-wave fv-orbit-wave--core" /> : null}
+                {layoutData.moonItems.map((m) => (
+                  <line key={m.moon.id} x1="50" y1="50" x2={m.x} y2={m.y} className="fv-filament" />
+                ))}
+                {selectedStarItem ? (
+                  <line x1="50" y1="50" x2={selectedStarItem.x} y2={selectedStarItem.y} className="fv-filament fv-filament--active" />
+                ) : null}
               </svg>
               <div className="fv-center">
                 <WorldPlanetSphere tone={moon ? moonTone(moon) : planet.tone} size={phone ? 104 : 150} />
                 <span className="fv-center__name">{centerName}</span>
                 <span className="fv-center__meta">{moon ? `${moon.count} Einträge${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
               </div>
-              {ring.map((m, i) => {
-                const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
-                return (
-                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id, `${50 + Math.cos(a) * 34}% ${50 + Math.sin(a) * 30}%`)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}>
-                    <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}><span className="wd-badge" aria-hidden>{m.count}</span></WorldPlanetSphere>
-                    <span className="fv-moon__name">{m.name}</span>
-                  </button>
-                );
-              })}
-              {stars.slice(0, 24).map((s, i, arr) => {
-                const a = (i / arr.length) * Math.PI * 2 - Math.PI / 2 + (ring.length ? Math.PI / Math.max(arr.length, 2) : 0);
-                const rx = ring.length ? (phone ? 40 : 45) : (phone ? 27 : 36); const ry = ring.length ? 42 : 33;
-                return (
-                  <button key={s.id} type="button" className="fv-star" data-kind={s.kind} data-done={s.done ? 'true' : undefined} data-overdue={s.overdue ? 'true' : undefined} data-selected={selected === s.id ? 'true' : undefined}
-                    style={{ left: `${50 + Math.cos(a) * rx}%`, top: `${50 + Math.sin(a) * ry}%` }} onClick={() => setSelected(s.id)} data-testid={`fv-star-${s.id}`} aria-label={`${kindLabel(s.kind)} ${s.name}${s.hint ? ` · ${s.hint}` : ''}`}>
-                    <span className="fv-star__dot" aria-hidden />
+              {layoutData.moonItems.map(({ moon: m, x, y }) => (
+                <button
+                  key={m.id}
+                  type="button"
+                  className="fv-moon"
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  onClick={() => goMoon(m.id, `${x}% ${y}%`)}
+                  data-testid={`fv-moon-${m.id}`}
+                  aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}
+                >
+                  <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}>
+                    <span className="wd-badge" aria-hidden>{m.count}</span>
+                  </WorldPlanetSphere>
+                  <span className="fv-moon__name">{m.name}</span>
+                </button>
+              ))}
+              {layoutData.starItems.map(({ star: s, x, y, labelPos }) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  className="fv-star"
+                  data-kind={s.kind}
+                  data-done={s.done ? 'true' : undefined}
+                  data-overdue={s.overdue ? 'true' : undefined}
+                  data-selected={selected === s.id ? 'true' : undefined}
+                  data-label-pos={labelPos}
+                  style={{ left: `${x}%`, top: `${y}%` }}
+                  onClick={() => setSelected(s.id)}
+                  data-testid={`fv-star-${s.id}`}
+                  aria-label={`${kindLabel(s.kind)} ${s.name}${s.hint ? ` · ${s.hint}` : ''}`}
+                >
+                  <span className="fv-star__dot" aria-hidden />
+                  <span className="fv-star__label-wrap">
                     <span className="fv-star__name">{s.name}</span>
                     {s.hint ? <span className="fv-star__hint">{s.hint}</span> : null}
-                  </button>
-                );
-              })}
+                  </span>
+                </button>
+              ))}
               {!ring.length && !stars.length ? (
                 <div className="fv-empty" data-testid="fv-empty">
                   <p>{moon ? 'Dieser Ordner ist noch leer.' : planet.kind === 'tasks' ? 'Noch keine Aufgaben.' : `In ${planet.name} gibt es noch keine Ordner.`}</p>

@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=390, height=844, initial-scale=1.0, user-scalable=no">
+  <title>Saimôr OS · Handy-Begleit-App (Entwurf)</title>
+  <style>
+    :root {
+      --bg-base: #111311;
+      --bg-card: #1c1f1c;
+      --bg-card-hover: #262a26;
+      --bg-dock: rgba(18, 21, 19, 0.92);
+      
+      --jade: #6f8f78;
+      --jade-bright: #9ec2a8;
+      --sand: #c9b89a;
+      --clay: #b08a74;
+      --stone: #8d9196;
+      --warn: #e07a5f;
+      
+      --tx-main: #f0f2f0;
+      --tx-mut: #8e948f;
+      --line: rgba(255, 255, 255, 0.08);
+      --line-active: rgba(111, 143, 120, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      width: 390px;
+      height: 844px;
+      margin: 0 auto;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--tx-main);
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .phone-frame {
+      position: relative;
+      width: 390px;
+      height: 844px;
+      background: radial-gradient(circle at 50% 15%, #18201a 0%, var(--bg-base) 65%);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Statusbar */
+    .status-bar {
+      height: 44px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      z-index: 50;
+    }
+
+    /* Scrollable App Body */
+    .app-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 16px 88px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header & MÔRA Greeting */
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding-top: 4px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--jade);
+      box-shadow: 0 0 8px var(--jade);
+    }
+
+    .studio-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--tx-mut);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .date-badge {
+      font-size: 12px;
+      color: var(--tx-mut);
+    }
+
+    .mora-briefing-card {
+      background: linear-gradient(150deg, #1f2721 0%, #171b18 100%);
+      border: 1px solid rgba(111, 143, 120, 0.28);
+      border-radius: 20px;
+      padding: 16px;
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .mora-stone-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mora-stone-avatar img {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    }
+
+    .mora-stone-halo {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(111,143,120,0.2) 0%, transparent 70%);
+      animation: pulse 4s ease-in-out infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.5; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1.05); }
+    }
+
+    .briefing-text h1 {
+      font-size: 17px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.3;
+    }
+
+    .briefing-text p {
+      font-size: 12.5px;
+      color: var(--jade-bright);
+      line-height: 1.4;
+      margin-top: 4px;
+    }
+
+    /* Section Headers */
+    .sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+
+    .sec-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--tx-mut);
+    }
+
+    .sec-sub {
+      font-size: 11.5px;
+      color: var(--sand);
+      font-weight: 500;
+    }
+
+    /* Hero Lead: Nächster Termin & Termin abschließen */
+    .lead-appointment {
+      background: #1a1e1b;
+      border: 1.5px solid rgba(201, 184, 154, 0.35);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge-now {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      background: rgba(201, 184, 154, 0.2);
+      color: var(--sand);
+      border: 1px solid rgba(201, 184, 154, 0.35);
+      padding: 3px 8px;
+      border-radius: 12px;
+    }
+
+    .app-meta-line {
+      font-size: 13px;
+      color: var(--tx-mut);
+    }
+
+    .app-title-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+
+    .app-time {
+      font-size: 26px;
+      font-weight: 600;
+      color: #fff;
+      letter-spacing: -0.01em;
+    }
+
+    .app-client {
+      font-size: 19px;
+      font-weight: 500;
+      color: var(--sand);
+    }
+
+    .app-detail-card {
+      background: rgba(14, 17, 14, 0.6);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      font-size: 12.5px;
+      line-height: 1.45;
+      color: #dedede;
+    }
+
+    .btn-finish-appointment {
+      width: 100%;
+      height: 48px;
+      background: var(--jade);
+      color: #0b110d;
+      border: none;
+      border-radius: 14px;
+      font-size: 14.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(111, 143, 120, 0.35);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .btn-finish-appointment:active {
+      transform: scale(0.97);
+      background: var(--jade-bright);
+    }
+
+    /* Tagestreifen / Termine heute */
+    .strip-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 0 6px;
+      scrollbar-width: none;
+    }
+
+    .strip-row::-webkit-scrollbar {
+      display: none;
+    }
+
+    .strip-card {
+      flex: 0 0 100px;
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+    }
+
+    .strip-card.active {
+      border-color: var(--sand);
+      background: #24221c;
+    }
+
+    .strip-card.gap {
+      border-style: dashed;
+      border-color: rgba(255,255,255,0.15);
+      opacity: 0.7;
+    }
+
+    .strip-time {
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .strip-name {
+      font-size: 11.5px;
+      color: var(--tx-mut);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Aufgaben-Checkliste mit Rückgängig */
+    .tasks-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .task-item {
+      background: var(--bg-card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .task-item.done {
+      opacity: 0.45;
+      text-decoration: line-through;
+    }
+
+    .task-item.urgent {
+      border-left: 3px solid var(--warn);
+    }
+
+    .task-item.today {
+      border-left: 3px solid var(--sand);
+    }
+
+    .task-check {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      border: 1.5px solid var(--tx-mut);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+    }
+
+    .task-item.done .task-check {
+      background: var(--jade);
+      border-color: var(--jade);
+      color: #0b110d;
+    }
+
+    .task-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .task-text {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: #fff;
+      line-height: 1.35;
+    }
+
+    .task-sub {
+      font-size: 11.5px;
+      color: var(--tx-mut);
+      margin-top: 2px;
+    }
+
+    .task-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .tag-warn {
+      background: rgba(224, 122, 95, 0.2);
+      color: #ff9e87;
+    }
+
+    .tag-today {
+      background: rgba(201, 184, 154, 0.2);
+      color: var(--sand);
+    }
+
+    /* MÔRA Quick-Chat */
+    .mora-chat-box {
+      background: #161917;
+      border: 1px solid var(--line-active);
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .chat-chips {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .chat-chips::-webkit-scrollbar {
+      display: none;
+    }
+
+    .chip-btn {
+      padding: 5px 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--line);
+      color: var(--tx-mut);
+      font-size: 11px;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+
+    .chip-btn:active {
+      background: rgba(111, 143, 120, 0.2);
+      color: #fff;
+    }
+
+    .chat-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 12px;
+    }
+
+    .chat-input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .chat-input::placeholder {
+      color: var(--tx-mut);
+    }
+
+    .chat-mic-btn {
+      background: none;
+      border: none;
+      color: var(--jade);
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    /* Bottom 3-Tab Companion Dock */
+    .companion-dock {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      right: 16px;
+      height: 58px;
+      background: var(--bg-dock);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--line);
+      border-radius: 29px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px;
+      z-index: 50;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+    }
+
+    .dock-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--tx-mut);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 6px 16px;
+      border-radius: 16px;
+      transition: all 0.15s ease;
+    }
+
+    .dock-tab.active {
+      color: var(--jade-bright);
+      background: rgba(111, 143, 120, 0.15);
+    }
+
+    .dock-tab svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
+
+    .dock-mora-medallion {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #3d5243, #162019);
+      border: 1.5px solid var(--jade);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+      cursor: pointer;
+      position: relative;
+    }
+
+    .dock-mora-medallion img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+    }
+
+    /* Toast with Undo */
+    .companion-toast {
+      position: absolute;
+      bottom: 82px;
+      left: 16px;
+      right: 16px;
+      background: rgba(22, 28, 24, 0.96);
+      border: 1px solid var(--line-active);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      z-index: 90;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: all 0.22s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .companion-toast.on {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .btn-undo {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border-radius: 10px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone-frame">
+    
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+      <span>09:12</span>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:11px;opacity:0.7">5G</span>
+        <span>●●● 84%</span>
+      </div>
+    </div>
+
+    <!-- MAIN SCROLLABLE COMPANION BODY -->
+    <div class="app-body">
+      
+      <!-- HEADER -->
+      <div class="header-card">
+        <div class="header-top">
+          <div class="brand-row">
+            <div class="brand-dot"></div>
+            <span class="studio-name">Studio Lea · Begleiter</span>
+          </div>
+          <span class="date-badge">Fr, 24. Oktober</span>
+        </div>
+
+        <!-- MÔRA BRIEFING -->
+        <div class="mora-briefing-card" onclick="toast('MÔRA hört zu: Was steht heute an?')">
+          <div class="mora-stone-avatar">
+            <div class="mora-stone-halo"></div>
+            <img src="../../public/brand/mora-stone-v1.png" alt="MÔRA">
+          </div>
+          <div class="briefing-text">
+            <h1>Guten Morgen, Lea.</h1>
+            <p>6 Termine heute. Um 09:30 kommt Michelle zum Auffüllen. Gel-Farbe Rot reicht noch genau für sie.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- FOCUS LEADS: NÄCHSTER TERMIN & ABSCHLIESSEN -->
+      <div class="sec-head">
+        <span class="sec-title">Aktueller Slot</span>
+        <span class="sec-sub">In 18 Min</span>
+      </div>
+
+      <div class="lead-appointment">
+        <div class="app-status-row">
+          <span class="badge-now">Nächster Termin</span>
+          <span class="app-meta-line">Dauer: 60 Min</span>
+        </div>
+
+        <div class="app-title-line">
+          <span class="app-time">09:30</span>
+          <span class="app-client">Michelle W.</span>
+        </div>
+
+        <div class="app-detail-card">
+          <p><strong>Behandlung:</strong> Gel-Auffüllen & Pflege</p>
+          <p style="color:var(--tx-mut);margin-top:3px">Wunsch: Herbst-Design / Nude & Dunkelrot. Letzter Besuch vor 4 Wochen.</p>
+        </div>
+
+        <button class="btn-finish-appointment" id="btnFinish" onclick="finishAppointment()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Termin mit Michelle abschließen</span>
+        </button>
+      </div>
+
+      <!-- TAGESTREIFEN (WEITERE TERMINE) -->
+      <div class="sec-head">
+        <span class="sec-title">Dein Tag · 6 Termine</span>
+        <span style="font-size:11.5px;color:var(--tx-mut)">9:00 bis 18:00</span>
+      </div>
+
+      <div class="strip-row">
+        <div class="strip-card active">
+          <span class="strip-time" style="color:var(--sand)">09:30</span>
+          <span class="strip-name" style="color:#fff">Michelle</span>
+        </div>
+        <div class="strip-card">
+          <span class="strip-time">11:00</span>
+          <span class="strip-name">Lara M.</span>
+        </div>
+        <div class="strip-card gap">
+          <span class="strip-time" style="color:var(--clay)">12:30</span>
+          <span class="strip-name" style="color:var(--clay)">Pause</span>
+        </div>
+        <div class="strip-card">
+          <span class="strip-time">14:00</span>
+          <span class="strip-name">Emma S.</span>
+        </div>
+        <div class="strip-card">
+          <span class="strip-time">15:30</span>
+          <span class="strip-name">Aylin T.</span>
+        </div>
+        <div class="strip-card">
+          <span class="strip-time">17:00</span>
+          <span class="strip-name">Kim B.</span>
+        </div>
+      </div>
+
+      <!-- AUFGABEN-CHECKLISTE MIT SOFORT-RÜCKGÄNGIG -->
+      <div class="sec-head">
+        <span class="sec-title">Aufgaben heute (2 offen)</span>
+        <span class="sec-sub">Antippen zum Abhaken</span>
+      </div>
+
+      <div class="tasks-container">
+        <!-- Aufgabe 1: Material Herbstrot -->
+        <div class="task-item today" id="task1" onclick="toggleTask('task1', 'Gel-Farbe Herbstrot nachbestellen')">
+          <div class="task-check" id="check1"></div>
+          <div class="task-content">
+            <p class="task-text">Gel-Farbe Herbstrot nachbestellen</p>
+            <p class="task-sub">Material · noch 15 ml im Studio (Nailstore Pro 14,90 €)</p>
+          </div>
+          <span class="task-tag tag-today">Heute</span>
+        </div>
+
+        <!-- Aufgabe 2: Instagram Herbst-Designs -->
+        <div class="task-item urgent" id="task2" onclick="toggleTask('task2', 'Instagram: Herbst-Designs posten')">
+          <div class="task-check" id="check2"></div>
+          <div class="task-content">
+            <p class="task-text">Instagram: Herbst-Designs posten</p>
+            <p class="task-sub">Marketing · 3 Kundenanfragen offen</p>
+          </div>
+          <span class="task-tag tag-warn">Überfällig</span>
+        </div>
+      </div>
+
+      <!-- MÔRA SCHNELL-EINGABE / CHAT -->
+      <div class="mora-chat-box">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--jade-bright)">MÔRA Kurzdialog</span>
+          <span style="font-size:11px;color:var(--tx-mut)">Antwortet sofort</span>
+        </div>
+
+        <div class="chat-chips">
+          <button class="chip-btn" onclick="sendPrompt('Termin mit Michelle um 15 Min verschieben')">Termin verschieben</button>
+          <button class="chip-btn" onclick="sendPrompt('Gel-Farbe Herbstrot jetzt bestellen')">Farbe bestellen</button>
+          <button class="chip-btn" onclick="sendPrompt('Wie viel Umsatz haben wir heute?')">Kasse heute</button>
+        </div>
+
+        <div class="chat-input-row">
+          <input type="text" id="moraInput" class="chat-input" placeholder="Kurze Frage an MÔRA …" onkeydown="if(event.key==='Enter')sendPrompt(this.value)">
+          <button class="chat-mic-btn" onclick="toast('Sprachaufnahme aktiv …')">🎤</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TOAST WITH UNDO -->
+    <div class="companion-toast" id="toast">
+      <span id="toastMsg" style="font-size:13px;color:#fff">Termin abgeschlossen</span>
+      <button class="btn-undo" id="btnUndo" onclick="undoLast()">Rückgängig</button>
+    </div>
+
+    <!-- BOTTOM 3-TAB COMPANION DOCK (Kein Universe, kein Finance!) -->
+    <nav class="companion-dock">
+      <button class="dock-tab active" onclick="toast('Heute-Ansicht aktiv')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+        <span>Heute</span>
+      </button>
+
+      <div class="dock-mora-medallion" onclick="toast('MÔRA: Was kann ich für dich tun?')">
+        <img src="../../public/brand/mora-stone-v1.png" alt="MÔRA">
+      </div>
+
+      <button class="dock-tab" onclick="toast('Aufgabenliste: 2 offen, 1 erledigt')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <span>Aufgaben</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <script>
+    let lastAction = null;
+    let toastTimeout = null;
+
+    function toast(msg, showUndo = false, undoFn = null) {
+      const t = document.getElementById('toast');
+      const m = document.getElementById('toastMsg');
+      const u = document.getElementById('btnUndo');
+      
+      m.textContent = msg;
+      u.style.display = showUndo ? 'block' : 'none';
+      if (undoFn) lastAction = undoFn;
+      
+      t.classList.add('on');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        t.classList.remove('on');
+      }, 3500);
+    }
+
+    function undoLast() {
+      if (lastAction) {
+        lastAction();
+        lastAction = null;
+      }
+      document.getElementById('toast').classList.remove('on');
+    }
+
+    function finishAppointment() {
+      const btn = document.getElementById('btnFinish');
+      btn.style.background = '#2c362e';
+      btn.style.color = '#9ec2a8';
+      btn.innerHTML = '<span>✓ Termin abgeschlossen</span>';
+      btn.disabled = true;
+
+      toast('Termin Michelle (09:30) abgeschlossen & Beleg gespeichert.', true, () => {
+        btn.style.background = 'var(--jade)';
+        btn.style.color = '#0b110d';
+        btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg><span>Termin mit Michelle abschließen</span>';
+        btn.disabled = false;
+        toast('Termin wieder als offen markiert.');
+      });
+    }
+
+    function toggleTask(id, title) {
+      const el = document.getElementById(id);
+      const isDone = el.classList.toggle('done');
+      
+      toast(isDone ? `„${title}“ erledigt.` : `„${title}“ wieder geöffnet.`, true, () => {
+        el.classList.toggle('done');
+        toast(`Status für „${title}“ zurückgesetzt.`);
+      });
+    }
+
+    function sendPrompt(text) {
+      if (!text) return;
+      document.getElementById('moraInput').value = '';
+      toast(`MÔRA denkt nach zu: „${text}“ …`);
+      setTimeout(() => {
+        toast(`MÔRA: Anfrage bearbeitet.`);
+      }, 1400);
+    }
+  </script>
+</body>
+</html>
