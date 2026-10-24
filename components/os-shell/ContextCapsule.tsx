@@ -27,7 +27,7 @@ export function ContextCapsule({ activeId, navigate, org, demo, internal = false
 }
 
 /** Uhr-Pille mit MÔRA-Szene bzw. Focus-Restzeit; öffnet das Control Center. */
-export function ContextClock() {
+export function ContextClock({ internal = false }: { internal?: boolean } = {}) {
   const [now, setNow] = useState(() => new Date());
   const focusUntil = useOsShellStore((s) => s.focusUntil);
   useEffect(() => { const t = setInterval(() => setNow(new Date()), 15_000); return () => clearInterval(t); }, []);
@@ -44,7 +44,7 @@ export function ContextClock() {
   return (
       <button type="button" className="os-context__clock" onClick={() => useOsShellStore.getState().setControlOpen(true)} aria-label="Control Center öffnen" data-testid="context-clock">
         <span className="os-context__live" aria-hidden />
-        {focusUntil ? <><Timer size={12} aria-hidden /> <span data-testid="focus-left">{mm}:{ss}</span> · Focus</> : <>{now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}<span className="os-context__scene"> · MÔRA · {scene.label.toUpperCase()}</span></>}
+        {focusUntil ? <><Timer size={12} aria-hidden /> <span data-testid="focus-left">{mm}:{ss}</span> · Focus</> : <>{now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}{internal ? <span className="os-context__scene"> · MÔRA · {scene.label.toUpperCase()}</span> : null}</>}
       </button>
   );
 }

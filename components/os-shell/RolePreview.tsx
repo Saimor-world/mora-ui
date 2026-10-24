@@ -2,6 +2,7 @@
 import React from 'react';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 export type RolePreview = 'owner' | 'department' | 'member';
 const OWNER_ROLES = ['owner', 'admin', 'superadmin', 'inhaber'];
@@ -25,7 +26,9 @@ export const ROLE_LABEL: Record<RolePreview, string> = { owner: 'Inhaberin', dep
 export function useRolePreview(): { role: RolePreview; canPreview: boolean } {
   const userRole = useSessionStore((s) => String((s.user as { role?: string } | null)?.role ?? '').toLowerCase());
   const preview = useOsShellStore((s) => s.rolePreview);
-  const canPreview = canPreviewRole(userRole);
+  // Nur intern (wie „Lokale Instanz“): Kund:innen sehen immer ihre echte Sicht.
+  const internal = useIsSaimorInternal();
+  const canPreview = internal && canPreviewRole(userRole);
   return { role: canPreview ? preview : 'owner', canPreview };
 }
 

@@ -143,7 +143,7 @@ export function OsShell({ preview }: { preview: boolean }) {
             <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow" className="os-shell__place">{active.title}</Text>{/* Kund:innen sehen den CORE-Zustand nur, wenn etwas nicht stimmt. */}{internal || preview || (!health.isLoading && !online) ? <span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung'}</Status></span> : null}{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
             <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} internal={internalUser} />
             <Stack direction="row" gap={1} align="center">
-              <ContextClock />
+              <ContextClock internal={internalUser} />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
