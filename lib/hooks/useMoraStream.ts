@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { parseFrame } from "@/lib/types/moraFrame";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { getCoreBaseUrl } from "@/lib/api/coreClient";
 import type { LastChatScopeState, ScopeContract, UiScopeHints } from "@/lib/types/mora";
 import { useOrbStore } from "@/lib/store/orbStore";
@@ -177,6 +178,7 @@ export function useMoraStream(): UseMoraStreamReturn {
     const [scopeEnforced, setScopeEnforced] = useState(false);
 
     const abortRef = useRef<AbortController | null>(null);
+    useEffect(() => () => abortRef.current?.abort(), []);
 
     const sendMessage = useCallback(
         async (message: string, opts: StreamOptions = {}): Promise<string> => {
@@ -244,15 +246,15 @@ export function useMoraStream(): UseMoraStreamReturn {
                 while (true) {
                     const { done, value } = await reader.read();
                     if (controller.signal.aborted) return accumulated;
-                    if (done) break;
-
-                    buffer += decoder.decode(value, { stream: true });
-                    const chunks = buffer.split("\n\n");
+                    buffer += done ? decoder.decode() : decoder.decode(value, { stream: true });
+                    if (done && buffer.trim()) buffer += "\n\n";
+                    const chunks = buffer.split(/\r?\n\r?\n/);
                     buffer = chunks.pop() ?? "";
 
                     for (const chunk of chunks) {
-                        const line = chunk.replace(/^data:\s?/, "").trim();
-                        if (!line || line === "[DONE]") continue;
+                        const line = chunk.split(/\r?\n/).filter(l => l.startsWith("data:")).map(l => l.replace(/^data:\s?/, "")).join("\n").trim();
+                        if (!line) continue;
+                        if (line === "[DONE]") { await reader.cancel(); return accumulated; }
                         if (line === "[ERROR]") {
                             setError("Stream error from server");
                             await reader.cancel();
@@ -300,16 +302,17 @@ export function useMoraStream(): UseMoraStreamReturn {
                                 );
                             }
 
-                            if (scopeUpdate) continue;
-
-                            if (json.token) {
-                                accumulated += json.token;
-                                setStreamingText((prev) => prev + json.token!);
+                            const typed = parseFrame(json);
+                            const delta = typed?.kind === "thought" ? typed.text : typeof json.token === "string" ? json.token : "";
+                            if (delta) {
+                                accumulated += delta;
+                                setStreamingText(accumulated);
                             }
                         } catch {
                             // Ignore malformed/non-JSON chunks
                         }
                     }
+                    if (done) break;
                 }
 
                 return accumulated;
@@ -348,15 +351,14 @@ export function useMoraStream(): UseMoraStreamReturn {
 
             return fullText;
         },
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-        [session, messages]
+        [session, messages, setError]
     );
 
     const clearHistory = useCallback(() => {
         setMessages([]);
         setStreamingText("");
         setError(null);
-    }, []);
+    }, [setError]);
 
     return {
         isStreaming,

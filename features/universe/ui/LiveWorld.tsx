@@ -74,6 +74,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   // Ändert sich etwas an Aufgaben oder Terminstatus (auch von „Heute“ aus), pulsiert die Linie dorthin.
   const phases = useDayStore((st) => st.phases);
   const setPhase = useDayStore((st) => st.setPhase);
+  const phasePending = useDayStore(st => st.pending);
+  const [calendarNotice, setCalendarNotice] = useState<string | null>(null);
   const calendarPlanetId = useMemo(() => world.finder.find((p) => p.moons.some((m) => m.stars.some((x) => x.kind === 'event')))?.id ?? null, [world.finder]);
   const taskSig = world.tasks.map((t) => `${t.id}:${t.status}`).join('|');
   const phaseSig = JSON.stringify(phases);
@@ -121,21 +123,20 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       case 'done': {
         if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
         const ok = await dayActions.setDone(cmd.task, true);
-        return ok ? { text: `Erledigt: ${cmd.task.title}.`, tone: 'action', undo: () => { void dayActions.setDone(cmd.task, false); } } : { text: 'Konnte nicht gespeichert werden. Bitte noch einmal.', tone: 'note' };
+        return ok ? { text: `Erledigt: ${cmd.task.title}.`, tone: 'action', undo: () => dayActions.setDone(cmd.task, false) } : { text: 'Konnte nicht gespeichert werden. Bitte noch einmal.', tone: 'note' };
       }
       case 'reopen': {
         const ok = await dayActions.setDone(cmd.task, false);
         return ok ? { text: `Wieder offen: ${cmd.task.title}.`, tone: 'action' } : { text: 'Konnte nicht gespeichert werden.', tone: 'note' };
       }
-      case 'arrived': {
-        const prev = phases[cmd.event.id] ?? 'geplant';
-        setPhase(cmd.event.id, 'laeuft');
-        return { text: `${personOf(cmd.event.title)} ist da. Ich halte dir den Rest fern.`, tone: 'action', undo: () => setPhase(cmd.event.id, prev) };
-      }
+      case 'arrived':
       case 'finish': {
+        if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
         const prev = phases[cmd.event.id] ?? 'geplant';
-        setPhase(cmd.event.id, 'erledigt');
-        return { text: `Termin mit ${personOf(cmd.event.title)} abgeschlossen.`, tone: 'action', undo: () => setPhase(cmd.event.id, prev) };
+        const result = await setPhase(cmd.event.id, cmd.kind === 'arrived' ? 'laeuft' : 'erledigt');
+        if (result.conflict) return { text: 'Inzwischen auf einem anderen Gerät geändert. Der aktuelle Stand ist geladen.', tone: 'note' };
+        if (!result.saved) return { text: 'Terminstatus nicht gespeichert. Bitte erneut versuchen.', tone: 'note' };
+        return { text: cmd.kind === 'arrived' ? `${personOf(cmd.event.title)} ist da. Termin läuft.` : `Termin mit ${personOf(cmd.event.title)} abgeschlossen.`, tone: 'action', undo: async () => (await setPhase(cmd.event.id, prev, result.version, result.scope)).saved };
       }
       case 'ambiguous': return { text: `Welche ${cmd.what} meinst du: ${cmd.options.slice(0, 3).join(' oder ')}?`, tone: 'note' };
       case 'unknown-target': return { text: `„${cmd.what}“ finde ich in deinen Daten nicht.`, tone: 'note' };
@@ -144,6 +145,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events]);
   const askCtx = useMemo(() => ({ tasks: world.tasks, todayEvents, planets: finderPlanets.map((p) => ({ id: p.id, name: p.name })), running: world.day.running, stale: world.day.stale }), [world.tasks, todayEvents, finderPlanets, world.day.running, world.day.stale]);
   const dayContext = useMemo(() => ({
+    company_id: world.companyId,
     surface: 'universe',
     today: localISO(),
     selected_area: selected?.name ?? null,
@@ -152,7 +154,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     running_event: world.day.running?.title ?? null,
     open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
     areas: finderPlanets.map((p) => p.name),
-  }), [selected, world.day, finderPlanets]);
+  }), [selected, world.day, finderPlanets, world.companyId]);
 
   const counts = useMemo(() => {
     const moons = finderPlanets.reduce((n, p) => n + p.moons.length, 0);
@@ -213,19 +215,20 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
         moraLine={moraState === 'idle' ? world.day.sentence : undefined}
       />
-      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
+      {calendarNotice ? <p role="status">{calendarNotice}</p> : null}
+      {!open ? <MoraAsk key={`${world.companyId}:${world.sessionGeneration}`} ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
       {selected ? (
         <PlanetFocus
           planet={selected}
           day={world.day}
           phone={phone}
-          readOnly={role === 'member'}
+          readOnly={role === 'member' || Object.values(phasePending).some(Boolean)}
           onZoom={() => openPlanet(selected.id)}
           onClose={() => setSelectedId(null)}
           onAsk={onAskMora}
           onTaskDone={(t) => { void dayActions.setDone(t, true); }}
-          onArrived={() => { if (world.day.next) setPhase(world.day.next.id, 'laeuft'); }}
-          onFinish={() => { const ev = world.day.running ?? world.day.stale; if (ev) setPhase(ev.id, 'erledigt'); }}
+          onArrived={() => { if (world.day.next) void runCommand({ kind: 'arrived', event: world.day.next }).then(r => setCalendarNotice(r.text)); }}
+          onFinish={() => { const ev = world.day.running ?? world.day.stale; if (ev) void runCommand({ kind: 'finish', event: ev }).then(r => setCalendarNotice(r.text)); }}
         />
       ) : null}
       {!phone && !open && !selected ? (

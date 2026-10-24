@@ -27,8 +27,16 @@ export function useWorld() {
   const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const enabled = hasSession && Boolean(companyId);
+  const generation = useSessionStore(s => s.sessionGeneration);
   const loadDayStatus = useDayStore((s) => s.loadCompany);
-  useEffect(() => { void loadDayStatus(enabled ? companyId : null); }, [enabled, companyId, loadDayStatus]);
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState !== 'hidden') void loadDayStatus(enabled ? companyId : null); };
+    void loadDayStatus(enabled ? companyId : null);
+    if (!enabled) return;
+    const timer = setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [enabled, companyId, loadDayStatus, generation]);
   const tree = useQuery({
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
@@ -105,6 +113,7 @@ export function useWorld() {
     });
   }, [finder, tree.data, events.data, day]);
   return {
+    sessionGeneration: generation,
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,
