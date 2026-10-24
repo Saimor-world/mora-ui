@@ -45,7 +45,7 @@ export function useDayActions(companyId: string | null) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qc, companyId]);
 
-  /** Neue Aufgabe mit Ort (Ordner = Mond). CORE nimmt folder_id beim Anlegen an. */
+  /** Neue Aufgabe mit Bereich (Ordner = Mond). CORE nimmt folder_id beim Anlegen an. */
   const addTask = useCallback(async (title: string, folderId?: string | null, due?: string | null) => {
     const res = await corePost('/v3/tasks', { title, due_date: due || undefined, folder_id: folderId || undefined, company_id: companyId ?? undefined }).catch(() => null);
     const created = (res && (res.data ?? res)) as WorldTask | null;
@@ -57,7 +57,7 @@ export function useDayActions(companyId: string | null) {
   }, [qc, companyId]);
 
   /** Bestehende Aufgabe einem Ordner zuordnen. Nur wahr, wenn CORE die folder_id wirklich zurückgibt –
-   *  heute kennt TaskUpdate das Feld noch nicht, dann bleibt die Aufgabe ehrlich „ohne Ort“. */
+   *  heute kennt TaskUpdate das Feld noch nicht, dann bleibt die Aufgabe ehrlich „noch nicht zugeordnet“. */
   const assignFolder = useCallback(async (task: WorldTask, folderId: string) => {
     const res = await corePost(`/v3/tasks/${encodeURIComponent(task.id)}`, { folder_id: folderId }).catch(() => null);
     const upd = (res && (res.data ?? res)) as WorldTask | null;
