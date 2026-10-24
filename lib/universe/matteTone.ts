@@ -98,9 +98,36 @@ function currentVariant(): Variant {
 }
 const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; };
 
+/**
+ * Glas (Standard, Marius 24.10. 20:46: „eine Familie ist zu monoton“): Planeten sind dunkle,
+ * gedämpft getönte GLAS-Kugeln, nur beleuchtet. Licht kommt von MÔRA (Richtung setzt die Ansicht
+ * über --lx/--ly). Töne: Granat, Tiefblau, Jade, Rauch-Bernstein, Petrol, Pflaumengrau – im Wechsel
+ * warm/kühl, alle sehr dunkel und wenig gesättigt.
+ */
+export const GLASS_TINTS: ReadonlyArray<[number, number]> = [[352, 30], [220, 30], [160, 26], [36, 30], [190, 28], [300, 14]];
+function glassVars(hue: number, sat: number): Record<string, string> {
+  const a = (l: number, al: number, ds = 0) => `hsla(${hue}, ${sat + ds}%, ${l}%, ${al})`;
+  return {
+    '--g-core': a(7, .78), '--g-mid': a(16, .5), '--g-glow': a(44, .42, 8), '--g-hi': a(86, .5, -10), '--g-edge': a(62, .55),
+    '--p-hi': hsl(hue, sat, 44), '--p-base': hsl(hue, sat, 24), '--p-mid': hsl(hue, sat, 16), '--p-shadow': hsl(hue, sat, 9), '--p-deep': hsl(hue, sat, 5),
+    '--m-hi': hsl(hue, sat, 50), '--m-base': hsl(hue, sat, 28), '--m-mid': hsl(hue, sat, 20), '--m-shadow': hsl(hue, sat, 12), '--m-deep': hsl(hue, sat, 6),
+    '--h-edge': hsl(hue, sat, 46), '--h-top': hsl(hue, sat, 16), '--h-body': hsl(hue, sat, 9),
+    '--p-rim': 'rgba(226, 196, 120, .42)',
+  };
+}
+function glassOn(): boolean {
+  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); return !v || v === 'G'; } catch { return true; }
+}
+
 export function matteTone(name: string, data: MatteData = {}, index?: number): MatteTone {
   const fam = matteFamily(name);
   const h = hash((name || '').trim().toLowerCase());
+  if (glassOn()) {
+    const n = GLASS_TINTS.length;
+    const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
+    const [gh, gs] = GLASS_TINTS[slot];
+    return { family: 'tone', className: 'planet--tone planet--glass', vars: glassVars(gh, gs) };
+  }
   const V = currentVariant();
   const n = V.hues.length;
   const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;

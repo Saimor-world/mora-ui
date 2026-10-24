@@ -649,3 +649,23 @@
 .wd-galaxy b { opacity: 1; }
 .wd-aurora { border-top-width: 3.5px; border-top-color: rgba(140, 244, 196, .95);
   box-shadow: 0 -8px 18px -4px rgba(130, 236, 188, .75), 0 -14px 30px -8px rgba(196, 160, 240, .6); }
+
+/* Glas-Planeten: dunkel getönt, durchscheinend, Licht kommt von MÔRA (--lx/--ly zur Mitte). */
+.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
+  --lx: 34%; --ly: 30%; --ox: 66%; --oy: 70%; --dx: -.6; --dy: -.6;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 22%),
+    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 46%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid) 0, var(--g-core) 72%);
+  box-shadow:
+    inset calc(var(--dx) * 3px) calc(var(--dy) * 3px) 3px -1px var(--g-edge),
+    inset calc(var(--dx) * -6px) calc(var(--dy) * -6px) 10px -4px rgba(0, 0, 0, .55),
+    inset 0 0 0 1px var(--p-rim),
+    0 0 18px -6px var(--g-glow);
+  -webkit-backdrop-filter: blur(3px) saturate(1.1); backdrop-filter: blur(3px) saturate(1.1);
+}
+.wd-sphere.planet--glass::before { display: none !important; }
+.wd-sphere.planet--glass::after { opacity: .12 !important; mix-blend-mode: screen !important; }
+.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wd-planet .wd-moondot { opacity: .9; }

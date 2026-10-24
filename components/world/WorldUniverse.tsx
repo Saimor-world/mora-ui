@@ -214,7 +214,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           >
             {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
             {planet.traits ? <PlanetTraitsLayer traits={planet.traits} size={phone ? Math.max(52, slot?.size ?? 60) : (slot?.size ?? 60)} phone={phone} /> : null}
-            <WorldPlanetSphere tone={planet.tone} className={`wd-tex-${planet.traits?.texture ?? 0}`} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
+            <WorldPlanetSphere light={slot ? { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) } : undefined} tone={planet.tone} className={`wd-tex-${planet.traits?.texture ?? 0}`} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
             </WorldPlanetSphere>
             <span className="wd-label">
