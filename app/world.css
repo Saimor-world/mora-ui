@@ -556,3 +556,90 @@
 .wd-horizon__row[data-testid="horizon-unassigned"] { flex-direction: row; justify-content: space-between; }
 .wd-horizon__row[data-testid="horizon-unassigned"] span { font-size: var(--os-type-small-size); letter-spacing: 0; text-transform: none; color: inherit; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wd-horizon__row[data-testid="horizon-unassigned"]::after { content: '›'; color: var(--wd-muted); }
+
+/* ── Galaxie v1 (Marius 24.10.: „mehr Universum, mehr Galaxie, Besonderheiten in jedem Planet“) ── */
+/* Tiefe: galaktisches Band + Spiralstaub hinter MÔRA, drei Sternschichten mit sanfter Drift (nur transform/opacity). */
+.wd-galaxy { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 0; }
+.wd-galaxy i, .wd-galaxy b { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
+.wd-galaxy i { width: 1500px; height: 360px; margin: -180px 0 0 -750px; transform: rotate(-16deg);
+  background: radial-gradient(closest-side, rgba(226, 196, 140, .10), rgba(120, 170, 150, .06) 45%, transparent 75%); filter: blur(18px); }
+.wd-galaxy b { width: 760px; height: 760px; margin: -380px 0 0 -380px; opacity: .55;
+  background: conic-gradient(from 0deg, transparent 0 8%, rgba(150, 200, 180, .07) 14%, transparent 24%, transparent 46%, rgba(226, 190, 130, .07) 56%, transparent 66%, transparent 100%);
+  -webkit-mask: radial-gradient(closest-side, transparent 18%, #000 40%, transparent 92%); mask: radial-gradient(closest-side, transparent 18%, #000 40%, transparent 92%);
+  filter: blur(10px); transform: scaleY(.42) rotate(0deg); animation: wd-spiral 240s linear infinite; }
+@keyframes wd-spiral { to { transform: scaleY(.42) rotate(360deg); } }
+.wd-parallax--mid { background-image: radial-gradient(1px 1px at 12% 44%, rgba(226, 214, 180, .32), transparent 60%), radial-gradient(1.2px 1.2px at 62% 12%, rgba(190, 226, 210, .28), transparent 60%), radial-gradient(1px 1px at 88% 66%, rgba(235, 231, 222, .22), transparent 60%); background-size: 290px 290px; transform: translate3d(calc(var(--px, 0) * -17px), calc(var(--py, 0) * -17px), 0); }
+.wd-parallax--far { animation: wd-drift 180s linear infinite alternate; }
+.wd-parallax--mid { animation: wd-drift 120s linear infinite alternate-reverse; }
+@keyframes wd-drift { from { background-position: 0 0; } to { background-position: 60px 24px; } }
+.wd-universe[data-phone='true'] .wd-parallax--near, .wd-universe[data-phone='true'] .wd-galaxy b { display: none; }
+.wd-universe[data-phone='true'] .wd-galaxy i { width: 760px; height: 220px; margin: -110px 0 0 -380px; }
+.wd-universe[data-phone='true'] .wd-parallax { animation: none; }
+
+/* Lichtbahnen statt Speichen: weich gebogen, leise. */
+.wd-orbits path.wd-link { fill: none; stroke: rgba(196, 226, 210, .16); stroke-width: 1; stroke-linecap: round; filter: none; }
+.wd-orbits path.wd-link--active { stroke: rgba(240, 220, 160, .7); stroke-width: 1.5; filter: drop-shadow(0 0 4px rgba(240, 210, 140, .6)); }
+.wd-orbits path.wd-link-pulse { fill: none; }
+
+/* Besonderheiten je Planet (nur aus Daten). */
+.wd-traits { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 0; }
+.wd-traits > * { position: absolute; left: 0; top: 0; }
+.wd-atmo { border-radius: 50%; box-shadow: 0 0 calc(8px + var(--atmo) * 26px) calc(2px + var(--atmo) * 8px) rgba(140, 215, 180, calc(.08 + var(--atmo) * .32)); }
+.wd-ring { overflow: visible; z-index: 2; }
+.wd-ring ellipse { fill: none; stroke: rgba(226, 200, 140, .42); }
+.wd-ring .wd-ring__outer { stroke: rgba(226, 200, 140, .18); stroke-width: .8; }
+.wd-aurora { border-radius: 50% 50% 40% 40%; z-index: 2; mix-blend-mode: screen; filter: blur(5px);
+  background: radial-gradient(60% 70% at 50% 100%, rgba(120, 230, 180, .0) 40%, rgba(120, 230, 180, .45) 62%, rgba(200, 160, 240, .28) 78%, transparent 92%);
+  animation: wd-aurora 6s ease-in-out infinite alternate; }
+@keyframes wd-aurora { from { opacity: .55; transform: scaleX(.94); } to { opacity: 1; transform: scaleX(1.06); } }
+.wd-spark { width: 3px; height: 3px; margin: -1.5px; border-radius: 50%; background: #e9fff3; box-shadow: 0 0 6px 1px rgba(160, 235, 200, .8); animation: wd-twinkle 3s ease-in-out infinite; z-index: 2; }
+@keyframes wd-twinkle { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+/* Oberflächen-Varianten (deterministisch aus der ID, im Farbsystem C, weich über das Material gelegt). */
+.wd-sphere[class*='wd-tex-'] { overflow: hidden; }
+.wd-sphere.wd-tex-0::after, .wd-sphere.wd-tex-1::after, .wd-sphere.wd-tex-2::after, .wd-sphere.wd-tex-3::after { content: ''; position: absolute; inset: 0; border-radius: 50%; pointer-events: none; mix-blend-mode: soft-light; opacity: .55; }
+.wd-sphere.wd-tex-0::after { background: repeating-linear-gradient(-14deg, rgba(255, 255, 255, .0) 0 9%, rgba(255, 255, 255, .22) 11%, rgba(0, 0, 0, .18) 15%, rgba(255, 255, 255, 0) 18%); } /* Bänder */
+.wd-sphere.wd-tex-1::after { background: radial-gradient(14% 14% at 62% 38%, rgba(0, 0, 0, .35), transparent 70%), radial-gradient(9% 9% at 34% 64%, rgba(0, 0, 0, .3), transparent 70%), radial-gradient(7% 7% at 70% 72%, rgba(0, 0, 0, .28), transparent 70%); } /* Krater */
+.wd-sphere.wd-tex-2::after { background: conic-gradient(from 40deg at 58% 46%, rgba(255, 255, 255, .18), rgba(0, 0, 0, .2) 25%, rgba(255, 255, 255, .12) 50%, rgba(0, 0, 0, .22) 75%, rgba(255, 255, 255, .18)); filter: blur(3px); } /* Wirbel */
+.wd-sphere.wd-tex-3::after { background: radial-gradient(40% 22% at 40% 30%, rgba(255, 255, 255, .25), transparent 70%), radial-gradient(50% 18% at 60% 70%, rgba(0, 0, 0, .3), transparent 70%); filter: blur(2px); } /* Wolken */
+.wd-sphere .wd-badge { z-index: 3; }
+.wd-sphere[class*='wd-tex-'] { overflow: visible; }
+.wd-sphere[class*='wd-tex-']::after { clip-path: circle(50%); }
+
+/* Komet: einmal quer über das Feld, wenn eine neue Mail da ist. */
+.wd-comet { position: absolute; left: -10%; top: 18%; width: 120px; height: 2px; pointer-events: none; z-index: 3; border-radius: 2px; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(226, 214, 170, .5) 70%, #fff8e6); transform: rotate(14deg); animation: wd-comet 4.2s cubic-bezier(.3, .1, .3, 1) 1.2s 1 forwards; }
+.wd-comet::after { content: ''; position: absolute; right: -2px; top: -2px; width: 6px; height: 6px; border-radius: 50%; background: #fff8e6; box-shadow: 0 0 10px 3px rgba(255, 236, 190, .8); }
+@keyframes wd-comet { 0% { opacity: 0; translate: 0 0; } 10% { opacity: 1; } 85% { opacity: .9; } 100% { opacity: 0; translate: 120vw 30vh; } }
+
+/* Legende: klein, unaufdringlich, per Hover/Fokus. */
+.wd-legend { position: absolute; left: 20px; bottom: 236px; z-index: 30; }
+.wd-legend summary { list-style: none; width: 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; cursor: pointer; color: var(--wd-muted, #aab); font-style: italic; font-family: Georgia, serif; background: rgba(255, 255, 255, .04); border: 1px solid rgba(255, 255, 255, .08); }
+.wd-legend summary::-webkit-details-marker { display: none; }
+.wd-legend ul { position: absolute; left: 52px; bottom: 0; margin: 0; padding: 12px 14px; list-style: none; width: 272px; border-radius: 14px; background: rgba(14, 20, 18, .9); border: 1px solid rgba(255, 255, 255, .08); backdrop-filter: blur(10px); font-size: 13px; color: #dfe9e3; display: grid; gap: 8px; }
+.wd-legend:not([open]):not(:hover) ul { display: none; }
+.wd-legend li { display: flex; align-items: center; gap: 10px; }
+.wd-legend li i { flex: none; width: 22px; height: 12px; display: inline-block; }
+.lg-ring { border: 1.5px solid rgba(226, 200, 140, .6); border-radius: 50%; transform: rotate(-14deg) scaleY(.6); }
+.lg-atmo { border-radius: 50%; width: 12px !important; background: #3f6656; box-shadow: 0 0 8px 3px rgba(140, 215, 180, .5); }
+.lg-aurora { border-radius: 50% 50% 0 0; background: linear-gradient(0deg, rgba(120, 230, 180, .6), rgba(200, 160, 240, .4)); }
+.lg-spark { width: 4px !important; height: 4px !important; margin: 0 9px; border-radius: 50%; background: #e9fff3; box-shadow: 0 0 6px 2px rgba(160, 235, 200, .8); }
+.lg-comet { height: 2px !important; background: linear-gradient(90deg, transparent, #fff8e6); }
+
+/* Handy-Lite-Monde: sichtbar, ohne Sterne/Speichen-Linien der Einträge. */
+.wd-universe[data-phone='true'] .wd-planet .wd-orbit { display: block !important; }
+.wd-universe[data-phone='true'] .wd-orbit .wd-stardot, .wd-universe[data-phone='true'] .wd-orbit .wd-sublink--star { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wd-galaxy b, .wd-parallax, .wd-aurora, .wd-spark { animation: none !important; }
+  .wd-comet { display: none; }
+}
+/* Galaxie v1 · Feinschliff nach eigener Sichtprüfung: Zeichen lesbar, aber ruhig. */
+.wd-galaxy i { background: radial-gradient(closest-side, rgba(232, 204, 150, .2), rgba(120, 180, 160, .1) 45%, transparent 78%); }
+.wd-galaxy b { opacity: .9; }
+.wd-aurora { border-radius: 50%; filter: blur(1.5px); mix-blend-mode: normal; background: none;
+  border-top: 2.5px solid rgba(130, 236, 188, .85); border-left: 1px solid transparent; border-right: 1px solid transparent;
+  box-shadow: 0 -6px 14px -4px rgba(130, 236, 188, .55), 0 -10px 22px -8px rgba(196, 160, 240, .45); }
+.wd-spark { width: 4px; height: 4px; margin: -2px; box-shadow: 0 0 8px 2px rgba(160, 235, 200, .85); }
+.wd-atmo { box-shadow: 0 0 calc(10px + var(--atmo) * 30px) calc(3px + var(--atmo) * 10px) rgba(140, 215, 180, calc(.12 + var(--atmo) * .38)); }
+.wd-legend summary { color: #e6efe9; background: rgba(18, 26, 23, .8); border-color: rgba(226, 200, 140, .3); font-size: 16px; }
+.wd-legend { bottom: 280px; z-index: 901; }

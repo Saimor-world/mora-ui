@@ -8,7 +8,7 @@ import { useNavStore } from '@/lib/store/navStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useDayStore } from './dayStore';
 import { buildLiveDay, calendarMeta } from './live';
-import { isCalendarDept, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
+import { isCalendarDept, planetTraits, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
 import { buildFinder, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
 import { matteTone } from '@/lib/universe/matteTone';
 
@@ -104,9 +104,10 @@ export function useWorld() {
         orbit: {
           moons: p.moons.map((m) => ({ id: m.id, label: m.name, stars: m.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind })) })),
           stars: p.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind, overdue: x.overdue, done: x.done })),
-        } };
+        },
+        traits: planetTraits(p.id, p.moons.map((m) => m.id), [...(nodes.data ?? []), ...(files.data ?? [])], tasks.data ?? []) };
     });
-  }, [finder, tree.data, events.data, day]);
+  }, [finder, tree.data, events.data, day, nodes.data, files.data, tasks.data]);
   return {
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),

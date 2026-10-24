@@ -215,6 +215,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         shift={selected && !phone ? 190 : 0}
         activeId={activeId}
         counts={counts}
+        comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
         moraLine={moraState === 'idle' ? world.day.sentence : undefined}
       />
