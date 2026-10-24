@@ -537,8 +537,9 @@
 .th-add:disabled { opacity: .35; }
 .th-note { margin: 0; font-size: 13px; color: rgba(190, 230, 210, .85); }
 .th-list { list-style: none; margin: 0; padding: 0; overflow-y: auto; display: flex; flex-direction: column; }
-.th-item { display: flex; align-items: center; gap: 12px; min-height: 52px; border-top: 1px solid rgba(255, 255, 255, .06); }
-.th-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.th-item { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, .06); }
+/* Titel brechen um statt „…“ – sonst verschwindet auch das Fälligkeitsdatum. */
+.th-title { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; line-height: 20px; font-size: var(--os-type-small-size, 14px); }
 .th-title small { color: rgba(235, 231, 222, .55); font-variant-numeric: tabular-nums; }
 .th-item .th-place { flex: 0 0 auto; max-width: 52%; color: rgba(235, 231, 222, .75); }
 .th-empty { padding: 16px 0; color: rgba(235, 231, 222, .6); font-size: 14px; }
@@ -571,7 +572,10 @@
 .wd-parallax--mid { background-image: radial-gradient(1px 1px at 12% 44%, rgba(226, 214, 180, .32), transparent 60%), radial-gradient(1.2px 1.2px at 62% 12%, rgba(190, 226, 210, .28), transparent 60%), radial-gradient(1px 1px at 88% 66%, rgba(235, 231, 222, .22), transparent 60%); background-size: 290px 290px; transform: translate3d(calc(var(--px, 0) * -17px), calc(var(--py, 0) * -17px), 0); }
 .wd-parallax--far { animation: wd-drift 180s linear infinite alternate; }
 .wd-parallax--mid { animation: wd-drift 120s linear infinite alternate-reverse; }
-@keyframes wd-drift { from { background-position: 0 0; } to { background-position: 60px 24px; } }
+/* Drift über `translate` statt background-position: der Browser verschiebt nur die Ebene, statt die
+   ganze Fläche in jedem Frame neu zu zeichnen. `translate` addiert sich zur Zeiger-Parallaxe (transform);
+   36/16 px bleiben innerhalb des 40-px-Überstands der Ebene, kein Rand wird sichtbar. */
+@keyframes wd-drift { from { translate: 0 0; } to { translate: 36px 16px; } }
 .wd-universe[data-phone='true'] .wd-parallax--near, .wd-universe[data-phone='true'] .wd-galaxy b { display: none; }
 .wd-universe[data-phone='true'] .wd-galaxy i { width: 760px; height: 220px; margin: -110px 0 0 -380px; }
 .wd-universe[data-phone='true'] .wd-parallax { animation: none; }
@@ -692,7 +696,8 @@
   -webkit-backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08); backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08);
 }
 .wd-sphere.planet--glass::after { opacity: .07 !important; }
-.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: saturate(1.4) brightness(1.2); backdrop-filter: saturate(1.4) brightness(1.2); }
+/* Handy: kein backdrop-filter auf den Kugeln – auf älteren Geräten zu teuer; das Glas lebt dort von den Verläufen. */
+.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .wd-universe[data-phone='true'] .wd-neb--b, .wd-universe[data-phone='true'] .wd-dust { display: none; }
 .wd-universe[data-phone='true'] .wd-neb { animation-duration: 180s; }
 @media (prefers-reduced-motion: reduce) { .wd-neb, .wd-dust { animation: none !important; } }

@@ -6,7 +6,7 @@
  * mit. Keine Vorlagen, keine Branchen-Templates, keine System-Planeten.
  * Das Material jedes Planeten kommt aus matteTone(name) (visual-v1).
  */
-import { matteTone, type MatteTone } from '@/lib/universe/matteTone';
+import { matteTone, toneSlots, type MatteTone } from '@/lib/universe/matteTone';
 
 export interface WorldEvent { id: string; title: string; date: string; time?: string; duration?: number }
 export interface WorldTask { id: string; title: string; status: string; due_date?: string | null; folder_id?: string | null; company_id?: string | null }
@@ -87,8 +87,9 @@ const folderCount = (s: WorldSpace) => s.folder_count ?? (Array.isArray(s.folder
 
 export function buildWorld(input: { departments: WorldDepartment[]; events: WorldEvent[]; now?: Date }): WorldPlanet[] {
   const upcoming = upcomingEvents(input.events, input.now ?? new Date());
-  return input.departments
-    .filter((d) => d && d.id && d.name)
+  const depts = input.departments.filter((d) => d && d.id && d.name);
+  const slots = toneSlots(depts.map((d) => d.name));
+  return depts
     .map((d, idx) => {
       const spaces = d.spaces ?? [];
       const moons: WorldMoon[] = spaces.map((s) => ({ id: s.id, label: s.name, count: folderCount(s) }));
@@ -98,6 +99,6 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
         weight += upcoming.length;
         meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       }
-      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }, idx), weight, meta, moons };
+      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }, slots[idx]), weight, meta, moons };
     });
 }

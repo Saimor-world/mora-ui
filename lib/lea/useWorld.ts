@@ -10,7 +10,7 @@ import { useDayStore } from './dayStore';
 import { buildLiveDay, calendarMeta } from './live';
 import { isCalendarDept, planetTraits, plural, upcomingEvents, type WorldDepartment, type WorldEvent, type WorldPlanet, type WorldTask } from './world';
 import { buildFinder, planetCounts, TASKS_PLANET, type FFolder, type FNode, type FPlanet, type FSpace } from './finder';
-import { matteTone } from '@/lib/universe/matteTone';
+import { matteTone, toneSlots } from '@/lib/universe/matteTone';
 
 function list<T>(raw: unknown, keys: string[] = []): T[] {
   if (Array.isArray(raw)) return raw as T[];
@@ -83,14 +83,23 @@ export function useWorld() {
     tasks: tasks.isSuccess ? tasks.data ?? [] : null,
   }), [tree.data, folders.data, nodes.data, files.data, tasks.data, tasks.isSuccess]);
   // Live: was Lea heute tut („ist da“, abgeschlossen), steht sofort am Termin-Planeten.
+  const places = useMemo(() => {
+    const depts = tree.data?.departments ?? [];
+    // Grammatik des Universe: Planeten sind nur Abteilungen (Orte). Aufgaben ohne Ordner und Termine sind
+    // keine Orte – sie stehen im Horizont und bei MÔRA. Eine reine Termin-Abteilung ohne Ordner ist eine Quelle.
+    return finder.filter((p) => p.kind !== 'tasks' && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
+  }, [finder, tree.data]);
+  // Ton je Ort fest aus dem Namen, Nachbarn auf der Bahn entzerrt – derselbe Ton im Universe und im Finder.
+  const toneById = useMemo(() => {
+    const slots = toneSlots(places.map((p) => p.name));
+    return new Map(places.map((p, i) => [p.id, matteTone(p.name, {}, slots[i])]));
+  }, [places]);
+  const finderToned: FPlanet[] = useMemo(() => finder.map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
   const planets: WorldPlanet[] = useMemo(() => {
     const live = calendarMeta(day);
     const depts = tree.data?.departments ?? [];
     const upcoming = upcomingEvents(events.data ?? []);
-    // Grammatik des Universe: Planeten sind nur Abteilungen (Orte). Aufgaben ohne Ordner und Termine sind
-    // keine Orte – sie stehen im Horizont und bei MÔRA. Eine reine Termin-Abteilung ohne Ordner ist eine Quelle.
-    const places = finder.filter((p) => p.kind !== 'tasks' && !(p.moons.length === 0 && depts.some((x) => x.id === p.id && isCalendarDept(x))));
-    return places.map((p, idx) => {
+    return places.map((p) => {
       const c = planetCounts(p);
       const d = depts.find((x) => x.id === p.id);
       const cal = Boolean(d && isCalendarDept(d));
@@ -100,21 +109,21 @@ export function useWorld() {
       if (cal && upcoming.length) meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       if (cal && live) meta = live;
       const weight = p.kind === 'tasks' ? p.stars.length : c.folders + c.items + (cal ? upcoming.length : 0);
-      return { id: p.id, name: p.name, tone: matteTone(p.name, { count: weight }, idx), weight, meta, moons: p.moons.map((m) => ({ id: m.id, label: m.name, count: m.count })),
+      return { id: p.id, name: p.name, tone: toneById.get(p.id) ?? matteTone(p.name, { count: weight }), weight, meta, moons: p.moons.map((m) => ({ id: m.id, label: m.name, count: m.count })),
         orbit: {
           moons: p.moons.map((m) => ({ id: m.id, label: m.name, stars: m.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind })) })),
           stars: p.stars.map((x) => ({ id: x.id, label: x.name, kind: x.kind, overdue: x.overdue, done: x.done })),
         },
         traits: planetTraits(p.id, p.moons.map((m) => m.id), [...(nodes.data ?? []), ...(files.data ?? [])], tasks.data ?? []) };
     });
-  }, [finder, tree.data, events.data, day, nodes.data, files.data, tasks.data]);
+  }, [places, toneById, tree.data, events.data, day, nodes.data, files.data, tasks.data]);
   return {
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,
     companyId,
     planets,
-    finder,
+    finder: finderToned,
     tasksPlanetId: TASKS_PLANET,
     day,
     events: events.data ?? [],
