@@ -28,6 +28,29 @@ beforeEach(() => {
 afterEach(() => { document.cookie = 'mora_session=; max-age=0'; });
 
 describe('MÔRA stream completion', () => {
+  it('reads actual CORE v3 thought frames in the text consumer, across chunks and CRLF', async () => {
+    (fetch as jest.Mock).mockResolvedValueOnce(response([
+      ': keepalive\r\n\r\nevent: message\r\ndata: {"kind":"thought","te',
+      'xt":"MÔRA "}\r\n\r\ndata: {"kind":"thought","text":"antwortet."}\r\n\r\ndata: [DONE]\r\n\r\n',
+    ]));
+    const { result } = renderHook(() => useMoraStream());
+    await act(async () => {
+      expect(await result.current.sendMessage('Wie geht es weiter?')).toBe('MÔRA antwortet.');
+      expect(result.current.getError()).toBeNull();
+    });
+    expect(result.current.messages.at(-1)?.content).toBe('MÔRA antwortet.');
+    expect(fetch).toHaveBeenCalledWith('/api/core/v3/chat/stream', expect.any(Object));
+  });
+
+  it('flushes the final thought at EOF but ignores data after DONE', async () => {
+    (fetch as jest.Mock)
+      .mockResolvedValueOnce(response(['data: {"kind":"thought","text":"Ende"}']))
+      .mockResolvedValueOnce(response(['data: {"kind":"thought","text":"Fertig"}\n\ndata: [DONE]\n\ndata: {"token":"ignored"}\n\n']));
+    const { result } = renderHook(() => useMoraStream());
+    await act(async () => { expect(await result.current.sendMessage('Frage')).toBe('Ende'); });
+    await act(async () => { expect(await result.current.sendMessage('Frage')).toBe('Fertig'); });
+  });
+
   it('returns the completed typed answer before a React rerender and retains it for the next turn', async () => {
     (fetch as jest.Mock)
       .mockResolvedValueOnce(response(['data: {"kind":"thought","te', 'xt":"Erste Antwort"}\n\ndata: [DONE]\n\n']))

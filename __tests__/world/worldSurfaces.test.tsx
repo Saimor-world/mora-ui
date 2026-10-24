@@ -26,6 +26,8 @@ jest.mock('@/lib/lea/useWorld', () => ({
     day: require('@/lib/lea/live').buildLiveDay(events, tasks, {}),
   }),
 }));
+const setPhase = jest.fn(async () => ({ phase: 'laeuft', conflict: false, saved: true, version: 1 }));
+jest.mock('@/lib/lea/dayStore', () => ({ useDayStore: (selector: (s: unknown) => unknown) => selector({ phases: {}, since: {}, pending: {}, sync: 'core', setPhase }) }));
 const setDone = jest.fn().mockResolvedValue(true);
 const addForTomorrow = jest.fn().mockResolvedValue(true);
 jest.mock('@/lib/lea/useDayActions', () => ({ useDayActions: () => ({ setDone, addForTomorrow }) }));
@@ -56,7 +58,6 @@ describe('PhoneHome (V4)', () => {
 describe('DayPanel', () => {
   it('ticks a task via CORE, offers undo, marks arrival and plans tomorrow', async () => {
     const { DayPanel } = require('@/components/day/DayPanel');
-    const { useDayStore } = require('@/lib/lea/dayStore');
     render(<DayPanel onAskMora={jest.fn()} />);
     fireEvent.click(screen.getByTestId('day-tick-t2'));
     await screen.findByText(/Erledigt: Rechnung schicken/);
@@ -64,7 +65,8 @@ describe('DayPanel', () => {
     fireEvent.click(within(screen.getByTestId('day-toast')).getByText('Rückgängig'));
     expect(setDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 't2' }), false);
     fireEvent.click(screen.getByTestId('day-arrived'));
-    expect(useDayStore.getState().phases.e1).toBe('laeuft');
+    await screen.findByText(/ist da. Termin läuft/);
+    expect(setPhase).toHaveBeenCalledWith('e1', 'laeuft');
     fireEvent.click(screen.getByTestId('day-plan'));
     fireEvent.change(screen.getByTestId('day-tomorrow-input'), { target: { value: 'Beispiel morgen' } });
     fireEvent.submit(screen.getByTestId('day-tomorrow-input').closest('form')!);

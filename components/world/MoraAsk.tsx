@@ -6,7 +6,7 @@ import { useMoraStream } from '@/lib/hooks/useMoraStream';
 import { parseDayCommand, type CommandContext, type DayCommand } from '@/lib/lea/moraCommands';
 
 export type MoraState = 'idle' | 'thinking' | 'speaking';
-export interface MoraReply { text: string; tone: 'answer' | 'action' | 'note'; undo?: () => void }
+export interface MoraReply { text: string; tone: 'answer' | 'action' | 'note'; undo?: () => void | boolean | Promise<void | boolean> }
 
 type SpeechCtor = new () => { lang: string; onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
 
@@ -26,6 +26,8 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
   onState?: (s: MoraState) => void;
   phone?: boolean;
 }) {
+  const busyRef = useRef(false);
+  const [busy, setBusy] = useState(false);
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
   const [reply, setReply] = useState<MoraReply | null>(null);
@@ -53,16 +55,31 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
 
   const run = async (raw: string) => {
     const t = raw.trim();
-    if (!t) return;
-    setText('');
-    setAsked(t);
-    const cmd = parseDayCommand(t, ctx);
-    if (cmd) { setReply(await onCommand(cmd)); return; }
-    setReply(null);
-    const answer = await stream.sendMessage(t, { context: dayContext, history: stream.messages.slice(-6) });
-    const err = stream.getError();
-    if (answer && !err) setReply({ text: answer, tone: 'answer' });
-    else setReply({ text: `Frei antworten kann ich gerade nicht – CORE erreicht kein Sprachmodell. Aus deinen Daten: ${fallback}`, tone: 'note' });
+    if (!t || busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      setText('');
+      setAsked(t);
+      const cmd = parseDayCommand(t, ctx);
+      if (cmd) { setReply(await onCommand(cmd)); return; }
+      setReply(null);
+      const answer = await stream.sendMessage(t, { context: dayContext, history: stream.messages.slice(-6) });
+      const err = stream.getError();
+      if (answer && !err) setReply({ text: answer, tone: 'answer' });
+      else setReply({ text: `Frei antworten kann ich gerade nicht – die Verbindung hat keine vollständige Antwort geliefert. Aus deinen Daten: ${fallback}`, tone: 'note' });
+    } catch { setReply({ text: 'Die Aktion konnte nicht bestätigt werden. Bitte erneut versuchen.', tone: 'note' }); }
+    finally { busyRef.current = false; setBusy(false); }
+  };
+
+  const undo = async () => {
+    if (busyRef.current || !reply?.undo) return;
+    busyRef.current = true; setBusy(true);
+    try {
+      const ok = await reply.undo();
+      setReply(ok === false ? { text: 'Rückgängig nicht gespeichert. Bitte neu laden und erneut versuchen.', tone: 'note' } : { text: 'Rückgängig gemacht.', tone: 'action' });
+    } catch { setReply({ text: 'Rückgängig nicht gespeichert. Bitte erneut versuchen.', tone: 'note' }); }
+    finally { busyRef.current = false; setBusy(false); }
   };
 
   const listen = () => {
@@ -84,7 +101,7 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
           <div className="wd-reply__body">
             {asked ? <p className="wd-reply__q">„{asked}“</p> : null}
             {state === 'thinking' ? <p className="wd-reply__thinking" data-testid="mora-thinking">MÔRA denkt <i /><i /><i /></p> : <p>{bubble}</p>}
-            {reply?.undo && state === 'idle' ? <button type="button" className="wd-reply__undo" onClick={() => { reply.undo?.(); setReply({ text: 'Rückgängig gemacht.', tone: 'action' }); }} data-testid="mora-undo">Rückgängig</button> : null}
+            {reply?.undo && state === 'idle' ? <button type="button" className="wd-reply__undo" disabled={busy} onClick={() => void undo()} data-testid="mora-undo">Rückgängig</button> : null}
           </div>
           {state === 'idle' ? <button type="button" className="wd-reply__close" onClick={() => { setReply(null); setAsked(null); }} aria-label="Antwort schließen"><X size={16} /></button> : null}
         </div>
@@ -100,7 +117,7 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
         <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
           placeholder={phone ? 'Frag MÔRA · „Michelle ist da“' : 'Frag MÔRA · „hak Herbstrot ab“ · @Bereich'} aria-label="Frag MÔRA" data-testid="world-ask-input" enterKeyHint="send" />
         {Speech ? <button type="button" onClick={listen} aria-pressed={listening} aria-label="Sprechen" data-testid="world-ask-mic"><Mic size={18} /></button> : null}
-        <button type="submit" aria-label="Senden" data-testid="world-ask-send" disabled={state !== 'idle'}><Send size={18} /></button>
+        <button type="submit" aria-label="Senden" data-testid="world-ask-send" disabled={busy || state !== 'idle'}><Send size={18} /></button>
       </form>
     </div>
   );
