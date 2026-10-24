@@ -1,5 +1,5 @@
 'use client';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 import { listCompanyFiles } from '@/lib/api/filesClient';
@@ -25,6 +25,8 @@ export function useWorld() {
   const companyId = sessionCompany || navCompany;
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const enabled = hasSession && Boolean(companyId);
+  const loadDayStatus = useDayStore((s) => s.loadCompany);
+  useEffect(() => { void loadDayStatus(enabled ? companyId : null); }, [enabled, companyId, loadDayStatus]);
   const tree = useQuery({
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
