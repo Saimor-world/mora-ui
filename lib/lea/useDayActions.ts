@@ -36,7 +36,7 @@ export function useDayActions(companyId: string | null) {
   const addForTomorrow = useCallback(async (title: string) => {
     const t = new Date();
     t.setDate(t.getDate() + 1);
-    const res = await corePost('/v3/tasks', { title, due_date: localISO(t) }).catch(() => null);
+    const res = await corePost('/v3/tasks', { title, due_date: localISO(t), company_id: companyId ?? undefined }).catch(() => null);
     const created = (res && (res.data ?? res)) as WorldTask | null;
     if (!created?.id) return false;
     patch((l) => [...l, created]);
