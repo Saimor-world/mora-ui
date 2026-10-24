@@ -124,6 +124,13 @@ export function planetCounts(p: FPlanet) {
   return { folders: p.moons.length, docs, notes, events, items: p.moons.reduce((n, m) => n + m.count, 0), open, overdue: p.stars.filter((s) => s.overdue).length };
 }
 
+/** Die zwei Kacheln für einen Planeten – dieselben im Universe-Fokus und im Finder. */
+export function focusTiles(p: FPlanet): Array<[string, number, string]> {
+  const c = planetCounts(p);
+  if (p.kind === 'tasks') return [['Offen', c.open, c.open === 1 ? 'Aufgabe' : 'Aufgaben'], ['Überfällig', c.overdue, c.overdue ? 'braucht dich' : 'nichts drängt']];
+  return [['Ordner', c.folders, c.folders === 1 ? 'kreist als Mond' : 'kreisen als Monde'], [c.events ? 'Termine' : 'Einträge', c.events || c.items, c.events ? 'im Kalender' : 'in den Ordnern']];
+}
+
 export function formatModified(iso?: string | null): string {
   if (!iso) return '–';
   const d = new Date(iso.endsWith('Z') || /[+-]\d\d:\d\d$/.test(iso) ? iso : `${iso}Z`);

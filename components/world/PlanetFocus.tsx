@@ -2,7 +2,7 @@
 import React from 'react';
 import { ArrowUpRight, Check, MessageCircle, UserCheck, X } from 'lucide-react';
 import { liveHints } from '@/components/finderverse/FinderVerse';
-import { planetCounts, type FPlanet } from '@/lib/lea/finder';
+import { focusTiles, planetCounts, type FPlanet } from '@/lib/lea/finder';
 import { personOf } from '@/lib/lea/day';
 import type { LiveDay } from '@/lib/lea/live';
 import { localISO, type WorldTask } from '@/lib/lea/world';
@@ -24,9 +24,7 @@ export function PlanetFocus({ planet, day, phone, readOnly, onZoom, onClose, onA
   onArrived: () => void;
 }) {
   const c = planetCounts(planet);
-  const tiles: Array<[string, number, string]> = planet.kind === 'tasks'
-    ? [['Offen', c.open, c.open === 1 ? 'Aufgabe' : 'Aufgaben'], ['Überfällig', c.overdue, c.overdue ? 'braucht dich' : 'nichts drängt']]
-    : [['Ordner', c.folders, c.folders === 1 ? 'kreist als Mond' : 'kreisen als Monde'], [c.events ? 'Termine' : 'Einträge', c.events || c.items, c.events ? 'im Kalender' : 'in den Ordnern']];
+  const tiles = focusTiles(planet);
   const hasEvents = c.events > 0;
   const firstOpen = planet.kind === 'tasks' ? day.open[0]?.task ?? null : null;
   const arrivable = hasEvents && !day.running && day.next && day.next.date === localISO() ? day.next : null;

@@ -3,9 +3,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Calendar, CheckCircle2, Circle, FileText, Folder, FolderPlus, LayoutList, Link2, Orbit, Sparkles, StickyNote, Upload, type LucideIcon } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
 import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
-import { formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
+import { focusTiles, formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
 import { matteTone } from '@/lib/universe/matteTone';
 import type { LiveDay } from '@/lib/lea/live';
+
+/** „1 Eintrag“, „3 Einträge“. */
+const entries = (n: number) => `${n} ${n === 1 ? 'Eintrag' : 'Einträge'}`;
 
 export type FinderView = 'universe' | 'list';
 export type RolePreview = 'owner' | 'department' | 'member';
@@ -51,7 +54,7 @@ export function liveHints(planet: FPlanet, day: LiveDay): string[] {
     // Kein Wiederholen der Zahlen aus den Kacheln: lieber das zuletzt Geänderte nennen.
     const last = planet.moons.flatMap((m) => m.stars.map((s) => ({ s, m }))).filter((x) => x.s.modified).sort((a, b) => String(b.s.modified).localeCompare(String(a.s.modified)))[0];
     if (last) out.push(`Zuletzt geändert: ${last.s.name} in ${last.m.name}.`);
-    else if (!events.length) out.push(`${c.folders} Ordner, ${c.items} Einträge.`);
+    else if (!events.length) out.push(`${c.folders} Ordner, ${entries(c.items)}.`);
   }
   return out.slice(0, 4);
 }
@@ -72,7 +75,9 @@ export function FinderVerse(p: FinderVerseProps) {
   const [form, setForm] = useState<null | 'folder' | 'note'>(null);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [msg, setMsg] = useState<{ text: string; tone: 'ok' | 'error' } | null>(null);
+  const ok = (text: string) => setMsg({ text, tone: 'ok' });
+  const fail = (text: string) => setMsg({ text, tone: 'error' });
   const [focusIdx, setFocusIdx] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -82,7 +87,7 @@ export function FinderVerse(p: FinderVerseProps) {
   useEffect(() => { if (moonId && !moon) setMoonId(null); }, [moonId, moon]);
   const stars: Star[] = moon ? moon.stars : planet.stars;
   const rows = useMemo(() => [
-    ...(moon ? [] : planet.moons.map((m) => ({ type: 'moon' as const, id: m.id, name: m.name, kind: 'Ordner', modified: m.modified, hint: `${m.count} Einträge`, moon: m }))),
+    ...(moon ? [] : planet.moons.map((m) => ({ type: 'moon' as const, id: m.id, name: m.name, kind: 'Ordner', modified: m.modified, hint: `${entries(m.count)}`, moon: m }))),
     ...stars.map((s) => ({ type: 'star' as const, id: s.id, name: s.name, kind: kindLabel(s.kind), modified: s.modified, hint: s.hint, star: s })),
   ], [moon, planet.moons, stars]);
 
@@ -122,10 +127,10 @@ export function FinderVerse(p: FinderVerseProps) {
     if (!v || busy) return;
     setBusy(true); setMsg(null);
     try {
-      if (form === 'folder') { await p.onCreateFolder(v); setMsg(`Ordner „${v}“ angelegt.`); }
-      if (form === 'note' && moon) { await p.onCreateNote(moon.id, v); setMsg(`Notiz „${v}“ angelegt.`); }
+      if (form === 'folder') { await p.onCreateFolder(v); ok(`Ordner „${v}“ angelegt.`); }
+      if (form === 'note' && moon) { await p.onCreateNote(moon.id, v); ok(`Notiz „${v}“ angelegt.`); }
       setText(''); setForm(null);
-    } catch { setMsg('Das hat nicht geklappt. CORE hat abgelehnt.'); }
+    } catch { fail('Das hat nicht geklappt. Bitte noch einmal.'); }
     setBusy(false);
   };
   const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,16 +138,14 @@ export function FinderVerse(p: FinderVerseProps) {
     e.target.value = '';
     if (!f || !moon) return;
     setBusy(true); setMsg(null);
-    try { await p.onUpload(moon.id, f); setMsg(`„${f.name}“ hochgeladen.`); } catch { setMsg('Hochladen hat nicht geklappt.'); }
+    try { await p.onUpload(moon.id, f); ok(`„${f.name}“ hochgeladen.`); } catch { fail('Hochladen hat nicht geklappt. Bitte noch einmal.'); }
     setBusy(false);
   };
 
   const c = planetCounts(planet);
-  const tiles: Array<[string, number, string]> = planet.kind === 'tasks'
-    ? [['Offen', c.open, 'Aufgaben'], ['Überfällig', c.overdue, 'seit gestern oder länger']]
-    : moon
-      ? [['Einträge', moon.count, 'in diesem Ordner'], ['Notizen', moon.stars.filter((s) => s.kind === 'note').length, 'persönliche Notizen']]
-      : [['Ordner', c.folders, 'kreisen als Monde'], [c.events ? 'Termine' : 'Dokumente', c.events || c.docs, c.events ? 'im Kalender' : 'verlinkte Dokumente']];
+  const tiles: Array<[string, number, string]> = moon && planet.kind !== 'tasks'
+    ? [['Einträge', moon.count, 'in diesem Ordner'], ['Notizen', moon.stars.filter((s) => s.kind === 'note').length, 'persönliche Notizen']]
+    : focusTiles(planet);
   const hints = liveHints(planet, day);
   const canFolder = !readOnly && planet.kind !== 'tasks' && (planet.kind === 'department' || planet.spaces.length > 0) && !moon;
   const canInside = !readOnly && Boolean(moon);
@@ -182,12 +185,12 @@ export function FinderVerse(p: FinderVerseProps) {
               <div className="fv-center">
                 <WorldPlanetSphere tone={moon ? moonTone(moon) : planet.tone} size={phone ? 104 : 150} />
                 <span className="fv-center__name">{centerName}</span>
-                <span className="fv-center__meta">{moon ? `${moon.count} Einträge${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
+                <span className="fv-center__meta">{moon ? `${entries(moon.count)}${moon.spaceName ? ` · ${moon.spaceName}` : ''}` : planet.kind === 'tasks' ? `${c.open} offen` : `${c.folders} Ordner`}</span>
               </div>
               {ring.map((m, i) => {
                 const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2;
                 return (
-                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id, `${50 + Math.cos(a) * 34}% ${50 + Math.sin(a) * 30}%`)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${m.count} Einträge`}>
+                  <button key={m.id} type="button" className="fv-moon" style={{ left: `${50 + Math.cos(a) * 34}%`, top: `${50 + Math.sin(a) * 30}%` }} onClick={() => goMoon(m.id, `${50 + Math.cos(a) * 34}% ${50 + Math.sin(a) * 30}%`)} data-testid={`fv-moon-${m.id}`} aria-label={`Ordner ${m.name} öffnen · ${entries(m.count)}`}>
                     <WorldPlanetSphere tone={moonTone(m)} size={phone ? 48 : 64}><span className="wd-badge" aria-hidden>{m.count}</span></WorldPlanetSphere>
                     <span className="fv-moon__name">{m.name}</span>
                   </button>
@@ -261,11 +264,11 @@ export function FinderVerse(p: FinderVerseProps) {
           {form ? (
             <form className="fv-form" onSubmit={submit} data-testid="fv-form">
               <input autoFocus value={text} onChange={(e) => setText(e.target.value)} placeholder={form === 'folder' ? 'Name des Ordners' : 'Titel der Notiz'} aria-label={form === 'folder' ? 'Name des Ordners' : 'Titel der Notiz'} data-testid="fv-form-input" maxLength={120} />
-              <button type="submit" className="fv-btn" disabled={busy || !text.trim()}>{busy ? '…' : 'Anlegen'}</button>
+              <button type="submit" className="fv-btn" disabled={busy || !text.trim()}>{busy ? 'Legt an …' : 'Anlegen'}</button>
               <button type="button" className="fv-btn fv-btn--ghost" onClick={() => setForm(null)}>Abbrechen</button>
             </form>
           ) : null}
-          {msg ? <p className="fv-msg" role="status" data-testid="fv-msg">{msg}</p> : null}
+          {msg ? <p className="fv-msg" role="status" data-tone={msg.tone} data-testid="fv-msg">{msg.text}</p> : null}
           <input ref={fileRef} type="file" hidden onChange={onFile} data-testid="fv-file" />
           <p className="fv-eyebrow"><MoraStone size={14} /> Live-Hinweise</p>
           <ul className="fv-hints" data-testid="fv-hints">{hints.map((h) => <li key={h}>{h}</li>)}</ul>
