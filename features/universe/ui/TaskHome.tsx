@@ -4,7 +4,7 @@
  * zugeordnet) und oben EIN Eingabefeld für neue Aufgaben mit eingebauter Bereichswahl. */
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import type { WorldTask } from '@/lib/lea/world';
+import { shortDate, type WorldTask } from '@/lib/lea/world';
 import type { useDayActions } from '@/lib/lea/useDayActions';
 
 export type TaskHomePlanet = { id: string; name: string; moons: { id: string; name: string }[] };
@@ -63,7 +63,7 @@ export function TaskHomeSheet({ tasks, planets, actions, readOnly, onClose, phon
         <ul className="th-list">
           {loose.length ? loose.map((t) => (
             <li key={t.id} className="th-item">
-              <span className="th-title">{t.title}{t.due_date ? <small> · {t.due_date}</small> : null}</span>
+              <span className="th-title">{t.title}{t.due_date ? <small> · {shortDate(t.due_date.slice(0, 10))}</small> : null}</span>
               {!readOnly ? (
                 <PlacePicker planets={planets} value="" label={`Bereich für ${t.title}`} testid={`taskhome-assign-${t.id}`}
                   onChange={async (fid) => { if (!fid) return; setBusy(t.id); const ok = await actions.assignFolder(t, fid); setBusy(null); setNote(ok ? `„${t.title}“ liegt jetzt in ${nameOf(fid)}` : 'Zuordnen hat nicht geklappt – CORE nimmt den Bereich noch nicht an.'); }} />
