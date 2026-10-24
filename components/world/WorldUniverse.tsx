@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { MoraStone } from '@/components/os-kit';
 import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
@@ -212,7 +212,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             aria-label={`${planet.name} öffnen · ${planet.meta}`}
             data-testid={`world-planet-${planet.id}`}
           >
-            {planet.orbit ? <PlanetOrbit away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
+            {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
             {planet.traits ? <PlanetTraitsLayer traits={planet.traits} size={phone ? Math.max(52, slot?.size ?? 60) : (slot?.size ?? 60)} phone={phone} /> : null}
             <WorldPlanetSphere tone={planet.tone} className={`wd-tex-${planet.traits?.texture ?? 0}`} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
@@ -331,7 +331,9 @@ export function PlanetTraitsLayer({ traits, size, phone }: { traits: PlanetTrait
 
 const moonR_ = (n: number, base: number) => Math.round((base / 2) * (0.55 + Math.min(1, Math.sqrt(n) / 4)) * 10) / 10;
 
-export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1 }) {
+export function PlanetOrbit({ orbit, size, phone, away = 1, tone }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1; tone?: Record<string, string> }) {
+  // Je Planet ein eigener Verlauf: Monde tragen den Farbton ihres Planeten (CSS-Variablen --m-*).
+  const gid = `wd-moon-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const moons = orbit.moons.slice(0, phone ? 3 : MAX_MOONS); // Handy-Lite: höchstens drei Monde
   const stars = orbit.stars.slice(0, MAX_STARS);
   if (!moons.length && !stars.length) return null;
@@ -360,12 +362,12 @@ export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbi
     return { x: c + Math.cos(a) * starR, y: c + Math.sin(a) * starR };
   };
   return (
-    <span className="wd-orbit" style={{ width: box, height: box, marginLeft: -box / 2, marginTop: -box / 2 }} aria-hidden data-testid="world-planet-orbit">
+    <span className="wd-orbit" style={{ ...(tone as React.CSSProperties), width: box, height: box, marginLeft: -box / 2, marginTop: -box / 2 }} aria-hidden data-testid="world-planet-orbit">
       <svg width={box} height={box}>
         {/* Monde: dasselbe matte Steinmaterial wie die Planeten, eine Stufe dunkler, warmes Licht oben links. */}
         <defs>
-          <radialGradient id="wd-moon-stone" cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#7c9a84" /><stop offset="35%" stopColor="#3f6656" /><stop offset="75%" stopColor="#1d3a31" /><stop offset="100%" stopColor="#0c1c17" />
+          <radialGradient id={gid} cx="35%" cy="30%" r="75%">
+            <stop offset="0%" style={{ stopColor: 'var(--p-hi, #7c9a84)' }} /><stop offset="35%" style={{ stopColor: 'var(--p-base, #3f6656)' }} /><stop offset="75%" style={{ stopColor: 'var(--p-shadow, #1d3a31)' }} /><stop offset="100%" style={{ stopColor: 'var(--p-deep, #0c1c17)' }} />
           </radialGradient>
         </defs>
         {moons.map((m, i) => {
@@ -375,7 +377,7 @@ export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbi
             <g key={m.id}>
               <line className="wd-sublink" x1={c + Math.cos(p.a) * r0} y1={c + Math.sin(p.a) * r0} x2={p.x} y2={p.y} />
               {/* Ein Mond ist ein Ordner: Größe = Anzahl Inhalte, ein Jade-Schimmer = offene Aufgaben darin. */}
-              <circle className="wd-moondot" data-tasks={sub.some((st) => st.kind === 'task' && !st.done) ? 'true' : undefined} cx={p.x} cy={p.y} r={moonR_(m.stars.length, moonSize)} />
+              <circle className="wd-moondot" style={{ fill: `url(#${gid})` }} data-tasks={sub.some((st) => st.kind === 'task' && !st.done) ? 'true' : undefined} cx={p.x} cy={p.y} r={moonR_(m.stars.length, moonSize)} />
             </g>
           );
         })}

@@ -74,7 +74,12 @@ const FAMILY_SLOT: Record<MatteFamily, number> = { sand: 4, ton: 5, salbei: 3, s
  * (localStorage „mora-planet-variant“).
  */
 type Variant = { hues: Array<[number, number]>; L: { hi: number; base: number; mid: number; shadow: number; deep: number }; warmHi: number; rim: string };
-export const PLANET_VARIANTS: Record<'A' | 'B' | 'C', Variant> = {
+export const PLANET_VARIANTS: Record<'A' | 'B' | 'C' | 'D', Variant> = {
+  // D (Standard, Marius 24.10. abends: „zu ähnlich, muss abwechselnd sein“): sechs klar
+  // verschiedene Edelstein-Töne aus einer Welt – Jade, Kupfer, Schieferblau, Moos, Pflaume, Bernstein (Petrol fiel raus: neben Jade zu ähnlich).
+  // Reihenfolge wechselt kühl/warm, damit Nachbarn kontrastieren. Gleiches Werteband, gleiches
+  // warmes Licht, gleicher Goldrand; Sättigung pro Ton so gewählt, dass alle gleich kräftig wirken.
+  D: { hues: [[158, 30], [24, 34], [214, 26], [100, 22], [318, 18], [40, 32]], L: { hi: 58, base: 40, mid: 30, shadow: 15, deep: 7 }, warmHi: 0.3, rim: 'rgba(226, 196, 120, .45)' },
   // A: Jade-Monochrom, Goldrand
   A: { hues: [[150, 30], [158, 30], [166, 28], [174, 28], [182, 26], [190, 26]], L: { hi: 54, base: 38, mid: 29, shadow: 15, deep: 7 }, warmHi: 0, rim: 'rgba(226, 196, 120, .55)' },
   // B: Jade im Wechsel mit warmen Nebel-Komplementen (Kupfer/Bernstein), gleiches Werteband
@@ -83,8 +88,8 @@ export const PLANET_VARIANTS: Record<'A' | 'B' | 'C', Variant> = {
   C: { hues: [[156, 28], [168, 26], [180, 24], [192, 22], [148, 24], [200, 20]], L: { hi: 58, base: 41, mid: 31, shadow: 16, deep: 8 }, warmHi: 0.45, rim: 'rgba(226, 196, 120, .42)' },
 };
 function currentVariant(): Variant {
-  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); if (v === 'A' || v === 'B' || v === 'C') return PLANET_VARIANTS[v]; } catch { /* SSR */ }
-  return PLANET_VARIANTS.C;
+  try { const v = globalThis.localStorage?.getItem('mora-planet-variant'); if (v === 'A' || v === 'B' || v === 'C' || v === 'D') return PLANET_VARIANTS[v]; } catch { /* SSR */ }
+  return PLANET_VARIANTS.D;
 }
 const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; };
 

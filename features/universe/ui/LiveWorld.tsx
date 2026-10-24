@@ -217,7 +217,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         counts={counts}
         comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? world.day.sentence : undefined}
+        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
       {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
       {selected ? (
@@ -294,3 +294,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   );
 }
 
+
+/** Im Universum nur MÔRAs erster Satz, höchstens ~56 Zeichen – der Rest steht in „Heute“. */
+export function shortLine(s: string): string {
+  const first = (s || '').split(/(?<=[.!?])\s+/)[0].trim();
+  return first.length <= 56 ? first : `${first.slice(0, 54).replace(/[\s,·:]+\S*$/, '')} …`;
+}

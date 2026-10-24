@@ -550,7 +550,7 @@
 .th-chip, [data-testid="horizon-unassigned"] span { white-space: nowrap; }
 
 /* Monde v2: matter Stein (Jade-Familie), feiner Goldrand, Jade-Schimmer nur bei offenen Aufgaben. */
-.wd-moondot, .wd-planet .wd-moondot { fill: url(#wd-moon-stone); stroke: rgba(226, 196, 120, .5); stroke-width: .8; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
+.wd-moondot, .wd-planet .wd-moondot { stroke: rgba(226, 196, 120, .5); stroke-width: .8; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .6)); }
 .wd-moondot[data-tasks='true'] { stroke: rgba(150, 225, 190, .7); filter: drop-shadow(0 0 4px rgba(120, 210, 170, .7)) drop-shadow(0 1px 2px rgba(0, 0, 0, .5)); }
 /* Horizont: eine ruhige Zeile statt Versal-Label mit Umbruch. */
 .wd-horizon__row[data-testid="horizon-unassigned"] { flex-direction: row; justify-content: space-between; }
@@ -643,3 +643,9 @@
 .wd-atmo { box-shadow: 0 0 calc(10px + var(--atmo) * 30px) calc(3px + var(--atmo) * 10px) rgba(140, 215, 180, calc(.12 + var(--atmo) * .38)); }
 .wd-legend summary { color: #e6efe9; background: rgba(18, 26, 23, .8); border-color: rgba(226, 200, 140, .3); font-size: 16px; }
 .wd-legend { bottom: 280px; z-index: 901; }
+
+/* Farben D · stärkeres Polarlicht und Galaxieband (Marius 24.10. abends) */
+.wd-galaxy i { background: radial-gradient(closest-side, rgba(236, 208, 156, .32), rgba(120, 184, 166, .16) 45%, transparent 80%); }
+.wd-galaxy b { opacity: 1; }
+.wd-aurora { border-top-width: 3.5px; border-top-color: rgba(140, 244, 196, .95);
+  box-shadow: 0 -8px 18px -4px rgba(130, 236, 188, .75), 0 -14px 30px -8px rgba(196, 160, 240, .6); }
