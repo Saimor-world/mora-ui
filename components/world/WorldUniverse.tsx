@@ -206,7 +206,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             aria-label={`${planet.name} öffnen · ${planet.meta}`}
             data-testid={`world-planet-${planet.id}`}
           >
-            {planet.orbit ? <PlanetOrbit orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
+            {planet.orbit ? <PlanetOrbit away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
             <WorldPlanetSphere tone={planet.tone} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
               {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
             </WorldPlanetSphere>
@@ -273,7 +273,8 @@ const MAX_STARS = 8;
  * Sternpunkte und direkte Sterne (Aufgaben) – jeweils mit feiner Leuchtlinie. Nur Anzeige,
  * der Klick gehört dem Planeten. Mehr als Platz ist, steht als „+N“ da.
  */
-export function PlanetOrbit({ orbit, size, phone }: { orbit: WorldOrbit; size: number; phone: boolean }) {
+/** `away`: +1 liegt der Planet rechts der Mitte, −1 links – Monde rücken von der Verbindungslinie zur Mitte weg. */
+export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1 }) {
   const moons = orbit.moons.slice(0, MAX_MOONS);
   const stars = orbit.stars.slice(0, MAX_STARS);
   if (!moons.length && !stars.length) return null;
@@ -285,11 +286,15 @@ export function PlanetOrbit({ orbit, size, phone }: { orbit: WorldOrbit; size: n
   const c = box / 2;
   // Monde oben verteilt (Label darunter bleibt frei), Sterne gleichmäßig rundherum.
   const moonAt = (i: number, n: number) => {
-    const a = -Math.PI / 2 + (n === 1 ? -0.7 : (-1.1 + (2.2 * i) / Math.max(1, n - 1)));
+    const a = -Math.PI / 2 + away * (n === 1 ? 0.7 : 0.4) + (n === 1 ? 0 : (-1.1 + (2.2 * i) / Math.max(1, n - 1)));
     return { x: c + Math.cos(a) * moonR, y: c + Math.sin(a) * moonR, a };
   };
+  // Sterne nur auf dem Bogen ohne Beschriftung: unten (wo das Label steht) bleibt ein Sektor frei,
+  // damit keine Leuchtlinie den Namen kreuzt.
   const starAt = (i: number, n: number) => {
-    const a = -Math.PI / 2 + (2 * Math.PI * i) / n + 0.35;
+    const gap = 1.3; // freier Sektor um die Label-Seite (rad)
+    const span = 2 * Math.PI - 2 * gap;
+    const a = Math.PI / 2 + gap + (n === 1 ? span / 2 : (span * i) / (n - 1));
     return { x: c + Math.cos(a) * starR, y: c + Math.sin(a) * starR };
   };
   return (
@@ -317,7 +322,9 @@ export function PlanetOrbit({ orbit, size, phone }: { orbit: WorldOrbit; size: n
       </svg>
       {!phone ? moons.map((m, i) => {
         const p = moonAt(i, moons.length);
-        return <span key={m.id} className="wd-moonlabel" style={{ left: p.x, top: p.y - moonSize / 2 - 4 }}>{m.label}{m.stars.length ? ` · ${m.stars.length}` : ''}</span>;
+        // Steht das Planeten-Label oben (hintere Bahn), wird das Netz gespiegelt (CSS) – das Mond-Label wandert dann unter den Punkt.
+        const vars = { left: p.x, '--mt': `${p.y - moonSize / 2 - 4}px`, '--mb': `${box - p.y + moonSize / 2 + 4}px` } as React.CSSProperties;
+        return <span key={m.id} className="wd-moonlabel" style={vars}>{m.label}{m.stars.length ? ` · ${m.stars.length}` : ''}</span>;
       }) : null}
       {orbit.moons.length > MAX_MOONS ? <span className="wd-moremoons">+{orbit.moons.length - MAX_MOONS}</span> : null}
     </span>

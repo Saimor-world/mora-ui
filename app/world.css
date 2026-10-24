@@ -340,7 +340,7 @@
 .wd-stardot[data-overdue='true'] { fill: #f0b36a; }
 .wd-stardot[data-done='true'] { fill: rgba(243, 236, 214, .4); }
 .wd-planet[data-active='true'] .wd-sublink { stroke: rgba(240, 220, 160, .6); }
-.wd-moonlabel { position: absolute; transform: translate(-50%, -100%); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--os-type-meta-size); color: rgba(235, 231, 222, .72); text-shadow: 0 1px 6px rgba(0, 0, 0, .9); }
+.wd-moonlabel { position: absolute; top: var(--mt); transform: translate(-50%, -100%); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--os-type-meta-size); color: rgba(235, 231, 222, .72); text-shadow: 0 1px 6px rgba(0, 0, 0, .9); }
 .wd-moremoons { position: absolute; right: 0; top: 0; font-size: var(--os-type-meta-size); color: rgba(235, 231, 222, .6); }
 .wd-planet .wd-sphere { z-index: 1; }
 .wd-planet[data-active='true'] .wd-sphere { box-shadow: 0 0 0 2px rgba(232, 214, 160, .55), 0 0 36px 8px rgba(232, 214, 160, .28); }
@@ -487,3 +487,8 @@
 .wd-mora-line { z-index: 900; max-width: min(560px, calc(100% - 520px)); padding: 8px 16px; font-size: var(--os-type-small-size); line-height: 20px; background: var(--wd-glass); border-color: var(--wd-line-strong); transition: border-color var(--os-motion-fast) var(--os-motion-ease); }
 .wd-mora-line:hover { border-color: var(--wd-jade-line); }
 @media (max-width: 1279px) { .wd-mora-line { max-width: calc(100% - 360px); } }
+
+/* Hintere Bahn: Planeten-Label steht oben – Monde und Sterne gespiegelt nach unten, nichts kreuzt den Namen. */
+.wd-planet[data-depth='back'] .wd-orbit svg { transform: scaleY(-1); }
+.wd-planet[data-depth='back'] .wd-moonlabel { top: var(--mb); transform: translate(-50%, 0); }
+.wd-planet[data-depth='back'] .wd-moremoons { top: auto; bottom: 0; }
