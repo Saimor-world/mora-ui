@@ -17,7 +17,7 @@ import { PhoneHome } from './ui/PhoneHome';
 import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
 import { DayPanel } from '@/components/day/DayPanel';
 import { useWorld } from '@/lib/lea/useWorld';
-import { taskLineOf } from '@/lib/lea/live';
+import { taskLineOf, formatTaskLine } from '@/lib/lea/live';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { nextOpenToday } from '@/lib/lea/day';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
@@ -116,7 +116,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')]] as const : []),
-              ['Aufgaben · Organisation', ListTodo, tc ? tc.line : snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
+              ['Aufgaben · Organisation', ListTodo, tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (

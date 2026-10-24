@@ -242,6 +242,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <span>Aufgaben</span>
             <b>{world.day.taskLine}</b>
           </button>
+          <TaskHome tasks={world.tasks} planets={finderPlanets} actions={dayActions} readOnly={role === 'member'} />
           {companyView ? (
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
@@ -285,5 +286,45 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         />
       ) : null}
     </>
+  );
+}
+
+/* Aufgaben brauchen ein Zuhause (Marius, 24.10.2026): Ort = Ordner (folder_id). Ohne Ort liegt eine
+ * Aufgabe ruhig im Horizont, ein Klick ordnet sie zu; neue Aufgaben bekommen den Ort gleich mit. */
+type TaskHomePlanet = { id: string; name: string; moons: { id: string; name: string }[] };
+function TaskHome({ tasks, planets, actions, readOnly }: { tasks: import('@/lib/lea/world').WorldTask[]; planets: TaskHomePlanet[]; actions: ReturnType<typeof useDayActions>; readOnly: boolean }) {
+  const loose = tasks.filter((t) => !t.folder_id && t.status !== 'done');
+  const places = planets.flatMap((p) => p.moons.map((m) => ({ id: m.id, label: `${p.name} › ${m.name}` })));
+  const [place, setPlace] = React.useState('');
+  const [title, setTitle] = React.useState('');
+  const [note, setNote] = React.useState<string | null>(null);
+  if (!places.length) return null;
+  const first = loose[0];
+  return (
+    <div data-testid="horizon-taskhome">
+      <div className="wd-horizon__row wd-ohneort" data-testid="horizon-ohne-ort">
+        <span>ohne Ort</span>
+        <b>{loose.length ? `${loose.length} · ${first.title}` : 'alle Aufgaben haben einen Ort'}</b>
+      </div>
+      {!readOnly ? (
+        <div className="wd-ohneort wd-taskhome-act">
+          <select aria-label="Ort wählen" value={place} onChange={(e) => setPlace(e.target.value)} data-testid="taskhome-place">
+            <option value="">Ort wählen …</option>
+            {places.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+          </select>
+          {first ? (
+            <button type="button" className="wd-horizon__row" disabled={!place} data-testid="taskhome-assign"
+              onClick={async () => { const ok = await actions.assignFolder(first, place); setNote(ok ? `„${first.title}“ zugeordnet` : 'Zuordnen geht erst, wenn CORE den Ort beim Bearbeiten annimmt.'); }}>zuordnen</button>
+          ) : null}
+        </div>
+      ) : null}
+      {!readOnly ? (
+        <form className="wd-ohneort wd-taskhome-act" onSubmit={async (e) => { e.preventDefault(); if (!title.trim()) return; const ok = await actions.addTask(title.trim(), place || null); setNote(ok ? (place ? 'Aufgabe mit Ort angelegt' : 'Aufgabe ohne Ort angelegt') : 'Anlegen fehlgeschlagen'); if (ok) setTitle(''); }}>
+          <input aria-label="Neue Aufgabe" placeholder="Neue Aufgabe …" value={title} onChange={(e) => setTitle(e.target.value)} style={{ minHeight: 44, flex: 1, background: 'transparent', color: 'inherit', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, padding: '0 10px' }} data-testid="taskhome-title" />
+          <button type="submit" className="wd-horizon__row" data-testid="taskhome-add">anlegen</button>
+        </form>
+      ) : null}
+      {note ? <p className="wd-horizon__foot" role="status">{note}</p> : null}
+    </div>
   );
 }

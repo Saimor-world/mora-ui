@@ -507,3 +507,19 @@
 .wd-source[data-state='empty'] { opacity: .3; }
 /* Handy: Monde und Sterne erst am gewählten Planeten – sonst drängen sie sich in die Namen der Nachbarn. */
 .wd-universe[data-phone='true'] .wd-planet:not([data-selected='true']):not([data-active='true']):not(:focus-visible) .wd-orbit { display: none; }
+
+/* v4 Feinschliff (Marius, 24.10.2026): leisere Bahnen, eine Schriftlinie, Monde mit Bedeutung. */
+.wd-orbits ellipse { stroke: rgba(214, 226, 218, .09); stroke-width: .75; }
+.wd-name { font-weight: 500; letter-spacing: -.01em; }
+.wd-meta, .wd-moonlabel { font-weight: 400; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.wd-sublink { stroke: rgba(196, 226, 210, .18); filter: none; }
+.wd-moondot { fill: rgba(207, 214, 207, .78); stroke: rgba(255, 255, 255, .22); filter: none; }
+.wd-moondot[data-tasks='true'] { fill: #bfe3cf; filter: drop-shadow(0 0 5px rgba(150, 225, 190, .75)); }
+.wd-stardot[data-kind='task'] { fill: #d9f2e4; filter: drop-shadow(0 0 4px rgba(150, 225, 190, .85)); }
+.wd-ohneort { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+.wd-ohneort select { min-height: 44px; background: rgba(255,255,255,.04); color: inherit; border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 0 8px; max-width: 180px; }
+/* Eine Schriftgröße für alle Namen – Tiefe zeigt die Kugel, nicht die Schrift (×0,85 ausgeglichen). */
+.wd-planet[data-depth='back'] .wd-label { transform: translateX(-50%) scale(1.1765); transform-origin: 50% 100%; }
+.wd-taskhome-act { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.wd-taskhome-act select, .wd-taskhome-act input { flex: 1 1 auto; min-width: 0; max-width: none; }
+.wd-taskhome-act button { flex: 0 0 auto; width: auto; min-height: 44px; padding: 0 12px; }

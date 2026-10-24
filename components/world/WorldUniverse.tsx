@@ -281,6 +281,9 @@ const MAX_STARS = 8;
  * der Klick gehört dem Planeten. Mehr als Platz ist, steht als „+N“ da.
  */
 /** `away`: +1 liegt der Planet rechts der Mitte, −1 links – Monde rücken von der Verbindungslinie zur Mitte weg. */
+/** Mondradius wächst mit der Wurzel der Inhalte – leer klein, voll deutlich, nie größer als ein Planetendetail. */
+const moonR_ = (n: number, base: number) => Math.round((base / 2) * (0.55 + Math.min(1, Math.sqrt(n) / 4)) * 10) / 10;
+
 export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1 }) {
   const moons = orbit.moons.slice(0, MAX_MOONS);
   const stars = orbit.stars.slice(0, MAX_STARS);
@@ -313,12 +316,8 @@ export function PlanetOrbit({ orbit, size, phone, away = 1 }: { orbit: WorldOrbi
           return (
             <g key={m.id}>
               <line className="wd-sublink" x1={c + Math.cos(p.a) * r0} y1={c + Math.sin(p.a) * r0} x2={p.x} y2={p.y} />
-              {sub.map((st, j) => {
-                const b = p.a + (-0.9 + (1.8 * j) / Math.max(1, sub.length - 1)) * (sub.length > 1 ? 1 : 0);
-                const d = moonSize / 2 + (phone ? 7 : 10);
-                return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={p.x} y1={p.y} x2={p.x + Math.cos(b) * d} y2={p.y + Math.sin(b) * d} /><circle className="wd-stardot" data-kind={st.kind} cx={p.x + Math.cos(b) * d} cy={p.y + Math.sin(b) * d} r={phone ? 1.6 : 2.2} /></g>;
-              })}
-              <circle className="wd-moondot" cx={p.x} cy={p.y} r={moonSize / 2} />
+              {/* Ein Mond ist ein Ordner: Größe = Anzahl Inhalte, ein Jade-Schimmer = offene Aufgaben darin. */}
+              <circle className="wd-moondot" data-tasks={sub.some((st) => st.kind === 'task' && !st.done) ? 'true' : undefined} cx={p.x} cy={p.y} r={moonR_(m.stars.length, moonSize)} />
             </g>
           );
         })}

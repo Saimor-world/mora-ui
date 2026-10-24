@@ -115,6 +115,17 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
     for (let i = 0; i < count; i++, k++) slots.push({ ring, angle: startAngle(i, count, ring), size: sizes[k] });
   });
   const ropts = { width, height, phone, labels: opts.labels };
+  // Ruhig zuerst: alle Planeten gleichmäßig auf EINER Bahn (gleiche Winkelabstände). Nur wenn das
+  // nicht kollisionsfrei passt, greifen mehrere Bahnen und der Koordinatenabstieg.
+  if (n >= 2 && n <= (phone ? 7 : 8)) {
+    const ry1 = phone ? outerRy * 0.92 : Math.min(outerRy, outerRx * TILT);
+    const ring1: OrbitRing = { rx: outerRx * (phone ? 1 : 0.96), ry: ry1, period: 120 };
+    for (let r = 0; r < 12; r++) {
+      const off = -Math.PI / 2 + (r * Math.PI) / (6 * n);
+      const even: OrbitLayout = { scale, cx, cy, mora, rings: [ring1], slots: sizes.map((size, i) => ({ ring: 0, angle: off + (2 * Math.PI * i) / n, size })) };
+      if (layoutOverlap(even, ropts, phone ? 0 : 6) === 0) return even;
+    }
+  }
   let layout: OrbitLayout = { scale, cx, cy, mora, rings, slots };
   resolveCollisions(layout, ropts);
   // Bleibt etwas übrig (enge Handy-Fläche), mit gedrehten Startwinkeln neu versuchen; das beste Bild gewinnt.

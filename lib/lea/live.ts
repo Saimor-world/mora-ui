@@ -28,16 +28,21 @@ export interface LiveDay {
 }
 
 /** Eine Quelle der Wahrheit für Aufgaben-Zeilen: „heute fällig“ ist nicht „offen“. */
+/** EINE Formulierung für Aufgabenzahlen – Planet, Horizont, MÔRA, Heute (auch ohne Live-Sitzung) und Glocke. */
+export function formatTaskLine(c: { openTotal: number; dueToday: number; overdue: number }): string {
+  if (!c.openTotal) return 'Alles erledigt';
+  if (!c.dueToday && !c.overdue) return `Heute nichts fällig · ${c.openTotal} offen`;
+  const parts = [c.dueToday ? `${c.dueToday} heute fällig` : '', c.overdue ? `${c.overdue} überfällig` : ''].filter(Boolean);
+  return `${parts.join(' · ')} · ${c.openTotal} offen`;
+}
+
 export function taskLineOf(tasks: WorldTask[], now = new Date()): { line: string; due: number; dueToday: number; overdue: number; inProgress: number; openTotal: number } {
   const iso = localISO(now);
   const notDone = tasks.filter((x) => x.status !== 'done');
   const overdue = notDone.filter((x) => x.due_date && x.due_date < iso).length;
   const due = notDone.filter((x) => x.due_date && x.due_date <= iso).length;
   const openTotal = notDone.length;
-  let line: string;
-  if (!openTotal) line = 'Alles erledigt';
-  else if (!due) line = `Heute nichts fällig · ${openTotal} offen`;
-  else line = `${due - overdue ? `${due - overdue} heute fällig` : ''}${due - overdue && overdue ? ' · ' : ''}${overdue ? `${overdue} überfällig` : ''} · ${openTotal} offen`;
+  const line = formatTaskLine({ openTotal, dueToday: due - overdue, overdue });
   return { line, due, dueToday: due - overdue, overdue, inProgress: notDone.filter((x) => x.status === 'in_progress').length, openTotal };
 }
 
