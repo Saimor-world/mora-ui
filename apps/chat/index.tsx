@@ -29,6 +29,8 @@ import { isLikelyFileOperationIntent, shouldPreferAgenticLoop } from '@/lib/chat
 import { renderMarkdown, normalizeAgentResponse, extractPlanId } from '@/lib/chat/format';
 import { toToolTrace, type ToolTraceStep } from '@/lib/chat/toolTrace';
 import { ToolTrace } from '@/components/chat/ToolTrace';
+import { CouncilCard } from '@/components/chat/CouncilCard';
+import { extractCouncil, type CouncilView } from '@/lib/chat/council';
 import { buildOpenIntentReceipt, toChatOpenableResult } from '@/lib/chat/openIntent';
 import { parseChatIntent } from '@/lib/chat/parseChatIntent';
 import { useNavStore } from '@/lib/store/navStore';
@@ -107,6 +109,8 @@ interface Message {
     recalledMemoryIds?: string[];
     /** Phase 1 "visible agency": safe trace of what Mora did (searched/read/acted) */
     toolTrace?: ToolTraceStep[];
+    /** MÔRA hat ihren Rat gefragt (convene_council) */
+    council?: CouncilView;
     /** MÔRA-Arbeitsmodus (Bauen/Recherche) und dessen Zusatzdaten */
     mode?: MoraMode;
     modeDetails?: MoraModeResult;
@@ -911,6 +915,7 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                             planId,
                             recalledMemoryIds: recalledMemoryIds && recalledMemoryIds.length > 0 ? recalledMemoryIds : undefined,
                             toolTrace: toToolTrace(agentResponse.tools_executed),
+                            council: extractCouncil(agentResponse.tools_executed as any) ?? undefined,
                         }]);
                         setIsLoading(false);
                         return;
@@ -1378,6 +1383,9 @@ export default function ChatApp({ paneId, initialData }: AppProps) {
                                             />}
                                             {msg.role === 'assistant' && msg.modeDetails && (
                                                 <MoraModeAnswer result={msg.modeDetails} isStandardMode={isStandardMode} />
+                                            )}
+                                            {msg.role === 'assistant' && msg.council && (
+                                                <CouncilCard council={msg.council} />
                                             )}
                                             {msg.role === 'assistant' && msg.toolTrace && msg.toolTrace.length > 0 && (
                                                 <ToolTrace steps={msg.toolTrace} />
