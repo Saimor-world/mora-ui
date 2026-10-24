@@ -243,12 +243,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
-                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : 'Posteingang ruhig'}</b>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>
-              <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-feed">
-                <span>Feed</span>
-                <b>{!horizon.feed ? '…' : horizon.feed.status === 'unavailable' ? 'nicht lesbar' : horizon.feed.items[0] ? horizon.feed.items[0].title : 'keine neuen Feed-Signale'}</b>
-              </button>
+              {/* Feed-Zeile entfernt (24.10.2026): allgemeine RSS-Einträge waren Rauschen; der Feed bleibt unter Post. */}
             </>
           ) : null}
           <p className="fv-eyebrow" style={{ marginTop: 12 }}>Wo die Arbeit liegt</p>

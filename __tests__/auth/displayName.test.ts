@@ -13,14 +13,15 @@ describe('names, never email addresses', () => {
     expect(firstName({ name: 'lea.k@beispiel.test', email: 'lea.k@beispiel.test' })).toBe('');
   });
 
-  it('calls the owner "Inhaberin" and everyone else "Mitglied" without a name', () => {
-    expect(displayName({ name: '', email: 'lea@beispiel.test', role: 'owner' })).toBe('Inhaberin');
-    expect(displayName({ email: 'team@beispiel.test', role: 'member' })).toBe('Mitglied');
+  it('never falls back to a gendered role word without a name', () => {
+    expect(displayName({ name: '', email: 'lea@beispiel.test', role: 'owner' })).toBe('');
+    expect(displayName({ email: 'team@beispiel.test', role: 'member' })).toBe('');
+    expect(displayName({ name: 'Marius Länder', email: 'm@x.test', role: 'owner' })).toBe('Marius Länder');
   });
 
   it('maps a CORE profile without full_name to a name, not to the email', () => {
     const user = mapProfileToUser({ user_id: 'u1', email: 'lea@beispiel.test', role: 'owner', tenant_id: 't1' } as never);
-    expect(user.name).toBe('Inhaberin');
+    expect(user.name).toBe('');
     expect(user.email).toBe('lea@beispiel.test');
   });
 });

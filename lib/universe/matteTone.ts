@@ -48,14 +48,28 @@ export function matteFamily(name: string): MatteFamily | null {
   return null;
 }
 
-export function matteTone(name: string, data: MatteData = {}): MatteTone {
-  const fam = matteFamily(name);
-  if (fam) return { family: fam, className: `planet--${fam}`, vars: {} };
+/**
+ * Eine Saimôr-Palette für alle Planeten (Marius, 24.10.: „die Farben passen nicht zum Gesamtbild“).
+ * Abgeleitet vom MÔRA-Stein: Jade, Meer-Jade, tiefes Petrol, Salbei, Sandgold, warmer Stein.
+ * Gleiche Sättigung und gleiche Helligkeitsleiter – die Planeten unterscheiden sich, wirken aber
+ * wie aus einem Material. Bekannte Bereiche bekommen einen festen Platz in der Palette.
+ */
+export const SAIMOR_PALETTE: ReadonlyArray<{ id: string; hue: number; sat: number }> = [
+  { id: 'jade', hue: 158, sat: 20 },
+  { id: 'meerjade', hue: 172, sat: 18 },
+  { id: 'petrol', hue: 188, sat: 16 },
+  { id: 'salbei', hue: 128, sat: 14 },
+  { id: 'sandgold', hue: 42, sat: 22 },
+  { id: 'stein', hue: 30, sat: 12 },
+];
+const FAMILY_SLOT: Record<MatteFamily, number> = { sand: 4, ton: 5, salbei: 3, stein: 2 };
 
+export function matteTone(name: string, data: MatteData = {}, index?: number): MatteTone {
+  const fam = matteFamily(name);
   const h = hash((name || '').trim().toLowerCase());
-  const [lo, hi] = BANDS[h % BANDS.length];
-  const hue = lo + ((h >>> 8) % (hi - lo + 1));
-  const sat = 10 + ((h >>> 16) % 15);
+  // Reihenfolge schlägt Name: Nachbarn bekommen nie denselben Ton.
+  const slot = index != null ? ((index % SAIMOR_PALETTE.length) + SAIMOR_PALETTE.length) % SAIMOR_PALETTE.length : fam ? FAMILY_SLOT[fam] : h % SAIMOR_PALETTE.length;
+  const { hue, sat } = SAIMOR_PALETTE[slot];
   const signal = Math.min(1, Math.log10(1 + (data.count ?? 0) + (data.activity ?? 0)) / 2); // 0..1
   const lift = Math.round(signal * 4);
   const s = sat + lift;

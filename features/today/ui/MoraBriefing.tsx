@@ -40,7 +40,7 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
       <Surface padding={5} data-testid="mora-briefing" data-scope="team">
         <Stack direction="row" gap={2} align="center" className="mb-3"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
         <Text data-testid="briefing-team">Dein Briefing umfasst deine Termine und Aufgaben oben.</Text>
-        <Text variant="meta" className="mt-1">Firmen-Quellen fasst MÔRA nur für die Inhaberin zusammen.</Text>
+        <Text variant="meta" className="mt-1">Firmen-Quellen fasst MÔRA nur in der Gesamtansicht zusammen.</Text>
       </Surface>
     );
   }

@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
 
-export interface HorizonMail { status: 'ok' | 'unavailable'; items: { id: string; subject: string; from?: string }[] }
+export interface HorizonMail { status: 'ok' | 'unavailable'; items: { id: string; subject: string; from?: string }[]; hidden?: number }
 export interface HorizonFeed { status: 'ok' | 'unavailable'; items: { id: string; title: string; source?: string }[] }
 export interface HorizonSource { key: string; label: string; state: 'connected' | 'empty'; sources: string[] }
 
@@ -10,6 +10,20 @@ function arr(raw: unknown, keys: string[]): Record<string, unknown>[] {
   if (Array.isArray(raw)) return raw as Record<string, unknown>[];
   if (raw && typeof raw === 'object') for (const k of keys) { const v = (raw as Record<string, unknown>)[k]; if (Array.isArray(v)) return v as Record<string, unknown>[]; }
   return [];
+}
+
+/**
+ * Rauschen für den Horizont (Marius, 24.10.2026): automatische Benachrichtigungen (GitHub,
+ * noreply, Newsletter) gehören nicht nach oben. Bleiben im Posteingang, nur nicht im Horizont.
+ */
+export function isNoiseMail(m: { subject?: string; from?: string }): boolean {
+  const from = (m.from ?? '').toLowerCase();
+  const subject = (m.subject ?? '').trim();
+  if (/(^|[<\s"])(no-?reply|do-?not-?reply|notifications?|newsletter|mailer-daemon|bounce|news)@/.test(from)) return true;
+  if (/github\.com|gitlab\.com|vercel\.com|linkedin\.com/.test(from)) return true;
+  // GitHub-Betreffzeilen: "[owner/repo] …" oder "Re: [owner/repo] …"
+  if (/^(re:\s*)?\[[\w.-]+\/[\w.-]+\]/i.test(subject)) return true;
+  return false;
 }
 
 /** Systemplaneten, die Kund:innen nicht sehen (Finanzen, Wache: intern). */
@@ -26,9 +40,10 @@ export function useHorizonSources(companyId: string | null, enabled: boolean) {
   const mail = useQuery({
     queryKey: ['lea-world', 'mail', companyId], enabled: on, staleTime: 60_000,
     queryFn: async (): Promise<HorizonMail> => {
-      const raw = await coreGet(`/v3/mail/messages?${q}&limit=5`, { isOptional: true });
+      const raw = await coreGet(`/v3/mail/messages?${q}&limit=20`, { isOptional: true });
       if (raw == null) return { status: 'unavailable', items: [] };
-      return { status: 'ok', items: arr(raw, ['messages', 'items']).map((m, i) => ({ id: String(m.id ?? i), subject: String(m.subject ?? '(ohne Betreff)'), from: m.from ? String(m.from) : undefined })) };
+      const all = arr(raw, ['messages', 'items']).map((m, i) => ({ id: String(m.id ?? i), subject: String(m.subject ?? '(ohne Betreff)'), from: m.from ? String(m.from) : undefined }));
+      return { status: 'ok', items: all.filter((m) => !isNoiseMail(m)), hidden: all.filter(isNoiseMail).length };
     },
   });
   const feed = useQuery({

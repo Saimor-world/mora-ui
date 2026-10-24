@@ -24,7 +24,11 @@ export interface OrbitOptions {
   /** Gewicht je Planet (gleiche Reihenfolge wie die Planeten). */
   weights: number[];
   phone: boolean;
+  /** Name und Anzahl Monde/Sterne je Planet: damit rechnet die Kollisionsprüfung (Beschriftung, Mondbogen). */
+  labels?: PlanetLabel[];
 }
+
+export interface PlanetLabel { name: string; meta?: string; moons?: number; stars?: number }
 
 /** Platz unter einem Planeten für Name und Zeile darunter. */
 export const LABEL_SPACE = 44;
@@ -71,7 +75,8 @@ function startAngle(index: number, count: number, ring: number): number {
   return (2 * Math.PI * index) / count + ring * 0.9 - Math.PI / 2 + 0.35;
 }
 
-export function layoutOrbits({ width, height, weights, phone }: OrbitOptions): OrbitLayout {
+export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
+  const { width, height, weights, phone } = opts;
   const scale = orbitScale(height, phone);
   const mora = moraSize(phone, scale);
   const maxWeight = Math.max(0, ...weights);
@@ -82,7 +87,9 @@ export function layoutOrbits({ width, height, weights, phone }: OrbitOptions): O
   const labelHalf = LABEL_HALF * scale;
   const cx = width / 2;
   const cy = height / 2 - labelSpace / 4;
-  const counts = ringCounts(weights.length);
+  const n = weights.length;
+  // Handy: ab 6 Planeten drei Bahnen, sonst fehlt der Platz für die Namen.
+  const counts = phone && n >= 6 && n <= 7 ? [2, Math.floor((n - 2) / 2), n - 2 - Math.floor((n - 2) / 2)] : ringCounts(n);
 
   // Außen: so weit, dass Planet und Name noch in der Fläche liegen.
   const outerRy = Math.max(0, Math.min(height - cy, cy) - biggest / 2 - labelSpace);
@@ -98,7 +105,8 @@ export function layoutOrbits({ width, height, weights, phone }: OrbitOptions): O
     const t = counts.length === 1 ? 1 : i / (counts.length - 1);
     const rx = counts.length === 1 ? Math.max(innerRx, Math.min(outerRx, Math.max(clear * 1.6, outerRx * 0.8))) : innerRx + (outerRx - innerRx) * t;
     const ry = counts.length === 1 ? Math.max(innerRy, Math.min(outerRy, rx * TILT)) : innerRy + (outerRy - innerRy) * t;
-    return { rx, ry: Math.min(ry, rx), period: 120 + i * 30 };
+    // Handy (hochkant): Bahnen dürfen höher als breit sein, sonst drängen sich Namen in der Mitte.
+    return { rx, ry: phone ? Math.max(Math.min(ry, rx), Math.min(outerRy * (0.62 + 0.38 * t), rx * 1.6)) : Math.min(ry, rx), period: 120 + i * 30 };
   });
 
   const slots: OrbitSlot[] = [];
@@ -106,7 +114,138 @@ export function layoutOrbits({ width, height, weights, phone }: OrbitOptions): O
   counts.forEach((count, ring) => {
     for (let i = 0; i < count; i++, k++) slots.push({ ring, angle: startAngle(i, count, ring), size: sizes[k] });
   });
-  return { scale, cx, cy, mora, rings, slots };
+  const ropts = { width, height, phone, labels: opts.labels };
+  let layout: OrbitLayout = { scale, cx, cy, mora, rings, slots };
+  resolveCollisions(layout, ropts);
+  // Bleibt etwas übrig (enge Handy-Fläche), mit gedrehten Startwinkeln neu versuchen; das beste Bild gewinnt.
+  let best = layoutOverlap(layout, ropts);
+  for (let seed = 1; best > 0 && seed < (phone ? 8 : 12); seed++) {
+    const trial: OrbitLayout = { ...layout, slots: slots.map((sl) => ({ ...sl, angle: sl.angle + (seed * Math.PI) / 6 + sl.ring * seed * 0.37 })) };
+    resolveCollisions(trial, ropts);
+    const o = layoutOverlap(trial, ropts);
+    if (o < best) { best = o; layout = trial; }
+  }
+  return layout;
+}
+
+/* ───────────────────────── Kollisionen (Marius, 24.10.2026) ─────────────────────────
+ * Jeder Planet belegt mehrere Rechtecke: Kugel (+ Sternkranz), Name samt Zeile (unten bei
+ * vorderen, oben bei hinteren Planeten) und den Mondbogen auf der Gegenseite. Ein
+ * Koordinatenabstieg probiert je Planet Winkel auf allen Ringen und nimmt den mit der
+ * kleinsten Überdeckung (andere Planeten, MÔRA, Rand). Funktioniert für beliebig viele Planeten.
+ */
+export interface Rect { x0: number; y0: number; x1: number; y1: number; kind: 'sphere' | 'label' | 'moons' }
+
+/** Geschätzte Breite eines Namens in px (Mittelwert der UI-Schrift, gekappt wie .wd-name). */
+export function labelWidth(name: string, phone: boolean, scale = 1): number {
+  const large = !phone && scale >= 1.2;
+  const per = phone ? 6.6 : large ? 8.6 : 7.6;
+  const max = phone ? 104 : large ? 168 : 132;
+  return Math.min(max, Math.max(36, (name || '').length * per)) + 8;
+}
+
+export function planetFootprint(layout: OrbitLayout, slot: OrbitSlot, label: PlanetLabel | undefined, phone: boolean): Rect[] {
+  const p = placeOnOrbit(layout, slot);
+  const k = p.front ? 1 : 0.85; // hintere Planeten sind kleiner gezeichnet
+  const s = (phone ? Math.max(52, slot.size) : slot.size) * k;
+  const r = s / 2;
+  const rects: Rect[] = [];
+  const starPad = label?.stars ? (phone ? 14 : 20) * k : 0;
+  rects.push({ x0: p.x - r - starPad, y0: p.y - r - starPad, x1: p.x + r + starPad, y1: p.y + r + starPad, kind: 'sphere' });
+  // Breiten wie in world.css: .wd-name/.wd-meta brechen bei 132 px (Full HD 168, Handy 104) um.
+  const large = !phone && layout.scale >= 1.2;
+  const maxW = phone ? 104 : large ? 168 : 132;
+  const nameRaw = label ? (label.name || '').length * (phone ? 6.6 : large ? 8.6 : 7.6) : LABEL_HALF * 2;
+  const metaRaw = label?.meta ? label.meta.length * (phone ? 5.6 : large ? 7 : 6.4) : 0;
+  const lw = (Math.max(36, Math.min(maxW, nameRaw), Math.min(maxW, metaRaw)) + 8) * k;
+  const extra = Math.max(0, Math.ceil(nameRaw / maxW) - 1) * (phone ? 18 : large ? 24 : 20) + Math.max(0, Math.ceil(metaRaw / maxW) - 1) * (large ? 20 : 16);
+  const lh = (LABEL_SPACE * layout.scale + extra) * k;
+  if (p.front) rects.push({ x0: p.x - lw / 2, y0: p.y + r + 6 * k, x1: p.x + lw / 2, y1: p.y + r + 6 * k + lh, kind: 'label' });
+  else rects.push({ x0: p.x - lw / 2, y0: p.y - r - 6 * k - lh, x1: p.x + lw / 2, y1: p.y - r - 6 * k, kind: 'label' });
+  if (label?.moons) {
+    const moonR = ((phone ? Math.max(52, slot.size) : slot.size) / 2 + (phone ? 22 : 34)) * k;
+    const m = (phone ? 10 : 14) * k;
+    const away = Math.cos(slot.angle) < 0 ? -1 : 1;
+    // Monde liegen auf einem Bogen zur Außenseite hin (siehe PlanetOrbit.moonAt).
+    const xa = away > 0 ? p.x - moonR * 0.65 - m : p.x - moonR - m;
+    const xb = away > 0 ? p.x + moonR + m : p.x + moonR * 0.65 + m;
+    if (p.front) rects.push({ x0: xa, y0: p.y - moonR - m, x1: xb, y1: p.y - r * 0.4, kind: 'moons' });
+    else rects.push({ x0: xa, y0: p.y + r * 0.4, x1: xb, y1: p.y + moonR + m, kind: 'moons' });
+  }
+  return rects;
+}
+
+const PAD = 6;
+function overlap(a: Rect, b: Rect, pad = PAD): number {
+  const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0) + pad;
+  const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0) + pad;
+  return w > 0 && h > 0 ? w * h : 0;
+}
+function moraRect(layout: OrbitLayout): Rect {
+  const r = layout.mora / 2 + 4;
+  return { x0: layout.cx - r, y0: layout.cy - r, x1: layout.cx + r, y1: layout.cy + r, kind: 'sphere' };
+}
+function outside(r: Rect, width: number, height: number): number {
+  const dx = Math.max(0, -r.x0) + Math.max(0, r.x1 - width);
+  const dy = Math.max(0, -r.y0) + Math.max(0, r.y1 - height);
+  return (dx + dy) * 40;
+}
+
+/**
+ * Summe aller Überdeckungen im Layout (0 = kollisionsfrei). `pad`: geforderter Mindestabstand;
+ * der Löser zielt auf 6 px Luft, 0 prüft echte Überlappung.
+ */
+export function layoutOverlap(layout: OrbitLayout, opts: { width: number; height: number; phone: boolean; labels?: PlanetLabel[] }, pad = PAD): number {
+  const feet = layout.slots.map((sl, i) => planetFootprint(layout, sl, opts.labels?.[i], opts.phone));
+  const mora = moraRect(layout);
+  let total = 0;
+  feet.forEach((f, i) => {
+    f.forEach((r) => { total += overlap(r, mora, pad) + outside(r, opts.width, opts.height); });
+    for (let j = i + 1; j < feet.length; j++) for (const a of f) for (const b of feet[j]) total += overlap(a, b, pad);
+  });
+  return total;
+}
+
+function resolveCollisions(layout: OrbitLayout, opts: { width: number; height: number; phone: boolean; labels?: PlanetLabel[] }) {
+  const n = layout.slots.length;
+  if (n < 1) return;
+  const mora = moraRect(layout);
+  const cost = (i: number, slot: OrbitSlot, feet: Rect[][]) => {
+    const f = planetFootprint(layout, slot, opts.labels?.[i], opts.phone);
+    let c = 0;
+    for (const r of f) {
+      c += overlap(r, mora) + outside(r, opts.width, opts.height);
+      for (let j = 0; j < n; j++) if (j !== i) for (const b of feet[j]) c += overlap(r, b);
+    }
+    return c;
+  };
+  const feet = layout.slots.map((sl, i) => planetFootprint(layout, sl, opts.labels?.[i], opts.phone));
+  const STEPS = 72;
+  for (let pass = 0; pass < 8; pass++) {
+    let moved = false;
+    for (let i = 0; i < n; i++) {
+      const cur = layout.slots[i];
+      const here = cost(i, cur, feet);
+      if (here === 0) continue;
+      let best = cur;
+      let bestC = here;
+      for (let ring = 0; ring < layout.rings.length; ring++) {
+        for (let s = 0; s < STEPS; s++) {
+          const cand = { ...cur, ring, angle: cur.angle + (2 * Math.PI * s) / STEPS };
+          if (cand.angle === cur.angle && ring === cur.ring) continue;
+          // kleine Vorliebe für den alten Platz/Ring: das Bild springt nicht ohne Not
+          const c = cost(i, cand, feet) + (ring !== cur.ring ? 1 : 0) + Math.min(s, STEPS - s) * 0.01;
+          if (c < bestC) { bestC = c; best = cand; }
+        }
+      }
+      if (best !== cur) {
+        layout.slots[i] = best;
+        feet[i] = planetFootprint(layout, best, opts.labels?.[i], opts.phone);
+        moved = true;
+      }
+    }
+    if (!moved) break;
+  }
 }
 
 export interface PlacedPlanet { x: number; y: number; front: boolean; z: number }

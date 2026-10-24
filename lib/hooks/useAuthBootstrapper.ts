@@ -29,7 +29,7 @@ import { resolveCompanySelection } from '@/lib/auth/companySelection';
 export function mapProfileToUser(profile: UserProfile): User {
     return {
         id: profile.user_id,
-        // Nie die E-Mail-Adresse als Name: echter Name, sonst Inhaberin/Mitglied.
+        // Nie die E-Mail-Adresse als Name: echter Name, sonst leer (neutral begrüßen).
         name: displayName({ name: profile.full_name, email: profile.email, role: profile.role }),
         email: profile.email,
         role: profile.role as UserRole,

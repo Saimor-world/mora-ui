@@ -57,7 +57,7 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   const tomorrow = tasks.filter((x) => x.status !== 'done' && x.due_date === tomorrowIso);
 
   let sentence: string;
-  const openNames = open.map((o) => o.task.title.split(':')[0]);
+  const openNames = summarizeTitles(open.map((o) => o.task.title.split(':')[0]));
   if (stale && !running) sentence = `Der Termin mit ${personOf(stale.title)} um ${stale.time} ist noch nicht abgeschlossen.`;
   else if (running) sentence = `${personOf(running.title)} ist da. Ich halte dir den Rest fern, bis ihr fertig seid.`;
   else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` Offen: ${plural(open.length, 'Aufgabe', 'Aufgaben')}.` : ' Sonst ist heute alles erledigt.'}`;
@@ -74,6 +74,25 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
     ahead = parts.length ? `Nach dem Abschluss: ${parts.join(' ')}` : tomorrow.length ? 'Nach dem Abschluss ist heute nichts mehr im Kalender. Für morgen steht schon etwas an.' : 'Nach dem Abschluss ist dein Tag frei – magst du morgen planen?';
   }
   return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, sentence, ahead };
+}
+
+/**
+ * Gleiche Titel nur einmal nennen („Mora-Sprechprobe live (3×)“), höchstens `max` Namen,
+ * der Rest als „N weitere“. Reihenfolge bleibt die der ersten Nennung.
+ */
+export function summarizeTitles(titles: string[], max = 3): string[] {
+  const counts = new Map<string, { label: string; n: number }>();
+  for (const raw of titles) {
+    const label = raw.trim();
+    if (!label) continue;
+    const key = label.toLocaleLowerCase('de-DE');
+    const hit = counts.get(key);
+    if (hit) hit.n += 1; else counts.set(key, { label, n: 1 });
+  }
+  const uniq = [...counts.values()].map((x) => (x.n > 1 ? `${x.label} (${x.n}×)` : x.label));
+  if (uniq.length <= max) return uniq;
+  const rest = uniq.length - max;
+  return [...uniq.slice(0, max), `${rest} ${rest === 1 ? 'weitere' : 'weitere'}`];
 }
 
 /** Kurze Zeile für einen Termin-Planeten im Universe. */

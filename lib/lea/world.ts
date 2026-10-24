@@ -69,7 +69,7 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
   const upcoming = upcomingEvents(input.events, input.now ?? new Date());
   return input.departments
     .filter((d) => d && d.id && d.name)
-    .map((d) => {
+    .map((d, idx) => {
       const spaces = d.spaces ?? [];
       const moons: WorldMoon[] = spaces.map((s) => ({ id: s.id, label: s.name, count: folderCount(s) }));
       let weight = spaces.length + moons.reduce((n, m) => n + m.count, 0);
@@ -78,6 +78,6 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
         weight += upcoming.length;
         meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       }
-      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }), weight, meta, moons };
+      return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }, idx), weight, meta, moons };
     });
 }

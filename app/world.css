@@ -493,3 +493,15 @@
 .wd-planet[data-depth='back'] .wd-orbit svg { transform: scaleY(-1); }
 .wd-planet[data-depth='back'] .wd-moonlabel { top: var(--mb); transform: translate(-50%, 0); }
 .wd-planet[data-depth='back'] .wd-moremoons { top: auto; bottom: 0; }
+
+/* Ruhiger (Marius, 24.10.2026): Mond-Namen und Quellen-Beschriftungen nur bei Hover/Fokus/Auswahl. */
+.wd-moonlabel { opacity: 0; transition: opacity var(--os-motion-fast) var(--os-motion-ease); }
+.wd-planet:hover .wd-moonlabel, .wd-planet:focus-visible .wd-moonlabel, .wd-planet[data-selected='true'] .wd-moonlabel { opacity: 1; }
+.wd-moremoons { opacity: .5; }
+.wd-source-ring { stroke: rgba(196, 226, 210, .06); }
+.wd-source { opacity: .55; transition: opacity var(--os-motion-fast) var(--os-motion-ease); }
+.wd-source i { width: 8px; height: 8px; box-shadow: 0 0 6px 1px rgba(150, 220, 190, .35); }
+.wd-source span, .wd-source small { opacity: 0; transition: opacity var(--os-motion-fast) var(--os-motion-ease); }
+.wd-source:hover, .wd-source:focus-visible { opacity: 1; }
+.wd-source:hover span, .wd-source:hover small, .wd-source:focus-visible span, .wd-source:focus-visible small { opacity: 1; }
+.wd-source[data-state='empty'] { opacity: .3; }

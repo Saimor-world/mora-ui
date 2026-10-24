@@ -4,7 +4,7 @@ import { useReducedMotion } from 'framer-motion';
 import { MoraStone } from '@/components/os-kit';
 import type { WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
-import { floatOffset, layoutOrbits, placeOnOrbit, type OrbitLayout } from '@/lib/universe/worldOrbits';
+import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 
 /**
@@ -69,7 +69,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   }, []);
 
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
     [size.width, size.height, planets, phone],
   );
 
@@ -151,7 +151,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         </svg>
       ) : null}
       {layout && sources?.length ? (() => {
-        const pts = sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)));
+        const rects = layout.slots.flatMap((sl, i) => planetFootprint(layout, sl, planets[i] ? { name: planets[i].name, meta: planets[i].meta, moons: planets[i].orbit?.moons.length ?? 0, stars: planets[i].orbit?.stars.length ?? 0 } : undefined, phone));
+        const pts = sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)), 130, rects);
         return sources.map((src, i) => {
         const { x, y } = pts[i];
         return (
@@ -242,10 +243,16 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
  * Positionen der Quellen auf der oberen Hälfte des äußeren Rings. Liegt ein Planet
  * (samt Label) zu nah, rückt die Quelle seitlich aus – Beschriftungen überlappen nicht.
  */
-export function sourcePositions(layout: OrbitLayout, n: number, planets: { x: number; y: number }[], minDist = 130) {
+export function sourcePositions(layout: OrbitLayout, n: number, planets: { x: number; y: number }[], minDist = 130, rects: Rect[] = []) {
   const ring = sourceRing(layout);
   const at = (a: number) => ({ x: layout.cx + Math.cos(a) * ring.rx, y: layout.cy + Math.sin(a) * ring.ry });
-  const clear = (a: number) => planets.every((p) => Math.hypot(at(a).x - p.x, at(a).y - p.y) >= minDist);
+  // Mit Rechtecken (Planet, Name, Mondbogen) prüft die Quelle echte Kollisionen statt nur Abstand.
+  const R = 26;
+  const clear = (a: number) => {
+    const q = at(a);
+    if (rects.length) return rects.every((r) => q.x + R < r.x0 || q.x - R > r.x1 || q.y + R < r.y0 || q.y - R > r.y1);
+    return planets.every((p) => Math.hypot(q.x - p.x, q.y - p.y) >= minDist);
+  };
   const used: number[] = [];
   return Array.from({ length: n }, (_, i) => {
     const base = Math.PI + (Math.PI * (i + 1)) / (n + 1);

@@ -30,11 +30,10 @@ describe('world from real data', () => {
     expect(buildWorld({ departments: [], events, now: NOW })).toEqual([]);
   });
 
-  it('gives each department a matte material from its name', () => {
+  it('gives each department a matte tone from one Saimôr palette, neighbours differ', () => {
     const [termine, kundinnen, lager] = buildWorld({ departments, events, now: NOW });
-    expect(termine.tone.className).toBe('planet--sand');
-    expect(kundinnen.tone.className).toBe('planet--ton');
-    expect(lager.tone.className).toBe('planet--stein');
+    for (const p of [termine, kundinnen, lager]) expect(p.tone.className).toBe('planet--tone');
+    expect(new Set([termine, kundinnen, lager].map((p) => p.tone.vars['--p-base'])).size).toBe(3);
   });
 
   it('only counts appointments from now on as upcoming', () => {
