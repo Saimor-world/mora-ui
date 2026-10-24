@@ -650,27 +650,39 @@
 .wd-aurora { border-top-width: 3.5px; border-top-color: rgba(140, 244, 196, .95);
   box-shadow: 0 -8px 18px -4px rgba(130, 236, 188, .75), 0 -14px 30px -8px rgba(196, 160, 240, .6); }
 
-/* Glas-Planeten: dunkel getönt, durchscheinend, Licht kommt von MÔRA (--lx/--ly zur Mitte). */
+/* Glas-Planeten v3: Authentische optische Brechung, MÔRA-Lichtquelle, farbtreue Tönung. */
 .wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
   --lx: 34%; --ly: 30%; --ox: 66%; --oy: 70%; --dx: -.6; --dy: -.6;
   border-radius: 50%;
+  position: relative;
   background:
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 22%),
+    radial-gradient(circle at var(--lx) var(--ly), rgba(255, 255, 255, .92) 0, var(--g-hi) 9%, transparent 22%),
     radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 46%),
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid) 0, var(--g-core) 72%);
+    radial-gradient(circle at 50% 50%, transparent 0 46%, var(--g-core) 94%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid) 0, rgba(12, 16, 14, .64) 100%);
   box-shadow:
     inset calc(var(--dx) * 3px) calc(var(--dy) * 3px) 3px -1px var(--g-edge),
-    inset calc(var(--dx) * -6px) calc(var(--dy) * -6px) 10px -4px rgba(0, 0, 0, .55),
+    inset calc(var(--dx) * -6px) calc(var(--dy) * -6px) 11px -3px rgba(0, 0, 0, .72),
     inset 0 0 0 1px var(--p-rim),
-    0 0 18px -6px var(--g-glow);
-  -webkit-backdrop-filter: blur(3px) saturate(1.1); backdrop-filter: blur(3px) saturate(1.1);
+    0 0 16px -5px var(--g-glow);
+  -webkit-backdrop-filter: blur(2px) saturate(1.18) brightness(1.12) contrast(1.06);
+  backdrop-filter: blur(2px) saturate(1.18) brightness(1.12) contrast(1.06);
 }
 .wd-sphere.planet--glass::before { display: none !important; }
-.wd-sphere.planet--glass::after { opacity: .12 !important; mix-blend-mode: screen !important; }
-.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wd-sphere.planet--glass::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(ellipse 70% 32% at var(--lx) var(--ly), rgba(255, 255, 255, .24) 0, transparent 65%);
+  mix-blend-mode: screen !important;
+  opacity: .75 !important;
+  clip-path: circle(50%);
+}
 .wd-planet .wd-moondot { opacity: .9; }
 
-/* Glas v2 (Marius 20:58): durchsichtiger, Hintergrund lebendiger und sichtbar DURCH die Kugeln. */
+/* Lebendiger Hintergrund: Nebel in Türkis/Violett/Kupfer + Sternstaub mit sanfter Drift. */
 .wd-neb, .wd-dust { position: absolute; left: 0; top: 0; border-radius: 50%; pointer-events: none; will-change: transform; mix-blend-mode: screen; }
 .wd-neb--a { width: 1100px; height: 700px; margin: -520px 0 0 -900px; background: radial-gradient(closest-side, rgba(70, 150, 140, .26), rgba(40, 90, 110, .1) 55%, transparent); animation: wd-neb-a 90s ease-in-out infinite alternate; }
 .wd-neb--b { width: 1000px; height: 760px; margin: -200px 0 0 -40px; background: radial-gradient(closest-side, rgba(120, 90, 170, .22), rgba(80, 60, 130, .08) 55%, transparent); animation: wd-neb-b 110s ease-in-out infinite alternate; }
@@ -682,17 +694,10 @@
 @keyframes wd-neb-b { to { transform: translate(-140px, -50px) scale(1.08); } }
 @keyframes wd-neb-c { to { transform: translate(90px, -70px) scale(1.15); } }
 @keyframes wd-dust { to { transform: translate(-400px, 150px); } }
-.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
-  background:
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 16%),
-    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 42%),
-    radial-gradient(circle at 50% 50%, transparent 0 52%, var(--g-core) 100%),
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid));
-  /* Linsenwirkung: leicht vergrößert, aufgehellt, getönt – der Hintergrund liegt sichtbar dahinter. */
-  -webkit-backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08); backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08);
-}
-.wd-sphere.planet--glass::after { opacity: .07 !important; }
-.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: saturate(1.4) brightness(1.2); backdrop-filter: saturate(1.4) brightness(1.2); }
-.wd-universe[data-phone='true'] .wd-neb--b, .wd-universe[data-phone='true'] .wd-dust { display: none; }
-.wd-universe[data-phone='true'] .wd-neb { animation-duration: 180s; }
+
+/* Handy-Performance & Begleit-App: 60fps auch auf älteren Handys durch Weglassen schwerer Shader */
+.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wd-universe[data-phone='true'] .wd-neb--b, .wd-universe[data-phone='true'] .wd-neb--c, .wd-universe[data-phone='true'] .wd-dust { display: none; }
+.wd-universe[data-phone='true'] .wd-neb--a { animation-duration: 180s; }
+.wd-universe[data-phone='true'] .wd-galaxy { contain: strict; }
 @media (prefers-reduced-motion: reduce) { .wd-neb, .wd-dust { animation: none !important; } }
