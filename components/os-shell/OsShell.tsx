@@ -21,7 +21,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
-import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { useIsSaimorInternal, useActiveCompanyIsDemo } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
@@ -109,6 +109,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const online = health.data?.state === 'online';
   const atmosphere = active.atmosphere ?? 'calm';
 
+  const activeDemo = useActiveCompanyIsDemo();
   const demoMode = preview && !userName;
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
@@ -141,7 +142,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
             <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow" className="os-shell__place">{active.title}</Text>{/* Kund:innen sehen den CORE-Zustand nur, wenn etwas nicht stimmt. */}{internal || preview || (!health.isLoading && !online) ? <span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung'}</Status></span> : null}{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
-            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} internal={internalUser} />
+            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode || activeDemo} internal={internalUser} />
             <Stack direction="row" gap={1} align="center">
               <ContextClock internal={internalUser} />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
