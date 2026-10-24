@@ -1,6 +1,8 @@
 import { FEATURE_MANIFESTS, DEFAULT_FEATURE_ID, getFeature, isFeatureVisible, navigationModel, resolveFeatureId, visibleFeatures } from '@/features/registry';
 
-const owner = { role: 'owner' as const, flags: new Set<string>() };
+// SAIMÔR's own owner (internal): sees Finance and Labs. Customers are tested below.
+const owner = { role: 'owner' as const, flags: new Set<string>(), internal: true };
+const customerOwner = { role: 'owner' as const, flags: new Set<string>() };
 
 describe('feature manifest registry', () => {
   it('has unique ids and complete manifests', () => {
@@ -33,6 +35,14 @@ describe('feature manifest registry', () => {
     expect(isFeatureVisible(finance, { role: 'member', flags: new Set() })).toBe(false);
     expect(isFeatureVisible(finance, { role: null, flags: new Set() })).toBe(false);
     expect(isFeatureVisible(finance, owner)).toBe(true);
+  });
+
+  it('hides SAIMÔR-internal places (Finance, Labs) from a customer company', () => {
+    const ids = visibleFeatures(customerOwner).map((m) => m.id);
+    expect(ids).not.toContain('finance');
+    expect(ids).not.toContain('labs');
+    expect(ids).toEqual(expect.arrayContaining(['today', 'post', 'knowledge', 'settings', 'universe']));
+    expect(resolveFeatureId('finance', customerOwner)).toBe('today');
   });
 
   it('local preview shows every surface (reads still fail closed)', () => {

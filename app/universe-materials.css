@@ -1,0 +1,128 @@
+/**
+ * Matte Planetenmaterialien aus visual-v1 (Antigravity/Gemini, 22.10.2026), übernommen aus
+ * C:/PersonalLobster/visual-v1/materials/materials.css. Regeln: matt wie Keramik oder Stein,
+ * Licht fest von oben links, kein Glanz, kein Glow. Weitere Planeten: lib/universe/matteTone.ts.
+ * Der Universe-Hintergrund bleibt das Bild aus main (deep-space-warm.jpg).
+ */
+:root {
+  --sv-jade: #6f8f78;
+  --sv-orbit: rgba(214, 222, 210, 0.16);
+  --sv-grain: url('/universe/planet-grain.png');
+  --sv-light-x: 32%;
+  --sv-light-y: 28%;
+}
+
+/* ── 1. Die vier Basismaterialien ─────────────────────────────────────── */
+/* Fünf Stufen: Licht, Grund, Mitte, Schatten, Nacht. Mondstufen eine Stufe heller. */
+.planet--sand,  .moon--sand,  .horizon--sand {
+  --p-hi: #ddd0b4; --p-base: #c9b89a; --p-mid: #a5947a; --p-shadow: #4b4335; --p-deep: #221f19;
+  --m-hi: #e8ddc6; --m-base: #d6c7aa; --m-mid: #b5a589; --m-shadow: #5a5141; --m-deep: #2a261f;
+  --h-edge: #8f846a; --h-top: #3a3427; --h-body: #211e17;
+}
+.planet--ton,   .moon--ton,   .horizon--ton {
+  --p-hi: #cfac97; --p-base: #b08a74; --p-mid: #8e6b58; --p-shadow: #45332a; --p-deep: #211915;
+  --m-hi: #dcbdaa; --m-base: #c19c87; --m-mid: #9d7a66; --m-shadow: #533f34; --m-deep: #29201b;
+  --h-edge: #8f6e5c; --h-top: #3a2b24; --h-body: #211915;
+}
+.planet--salbei, .moon--salbei, .horizon--salbei {
+  --p-hi: #c0ccb9; --p-base: #9eb098; --p-mid: #7c8e77; --p-shadow: #394336; --p-deep: #1b201a;
+  --m-hi: #cfd9c9; --m-base: #afbfa9; --m-mid: #8b9d86; --m-shadow: #465243; --m-deep: #222820;
+  --h-edge: #7e917a; --h-top: #2d352b; --h-body: #1a1f19;
+}
+.planet--stein, .moon--stein, .horizon--stein {
+  --p-hi: #b6b9bd; --p-base: #8d9196; --p-mid: #6f7378; --p-shadow: #35383b; --p-deep: #1a1b1d;
+  --m-hi: #c6c9cc; --m-base: #a0a4a8; --m-mid: #7f8388; --m-shadow: #414447; --m-deep: #212224;
+  --h-edge: #7c8086; --h-top: #2f3134; --h-body: #1b1c1e;
+}
+
+/* ── 2. Planet: matte Kugel ───────────────────────────────────────────── */
+.planet--sand, .planet--ton, .planet--salbei, .planet--stein, .planet--tone {
+  border-radius: 50%;
+  background-color: var(--p-base);
+  background-image:
+    var(--sv-grain),
+    /* Randverdunkelung: gibt Gewicht, ohne Kontur zu zeichnen */
+    radial-gradient(circle at 50% 50%, rgba(10, 12, 10, 0) 60%, rgba(10, 12, 10, 0.22) 88%, rgba(10, 12, 10, 0.4) 100%),
+    /* Licht oben links, weicher Terminator, Nachtseite unten rechts */
+    radial-gradient(circle at var(--sv-light-x) var(--sv-light-y),
+      var(--p-hi) 0%, var(--p-base) 26%, var(--p-mid) 50%, var(--p-shadow) 80%, var(--p-deep) 104%);
+  background-size: 96px 96px, 100% 100%, 100% 100%;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-blend-mode: soft-light, normal, normal;
+  box-shadow: none;
+}
+
+/* ── 3. Monde: dasselbe Material, eine Stufe heller, feinere Textur ──── */
+.moon.moon--sand, .moon.moon--ton, .moon.moon--salbei, .moon.moon--stein, .moon.moon--tone {
+  border-radius: 50%;
+  background-color: var(--m-base);
+  background-image:
+    var(--sv-grain),
+    radial-gradient(circle at 50% 50%, rgba(10, 12, 10, 0) 60%, rgba(10, 12, 10, 0.2) 88%, rgba(10, 12, 10, 0.36) 100%),
+    radial-gradient(circle at var(--sv-light-x) var(--sv-light-y),
+      var(--m-hi) 0%, var(--m-base) 28%, var(--m-mid) 52%, var(--m-shadow) 82%, var(--m-deep) 106%);
+  background-size: 48px 48px, 100% 100%, 100% 100%;
+  background-repeat: repeat, no-repeat, no-repeat;
+  background-blend-mode: soft-light, normal, normal;
+  box-shadow: none;
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1), opacity 160ms ease, outline-color 160ms ease;
+}
+
+/* Auswahl: Jade-Ring 2 px mit 4 px Abstand. Gedimmt: 75 %. */
+.moon.is-selected, .moon[aria-pressed="true"], .moon.sel {
+  outline: 2px solid var(--sv-jade);
+  outline-offset: 4px;
+  opacity: 1;
+}
+.moon.is-dimmed, .moon.dim { opacity: 0.75; }
+
+/* ── 4. Horizont im Planeteninneren ───────────────────────────────────── */
+/* Oberfläche: Kante leicht aufgehellt, darunter matt und dunkel. Überstrahlt nichts. */
+.horizon--sand, .horizon--ton, .horizon--salbei, .horizon--stein, .horizon--tone {
+  border-radius: 50%;
+  background-color: var(--h-body);
+  background-image:
+    var(--sv-grain),
+    radial-gradient(circle at 50% 0%, var(--h-top) 0%, var(--h-body) 7%, #171815 16%, #141512 30%);
+  background-size: 128px 128px, 100% 100%;
+  background-repeat: repeat, no-repeat;
+  background-blend-mode: soft-light, normal;
+  /* Kante: 1 px helle Linie, dazu ein sehr schmaler Saum nach innen */
+  box-shadow:
+    0 -1px 0 color-mix(in srgb, var(--h-edge) 62%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--h-edge) 22%, transparent);
+}
+
+/* ── 5. Tiefe und Licht im Universe ───────────────────────────────────── */
+.orbit, .universe-orbit {
+  border: 1px solid var(--sv-orbit);
+  background: none;
+}
+
+/* Tiefe aus der Bahnposition: vorne 100 %, hinten 85 %, hinten 10 % dunkler. */
+.planet[data-depth="back"], .universe-planet[data-depth="back"] {
+  --depth-scale: 0.85;
+  filter: brightness(0.9);
+}
+.planet[data-depth="front"], .universe-planet[data-depth="front"] {
+  --depth-scale: 1;
+  /* Sehr weicher Kontaktschatten nach unten, kein Schein */
+  box-shadow: 0 14px 22px -14px rgba(0, 0, 0, 0.55);
+}
+
+/* ── 6. Zustände ──────────────────────────────────────────────────────── */
+.planet--sand, .planet--ton, .planet--salbei, .planet--stein, .planet--tone {
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1), filter 160ms ease;
+}
+@media (hover: hover) {
+  .moon.moon--sand:hover, .moon.moon--ton:hover, .moon.moon--salbei:hover, .moon.moon--stein:hover, .moon.moon--tone:hover {
+    transform: translate(-50%, -52%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .planet--sand, .planet--ton, .planet--salbei, .planet--stein, .planet--tone,
+  .moon.moon--sand, .moon.moon--ton, .moon.moon--salbei, .moon.moon--stein, .moon.moon--tone {
+    transition: none;
+  }
+}

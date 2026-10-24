@@ -1,17 +1,23 @@
 'use client';
+/** ISO-Datum (YYYY-MM-DD) → „24.10.2026“; alles andere bleibt unverändert. */
+export function formatDeDate(iso?: string | null): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso ?? '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : (iso ?? '');
+}
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppWindow, Building2, CornerDownLeft, FileText, Search, Sparkles } from 'lucide-react';
-import { DEMO_DEPARTMENTS, demoAllDocuments } from '@/lib/os-prototype/demoPack';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { Stack, Text, cx } from '@/components/os-kit';
 import type { FeatureManifest } from '@/features/types';
 import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { searchGlobal } from '@/lib/api/searchClient';
+import { useWorld } from '@/lib/lea/useWorld';
+import { CalendarDays, CheckCircle2, Folder } from 'lucide-react';
 
 interface Item {
   id: string;
-  group: 'Bereiche' | 'MÔRA' | 'Planeten' | 'Dokumente' | 'Klassische Apps' | 'Inhalte';
+  group: 'Bereiche' | 'MÔRA' | 'Planeten' | 'Ordner' | 'Heute' | 'Dokumente' | 'Klassische Apps' | 'Inhalte';
   label: string;
   hint?: string;
   icon: React.ReactNode;
@@ -29,6 +35,8 @@ export interface CommandPaletteProps {
   searchEnabled: boolean;
   /** Lokale Vorschau: Planeten und Dokumente aus dem Demo-Paket (Beispiel). */
   demo?: boolean;
+  /** Klassische Apps nur für SAIMÔR-intern. */
+  showLegacy?: boolean;
 }
 
 /**
@@ -36,7 +44,7 @@ export interface CommandPaletteProps {
  * every legacy app, "ask MÔRA", and CORE keyword search (same searchClient the
  * legacy Spotlight/Search app use).
  */
-export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false }: CommandPaletteProps) {
+export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false, showLegacy = false }: CommandPaletteProps) {
   const [q, setQ] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,6 +59,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
     staleTime: 30_000,
   });
 
+  const world = useWorld();
   const items = useMemo<Item[]>(() => {
     const n = norm(trimmed);
     const match = (...values: Array<string | undefined>) => !n || values.some((v) => v && norm(v).includes(n));
@@ -61,26 +70,28 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
         out.push({ id: `f-${f.id}`, group: 'Bereiche', label: f.title, hint: f.description, icon: <Icon size={15} />, run: () => navigate(f.id) });
       }
     }
-    if (demo) {
-      for (const d of DEMO_DEPARTMENTS) {
-        if (n && match(d.name, d.description)) {
-          out.push({ id: `p-${d.id}`, group: 'Planeten', label: d.name, hint: `Beispiel · Planet im Universe · ${d.description}`, icon: <Building2 size={15} />,
-            run: () => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); } });
+    if (!demo) {
+      // Leas echte Planeten, Ordner und Einträge (Finder = Universe) und der Tag.
+      const focus = (planetId: string) => { useOsShellStore.getState().setUniverseFocus(planetId); navigate('universe'); };
+      for (const p of world.finder) {
+        if (match(p.name)) out.push({ id: `p-${p.id}`, group: 'Planeten', label: p.name, hint: 'Planet im Universe', icon: <Building2 size={15} />, run: () => focus(p.id) });
+        if (!n) continue;
+        for (const m of p.moons) {
+          if (match(m.name)) out.push({ id: `m-${m.id}`, group: 'Ordner', label: m.name, hint: `Ordner in ${p.name}`, icon: <Folder size={15} />, run: () => focus(p.id) });
+          for (const st of m.stars) if (match(st.name, st.hint)) out.push({ id: `st-${st.id}`, group: 'Ordner', label: st.name, hint: `${p.name} › ${m.name}${st.hint ? ` · ${st.hint}` : ''}`, icon: st.kind === 'event' ? <CalendarDays size={15} /> : <FileText size={15} />, run: () => (st.kind === 'event' ? focus(p.id) : openLegacyApp('document', { nodeId: st.id })) });
         }
       }
-      if (n) {
-        for (const doc of demoAllDocuments()) {
-          if (match(doc.name, doc.summary, doc.department, ...doc.tags)) {
-            out.push({ id: `d-${doc.name}`, group: 'Dokumente', label: doc.name, hint: `Beispiel · ${doc.department} · ${doc.summary}`, icon: <FileText size={15} />,
-              run: () => { useOsShellStore.getState().setKnowledgeQuery(doc.name); navigate('knowledge'); } });
-          }
-        }
+      for (const t of world.day.open) {
+        if (n && match(t.task.title)) out.push({ id: `t-${t.task.id}`, group: 'Heute', label: t.task.title, hint: t.overdue ? 'Aufgabe · überfällig' : `Aufgabe · ${t.meta}`, icon: <CheckCircle2 size={15} />, run: () => world.tasksPlanetId && focus(world.tasksPlanetId) });
+      }
+      for (const e of world.events) {
+        if (n && match(e.title)) out.push({ id: `e-${e.id}`, group: 'Heute', label: e.title, hint: `Termin · ${formatDeDate(e.date)}${e.time ? ` · ${e.time}` : ''}`, icon: <CalendarDays size={15} />, run: () => navigate('post') });
       }
     }
     if (trimmed) {
       out.push({ id: 'ask', group: 'MÔRA', label: `MÔRA fragen: „${trimmed}“`, icon: <Sparkles size={15} />, run: () => askMora(trimmed) });
     }
-    for (const e of LEGACY_APP_PLACEMENT) {
+    for (const e of showLegacy ? LEGACY_APP_PLACEMENT : []) {
       const name = legacyAppName(e.appId);
       if (n && match(name, e.appId, e.note)) {
         out.push({ id: `l-${e.appId}`, group: 'Klassische Apps', label: name, hint: e.note, icon: <AppWindow size={15} />, run: () => openLegacyApp(e.appId) });
@@ -92,7 +103,7 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
       out.push({ id: `s-${nodeId || title}`, group: 'Inhalte', label: String(title), hint: r?.type, icon: <FileText size={15} />, run: () => nodeId && openLegacyApp('document', { nodeId }) });
     }
     return out;
-  }, [features, trimmed, search.data, navigate, askMora, demo]);
+  }, [features, trimmed, search.data, navigate, askMora, demo, showLegacy, world.finder, world.day.open, world.events, world.tasksPlanetId]);
 
   useEffect(() => { setIndex(0); }, [trimmed]);
   if (!open) return null;
@@ -128,17 +139,6 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
               <div className="os-palette-home__chips">
                 {['Alle Dateien', 'Budget', 'Onboarding', 'Kampagne'].map((c) => (
                   <button key={c} type="button" onClick={() => (c === 'Alle Dateien' ? (navigate('knowledge'), onClose()) : setQ(c))}>{c}</button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Text variant="eyebrow" className="mb-2">Abteilungen</Text>
-              <div className="os-palette-home__planets">
-                {DEMO_DEPARTMENTS.map((d) => (
-                  <button key={d.id} type="button" title={d.name} onClick={() => { useOsShellStore.getState().setUniverseFocus(d.id); navigate('universe'); onClose(); }}>
-                    <span style={{ ['--planet' as string]: d.color }} aria-hidden><Building2 size={14} /></span>
-                    <em>{d.name}</em>
-                  </button>
                 ))}
               </div>
             </div>

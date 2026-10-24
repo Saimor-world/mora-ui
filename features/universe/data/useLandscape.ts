@@ -2,6 +2,7 @@
 import { useMemo } from 'react';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import { useDepartments } from '@/lib/queries/useDepartments';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useFinanceSignal } from '@/features/finance/data/useFinanceSignal';
 import { CONTRACT_LABEL } from '@/features/finance/data/contracts';
@@ -9,25 +10,24 @@ import { useRecentMemories } from '@/features/knowledge/data/useKnowledge';
 import { useSources } from '@/lib/os-prototype/useSources';
 import { LEGACY_APP_PLACEMENT, legacyAppName } from '@/lib/os-prototype/legacyApps';
 import { buildLandscape, type Landscape, type LandscapeInput } from './landscape';
-import { sampleLandscapeInput } from './sample';
 
 /** Real data via existing hooks; in local preview without session clearly marked example data. */
 export function useLandscape(preview: boolean): Landscape & { sample: boolean } {
   const user = useSessionStore((s) => s.user);
+  const scopeCompany = useScopeCompanyId();
   const hasSession = Boolean(user?.tenant_id);
   const today = useScopedToday({ backgroundRefresh: true });
   const finance = useFinanceSignal();
-  const departments = useDepartments(hasSession ? user?.active_company_id ?? null : null);
+  const departments = useDepartments(hasSession ? scopeCompany : null);
   const memories = useRecentMemories();
   const sources = useSources(hasSession);
-  const sample = preview && !hasSession;
+  void preview; // Ohne Sitzung kein Beispiel mehr: Demos sind echte is_demo-Firmen in CORE.
 
   return useMemo(() => {
     const labs = { count: LEGACY_APP_PLACEMENT.length, names: LEGACY_APP_PLACEMENT.filter((e) => e.placement === 'labs').map((e) => legacyAppName(e.appId)) };
     const fin: LandscapeInput['finance'] = finance.kind === 'value'
       ? { kind: 'value', label: finance.label, value: finance.value, warnings: finance.warnings }
       : { kind: 'state', label: CONTRACT_LABEL[finance.state] };
-    if (sample) return { ...buildLandscape({ ...sampleLandscapeInput(), finance: fin, labs }), sample: true };
     const snap = today.snapshot;
     const depts = Array.isArray(departments.data) ? departments.data : null;
     const mems = Array.isArray(memories.data) ? memories.data : null;
@@ -44,5 +44,5 @@ export function useLandscape(preview: boolean): Landscape & { sample: boolean } 
       labs,
     };
     return { ...buildLandscape(input), sample: false };
-  }, [sample, today.snapshot, finance, departments.data, memories.data, sources.data]);
+  }, [today.snapshot, finance, departments.data, memories.data, sources.data]);
 }

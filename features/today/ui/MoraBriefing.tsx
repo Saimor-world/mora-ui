@@ -7,7 +7,6 @@ import { coreGet } from '@/lib/api/http';
 import { connectedSources, useSources } from '@/lib/os-prototype/useSources';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { MailSummaryView } from './MailSummary';
-import { DEMO_CALENDAR, DEMO_MAIL, DEMO_MINDLOOP, DEMO_TASKS } from '@/lib/os-prototype/demoPack';
 
 /**
  * V1.5 MÔRA-Morgenbriefing.
@@ -25,19 +24,8 @@ interface Briefing { status?: string; text?: string; date?: string }
 
 const SOURCES = ['Mail', 'Kalender', 'Cloud-Dateien', 'Branchen-Feeds'];
 
-function demoBriefing(): string[] {
-  const unread = DEMO_MAIL.filter((m) => !m.read).length;
-  const risk = DEMO_MINDLOOP.find((m) => m.category === 'risk');
-  return [
-    `${DEMO_CALENDAR.length} Termine heute, zuerst „${DEMO_CALENDAR[0]?.title}“.`,
-    `${unread} ungelesene Nachrichten – wichtigste: „${DEMO_MAIL[0]?.subject}“.`,
-    `${DEMO_TASKS.length} offene Aufgaben in der Organisation.`,
-    risk ? `Risiko im Blick: ${risk.title}.` : 'Keine Risiken belegt.',
-  ];
-}
 
-export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id: string) => void }) {
-  const [preview, setPreview] = useState(false);
+export function MoraBriefing({ live, navigate, companyView = true }: { live: boolean; navigate?: (id: string) => void; companyView?: boolean }) {
   // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
   const conns = useSources(live);
   const connected = connectedSources(conns.data?.connections);
@@ -46,18 +34,29 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
   const mailDocked = live && connected.some((c) => c.group === 'mail');
 
+  // Rollen-Vorschau: ohne Firmenblick keine Firmen-Quellen (Post, Feeds) im Briefing.
+  if (!companyView) {
+    return (
+      <Surface padding={5} data-testid="mora-briefing" data-scope="team">
+        <Stack direction="row" gap={2} align="center" className="mb-3"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
+        <Text data-testid="briefing-team">Dein Briefing umfasst deine Termine und Aufgaben oben.</Text>
+        <Text variant="meta" className="mt-1">Firmen-Quellen fasst MÔRA nur für die Inhaberin zusammen.</Text>
+      </Surface>
+    );
+  }
+
   return (
     <Surface padding={5} data-testid="mora-briefing">
       <Stack direction="row" align="center" justify="space-between" className="mb-3">
         <Stack direction="row" gap={2} align="center"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
-        {real || mailDocked ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : preview ? <SampleTag /> : null}
+        {real && connected.length ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : null}
       </Stack>
       {real || mailDocked ? (
         <Stack gap={3}>
           {real ? <Stack direction="row" gap={3} align="flex-start"><MoraStone size={28} /><Text>{brief.data!.text}</Text></Stack> : null}
           {mailDocked ? (
             <div data-testid="briefing-mail">
-              {!real ? <Text variant="meta" className="mb-2">Ein KI-Briefing liefert CORE gerade nicht. Das hier ist die regelbasierte Zusammenfassung deines Postfachs.</Text> : null}
+              {!real ? <Text variant="meta" className="mb-2">Kurz aus deinem Postfach:</Text> : null}
               <MailSummaryView enabled={mailDocked} variant="full" />
             </div>
           ) : null}
@@ -73,14 +72,7 @@ export function MoraBriefing({ live, navigate }: { live: boolean; navigate?: (id
           </div>
           <Stack direction="row" gap={2} className="mt-3">
             {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
-            <Button size="sm" variant="ghost" onClick={() => setPreview((v) => !v)} data-testid="briefing-preview-toggle">{preview ? 'Vorschau schließen' : 'So sähe es aus (Beispiel)'}</Button>
           </Stack>
-          {preview ? (
-            <div className="os-briefing-demo mt-3" data-testid="briefing-demo">
-              <Stack direction="row" gap={2} align="center" className="mb-2"><MoraStone size={20} /><Text variant="eyebrow">Beispiel · Simple Coffee Group</Text></Stack>
-              <ul>{demoBriefing().map((l) => <li key={l}>{l}</li>)}</ul>
-            </div>
-          ) : null}
         </>
       )}
     </Surface>

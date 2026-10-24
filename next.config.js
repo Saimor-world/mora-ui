@@ -36,14 +36,18 @@ const nextConfig = {
   },
   async rewrites() {
     if (!coreRewriteTarget) return [];
-    return [
+    // fallback (nicht afterFiles): Die Proxy-Route app/api/core/[...slug] hat Vorrang.
+    // Sonst ginge jeder Aufruf am Proxy vorbei, das httpOnly-Cookie würde nie zum
+    // Bearer-Header, und CORE-Endpunkte mit optionaler Auth (z. B. /v3/chat) sähen
+    // die Sitzung nicht („Bitte melde dich an“).
+    return { fallback: [
       {
         // Frontend calls /api/core/v1/...
         // Use absolute core URL only when explicitly configured.
         source: '/api/core/:path*',
         destination: `${coreRewriteTarget}/:path*`,
       },
-    ];
+    ] };
   },
   // Baseline security headers applied to every response.
   // Deliberately conservative: no Content-Security-Policy and no Permissions-Policy

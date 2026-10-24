@@ -82,7 +82,14 @@ function Instruments({ context }: { context: WidgetContext }) {
   );
 }
 
-export function PlanetInterior({ incidentPanels = [], instrumentContext }: { incidentPanels?: IncidentStatusPanelData[]; instrumentContext?: WidgetContext }) {
+export function PlanetInterior({ incidentPanels = [], instrumentContext, onOpenSpace, onAskMora }: {
+  incidentPanels?: IncidentStatusPanelData[];
+  instrumentContext?: WidgetContext;
+  /** Im OS: Bereich öffnen (Standard: Navigation der klassischen Oberfläche). */
+  onOpenSpace?: (spaceId: string) => void;
+  /** Im OS: MÔRA mit einer Frage öffnen (Standard: MÔRA-Arbeitsfläche der klassischen Oberfläche). */
+  onAskMora?: (question: string) => void;
+}) {
   const { activeDepartmentId, activeCompanyId, navigateToSpace } = useNavStore();
   const openPane = usePaneStore((s) => s.openPane);
   const reduced = !!useReducedMotion();
@@ -130,13 +137,13 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
       {slots.map((s, i) => {
         const sp: any = spaces[i];
         return (
-          <motion.button key={sp.id} type="button" onClick={() => navigateToSpace(sp.id)} data-testid="uv2-moon"
+          <motion.button key={sp.id} type="button" onClick={() => (onOpenSpace ? onOpenSpace(sp.id) : navigateToSpace(sp.id))} data-testid="uv2-moon"
             className="group absolute flex -translate-x-1/2 flex-col items-center"
             style={{ left: `${s.x * 100}%`, top: `calc(74vh - ${70 + s.lift * 70}px)` }}
             {...(reduced ? {} : { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 }, transition: { duration: 1.6, ease: [0.22, 1, 0.36, 1] as const, delay: 0.5 + i * 0.12 } })}>
             <span className="block rounded-full transition-transform duration-300 group-hover:scale-110"
               style={{ width: s.size, height: s.size, background: moonBackground(name, 0.7), boxShadow: 'none' }} />
-            <span className="mt-3 max-w-[140px] truncate group-hover:text-white" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.6), textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
+            <span className="mt-3 max-w-[140px] text-center [overflow-wrap:anywhere] group-hover:text-white" style={{ ...TYPE.meta, fontSize: 10, color: UV.c(0.6), textShadow: '0 1px 8px rgba(0,0,0,0.8)' }}>{sp.name}</span>
           </motion.button>
         );
       })}
@@ -172,7 +179,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
                   <button type="button" className="group flex w-full items-baseline gap-4 py-3 text-left"
                     onClick={() => openPane({ id: `document-${d.id}`, type: 'document', title: d.name || d.title || 'Dokument', size: GLASS_SHEET_SIZE, data: { nodeId: d.id } } as any)}>
                     <span style={{ ...TYPE.meta, color: UV.c(0.35) }}>{String(i + 1).padStart(2, '0')}</span>
-                    <span className="min-w-0 flex-1 truncate transition-colors group-hover:text-white" style={{ ...TYPE.text, color: UV.c(0.85) }}>{d.name || d.title || 'Ohne Titel'}</span>
+                    <span className="min-w-0 flex-1 [overflow-wrap:anywhere] transition-colors group-hover:text-white" style={{ ...TYPE.text, color: UV.c(0.85) }}>{d.name || d.title || 'Ohne Titel'}</span>
                     {d.updated_at && <span style={{ ...TYPE.meta, color: UV.c(0.35), letterSpacing: '0.1em' }}>{new Date(d.updated_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}</span>}
                   </button>
                 </li>
@@ -186,7 +193,7 @@ export function PlanetInterior({ incidentPanels = [], instrumentContext }: { inc
         )}
 
         <div className="mt-10 flex items-center gap-6">
-          <button type="button" onClick={() => openMoraWorkspace({ source: 'system', label: name, draftQuestion: `Was ist in ${name} gerade wichtig?`, submitQuestion: true })}
+          <button type="button" onClick={() => (onAskMora ? onAskMora(`Was ist in ${name} gerade wichtig?`) : openMoraWorkspace({ source: 'system', label: name, draftQuestion: `Was ist in ${name} gerade wichtig?`, submitQuestion: true }))}
             className="h-10 rounded-full px-6 transition-transform active:scale-[0.97]" style={{ background: UV.goldGrad, color: UV.ink, fontSize: 15, fontWeight: 500 }}>
             MÔRA fragen
           </button>

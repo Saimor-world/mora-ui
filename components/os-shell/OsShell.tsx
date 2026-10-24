@@ -1,4 +1,5 @@
 'use client';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
@@ -21,6 +22,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
+import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, ContextClock } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
@@ -45,7 +47,8 @@ export function OsShell({ preview }: { preview: boolean }) {
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
   const flags = useMemo(() => enabledFeatureFlags(), []);
-  const ctx = useMemo(() => ({ role, flags, preview }), [role, flags, preview]);
+  const internal = useIsSaimorInternal();
+  const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
   const nav = useMemo(() => navigationModel(ctx), [ctx]);
   const visible = useMemo(() => visibleFeatures(ctx), [ctx]);
 
@@ -56,6 +59,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const paletteOpen = useOsShellStore((s) => s.paletteOpen);
   const setPaletteOpen = useOsShellStore((s) => s.setPaletteOpen);
   const [trayOpen, setTrayOpen] = useState(false);
+  const closeTray = useCallback(() => setTrayOpen(false), []);
   const [moreOpen, setMoreOpen] = useState(false);
   const health = useCoreHealth();
 
@@ -107,12 +111,18 @@ export function OsShell({ preview }: { preview: boolean }) {
   const online = health.data?.state === 'online';
   const atmosphere = active.atmosphere ?? 'calm';
 
+  const activeDemo = useActiveCompanyIsDemo();
   const demoMode = preview && !userName;
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
   const look = mounted ? lookStored : 'kosmos';
   const localCompany = mounted ? readLocalOrg().company : '';
-  const org = demoMode ? 'Simple Coffee Group' : localCompany || 'Deine Organisation';
+  const sessionOrg = useSessionStore((s) => (s.user as { active_company_name?: string | null } | null)?.active_company_name ?? '');
+  const internalUser = useIsSaimorInternal();
+  const demoCompanyId = useDemoStore((s) => s.demoCompanyId);
+  const demoCompanies = useDemoCompanies(Boolean(demoCompanyId));
+  const demoName = demoCompanyId ? demoCompanies.find((c) => c.id === demoCompanyId)?.name : undefined;
+  const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Studio';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {
@@ -131,26 +141,25 @@ export function OsShell({ preview }: { preview: boolean }) {
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
-      <div className="os-small-notice" role="note" data-testid="os-small-notice">SAIMÔR ist eine Kommandozentrale – am besten auf Desktop, Laptop oder Tablet (ab 768 px).</div>
       <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} look={look} />
 
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
-            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow">{active.title}</Text><span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : 'CORE nicht erreichbar'}</Status></span>{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
-            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode} />
+            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow" className="os-shell__place">{active.title}</Text>{/* Kund:innen sehen den CORE-Zustand nur, wenn etwas nicht stimmt. */}{internal || preview || (!health.isLoading && !online) ? <span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung'}</Status></span> : null}{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
+            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode || activeDemo} internal={internalUser} />
             <Stack direction="row" gap={1} align="center">
-              <ContextClock />
+              <ContextClock internal={internalUser} />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
-              <Button size="sm" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
+              <Button size="sm" className="os-shell__mora-toggle" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>
           </div>
-          {trayOpen ? <NotificationTray onClose={() => setTrayOpen(false)} /> : null}
+          {trayOpen ? <NotificationTray onClose={closeTray} /> : null}
           <div className="os-shell__content">
             <FeatureBoundary featureId={active.id}>
               <Suspense fallback={<Loading label={`${active.title} wird geladen`} lines={5} />}>
@@ -167,6 +176,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         ) : null}
 
         <OsDock
+          showLegacy={internal || preview}
           items={dockItems}
           mobileItems={nav.mobileBar.filter((m) => m.id !== 'mora')}
           activeId={active.id}
@@ -189,14 +199,14 @@ export function OsShell({ preview }: { preview: boolean }) {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}
-                <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link>
+                {internal || preview ? <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link> : null}
               </Stack>
             </div>
           </div>
         ) : null}
       </div>
 
-      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode} /> : null}
+      {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}
@@ -206,6 +216,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         askMora={askMora}
         searchEnabled={online && !preview}
         demo={preview && !userName}
+        showLegacy={internal || preview}
       />
     </div>
   );

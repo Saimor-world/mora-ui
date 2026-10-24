@@ -8,7 +8,7 @@ import type { FeatureManifest } from '../types';
 export const universeManifest: FeatureManifest = {
   id: 'universe',
   title: 'Universe',
-  description: 'Den Raum deines Unternehmens betreten – Bereiche, Spaces und Zusammenhänge als Landschaft.',
+  description: 'Dein Studio als Raum – Bereiche, Ordner und Termine.',
   icon: Orbit,
   slot: 'secondary',
   order: 80,

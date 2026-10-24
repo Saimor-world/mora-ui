@@ -1,5 +1,5 @@
 import { buildLandscape } from '@/features/universe/data/landscape';
-import { sampleLandscapeInput } from '@/features/universe/data/sample';
+import { landscapeFixture as sampleLandscapeInput } from '../../fixtures/landscapeInput';
 
 describe('universe landscape model', () => {
   const labs = { count: 18, names: ['Scanner'] };

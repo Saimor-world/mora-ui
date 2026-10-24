@@ -4,6 +4,7 @@ import type { CoreFailureKind } from '@/lib/os-prototype/coreFailure';
 import { Text } from './Typography';
 import { Button } from './Button';
 import { cx } from './cx';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 export type OsStateKind =
   | 'loading' | 'empty' | 'error' | 'offline' | 'backend_unavailable'
@@ -29,6 +30,8 @@ export interface StateViewProps {
 }
 
 export function StateView({ kind, title, copy, compact, action, detail }: StateViewProps) {
+  // Details sind technisch (Endpunkte, Fehlertexte): nur für SAIMÔR intern.
+  const internal = useIsSaimorInternal();
   if (kind === 'loading') return <Loading label={title} />;
   const base = COPY[kind];
   return (
@@ -40,7 +43,7 @@ export function StateView({ kind, title, copy, compact, action, detail }: StateV
       <span className="os-state__icon" aria-hidden>{base.icon}</span>
       <Text variant="body" tone="default" className="font-medium">{title || base.title}</Text>
       <Text variant="meta" tone="muted">{copy || base.copy}</Text>
-      {detail ? <Text variant="meta" tone="faint">{detail}</Text> : null}
+      {detail && internal ? <Text variant="meta" tone="faint">{detail}</Text> : null}
       {action ? <Button size="sm" className="mt-2" onClick={action.onClick}>{action.label}</Button> : null}
     </div>
   );
@@ -77,15 +80,18 @@ export function stateForFailure(kind: CoreFailureKind): OsStateKind {
 }
 
 export function FailureState({ kind, compact, subject, onRetry }: { kind: CoreFailureKind; compact?: boolean; subject?: string; onRetry?: () => void }) {
+  // Endpunkte und Build-Begriffe sind für SAIMÔR intern; Kund:innen lesen Klartext.
+  const internal = useIsSaimorInternal();
   const state = stateForFailure(kind);
+  const customerMissing = !internal && state === 'backend_unavailable';
   const copy = kind === 'unauthenticated'
     ? 'Keine bestätigte CORE-Sitzung. Melde dich an, um echte Daten zu sehen.'
-    : undefined;
+    : customerMissing ? 'Diese Funktion ist in deinem SAIMÔR noch nicht freigeschaltet.' : undefined;
   return (
     <StateView
       kind={state}
       compact={compact}
-      title={kind === 'unauthenticated' ? 'Nicht angemeldet' : undefined}
+      title={kind === 'unauthenticated' ? 'Nicht angemeldet' : customerMissing ? 'Noch nicht verfügbar' : undefined}
       copy={copy}
       detail={subject}
       action={onRetry && (kind === 'offline' || kind === 'backend_error') ? { label: 'Erneut versuchen', onClick: onRetry } : undefined}

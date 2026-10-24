@@ -12,9 +12,16 @@ import { useFinanceSignal } from '@/features/finance/data/useFinanceSignal';
 import { CONTRACT_LABEL } from '@/features/finance/data/contracts';
 import type { FeatureSurfaceProps } from '../types';
 import { deriveAttention, deriveHints } from './data/attention';
-import { sampleTodaySnapshot } from './data/sample';
-import { MoraLagebild } from './ui/MoraLagebild';
 import { MoraBriefing } from './ui/MoraBriefing';
+import { PhoneHome } from './ui/PhoneHome';
+import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
+import { DayPanel } from '@/components/day/DayPanel';
+import { useWorld } from '@/lib/lea/useWorld';
+import { useDayStore } from '@/lib/lea/dayStore';
+import { nextOpenToday } from '@/lib/lea/day';
+import { useIsPhone } from '@/lib/hooks/useIsPhone';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { firstName } from '@/lib/auth/displayName';
 
 const PHASE_GREETING = { flow: 'Guten Morgen', build: 'Guten Tag', lounge: 'Guten Abend', night: 'Guten Abend' } as const;
 function greeting(phase?: keyof typeof PHASE_GREETING | null, date = new Date()) {
@@ -44,42 +51,71 @@ function Section({ icon, title, children, aside }: { icon: React.ReactNode; titl
 
 export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps) {
   const phaseOverride = useOsShellStore((s) => s.phaseOverride);
-  const userName = useSessionStore((s) => s.user?.name?.split(' ')[0] ?? null);
+  const user = useSessionStore((s) => s.user);
+  const userName = firstName(user) || null;
+  const hasSession = Boolean(user?.tenant_id);
+  const phone = useIsPhone();
+  const internal = useIsSaimorInternal();
   const today = useScopedToday({ backgroundRefresh: true });
+  // Rollen-Vorschau: Abteilung/Mitglied sehen keine Firmen-Quellen (Mail, Feed, Agenten).
+  const { role } = useRolePreview();
+  const companyView = role === 'owner';
   const finance = useFinanceSignal();
   const sample = preview && !today.snapshot;
-  const snapshot: TodaySnapshot | null = today.snapshot || (sample ? sampleTodaySnapshot() : null);
+  const snapshot: TodaySnapshot | null = today.snapshot || null;
   const attention = useMemo(() => (snapshot ? deriveAttention(snapshot) : []), [snapshot]);
   const hints = useMemo(() => deriveHints(snapshot), [snapshot]);
   const dateLabel = new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
+  const world = useWorld();
+  const phases = useDayStore((s) => s.phases);
+  const openToday = useMemo(() => nextOpenToday(world.events, phases, new Date()), [world.events, phases]);
+  const calendarTile = (snap: TodaySnapshot): [string, string] => {
+    if (!preview && hasSession && openToday.total > 0) {
+      const n = openToday.next;
+      if (!n) return ['Alle Termine abgeschlossen', `${openToday.total} Termin${openToday.total === 1 ? '' : 'e'} heute, alle erledigt.`];
+      return [n.time ? `${n.time} · ${n.title}` : n.title, `${openToday.open} von ${openToday.total} Termin${openToday.total === 1 ? '' : 'en'} heute offen`];
+    }
+    const evs = snap.calendar.events;
+    return [evs[0]?.title ?? 'Heute frei', evs.length ? `${evs.length} Termin${evs.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.'];
+  };
+
+  // Handy mit Sitzung: oben Home V4 aus echten Daten, darunter dieselben Widgets wie am Desktop (wie auf HQ).
+  const phoneHome = phone && hasSession && !preview;
+  const askMoraPhone = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
 
   return (
-    <div className="flex flex-col gap-6" data-testid="feature-today">
-      <header>
+    <div className="flex flex-col gap-6" data-testid="feature-today" data-role={role}>
+      {hasSession && !preview ? <div className="flex flex-wrap items-center justify-end gap-3"><RolePreviewBanner /><RolePreviewToggle /></div> : null}
+      {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
+      {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
         <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
-            : 'Das Wichtigste von heute, ruhig zusammengeführt. Was nicht belegt ist, steht hier als „unbekannt“ – nicht als „nichts“.'}
+            : 'Das Wichtigste von heute, ruhig zusammengeführt.'}
         </Text>
-      </header>
+      </header>}
 
-      <MoraBriefing live={!preview && Boolean(userName)} navigate={navigate} />
+      {hasSession && !preview && !phoneHome ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
+
+      <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">
           <Text variant="eyebrow" className="mb-2">Heute · Aktuell — das ist heute relevant</Text>
           <div className="os-today-now">
             {([
-              ['Kalender', CalendarDays, snapshot.calendar.events[0]?.title ?? 'Heute frei', snapshot.calendar.events.length ? `${snapshot.calendar.events.length} Termin${snapshot.calendar.events.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.', () => navigate('post')],
+              ['Kalender', CalendarDays, ...calendarTile(snapshot), () => navigate('post')],
               // V1.8: Ein Lesefehler ist nie „Nichts Neues“.
-              ['Mail', Mail,
+              ...(companyView ? [['Mail', Mail,
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
-                () => navigate('post')],
+                () => navigate('post')]] as const : []),
               ['Aufgaben · Organisation', ListTodo, snapshot.tasks.counts.open ? `${snapshot.tasks.counts.open} offen` : 'Nichts offen', snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
-              ['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')],
+              // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
+              ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
               <button key={label} type="button" className="os-today-now__card" onClick={run} data-testid={`today-now-${label.split(' ')[0].toLowerCase()}`}>
                 <span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {label} <ArrowUpRight size={12} className="ml-auto" aria-hidden /></span>
@@ -90,16 +126,15 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         </section>
       ) : null}
 
-      {sample ? <MoraLagebild navigate={navigate} /> : null}
 
-      <AgentFeed live={!preview && Boolean(userName)} demo={Boolean(sample)} limit={3} compact />
+      {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
           <Stack gap={1} className="min-w-0">
             <Text variant="eyebrow">Universe</Text>
             <Text variant="title" as="div">Den Raum deines Unternehmens betreten</Text>
-            <Text variant="meta">Bereiche, Spaces und Zusammenhänge – als Landschaft statt als Liste.</Text>
+            <Text variant="meta">Bereiche, Ordner und Termine – als Raum statt als Liste.</Text>
           </Stack>
           <ArrowRight size={16} className="os-tone-accent" aria-hidden />
         </Stack>
@@ -123,7 +158,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               <div className="os-list">
                 {attention.map((a) => (
                   <div key={a.id} className="os-list-row">
-                    <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
+                    <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{a.title}</Text><Text variant="meta">{a.reason}</Text></Stack>
                     <Button size="sm" variant="ghost" onClick={() => (a.target === 'today' ? openLegacyApp('tasks') : navigate(a.target))}>Ansehen</Button>
                   </div>
                 ))}
@@ -138,14 +173,15 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.calendar.events.length === 0 ? <Text>Keine Termine heute.</Text> : (
                   <div className="os-list">
                     {snapshot.calendar.events.slice(0, 4).map((e) => (
-                      <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
+                      <div key={e.id} className="os-list-row"><Text tone="default" className="[overflow-wrap:anywhere]">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
                     ))}
                   </div>
                 )
               )}
             </Section>
 
-            <Section icon={<Wallet size={14} />} title="Finance-Signal" aside={<Button size="sm" variant="ghost" onClick={() => navigate('finance')}>Finance</Button>}>
+            {/* Finance ist SAIMÔR-intern (wie der Ort Finance selbst). */}
+            {internal || sample ? <Section icon={<Wallet size={14} />} title="Finance-Signal" aside={<Button size="sm" variant="ghost" onClick={() => navigate('finance')}>Finance</Button>}>
               {finance.kind === 'value' ? (
                 <Stack gap={1}>
                   <Text variant="meta">{finance.label}</Text>
@@ -161,7 +197,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                   <Status tone="warning">{CONTRACT_LABEL[finance.state]}</Status>
                 </Stack>
               )}
-            </Section>
+            </Section> : null}
 
             <Section icon={<ListTodo size={14} />} title="Offene Arbeit" aside={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('tasks')}>Aufgaben</Button>}>
               <SourceState status={snapshot.tasks.status} label="Aufgaben" />
@@ -174,19 +210,19 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
               ) : null}
             </Section>
 
-            <Section icon={<Inbox size={14} />} title="Neue Informationen" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
+            {companyView ? <Section icon={<Inbox size={14} />} title="Neue Informationen" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
               <SourceState status={snapshot.mail.status} label="Post" />
               {snapshot.mail.items.length === 0 && snapshot.mail.status !== 'disconnected' && snapshot.mail.status !== 'unavailable' ? <Text>Nichts Neues.</Text> : (
                 <div className="os-list">
                   {snapshot.mail.items.slice(0, 3).map((m) => (
                     <div key={m.id} className="os-list-row">
-                      <Stack gap={0} className="min-w-0"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr}</Text></Stack>
+                      <Stack gap={0} className="min-w-0"><Text tone="default" className="[overflow-wrap:anywhere]">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="[overflow-wrap:anywhere]">{m.from_addr}</Text></Stack>
                       {m.read === false ? <Status tone="info">neu</Status> : null}
                     </div>
                   ))}
                 </div>
               )}
-            </Section>
+            </Section> : null}
           </ResponsiveGrid>
         </>
       ) : null}

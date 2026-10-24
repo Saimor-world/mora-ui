@@ -21,6 +21,9 @@ export interface OsShellState {
   setSurfaceContext(context: string | null): void;
   /** V1.4: planet the Universe should focus when it opens (department id). */
   universeFocus: string | null;
+  /** Interne Rollen-Vorschau der Inhaberin (Heute + Universe + Finder). */
+  rolePreview: 'owner' | 'department' | 'member';
+  setRolePreview(role: 'owner' | 'department' | 'member'): void;
   setUniverseFocus(id: string | null): void;
   /** V1.4: query Wissen should start with (e.g. from the palette or a planet). */
   knowledgeQuery: string | null;
@@ -92,6 +95,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setPaletteOpen: (open) => set({ paletteOpen: open }),
   setSurfaceContext: (context) => set({ surfaceContext: context }),
   universeFocus: null,
+  rolePreview: 'owner',
+  setRolePreview: (role) => set({ rolePreview: role }),
   setUniverseFocus: (id) => set({ universeFocus: id }),
   knowledgeQuery: null,
   setKnowledgeQuery: (q) => set({ knowledgeQuery: q }),

@@ -2,6 +2,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { moraAgentClient, type AgentMessage } from '@/lib/api/moraAgentClient';
 import { useMoraConversation } from './conversationStore';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
 
 /**
  * Sends a message through the SAME client the legacy chat/Dock use
@@ -10,6 +11,8 @@ import { useMoraConversation } from './conversationStore';
  */
 export function useMoraSend(surface: { featureId: string; contextLabel: string; detail?: string | null }) {
   const add = useMoraConversation((s) => s.add);
+  // Gleiche Firma wie Heute/Termine/Aufgaben – im Demo also die Demo-Firma, nicht HQ.
+  const companyId = useScopeCompanyId();
   return useMutation({
     mutationFn: async (message: string) => {
       const history = useMoraConversation.getState().turns
@@ -23,6 +26,7 @@ export function useMoraSend(surface: { featureId: string; contextLabel: string; 
         context: {
           route_path: `/os#${surface.featureId}${surface.detail ? `:${surface.detail}` : ''}`,
           pane_id: `os-${surface.featureId}`,
+          ...(companyId ? { company_id: companyId } : {}),
         },
       });
       if (!result?.response) throw new Error('MÔRA hat keine Antwort geliefert');

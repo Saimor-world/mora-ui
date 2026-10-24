@@ -29,7 +29,8 @@ describe('OsShell navigation', () => {
   beforeEach(() => {
     window.location.hash = '';
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
-    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 't1' } as any });
+    // SAIMÔR's own organization: sees Finance, Labs and the classic surface. Customers: own test below.
+    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
   });
 
   it('renders the six primary surfaces and Labs from manifests', async () => {
@@ -56,7 +57,7 @@ describe('OsShell navigation', () => {
     await screen.findByTestId('feature-post');
     act(() => { fireEvent.keyDown(window, { key: 'j', metaKey: true }); });
     const panel = await screen.findByTestId('mora-console-panel');
-    expect(panel).toHaveTextContent('Kontext: Post');
+    expect(panel).toHaveTextContent('Bei: Post');
     expect(panel).toHaveTextContent('nur mit Bestätigung');
   });
 
@@ -67,6 +68,16 @@ describe('OsShell navigation', () => {
     fireEvent.change(input, { target: { value: 'scanner' } });
     await waitFor(() => expect(screen.getByRole('option', { name: /Scanner/ })).toBeInTheDocument());
     expect(screen.getByRole('option', { name: /MÔRA fragen/ })).toBeInTheDocument();
+  });
+
+  it('hides Finance, Labs and the classic surface from a customer company', () => {
+    useSessionStore.setState({ user: { id: 'u3', name: 'Lea', role: 'owner', tenant_id: 'tenant-beispiel-lea' } as any });
+    renderShell();
+    const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
+    expect(within(nav).queryByRole('button', { name: 'Finance' })).toBeNull();
+    expect(within(nav).queryByRole('button', { name: 'Labs & System' })).toBeNull();
+    expect(screen.queryByTestId('legacy-shell-link')).toBeNull();
+    expect(screen.queryByTestId('os-small-notice')).toBeNull();
   });
 
   it('hides Finance for roles without permission', () => {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { displayName } from '@/lib/auth/displayName';
 import { useRouter, usePathname } from 'next/navigation';
 import { bridgeNextAuthSignOut } from '@/lib/auth/nextAuthBridge';
 import { useUserProfile } from '@/lib/queries/useUserProfile';
@@ -28,7 +29,8 @@ import { resolveCompanySelection } from '@/lib/auth/companySelection';
 export function mapProfileToUser(profile: UserProfile): User {
     return {
         id: profile.user_id,
-        name: profile.full_name ?? profile.email ?? 'Unknown',
+        // Nie die E-Mail-Adresse als Name: echter Name, sonst Inhaberin/Mitglied.
+        name: displayName({ name: profile.full_name, email: profile.email, role: profile.role }),
         email: profile.email,
         role: profile.role as UserRole,
         tenant_id: profile.tenant_id,

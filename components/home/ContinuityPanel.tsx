@@ -75,14 +75,14 @@ export function ContinuityPanel({ request }: { request: ContinuityRequest }) {
 
   return <section aria-label="Kalender-Fäden" aria-busy={busy}>
     <h3>Deine Kalender-Fäden</h3>
-    <p>Private Vorbereitungsaufgaben für bevorstehende Termine. In YORI und OS derselbe Stand.</p>
+    <p>Was MÔRA für deine nächsten Termine vorbereitet hat.</p>
     <div>
       <button type="button" disabled={busy} onClick={() => void run("scan")}>Kalender prüfen</button>{" "}
       <button type="button" disabled={busy} onClick={() => void run("list")}>Stand laden</button>
     </div>
     {busy ? <p role="status">Wird geprüft …</p> : null}
     {message ? <p role="status">{message}</p> : null}
-    {threads?.length === 0 ? <p>Keine vorbereiteten Vorschläge geladen. Das sagt nichts über externe Reminder aus.</p> : null}
+    {threads?.length === 0 ? <p>Für deine nächsten Termine liegt noch nichts zur Vorbereitung an.</p> : null}
     {threads?.slice(0, 8).map(thread => <article key={thread.id}>
       <h4>{thread.proposal.action.title}</h4>
       {thread.state === "approved" ? <p>Aufgabe gespeichert · nur für dich</p> :

@@ -2,7 +2,7 @@ import React from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { UniverseLandscape } from '@/features/universe/ui/UniverseLandscape';
 import { buildLandscape } from '@/features/universe/data/landscape';
-import { sampleLandscapeInput } from '@/features/universe/data/sample';
+import { landscapeFixture as sampleLandscapeInput } from '../../fixtures/landscapeInput';
 
 const base = sampleLandscapeInput();
 // Demo-Paket + eine Test-Mail mit Rechnungsbezug, damit die vermutete Post→Finance-Linie geprüft wird.
@@ -13,7 +13,8 @@ describe('UniverseLandscape', () => {
     const { container } = render(<UniverseLandscape landscape={landscape} sample onOpenArea={jest.fn()} onAskMora={jest.fn()} />);
     expect(screen.getByTestId('universe-core')).toBeInTheDocument();
     expect(container.querySelectorAll('[data-planet]')).toHaveLength(7);
-    expect(container.querySelectorAll('ellipse')).toHaveLength(2);
+    // Nur die Bahnen; MÔRAs Augen (MoraFace) sind ebenfalls Ellipsen.
+    expect(container.querySelectorAll('ellipse.os-ulx__orbit')).toHaveLength(2);
     expect(container.querySelector('[data-strand="post-finance"]')).toHaveAttribute('data-evidence', 'inferred');
     expect(screen.getByTestId('universe-attention')).toHaveTextContent('Heute');
   });
@@ -24,7 +25,7 @@ describe('UniverseLandscape', () => {
     const panel = screen.getByTestId('universe-detail');
     expect(within(panel).getByText('Post')).toBeInTheDocument();
     expect(within(panel).getAllByText('Beispiel').length).toBeGreaterThan(0);
-    expect(within(panel).getByText(/Wochenlieferung Arabica/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Terminanfrage Samstag/)).toBeInTheDocument();
     expect(screen.getByTestId('universe-landscape')).toHaveAttribute('data-focus', 'post');
     expect(screen.getByTestId('universe-landscape')).toHaveAttribute('data-motion', 'still');
     fireEvent.click(screen.getByTestId('universe-open-area'));

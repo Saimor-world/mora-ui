@@ -13,6 +13,7 @@ const mockOpenPane = jest.fn();
 let mockUniverseV2 = false;
 jest.mock('@/lib/universe/morgen', () => ({ isUniverseV2Enabled: () => mockUniverseV2 }));
 jest.mock('@/components/home/CalendarContinuity', () => ({ CalendarContinuity: () => null }));
+jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => ({ events: [] }) }));
 
 jest.mock('@/lib/store/navStore', () => ({
   useNavStore: (selector: (state: { activeCompanyId: string | null }) => unknown) =>

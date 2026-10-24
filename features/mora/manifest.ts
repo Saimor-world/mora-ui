@@ -13,7 +13,7 @@ export const moraManifest: FeatureManifest = {
   load: () => import('./index'),
   mora: {
     contextLabel: 'MÔRA',
-    suggestions: ['Zeig mir Management', 'Was gibt es Neues?', 'Was läuft in HR & Culture?', 'Hilf mir beim Organisieren', 'Was weißt du über mein Unternehmen?'],
+    suggestions: ['Was steht heute an?', 'Wer kommt als Nächstes?', 'Was ist noch offen?', 'Was gibt es Neues?'],
   },
   legacyApps: ['chat'],
   keywords: ['mora', 'chat', 'assistent', 'fragen', 'ki'],

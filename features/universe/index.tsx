@@ -1,4 +1,5 @@
 'use client';
+import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
 import { useNavStore } from '@/lib/store/navStore';
 import { DepartmentWizard } from '@/components/wizards/DepartmentWizard';
 import React, { useState } from 'react';
@@ -9,16 +10,15 @@ import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
 import { useLandscape } from './data/useLandscape';
 import { UniverseLandscape } from './ui/UniverseLandscape';
-import { DemoOrganizationUniverse } from './ui/DemoOrganizationUniverse';
+import { LiveWorld } from './ui/LiveWorld';
 
 type Lens = 'landscape' | 'organization';
 
 /**
  * Universe place (V1.3: am Original orientiert). Two lenses:
- *  - Organisationsfeld (Standard): die ORIGINAL-Planeten aus UniverseView –
- *    Abteilungen als Planeten, Ordner als Monde, Observatorium. Mit Sitzung
- *    die echte UniverseView; in der lokalen Vorschau dieselben Komponenten mit
- *    dem Demo-Paket „Simple Coffee Group“ und dem MÔRA-Kern in der Mitte.
+ *  - Organisationsfeld (Standard): mit Sitzung die Welt des Betriebs aus echten
+ *    Daten (LiveWorld: Abteilungen als matte Planeten um MÔRA, Richtung visual-v1);
+ *    in der lokalen Vorschau das Demo-Paket „Simple Coffee Group“.
  *  - OS-Bereiche: die V1.2-Landschaft der OS-Bereiche um MÔRA.
  */
 export default function UniverseSurface({ navigate, preview }: FeatureSurfaceProps) {
@@ -27,7 +27,10 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
   const askMora = (text: string) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); };
   const hasSession = useSessionStore((st) => Boolean(st.user?.tenant_id));
   const demo = preview && !hasSession;
-  const companyId = useNavStore((s) => s.activeCompanyId);
+  const demoCompany = useDemoStore((s) => s.demoCompanyId);
+  const navCompany = useNavStore((s) => s.activeCompanyId);
+  const sessionCompany = useSessionStore((st) => (st.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
+  const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
   const [wizard, setWizard] = React.useState(false);
   const openArea = (target: string) => (target === 'universe:organization' ? setLens('organization') : navigate(target));
 
@@ -42,7 +45,9 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
             <Text variant="title" as="h1">{lens === 'organization' ? (demo ? 'Simple Coffee Group – deine Abteilungen' : 'Deine Abteilungen') : 'Deine Arbeitsbereiche'}</Text>
             <Text variant="meta">
               {lens === 'organization'
-                ? 'Jede Kugel ist eine Abteilung. Klicke eine an, um Dokumente, Aufgaben und Hinweise zu sehen. Linien zeigen Zusammenhänge, die MÔRA gefunden hat.'
+                ? hasSession && !demo
+                  ? 'Wähle einen Bereich – Pfeiltasten, Enter zum Hineinzoomen, oder frag MÔRA unten.'
+                  : 'Jede Kugel ist eine Abteilung. Klicke eine an, um Dokumente, Aufgaben und Hinweise zu sehen. Linien zeigen Zusammenhänge, die MÔRA gefunden hat.'
                 : landscape.sample
                   ? 'Lokale Vorschau: die OS-Bereiche um MÔRA, gespeist aus dem Demo-Paket.'
                   : 'Deine OS-Bereiche als Planeten um MÔRA. Wähle einen Planeten, um hineinzuzoomen.'}
@@ -60,7 +65,7 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
       <div className="os-universe__field" data-testid="universe-field">
         {lens === 'landscape'
           ? <UniverseLandscape landscape={landscape} sample={landscape.sample} onOpenArea={openArea} onAskMora={askMora} />
-          : demo ? <DemoOrganizationUniverse onOpenArea={openArea} onAskMora={askMora} /> : <UniverseView />}
+          : hasSession ? <LiveWorld onAskMora={askMora} navigate={navigate} onAddDepartment={companyId ? () => setWizard(true) : undefined} /> : <UniverseView />}
       </div>
     </div>
   );

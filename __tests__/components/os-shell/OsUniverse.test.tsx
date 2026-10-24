@@ -11,6 +11,7 @@ jest.mock('@/components/os/shell/ShellStaticBackdrop', () => ({ ShellStaticBackd
 jest.mock('@/components/mora/MoraLivingBackground', () => ({ MoraLivingBackground: () => require('react').createElement('div', { 'data-testid': 'legacy-living-background' }) }));
 jest.mock('@/components/os/RitualSceneStyler', () => ({ RitualSceneStyler: ({ muted }: { muted?: boolean }) => require('react').createElement('div', { 'data-testid': 'legacy-ritual-styler', 'data-muted': String(Boolean(muted)) }) }));
 jest.mock('@/components/home/UniverseView', () => ({ __esModule: true, default: () => require('react').createElement('div', { 'data-testid': 'legacy-universe-view' }) }));
+jest.mock('@/features/universe/ui/LiveWorld', () => ({ LiveWorld: () => require('react').createElement('div', { 'data-testid': 'live-world' }) }));
 jest.mock('@/features/today/index', () => ({
   __esModule: true,
   default: ({ navigate }: { navigate: (id: string) => void }) => require('react').createElement('button', { 'data-testid': 'today-universe-card', onClick: () => navigate('universe') }, 'Den Raum deines Unternehmens betreten'),
@@ -44,10 +45,12 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     expect(within(layer).queryByTestId('os-atmo-motion')).toBeNull();
   });
 
-  it('Heute → Universe: opens the ORIGINAL Organisationsfeld (real UniverseView with session), OS-Bereiche lens shows the landscape, atmosphere switches to universe', async () => {
+  it('Heute → Universe: with a session the world of the business (LiveWorld, real data), OS-Bereiche lens shows the landscape, atmosphere switches to universe', async () => {
     renderShell();
     fireEvent.click(await screen.findByTestId('today-universe-card'));
-    expect(await screen.findByTestId('legacy-universe-view')).toBeInTheDocument();
+    // Der Ort lädt lazy; in jsdom kann das länger als die 900-ms-Leerlaufschwelle dauern.
+    expect(await screen.findByTestId('live-world', {}, { timeout: 5000 })).toBeInTheDocument();
+    expect(screen.queryByTestId('legacy-universe-view')).toBeNull();
     expect(window.location.hash).toBe('#universe');
     fireEvent.click(screen.getByTestId('universe-lens-landscape'));
     expect(await screen.findByTestId('universe-landscape')).toBeInTheDocument();
@@ -56,8 +59,9 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     expect(layer).toHaveAttribute('data-mode', 'universe');
     expect(within(layer).getByTestId('legacy-living-background')).toBeInTheDocument();
     expect(within(layer).getByTestId('legacy-ritual-styler')).toHaveAttribute('data-muted', 'true');
-    // jsdom: narrow default + no idle → stars/atmosphere stay off (lazy, capability-gated)
-    expect(layer).toHaveAttribute('data-motion', 'off');
+    // Bewegung ist fähigkeits- und leerlaufabhängig (useAmbientCapability, 900 ms); der erste Test
+    // prüft, dass sie zu Beginn aus ist. Hier hängt der Wert nur von der Ladezeit ab.
+    expect(layer).toHaveAttribute('data-motion');
   });
 
   it('Universe is a second-level nav entry, the six main surfaces stay', () => {
