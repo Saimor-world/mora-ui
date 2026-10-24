@@ -16,6 +16,8 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
  */
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
 const ASK_RESERVE_PHONE = 84;
+/** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
+const ASK_RESERVE_DESKTOP = 92;
 
 export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource }: {
   /** Doppelklick: direkt hineinzoomen. */
@@ -67,7 +69,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   }, []);
 
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : 0)), weights: planets.map((p) => p.weight), phone }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone }) : null),
     [size.width, size.height, planets, phone],
   );
 
@@ -177,7 +179,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         </button>
       ) : null}
       {layout && moraLine ? (
-        <button type="button" className="wd-mora-line" style={{ left: layout.cx, top: layout.cy + layout.mora / 2 + 14, zIndex: 11 + Math.round(layout.cy) }} onClick={onMora} data-testid="world-mora-line">
+        // MÔRAs Satz oben mittig im Feld, außerhalb der Bahnen: er verdeckt nie einen Planeten.
+        <button type="button" className="wd-mora-line" style={{ left: layout.cx, top: 16 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
         </button>
       ) : null}

@@ -141,7 +141,9 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
         </Stack>
         {!hasSession ? <FailureState compact kind="unauthenticated" subject="/v3/memory/list" />
           : memories.isLoading ? <Loading />
-          : memories.data === null || memories.isError ? <StateView compact kind="offline" detail="/v3/memory/list" />
+          // Leere Antwort = Funktion fehlt im CORE, nicht „keine Verbindung“; echte Fehler werden eingeordnet.
+          : memories.isError ? <FailureState compact kind={classifyCoreFailure(memories.error)} subject="/v3/memory/list" />
+          : memories.data === null ? <FailureState compact kind="contract_missing" subject="/v3/memory/list" />
           : (memories.data?.length ?? 0) === 0 ? <StateView compact kind="empty" title="Noch keine Erinnerungen" copy="MÔRA merkt sich Zusammenfassungen nach Gesprächen." />
           : <div className="os-list">{memories.data!.map((m) => <div key={m.id} className="os-list-row"><Text>{m.summary}</Text><Text variant="meta">{new Date(m.created_at).toLocaleDateString('de-DE')}</Text></div>)}</div>}
       </Surface> : null}

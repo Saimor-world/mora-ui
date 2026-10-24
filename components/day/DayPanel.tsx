@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { MoraStone } from '@/components/os-kit';
+import { Loading, MoraStone } from '@/components/os-kit';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { useDayActions } from '@/lib/lea/useDayActions';
@@ -24,31 +24,61 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const now = useMemo(() => new Date(), [tick, world.events, world.tasks, phases]);
   const day = useMemo(() => buildLiveDay(world.events, world.tasks, phases, now), [world.events, world.tasks, phases, now]);
-  const [toast, setToast] = useState<{ text: string; undo?: () => void } | null>(null);
+  const [toast, setToast] = useState<{ text: string; undo?: () => void; tone: 'ok' | 'error' } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
-  const say = (text: string, undo?: () => void) => {
-    setToast({ text, undo });
+  const say = (text: string, undo?: () => void, tone: 'ok' | 'error' = 'ok') => {
+    setToast({ text, undo, tone });
     clearTimeout(toastTimer.current);
     toastTimer.current = setTimeout(() => setToast(null), 5000);
   };
   const [draft, setDraft] = useState('');
   const [planning, setPlanning] = useState(false);
+  // Was gerade gespeichert wird: Knöpfe warten, statt doppelt zu senden.
+  const [pending, setPending] = useState<Set<string>>(() => new Set());
+  const mark = (id: string, on: boolean) => setPending((s) => { const n = new Set(s); if (on) n.add(id); else n.delete(id); return n; });
   const inputRef = useRef<HTMLInputElement>(null);
   useEffect(() => { if (planning) inputRef.current?.focus(); }, [planning]);
 
-  if (!world.enabled || world.loading) return null;
+  if (!world.enabled) return null;
+  if (world.loading) {
+    return (
+      <section className="dy" data-compact={compact ? 'true' : 'false'} aria-label="Dein Tag" aria-busy="true" data-testid="day-loading">
+        <div className="dy-grid">
+          <div className="dy-card"><p className="dy-eyebrow">Als Nächstes</p><div className="dy-skeleton"><Loading lines={2} label="Dein Tag wird geladen" /></div></div>
+          <div className="dy-card"><p className="dy-eyebrow">Was heute drängt</p><div className="dy-skeleton"><Loading lines={3} label="Aufgaben werden geladen" /></div></div>
+        </div>
+      </section>
+    );
+  }
+  if (world.failed) {
+    return (
+      <section className="dy" aria-label="Dein Tag" data-testid="day-error">
+        <div className="dy-card dy-card--error" role="status">
+          <p className="dy-eyebrow">Dein Tag</p>
+          <p className="dy-title">Gerade nicht lesbar</p>
+          <p className="dy-meta">CORE hat Termine und Aufgaben nicht geliefert. Angezeigt wird nichts, was nicht belegt ist.</p>
+        </div>
+      </section>
+    );
+  }
 
   const done = async (t: WorldTask, value: boolean) => {
+    if (pending.has(t.id)) return;
+    mark(t.id, true);
     const ok = await actions.setDone(t, value);
-    if (!ok) return say('Konnte nicht gespeichert werden. Bitte noch einmal.');
+    mark(t.id, false);
+    if (!ok) return say('Konnte nicht gespeichert werden. Bitte noch einmal.', undefined, 'error');
     say(value ? `Erledigt: ${t.title}` : `Wieder offen: ${t.title}`, value ? () => { void done(t, false); } : undefined);
   };
   const add = async (e: React.FormEvent) => {
     e.preventDefault();
     const v = draft.trim();
     if (!v) return inputRef.current?.focus();
+    if (pending.has('tomorrow')) return;
+    mark('tomorrow', true);
     const ok = await actions.addForTomorrow(v);
-    if (!ok) return say('Konnte nicht gespeichert werden. Bitte noch einmal.');
+    mark('tomorrow', false);
+    if (!ok) return say('Konnte nicht gespeichert werden. Bitte noch einmal.', undefined, 'error');
     setDraft('');
     say('Für morgen notiert.');
   };
@@ -98,7 +128,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
             <ul className="dy-list">
               {day.open.map((o) => (
                 <li key={o.task.id} className="dy-task">
-                  <button type="button" className="dy-box" aria-label={`Erledigt: ${o.task.title}`} data-testid={`day-tick-${o.task.id}`} onClick={() => done(o.task, true)} />
+                  <button type="button" className="dy-box" aria-label={`Erledigt: ${o.task.title}`} aria-busy={pending.has(o.task.id) || undefined} disabled={pending.has(o.task.id)} data-testid={`day-tick-${o.task.id}`} onClick={() => done(o.task, true)} />
                   <span className="dy-tx">{o.task.title}<small>{o.meta}</small></span>
                   <span className={`dy-tag${o.overdue ? ' dy-tag--over' : ''}`}>{o.overdue ? 'Überfällig' : 'Heute'}</span>
                 </li>
@@ -109,7 +139,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
             <ul className="dy-list dy-list--done">
               {day.doneToday.map((x) => (
                 <li key={x.id} className="dy-task dy-task--done">
-                  <button type="button" className="dy-box dy-box--on" aria-label={`Wieder öffnen: ${x.title}`} onClick={() => done(x, false)}>✓</button>
+                  <button type="button" className="dy-box dy-box--on" aria-label={`Wieder öffnen: ${x.title}`} aria-busy={pending.has(x.id) || undefined} disabled={pending.has(x.id)} onClick={() => done(x, false)}>✓</button>
                   <span className="dy-tx">{x.title}</span>
                 </li>
               ))}
@@ -121,7 +151,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
             {planning || day.tomorrow.length ? (
               <form className="dy-add" onSubmit={add}>
                 <input ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} placeholder="Was steht morgen an?" aria-label="Aufgabe für morgen" data-testid="day-tomorrow-input" />
-                <button type="submit" className="dy-btn dy-btn--ghost">Hinzufügen</button>
+                <button type="submit" className="dy-btn dy-btn--ghost" disabled={pending.has('tomorrow')} aria-busy={pending.has('tomorrow') || undefined}>{pending.has('tomorrow') ? 'Speichert …' : 'Hinzufügen'}</button>
               </form>
             ) : (
               <button type="button" className="dy-link" onClick={() => setPlanning(true)} data-testid="day-plan">Morgen planen</button>
@@ -136,7 +166,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
       </button>
 
       {toast ? (
-        <div className="dy-toast" role="status" data-testid="day-toast">
+        <div className="dy-toast" role="status" data-tone={toast.tone} data-testid="day-toast">
           <span>{toast.text}</span>
           {toast.undo ? <button type="button" onClick={() => { toast.undo!(); setToast(null); }}>Rückgängig</button> : null}
         </div>
