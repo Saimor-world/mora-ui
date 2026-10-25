@@ -15,7 +15,8 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
 }
 function buildCharacter() {
   const body = new THREE.Group(), face = new THREE.Group(), jade = new THREE.Group();
-  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.66, 0);
+  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.66, 0), veilMaterial = lightMaterial(.22, 1);
+  const veil = new THREE.Mesh(createLightForm('veil'), veilMaterial); veil.position.z=-.08; body.add(veil);
   body.add(new THREE.Mesh(createLightForm('head'), headMaterial), new THREE.Mesh(createLightForm('body'), torsoMaterial));
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
   // Filaments follow the actual flame surface and extend its silhouette, rather than adding a metal shell.
@@ -32,8 +33,8 @@ function buildCharacter() {
   const leaf = new THREE.Mesh(createLightForm('body'), leafMaterial);
   leaf.scale.set(1.15,.83,1.1); leaf.rotation.z=-.22; leaf.position.set(-.08,-.12,-.03); body.add(leaf);
   const ribbons = new THREE.Group();
-  ribbons.add(ellipseThread(1.10, .55, -.35, .24), ellipseThread(.98, .50, -.42, -.20));
-  ribbons.rotation.z = .13; body.add(ribbons);
+  ribbons.add(ellipseThread(1.10, .55, -.06, .45), ellipseThread(.98, .50, -.42, -.20));
+  ribbons.rotation.z = .28; body.add(ribbons);
   const openEyes: THREE.Group[] = [], closedEyes: THREE.Mesh[] = [];
   for (const side of [-1, 1]) {
     const eye = new THREE.Group(); eye.position.set(side * .20, .31, .374);
@@ -55,7 +56,7 @@ function buildCharacter() {
   const light = new THREE.PointLight(P.gold, 1.5, 5, 2); light.position.set(0,.5,1); body.add(light);
   const threads: THREE.MeshBasicMaterial[] = [];
   body.traverse(object => {if(object instanceof THREE.Mesh && object.material.userData?.lightThread) threads.push(object.material);});
-  return { body, face, openEyes, closedEyes, smile, neutral, jade, ribbons, light, headMaterial, torsoMaterial, leafMaterial, threads, aura };
+  return { body, face, openEyes, closedEyes, smile, neutral, jade, ribbons, light, headMaterial, torsoMaterial, leafMaterial, veilMaterial, threads, aura };
 }
 /** Native Three.js retains the existing Next/React runtime and shares one body with the Website. */
 export default function CharacterScene(props: CharacterSceneProps) {
@@ -95,7 +96,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       const tapped=!still && time-interaction.current.touchedAt<4500;
       target.set(still||rest?0:tapped?interaction.current.x*.65:Math.sin(t*.32)*.22,
         rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
-      const {body,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,headMaterial,torsoMaterial,leafMaterial,threads,aura}=character;
+      const {body,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,headMaterial,torsoMaterial,leafMaterial,veilMaterial,threads,aura}=character;
       if (still) body.position.copy(target); else body.position.lerp(target,1-Math.exp(-dt*(tapped?2.5:1.6)));
       body.rotation.z=still?0:THREE.MathUtils.damp(body.rotation.z,rest?-.18:Math.sin(t*.65)*(busy?.10:.035),3,dt);
       body.rotation.y=still?0:THREE.MathUtils.damp(body.rotation.y,interaction.current.x*.18,3,dt);
@@ -106,9 +107,9 @@ export default function CharacterScene(props: CharacterSceneProps) {
       face.position.set(still?0:interaction.current.x*.025,still?0:interaction.current.y*.018,0);
       if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.08:busy?1.1:.4,2,dt);orbit+=dt*velocity;}
       jade.position.set(Math.cos(orbit)*1.06,.25+Math.sin(orbit)*.36,Math.sin(orbit)*.60);jade.rotation.y=orbit*.4;
-      ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.13+(still?0:Math.sin(t*.4)*.08);
+      ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.28+(still?0:Math.sin(t*.4)*.08);
       const dim=state==='error'||rest;
-      for (const material of [headMaterial,torsoMaterial,leafMaterial]) {
+      for (const material of [headMaterial,torsoMaterial,leafMaterial,veilMaterial]) {
         material.uniforms.time.value=t;material.uniforms.motion.value=still||rest?0:busy?1.4:1;
         material.uniforms.warmth.value=dim?.28:1;
         material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);

@@ -12,6 +12,10 @@ const HEAD = [
   [-.255, 1.01, .235, .145], [-.27, 1.20, .135, .085],
   [-.13, 1.39, .09, .047], [.105, 1.57, .045, .021], [.43, 1.76, .001, .001],
 ];
+const VEIL = [
+  [-.38,.62,.001,.001],[-.55,.80,.07,.035],[-.61,1.02,.14,.05],
+  [-.49,1.24,.12,.04],[-.18,1.47,.075,.025],[.43,1.76,.001,.001],
+];
 const BODY = [
   [0, -.05, .025, .025], [.015, -.18, .10, .065], [.015, -.36, .22, .125],
   [-.055, -.57, .26, .14], [-.23, -.79, .235, .11],
@@ -29,8 +33,8 @@ function profile(rows: number[][], t: number) {
 }
 
 /** Closed cross-section loft. Depth remains real at every angle, including the head's flame tip. */
-export function createLightForm(kind: 'head' | 'body') {
-  const rows = kind === 'head' ? HEAD : BODY, rings = 96, sides = 48;
+export function createLightForm(kind: 'head' | 'body' | 'veil') {
+  const rows = kind === 'head' ? HEAD : kind === 'veil' ? VEIL : BODY, rings = 96, sides = 48;
   const positions = new Float32Array((rings + 1) * (sides + 1) * 3);
   const uv = new Float32Array((rings + 1) * (sides + 1) * 2), indices: number[] = [];
   for (let i = 0; i <= rings; i++) {
@@ -44,7 +48,7 @@ export function createLightForm(kind: 'head' | 'body') {
       uv.set([j / sides, i / rings], n * 2);
       if (i < rings && j < sides) {
         const next = n + sides + 1;
-        if (kind === 'head') indices.push(n, next, n + 1, n + 1, next, next + 1);
+        if (kind !== 'body') indices.push(n, next, n + 1, n + 1, next, next + 1);
         else indices.push(n, n + 1, next, n + 1, next + 1, next);
       }
     }
