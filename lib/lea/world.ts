@@ -31,17 +31,31 @@ export interface WorldPlanet {
   /** Besonderheiten aus echten Daten (Galaxie v1): Ring = Ordner, Leuchten = Aktivität, Polarlicht = Überfälliges. */
   traits?: PlanetTraits;
 }
-export interface PlanetTraits { folders: number; activity: number; overdue: number; open: number; texture: 0 | 1 | 2 | 3 }
+export interface PlanetTraits {
+  folders: number; activity: number; overdue: number; open: number; texture: 0 | 1 | 2 | 3;
+  /** Echte Zusatzinfos (nur gesetzt, wenn vorhanden): letzte Änderung, neuester Eintrag, nächste fällige Aufgabe. */
+  lastAt?: string; latest?: string; nextTask?: { title: string; due?: string };
+}
 
 /** Reine Funktion: Besonderheiten eines Planeten aus Ordnern, Einträgen und Aufgaben. */
-export function planetTraits(id: string, folderIds: string[], nodes: { folder_id?: string | null; created_at?: string | null; updated_at?: string | null }[], tasks: WorldTask[], now = new Date()): PlanetTraits {
+export function planetTraits(id: string, folderIds: string[], nodes: { folder_id?: string | null; created_at?: string | null; updated_at?: string | null; name?: string | null; title?: string | null }[], tasks: WorldTask[], now = new Date()): PlanetTraits {
   const set = new Set(folderIds);
   const week = now.getTime() - 7 * 864e5;
   const today = localISO(now);
   const recent = nodes.filter((n) => n.folder_id && set.has(n.folder_id) && Date.parse(n.updated_at || n.created_at || '') >= week).length;
   const mine = tasks.filter((t) => t.folder_id && set.has(t.folder_id) && !/done|erledigt|closed|completed/i.test(t.status || ''));
   let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  let lastAt: string | undefined; let latest: string | undefined; let lastT = -Infinity;
+  for (const n of nodes) {
+    if (!n.folder_id || !set.has(n.folder_id)) continue;
+    const t = Date.parse(n.updated_at || n.created_at || '');
+    if (Number.isFinite(t) && t > lastT) { lastT = t; lastAt = n.updated_at || n.created_at || undefined; latest = (n.name || n.title || '').trim() || undefined; }
+  }
+  const dated = mine.filter((t) => t.due_date).sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
+  const nt = dated[0] ?? mine[0];
+  const nextTask = nt && (nt.title || '').trim() ? { title: nt.title!.trim(), due: nt.due_date ? nt.due_date.slice(0, 10) : undefined } : undefined;
   return {
+    lastAt, latest, nextTask,
     folders: folderIds.length,
     activity: Math.min(1, recent / 8),
     overdue: mine.filter((t) => t.due_date && t.due_date.slice(0, 10) < today).length,
@@ -101,4 +115,17 @@ export function buildWorld(input: { departments: WorldDepartment[]; events: Worl
       }
       return { id: d.id, name: d.name, tone: matteTone(d.name, { count: weight }, slots[idx]), weight, meta, moons };
     });
+}
+
+/** „heute“, „gestern“, „vor N Tagen“, sonst Datum – nur für echte Zeitstempel. */
+export function relDay(iso: string | undefined, now = new Date()): string | undefined {
+  if (!iso) return undefined;
+  const t = Date.parse(iso); if (!Number.isFinite(t)) return undefined;
+  const d0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const d1 = new Date(new Date(t).getFullYear(), new Date(t).getMonth(), new Date(t).getDate()).getTime();
+  const days = Math.round((d0 - d1) / 864e5);
+  if (days <= 0) return 'heute';
+  if (days === 1) return 'gestern';
+  if (days < 14) return `vor ${days} Tagen`;
+  return shortDate(localISO(new Date(t)));
 }
