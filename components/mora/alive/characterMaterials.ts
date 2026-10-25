@@ -35,9 +35,9 @@ export function lightMaterial(opacity: number, flow: number) {
         vec3 color=mix(gold*.32,cream*.95,clamp(diffuse*.8+front*.15,0.,1.));
         color+=gold*(edge*.9+inner*.12)+cream*highlight*.8;
         float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
-        color+=gold*filaments*.25;color=mix(color*.35,color,warmth);
+        color+=gold*filaments*.06*edge;color=mix(color*.35,color,warmth);
         float alpha=opacity*mix(.55,.98,pow(front,.5))*mix(1.,.50,tip);
-        if(flow<.5){color=mix(gold*1.5,cream*1.2,front*.35);alpha=opacity*(.55+edge*.45+filaments*.10);}
+        if(flow<.5){color=mix(gold*1.5,cream*1.5,front*.65);alpha=opacity*(.25+front*.65+filaments*.10);}
         gl_FragColor=vec4(color,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -68,5 +68,14 @@ export function halo(color: string, size: number, strength: number) {
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: 'varying vec2 xy;void main(){xy=uv*2.-1.;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
     fragmentShader: 'uniform vec3 tint;uniform float strength;varying vec2 xy;void main(){float r=dot(xy,xy);float a=exp(-r*4.5)*(1.-smoothstep(.45,1.,r));gl_FragColor=vec4(tint,a*strength);}',
+  }));
+}
+
+/** Small orbital caustic: a light source carried by the jade, not a screen-space emoji. */
+export function jadeSpark() {
+  return new THREE.Mesh(new THREE.PlaneGeometry(.44,.44), new THREE.ShaderMaterial({
+    uniforms: { tint: { value: new THREE.Color(P.gold) } }, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending,
+    vertexShader:'varying vec2 xy;void main(){xy=uv*2.-1.;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:'uniform vec3 tint;varying vec2 xy;void main(){float ray=exp(-abs(xy.x)*85.-abs(xy.y)*6.)+exp(-abs(xy.y)*85.-abs(xy.x)*6.);float core=exp(-dot(xy,xy)*130.);gl_FragColor=vec4(tint*3.,clamp(ray+core,0.,1.)*.8);}',
   }));
 }

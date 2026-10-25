@@ -3,7 +3,7 @@ import { useEffect, useRef, type MutableRefObject } from 'react';
 import * as THREE from 'three';
 import type { CharacterState } from '@/lib/mora/alive/engine';
 import { createLightForm, ellipseThread, lightThread, LIGHT_PALETTE as P } from './characterForm';
-import { halo, jadeMaterial, lightMaterial } from './characterMaterials';
+import { halo, jadeMaterial, jadeSpark, lightMaterial } from './characterMaterials';
 import { createCharacterGlow } from './characterGlow';
 
 export interface CharacterInteraction { x: number; y: number; touchedAt: number }
@@ -15,7 +15,8 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
 }
 function buildCharacter() {
   const body = new THREE.Group(), face = new THREE.Group(), jade = new THREE.Group();
-  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.66, 0), veilMaterial = lightMaterial(.22, 1);
+  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.86, 0), veilMaterial = lightMaterial(.22, 1);
+  headMaterial.depthWrite = true;
   const veil = new THREE.Mesh(createLightForm('veil'), veilMaterial); veil.position.z=-.08; body.add(veil);
   body.add(new THREE.Mesh(createLightForm('head'), headMaterial), new THREE.Mesh(createLightForm('body'), torsoMaterial));
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
@@ -52,7 +53,8 @@ function buildCharacter() {
   jade.add(new THREE.Mesh(new THREE.SphereGeometry(.205, 40, 28), jadeMaterial()));
   const rim = new THREE.Mesh(new THREE.TorusGeometry(.212, .009, 8, 64), new THREE.MeshStandardMaterial({ color: P.gold, metalness: .65, roughness: .26, emissive: P.gold, emissiveIntensity: .2 }));
   rim.rotation.set(.15,.25,-.3); jade.add(rim);
-  const jadeAura = halo(P.mint, .9, .10); jadeAura.position.z = -.25; jade.add(jadeAura); body.add(jade);
+  const jadeAura = halo(P.mint, .9, .10); jadeAura.position.z = -.25; jade.add(jadeAura);
+  const glint = jadeSpark(); glint.position.set(.13,.14,.17); jade.add(glint); body.add(jade);
   const light = new THREE.PointLight(P.gold, 1.5, 5, 2); light.position.set(0,.5,1); body.add(light);
   const threads: THREE.MeshBasicMaterial[] = [];
   body.traverse(object => {if(object instanceof THREE.Mesh && object.material.userData?.lightThread) threads.push(object.material);});
