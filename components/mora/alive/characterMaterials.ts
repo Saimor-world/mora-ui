@@ -32,12 +32,12 @@ export function lightMaterial(opacity: number, flow: number) {
         vec3 lamp=normalize(vec3(-.65,.8,1.));float diffuse=max(0.,dot(nn,lamp));
         float highlight=pow(max(0.,dot(reflect(-lamp,nn),vv)),35.);
         float inner=exp(-dot((local.xy-vec2(-.12,.38))*vec2(2.,1.5),(local.xy-vec2(-.12,.38))*vec2(2.,1.5)));
-        vec3 color=mix(gold*.65,cream*1.65,clamp(diffuse*.75+front*.4,0.,1.));
-        color+=gold*(edge*2.3+inner*.30)+cream*highlight*1.5;
+        vec3 color=mix(gold*.32,cream*.95,clamp(diffuse*.8+front*.15,0.,1.));
+        color+=gold*(edge*.9+inner*.12)+cream*highlight*.8;
         float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
         color+=gold*filaments*.25;color=mix(color*.35,color,warmth);
         float alpha=opacity*mix(.55,.98,pow(front,.5))*mix(1.,.50,tip);
-        if(flow<.5){color=mix(gold*1.7,cream*1.3,front);alpha=opacity*(.30+edge*.8+filaments*.14);}
+        if(flow<.5){color=mix(gold*1.5,cream*1.2,front*.35);alpha=opacity*(.55+edge*.45+filaments*.10);}
         gl_FragColor=vec4(color,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
