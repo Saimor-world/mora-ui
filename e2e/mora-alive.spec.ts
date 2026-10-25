@@ -3,11 +3,15 @@ import { test, expect } from '@playwright/test';
 test('renders a 3D body, supports touch/keyboard controls and labels expressions as preview', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => { if (message.type() === 'error' && /THREE.WebGLProgram|VALIDATE_STATUS|Shader Error/.test(message.text())) errors.push(message.text()); });
   await page.goto('/tunnel?mora=alive');
   await expect(page.getByRole('region', { name: 'MÔRA Alive Vorschau' })).toBeVisible();
   const canvas = page.locator('canvas');
   await expect(canvas).toBeVisible();
   await expect.poll(() => page.getByRole('img', { name: 'Freigegebenes SAIMÔR-Sigil' }).evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  await page.getByRole('button', { name: 'Bewegung pausieren' }).click();
+  await canvas.screenshot({ path: info.outputPath('reference-idle.png') });
+  await page.getByRole('button', { name: 'Bewegung fortsetzen' }).click();
   await page.getByRole('button', { name: 'Zu mir', exact: true }).press('Enter');
   await page.getByTestId('mora-alive-stage').tap({ position: { x: 100, y: 100 } });
   await page.getByRole('combobox', { name: 'Character-Vorschau' }).selectOption('working');

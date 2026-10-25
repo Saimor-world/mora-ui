@@ -1,4 +1,4 @@
-# MÔRA Alive v01 — implementation and truth contract
+# MÔRA Alive v02 — implementation and truth contract
 
 ## Goal and acceptance
 MÔRA gets a real mesh-based body inside the existing OS, without another agent, socket, data store or execution path. A user can open MÔRA Center → **Alive · Vorschau**, interact using mouse/touch/keyboard, pause movement, and distinguish CORE-derived activity from explicit character previews. The existing Universe, dock stone and chat behavior remain intact until a separately approved replacement.
@@ -9,12 +9,12 @@ MÔRA gets a real mesh-based body inside the existing OS, without another agent,
 - `lib/universe/moraPresence.ts`, `lib/store/orbStore.ts`, `lib/hooks/{useMoraExecutions,useActionEvents}.ts`, `lib/hooks/shell/useRealtime.ts`, shared `lib/api/realtimeClient.ts`.
 - CORE `core/services/tool_dispatcher.py`: confirmed tenant broadcast of `mora.execution.started/progress/done/failed`; done includes `ok: true`, failed includes `ok: false`.
 - Website `components/{BrandSigil,MoraCharacter,MoraOsFace}.tsx`: approved master is `public/brand/saimor-sigil-restored-v1.webp`, copied byte-for-byte here; the header uses a 256px PNG derived from the approved PNG master to work with existing static-path handling. Existing OS `/images/saimor_logo.png` is older cyan artwork and is not used for Alive.
-- The supplied conversational reference images are not mounted in this checkout; this version uses verifiable repository references. Character fidelity to those unseen images remains unverified.
+- V02 follows the character turnaround sheet supplied by Marius in this conversation (2026-10-25): continuous curved flame head, small translucent leaf torso, closed smiling idle eyes, tiny mouth, fine gold orbital filaments, separate veined jade. The rejected V01 metallic tube/egg silhouette is removed. The reference itself is not redistributed in the repository.
 
 ## Implementation
 Three.js 0.181 and React Three Fiber 8.18 were already installed. The first remote browser check exposed R3F 8 / Next 15 React-runtime incompatibility (`ReactCurrentBatchConfig`). Alive now uses native Three.js with a React lifecycle wrapper; no React/R3F upgrade, dependency or lockfile change.
-- `CharacterScene.tsx`: tapered elliptical S ribbon mesh, warm emissive head, small jade eyes with highlights, gaze damping and blinking, separate jade satellite with changing orbit, local light and receiving floor. No remote textures, HDRI, model downloads or postprocessing.
-- Tail vertices deform in place; no geometry allocation inside the frame loop. Delta-clamped exponential damping supports different refresh rates. Discrete moods change gaze, eye aperture, orbit velocity, brightness and drift.
+- `characterForm.ts`: continuous cross-section lofts for the flame head and tapered leaf torso, plus fine three-dimensional filament curves. `characterMaterials.ts`: translucent cream/gold light shader, procedural jade veins and soft additive halos. `CharacterScene.tsx`: expressive curved idle eyes and mouth, open eyes with highlights for attention, separate jade satellite, soft landing light. No remote textures, HDRI, model downloads or postprocessing.
+- Crest and leaf motion happen in the vertex shader; no geometry allocation or normal recomputation inside the frame loop. Delta-clamped exponential damping supports different refresh rates. Discrete moods change gaze, eye aperture, orbit velocity, brightness and drift.
 - `engine.ts`: pure bounded reducer and precedence resolver; no backend writes or tool calls.
 - `useCharacter.ts`: read-only adapter on existing realtime singleton; no new `connect()` call. Existing UI presence contributes only listening/thinking, never inferred success.
 - `MoraAlive.tsx`: thin OS adapter. `MoraAliveView.tsx`: shared presentation with lazy native canvas, visible source labels, preview expression selector, pause, keyboard-invitation equivalent, semantic status, WebGL/context-loss fallback, system reduced-motion preference and offscreen/background suspension.
@@ -45,7 +45,7 @@ Lifecycle cleanup cancels animation frames, removes the canvas and context liste
 
 `CharacterScene` takes only `state`, `still`, `active`, normalized pointer ref, and context-failure callback. Its only engine import is a TypeScript type. Reuse this renderer and the pure engine on the Website; supply a Website-specific read-only event adapter, never reuse OS authentication or invent agent events. Keep the source in this repository as canonical and pin the source commit for downstream use. Website preview integration is prepared in Saimor-world/Website#122; production rollout is pending visual acceptance and explicit release approval.
 
-The paused scene provides a stable pose for later screenshots/video. A production marketing exporter, rigged GLB, captured video and physically modeled jade texture are not yet implemented. The body is procedural, so there is no static bitmap character standing in for 3D. CI captures provide the first reusable raster views from the real renderer; they are not generated illustrations.
+The paused scene provides a stable pose for later screenshots/video. A production marketing exporter, rigged GLB, captured video and physical jade material scan are not yet implemented. The body is procedural, so there is no static bitmap character standing in for 3D. CI captures provide the first reusable raster views from the real renderer; they are not generated illustrations.
 
 ## Limits and follow-up
 - This is a first interactive body prototype, not a completed autonomous personality or a new AI model.

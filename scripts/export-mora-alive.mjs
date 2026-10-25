@@ -7,7 +7,7 @@ const [targetArg, commit] = process.argv.slice(2);
 if (!targetArg || !/^[a-f0-9]{40}$/.test(commit || '')) throw new Error('Usage: node scripts/export-mora-alive.mjs <website-checkout> <immutable-source-sha>');
 const target = resolve(targetArg);
 if (target === process.cwd() || !existsSync(resolve(target, 'package.json'))) throw new Error('Target must be a separate existing Website checkout');
-const paths = ['components/mora/alive/CharacterScene.tsx', 'components/mora/alive/MoraAliveView.tsx', 'components/mora/alive/MoraAlive.module.css', 'lib/mora/alive/engine.ts', 'public/brand/saimor-sigil-alive-256.png'];
+const paths = ['components/mora/alive/CharacterScene.tsx', 'components/mora/alive/characterForm.ts', 'components/mora/alive/characterMaterials.ts', 'components/mora/alive/MoraAliveView.tsx', 'components/mora/alive/MoraAlive.module.css', 'lib/mora/alive/engine.ts', 'public/brand/saimor-sigil-alive-256.png'];
 const files = {};
 for (const path of paths) {
   const bytes = execFileSync('git', ['show', `${commit}:${path}`], { maxBuffer: 1024 * 1024 });
