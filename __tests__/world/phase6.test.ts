@@ -9,7 +9,7 @@ describe('Phase 6', () => {
   });
   it('Tagessatz: korrekte Grammatik bei einem vorbeien Termin', () => {
     const now = new Date('2026-10-23T20:00:00');
-    const day = { today: [{ id: 'e', title: 'Michelle', date: '2026-10-23', time: '10:00' }], next: null, minutesToNext: null, onlyToday: [] } as any;
+    const day = { today: [{ id: 'e', title: 'Michelle', date: '2026-10-23', time: '10:00', duration: 60 }], next: null, minutesToNext: null, onlyToday: [] } as any;
     expect(daySentence(day, now)).toBe('Dein Termin heute ist vorbei.');
     expect(daySentence({ ...day, today: [day.today[0], { ...day.today[0], id: 'f' }] }, now)).toBe('Alle 2 Termine von heute sind vorbei.');
   });

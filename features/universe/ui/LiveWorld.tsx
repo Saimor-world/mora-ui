@@ -169,12 +169,14 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       case 'unknown-target': return { text: `„${cmd.what}“ finde ich in deinen Daten nicht.`, tone: 'note' };
     }
   }, [dayActions, openPlanet, phases, setPhase, role, world.tasksPlanetId]);
-  const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events]);
+  const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO(new Date(), world.calendar?.window.timezone)).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events, world.calendar?.window.timezone]);
   const askCtx = useMemo(() => ({ tasks: world.tasks, todayEvents, planets: finderPlanets.map((p) => ({ id: p.id, name: p.name })), running: world.day.running, stale: world.day.stale }), [world.tasks, todayEvents, finderPlanets, world.day.running, world.day.stale]);
   const dayContext = useMemo(() => ({
     company_id: world.companyId,
     surface: 'universe',
-    today: localISO(),
+    calendar: world.calendar ? { status: world.calendar.status, complete: world.calendar.complete,
+      source: world.calendar.source, window: world.calendar.window, last_synced_at: world.calendar.last_synced_at } : { status: 'unavailable', complete: false },
+    today: localISO(new Date(), world.calendar?.window.timezone),
     selected_area: selected?.name ?? null,
     day_sentence: world.day.sentence,
     next_event: world.day.next ? { time: world.day.next.time, title: world.day.next.title, date: world.day.next.date } : null,
@@ -182,7 +184,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
     task_line: world.day.taskLine,
     areas: finderPlanets.map((p) => p.name),
-  }), [selected, world.day, finderPlanets, world.companyId]);
+  }), [selected, world.day, world.companyId, world.calendar, finderPlanets]);
 
   const counts = useMemo(() => {
     const moons = finderPlanets.reduce((n, p) => n + p.moons.length, 0);
@@ -252,6 +254,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         <PlanetFocus
           planet={selected}
           day={world.day}
+          timeZone={world.calendar?.window.timezone}
           phone={phone}
           readOnly={role === 'member' || Object.values(phasePending).some(Boolean)}
           onZoom={() => openPlanet(selected.id)}
@@ -267,7 +270,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <p className="fv-eyebrow">Dein Horizont</p>
           <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-calendar">
             <span>Kalender</span>
-            <b>{world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
+            <b>{world.calendarUnavailable ? 'Kalenderstand nicht vollständig lesbar' : world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
           <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
             <span>Aufgaben</span>

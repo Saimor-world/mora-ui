@@ -141,9 +141,14 @@ export function TodayOverview() {
 
   const world = useWorld();
   const phases = useDayStore((s) => s.phases);
-  const openToday = useMemo(() => nextOpenToday(world.events ?? [], phases, new Date()), [world.events, phases]);
+  const timeZone = world.calendar?.window.timezone;
+  const openToday = useMemo(() => nextOpenToday(world.events ?? [], phases, new Date(), timeZone), [world.events, phases, timeZone]);
 
   const calendarCopy = useMemo<TodayCopy>(() => {
+    if (world.calendarUnavailable) {
+      const status = world.calendar?.status;
+      return sourceStateCopy('Kalender', status === 'partial' ? 'unavailable' : status, world.loading, world.calendar?.last_synced_at);
+    }
     // Leas Termine mit Status aus CORE: abgeschlossene überspringen, den nächsten offenen zeigen.
     if (openToday.total > 0) {
       const n = openToday.next;
@@ -153,6 +158,7 @@ export function TodayOverview() {
         detail: `${openToday.open} von ${openToday.total} Termin${openToday.total === 1 ? '' : 'en'} heute offen`,
       };
     }
+    if (world.calendar?.complete) return { value: 'Keine Termine heute', detail: 'Im bestätigten Kalenderstand sind heute keine Termine eingetragen.' };
     if (!snapshot) return topLevelStateCopy('Kalender', loadError, loading);
     if (snapshot.calendar.status === 'empty') {
       // "frei" klang nach "nichts zu tun" – Termine und Aufgaben sind verschiedene Dinge.
@@ -181,7 +187,7 @@ export function TodayOverview() {
         ? next.location
         : `${snapshot.calendar.count} Termin${snapshot.calendar.count === 1 ? '' : 'e'} heute`,
     };
-  }, [loadError, loading, snapshot, openToday]);
+  }, [loadError, loading, snapshot, openToday, world.calendarUnavailable, world.loading, world.calendar]);
 
   const mailCopy = useMemo<TodayCopy>(() => {
     if (!snapshot) return topLevelStateCopy('Mail', loadError, loading);

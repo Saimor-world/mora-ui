@@ -20,6 +20,7 @@ import { useWorld } from '@/lib/lea/useWorld';
 import { taskLineOf, formatTaskLine } from '@/lib/lea/live';
 import { useDayStore } from '@/lib/lea/dayStore';
 import { nextOpenToday } from '@/lib/lea/day';
+import { localISO } from '@/lib/lea/world';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 import { firstName } from '@/lib/auth/displayName';
@@ -70,18 +71,25 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
   // Kalender-Kachel: mit Sitzung Leas Termine samt CORE-Status – abgeschlossene überspringen, nächster offener zuerst.
   const world = useWorld();
   // Eine Quelle der Wahrheit: mit Sitzung zählen Heute, Universe, Horizont und MÔRA dieselben Aufgaben (taskLineOf).
-  const tc = world.enabled && !world.loading ? taskLineOf(world.tasks) : null;
+  const tc = world.enabled && !world.loading && !world.tasksUnavailable ? taskLineOf(world.tasks, new Date(), world.calendar?.window.timezone) : null;
   const phases = useDayStore((s) => s.phases);
-  const openToday = useMemo(() => nextOpenToday(world.events, phases, new Date()), [world.events, phases]);
+  const timeZone = world.calendar?.window.timezone;
+  const openToday = useMemo(() => nextOpenToday(world.events, phases, new Date(), timeZone), [world.events, phases, timeZone]);
   const calendarTile = (snap: TodaySnapshot): [string, string] => {
+    if (!preview && hasSession && world.calendarUnavailable) return ['Kalenderstand nicht vollständig lesbar', 'Ein unbekannter Stand bedeutet keine freie Zeit.'];
     if (!preview && hasSession && openToday.total > 0) {
       const n = openToday.next;
       if (!n) return ['Alle Termine abgeschlossen', `${openToday.total} Termin${openToday.total === 1 ? '' : 'e'} heute, alle erledigt.`];
       return [n.time ? `${n.time} · ${n.title}` : n.title, `${openToday.open} von ${openToday.total} Termin${openToday.total === 1 ? '' : 'en'} heute offen`];
     }
+    if (!preview && hasSession && world.calendar?.complete) return ['Keine Termine heute', 'Im bestätigten Kalenderstand sind heute keine Termine eingetragen.'];
     const evs = snap.calendar.events;
     return [evs[0]?.title ?? 'Heute frei', evs.length ? `${evs.length} Termin${evs.length === 1 ? '' : 'e'} heute` : 'Keine weiteren Termine für heute.'];
   };
+  const worldCalendar = !preview && hasSession;
+  const calendarEvents = worldCalendar
+    ? world.events.filter((event) => event.date === localISO(new Date(), timeZone))
+    : snapshot?.calendar.events ?? [];
 
   // Handy mit Sitzung: oben Home V4 aus echten Daten, darunter dieselben Widgets wie am Desktop (wie auf HQ).
   const phoneHome = phone && hasSession && !preview;
@@ -116,7 +124,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 snapshot.mail.status === 'unavailable' ? 'Unbekannt' : snapshot.mail.status === 'disconnected' ? 'Nicht angedockt' : snapshot.mail.items[0]?.subject ?? 'Nichts Neues',
                 snapshot.mail.status === 'unavailable' ? 'Postfach konnte gerade nicht gelesen werden.' : snapshot.mail.status === 'disconnected' ? 'Docke die Post in der Andockstation an.' : `${snapshot.mail.items.length} zuletzt geladene Nachrichten.`,
                 () => navigate('post')]] as const : []),
-              ['Aufgaben · Organisation', ListTodo, tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
+              ['Aufgaben · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Aufgabenstand nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
               ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
@@ -171,11 +179,11 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
           <ResponsiveGrid columns={2}>
             <Section icon={<CalendarDays size={14} />} title="Termine heute" aside={<Button size="sm" variant="ghost" onClick={() => navigate('post')}>Post</Button>}>
-              <SourceState status={snapshot.calendar.status} label="Kalender" />
-              {(snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'stale') && (
-                snapshot.calendar.events.length === 0 ? <Text>Keine Termine heute.</Text> : (
+              <SourceState status={worldCalendar ? world.calendarUnavailable ? 'unavailable' : 'ok' : snapshot.calendar.status} label="Kalender" />
+              {(worldCalendar ? !world.calendarUnavailable : snapshot.calendar.status === 'ok' || snapshot.calendar.status === 'empty' || snapshot.calendar.status === 'stale') && (
+                calendarEvents.length === 0 ? <Text>Keine Termine heute.</Text> : (
                   <div className="os-list">
-                    {snapshot.calendar.events.slice(0, 4).map((e) => (
+                    {calendarEvents.slice(0, 4).map((e) => (
                       <div key={e.id} className="os-list-row"><Text tone="default" className="[overflow-wrap:anywhere]">{e.title}</Text><Text variant="meta">{e.time || 'ganztägig'}</Text></div>
                     ))}
                   </div>

@@ -36,8 +36,8 @@ export function formatTaskLine(c: { openTotal: number; dueToday: number; overdue
   return `${parts.join(' · ')} · ${c.openTotal} offen`;
 }
 
-export function taskLineOf(tasks: WorldTask[], now = new Date()): { line: string; due: number; dueToday: number; overdue: number; inProgress: number; openTotal: number } {
-  const iso = localISO(now);
+export function taskLineOf(tasks: WorldTask[], now = new Date(), timeZone?: string): { line: string; due: number; dueToday: number; overdue: number; inProgress: number; openTotal: number } {
+  const iso = localISO(now, timeZone);
   const notDone = tasks.filter((x) => x.status !== 'done');
   const overdue = notDone.filter((x) => x.due_date && x.due_date < iso).length;
   const due = notDone.filter((x) => x.due_date && x.due_date <= iso).length;
@@ -50,14 +50,14 @@ export function phaseOf(e: WorldEvent, phases: Record<string, EventPhase>): Even
   return phases[e.id] ?? 'geplant';
 }
 
-export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: Record<string, EventPhase>, now = new Date()): LiveDay {
-  const iso = localISO(now);
-  const t = new Date(now); t.setDate(t.getDate() + 1);
-  const tomorrowIso = localISO(t);
-  const time = hm(now);
+export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: Record<string, EventPhase>, now = new Date(), timeZone?: string): LiveDay {
+  const iso = localISO(now, timeZone);
+  const t = new Date(`${iso}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + 1);
+  const tomorrowIso = t.toISOString().slice(0, 10);
+  const time = hm(now, timeZone);
   const today = events.filter((e) => e.date === iso).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
   const running = today.find((e) => phaseOf(e, phases) === 'laeuft') ?? null;
-  const endOf = (e: WorldEvent) => { if (!e.time) return '23:59'; const [h, m] = e.time.split(':').map(Number); const t = h * 60 + m + (e.duration ?? 60); return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
+  const endOf = (e: WorldEvent) => { if (!e.time) return '23:59'; if (e.duration == null) return e.time; const [h, m] = e.time.split(':').map(Number); const t = h * 60 + m + e.duration; return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`; };
   const stale = running ? null : today.find((e) => phaseOf(e, phases) === 'geplant' && endOf(e) < time) ?? null;
   const next = running ? null : (
     today.find((e) => phaseOf(e, phases) === 'geplant' && (e.time ?? '23:59') >= time)
@@ -67,7 +67,8 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   let minutesToNext: number | null = null;
   if (next && next.date === iso && next.time) {
     const [h, m] = next.time.split(':').map(Number);
-    minutesToNext = Math.max(0, h * 60 + m - (now.getHours() * 60 + now.getMinutes()));
+    const [hour, minute] = time.split(':').map(Number);
+    minutesToNext = Math.max(0, h * 60 + m - (hour * 60 + minute));
   }
   const open = tasks
     .filter((x) => x.status !== 'done' && x.due_date && x.due_date <= iso)
@@ -79,7 +80,7 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   const doneToday = tasks.filter((x) => x.status === 'done' && x.due_date && x.due_date <= iso);
   const tomorrow = tasks.filter((x) => x.status !== 'done' && x.due_date === tomorrowIso);
 
-  const tl = taskLineOf(tasks, now);
+  const tl = taskLineOf(tasks, now, timeZone);
   const restLine = tl.openTotal ? ` Heute nichts fällig, ${tl.openTotal} offen.` : ' Sonst ist heute alles erledigt.';
   let sentence: string;
   // „Heute fällig“ und „überfällig“ getrennt – wie in der Aufgabenzeile (formatTaskLine).
@@ -126,9 +127,9 @@ export function summarizeTitles(titles: string[], max = 3): string[] {
 }
 
 /** Kurze Zeile für einen Termin-Planeten im Universe. */
-export function calendarMeta(day: LiveDay): string | null {
+export function calendarMeta(day: LiveDay, timeZone?: string): string | null {
   if (day.running) return `${personOf(day.running.title)} · läuft gerade`;
-  if (day.next && day.next.date === localISO()) return `heute ${day.next.time ?? ''} ${personOf(day.next.title)}`.replace(/\s+/g, ' ').trim();
+  if (day.next && day.next.date === localISO(new Date(), timeZone)) return `heute ${day.next.time ?? ''} ${personOf(day.next.title)}`.replace(/\s+/g, ' ').trim();
   if (day.doneTodayEvents) return 'heute erledigt';
   return null;
 }
