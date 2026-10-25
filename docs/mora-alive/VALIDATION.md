@@ -1,4 +1,23 @@
-# Validation — MÔRA Alive v01
+# Validation — MÔRA Alive v02
+
+## Reference correction (2026-10-25)
+
+The supplied turnaround sheet is the binding target; V01 was rejected visually. The implementation remains PREPARED, not accepted as a finished 1:1 asset.
+
+- Geometry: continuous flame head, outer translucent crest veil, leaf torso layers, small idle smile/curved eyes, separate dark veined jade, spatial orbital light threads. Actual procedural 3D, no character bitmap.
+- First V02 render (`8c597faf`) passed full CI and all six browser checks, but visual review found flat material and insufficient luminous depth. It was revised rather than accepted on test results alone.
+- Second render (`0f61ab8d`) passed full CI (40150344825) and six desktop/iPhone Chromium/WebKit checks (40150344518). Visual review found face overexposure and orbit crossing the face, leading to another material/compositing correction.
+- Last captured body: `7ec5eb68d0fe0a7b6453ce258b1ecf46beef7cfe`, followed by a corrected jade orbit (front half descends below the face, rear half rises behind it). Local TypeScript and focused ESLint pass. Full CI 40151099772 passed 1,842 unit tests, 53 smoke tests and the build. Browser run 40151099758 passed all six checks. Actual idle and working captures were reviewed at desktop 1440px and iPhone WebKit 390 CSS px / DPR 3. Latest orbit correction results remain linked on draft PR #163.
+- `characterGlow.ts` preserves HDR gradients when supported, falls back to byte targets otherwise, uses two half-resolution separable blurs, antialiases the scene target, protects opaque face details from bloom, and disposes all render targets. Physical iPhone thermal/FPS measurement is still outstanding.
+- The 13 state/adapter regression tests pass; these visual edits do not alter the event engine. Full earlier CI includes existing tests, smoke and builds, not a newly verified authenticated live CORE journey.
+- Website export includes the same form, material and glow modules. V02 distribution is held because visual fidelity remains incomplete; the Website draft's previously pinned source is not silently presented as the corrected body.
+
+## Remaining visual differences
+
+The reconstruction is closer to the supplied silhouette and face, but it is not a 1:1 match. The sheet has more finely layered, curved luminous membranes, richer local scattering and a natural jade microstructure. The current procedural surface and vein pattern are visibly simpler. Night rest is a lowered/tilted pose, not the sheet's fully curled rigged pose. Do not mark the character asset as finished or accepted. The Website draft retains its prior pinned version while the canonical OS preview is revised.
+
+## Earlier integration checks
+
 
 Status: PREPARED for review. Body and isolated signal adapter tests verified; authenticated live CORE journey and physical iPhone performance remain unverified. No production release.
 

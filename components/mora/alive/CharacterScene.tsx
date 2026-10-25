@@ -108,7 +108,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       smile.visible=state!=='error'&&state!=='offline';neutral.visible=!smile.visible;
       face.position.set(still?0:interaction.current.x*.025,still?0:interaction.current.y*.018,0);
       if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.08:busy?1.1:.4,2,dt);orbit+=dt*velocity;}
-      jade.position.set(Math.cos(orbit)*1.06,.05+Math.sin(orbit)*.36,Math.sin(orbit)*.60);jade.rotation.y=orbit*.4;
+      jade.position.set(Math.cos(orbit)*1.06,.05-Math.sin(orbit)*.36,Math.sin(orbit)*.60);jade.rotation.y=orbit*.4;
       ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.28+(still?0:Math.sin(t*.4)*.08);
       const dim=state==='error'||rest;
       for (const material of [headMaterial,torsoMaterial,leafMaterial,veilMaterial]) {
