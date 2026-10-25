@@ -5,7 +5,7 @@ import type { CharacterState } from '@/lib/mora/alive/engine';
 
 export interface CharacterInteraction { x: number; y: number; touchedAt: number }
 export interface CharacterSceneProps { state: CharacterState; still: boolean; active: boolean; interaction: MutableRefObject<CharacterInteraction>; onFailure: () => void }
-const GOLD = '#e7c578', JADE = '#58bc9e', SEGMENTS = 64, SIDES = 10;
+const GOLD = '#e7c578', JADE = '#58bc9e', SEGMENTS = 64, SIDES = 20;
 function makeTail() {
   const curve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, 0.12, 0), new THREE.Vector3(-0.44, -0.35, -0.05),
@@ -29,7 +29,7 @@ function glow(color: string, scale: number) {
   const material = new THREE.ShaderMaterial({
     uniforms: { tint: { value: new THREE.Color(color) } }, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
     vertexShader: 'varying vec3 n; varying vec3 v; void main(){vec4 p=modelViewMatrix*vec4(position,1.); n=normalize(normalMatrix*normal); v=normalize(-p.xyz); gl_Position=projectionMatrix*p;}',
-    fragmentShader: 'uniform vec3 tint; varying vec3 n; varying vec3 v; void main(){float a=pow(1.-abs(dot(normalize(n),normalize(v))),2.8); gl_FragColor=vec4(tint,a*.18);}',
+    fragmentShader: 'uniform vec3 tint; varying vec3 n; varying vec3 v; void main(){float a=pow(abs(dot(normalize(n),normalize(v))),3.); gl_FragColor=vec4(tint,a*.18);}',
   });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.63, 24, 16), material); mesh.scale.setScalar(scale); return mesh;
 }

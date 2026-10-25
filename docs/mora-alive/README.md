@@ -43,9 +43,9 @@ Lifecycle cleanup cancels animation frames, removes the canvas and context liste
 ## Reuse and asset preparation
 `node scripts/export-mora-alive.mjs <Website-checkout> <immutable-source-sha>` copies the canonical View, renderer, engine, CSS and derived sigil. It reads only `git show` at the supplied SHA and records SHA-256 hashes in `docs/mora-alive/SOURCE.json`. Mirrored files must not be edited independently. OS-only `useCharacter` and realtime/auth code are deliberately excluded.
 
-`CharacterScene` takes only `state`, `still`, `active`, normalized pointer ref, and context-failure callback. Its only engine import is a TypeScript type. Reuse this renderer and the pure engine on the Website; supply a Website-specific read-only event adapter, never reuse OS authentication or invent agent events. Keep the source in this repository as canonical and pin the source commit for downstream use. Website rollout is pending visual acceptance of v01; no Website production changes were made.
+`CharacterScene` takes only `state`, `still`, `active`, normalized pointer ref, and context-failure callback. Its only engine import is a TypeScript type. Reuse this renderer and the pure engine on the Website; supply a Website-specific read-only event adapter, never reuse OS authentication or invent agent events. Keep the source in this repository as canonical and pin the source commit for downstream use. Website preview integration is prepared in Saimor-world/Website#122; production rollout is pending visual acceptance and explicit release approval.
 
-The paused scene provides a stable pose for later screenshots/video. A production marketing exporter, rigged GLB, captured video and physically modeled jade texture are not yet implemented. The body is procedural, so there is no static bitmap character standing in for 3D.
+The paused scene provides a stable pose for later screenshots/video. A production marketing exporter, rigged GLB, captured video and physically modeled jade texture are not yet implemented. The body is procedural, so there is no static bitmap character standing in for 3D. CI captures provide the first reusable raster views from the real renderer; they are not generated illustrations.
 
 ## Limits and follow-up
 - This is a first interactive body prototype, not a completed autonomous personality or a new AI model.
