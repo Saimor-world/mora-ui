@@ -193,6 +193,11 @@ class RealtimeClient {
         return token ?? null;
     }
 
+    /** Read-only transport status for presentation adapters. */
+    public isConnected(): boolean {
+        return this.ws?.readyState === 1;
+    }
+
     public connect() {
         // Cross-evaluation lock: prevents duplicate connections when Next.js App Router
         // evaluates this module multiple times (once per hydration island).

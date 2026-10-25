@@ -1,6 +1,8 @@
-﻿"use client";
+"use client";
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+const MoraAlive = dynamic(() => import("@/components/mora/alive/MoraAlive"), { ssr: false });
 import { GlassPanel } from "@/components/layers/GlassPanel";
 import { usePaneStore } from "@/lib/store/paneStore";
 import { useNavStore } from "@/lib/store/navStore";
@@ -13,7 +15,7 @@ import { useMoraContext } from '@/lib/mora/useMoraContext';
 import { MoraContextChip } from '@/components/mora/MoraContextChip';
 import { useSurfaceProfile } from '@/lib/hooks/useSurfaceProfile';
 
-type HubSection = "overview" | "memory" | "stats";
+type HubSection = "overview" | "memory" | "stats" | "alive";
 
 interface Props {
     id?: string;
@@ -30,15 +32,18 @@ const TABS: { id: HubSection; label: string; icon: React.ElementType }[] = [
     { id: "overview", label: "Überblick", icon: Sparkles },
     { id: "memory", label: "Erinnerungen", icon: Brain },
     { id: "stats", label: "Signale", icon: BarChart3 },
+    { id: "alive", label: "Alive · Vorschau", icon: Sparkles },
 ];
 
 const TAB_DESCRIPTIONS: Record<HubSection, string> = {
+    alive: "Interaktiver Körperprototyp am bestehenden OS-Ereigniskanal.",
     overview: "Kontext, Schnellaktionen und aktueller Arbeitsfokus.",
     memory: "Gespeicherte Erinnerungen, gelernte Fakten und Suchzugriff.",
     stats: "Live-Signale und operative Aktivität dieses Bereichs.",
 };
 
 const SECTION_TITLES: Record<HubSection, string> = {
+    alive: "MÔRA Alive",
     overview: "Arbeitsfokus",
     memory: "Erinnerungsebenen",
     stats: "Signale und Aktivität",
@@ -107,6 +112,8 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     // ─── Render Section Content ───
     const renderContent = () => {
         switch (activeSection) {
+            case "alive":
+                return <MoraAlive live compact />;
             case "memory":
                 return (
                     <div className="flex h-full flex-col">
@@ -251,7 +258,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
         >
             <div className="flex h-full flex-col">
                 {/* Tab bar — minimal, no mode banner */}
-                <div className="flex items-center gap-0.5 border-b border-white/[0.06] px-3 py-2 shrink-0">
+                <div className="flex flex-wrap items-center gap-0.5 border-b border-white/[0.06] px-3 py-2 shrink-0">
                     {TABS.map((tab) => {
                         const Icon = tab.icon;
                         const isTabActive = activeSection === tab.id;
@@ -260,7 +267,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
                                 key={tab.id}
                                 type="button"
                                 onClick={() => switchSection(tab.id)}
-                                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] transition-all ${
+                                className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] transition-all ${
                                     isTabActive
                                         ? "bg-emerald-500/14 text-emerald-200/90 shadow-[0_0_0_1px_rgba(16,185,129,0.16)]"
                                         : "text-white/38 hover:bg-white/[0.04] hover:text-white/65"
