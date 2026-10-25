@@ -37,7 +37,7 @@ export default function MoraAlive({ live = false, compact = false }: { live?: bo
   return <section ref={root} className={`${styles.alive} ${compact ? styles.compact : ''}`} aria-label="MÔRA Alive Vorschau" data-character-state={snapshot.state} data-character-source={snapshot.source}>
     <header className={styles.header}>
       <div><span className={styles.eyebrow}>SAIMÔR / MÔRA ALIVE · V01</span><h1>Ein Licht. Ein Gegenüber.</h1></div>
-      <Image src="/brand/saimor-sigil-restored-v1.webp" width={64} height={64} alt="Freigegebenes SAIMÔR-Sigil" className={styles.sigil} />
+      <Image src="/brand/saimor-sigil-alive-256.png" width={64} height={64} alt="Freigegebenes SAIMÔR-Sigil" className={styles.sigil} />
     </header>
     <div className={styles.stage} data-testid="mora-alive-stage" onPointerMove={event => {
       const rect = event.currentTarget.getBoundingClientRect();

@@ -26,9 +26,10 @@ export function useCharacter(live: boolean): CharacterSnapshot {
     };
   }, [live]);
   useEffect(() => {
+    if (!live) return;
     const tick = () => setNow(Date.now()); tick();
     const timer = setInterval(tick, 1000); return () => clearInterval(timer);
-  }, []);
+  }, [live]);
   const hour = now ? new Date(now).getHours() : 12;
   return live ? resolveCharacter(engine, now, hour < 6 || hour >= 23) : { state: 'idle', source: 'preview' };
 }

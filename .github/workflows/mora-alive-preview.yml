@@ -1,0 +1,39 @@
+name: MORA Alive browser checks
+on:
+  pull_request:
+    paths:
+      - 'components/mora/alive/**'
+      - 'lib/mora/alive/**'
+      - 'app/tunnel/page.tsx'
+      - 'e2e/mora-alive.spec.ts'
+      - 'playwright.alive.config.ts'
+      - '.github/workflows/mora-alive-preview.yml'
+permissions:
+  contents: read
+concurrency:
+  group: alive-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test --config=playwright.alive.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mora-alive-browser-${{ github.sha }}
+          path: test-results/mora-alive
+          retention-days: 7

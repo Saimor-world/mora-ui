@@ -8,16 +8,16 @@ MÔRA gets a real mesh-based body inside the existing OS, without another agent,
 - `components/universe/{OrganizationField,MoraCore}.tsx`, existing `MoraOrb`, `MoraFace`, `MoraHubPane`, `MoraPlayground`.
 - `lib/universe/moraPresence.ts`, `lib/store/orbStore.ts`, `lib/hooks/{useMoraExecutions,useActionEvents}.ts`, `lib/hooks/shell/useRealtime.ts`, shared `lib/api/realtimeClient.ts`.
 - CORE `core/services/tool_dispatcher.py`: confirmed tenant broadcast of `mora.execution.started/progress/done/failed`; done includes `ok: true`, failed includes `ok: false`.
-- Website `components/{BrandSigil,MoraCharacter,MoraOsFace}.tsx`: approved master is `public/brand/saimor-sigil-restored-v1.webp`, copied byte-for-byte here. Existing OS `/images/saimor_logo.png` is older cyan artwork and is not used for Alive.
+- Website `components/{BrandSigil,MoraCharacter,MoraOsFace}.tsx`: approved master is `public/brand/saimor-sigil-restored-v1.webp`, copied byte-for-byte here; the header uses a 256px PNG derived from the approved PNG master to work with existing static-path handling. Existing OS `/images/saimor_logo.png` is older cyan artwork and is not used for Alive.
 - The supplied conversational reference images are not mounted in this checkout; this version uses verifiable repository references. Character fidelity to those unseen images remains unverified.
 
 ## Implementation
-Three.js 0.181 and React Three Fiber 8.18 were already installed. No dependency or lockfile change.
+Three.js 0.181 and React Three Fiber 8.18 were already installed. The first remote browser check exposed R3F 8 / Next 15 React-runtime incompatibility (`ReactCurrentBatchConfig`). Alive now uses native Three.js with a React lifecycle wrapper; no React/R3F upgrade, dependency or lockfile change.
 - `CharacterScene.tsx`: tapered elliptical S ribbon mesh, warm emissive head, small jade eyes with highlights, gaze damping and blinking, separate jade satellite with changing orbit, local light and receiving floor. No remote textures, HDRI, model downloads or postprocessing.
 - Tail vertices deform in place; no geometry allocation inside the frame loop. Delta-clamped exponential damping supports different refresh rates. Discrete moods change gaze, eye aperture, orbit velocity, brightness and drift.
 - `engine.ts`: pure bounded reducer and precedence resolver; no backend writes or tool calls.
 - `useCharacter.ts`: read-only adapter on existing realtime singleton; no new `connect()` call. Existing UI presence contributes only listening/thinking, never inferred success.
-- `MoraAlive.tsx`: lazy canvas, visible source labels, preview expression selector, pause, keyboard-invitation equivalent, semantic status, WebGL/context-loss fallback, system reduced-motion preference and offscreen/background suspension.
+- `MoraAlive.tsx`: lazy native canvas, visible source labels, preview expression selector, pause, keyboard-invitation equivalent, semantic status, WebGL/context-loss fallback, system reduced-motion preference and offscreen/background suspension.
 
 ## Signal mapping
 | Input | Character state | Provenance |
@@ -33,6 +33,8 @@ Three.js 0.181 and React Three Fiber 8.18 were already installed. No dependency 
 | User selects an expression | selected state | explicitly PREVIEW |
 
 Approval takes precedence over work; another job completing never dismisses active work. Invalid IDs, invalid timestamps, stale/future actions, and late progress after a terminal event are ignored. Jobs expire visually after 120 seconds without evidence; this is not completion. Terminal expressions last four seconds. Disconnect clears retained activity. No raw tool payloads, IDs or private data are rendered in the canvas/UI.
+
+Lifecycle cleanup cancels animation frames, removes the canvas and context listener, disconnects ResizeObserver, and disposes unique geometry/material resources and the renderer.
 
 ## Preview entry points
 - Existing OS: MÔRA Center → Alive · Vorschau (uses current authenticated OS connection).
