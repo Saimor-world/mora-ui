@@ -331,7 +331,7 @@
 .wd-link { stroke: rgba(196, 226, 210, .34); stroke-width: 1.2; filter: drop-shadow(0 0 3px rgba(150, 220, 190, .55)); }
 .wd-link--active { stroke: rgba(240, 220, 160, .85); stroke-width: 1.8; filter: drop-shadow(0 0 6px rgba(240, 210, 140, .8)); }
 /* Netz um den Planeten: Monde (Ordner), Sternpunkte (Einträge, Aufgaben). */
-.wd-orbit { position: absolute; left: 50%; top: 50%; pointer-events: none; z-index: 0; }
+.wd-orbit { position: absolute; left: 50%; top: 50%; pointer-events: none; z-index: -1; }
 .wd-orbit svg { position: absolute; inset: 0; overflow: visible; }
 .wd-sublink { stroke: rgba(196, 226, 210, .3); stroke-width: 1; filter: drop-shadow(0 0 2px rgba(150, 220, 190, .5)); }
 .wd-sublink--star { stroke: rgba(196, 226, 210, .22); }
@@ -559,7 +559,7 @@
 
 /* ── Galaxie v1 (Marius 24.10.: „mehr Universum, mehr Galaxie, Besonderheiten in jedem Planet“) ── */
 /* Tiefe: galaktisches Band + Spiralstaub hinter MÔRA, drei Sternschichten mit sanfter Drift (nur transform/opacity). */
-.wd-galaxy { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 0; }
+.wd-galaxy { position: absolute; width: 0; height: 0; pointer-events: none; z-index: -1; }
 .wd-galaxy i, .wd-galaxy b { position: absolute; left: 0; top: 0; border-radius: 50%; will-change: transform; }
 .wd-galaxy i { width: 1500px; height: 360px; margin: -180px 0 0 -750px; transform: rotate(-16deg);
   background: radial-gradient(closest-side, rgba(226, 196, 140, .10), rgba(120, 170, 150, .06) 45%, transparent 75%); filter: blur(18px); }
@@ -582,7 +582,7 @@
 .wd-orbits path.wd-link-pulse { fill: none; }
 
 /* Besonderheiten je Planet (nur aus Daten). */
-.wd-traits { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 0; }
+.wd-traits { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: -1; }
 .wd-traits > * { position: absolute; left: 0; top: 0; }
 .wd-atmo { border-radius: 50%; box-shadow: 0 0 calc(8px + var(--atmo) * 26px) calc(2px + var(--atmo) * 8px) rgba(140, 215, 180, calc(.08 + var(--atmo) * .32)); }
 .wd-ring { overflow: visible; z-index: 2; }
@@ -696,3 +696,136 @@
 .wd-universe[data-phone='true'] .wd-neb--b, .wd-universe[data-phone='true'] .wd-dust { display: none; }
 .wd-universe[data-phone='true'] .wd-neb { animation-duration: 180s; }
 @media (prefers-reduced-motion: reduce) { .wd-neb, .wd-dust { animation: none !important; } }
+
+/* Glas: Glanz kleiner, Hintergrund gedämpft. */
+.wd-neb { filter: saturate(.45); opacity: .8; }
+.wd-dust { filter: saturate(.3); }
+.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
+  background:
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 11%),
+    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 42%),
+    radial-gradient(circle at 50% 50%, transparent 0 50%, var(--g-core) 100%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid));
+  -webkit-backdrop-filter: blur(1.6px) saturate(.55) brightness(1.08); backdrop-filter: blur(1.6px) saturate(.55) brightness(1.08);
+}
+/* Licht: MÔRA (Elfenbein/Gold) ist die Lichtquelle. */
+:root { --lt: 247, 233, 203; --lt2: 233, 185, 103; --lt-a: .30; }
+.os-mora-stone--halo::before { background: radial-gradient(circle, rgba(var(--lt), var(--lt-a)) 0, rgba(var(--lt2), calc(var(--lt-a) * .4)) 38%, transparent 68%) !important; }
+.wd-galaxy i { background: radial-gradient(closest-side, rgba(var(--lt), .16), rgba(var(--lt2), .06) 45%, transparent 78%) !important; }
+.wd-galaxy b { background: conic-gradient(from 0deg, transparent 0 8%, rgba(var(--lt), .05) 14%, transparent 24%, transparent 46%, rgba(var(--lt2), .06) 56%, transparent 66%) !important; }
+.wd-neb, .wd-dust { filter: saturate(0) !important; opacity: .55; }
+.wd-atmo { box-shadow: 0 0 calc(8px + var(--atmo) * 20px) calc(1px + var(--atmo) * 5px) rgba(var(--lt), calc(.04 + var(--atmo) * .14)) !important; }
+.wd-aurora { filter: saturate(0) brightness(.8); opacity: .5; }
+.wd-spark { background: rgb(var(--lt)); box-shadow: 0 0 6px 1px rgba(var(--lt), .6); }
+.wd-link, .wd-sublink, .wd-orbits path.wd-link { stroke: rgba(var(--lt), .16); filter: none; }
+.wd-moondot[data-tasks='true'] { fill: rgb(var(--lt)); stroke: rgba(var(--lt), .6); filter: drop-shadow(0 0 3px rgba(var(--lt), .45)); }
+.wd-stardot[data-kind='task'] { fill: rgb(var(--lt)); filter: drop-shadow(0 0 3px rgba(var(--lt), .5)); }
+.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
+  background:
+    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt), .5) 0, transparent 10%),
+    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt2), .16) 0, transparent 46%),
+    radial-gradient(circle at 50% 50%, transparent 0 50%, var(--g-core) 100%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid)) !important;
+}
+.os-tab[aria-selected='true'], [role='tablist'] [aria-selected='true'], .os-seg [aria-pressed='true'], .wd-universe ~ * [aria-pressed='true'] { background: rgba(var(--lt), .10) !important; border-color: rgba(var(--lt), .26) !important; color: #f2eee5 !important; }
+.wd-spirit { position: absolute; inset: 0; display: block; pointer-events: none; }
+.wd-spirit canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.wd-mora[data-spirit] { animation: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.os-context__seg [aria-pressed='true'] { background: rgba(247, 233, 203, .10) !important; border-color: rgba(247, 233, 203, .24) !important; color: #f2eee5 !important; }
+.wd-mora { width: 56px !important; height: 56px !important; margin: 0; }
+.os-dock__stone .os-mora-mark { display: block; }
+
+/* Universe-Hintergrund (Marius 25.10.): SEIN Bild deep-space-warm.jpg wie .uv2-cosmos-image (#159),
+   etwas gedimmt (links der helle Orange-Nebel stärker), damit MÔRA das hellste Licht bleibt.
+   Darüber nur eine feine Sterndrift; keine generierten Nebel, keine grünen Schleier. */
+.wd-universe { background: #07090c !important; }
+.wd-universe::before, .wd-universe::after { content: ''; position: absolute; pointer-events: none; z-index: -1; }
+.wd-universe::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(5, 6, 8, .38), rgba(5, 6, 8, .12) 40%, rgba(5, 6, 8, .08) 70%, rgba(5, 6, 8, .2)),
+    url('/universe/deep-space-warm.jpg') center / cover no-repeat;
+  filter: brightness(1.5) saturate(.9) contrast(.98);
+}
+.wd-universe::after {
+  inset: -10%;
+  background-image:
+    radial-gradient(1.6px 1.6px at 20% 30%, rgba(247,233,203,.85), transparent 60%), radial-gradient(1.4px 1.4px at 70% 60%, rgba(233,185,103,.6), transparent 60%),
+    radial-gradient(1.8px 1.8px at 45% 85%, rgba(247,233,203,.7), transparent 60%), radial-gradient(1.3px 1.3px at 88% 15%, rgba(169,221,196,.55), transparent 60%);
+  background-size: 520px 460px; opacity: .45;
+  animation: wd-stars-near 160s linear infinite;
+}
+@keyframes wd-stars-near { to { transform: translate(-520px, 230px); } }
+.wd-universe[data-phone='true']::after { animation: none; }
+@media (prefers-reduced-motion: reduce) { .wd-universe::after { animation: none !important; } }
+.wd-neb, .wd-dust, .wd-galaxy b { display: none !important; }
+.wd-galaxy i { opacity: .5; }
+
+/* Chrome im Universe: neutral dunkel (kein Grün, kein Petrol). */
+body:has(.wd-universe) { background: #07090c; }
+body:has(.wd-universe) .os-root, body:has(.wd-universe) .os-shell { background-color: #07090c; }
+body:has(.wd-universe) .os-atmo__plate { background: #07090c !important; filter: none !important; }
+body:has(.wd-universe) .os-shell__content { background: none !important; }
+body:has(.wd-universe) .os-context, body:has(.wd-universe) .os-dock { background: transparent !important; border-color: transparent !important; }
+body:has(.wd-universe) .os-shell__topbar { background: linear-gradient(180deg, rgba(6, 8, 10, .55), rgba(6, 8, 10, .25) 70%, transparent) !important; }
+body:has(.wd-universe) .os-context__capsule, body:has(.wd-universe) .os-dock__capsule, body:has(.wd-universe) .os-universe__intro,
+body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-universe) .os-surface, .wd-horizon { background: rgba(8, 9, 12, .58) !important; border-color: rgba(247, 233, 203, .1) !important; }
+
+/* Glas-Planeten (glass2): Körper dominiert, Mitte bis 45 % klar, Lichtkante von MÔRA. */
+.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
+  background:
+    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt), .55) 0, rgba(var(--lt), .12) 7%, transparent 13%),
+    radial-gradient(circle at var(--ox) var(--oy), rgba(var(--lt2), .10) 0, transparent 38%),
+    radial-gradient(circle at 50% 50%, transparent 0 45%, var(--g-mid) 72%, var(--g-core) 100%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-glow), var(--g-mid) 60%) !important;
+  box-shadow:
+    inset calc(var(--dx) * 2px) calc(var(--dy) * 2px) 2px -1px rgba(var(--lt), .55),
+    inset calc(var(--dx) * -5px) calc(var(--dy) * -5px) 8px -4px rgba(0, 0, 0, .35),
+    inset 0 0 0 1px rgba(var(--lt), .22),
+    0 0 14px -6px rgba(var(--lt2), .35) !important;
+  -webkit-backdrop-filter: brightness(1.15) saturate(1.1); backdrop-filter: brightness(1.15) saturate(1.1);
+}
+.wd-sphere.planet--glass::after { opacity: .04 !important; }
+.wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.wd-ring ellipse { stroke: rgba(230, 206, 150, .55) !important; stroke-width: .85 !important; }
+.wd-ring .wd-ring__outer { stroke: rgba(230, 206, 150, .26) !important; stroke-width: .6 !important; }
+
+/* Datenzeichen etwas lesbarer: Polarlicht (überfällig) in Bernstein, Funken (offen), Atmosphäre (Aktivität). */
+.wd-aurora { filter: none !important; opacity: .85 !important; border-top-color: rgba(233, 185, 103, .9) !important;
+  box-shadow: 0 -6px 14px -4px rgba(233, 185, 103, .6) !important; }
+.wd-spark { box-shadow: 0 0 8px 2px rgba(var(--lt), .75) !important; }
+.wd-atmo { box-shadow: 0 0 calc(10px + var(--atmo) * 22px) calc(2px + var(--atmo) * 6px) rgba(var(--lt), calc(.08 + var(--atmo) * .2)) !important; }
+.wd-comet { filter: brightness(1.3); }
+
+/* Zweite Infozeile + Glas-Tooltip (nur echte Werte). */
+.wd-info { display: block; margin-top: 1px; font-size: 10.5px; line-height: 1.3; color: rgba(242, 238, 229, .62); white-space: nowrap; text-shadow: 0 1px 3px rgba(0, 0, 0, .8); }
+.wd-info__warn { color: #E9B967; }
+.wd-universe[data-phone='true'] .wd-info { font-size: 11px; }
+.wd-tip { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translate(-50%, 4px); z-index: 30; display: flex; flex-direction: column; gap: 4px;
+  min-width: 180px; max-width: 240px; padding: 8px 10px; border-radius: 12px; text-align: left; pointer-events: none; opacity: 0;
+  background: rgba(10, 11, 14, .72); border: 1px solid rgba(247, 233, 203, .14); box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: opacity .18s, transform .18s; }
+.wd-planet:hover .wd-tip, .wd-planet:focus-visible .wd-tip { opacity: 1; transform: translate(-50%, 0); }
+.wd-tip__row { display: flex; flex-direction: column; }
+.wd-tip__k { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: rgba(247, 233, 203, .5); }
+.wd-tip__v { font-size: 12px; color: #f2eee5; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .wd-tip { transition: none; } }
+
+/* Tooltip seitlich, weg von MÔRA und den Mondlabels */
+.wd-tip { left: calc(100% + 88px); right: auto; bottom: auto; top: 50%; transform: translate(4px, -50%); }
+.wd-planet[data-side='left'] .wd-tip { left: auto; right: calc(100% + 88px); transform: translate(-4px, -50%); }
+.wd-planet:hover .wd-tip, .wd-planet:focus-visible .wd-tip,
+.wd-planet[data-side='left']:hover .wd-tip, .wd-planet[data-side='left']:focus-visible .wd-tip { transform: translate(0, -50%); }
+/* Phone: Luft unter dem Kopf */
+.wd-universe[data-phone='true'] .wd-zoomwrap { inset: 26px 0 0 0; }
+/* Leeres linkes Feld: ruhige Glaskarten aus echten Daten */
+.wd-pulse { position: absolute; left: 88px; top: 50%; transform: translateY(-58%); z-index: 20; width: 248px; display: flex; flex-direction: column; gap: 12px; }
+.wd-pulse__card { padding: 12px 14px 8px; border-radius: 14px; background: rgba(8, 9, 12, .46); border: 1px solid rgba(255, 255, 255, .07); backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1); box-shadow: 0 10px 30px rgba(0, 0, 0, .35); }
+.wd-pulse__card h3 { margin: 0 0 4px; font-size: 9.5px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase; color: rgba(247, 233, 203, .5); }
+.wd-pulse__card ul { list-style: none; margin: 0; padding: 0; }
+.wd-pulse__card button { display: flex; flex-direction: column; justify-content: center; gap: 1px; width: 100%; min-height: 44px; padding: 4px 6px; margin: 0 -6px; border: 0; border-radius: 8px; background: none; color: inherit; text-align: left; cursor: pointer; transition: background .2s ease; }
+.wd-pulse__card button:hover, .wd-pulse__card button:focus-visible { background: rgba(255, 255, 255, .05); outline: none; }
+.wd-pulse__t { font-size: 12.5px; color: rgba(242, 238, 229, .9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
+.wd-pulse__m { font-size: 10.5px; color: rgba(242, 238, 229, .5); }
+@media (max-width: 1279px) { .wd-pulse { display: none; } }

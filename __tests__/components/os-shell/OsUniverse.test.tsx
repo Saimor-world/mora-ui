@@ -68,7 +68,7 @@ describe('OS V1.1 Universe & Atmosphäre', () => {
     renderShell();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
     expect(within(nav).getByRole('button', { name: 'Universe' })).toBeInTheDocument();
-    expect(within(nav).getByRole('button', { name: 'MÔRA' }).querySelector('[data-testid="mora-stone"]')).not.toBeNull();
+    expect(within(nav).getByRole('button', { name: 'MÔRA' }).querySelector('[data-testid="mora-mark"]')).not.toBeNull();
   });
 
   it('deep link #universe opens the place', async () => {

@@ -1,8 +1,9 @@
 'use client';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import { MoraStone } from '@/components/os-kit';
+import { MoraSpirit, type SpiritMood } from './MoraSpirit';
 import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
+import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
@@ -19,7 +20,13 @@ const ASK_RESERVE_PHONE = 212; // Frag-MÔRA-Leiste + Dock + Zuordnen-Chip (44 p
 /** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
 const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource, comet = null }: {
+/** Phone: Luft unter dem Seitenkopf, damit obere Planetenlabels ihn nicht berühren. */
+const PHONE_TOP = 26;
+
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null }: {
+  spiritMood?: SpiritMood;
+  /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
+  spiritTarget?: string | null;
   /** Doppelklick: direkt hineinzoomen. */
   onZoomPlanet?: (id: string) => void;
   /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
@@ -71,7 +78,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   }, []);
 
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
     [size.width, size.height, planets, phone],
   );
 
@@ -176,12 +183,18 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           type="button"
           className="wd-mora"
           data-state={moraState}
+          data-spirit={spiritMood}
           style={{ left: layout.cx, top: layout.cy, width: layout.mora, height: layout.mora, zIndex: 10 + Math.round(layout.cy) }}
           onClick={onMora}
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
-          <MoraStone size={layout.mora} halo thinking={moraState === 'thinking'} />
+          <MoraSpirit size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={(() => {
+            if (!spiritTarget) return null;
+            if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
+            const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
+            return pp ? { x: pp.x - layout.cx, y: pp.y - layout.cy } : null;
+          })()} />
         </button>
       ) : null}
       {layout && moraLine ? (
@@ -209,8 +222,9 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             onPointerLeave={hold(false)}
             onFocus={hold(true)}
             onBlur={hold(false)}
-            aria-label={`${planet.name} öffnen · ${planet.meta}`}
+            aria-label={`${planet.name} öffnen · ${planet.meta}${planet.traits?.overdue ? ` · ${planet.traits.overdue} überfällig` : ''}${planet.traits?.open ? ` · ${planet.traits.open} offen` : ''}${planet.traits?.nextTask ? ` · nächste Aufgabe: ${planet.traits.nextTask.title}` : ''}`}
             data-testid={`world-planet-${planet.id}`}
+            data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
           >
             {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
             {planet.traits ? <PlanetTraitsLayer traits={planet.traits} size={phone ? Math.max(52, slot?.size ?? 60) : (slot?.size ?? 60)} phone={phone} /> : null}
@@ -220,12 +234,15 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             <span className="wd-label">
               <span className="wd-name">{planet.name}</span>
               <span className="wd-meta">{planet.meta}</span>
+              <PlanetInfoLine traits={planet.traits} phone={phone} />
             </span>
+            {!phone && planet.traits ? <PlanetTip traits={planet.traits} /> : null}
             {planet.id === activeId ? <span className="wd-active-tag" data-testid="world-active-tag">Aktiver Bereich</span> : null}
           </button>
         );
       })}
       </div>
+      {layout && !phone ? <WorldPulse planets={planets} onOpen={onOpenPlanet} /> : null}
       {layout && !phone ? (
         <>
           {counts ? (
@@ -394,5 +411,81 @@ export function PlanetOrbit({ orbit, size, phone, away = 1, tone }: { orbit: Wor
       }) : null}
       {orbit.moons.length > MAX_MOONS ? <span className="wd-moremoons">+{orbit.moons.length - MAX_MOONS}</span> : null}
     </span>
+  );
+}
+
+/** Zweite Zeile unter dem Planetennamen – nur echte Werte, 0 wird nie gezeigt. Phone: ein Wert. */
+export function PlanetInfoLine({ traits, phone }: { traits?: PlanetTraits; phone: boolean }) {
+  if (!traits) return null;
+  const parts: { k: string; t: string; warn?: boolean }[] = [];
+  if (traits.overdue > 0) parts.push({ k: 'od', t: `${traits.overdue} überfällig`, warn: true });
+  if (traits.open > 0) parts.push({ k: 'op', t: `${traits.open} offen` });
+  const rel = relDay(traits.lastAt);
+  if (rel) parts.push({ k: 'la', t: rel });
+  const shown = phone ? parts.slice(0, 1) : parts;
+  if (!shown.length) return null;
+  return (
+    <span className="wd-info" data-testid="world-planet-info">
+      {shown.map((p, i) => <span key={p.k} className={p.warn ? 'wd-info__warn' : undefined}>{i ? ' · ' : ''}{p.t}</span>)}
+    </span>
+  );
+}
+
+/** Kleine Glaskarte bei Hover/Fokus: nächste Aufgabe, neuester Eintrag – nur wenn vorhanden. */
+export function PlanetTip({ traits }: { traits: PlanetTraits }) {
+  const rows: [string, string][] = [];
+  if (traits.nextTask) rows.push(['Nächste Aufgabe', traits.nextTask.title + (traits.nextTask.due ? ` · ${shortDate(traits.nextTask.due)}` : '')]);
+  if (traits.latest) rows.push(['Zuletzt', traits.latest + (relDay(traits.lastAt) ? ` · ${relDay(traits.lastAt)}` : '')]);
+  if (traits.overdue > 0) rows.push(['Überfällig', `${traits.overdue} Aufgabe${traits.overdue === 1 ? '' : 'n'}`]);
+  if (!rows.length) return null;
+  return (
+    <span className="wd-tip" aria-hidden data-testid="world-planet-tip">
+      {rows.slice(0, 3).map(([k, v]) => <span key={k} className="wd-tip__row"><span className="wd-tip__k">{k}</span><span className="wd-tip__v">{v}</span></span>)}
+    </span>
+  );
+}
+
+/**
+ * Ruhige Glaskarten im leeren linken Feld – ausschließlich aus echten Planeten-Daten
+ * (nächste offene Aufgaben aus /v3/tasks, letzte Änderungen aus /v3/nodes + /v3/files).
+ * Ohne Daten erscheint die jeweilige Karte nicht.
+ */
+export function WorldPulse({ planets, onOpen }: { planets: WorldPlanet[]; onOpen: (id: string) => void }) {
+  const next = planets
+    .filter((p) => p.traits?.nextTask)
+    .map((p) => ({ id: p.id, planet: p.name, title: p.traits!.nextTask!.title, due: p.traits!.nextTask!.due, overdue: !!p.traits!.nextTask!.due && p.traits!.nextTask!.due! < localISO() }))
+    .sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'))
+    .slice(0, 3);
+  const recent = planets
+    .filter((p) => p.traits?.lastAt && p.traits.latest)
+    .map((p) => ({ id: p.id, planet: p.name, title: p.traits!.latest!, at: p.traits!.lastAt! }))
+    .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+    .slice(0, 3);
+  if (!next.length && !recent.length) return null;
+  return (
+    <aside className="wd-pulse" aria-label="Überblick" data-testid="world-pulse">
+      {next.length ? (
+        <section className="wd-pulse__card" data-testid="world-pulse-next">
+          <h3>Nächste Schritte</h3>
+          <ul>{next.map((n) => (
+            <li key={n.id}><button type="button" onClick={() => onOpen(n.id)}>
+              <span className="wd-pulse__t">{n.title}</span>
+              <span className="wd-pulse__m">{n.planet}{n.due ? <> · <span className={n.overdue ? 'wd-info__warn' : undefined}>{n.overdue ? 'überfällig seit ' : 'fällig '}{shortDate(n.due)}</span></> : null}</span>
+            </button></li>
+          ))}</ul>
+        </section>
+      ) : null}
+      {recent.length ? (
+        <section className="wd-pulse__card" data-testid="world-pulse-recent">
+          <h3>Zuletzt bewegt</h3>
+          <ul>{recent.map((r) => (
+            <li key={r.id}><button type="button" onClick={() => onOpen(r.id)}>
+              <span className="wd-pulse__t">{r.title}</span>
+              <span className="wd-pulse__m">{r.planet} · {relDay(r.at)}</span>
+            </button></li>
+          ))}</ul>
+        </section>
+      ) : null}
+    </aside>
   );
 }

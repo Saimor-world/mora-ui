@@ -4,6 +4,7 @@ import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
+import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
 import { PlanetFocus } from '@/components/world/PlanetFocus';
 import type { DayCommand } from '@/lib/lea/moraCommands';
@@ -56,6 +57,23 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const [zoomTo, setZoomTo] = useState<string | null>(null);
   const [moraState, setMoraState] = useState<MoraState>('idle');
   const [pulseIds, setPulseIds] = useState<string[]>([]);
+  // MÔRA lebt nur aus echten Ereignissen: Eingabefokus, laufende Anfrage, Ergebnis, Aktivität, neue Mail, Uhrzeit.
+  const [listening, setListening] = useState(false);
+  const [outcome, setOutcome] = useState<'done' | 'error' | null>(null);
+  const [flyTo, setFlyTo] = useState<string | null>(null);
+  const [night, setNight] = useState(() => isNight());
+  useEffect(() => { const t = setInterval(() => setNight(isNight()), 60_000); return () => clearInterval(t); }, []);
+  const outcomeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const flyTimer = useRef<ReturnType<typeof setTimeout>>();
+  const onOutcome = useCallback((ok: boolean) => { clearTimeout(outcomeTimer.current); setOutcome(ok ? 'done' : 'error'); outcomeTimer.current = setTimeout(() => setOutcome(null), ok ? 2400 : 6000); }, []);
+  const fly = useCallback((id: string) => { clearTimeout(flyTimer.current); setFlyTo(id); flyTimer.current = setTimeout(() => setFlyTo(null), 2200); }, []);
+  useEffect(() => () => { clearTimeout(outcomeTimer.current); clearTimeout(flyTimer.current); }, []);
+  // Neue Mail (erste Mail-ID wechselt, nicht beim ersten Laden): kurz zum Kometen fliegen.
+  const mailId = horizon.mail?.status === 'ok' ? horizon.mail.items[0]?.id ?? null : null;
+  const seenMail = useRef<string | null | undefined>(undefined);
+  useEffect(() => { if (seenMail.current !== undefined && mailId && mailId !== seenMail.current) fly('mail'); seenMail.current = mailId; }, [mailId, fly]);
+  const spiritMood: SpiritMood = outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
+    : flyTo ? 'flying' : outcome === 'done' ? 'done' : listening ? 'listening' : night ? 'night' : 'idle';
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
   const close = useCallback(() => { setOpenId(null); setInitial(null); setZoomTo(null); }, []);
@@ -73,8 +91,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const pulse = useCallback((id: string | null | undefined) => {
     if (!id) return;
     setPulseIds((l) => [...l.filter((x) => x !== id), id]);
+    fly(id);
     setTimeout(() => setPulseIds((l) => l.filter((x) => x !== id)), 1800);
-  }, []);
+  }, [fly]);
   // Ändert sich etwas an Aufgaben oder Terminstatus (auch von „Heute“ aus), pulsiert die Linie dorthin.
   const phases = useDayStore((st) => st.phases);
   const setPhase = useDayStore((st) => st.setPhase);
@@ -211,6 +230,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         selectedId={selectedId}
         pulseIds={pulseIds}
         moraState={moraState}
+        spiritMood={spiritMood}
+        spiritTarget={flyTo}
         zoomTo={zoomTo}
         shift={selected && !phone ? 190 : 0}
         activeId={activeId}
@@ -219,7 +240,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
         moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
-      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
+      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
       {selected ? (
         <PlanetFocus
           planet={selected}
