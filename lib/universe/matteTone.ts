@@ -115,19 +115,48 @@ function glassOn(): boolean {
   return true; // Nachtwald-Glas ist überall Standard (auch Phone)
 }
 
-export function matteTone(name: string, data: MatteData = {}, index?: number): MatteTone {
+const SLOT_COUNT = GLASS_FOREST.length; // gleich viele Töne wie in PLANET_VARIANTS.*.hues
+
+/** Fester Platz in der Palette aus dem Namen: bekannte Bereiche fest, sonst stabiler Hash. */
+export function toneSlot(name: string, n = SLOT_COUNT): number {
+  const fam = matteFamily(name);
+  return fam ? FAMILY_SLOT[fam] % n : hash((name || '').trim().toLowerCase()) % n;
+}
+
+/**
+ * Farben fest aus dem Abteilungsnamen (Marius, 24.10.: eine neue Abteilung färbt die anderen nicht um).
+ * Nur wenn ein Planet denselben Ton wie sein Vorgänger (oder als letzter wie der erste, die Bahn ist
+ * ein Kreis) hätte, rückt er einen Platz weiter. Alle anderen behalten ihren Ton – egal, was dazukommt.
+ */
+export function toneSlots(names: string[], n = SLOT_COUNT): number[] {
+  const out = names.map((name) => toneSlot(name, n));
+  for (let i = 1; i < out.length; i++) {
+    const prev = out[i - 1];
+    const first = i === out.length - 1 && out.length > 2 ? out[0] : -1;
+    if (out[i] !== prev && out[i] !== first) continue;
+    for (let k = 1; k < n; k++) {
+      const s = (out[i] + k) % n;
+      if (s !== prev && s !== first) { out[i] = s; break; }
+    }
+  }
+  return out;
+}
+
+/** `slot`: Platz aus toneSlots (Nachbarn entzerrt); ohne ihn der feste Platz aus dem Namen. */
+export function matteTone(name: string, data: MatteData = {}, slot?: number): MatteTone {
   const fam = matteFamily(name);
   const h = hash((name || '').trim().toLowerCase());
   if (glassOn()) {
+    // Töne aus #164 (Nachtwald-Glas), Platz aus #162 (fest nach Name, Nachbarn entzerrt).
     const T = glassTints(); const n = T.length;
-    const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
-    const [gh, gs] = T[slot];
+    const at = slot != null ? ((slot % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
+    const [gh, gs] = T[at];
     return { family: 'tone', className: 'planet--tone planet--glass', vars: glassVars(gh, gs) };
   }
   const V = currentVariant();
   const n = V.hues.length;
-  const slot = index != null ? ((index % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
-  const [hue, sat, dL = 0] = V.hues[slot];
+  const at = slot != null ? ((slot % n) + n) % n : fam ? FAMILY_SLOT[fam] % n : h % n;
+  const [hue, sat, dL = 0] = V.hues[at];
   const signal = Math.min(1, Math.log10(1 + (data.count ?? 0) + (data.activity ?? 0)) / 2);
   const lift = Math.round(signal * 3);
   const s = sat + lift;

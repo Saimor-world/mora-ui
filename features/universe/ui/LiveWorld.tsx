@@ -30,21 +30,24 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const world = useWorld();
   const phone = useIsPhone();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [taskSheet, setTaskSheet] = React.useState(false);
   const [initial, setInitial] = useState<{ moonId?: string | null; starId?: string | null } | null>(null);
   const takeTarget = useUniverseFocus((s) => s.take);
   const pendingTarget = useUniverseFocus((s) => s.target);
   useEffect(() => {
     if (!pendingTarget) return;
     const t = takeTarget();
-    if (t) { setInitial({ moonId: t.moonId, starId: t.starId }); setOpenId(t.planetId); }
-  }, [pendingTarget, takeTarget]);
+    if (!t) return;
+    // Der alte Aufgaben-Planet ist kein Ort mehr: Aufgaben öffnen das Blatt „Aufgaben zuordnen“.
+    if (t.planetId === world.tasksPlanetId) { setTaskSheet(true); return; }
+    setInitial({ moonId: t.moonId, starId: t.starId }); setOpenId(t.planetId);
+  }, [pendingTarget, takeTarget, world.tasksPlanetId]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { role } = useRolePreview();
   const companyView = role === 'owner';
   const horizon = useHorizonSources(world.companyId, world.enabled && companyView);
   const finder = useFinderActions(world.companyId);
   const dayActions = useDayActions(world.companyId);
-  const [taskSheet, setTaskSheet] = React.useState(false);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
   // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
@@ -80,14 +83,15 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
   const openPlanet = useCallback((id: string) => {
     clearTimeout(zoomTimer.current);
+    if (id === world.tasksPlanetId) { setSelectedId(null); setTaskSheet(true); return; }
     setActiveId(id); setSelectedId(id);
     if (reduced) { setOpenId(id); return; }
     setZoomTo(id);
     zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 520);
-  }, [reduced]);
+  }, [reduced, world.tasksPlanetId]);
   useEffect(() => () => clearTimeout(zoomTimer.current), []);
   /** Erster Klick wählt (Fokus-Panel), zweiter Klick auf denselben Planeten zoomt hinein. */
-  const selectPlanet = useCallback((id: string) => { if (selectedId === id) openPlanet(id); else setSelectedId(id); }, [selectedId, openPlanet]);
+  const selectPlanet = useCallback((id: string) => { if (id === world.tasksPlanetId || selectedId === id) openPlanet(id); else setSelectedId(id); }, [selectedId, openPlanet, world.tasksPlanetId]);
   const pulse = useCallback((id: string | null | undefined) => {
     if (!id) return;
     setPulseIds((l) => [...l.filter((x) => x !== id), id]);
@@ -140,7 +144,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   // MÔRAs Tages-Sätze ausführen – über dieselben Aktionen wie „Heute“, immer mit Rückgängig.
   const runCommand = useCallback(async (cmd: DayCommand): Promise<MoraReply> => {
     switch (cmd.kind) {
-      case 'jump': setSelectedId(cmd.planetId); openPlanet(cmd.planetId); return { text: `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
+      case 'jump': openPlanet(cmd.planetId); return { text: cmd.planetId === world.tasksPlanetId ? 'Hier sind deine Aufgaben zum Zuordnen.' : `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
       case 'done': {
         if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
         const ok = await dayActions.setDone(cmd.task, true);
@@ -163,7 +167,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       case 'ambiguous': return { text: `Welche ${cmd.what} meinst du: ${cmd.options.slice(0, 3).join(' oder ')}?`, tone: 'note' };
       case 'unknown-target': return { text: `„${cmd.what}“ finde ich in deinen Daten nicht.`, tone: 'note' };
     }
-  }, [dayActions, openPlanet, phases, setPhase, role]);
+  }, [dayActions, openPlanet, phases, setPhase, role, world.tasksPlanetId]);
   const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events]);
   const askCtx = useMemo(() => ({ tasks: world.tasks, todayEvents, planets: finderPlanets.map((p) => ({ id: p.id, name: p.name })), running: world.day.running, stale: world.day.stale }), [world.tasks, todayEvents, finderPlanets, world.day.running, world.day.stale]);
   const dayContext = useMemo(() => ({
@@ -262,7 +266,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <span>Kalender</span>
             <b>{world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
-          <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) setSelectedId(t.id); }} data-testid="horizon-tasks">
+          <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
             <span>Aufgaben</span>
             <b>{world.day.taskLine}</b>
           </button>
@@ -318,6 +322,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
 
 /** Im Universum nur MÔRAs erster Satz, höchstens ~56 Zeichen – der Rest steht in „Heute“. */
 export function shortLine(s: string): string {
-  const first = (s || '').split(/(?<=[.!?])\s+/)[0].trim();
+  // Erster Satz ohne Lookbehind (iOS < 16.4 bricht sonst beim Laden ab): bis zum ersten Satzzeichen vor Leerraum oder Ende.
+  const text = (s || '').trim();
+  const end = text.search(/[.!?](\s|$)/);
+  const first = end < 0 ? text : text.slice(0, end + 1);
   return first.length <= 56 ? first : `${first.slice(0, 54).replace(/[\s,·:]+\S*$/, '')} …`;
 }

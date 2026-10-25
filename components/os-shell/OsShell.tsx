@@ -44,11 +44,13 @@ function readHash(): string | null {
  * MÔRA panel, command palette, notification tray. Features render inside.
  */
 /** Rollen ohne Geschlecht (Marius, 24.10.2026). */
-const ROLE_WORD: Record<string, string> = { owner: 'Volle Rechte', admin: 'Admin', manager: 'Leitung', member: 'Team', viewer: 'Nur lesen' };
+const ROLE_WORD: Record<string, string> = { owner: 'Volle Rechte', admin: 'Verwaltung', manager: 'Leitung', member: 'Mitglied', viewer: 'Nur lesen' };
 
 export function OsShell({ preview }: { preview: boolean }) {
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
+  // Sitzung = Tenant aus CORE, nicht der Name: ohne hinterlegten Namen ist der Name leer (neutral begrüßen).
+  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const flags = useMemo(() => enabledFeatureFlags(), []);
   const internal = useIsSaimorInternal();
   const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
@@ -115,7 +117,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const atmosphere = active.atmosphere ?? 'calm';
 
   const activeDemo = useActiveCompanyIsDemo();
-  const demoMode = preview && !userName;
+  const demoMode = preview && !hasSession;
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
   const look = mounted ? lookStored : 'kosmos';
@@ -138,7 +140,7 @@ export function OsShell({ preview }: { preview: boolean }) {
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
       {!preview ? <OsSessionBoot /> : null}
-      <OsOnboarding live={Boolean(userName)} navigate={navigate} />
+      <OsOnboarding live={hasSession} navigate={navigate} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
@@ -220,7 +222,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         navigate={navigate}
         askMora={askMora}
         searchEnabled={online && !preview}
-        demo={preview && !userName}
+        demo={preview && !hasSession}
         showLegacy={internal || preview}
       />
     </div>
