@@ -80,7 +80,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
     const floor = new THREE.Mesh(new THREE.CircleGeometry(8, 64), new THREE.MeshStandardMaterial({ color: '#153c2b', metalness: 0.55, roughness: 0.6 })); floor.rotation.x = -Math.PI / 2; floor.position.y = -2; scene.add(floor);
     const ring = new THREE.Mesh(new THREE.RingGeometry(1.65, 1.66, 80), new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, opacity: 0.35 })); ring.rotation.x = -Math.PI / 2; ring.position.y = -1.99; scene.add(ring);
     const target = new THREE.Vector3();
-    let frame = 0, elapsed = 0, previous = performance.now(), disposed = false;
+    let frame = 0, elapsed = 0, orbit = 0.65, orbitVelocity = 0.55, previous = performance.now(), disposed = false;
     function draw(time: number) {
       frame = 0; if (disposed) return;
       const { state, still, active, interaction } = latest.current;
@@ -89,7 +89,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       const t = elapsed, rest = state === 'night-rest' || state === 'offline', busy = state === 'working' || state === 'thinking';
       const tapped = !still && time - interaction.current.touchedAt < 4500, wandering = still || rest ? 0 : 1;
       target.set(tapped ? interaction.current.x * 1.3 : Math.sin(t * 0.32) * 0.55 * wandering,
-        rest ? -0.45 : tapped ? interaction.current.y * 0.6 + 0.4 : Math.sin(t * 0.7) * 0.14 * wandering + 0.4,
+        rest ? 0 : tapped ? interaction.current.y * 0.6 + 0.4 : Math.sin(t * 0.7) * 0.14 * wandering + 0.4,
         Math.sin(t * 0.22) * 0.22 * wandering);
       const { body, eyes, jade, light, tail, gold, headMaterial, aura } = character;
       if (still) body.position.copy(target); else body.position.lerp(target, 1 - Math.exp(-dt * (tapped ? 2.5 : 1.6)));
@@ -98,7 +98,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       const phase = t % 5.7, blink = !still && phase > 5.42 ? Math.max(0.07, Math.abs(phase - 5.56) / 0.14) : 1;
       eyes.scale.y = rest ? 0.13 : blink * (state === 'approval' || state === 'listening' ? 1.18 : busy ? 0.7 : 1);
       eyes.position.set(still ? 0 : interaction.current.x * 0.055, still ? 0 : interaction.current.y * 0.035, 0);
-      const orbit = still ? 0.65 : t * (busy ? 1.5 : 0.55);
+      if (!still && active) { orbitVelocity = THREE.MathUtils.damp(orbitVelocity, rest ? 0.12 : busy ? 1.5 : 0.55, 2, dt); orbit += dt * orbitVelocity; }
       jade.position.set(Math.cos(orbit) * 1.13, Math.sin(orbit) * 0.33 - 0.35, Math.sin(orbit) * 0.8); jade.rotation.y = orbit;
       const color = state === 'error' ? '#efa57e' : state === 'approval' ? '#ffe0a0' : GOLD;
       gold.color.set(color); gold.emissive.set(color); gold.emissiveIntensity = rest ? 0.08 : 0.3;
