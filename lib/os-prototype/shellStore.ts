@@ -21,7 +21,7 @@ export interface OsShellState {
   setSurfaceContext(context: string | null): void;
   /** V1.4: planet the Universe should focus when it opens (department id). */
   universeFocus: string | null;
-  /** Interne Rollen-Vorschau der Inhaberin (Heute + Universe + Finder). */
+  /** Interne Rollen-Vorschau mit vollen Rechten (Heute + Universe + Finder). */
   rolePreview: 'owner' | 'department' | 'member';
   setRolePreview(role: 'owner' | 'department' | 'member'): void;
   setUniverseFocus(id: string | null): void;

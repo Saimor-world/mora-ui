@@ -24,7 +24,7 @@ import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
 import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
-import { ContextCapsule, ContextClock } from './ContextCapsule';
+import { ContextCapsule, DemoBanner, DemoSwitch, StatusMenu } from './ContextCapsule';
 import { ControlCenter } from './ControlCenter';
 
 const lazyCache = new Map<string, React.LazyExoticComponent<React.ComponentType<FeatureSurfaceProps>>>();
@@ -43,9 +43,14 @@ function readHash(): string | null {
  * OS prototype shell. Knows only: navigation model (from manifests),
  * MÔRA panel, command palette, notification tray. Features render inside.
  */
+/** Rollen ohne Geschlecht (Marius, 24.10.2026). */
+const ROLE_WORD: Record<string, string> = { owner: 'Volle Rechte', admin: 'Verwaltung', manager: 'Leitung', member: 'Mitglied', viewer: 'Nur lesen' };
+
 export function OsShell({ preview }: { preview: boolean }) {
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
+  // Sitzung = Tenant aus CORE, nicht der Name: ohne hinterlegten Namen ist der Name leer (neutral begrüßen).
+  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
   const flags = useMemo(() => enabledFeatureFlags(), []);
   const internal = useIsSaimorInternal();
   const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
@@ -112,7 +117,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const atmosphere = active.atmosphere ?? 'calm';
 
   const activeDemo = useActiveCompanyIsDemo();
-  const demoMode = preview && !userName;
+  const demoMode = preview && !hasSession;
   const { phase, mounted } = usePhase();
   const lookStored = useOsShellStore((s) => s.look);
   const look = mounted ? lookStored : 'kosmos';
@@ -135,7 +140,7 @@ export function OsShell({ preview }: { preview: boolean }) {
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
       {!preview ? <OsSessionBoot /> : null}
-      <OsOnboarding live={Boolean(userName)} navigate={navigate} />
+      <OsOnboarding live={hasSession} navigate={navigate} />
       {preview ? (
         <div className="os-preview-banner" role="note" data-testid="os-preview-banner">
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
@@ -146,19 +151,21 @@ export function OsShell({ preview }: { preview: boolean }) {
 
         <main className="os-shell__main" id="os-main">
           <div className="os-shell__topbar">
-            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><Text variant="eyebrow" className="os-shell__place">{active.title}</Text>{/* Kund:innen sehen den CORE-Zustand nur, wenn etwas nicht stimmt. */}{internal || preview || (!health.isLoading && !online) ? <span className="os-shell__health"><Status tone={online ? 'safe' : 'warning'}>{health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung'}</Status></span> : null}{userName ? <Text variant="meta" className="os-shell__user">{userName}</Text> : null}</Stack>
-            <ContextCapsule activeId={active.id} navigate={navigate} org={org} demo={demoMode || activeDemo} internal={internalUser} />
+            <Stack direction="row" gap={3} align="center"><Text variant="title" as="div" className="os-brand">SAIMÔR</Text><ContextCapsule activeId={active.id} navigate={navigate} /></Stack>
             <Stack direction="row" gap={1} align="center">
-              <ContextClock internal={internalUser} />
+              <DemoSwitch />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
                 <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
+              <StatusMenu org={org} userName={userName} role={role ? ROLE_WORD[role] ?? null : null} internal={internalUser} coreOk={health.isLoading || online}
+                core={internal || preview || (!health.isLoading && !online) ? (health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung') : null} />
               <Button size="sm" className="os-shell__mora-toggle" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>
           </div>
+          <DemoBanner />
           {trayOpen ? <NotificationTray onClose={closeTray} /> : null}
           <div className="os-shell__content">
             <FeatureBoundary featureId={active.id}>
@@ -215,7 +222,7 @@ export function OsShell({ preview }: { preview: boolean }) {
         navigate={navigate}
         askMora={askMora}
         searchEnabled={online && !preview}
-        demo={preview && !userName}
+        demo={preview && !hasSession}
         showLegacy={internal || preview}
       />
     </div>

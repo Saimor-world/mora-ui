@@ -17,7 +17,7 @@ export function visiblePlanetIds(role: RolePreview, planets: { id: string; kind?
 /** Echte Rolle → darf umschalten? */
 export function canPreviewRole(userRole: string): boolean { return OWNER_ROLES.includes(userRole.toLowerCase()); }
 
-export const ROLE_LABEL: Record<RolePreview, string> = { owner: 'Inhaberin', department: 'Abteilung', member: 'Mitglied' };
+export const ROLE_LABEL: Record<RolePreview, string> = { owner: 'Gesamtansicht', department: 'Abteilung', member: 'Mitglied' };
 
 /**
  * Rollen-Vorschau: nur wer selbst Inhaber:in ist, kann umschalten; alle anderen sehen immer
@@ -54,7 +54,7 @@ export function RolePreviewBanner() {
   return (
     <div className="wd-role-banner" role="status" data-testid="role-banner">
       Vorschau als {ROLE_LABEL[role]}: {role === 'member' ? 'nur lesen, nur eigene Abteilung, keine Firmen-Quellen.' : 'nur die eigene Abteilung, keine Firmen-Quellen.'}
-      <button type="button" onClick={() => useOsShellStore.getState().setRolePreview('owner')} data-testid="role-banner-reset">Zurück zur Inhaberin</button>
+      <button type="button" onClick={() => useOsShellStore.getState().setRolePreview('owner')} data-testid="role-banner-reset">Zurück zur Gesamtansicht</button>
     </div>
   );
 }

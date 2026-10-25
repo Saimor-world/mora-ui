@@ -41,9 +41,9 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
       <Surface padding={4} className="os-universe__intro" aria-label="Universe">
         <Stack direction="row" align="center" justify="space-between" gap={3} wrap>
           <Stack gap={1} className="min-w-0">
-            <Stack direction="row" gap={2} align="center"><Text variant="eyebrow">Universe</Text>{landscape.sample ? <SampleTag /> : null}</Stack>
+            <Stack direction="row" gap={2} align="center" className="os-universe__eyebrow"><Text variant="eyebrow">Universe</Text>{landscape.sample ? <SampleTag /> : null}</Stack>
             <Text variant="title" as="h1">{lens === 'organization' ? (demo ? 'Simple Coffee Group – deine Abteilungen' : 'Deine Abteilungen') : 'Deine Arbeitsbereiche'}</Text>
-            <Text variant="meta">
+            <div className="os-universe__hint"><Text variant="meta">
               {lens === 'organization'
                 ? hasSession && !demo
                   ? 'Wähle einen Bereich – Pfeiltasten, Enter zum Hineinzoomen, oder frag MÔRA unten.'
@@ -51,14 +51,14 @@ export default function UniverseSurface({ navigate, preview }: FeatureSurfacePro
                 : landscape.sample
                   ? 'Lokale Vorschau: die OS-Bereiche um MÔRA, gespeist aus dem Demo-Paket.'
                   : 'Deine OS-Bereiche als Planeten um MÔRA. Wähle einen Planeten, um hineinzuzoomen.'}
-            </Text>
+            </Text></div>
           </Stack>
-          <Stack direction="row" gap={2} wrap>
+          <Stack direction="row" gap={2} wrap className="os-universe__actions">
             <div className="os-tabs os-universe__lens" role="tablist" aria-label="Ansicht">
               <button type="button" role="tab" className="os-tab" aria-selected={lens === 'organization'} onClick={() => setLens('organization')} data-testid="universe-lens-organization">Abteilungen</button>
               <button type="button" role="tab" className="os-tab" aria-selected={lens === 'landscape'} onClick={() => setLens('landscape')} data-testid="universe-lens-landscape">Arbeitsbereiche</button>
             </div>
-            <Button size="sm" variant="ghost" disabled={demo || !companyId} title={demo ? 'Braucht eine CORE-Sitzung' : undefined} onClick={() => setWizard(true)} data-testid="universe-add-department">Abteilung hinzufügen</Button>
+            <Button size="sm" variant="ghost" disabled={demo || !companyId} title={demo ? 'Braucht eine CORE-Sitzung' : undefined} onClick={() => setWizard(true)} data-testid="universe-add-department" aria-label="Abteilung hinzufügen"><span className="os-universe__addlong">Abteilung hinzufügen</span><span className="os-universe__addshort" aria-hidden>+ Abteilung</span></Button>
           </Stack>
         </Stack>
       </Surface>
