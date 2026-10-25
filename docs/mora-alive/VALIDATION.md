@@ -4,9 +4,9 @@
 
 V03 replaces the flat outer veil and rotated duplicate torso with six cambered light membranes. It adds damped eye aperture, larger glossy dark-green eyes, warped cellular jade veins, and an articulated night-rest pose with a curled crest, rotated tail and a smaller jade orbit. Night stays warm; offline/error use the dim violet palette. Engine/event mapping remains unchanged.
 
-Source `b1b8e720` passed full CI (40213278858) and six desktop/iPhone Chromium/WebKit browser checks (40213278749). Actual idle, working and night-rest captures were reviewed. This visual review found bright square artifacts at membrane tips despite passing tests: an unclamped `pow(sin(...), 2.)` could receive a tiny negative value at a zero-opacity edge. V03's follow-up clamps fractional-power domains and uses multiplication for squared values. It also reconnects the night-rest head/tail and fades the upright crest threads during curling.
+Source `b1b8e720` passed full CI (40213278858) and six desktop/iPhone Chromium/WebKit browser checks (40213278749). Actual idle, working and night-rest captures were reviewed. This visual review found bright square artifacts at membrane tips despite passing tests: an unclamped `pow(sin(...), 2.)` could receive a tiny negative value at a zero-opacity edge. Clamping power domains alone did not remove those artifacts. The next correction discards near-zero-coverage edge fragments, bounds their HDR output and safely normalizes the interpolated vectors. It reconnects the night-rest head/tail and fades the upright crest threads during curling.
 
-The corrected browser captures and current checks are linked on draft PR #163. Fidelity remains a work in progress: this is a custom procedural 3D reconstruction, not a claimed 1:1 finished character asset. Physical iPhone GPU/FPS/thermal testing remains outstanding. No production release or merge.
+Source `f8e08637` passed full CI 40233824628 and all six browser checks 40233824561. The corrected actual idle and night-rest frames were reviewed: the white squares are absent. CI also reads the half-float source and both blur targets and asserts zero non-finite components on desktop Chromium, iPhone Chromium and iPhone WebKit. The final night-light correction preserves the rounded forehead, dims all light layers continuously during curling, and limits fully resting rendering to at most 20 draws per second (not a measured physical-device FPS claim). Current checks are linked on draft PR #163. Fidelity remains a work in progress: this is a custom procedural 3D reconstruction, not a claimed 1:1 finished character asset. Physical iPhone GPU/FPS/thermal testing remains outstanding. No production release or merge.
 
 ## Reference correction (2026-10-25)
 
@@ -22,7 +22,7 @@ The supplied turnaround sheet is the binding target; V01 was rejected visually. 
 
 ## Remaining visual differences
 
-The reconstruction is closer to the supplied silhouette and face, but it is not a 1:1 match. The sheet has more finely layered, curved luminous membranes, richer local scattering and a natural jade microstructure. The current procedural surface and vein pattern are visibly simpler. Night rest is a lowered/tilted pose, not the sheet's fully curled rigged pose. Do not mark the character asset as finished or accepted. The Website draft retains its prior pinned version while the canonical OS preview is revised.
+The reconstruction is closer to the supplied silhouette and face, but it is not a 1:1 match. The sheet has more finely layered, curved luminous membranes, richer local scattering and a natural jade microstructure. The current procedural surface and vein pattern are visibly simpler. V03 adds a procedural curled night-rest pose; it is not the sheet's final artist-authored rig. Do not mark the character asset as finished or accepted. The Website draft retains its prior pinned version while the canonical OS preview is revised.
 
 ## Earlier integration checks
 

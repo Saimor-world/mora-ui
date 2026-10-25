@@ -22,8 +22,8 @@ export function lightMaterial(opacity: number, flow: number) {
       void main(){vec3 p=position;float w=flow>.5?smoothstep(.75,1.8,p.y):(1.-smoothstep(-1.4,-.1,p.y));
         p.x+=sin(time*1.1+p.y*2.8)*w*.045*motion;
         p.z+=sin(time*1.25-p.y*3.)*w*.055*motion;
-        float crest=smoothstep(.7,1.7,p.y);p.x-=sleep*crest*1.1;p.y-=sleep*crest;
-        local=p;n=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.);view=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
+        float crest=smoothstep(.95,1.76,p.y);p.x-=sleep*crest*1.1;p.y-=sleep*crest;
+        local=position;n=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.);view=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
     fragmentShader: `
       uniform vec3 cream;uniform vec3 gold;uniform float opacity;uniform float warmth;uniform float flow;
       varying vec3 n;varying vec3 view;varying vec3 local;
@@ -36,9 +36,10 @@ export function lightMaterial(opacity: number, flow: number) {
         vec3 color=mix(gold*.32,cream*.95,clamp(diffuse*.8+front*.15,0.,1.));
         color+=gold*(edge*.9+inner*.12)+cream*highlight*.8;
         float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
-        color+=gold*filaments*.06*edge;color=mix(color*.35,color,warmth);
+        color+=gold*filaments*.06*edge;
         float alpha=opacity*mix(.55,.98,pow(front,.5))*mix(1.,.50,tip);
         if(flow<.5){color=mix(gold*1.5,cream*1.5,front*.65);alpha=opacity*(.25+front*.65+filaments*.10);}
+        color=mix(color*.35,color,warmth);
         gl_FragColor=vec4(color,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>

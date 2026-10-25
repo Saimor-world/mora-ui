@@ -27,7 +27,7 @@ function membrane(rows: Station[], strength: number, phase: number) {
     vertexShader:`uniform float time;uniform float motion;uniform float sleep;uniform float phase;
       varying vec2 sheet;varying vec3 n;varying vec3 view;
       void main(){vec3 p=position;sheet=uv;
-        float tail=1.-smoothstep(-1.4,-.1,p.y);float crest=smoothstep(.7,1.7,p.y);
+        float tail=1.-smoothstep(-1.4,-.1,p.y);float crest=smoothstep(.95,1.76,p.y);
         p.z+=sin(uv.y*5.-time*1.15+phase)*sin(uv.x*3.14159)*.065*motion;
         p.x+=sin(time*.9+uv.y*4.+phase)*tail*.035*motion;
         p.x-=sleep*crest*1.1;p.y-=sleep*crest;

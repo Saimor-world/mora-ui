@@ -44,7 +44,9 @@ export function createCharacterGlow(renderer: THREE.WebGLRenderer) {
       for(const target of [source,ping,pong]){
         const pixels=new Uint16Array(target.width*target.height*4);
         renderer.readRenderTargetPixels(target,0,0,target.width,target.height,pixels);
-        for(const value of pixels)if((value&0x7c00)===0x7c00)invalid++;
+        let hasContent=false;
+        for(const value of pixels){if(value!==0)hasContent=true;if((value&0x7c00)===0x7c00)invalid++;}
+        if(target===source&&!hasContent)return -1;
       }
       return invalid;
     },

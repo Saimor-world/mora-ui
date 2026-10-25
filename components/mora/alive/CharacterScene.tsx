@@ -24,6 +24,7 @@ function buildCharacter() {
   const core = new THREE.Mesh(createLightForm('body'), torsoMaterial);core.scale.x=.86;
   tailRig.add(core, membranes.tail);body.add(headRig,tailRig);
   const materials = [headMaterial,torsoMaterial,...membranes.materials];
+  materials.forEach(material=>{material.userData.dayOpacity=material.uniforms.opacity.value;});
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
   // Filaments follow the actual flame surface and extend its silhouette, rather than adding a metal shell.
   const paths = [
@@ -90,10 +91,12 @@ export default function CharacterScene(props: CharacterSceneProps) {
       ring.traverse(object => { if (object instanceof THREE.Mesh) (object.material as THREE.MeshBasicMaterial).opacity *= .28; }); scene.add(ring);
     }
     const target = new THREE.Vector3();
-    let frame=0, elapsed=0, orbit=.22, velocity=.4, aperture=0, sleep=0, previous=performance.now(), disposed=false;
+    let frame=0, elapsed=0, orbit=.22, velocity=.4, aperture=0, sleep=0, painted=0, previous=performance.now(), disposed=false;
     function draw(time: number) {
       frame=0; if (disposed) return;
       const { state, still, active, interaction } = latest.current;
+      if(active&&!still&&state==='night-rest'&&sleep>.99&&time-painted<50){frame=requestAnimationFrame(draw);return;}
+      painted=time;
       const dt=Math.min(Math.max((time-previous)/1000,0),.05); previous=time;
       if (!still && active) elapsed+=dt;
       const t=elapsed, night=state==='night-rest', rest=night||state==='offline', busy=state==='working'||state==='thinking';
@@ -120,15 +123,16 @@ export default function CharacterScene(props: CharacterSceneProps) {
       ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.28+(still?0:Math.sin(t*.4)*.08);
       const dim=state==='error'||state==='offline';
       for (const material of materials) {
-        material.uniforms.time.value=t;material.uniforms.sleep.value=sleep;material.uniforms.motion.value=still||rest?0:busy?1.4:1;
-        material.uniforms.warmth.value=dim?.28:night?.58:1;
+        material.uniforms.time.value=t;material.uniforms.sleep.value=sleep;material.uniforms.motion.value=still||state==='offline'?0:(busy?1.4:1)*(1-sleep);
+        material.uniforms.warmth.value=dim?.28:1-sleep*.72;
+        material.uniforms.opacity.value=material.userData.dayOpacity*(1-sleep*.45);
         material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);
         material.uniforms.gold.value.set(dim?'#8e819d':state==='approval'?'#f3bb61':P.gold);
       }
-      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:night?1.3:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1)*(material.userData.crest?1-sleep:1);});
-      sparks.material.color.set(dim?'#bcb0ce':P.gold);
-      aura.material.uniforms.strength.value=rest?.035:.11;
-      light.intensity=rest?.4:1.5;sparks.rotation.y=still?0:t*.025;
+      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:2.5-sleep*1.2);material.opacity=material.userData.restOpacity*(state==='offline'?.35:1-sleep*.65)*(material.userData.crest?1-sleep:1);});
+      sparks.material.color.set(dim?'#bcb0ce':P.gold);sparks.material.opacity=.5-sleep*.32;
+      aura.material.uniforms.strength.value=state==='offline'?.035:.11-sleep*.075;
+      light.intensity=state==='offline'?.4:1.5-sleep*1.1;sparks.rotation.y=still?0:t*.025;
       glow.render(scene,camera);
       if(still&&process.env.NEXT_PUBLIC_MORA_RENDER_QA==='1')renderer.domElement.dataset.gpuNonfinite=String(glow.checkFinite());
       if (active&&!still) frame=requestAnimationFrame(draw);
