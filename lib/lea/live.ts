@@ -82,11 +82,15 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   const tl = taskLineOf(tasks, now);
   const restLine = tl.openTotal ? ` Heute nichts fällig, ${tl.openTotal} offen.` : ' Sonst ist heute alles erledigt.';
   let sentence: string;
-  const openNames = summarizeTitles(open.map((o) => o.task.title.split(':')[0]));
+  // „Heute fällig“ und „überfällig“ getrennt – wie in der Aufgabenzeile (formatTaskLine).
+  const dueNames = summarizeTitles(open.filter((o) => !o.overdue).map((o) => o.task.title.split(':')[0]));
+  const overdueNames = summarizeTitles(open.filter((o) => o.overdue).map((o) => o.task.title.split(':')[0]));
+  const dueCount = [tl.dueToday ? `${plural(tl.dueToday, 'Aufgabe', 'Aufgaben')} heute fällig` : '', tl.overdue ? `${tl.overdue} überfällig` : ''].filter(Boolean).join(', ');
+  const dueList = [dueNames.length ? `Heute fällig: ${dueNames.join(' und ')}.` : '', overdueNames.length ? `Überfällig: ${overdueNames.join(' und ')}.` : ''].filter(Boolean).join(' ');
   if (stale && !running) sentence = `Der Termin mit ${personOf(stale.title)} um ${stale.time} ist noch nicht abgeschlossen.`;
   else if (running) sentence = `${personOf(running.title)} ist da. Ich halte dir den Rest fern, bis ihr fertig seid.`;
-  else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` Heute fällig: ${plural(open.length, 'Aufgabe', 'Aufgaben')}.` : restLine}`;
-  else if (open.length) sentence = `Heute kommt niemand mehr. Heute fällig: ${openNames.join(' und ')}.`;
+  else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` ${dueCount.charAt(0).toUpperCase()}${dueCount.slice(1)}.` : restLine}`;
+  else if (open.length) sentence = `Heute kommt niemand mehr. ${dueList}`;
   else if (tl.openTotal) sentence = `Heute ist nichts fällig · ${plural(tl.openTotal, 'Aufgabe', 'Aufgaben')} offen.${tomorrow.length ? ' Morgen steht schon etwas drin.' : ''}`;
   else sentence = tomorrow.length ? 'Heute ist alles erledigt. Morgen steht schon etwas drin.' : 'Heute ist alles erledigt. Magst du morgen planen?';
   const doneTodayEvents = today.length > 0 && today.every((e) => phaseOf(e, phases) === 'erledigt');
@@ -118,7 +122,7 @@ export function summarizeTitles(titles: string[], max = 3): string[] {
   const uniq = [...counts.values()].map((x) => (x.n > 1 ? `${x.label} (${x.n}×)` : x.label));
   if (uniq.length <= max) return uniq;
   const rest = uniq.length - max;
-  return [...uniq.slice(0, max), `${rest} ${rest === 1 ? 'weitere' : 'weitere'}`];
+  return [...uniq.slice(0, max), `${rest} weitere`];
 }
 
 /** Kurze Zeile für einen Termin-Planeten im Universe. */
