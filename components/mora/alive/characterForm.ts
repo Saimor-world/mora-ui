@@ -57,6 +57,11 @@ export function createLightForm(kind: 'head' | 'body' | 'veil') {
   geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
   geometry.setIndex(indices); geometry.computeVertexNormals();
+  if(kind==='head'){
+    let split=0;while(split<rings&&profile(rows,split/rings)[1]<.86)split++;
+    const faceCount=split*sides*6;
+    geometry.addGroup(0,faceCount,0);geometry.addGroup(faceCount,indices.length-faceCount,1);
+  }
   // Match the two seam normals instead of leaving a visible lighting seam on the face.
   const normals = geometry.attributes.normal;
   for (let i = 0; i <= rings; i++) {

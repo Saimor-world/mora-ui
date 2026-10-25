@@ -17,13 +17,13 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
 function buildCharacter() {
   const body = new THREE.Group(), headRig = new THREE.Group(), tailRig = new THREE.Group();
   const face = new THREE.Group(), jade = new THREE.Group();
-  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.78, 0);
+  const headMaterial = lightMaterial(.94, 1), crestMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.78, 0);
   headMaterial.depthWrite = true;
   const membranes = createMembranes();
-  headRig.add(new THREE.Mesh(createLightForm('head'), headMaterial), membranes.crest);
+  headRig.add(new THREE.Mesh(createLightForm('head'), [headMaterial,crestMaterial]), membranes.crest);
   const core = new THREE.Mesh(createLightForm('body'), torsoMaterial);core.scale.x=.86;
   tailRig.add(core, membranes.tail);body.add(headRig,tailRig);
-  const materials = [headMaterial,torsoMaterial,...membranes.materials];
+  const materials = [headMaterial,crestMaterial,torsoMaterial,...membranes.materials];
   materials.forEach(material=>{material.userData.dayOpacity=material.uniforms.opacity.value;});
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
   // Filaments follow the actual flame surface and extend its silhouette, rather than adding a metal shell.

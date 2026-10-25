@@ -29,15 +29,18 @@ export function lightMaterial(opacity: number, flow: number) {
       varying vec3 n;varying vec3 view;varying vec3 local;
       ${NOISE}
       void main(){vec3 nn=normalize(n);vec3 vv=normalize(view);float front=clamp(abs(dot(nn,vv)),0.,1.);float edge=(1.-front)*(1.-front);
-        float tip=smoothstep(.72,1.7,local.y);float silk=cloud(local*4.);
+        float flame=smoothstep(.72,1.10,local.y);float silk=cloud(local*4.);
         vec3 lamp=normalize(vec3(-.65,.8,1.));float diffuse=max(0.,dot(nn,lamp));
         float highlight=pow(max(0.,dot(reflect(-lamp,nn),vv)),35.);
         float inner=exp(-dot((local.xy-vec2(-.12,.38))*vec2(2.,1.5),(local.xy-vec2(-.12,.38))*vec2(2.,1.5)));
-        vec3 color=mix(gold*.32,cream*.95,clamp(diffuse*.8+front*.15,0.,1.));
-        color+=gold*(edge*.9+inner*.12)+cream*highlight*.8;
         float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
-        color+=gold*filaments*.06*edge;
-        float alpha=opacity*mix(.55,.98,pow(front,.5))*mix(1.,.50,tip);
+        // A broad internal cream source defines the face; the upper crest is a separate gold light volume.
+        vec3 color=mix(gold*.55,cream*1.45,clamp(front*.7+.23,0.,1.));
+        color*=.92+diffuse*.10;
+        color+=gold*(edge*1.2+inner*.18)+cream*highlight*.15;
+        vec3 glass=mix(gold*1.6,cream*.9,front*.25)+gold*(edge*2.+filaments*.08);
+        color=mix(color,glass,flame);
+        float alpha=mix(opacity*(.87+.12*front),opacity*(.13+.48*edge+.13*front),flame);
         if(flow<.5){color=mix(gold*1.5,cream*1.5,front*.65);alpha=opacity*(.25+front*.65+filaments*.10);}
         color=mix(color*.35,color,warmth);
         gl_FragColor=vec4(color,alpha);
