@@ -36,13 +36,17 @@ function membrane(rows: Station[], strength: number, phase: number) {
       varying vec2 sheet;varying vec3 n;varying vec3 view;
       void main(){float edge=pow(abs(sheet.x*2.-1.),14.);float tip=sin(sheet.y*3.14159);
         float fold=pow(clamp(.5+.5*cos(sheet.x*14.+sheet.y*9.+phase),0.,1.),18.);
-        float facing=clamp(abs(dot(normalize(n),normalize(view))),0.,1.);float fresnel=(1.-facing)*(1.-facing);
+        vec3 nn=n*inversesqrt(max(dot(n,n),.000001));vec3 vv=view*inversesqrt(max(dot(view,view),.000001));
+        float facing=clamp(abs(dot(nn,vv)),0.,1.);float fresnel=(1.-facing)*(1.-facing);
         float taper=smoothstep(0.,.06,sheet.y)*(1.-smoothstep(.91,1.,sheet.y));
         float center=max(0.,sin(sheet.x*3.14159));
         vec3 color=mix(gold*1.45,cream*1.4,center*center*.55);
         color+=gold*(edge*3.+fold*.5+fresnel);color*=mix(.38,1.,warmth);
         float a=opacity*(.10+edge*.85+fold*.16+fresnel*.12)*taper*sqrt(max(.02,tip));
-        gl_FragColor=vec4(color,a);
+        // Zero-coverage tips must not enter the HDR/MSAA target with undefined or unbounded RGB.
+        if(!(a>.003))discard;
+        if(!(color.r>=0.)||!(color.g>=0.)||!(color.b>=0.))discard;
+        gl_FragColor=vec4(min(color,vec3(8.)),min(a,1.));
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
       }`,

@@ -38,6 +38,16 @@ export function createCharacterGlow(renderer: THREE.WebGLRenderer) {
       renderer.setRenderTarget(pong);renderer.render(scene,camera);
       quad.material=combine;renderer.setRenderTarget(null);renderer.render(scene,camera);
     },
+    checkFinite() {
+      if(options.type!==THREE.HalfFloatType)return 0;
+      let invalid=0;
+      for(const target of [source,ping,pong]){
+        const pixels=new Uint16Array(target.width*target.height*4);
+        renderer.readRenderTargetPixels(target,0,0,target.width,target.height,pixels);
+        for(const value of pixels)if((value&0x7c00)===0x7c00)invalid++;
+      }
+      return invalid;
+    },
     dispose() {source.dispose();ping.dispose();pong.dispose();blur.dispose();combine.dispose();quad.geometry.dispose();},
   };
 }

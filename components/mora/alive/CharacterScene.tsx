@@ -130,6 +130,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       aura.material.uniforms.strength.value=rest?.035:.11;
       light.intensity=rest?.4:1.5;sparks.rotation.y=still?0:t*.025;
       glow.render(scene,camera);
+      if(still&&process.env.NEXT_PUBLIC_MORA_RENDER_QA==='1')renderer.domElement.dataset.gpuNonfinite=String(glow.checkFinite());
       if (active&&!still) frame=requestAnimationFrame(draw);
     }
     const redraw=()=>{if(frame)cancelAnimationFrame(frame);previous=performance.now();draw(previous);};

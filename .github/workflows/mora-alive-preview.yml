@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 15
     env:
       NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_MORA_RENDER_QA: '1'
     steps:
       - uses: actions/checkout@v4
         with:

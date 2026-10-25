@@ -10,6 +10,7 @@ test('renders a 3D body, supports touch/keyboard controls and labels expressions
   await expect(canvas).toBeVisible();
   await expect.poll(() => page.getByRole('img', { name: 'Freigegebenes SAIMÔR-Sigil' }).evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Bewegung pausieren' }).click();
+  await expect(canvas).toHaveAttribute('data-gpu-nonfinite', '0');
   await canvas.screenshot({ path: info.outputPath('reference-idle.png') });
   await page.getByRole('button', { name: 'Bewegung fortsetzen' }).click();
   await page.getByRole('button', { name: 'Zu mir', exact: true }).press('Enter');
@@ -21,6 +22,7 @@ test('renders a 3D body, supports touch/keyboard controls and labels expressions
   await expect(page.getByRole('button', { name: 'Bewegung fortsetzen' })).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({ path: info.outputPath('alive-paused.png'), fullPage: true });
   await page.getByRole('combobox', { name: 'Character-Vorschau' }).selectOption('night-rest');
+  await expect(canvas).toHaveAttribute('data-gpu-nonfinite', '0');
   await canvas.screenshot({ path: info.outputPath('reference-night-rest.png') });
   await page.getByRole('combobox', { name: 'Character-Vorschau' }).selectOption('');
   await expect(page.getByRole('status')).toHaveText('Bei dir');
