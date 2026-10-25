@@ -31,7 +31,8 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
   useEffect(() => { const h = setInterval(() => setTick((n) => n + 1), 60_000); return () => clearInterval(h); }, []);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const now = useMemo(() => new Date(), [tick, world.events, world.tasks, phases]);
-  const day = useMemo(() => buildLiveDay(world.events, world.tasks, phases, now), [world.events, world.tasks, phases, now]);
+  const timeZone = world.calendar?.window.timezone;
+  const day = useMemo(() => buildLiveDay(world.events, world.tasks, phases, now, timeZone), [world.events, world.tasks, phases, now, timeZone]);
   const [toast, setToast] = useState<{ text: string; undo?: () => void; tone: 'ok' | 'error' } | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout>>();
   const say = (text: string, undo?: () => void, tone: 'ok' | 'error' = 'ok') => {
@@ -58,13 +59,13 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
       </section>
     );
   }
-  if (world.failed) {
+  if (world.failed || world.dayUnavailable) {
     return (
       <section className="dy" aria-label="Dein Tag" data-testid="day-error">
         <div className="dy-card dy-card--error" role="status">
           <p className="dy-eyebrow">Dein Tag</p>
           <p className="dy-title">Gerade nicht lesbar</p>
-          <p className="dy-meta">CORE hat Termine und Aufgaben nicht geliefert. Angezeigt wird nichts, was nicht belegt ist.</p>
+          <p className="dy-meta">Der Kalender- oder Aufgabenstand ist nicht vollständig bestätigt. Angezeigt wird nichts, was nicht belegt ist.</p>
         </div>
       </section>
     );
@@ -102,16 +103,16 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
   };
 
   const ev = day.running ?? day.next;
-  const isToday = ev ? ev.date === localISO(now) : false;
-  const t = new Date(now); t.setDate(t.getDate() + 1);
-  const tomorrowLabel = t.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short' });
+  const isToday = ev ? ev.date === localISO(now, timeZone) : false;
+  const t = new Date(`${localISO(now, timeZone)}T12:00:00Z`); t.setUTCDate(t.getUTCDate() + 1);
+  const tomorrowLabel = t.toLocaleDateString('de-DE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 
   return (
     <section className="dy" data-compact={compact ? 'true' : 'false'} aria-label="Dein Tag" data-testid="day-panel">
       <div className="dy-grid">
         {day.stale ? (
           <div className="dy-card dy-next" data-testid="day-stale">
-            <p className="dy-eyebrow">Heute · {day.stale.time} · vorbei</p>
+            <p className="dy-eyebrow">Heute · {day.stale.time} · offen</p>
             <p className="dy-title">{personOf(day.stale.title)} {day.stale.duration ? <small>{day.stale.duration} Min</small> : null}</p>
             <p className="dy-meta">{serviceOf(day.stale.title) || 'Termin'} · noch nicht abgeschlossen</p>
             <button type="button" className="dy-btn" data-testid="day-finish-stale" onClick={() => { const s = day.stale!; void change(s.id, s.title, 'erledigt', `Termin mit ${personOf(s.title)} abgeschlossen.`, 'geplant'); }}>Termin abschließen</button>
@@ -119,7 +120,7 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
         ) : (
         <div className={`dy-card dy-next${day.running ? ' dy-next--live' : ''}`} data-testid="day-next">
           <p className="dy-eyebrow">
-            {day.running ? `Jetzt · seit ${sinceLabel(since[day.running.id]) ?? day.running.time ?? ''}` : ev ? `Als Nächstes${isToday && day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ev.date !== localISO(now) ? ` · am ${shortDate(ev.date)}` : ''}` : 'Als Nächstes'}
+            {day.running ? `Jetzt · seit ${sinceLabel(since[day.running.id]) ?? day.running.time ?? ''}` : ev ? `Als Nächstes${isToday && day.minutesToNext !== null ? ` · ${inMinutes(day.minutesToNext)}` : ev.date !== localISO(now, timeZone) ? ` · am ${shortDate(ev.date)}` : ''}` : 'Als Nächstes'}
           </p>
           {ev ? (
             <>

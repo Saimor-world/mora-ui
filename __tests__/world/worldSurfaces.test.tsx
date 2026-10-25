@@ -18,11 +18,14 @@ const departments = [
   { id: 'd2', name: 'Kundinnen', spaces: [] },
 ];
 
+let mockDayUnavailable = false;
+afterEach(() => { mockDayUnavailable = false; });
 jest.mock('@/lib/lea/useWorld', () => ({
   useWorld: () => ({
     enabled: true, loading: false, failed: false, companyId: 'co-beispiel',
+    dayUnavailable: mockDayUnavailable,
     planets: require('@/lib/lea/world').buildWorld({ departments, events }),
-    events, tasks,
+    events: mockDayUnavailable ? [] : events, tasks,
     day: require('@/lib/lea/live').buildLiveDay(events, tasks, {}),
   }),
 }));
@@ -34,6 +37,17 @@ import { PhoneHome } from '@/features/today/ui/PhoneHome';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
 
 describe('PhoneHome (V4)', () => {
+  it('keeps the planets and MÔRA button usable without claiming an unknown day is empty', () => {
+    mockDayUnavailable = true;
+    const ask = jest.fn();
+    render(<PhoneHome greeting="Guten Tag" firstName="Test" navigate={jest.fn()} onAskMora={ask} />);
+    expect(screen.getByText('Dein Tagesstand ist gerade nicht vollständig lesbar.')).toBeInTheDocument();
+    expect(screen.queryByText('Heute ist nichts eingetragen.')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('day-panel')).not.toBeInTheDocument();
+    expect(screen.getByTestId('phone-home-planets')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('phone-home-cta'));
+    expect(ask).toHaveBeenCalled();
+  });
   it('shows MÔRA with eyes, one button, full names and overdue honestly', () => {
     const navigate = jest.fn();
     const ask = jest.fn();
@@ -54,6 +68,14 @@ describe('PhoneHome (V4)', () => {
 });
 
 describe('DayPanel', () => {
+  it('does not display Frei or completed tasks when its source is unconfirmed', () => {
+    mockDayUnavailable = true;
+    const { DayPanel } = require('@/components/day/DayPanel');
+    render(<DayPanel onAskMora={jest.fn()} />);
+    expect(screen.getByTestId('day-error')).toBeInTheDocument();
+    expect(screen.queryByText('Frei')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nichts drängt mehr.')).not.toBeInTheDocument();
+  });
   it('ticks a task via CORE, offers undo, marks arrival and plans tomorrow', async () => {
     const { DayPanel } = require('@/components/day/DayPanel');
     const { useDayStore } = require('@/lib/lea/dayStore');
