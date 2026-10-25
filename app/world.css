@@ -688,14 +688,19 @@
 @keyframes wd-dust { to { transform: translate(-400px, 150px); } }
 .wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
   background:
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 16%),
-    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 42%),
-    radial-gradient(circle at 50% 50%, transparent 0 52%, var(--g-core) 100%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 13%),
+    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 44%),
+    radial-gradient(circle at 50% 50%, transparent 0 54%, var(--g-core) 100%),
     radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid));
+  box-shadow:
+    inset calc(var(--dx) * 2px) calc(var(--dy) * 2px) 2px -0.5px var(--g-edge),
+    inset calc(var(--dx) * -5px) calc(var(--dy) * -5px) 9px -3px rgba(0, 0, 0, .52),
+    inset 0 0 0 1px var(--p-rim),
+    0 0 14px -5px var(--g-glow);
   /* Linsenwirkung: leicht vergrößert, aufgehellt, getönt – der Hintergrund liegt sichtbar dahinter. */
-  -webkit-backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08); backdrop-filter: blur(1.6px) saturate(1.6) brightness(1.25) contrast(1.08);
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.2) brightness(1.12) contrast(1.06); backdrop-filter: blur(1.5px) saturate(1.2) brightness(1.12) contrast(1.06);
 }
-.wd-sphere.planet--glass::after { opacity: .07 !important; }
+.wd-sphere.planet--glass::after { opacity: .12 !important; mix-blend-mode: screen !important; }
 /* Handy: kein backdrop-filter auf den Kugeln – auf älteren Geräten zu teuer; das Glas lebt dort von den Verläufen. */
 .wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .wd-universe[data-phone='true'] .wd-neb--b, .wd-universe[data-phone='true'] .wd-dust { display: none; }
@@ -705,14 +710,6 @@
 /* Glas: Glanz kleiner, Hintergrund gedämpft. */
 .wd-neb { filter: saturate(.45); opacity: .8; }
 .wd-dust { filter: saturate(.3); }
-.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
-  background:
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-hi) 0, transparent 11%),
-    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 42%),
-    radial-gradient(circle at 50% 50%, transparent 0 50%, var(--g-core) 100%),
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid));
-  -webkit-backdrop-filter: blur(1.6px) saturate(.55) brightness(1.08); backdrop-filter: blur(1.6px) saturate(.55) brightness(1.08);
-}
 /* Licht: MÔRA (Elfenbein/Gold) ist die Lichtquelle. */
 :root { --lt: 247, 233, 203; --lt2: 233, 185, 103; --lt-a: .30; }
 .os-mora-stone--halo::before { background: radial-gradient(circle, rgba(var(--lt), var(--lt-a)) 0, rgba(var(--lt2), calc(var(--lt-a) * .4)) 38%, transparent 68%) !important; }
@@ -725,13 +722,6 @@
 .wd-link, .wd-sublink, .wd-orbits path.wd-link { stroke: rgba(var(--lt), .16); filter: none; }
 .wd-moondot[data-tasks='true'] { fill: rgb(var(--lt)); stroke: rgba(var(--lt), .6); filter: drop-shadow(0 0 3px rgba(var(--lt), .45)); }
 .wd-stardot[data-kind='task'] { fill: rgb(var(--lt)); filter: drop-shadow(0 0 3px rgba(var(--lt), .5)); }
-.wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
-  background:
-    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt), .5) 0, transparent 10%),
-    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt2), .16) 0, transparent 46%),
-    radial-gradient(circle at 50% 50%, transparent 0 50%, var(--g-core) 100%),
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid)) !important;
-}
 .os-tab[aria-selected='true'], [role='tablist'] [aria-selected='true'], .os-seg [aria-pressed='true'], .wd-universe ~ * [aria-pressed='true'] { background: rgba(var(--lt), .10) !important; border-color: rgba(var(--lt), .26) !important; color: #f2eee5 !important; }
 .wd-spirit { position: absolute; inset: 0; display: block; pointer-events: none; }
 .wd-spirit canvas { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
@@ -777,21 +767,21 @@ body:has(.wd-universe) .os-shell__topbar { background: linear-gradient(180deg, r
 body:has(.wd-universe) .os-context__capsule, body:has(.wd-universe) .os-dock__capsule, body:has(.wd-universe) .os-universe__intro,
 body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-universe) .os-surface, .wd-horizon { background: rgba(8, 9, 12, .58) !important; border-color: rgba(247, 233, 203, .1) !important; }
 
-/* Glas-Planeten (glass2): Körper dominiert, Mitte bis 45 % klar, Lichtkante von MÔRA. */
+/* Glas-Planeten: transparentes Glas in gedämpften Tönen, weicher Glanzpunkt, Ringe und Bahnen durch die Kugel sichtbar */
 .wd-sphere.planet--glass, .wd-planet .wd-sphere.planet--glass, .wd-planet[data-depth] .wd-sphere.planet--glass {
   background:
-    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt), .55) 0, rgba(var(--lt), .12) 7%, transparent 13%),
-    radial-gradient(circle at var(--ox) var(--oy), rgba(var(--lt2), .10) 0, transparent 38%),
-    radial-gradient(circle at 50% 50%, transparent 0 45%, var(--g-mid) 72%, var(--g-core) 100%),
-    radial-gradient(circle at var(--lx) var(--ly), var(--g-glow), var(--g-mid) 60%) !important;
+    radial-gradient(circle at var(--lx) var(--ly), rgba(var(--lt), .45) 0, rgba(var(--lt), .10) 6%, transparent 13%),
+    radial-gradient(circle at var(--ox) var(--oy), var(--g-glow) 0, transparent 44%),
+    radial-gradient(circle at 50% 50%, transparent 0 54%, var(--g-core) 100%),
+    radial-gradient(circle at var(--lx) var(--ly), var(--g-mid), var(--g-mid)) !important;
   box-shadow:
-    inset calc(var(--dx) * 2px) calc(var(--dy) * 2px) 2px -1px rgba(var(--lt), .55),
-    inset calc(var(--dx) * -5px) calc(var(--dy) * -5px) 8px -4px rgba(0, 0, 0, .35),
-    inset 0 0 0 1px rgba(var(--lt), .22),
-    0 0 14px -6px rgba(var(--lt2), .35) !important;
-  -webkit-backdrop-filter: brightness(1.15) saturate(1.1); backdrop-filter: brightness(1.15) saturate(1.1);
+    inset calc(var(--dx) * 2px) calc(var(--dy) * 2px) 2px -0.5px var(--g-edge),
+    inset calc(var(--dx) * -5px) calc(var(--dy) * -5px) 9px -3px rgba(0, 0, 0, .48),
+    inset 0 0 0 1px var(--p-rim),
+    0 0 14px -5px var(--g-glow) !important;
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.2) brightness(1.12) contrast(1.06); backdrop-filter: blur(1.5px) saturate(1.2) brightness(1.12) contrast(1.06);
 }
-.wd-sphere.planet--glass::after { opacity: .04 !important; }
+.wd-sphere.planet--glass::after { opacity: .12 !important; mix-blend-mode: screen !important; }
 .wd-universe[data-phone='true'] .wd-sphere.planet--glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .wd-ring ellipse { stroke: rgba(230, 206, 150, .55) !important; stroke-width: .85 !important; }
 .wd-ring .wd-ring__outer { stroke: rgba(230, 206, 150, .26) !important; stroke-width: .6 !important; }

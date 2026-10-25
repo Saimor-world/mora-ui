@@ -98,24 +98,29 @@ function currentVariant(): Variant {
 }
 const mixHue = (a: number, b: number, t: number) => { const d = ((b - a + 540) % 360) - 180; return (a + d * t + 360) % 360; };
 
+/**
+ * Glas (Standard, Marius 24.10. 20:46: „eine Familie ist zu monoton“): Planeten sind dunkle,
+ * gedämpft getönte GLAS-Kugeln, nur beleuchtet. Licht kommt von MÔRA (Richtung setzt die Ansicht
+ * über --lx/--ly). Töne: Granat, Tiefblau, Jade, Rauch-Bernstein, Petrol, kühles Violett (274°, 30%) – im Wechsel
+ * warm/kühl, alle sehr dunkel und wenig gesättigt.
+ */
+export const GLASS_TINTS: ReadonlyArray<[number, number]> = [[356, 36], [220, 32], [160, 28], [36, 32], [190, 30], [274, 30]];
 function glassVars(hue: number, sat: number): Record<string, string> {
   const a = (l: number, al: number, ds = 0) => `hsla(${hue}, ${sat + ds}%, ${l}%, ${al})`;
   return {
-    '--g-core': a(7, .42), '--g-mid': a(26, .22), '--g-glow': a(48, .22, 4), '--g-hi': a(90, .45, -10), '--g-edge': a(70, .6),
+    '--g-core': a(8, .38), '--g-mid': a(26, .16), '--g-glow': a(52, .36, 10), '--g-hi': a(92, .42, -10), '--g-edge': a(70, .6),
     '--p-hi': hsl(hue, sat, 44), '--p-base': hsl(hue, sat, 24), '--p-mid': hsl(hue, sat, 16), '--p-shadow': hsl(hue, sat, 9), '--p-deep': hsl(hue, sat, 5),
     '--m-hi': hsl(hue, sat, 50), '--m-base': hsl(hue, sat, 28), '--m-mid': hsl(hue, sat, 20), '--m-shadow': hsl(hue, sat, 12), '--m-deep': hsl(hue, sat, 6),
     '--h-edge': hsl(hue, sat, 46), '--h-top': hsl(hue, sat, 16), '--h-body': hsl(hue, sat, 9),
     '--p-rim': 'rgba(226, 196, 120, .42)',
   };
 }
-/** SAIMÔR-Nachtwald: dunkles Glas in Jade, Moos, Petrol, Bronze, Salbei, Nebelgrau. */
-const GLASS_FOREST: ReadonlyArray<[number, number]> = [[164, 26], [150, 14], [176, 18], [40, 22], [138, 10], [190, 9]];
-function glassTints(): ReadonlyArray<[number, number]> { return GLASS_FOREST; }
+function glassTints(): ReadonlyArray<[number, number]> { return GLASS_TINTS; }
 function glassOn(): boolean {
-  return true; // Nachtwald-Glas ist überall Standard (auch Phone)
+  return true;
 }
 
-const SLOT_COUNT = GLASS_FOREST.length; // gleich viele Töne wie in PLANET_VARIANTS.*.hues
+const SLOT_COUNT = GLASS_TINTS.length; // gleich viele Töne wie in PLANET_VARIANTS.*.hues
 
 /** Fester Platz in der Palette aus dem Namen: bekannte Bereiche fest, sonst stabiler Hash. */
 export function toneSlot(name: string, n = SLOT_COUNT): number {
