@@ -113,7 +113,7 @@ export const MoraHubPane: React.FC<Props> = ({ id = "mora-hub", onClose, data })
     const renderContent = () => {
         switch (activeSection) {
             case "alive":
-                return <MoraAlive live compact />;
+                return <div className="min-h-0 flex-1 overflow-y-auto"><MoraAlive live compact /></div>;
             case "memory":
                 return (
                     <div className="flex h-full flex-col">
