@@ -11,7 +11,8 @@ import { localISO, type WorldTask } from '@/lib/lea/world';
  * Fokus im Universe, sobald ein Planet gewählt ist (Klick, Pfeiltasten oder @Bereich):
  * echte Zahlen, die eine Aktion, die jetzt passt, und MÔRAs Live-Hinweise. Enter/„Hineinzoomen“ öffnet.
  */
-export function PlanetFocus({ planet, day, phone, readOnly, onZoom, onClose, onAsk, onTaskDone, onArrived, onFinish }: {
+export function PlanetFocus({ planet, day, phone, readOnly, onZoom, onClose, onAsk, onTaskDone, onArrived, onFinish, timeZone }: {
+  timeZone?: string;
   onFinish?: () => void;
   planet: FPlanet;
   day: LiveDay;
@@ -27,7 +28,7 @@ export function PlanetFocus({ planet, day, phone, readOnly, onZoom, onClose, onA
   const tiles = focusTiles(planet);
   const hasEvents = c.events > 0;
   const firstOpen = planet.kind === 'tasks' ? day.open[0]?.task ?? null : null;
-  const arrivable = hasEvents && !day.running && day.next && day.next.date === localISO() ? day.next : null;
+  const arrivable = hasEvents && !day.running && day.next && day.next.date === localISO(new Date(), timeZone) ? day.next : null;
   return (
     <aside className="fv-focus wd-focus" data-phone={phone ? 'true' : 'false'} aria-label={`Fokus: ${planet.name}`} data-testid="world-focus">
       <div className="wd-focus__head">

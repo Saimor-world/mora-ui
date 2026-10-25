@@ -66,7 +66,12 @@ export function planetTraits(id: string, folderIds: string[], nodes: { folder_id
 
 export const isCalendarDept = (d: WorldDepartment) => /termin|kalender|buchung/i.test(`${d.slug ?? ''} ${d.name}`);
 
-export function localISO(date = new Date()): string {
+const berlinDayFormatter = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Berlin', year: 'numeric', month: '2-digit', day: '2-digit' });
+const berlinTimeFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+
+export function localISO(date = new Date(), timeZone?: string): string {
+  if (timeZone === 'Europe/Berlin') return berlinDayFormatter.format(date);
+  if (timeZone) return new Intl.DateTimeFormat('sv-SE', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
   const p = (n: number) => String(n).padStart(2, '0');
   return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
 }
@@ -76,22 +81,24 @@ export function shortDate(iso: string): string {
   return `${d}.${m}.`;
 }
 
-export function hm(date: Date): string {
+export function hm(date: Date, timeZone?: string): string {
+  if (timeZone === 'Europe/Berlin') return berlinTimeFormatter.format(date);
+  if (timeZone) return new Intl.DateTimeFormat('en-GB', { timeZone, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(date);
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 }
 
 /** Termine ab jetzt, zeitlich sortiert. */
-export function upcomingEvents(events: WorldEvent[], now = new Date()): WorldEvent[] {
-  const today = localISO(now);
-  const time = hm(now);
+export function upcomingEvents(events: WorldEvent[], now = new Date(), timeZone?: string): WorldEvent[] {
+  const today = localISO(now, timeZone);
+  const time = hm(now, timeZone);
   return [...events]
     .filter((e) => e.date > today || (e.date === today && (e.time ?? '23:59') >= time))
     .sort((a, b) => `${a.date} ${a.time ?? ''}`.localeCompare(`${b.date} ${b.time ?? ''}`));
 }
 
 /** Termine von heute, zeitlich sortiert (auch die schon vorbei sind). */
-export function todaysEvents(events: WorldEvent[], now = new Date()): WorldEvent[] {
-  const today = localISO(now);
+export function todaysEvents(events: WorldEvent[], now = new Date(), timeZone?: string): WorldEvent[] {
+  const today = localISO(now, timeZone);
   return events.filter((e) => e.date === today).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
 }
 

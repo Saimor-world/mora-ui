@@ -13,7 +13,8 @@ const mockOpenPane = jest.fn();
 let mockUniverseV2 = false;
 jest.mock('@/lib/universe/morgen', () => ({ isUniverseV2Enabled: () => mockUniverseV2 }));
 jest.mock('@/components/home/CalendarContinuity', () => ({ CalendarContinuity: () => null }));
-jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => ({ events: [] }) }));
+let mockCalendarUnavailable = false;
+jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => ({ events: [], calendarUnavailable: mockCalendarUnavailable, calendar: null }) }));
 
 jest.mock('@/lib/store/navStore', () => ({
   useNavStore: (selector: (state: { activeCompanyId: string | null }) => unknown) =>
@@ -127,10 +128,20 @@ beforeEach(() => {
   mockTenantId = 'tenant-a';
   mockSessionGeneration = 1;
   mockUniverseV2 = false;
+  mockCalendarUnavailable = false;
 });
 
 describe('TodayOverview Universe V2 source truth', () => {
   beforeEach(() => { mockUniverseV2 = true; });
+
+  it('does not fall back to an old empty Today calendar when the new read model is unavailable', async () => {
+    mockCalendarUnavailable = true;
+    (fetchTodaySnapshot as jest.Mock).mockResolvedValue(snapshotFor('company-a', 'Mail remains available'));
+    render(<TodayOverview />);
+    await screen.findByText('Mail remains available');
+    expect(screen.getByTestId('uv2-today-calendar')).not.toHaveTextContent('Keine Termine heute');
+    expect(screen.getByTestId('uv2-today-calendar')).toHaveTextContent('Nicht verfügbar');
+  });
 
   it('shows loading and prevents connection setup while a response is pending', async () => {
     const pending = deferred<TodaySnapshot | null>();

@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { calendarReadWindow, calendarSnapshotIsCurrent, fetchCalendarReadSnapshot } from '@/lib/api/calendarReadClient';
 import { listCompanyFiles } from '@/lib/api/filesClient';
 import { useDemoStore, resolveScopeCompany } from '@/lib/demo/demoStore';
 import { useNavStore } from '@/lib/store/navStore';
@@ -25,8 +26,17 @@ export function useWorld() {
   const sessionCompany = useSessionStore((s) => (s.user as { active_company_id?: string | null } | null)?.active_company_id ?? null);
   // Die Firma der Sitzung zuerst: navStore kann noch eine alte Firma aus localStorage halten.
   const companyId = resolveScopeCompany(demoCompany, sessionCompany, navCompany);
-  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const tenantId = useSessionStore((s) => s.user?.tenant_id);
+  const userId = useSessionStore((s) => s.user?.id);
+  const generation = useSessionStore((s) => s.sessionGeneration);
+  const hasSession = Boolean(tenantId && userId);
   const enabled = hasSession && Boolean(companyId);
+  const [now, setNow] = useState(() => new Date());
+  const window = useMemo(() => calendarReadWindow(now), [now]);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
   const loadDayStatus = useDayStore((s) => s.loadCompany);
   useEffect(() => { void loadDayStatus(enabled ? companyId : null); }, [enabled, companyId, loadDayStatus]);
   const tree = useQuery({
@@ -61,19 +71,38 @@ export function useWorld() {
       .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
   });
   const events = useQuery({
-    queryKey: ['lea-world', 'events', companyId],
+    queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, window.startDate, window.endDate],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<WorldEvent>(await coreGet(`/v3/calendar/events?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['events', 'items']),
+    refetchInterval: 30_000,
+    retry: false,
+    queryFn: () => fetchCalendarReadSnapshot({ tenantId: tenantId!, userId: userId!, companyId: companyId!, ...window }),
   });
   const tasks = useQuery({
     queryKey: ['lea-world', 'tasks', companyId],
     enabled,
     staleTime: 30_000,
-    queryFn: async () => list<WorldTask>(await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true }), ['tasks', 'items']),
+    queryFn: async () => {
+      const raw = await coreGet(`/v3/tasks?company_id=${encodeURIComponent(companyId!)}`, { isOptional: true, throwAuthErrors: true });
+      if (!Array.isArray(raw) && !(raw && typeof raw === 'object' && (Array.isArray(raw.tasks) || Array.isArray(raw.items)))) throw new Error('Tasks unavailable');
+      return list<WorldTask>(raw, ['tasks', 'items']);
+    },
   });
   const phases = useDayStore((s) => s.phases);
-  const day = useMemo(() => buildLiveDay(events.data ?? [], tasks.data ?? [], phases), [events.data, tasks.data, phases]);
+  const calendarComplete = calendarSnapshotIsCurrent(events.data, new Date()) && !events.isError;
+  const calendar = useMemo(() => events.data ? { ...events.data, complete: calendarComplete,
+    status: calendarComplete ? events.data.status : events.isError ? 'unavailable' as const : events.data.complete ? 'stale' as const : events.data.status,
+    count: calendarComplete ? events.data.count : null } : null, [events.data, calendarComplete, events.isError]);
+  const tasksComplete = tasks.isSuccess;
+  const calendarEvents = useMemo<WorldEvent[]>(() => calendarComplete ? (events.data?.events ?? []).map((event) => ({
+    id: event.id, title: event.title, date: event.date, time: event.time ?? undefined, duration: event.duration ?? undefined,
+  })) : [], [calendarComplete, events.data]);
+  const day = useMemo(() => {
+    const result = buildLiveDay(calendarEvents, tasks.data ?? [], phases, now, 'Europe/Berlin');
+    if (!calendarComplete || !tasksComplete) return { ...result, ahead: null, taskLine: tasksComplete ? result.taskLine : 'Aufgabenstand nicht verfügbar',
+      sentence: !calendarComplete ? 'Den Kalenderstand kann ich gerade nicht vollständig lesen.' : 'Den Aufgabenstand kann ich gerade nicht vollständig lesen.' };
+    return result;
+  }, [calendarEvents, tasks.data, phases, calendarComplete, tasksComplete, now]);
   // Finder = Universe: Abteilungen, Ordner (Monde), Inhalte (Sterne) und der Aufgaben-Planet.
   const finder: FPlanet[] = useMemo(() => buildFinder({
     departments: (tree.data?.departments ?? []) as never,
@@ -96,9 +125,9 @@ export function useWorld() {
   }, [places]);
   const finderToned: FPlanet[] = useMemo(() => finder.map((p) => (toneById.has(p.id) ? { ...p, tone: toneById.get(p.id)! } : p)), [finder, toneById]);
   const planets: WorldPlanet[] = useMemo(() => {
-    const live = calendarMeta(day);
+    const live = calendarMeta(day, 'Europe/Berlin');
     const depts = tree.data?.departments ?? [];
-    const upcoming = upcomingEvents(events.data ?? []);
+    const upcoming = upcomingEvents(calendarEvents, now, 'Europe/Berlin');
     return places.map((p) => {
       const c = planetCounts(p);
       const d = depts.find((x) => x.id === p.id);
@@ -116,17 +145,21 @@ export function useWorld() {
         },
         traits: planetTraits(p.id, p.moons.map((m) => m.id), [...(nodes.data ?? []), ...(files.data ?? [])], tasks.data ?? []) };
     });
-  }, [places, toneById, tree.data, events.data, day, nodes.data, files.data, tasks.data]);
+  }, [places, toneById, tree.data, calendarEvents, day, nodes.data, files.data, tasks.data, now]);
   return {
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,
+    dayUnavailable: enabled && (!calendarComplete || !tasksComplete),
+    calendarUnavailable: enabled && !calendarComplete,
+    tasksUnavailable: enabled && !tasksComplete,
     companyId,
     planets,
     finder: finderToned,
     tasksPlanetId: TASKS_PLANET,
     day,
-    events: events.data ?? [],
+    calendar,
+    events: calendarEvents,
     tasks: tasks.data ?? [],
   };
 }
