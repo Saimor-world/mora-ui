@@ -2,7 +2,8 @@ import * as THREE from 'three';
 
 /** Two half-resolution separable blurs; preserves canvas transparency instead of drawing a black bloom backdrop. */
 export function createCharacterGlow(renderer: THREE.WebGLRenderer) {
-  const source = new THREE.WebGLRenderTarget(1, 1), ping = new THREE.WebGLRenderTarget(1, 1), pong = new THREE.WebGLRenderTarget(1, 1);
+  const options = { type: renderer.extensions.has('EXT_color_buffer_float') ? THREE.HalfFloatType : THREE.UnsignedByteType };
+  const source = new THREE.WebGLRenderTarget(1, 1, options), ping = new THREE.WebGLRenderTarget(1, 1, options), pong = new THREE.WebGLRenderTarget(1, 1, options);
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1), scene = new THREE.Scene();
   const vertex = 'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
   const blur = new THREE.ShaderMaterial({ uniforms: { image: { value: source.texture }, stepSize: { value: new THREE.Vector2() }, extract: { value: 1 } },
@@ -21,6 +22,7 @@ export function createCharacterGlow(renderer: THREE.WebGLRenderer) {
         float a=clamp(base.a+max(bloom.r,max(bloom.g,bloom.b))*.8,0.,1.);
         vec3 premultiplied=base.rgb+bloom;
         gl_FragColor=vec4(premultiplied/max(a,.001),a);
+        #include <tonemapping_fragment>
         #include <colorspace_fragment>
         gl_FragColor.rgb*=a;
       }`,
