@@ -27,7 +27,13 @@ export function useCharacter(live: boolean): CharacterSnapshot {
   }, [live]);
   useEffect(() => {
     if (!live) return;
-    const tick = () => setNow(Date.now()); tick();
+    const tick = () => {
+      setNow(Date.now());
+      // Explicit logout disconnects suppress the socket's onclose callback.
+      // Sample the same transport so an open pane cannot retain stale activity.
+      if (!realtime.isConnected()) dispatch({ type: 'connection', connected: false });
+    };
+    tick();
     const timer = setInterval(tick, 1000); return () => clearInterval(timer);
   }, [live]);
   const hour = now ? new Date(now).getHours() : 12;
