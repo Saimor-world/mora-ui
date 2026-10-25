@@ -20,6 +20,8 @@ test('renders a 3D body, supports touch/keyboard controls and labels expressions
   await page.getByRole('button', { name: 'Bewegung pausieren' }).click();
   await expect(page.getByRole('button', { name: 'Bewegung fortsetzen' })).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({ path: info.outputPath('alive-paused.png'), fullPage: true });
+  await page.getByRole('combobox', { name: 'Character-Vorschau' }).selectOption('night-rest');
+  await canvas.screenshot({ path: info.outputPath('reference-night-rest.png') });
   await page.getByRole('combobox', { name: 'Character-Vorschau' }).selectOption('');
   await expect(page.getByRole('status')).toHaveText('Bei dir');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

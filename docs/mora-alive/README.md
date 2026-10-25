@@ -1,4 +1,4 @@
-# MÔRA Alive v02 — implementation and truth contract
+# MÔRA Alive v03 — implementation and truth contract
 
 ## Goal and acceptance
 MÔRA gets a real mesh-based body inside the existing OS, without another agent, socket, data store or execution path. A user can open MÔRA Center → **Alive · Vorschau**, interact using mouse/touch/keyboard, pause movement, and distinguish CORE-derived activity from explicit character previews. The existing Universe, dock stone and chat behavior remain intact until a separately approved replacement.
@@ -15,6 +15,7 @@ MÔRA gets a real mesh-based body inside the existing OS, without another agent,
 Three.js 0.181 and React Three Fiber 8.18 were already installed. The first remote browser check exposed R3F 8 / Next 15 React-runtime incompatibility (`ReactCurrentBatchConfig`). Alive now uses native Three.js with a React lifecycle wrapper; no React/R3F upgrade, dependency or lockfile change.
 - `characterForm.ts`: continuous cross-section lofts for the flame head and tapered leaf torso, plus fine three-dimensional filament curves. `characterMaterials.ts`: translucent cream/gold light shader, procedural jade veins and soft additive halos. `CharacterScene.tsx`: expressive curved idle eyes and mouth, open eyes with highlights for attention, separate jade satellite, soft landing light. No remote textures, HDRI or model downloads. `characterGlow.ts` adds two half-resolution blur passes with transparent compositing for actual light bloom.
 - Crest and leaf motion happen in the vertex shader; no geometry allocation or normal recomputation inside the frame loop. Delta-clamped exponential damping supports different refresh rates. Discrete moods change gaze, eye aperture, orbit velocity, brightness and drift.
+- `characterMembranes.ts`: cambered light sheets with changing width, separate torso/crest layers, thin lit edges and local flow. V03 removes the visibly triangular rotated duplicate body and the flat outer crest copy. Eye opening/blinks use damped aperture; night-rest curls the head crest and tail independently while preserving warm low light. Jade uses warped cellular mineral boundaries instead of sine-wave stripes.
 - `engine.ts`: pure bounded reducer and precedence resolver; no backend writes or tool calls.
 - `useCharacter.ts`: read-only adapter on existing realtime singleton; no new `connect()` call. Existing UI presence contributes only listening/thinking, never inferred success.
 - `MoraAlive.tsx`: thin OS adapter. `MoraAliveView.tsx`: shared presentation with lazy native canvas, visible source labels, preview expression selector, pause, keyboard-invitation equivalent, semantic status, WebGL/context-loss fallback, system reduced-motion preference and offscreen/background suspension.
@@ -49,7 +50,7 @@ The paused scene provides a stable pose for later screenshots/video. A productio
 
 ## Limits and follow-up
 - This is a first interactive body prototype, not a completed autonomous personality or a new AI model.
-- Exploration is bounded procedural drift and pointer/tap invitation. Landing/rest is a lowered pose; contact-aware locomotion and obstacle navigation are future work.
+- Exploration is bounded procedural drift and pointer/tap invitation. Night rest now articulates separate head/tail groups and curls the upper flame in the vertex shader. This is a procedural pose, not the final artist-authored rig; contact-aware locomotion and obstacle navigation are future work.
 - No authenticated live CORE transaction was initiated during validation; event mapping is source-checked and tested with isolated fixtures.
 - Device emulation is not a physical iPhone GPU/thermal/FPS test. 60/120 FPS is a target, not a claimed measured guarantee.
 - No globally roaming replacement of the dock/Universe character yet; prevents duplication and navigation interference.

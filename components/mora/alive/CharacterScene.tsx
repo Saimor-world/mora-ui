@@ -5,6 +5,7 @@ import type { CharacterState } from '@/lib/mora/alive/engine';
 import { createLightForm, ellipseThread, lightThread, LIGHT_PALETTE as P } from './characterForm';
 import { halo, jadeMaterial, jadeSpark, lightMaterial } from './characterMaterials';
 import { createCharacterGlow } from './characterGlow';
+import { createMembranes } from './characterMembranes';
 
 export interface CharacterInteraction { x: number; y: number; touchedAt: number }
 export interface CharacterSceneProps { state: CharacterState; still: boolean; active: boolean; interaction: MutableRefObject<CharacterInteraction>; onFailure: () => void }
@@ -14,11 +15,15 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
     new THREE.MeshBasicMaterial({ color: '#493b21' }));
 }
 function buildCharacter() {
-  const body = new THREE.Group(), face = new THREE.Group(), jade = new THREE.Group();
-  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.86, 0), veilMaterial = lightMaterial(.22, 1);
+  const body = new THREE.Group(), headRig = new THREE.Group(), tailRig = new THREE.Group();
+  const face = new THREE.Group(), jade = new THREE.Group();
+  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.78, 0);
   headMaterial.depthWrite = true;
-  const veil = new THREE.Mesh(createLightForm('veil'), veilMaterial); veil.position.z=-.08; body.add(veil);
-  body.add(new THREE.Mesh(createLightForm('head'), headMaterial), new THREE.Mesh(createLightForm('body'), torsoMaterial));
+  const membranes = createMembranes();
+  headRig.add(new THREE.Mesh(createLightForm('head'), headMaterial), membranes.crest);
+  const core = new THREE.Mesh(createLightForm('body'), torsoMaterial);core.scale.x=.86;
+  tailRig.add(core, membranes.tail);body.add(headRig,tailRig);
+  const materials = [headMaterial,torsoMaterial,...membranes.materials];
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
   // Filaments follow the actual flame surface and extend its silhouette, rather than adding a metal shell.
   const paths = [
@@ -29,27 +34,24 @@ function buildCharacter() {
     [[-.94,-1.36,0],[-.42,-1.14,.04],[.08,-.81,.03],[.22,-.43,.03],[.03,-.15,.03]],
     [[-.13,-.30,.04],[-.34,-.61,.09],[-.75,-.83,.02],[-1.05,-.84,0],[-.69,-1.08,.03]],
   ];
-  for (const points of paths) body.add(lightThread(points, .003, .72, P.gold));
-  const leafMaterial = lightMaterial(.20, 0);
-  const leaf = new THREE.Mesh(createLightForm('body'), leafMaterial);
-  leaf.scale.set(1.15,.83,1.1); leaf.rotation.z=-.22; leaf.position.set(-.08,-.12,-.03); body.add(leaf);
+  paths.forEach((points,index)=>(index<3?headRig:tailRig).add(lightThread(points,.0025,.55,P.gold)));
   const ribbons = new THREE.Group();
   ribbons.add(ellipseThread(1.10, .55, -.06, -.45), ellipseThread(.98, .50, -.42, -.20));
   ribbons.rotation.z = .28; body.add(ribbons);
   const openEyes: THREE.Group[] = [], closedEyes: THREE.Mesh[] = [];
   for (const side of [-1, 1]) {
     const eye = new THREE.Group(); eye.position.set(side * .20, .31, .374);
-    const iris = new THREE.Mesh(new THREE.SphereGeometry(.069, 24, 16), new THREE.MeshBasicMaterial({ color: '#173b2e' }));
-    iris.scale.set(.69, 1.1, .35); eye.add(iris);
+    const iris = new THREE.Mesh(new THREE.SphereGeometry(.087, 28, 20), new THREE.MeshPhysicalMaterial({ color: '#183c28', roughness:.17, metalness:.12, clearcoat:1, clearcoatRoughness:.08 }));
+    iris.scale.set(.77, 1.13, .37); eye.add(iris);
     const glint = new THREE.Mesh(new THREE.SphereGeometry(.016, 12, 8), new THREE.MeshBasicMaterial({ color: '#fff9df' }));
-    glint.position.set(-.014, .025, .021); eye.add(glint); openEyes.push(eye); face.add(eye);
+    glint.position.set(-.018, .033, .030); eye.add(glint); openEyes.push(eye); face.add(eye);
     const closed = faceStroke([new THREE.Vector3(-.070,0,0), new THREE.Vector3(0,.065,.003), new THREE.Vector3(.070,0,0)], .010);
     closed.position.copy(eye.position); closed.position.z += .006; closedEyes.push(closed); face.add(closed);
   }
   const smile = faceStroke([new THREE.Vector3(-.046,0,0),new THREE.Vector3(0,-.043,.006),new THREE.Vector3(.046,0,0)], .007);
   smile.position.set(.015, .148, .332); face.add(smile);
   const neutral = faceStroke([new THREE.Vector3(-.04,0,0),new THREE.Vector3(0,.015,.003),new THREE.Vector3(.04,0,0)], .007);
-  neutral.position.copy(smile.position); face.add(neutral); body.add(face);
+  neutral.position.copy(smile.position); face.add(neutral); headRig.add(face);
   jade.add(new THREE.Mesh(new THREE.SphereGeometry(.205, 40, 28), jadeMaterial()));
   const rim = new THREE.Mesh(new THREE.TorusGeometry(.212, .009, 8, 64), new THREE.MeshStandardMaterial({ color: P.gold, metalness: .65, roughness: .26, emissive: P.gold, emissiveIntensity: .2 }));
   rim.rotation.set(.15,.25,-.3); jade.add(rim);
@@ -58,7 +60,7 @@ function buildCharacter() {
   const light = new THREE.PointLight(P.gold, 1.5, 5, 2); light.position.set(0,.5,1); body.add(light);
   const threads: THREE.MeshBasicMaterial[] = [];
   body.traverse(object => {if(object instanceof THREE.Mesh && object.material.userData?.lightThread) threads.push(object.material);});
-  return { body, face, openEyes, closedEyes, smile, neutral, jade, ribbons, light, headMaterial, torsoMaterial, leafMaterial, veilMaterial, threads, aura };
+  return { body, headRig, tailRig, face, openEyes, closedEyes, smile, neutral, jade, ribbons, light, materials, threads, aura };
 }
 /** Native Three.js retains the existing Next/React runtime and shares one body with the Website. */
 export default function CharacterScene(props: CharacterSceneProps) {
@@ -88,36 +90,42 @@ export default function CharacterScene(props: CharacterSceneProps) {
       ring.traverse(object => { if (object instanceof THREE.Mesh) (object.material as THREE.MeshBasicMaterial).opacity *= .28; }); scene.add(ring);
     }
     const target = new THREE.Vector3();
-    let frame=0, elapsed=0, orbit=.22, velocity=.4, previous=performance.now(), disposed=false;
+    let frame=0, elapsed=0, orbit=.22, velocity=.4, aperture=0, sleep=0, previous=performance.now(), disposed=false;
     function draw(time: number) {
       frame=0; if (disposed) return;
       const { state, still, active, interaction } = latest.current;
       const dt=Math.min(Math.max((time-previous)/1000,0),.05); previous=time;
       if (!still && active) elapsed+=dt;
-      const t=elapsed, rest=state==='night-rest'||state==='offline', busy=state==='working'||state==='thinking';
+      const t=elapsed, night=state==='night-rest', rest=night||state==='offline', busy=state==='working'||state==='thinking';
+      sleep=still?(night?1:0):THREE.MathUtils.damp(sleep,night?1:0,2.5,dt);
       const tapped=!still && time-interaction.current.touchedAt<4500;
       target.set(still||rest?0:tapped?interaction.current.x*.65:Math.sin(t*.32)*.22,
-        rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
-      const {body,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,headMaterial,torsoMaterial,leafMaterial,veilMaterial,threads,aura}=character;
+        night?-.25:rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
+      const {body,headRig,tailRig,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,materials,threads,aura}=character;
+      headRig.position.set(sleep*.45,-sleep*.85,0);headRig.rotation.z=sleep*.15;
+      tailRig.position.set(sleep*.3,-sleep*.98,0);tailRig.rotation.z=-sleep*1.05;
       if (still) body.position.copy(target); else body.position.lerp(target,1-Math.exp(-dt*(tapped?2.5:1.6)));
-      body.rotation.z=still?0:THREE.MathUtils.damp(body.rotation.z,rest?-.18:Math.sin(t*.65)*(busy?.10:.035),3,dt);
+      body.rotation.z=still?0:THREE.MathUtils.damp(body.rotation.z,rest?0:Math.sin(t*.65)*(busy?.10:.035),3,dt);
       body.rotation.y=still?0:THREE.MathUtils.damp(body.rotation.y,interaction.current.x*.18,3,dt);
       const blink=!still && t%5.7>5.45, curious=!rest&&(tapped||['listening','thinking','working','approval'].includes(state));
-      openEyes.forEach(eye=>{eye.visible=curious&&!blink;eye.scale.y=busy?.85:1;});
-      closedEyes.forEach(eye=>{eye.visible=!curious||blink;eye.scale.y=rest?.45:1;});
+      const opening=curious&&!blink?(busy?.90:1):0;
+      aperture=still?opening:THREE.MathUtils.damp(aperture,opening,blink?38:16,dt);
+      openEyes.forEach(eye=>{eye.visible=aperture>.12;eye.scale.y=Math.max(.05,aperture);});
+      closedEyes.forEach(eye=>{eye.visible=aperture<=.12;eye.scale.y=rest?.65:1;});
       smile.visible=state!=='error'&&state!=='offline';neutral.visible=!smile.visible;
       face.position.set(still?0:interaction.current.x*.025,still?0:interaction.current.y*.018,0);
       if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.08:busy?1.1:.4,2,dt);orbit+=dt*velocity;}
-      jade.position.set(Math.cos(orbit)*1.06,.05-Math.sin(orbit)*.36,Math.sin(orbit)*.60);jade.rotation.y=orbit*.4;
+      jade.position.set(Math.cos(orbit)*THREE.MathUtils.lerp(1.06,.26,sleep)+sleep*.95,THREE.MathUtils.lerp(.05,-1.02,sleep)-Math.sin(orbit)*THREE.MathUtils.lerp(.36,.08,sleep),Math.sin(orbit)*.60*(1.-sleep*.6));jade.rotation.y=orbit*.4;
+      ribbons.scale.set(1.-sleep*.2,1.-sleep*.55,1.-sleep*.2);ribbons.position.y=-sleep*.8;
       ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.28+(still?0:Math.sin(t*.4)*.08);
-      const dim=state==='error'||rest;
-      for (const material of [headMaterial,torsoMaterial,leafMaterial,veilMaterial]) {
-        material.uniforms.time.value=t;material.uniforms.motion.value=still||rest?0:busy?1.4:1;
-        material.uniforms.warmth.value=dim?.28:1;
+      const dim=state==='error'||state==='offline';
+      for (const material of materials) {
+        material.uniforms.time.value=t;material.uniforms.sleep.value=sleep;material.uniforms.motion.value=still||rest?0:busy?1.4:1;
+        material.uniforms.warmth.value=dim?.28:night?.58:1;
         material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);
         material.uniforms.gold.value.set(dim?'#8e819d':state==='approval'?'#f3bb61':P.gold);
       }
-      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1);});
+      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:night?1.3:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1);});
       sparks.material.color.set(dim?'#bcb0ce':P.gold);
       aura.material.uniforms.strength.value=rest?.035:.11;
       light.intensity=rest?.4:1.5;sparks.rotation.y=still?0:t*.025;
