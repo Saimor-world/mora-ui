@@ -364,7 +364,7 @@
 @media (max-width: 1679px) { .os-context__chip, .os-context__scope { display: none; } }
 @media (max-width: 1499px) { .os-context__org, .os-context__demo { display: none; } }
 @media (max-width: 1279px) { .os-context__scene { display: none; } }
-@media (max-width: 899px) { .os-context__clock { display: none; } }
+@media (max-width: 899px) { .os-context__clock { display: none; } .os-status__menu .os-context__clock { display: inline-flex; } }
 
 /* V1.4 – Control Center (Legacy-Dock) */
 .os-cc { width: min(760px, 100%); max-height: calc(100dvh - var(--os-dock-space, 120px) - 40px); overflow-y: auto; }
@@ -580,3 +580,36 @@
   background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18);
 }
 @media (max-width: 640px) { .os-context__demoswitch select { min-height: 44px; } }
+
+/* Ruhige Kopfzeile (24.10.2026): Status-Menü statt Chips, Demo-Band. */
+.os-status { position: relative; }
+.os-status__btn { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; min-width: 36px; padding: 0 10px; border: 1px solid var(--os-glass-edge); border-radius: var(--os-radius-pill); background: var(--os-glass-strong); color: var(--os-text-faint); }
+.os-status__btn:hover, .os-status__btn[aria-expanded="true"] { color: var(--os-text); }
+.os-status__btn .os-context__clock { border: 0; background: none; padding: 0; }
+.os-status__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--os-accent); box-shadow: 0 0 6px var(--os-accent); }
+.os-status__dot--warn { background: var(--os-tone-warning-text); box-shadow: 0 0 6px var(--os-tone-warning-text); }
+.os-status__menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 220px; display: flex; flex-direction: column; gap: 6px; padding: 12px; border: 1px solid var(--os-glass-edge); border-radius: var(--os-radius-lg); background: var(--os-glass-strong); backdrop-filter: var(--os-glass-filter); font-size: var(--os-type-meta-size); color: var(--os-text-muted); }
+.os-status__org { color: var(--os-text); font-weight: 500; }
+.os-status__row--warn { color: var(--os-tone-warning-text); }
+.os-status__faint { color: var(--os-text-faint); letter-spacing: .12em; text-transform: uppercase; }
+.os-status__menu .os-context__clock { align-self: flex-start; display: inline-flex; }
+.os-demo-banner { display: flex; align-items: center; justify-content: center; gap: 12px; max-width: var(--os-content-max); margin: 8px auto 0; padding: 4px 12px; font-size: var(--os-type-meta-size); letter-spacing: .08em; color: var(--os-text-muted); }
+.os-demo-banner button { min-height: 32px; padding: 0 12px; border: 1px solid var(--os-hairline); border-radius: var(--os-radius-pill); color: var(--os-text); }
+@media (max-width: 640px) { .os-status__btn, .os-demo-banner button { min-height: 44px; min-width: 44px; } }
+
+/* Handy: Universe-Kopf in einer Zeile, damit die Planeten Platz haben (über der Frag-MÔRA-Leiste). */
+@media (max-width: 640px) {
+  .os-universe__intro { padding: 8px 12px !important; }
+  .os-universe__intro .os-universe__eyebrow, .os-universe__intro .os-universe__hint { display: none; }
+  .os-universe__intro h1 { font-size: 15px; line-height: 20px; }
+  .os-universe__actions { flex-wrap: nowrap !important; gap: 6px !important; }
+  .os-universe__actions .os-tab, .os-universe__actions button { min-height: 44px; padding-inline: 12px; font-size: 13px; }
+}
+@media (max-width: 640px) {
+  .os-universe__intro h1 { display: none; }
+  .os-universe__intro .os-universe__actions { width: 100%; justify-content: space-between; }
+  .os-universe__lens { display: flex; flex-wrap: nowrap; }
+  .os-universe__actions .os-tab, .os-universe__actions button { white-space: nowrap; padding-inline: 10px; }
+}
+.os-universe__addshort { display: none; }
+@media (max-width: 640px) { .os-universe__addlong { display: none; } .os-universe__addshort { display: inline; } }

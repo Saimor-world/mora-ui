@@ -10,8 +10,8 @@ describe('PlanetOrbit', () => {
     const orbit = { moons: [{ id: 'm1', label: 'Kalender', stars: [{ id: 's1', label: 'A', kind: 'event' }, { id: 's2', label: 'B', kind: 'event' }] }], stars: [{ id: 't1', label: 'X', kind: 'task', overdue: true }] };
     const { container } = render(<PlanetOrbit orbit={orbit} size={80} phone={false} />);
     expect(container.querySelectorAll('.wd-moondot')).toHaveLength(1);
-    expect(container.querySelectorAll('.wd-stardot').length).toBe(3);
-    expect(container.querySelectorAll('.wd-sublink').length).toBeGreaterThanOrEqual(3);
+    expect(container.querySelectorAll('.wd-stardot').length).toBe(1); // Mond-Inhalte stecken in der Mondgröße, nicht in Punkten
+    expect(container.querySelectorAll('.wd-sublink').length).toBeGreaterThanOrEqual(1);
     expect(container.textContent).toContain('Kalender');
   });
   it('rendert nichts ohne Inhalte und kappt Überlauf mit +N', () => {

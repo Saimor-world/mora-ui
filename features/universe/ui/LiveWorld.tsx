@@ -4,6 +4,7 @@ import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
 import { WorldUniverse } from '@/components/world/WorldUniverse';
+import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
 import { PlanetFocus } from '@/components/world/PlanetFocus';
 import type { DayCommand } from '@/lib/lea/moraCommands';
@@ -16,6 +17,7 @@ import { visiblePlanetIds, RolePreviewBanner, RolePreviewToggle, useRolePreview 
 import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
+import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
 import type { Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
@@ -28,14 +30,18 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const world = useWorld();
   const phone = useIsPhone();
   const [openId, setOpenId] = useState<string | null>(null);
+  const [taskSheet, setTaskSheet] = React.useState(false);
   const [initial, setInitial] = useState<{ moonId?: string | null; starId?: string | null } | null>(null);
   const takeTarget = useUniverseFocus((s) => s.take);
   const pendingTarget = useUniverseFocus((s) => s.target);
   useEffect(() => {
     if (!pendingTarget) return;
     const t = takeTarget();
-    if (t) { setInitial({ moonId: t.moonId, starId: t.starId }); setOpenId(t.planetId); }
-  }, [pendingTarget, takeTarget]);
+    if (!t) return;
+    // Der alte Aufgaben-Planet ist kein Ort mehr: Aufgaben öffnen das Blatt „Aufgaben zuordnen“.
+    if (t.planetId === world.tasksPlanetId) { setTaskSheet(true); return; }
+    setInitial({ moonId: t.moonId, starId: t.starId }); setOpenId(t.planetId);
+  }, [pendingTarget, takeTarget, world.tasksPlanetId]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const { role } = useRolePreview();
   const companyView = role === 'owner';
@@ -44,7 +50,9 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const dayActions = useDayActions(world.companyId);
   // Rollen-Vorschau: Abteilung/Mitglied sehen nur eine Abteilung (die aktive, sonst die erste) und die Aufgaben.
   const visibleIds = useMemo(() => visiblePlanetIds(role, world.finder, activeId, world.tasksPlanetId), [role, world.finder, world.tasksPlanetId, activeId]);
-  const finderPlanets = useMemo(() => (visibleIds ? world.finder.filter((p) => visibleIds.has(p.id)) : world.finder), [visibleIds, world.finder]);
+  // Nur Orte (Abteilungen) zählen als Bereiche – dieselbe Menge wie die Planeten im Bild.
+  const placeIds = useMemo(() => new Set(world.planets.map((p) => p.id)), [world.planets]);
+  const finderPlanets = useMemo(() => world.finder.filter((p) => placeIds.has(p.id) && (!visibleIds || visibleIds.has(p.id))), [visibleIds, world.finder, placeIds]);
   const worldPlanets = useMemo(() => (visibleIds ? world.planets.filter((p) => visibleIds.has(p.id)) : world.planets), [visibleIds, world.planets]);
   const open = finderPlanets.find((p) => p.id === openId) ?? null;
   const reduced = !!useReducedMotion();
@@ -52,25 +60,44 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const [zoomTo, setZoomTo] = useState<string | null>(null);
   const [moraState, setMoraState] = useState<MoraState>('idle');
   const [pulseIds, setPulseIds] = useState<string[]>([]);
+  // MÔRA lebt nur aus echten Ereignissen: Eingabefokus, laufende Anfrage, Ergebnis, Aktivität, neue Mail, Uhrzeit.
+  const [listening, setListening] = useState(false);
+  const [outcome, setOutcome] = useState<'done' | 'error' | null>(null);
+  const [flyTo, setFlyTo] = useState<string | null>(null);
+  const [night, setNight] = useState(() => isNight());
+  useEffect(() => { const t = setInterval(() => setNight(isNight()), 60_000); return () => clearInterval(t); }, []);
+  const outcomeTimer = useRef<ReturnType<typeof setTimeout>>();
+  const flyTimer = useRef<ReturnType<typeof setTimeout>>();
+  const onOutcome = useCallback((ok: boolean) => { clearTimeout(outcomeTimer.current); setOutcome(ok ? 'done' : 'error'); outcomeTimer.current = setTimeout(() => setOutcome(null), ok ? 2400 : 6000); }, []);
+  const fly = useCallback((id: string) => { clearTimeout(flyTimer.current); setFlyTo(id); flyTimer.current = setTimeout(() => setFlyTo(null), 2200); }, []);
+  useEffect(() => () => { clearTimeout(outcomeTimer.current); clearTimeout(flyTimer.current); }, []);
+  // Neue Mail (erste Mail-ID wechselt, nicht beim ersten Laden): kurz zum Kometen fliegen.
+  const mailId = horizon.mail?.status === 'ok' ? horizon.mail.items[0]?.id ?? null : null;
+  const seenMail = useRef<string | null | undefined>(undefined);
+  useEffect(() => { if (seenMail.current !== undefined && mailId && mailId !== seenMail.current) fly('mail'); seenMail.current = mailId; }, [mailId, fly]);
+  const spiritMood: SpiritMood = outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
+    : flyTo ? 'flying' : outcome === 'done' ? 'done' : listening ? 'listening' : night ? 'night' : 'idle';
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
   const close = useCallback(() => { setOpenId(null); setInitial(null); setZoomTo(null); }, []);
   /** Kamerafahrt: erst auf den Planeten zoomen, dann den Finder öffnen. */
   const openPlanet = useCallback((id: string) => {
     clearTimeout(zoomTimer.current);
+    if (id === world.tasksPlanetId) { setSelectedId(null); setTaskSheet(true); return; }
     setActiveId(id); setSelectedId(id);
     if (reduced) { setOpenId(id); return; }
     setZoomTo(id);
     zoomTimer.current = setTimeout(() => { setOpenId(id); setZoomTo(null); }, 520);
-  }, [reduced]);
+  }, [reduced, world.tasksPlanetId]);
   useEffect(() => () => clearTimeout(zoomTimer.current), []);
   /** Erster Klick wählt (Fokus-Panel), zweiter Klick auf denselben Planeten zoomt hinein. */
-  const selectPlanet = useCallback((id: string) => { if (selectedId === id) openPlanet(id); else setSelectedId(id); }, [selectedId, openPlanet]);
+  const selectPlanet = useCallback((id: string) => { if (id === world.tasksPlanetId || selectedId === id) openPlanet(id); else setSelectedId(id); }, [selectedId, openPlanet, world.tasksPlanetId]);
   const pulse = useCallback((id: string | null | undefined) => {
     if (!id) return;
     setPulseIds((l) => [...l.filter((x) => x !== id), id]);
+    fly(id);
     setTimeout(() => setPulseIds((l) => l.filter((x) => x !== id)), 1800);
-  }, []);
+  }, [fly]);
   // Ändert sich etwas an Aufgaben oder Terminstatus (auch von „Heute“ aus), pulsiert die Linie dorthin.
   const phases = useDayStore((st) => st.phases);
   const setPhase = useDayStore((st) => st.setPhase);
@@ -117,7 +144,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   // MÔRAs Tages-Sätze ausführen – über dieselben Aktionen wie „Heute“, immer mit Rückgängig.
   const runCommand = useCallback(async (cmd: DayCommand): Promise<MoraReply> => {
     switch (cmd.kind) {
-      case 'jump': setSelectedId(cmd.planetId); openPlanet(cmd.planetId); return { text: `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
+      case 'jump': openPlanet(cmd.planetId); return { text: cmd.planetId === world.tasksPlanetId ? 'Hier sind deine Aufgaben zum Zuordnen.' : `Ich bringe dich zu ${cmd.name}.`, tone: 'action' };
       case 'done': {
         if (role === 'member') return { text: 'In der Mitglied-Vorschau kann ich nichts ändern.', tone: 'note' };
         const ok = await dayActions.setDone(cmd.task, true);
@@ -140,7 +167,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       case 'ambiguous': return { text: `Welche ${cmd.what} meinst du: ${cmd.options.slice(0, 3).join(' oder ')}?`, tone: 'note' };
       case 'unknown-target': return { text: `„${cmd.what}“ finde ich in deinen Daten nicht.`, tone: 'note' };
     }
-  }, [dayActions, openPlanet, phases, setPhase, role]);
+  }, [dayActions, openPlanet, phases, setPhase, role, world.tasksPlanetId]);
   const todayEvents = useMemo(() => world.events.filter((e) => e.date === localISO()).sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')), [world.events]);
   const askCtx = useMemo(() => ({ tasks: world.tasks, todayEvents, planets: finderPlanets.map((p) => ({ id: p.id, name: p.name })), running: world.day.running, stale: world.day.stale }), [world.tasks, todayEvents, finderPlanets, world.day.running, world.day.stale]);
   const dayContext = useMemo(() => ({
@@ -151,6 +178,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
     next_event: world.day.next ? { time: world.day.next.time, title: world.day.next.title, date: world.day.next.date } : null,
     running_event: world.day.running?.title ?? null,
     open_tasks: world.day.open.map((o) => ({ title: o.task.title, overdue: o.overdue })),
+    task_line: world.day.taskLine,
     areas: finderPlanets.map((p) => p.name),
   }), [selected, world.day, finderPlanets]);
 
@@ -206,14 +234,17 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         selectedId={selectedId}
         pulseIds={pulseIds}
         moraState={moraState}
+        spiritMood={spiritMood}
+        spiritTarget={flyTo}
         zoomTo={zoomTo}
         shift={selected && !phone ? 190 : 0}
         activeId={activeId}
         counts={counts}
+        comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}
         onMora={() => useOsShellStore.getState().setMoraOpen(true)}
-        moraLine={moraState === 'idle' ? world.day.sentence : undefined}
+        moraLine={moraState === 'idle' ? shortLine(world.day.sentence) : undefined}
       />
-      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} phone={phone} /> : null}
+      {!open ? <MoraAsk ctx={askCtx} dayContext={dayContext} fallback={world.day.sentence} onCommand={runCommand} onState={setMoraState} onListen={setListening} onOutcome={onOutcome} phone={phone} /> : null}
       {selected ? (
         <PlanetFocus
           planet={selected}
@@ -235,20 +266,18 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             <span>Kalender</span>
             <b>{world.day.running ? `läuft: ${world.day.running.title}` : world.day.next ? `${world.day.next.time ?? ''} ${world.day.next.title}`.trim() : 'heute keine weiteren Termine'}</b>
           </button>
-          <button type="button" className="wd-horizon__row" onClick={() => { const t = world.finder.find((p) => p.id === world.tasksPlanetId); if (t) setSelectedId(t.id); }} data-testid="horizon-tasks">
+          <button type="button" className="wd-horizon__row" onClick={() => setTaskSheet(true)} data-testid="horizon-tasks">
             <span>Aufgaben</span>
-            <b>{world.day.open.length ? `${world.day.open.length} offen${world.day.open.some((t) => t.overdue) ? ` · ${world.day.open.filter((t) => t.overdue).length} überfällig` : ''}` : 'alles erledigt'}</b>
+            <b>{world.day.taskLine}</b>
           </button>
+          <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />
           {companyView ? (
             <>
               <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
-                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : 'Posteingang ruhig'}</b>
+                <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>
-              <button type="button" className="wd-horizon__row" onClick={() => navigate?.('post')} data-testid="horizon-feed">
-                <span>Feed</span>
-                <b>{!horizon.feed ? '…' : horizon.feed.status === 'unavailable' ? 'nicht lesbar' : horizon.feed.items[0] ? horizon.feed.items[0].title : 'keine neuen Feed-Signale'}</b>
-              </button>
+              {/* Feed-Zeile entfernt (24.10.2026): allgemeine RSS-Einträge waren Rauschen; der Feed bleibt unter Post. */}
             </>
           ) : null}
           <p className="fv-eyebrow" style={{ marginTop: 12 }}>Wo die Arbeit liegt</p>
@@ -264,6 +293,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <p className="wd-horizon__foot">{finderPlanets.length} Bereiche · {counts.nodes - 1 - finderPlanets.length} Ordner und Einträge</p>
         </aside>
       ) : null}
+      {phone && !open && !selected ? <TaskHomeRow variant="chip" tasks={world.tasks} onOpen={() => setTaskSheet(true)} /> : null}
+      {taskSheet ? <TaskHomeSheet tasks={world.tasks} planets={finderPlanets} actions={dayActions} readOnly={role === 'member'} phone={phone} onClose={() => setTaskSheet(false)} /> : null}
       {!open && !phone ? <RolePreviewToggle className="absolute right-5 top-4 z-[900]" /> : null}
       {!open ? <div className="absolute left-1/2 top-4 z-[900] -translate-x-1/2"><RolePreviewBanner /></div> : null}
       {open ? (
@@ -286,4 +317,14 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       ) : null}
     </>
   );
+}
+
+
+/** Im Universum nur MÔRAs erster Satz, höchstens ~56 Zeichen – der Rest steht in „Heute“. */
+export function shortLine(s: string): string {
+  // Erster Satz ohne Lookbehind (iOS < 16.4 bricht sonst beim Laden ab): bis zum ersten Satzzeichen vor Leerraum oder Ende.
+  const text = (s || '').trim();
+  const end = text.search(/[.!?](\s|$)/);
+  const first = end < 0 ? text : text.slice(0, end + 1);
+  return first.length <= 56 ? first : `${first.slice(0, 54).replace(/[\s,·:]+\S*$/, '')} …`;
 }

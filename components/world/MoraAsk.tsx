@@ -16,7 +16,9 @@ type SpeechCtor = new () => { lang: string; onresult: ((e: { results: ArrayLike<
  * 2) Sonst: Frage an den bestehenden MÔRA-Stream (/v3/chat/stream) mit Leas Tageskontext.
  *    Liefert CORE keine Antwort, sagt MÔRA das ehrlich und nennt nur, was aus den Daten belegt ist.
  */
-export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone = false }: {
+export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListen, onOutcome, phone = false }: {
+  onListen?: (on: boolean) => void;
+  onOutcome?: (ok: boolean) => void;
   ctx: CommandContext;
   /** Kontext für den Stream: nur echte Daten des Tages. */
   dayContext: Record<string, unknown>;
@@ -57,10 +59,11 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
     setText('');
     setAsked(t);
     const cmd = parseDayCommand(t, ctx);
-    if (cmd) { setReply(await onCommand(cmd)); return; }
+    if (cmd) { setReply(await onCommand(cmd)); onOutcome?.(true); return; }
     setReply(null);
     const answer = await stream.sendMessage(t, { context: dayContext, history: stream.messages.slice(-6) });
     const err = stream.getError();
+    onOutcome?.(!!answer && !err);
     if (answer && !err) setReply({ text: answer, tone: 'answer' });
     else setReply({ text: `Frei antworten kann ich gerade nicht – CORE erreicht kein Sprachmodell. Aus deinen Daten: ${fallback}`, tone: 'note' });
   };
@@ -97,7 +100,7 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, phone =
         </ul>
       ) : null}
       <form onSubmit={(e) => { e.preventDefault(); void run(text); }}>
-        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
+        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => onListen?.(true)} onBlur={() => onListen?.(false)} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
           placeholder={phone ? 'Frag MÔRA · „Michelle ist da“' : 'Frag MÔRA · „hak Herbstrot ab“ · @Bereich'} aria-label="Frag MÔRA" data-testid="world-ask-input" enterKeyHint="send" />
         {Speech ? <button type="button" onClick={listen} aria-pressed={listening} aria-label="Sprechen" data-testid="world-ask-mic"><Mic size={18} /></button> : null}
         <button type="submit" aria-label="Senden" data-testid="world-ask-send" disabled={state !== 'idle'}><Send size={18} /></button>

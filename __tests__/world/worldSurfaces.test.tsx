@@ -88,9 +88,10 @@ describe('WorldUniverse', () => {
     const planets = buildWorld({ departments, events });
     render(<WorldUniverse planets={planets} phone={false} onOpenPlanet={open} onMora={jest.fn()} />);
     expect(screen.getAllByRole('button', { name: /öffnen ·/ })).toHaveLength(2);
-    expect(within(screen.getByTestId('world-mora')).getByTestId('mora-stone')).toHaveAttribute('data-face', 'true');
+    expect(within(screen.getByTestId('world-mora')).getByTestId('mora-spirit')).toBeInTheDocument();
+    expect(screen.getByTestId('mora-status')).toHaveTextContent('MÔRA ist da und ruhig.');
     const termine = screen.getByTestId('world-planet-d1');
-    expect(termine.querySelector('.planet--sand')).not.toBeNull();
+    expect(termine.querySelector('.planet--tone')).not.toBeNull(); // eine Saimôr-Palette für alle (24.10.2026)
     expect(termine).toHaveTextContent('Termine');
     fireEvent.click(termine);
     expect(open).toHaveBeenCalledWith('d1');

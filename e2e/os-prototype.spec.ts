@@ -259,7 +259,8 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.goto('/os#today');
     await expect(page.getByTestId('today-now')).toBeVisible();
     await expect(page.getByTestId('today-launch')).toBeVisible();
-    await expect(page.getByTestId('context-capsule')).toContainText('Simple Coffee Group');
+    await page.getByTestId('status-menu').hover();
+    await expect(page.getByTestId('status-menu')).toContainText('Simple Coffee Group');
     await page.getByTestId('context-capsule').getByRole('button', { name: /Universe/ }).click();
     await expect(page).toHaveURL(/#universe/);
     await page.keyboard.press('c');
@@ -279,7 +280,7 @@ test.describe('OS prototype (/os, local preview)', () => {
         await expect(page.getByTestId('context-capsule')).toBeAttached();
         const r = await page.evaluate(() => {
           const cap = document.querySelector('[data-testid="context-capsule"]')!;
-          const kids = [...cap.querySelectorAll('.os-context__capsule > *'), document.querySelector('.os-context__clock')!].filter((e) => getComputedStyle(e).display !== 'none' && (e as HTMLElement).offsetWidth > 0).map((e) => e.getBoundingClientRect());
+          const kids = [...cap.querySelectorAll('.os-context__capsule > *'), document.querySelector('.os-status__btn')].filter((e): e is Element => Boolean(e)).filter((e) => getComputedStyle(e).display !== 'none' && (e as HTMLElement).offsetWidth > 0).map((e) => e.getBoundingClientRect());
           const others = [...document.querySelectorAll('.os-shell__topbar > div:first-child > *, [aria-label="Befehle öffnen"], [data-testid="mora-toggle"]')].map((e) => e.getBoundingClientRect()).filter((b) => b.width > 0);
           const capBox = cap.getBoundingClientRect();
           const hit = others.some((o) => kids.some((k) => Math.min(k.right, o.right) - Math.max(k.left, o.left) > 0 && Math.min(k.bottom, o.bottom) - Math.max(k.top, o.top) > 0));
@@ -314,6 +315,7 @@ test.describe('OS prototype (/os, local preview)', () => {
     await page.reload();
     await expect(page.getByTestId('os-shell')).toHaveAttribute('data-look', 'klar');
     await expect(page.getByTestId('os-shell')).toHaveAttribute('data-phase', 'lounge');
+    await page.getByTestId('status-menu').hover();
     await expect(page.getByTestId('context-clock')).toContainText('LOUNGE');
     await page.getByTestId('phase-auto').click();
     await page.getByTestId('look-kosmos').click();
