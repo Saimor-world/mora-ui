@@ -34,7 +34,7 @@ function buildCharacter() {
     [[-.94,-1.36,0],[-.42,-1.14,.04],[.08,-.81,.03],[.22,-.43,.03],[.03,-.15,.03]],
     [[-.13,-.30,.04],[-.34,-.61,.09],[-.75,-.83,.02],[-1.05,-.84,0],[-.69,-1.08,.03]],
   ];
-  paths.forEach((points,index)=>(index<3?headRig:tailRig).add(lightThread(points,.0025,.55,P.gold)));
+  paths.forEach((points,index)=>{const thread=lightThread(points,.0025,.55,P.gold);thread.material.userData.crest=index<3;(index<3?headRig:tailRig).add(thread);});
   const ribbons = new THREE.Group();
   ribbons.add(ellipseThread(1.10, .55, -.06, -.45), ellipseThread(.98, .50, -.42, -.20));
   ribbons.rotation.z = .28; body.add(ribbons);
@@ -100,10 +100,10 @@ export default function CharacterScene(props: CharacterSceneProps) {
       sleep=still?(night?1:0):THREE.MathUtils.damp(sleep,night?1:0,2.5,dt);
       const tapped=!still && time-interaction.current.touchedAt<4500;
       target.set(still||rest?0:tapped?interaction.current.x*.65:Math.sin(t*.32)*.22,
-        night?-.25:rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
+        night?-.35:rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
       const {body,headRig,tailRig,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,materials,threads,aura}=character;
       headRig.position.set(sleep*.45,-sleep*.85,0);headRig.rotation.z=sleep*.15;
-      tailRig.position.set(sleep*.3,-sleep*.98,0);tailRig.rotation.z=-sleep*1.05;
+      tailRig.position.set(sleep*.46,-sleep*.88,0);tailRig.rotation.z=-sleep*1.05;
       if (still) body.position.copy(target); else body.position.lerp(target,1-Math.exp(-dt*(tapped?2.5:1.6)));
       body.rotation.z=still?0:THREE.MathUtils.damp(body.rotation.z,rest?0:Math.sin(t*.65)*(busy?.10:.035),3,dt);
       body.rotation.y=still?0:THREE.MathUtils.damp(body.rotation.y,interaction.current.x*.18,3,dt);
@@ -115,7 +115,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       smile.visible=state!=='error'&&state!=='offline';neutral.visible=!smile.visible;
       face.position.set(still?0:interaction.current.x*.025,still?0:interaction.current.y*.018,0);
       if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.08:busy?1.1:.4,2,dt);orbit+=dt*velocity;}
-      jade.position.set(Math.cos(orbit)*THREE.MathUtils.lerp(1.06,.26,sleep)+sleep*.95,THREE.MathUtils.lerp(.05,-1.02,sleep)-Math.sin(orbit)*THREE.MathUtils.lerp(.36,.08,sleep),Math.sin(orbit)*.60*(1.-sleep*.6));jade.rotation.y=orbit*.4;
+      jade.position.set(Math.cos(orbit)*THREE.MathUtils.lerp(1.06,.26,sleep)+sleep*.95,THREE.MathUtils.lerp(.05,-.92,sleep)-Math.sin(orbit)*THREE.MathUtils.lerp(.36,.08,sleep),Math.sin(orbit)*.60*(1.-sleep*.6));jade.rotation.y=orbit*.4;
       ribbons.scale.set(1.-sleep*.2,1.-sleep*.55,1.-sleep*.2);ribbons.position.y=-sleep*.8;
       ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.28+(still?0:Math.sin(t*.4)*.08);
       const dim=state==='error'||state==='offline';
@@ -125,7 +125,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
         material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);
         material.uniforms.gold.value.set(dim?'#8e819d':state==='approval'?'#f3bb61':P.gold);
       }
-      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:night?1.3:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1);});
+      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:night?1.3:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1)*(material.userData.crest?1-sleep:1);});
       sparks.material.color.set(dim?'#bcb0ce':P.gold);
       aura.material.uniforms.strength.value=rest?.035:.11;
       light.intensity=rest?.4:1.5;sparks.rotation.y=still?0:t*.025;

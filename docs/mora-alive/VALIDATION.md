@@ -1,4 +1,12 @@
-# Validation — MÔRA Alive v02
+# Validation — MÔRA Alive v03
+
+## Layered light revision
+
+V03 replaces the flat outer veil and rotated duplicate torso with six cambered light membranes. It adds damped eye aperture, larger glossy dark-green eyes, warped cellular jade veins, and an articulated night-rest pose with a curled crest, rotated tail and a smaller jade orbit. Night stays warm; offline/error use the dim violet palette. Engine/event mapping remains unchanged.
+
+Source `b1b8e720` passed full CI (40213278858) and six desktop/iPhone Chromium/WebKit browser checks (40213278749). Actual idle, working and night-rest captures were reviewed. This visual review found bright square artifacts at membrane tips despite passing tests: an unclamped `pow(sin(...), 2.)` could receive a tiny negative value at a zero-opacity edge. V03's follow-up clamps fractional-power domains and uses multiplication for squared values. It also reconnects the night-rest head/tail and fades the upright crest threads during curling.
+
+The corrected browser captures and current checks are linked on draft PR #163. Fidelity remains a work in progress: this is a custom procedural 3D reconstruction, not a claimed 1:1 finished character asset. Physical iPhone GPU/FPS/thermal testing remains outstanding. No production release or merge.
 
 ## Reference correction (2026-10-25)
 

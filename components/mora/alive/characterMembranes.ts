@@ -35,10 +35,11 @@ function membrane(rows: Station[], strength: number, phase: number) {
     fragmentShader:`uniform vec3 cream;uniform vec3 gold;uniform float opacity;uniform float warmth;uniform float phase;
       varying vec2 sheet;varying vec3 n;varying vec3 view;
       void main(){float edge=pow(abs(sheet.x*2.-1.),14.);float tip=sin(sheet.y*3.14159);
-        float fold=pow(.5+.5*cos(sheet.x*14.+sheet.y*9.+phase),18.);
-        float fresnel=pow(1.-abs(dot(normalize(n),normalize(view))),2.);
+        float fold=pow(clamp(.5+.5*cos(sheet.x*14.+sheet.y*9.+phase),0.,1.),18.);
+        float facing=clamp(abs(dot(normalize(n),normalize(view))),0.,1.);float fresnel=(1.-facing)*(1.-facing);
         float taper=smoothstep(0.,.06,sheet.y)*(1.-smoothstep(.91,1.,sheet.y));
-        vec3 color=mix(gold*1.45,cream*1.4,pow(sin(sheet.x*3.14159),2.)*.55);
+        float center=max(0.,sin(sheet.x*3.14159));
+        vec3 color=mix(gold*1.45,cream*1.4,center*center*.55);
         color+=gold*(edge*3.+fold*.5+fresnel);color*=mix(.38,1.,warmth);
         float a=opacity*(.10+edge*.85+fold*.16+fresnel*.12)*taper*sqrt(max(.02,tip));
         gl_FragColor=vec4(color,a);

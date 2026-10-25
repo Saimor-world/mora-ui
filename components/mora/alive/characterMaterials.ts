@@ -28,7 +28,7 @@ export function lightMaterial(opacity: number, flow: number) {
       uniform vec3 cream;uniform vec3 gold;uniform float opacity;uniform float warmth;uniform float flow;
       varying vec3 n;varying vec3 view;varying vec3 local;
       ${NOISE}
-      void main(){vec3 nn=normalize(n);vec3 vv=normalize(view);float front=abs(dot(nn,vv));float edge=pow(1.-front,2.);
+      void main(){vec3 nn=normalize(n);vec3 vv=normalize(view);float front=clamp(abs(dot(nn,vv)),0.,1.);float edge=(1.-front)*(1.-front);
         float tip=smoothstep(.72,1.7,local.y);float silk=cloud(local*4.);
         vec3 lamp=normalize(vec3(-.65,.8,1.));float diffuse=max(0.,dot(nn,lamp));
         float highlight=pow(max(0.,dot(reflect(-lamp,nn),vv)),35.);
@@ -57,15 +57,15 @@ export function jadeMaterial() {
           vec3 offset=vec3(float(x),float(y),float(z));vec3 r=offset+hash33(cell+offset)-f;float d=dot(r,r);
           if(d<first){second=first;first=d;}else if(d<second){second=d;}}
         return sqrt(second)-sqrt(first);}
-      void main(){vec3 q=p*17.;float mineral=cloud(q*1.6);vec3 warped=q+vec3(noise3(q*1.5),noise3(q*1.5+8.),noise3(q*1.5-4.))*.32;
+      void main(){vec3 q=p*13.;float mineral=cloud(q*1.6);vec3 warped=q+vec3(noise3(q*1.5),noise3(q*1.5+8.),noise3(q*1.5-4.))*.7;
         float seam=boundary(warped);float vein=1.-smoothstep(.012,.055,seam);
         float fine=1.-smoothstep(.006,.02,boundary(warped*1.9+5.));
         vec3 nn=normalize(n),vv=normalize(v),light=normalize(vec3(-.6,.8,1.));
-        float diffuse=max(0.,dot(nn,light)),rim=pow(1.-max(0.,dot(nn,vv)),3.);
+        float diffuse=max(0.,dot(nn,light)),rim=pow(1.-clamp(dot(nn,vv),0.,1.),3.);
         float spec=pow(max(0.,dot(reflect(-light,nn),vv)),85.);
         float window=pow(max(0.,dot(reflect(-normalize(vec3(-.4,1.,.3)),nn),vv)),16.);
         vec3 color=mix(vec3(.001,.009,.006),base,(.12+mineral*.48))*(.4+diffuse*.8);
-        color+=mint*(vein*(.08+mineral*.24)+fine*.025)+base*rim*.45;
+        color+=mint*(vein*(.045+mineral*.14)+fine*.010)+base*rim*.45;
         color+=vec3(1.,.96,.78)*(spec*.9+window*.16);
         gl_FragColor=vec4(color,1.);
         #include <tonemapping_fragment>
