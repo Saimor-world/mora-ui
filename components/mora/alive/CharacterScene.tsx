@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import type { CharacterState } from '@/lib/mora/alive/engine';
 import { createLightForm, ellipseThread, lightThread, LIGHT_PALETTE as P } from './characterForm';
 import { halo, jadeMaterial, lightMaterial } from './characterMaterials';
+import { createCharacterGlow } from './characterGlow';
 
 export interface CharacterInteraction { x: number; y: number; touchedAt: number }
 export interface CharacterSceneProps { state: CharacterState; still: boolean; active: boolean; interaction: MutableRefObject<CharacterInteraction>; onFailure: () => void }
@@ -14,7 +15,7 @@ function faceStroke(points: THREE.Vector3[], radius: number) {
 }
 function buildCharacter() {
   const body = new THREE.Group(), face = new THREE.Group(), jade = new THREE.Group();
-  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.63, 0);
+  const headMaterial = lightMaterial(.94, 1), torsoMaterial = lightMaterial(.66, 0);
   body.add(new THREE.Mesh(createLightForm('head'), headMaterial), new THREE.Mesh(createLightForm('body'), torsoMaterial));
   const aura = halo(P.gold, 3.9, .11); aura.position.set(0, .24, -.5); body.add(aura);
   // Filaments follow the actual flame surface and extend its silhouette, rather than adding a metal shell.
@@ -26,7 +27,10 @@ function buildCharacter() {
     [[-.94,-1.36,0],[-.42,-1.14,.04],[.08,-.81,.03],[.22,-.43,.03],[.03,-.15,.03]],
     [[-.13,-.30,.04],[-.34,-.61,.09],[-.75,-.83,.02],[-1.05,-.84,0],[-.69,-1.08,.03]],
   ];
-  for (const points of paths) body.add(lightThread(points, .004, .50, P.cream));
+  for (const points of paths) body.add(lightThread(points, .003, .72, P.gold));
+  const leafMaterial = lightMaterial(.20, 0);
+  const leaf = new THREE.Mesh(createLightForm('body'), leafMaterial);
+  leaf.scale.set(1.15,.83,1.1); leaf.rotation.z=-.22; leaf.position.set(-.08,-.12,-.03); body.add(leaf);
   const ribbons = new THREE.Group();
   ribbons.add(ellipseThread(1.10, .55, -.35, .24), ellipseThread(.98, .50, -.42, -.20));
   ribbons.rotation.z = .13; body.add(ribbons);
@@ -41,13 +45,17 @@ function buildCharacter() {
     closed.position.copy(eye.position); closed.position.z += .006; closedEyes.push(closed); face.add(closed);
   }
   const smile = faceStroke([new THREE.Vector3(-.046,0,0),new THREE.Vector3(0,-.043,.006),new THREE.Vector3(.046,0,0)], .007);
-  smile.position.set(.015, .148, .332); face.add(smile); body.add(face);
+  smile.position.set(.015, .148, .332); face.add(smile);
+  const neutral = faceStroke([new THREE.Vector3(-.04,0,0),new THREE.Vector3(0,.015,.003),new THREE.Vector3(.04,0,0)], .007);
+  neutral.position.copy(smile.position); face.add(neutral); body.add(face);
   jade.add(new THREE.Mesh(new THREE.SphereGeometry(.205, 40, 28), jadeMaterial()));
   const rim = new THREE.Mesh(new THREE.TorusGeometry(.212, .009, 8, 64), new THREE.MeshStandardMaterial({ color: P.gold, metalness: .65, roughness: .26, emissive: P.gold, emissiveIntensity: .2 }));
   rim.rotation.set(.15,.25,-.3); jade.add(rim);
   const jadeAura = halo(P.mint, .9, .10); jadeAura.position.z = -.25; jade.add(jadeAura); body.add(jade);
   const light = new THREE.PointLight(P.gold, 1.5, 5, 2); light.position.set(0,.5,1); body.add(light);
-  return { body, face, openEyes, closedEyes, jade, ribbons, light, headMaterial, torsoMaterial, aura };
+  const threads: THREE.MeshBasicMaterial[] = [];
+  body.traverse(object => {if(object instanceof THREE.Mesh && object.material.userData?.lightThread) threads.push(object.material);});
+  return { body, face, openEyes, closedEyes, smile, neutral, jade, ribbons, light, headMaterial, torsoMaterial, leafMaterial, threads, aura };
 }
 /** Native Three.js retains the existing Next/React runtime and shares one body with the Website. */
 export default function CharacterScene(props: CharacterSceneProps) {
@@ -66,6 +74,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
     scene.add(new THREE.AmbientLight(P.mint, .8));
     const sun = new THREE.DirectionalLight(P.cream, 3); sun.position.set(-3,4,4); scene.add(sun);
     const character = buildCharacter(); scene.add(character.body);
+    const glow = createCharacterGlow(renderer);
     const dust = new THREE.BufferGeometry(), positions = new Float32Array(100 * 3);
     for (let i = 0; i < 100; i++) { positions[i*3] = Math.sin(i*79.3)*2.0; positions[i*3+1] = Math.cos(i*41.1)*1.8; positions[i*3+2] = Math.sin(i*17.1)*1.3-.5; }
     dust.setAttribute('position', new THREE.BufferAttribute(positions,3));
@@ -86,31 +95,34 @@ export default function CharacterScene(props: CharacterSceneProps) {
       const tapped=!still && time-interaction.current.touchedAt<4500;
       target.set(still||rest?0:tapped?interaction.current.x*.65:Math.sin(t*.32)*.22,
         rest?-.15:still?0:tapped?interaction.current.y*.25:Math.sin(t*.9)*.08,0);
-      const {body,face,openEyes,closedEyes,jade,ribbons,light,headMaterial,torsoMaterial,aura}=character;
+      const {body,face,openEyes,closedEyes,smile,neutral,jade,ribbons,light,headMaterial,torsoMaterial,leafMaterial,threads,aura}=character;
       if (still) body.position.copy(target); else body.position.lerp(target,1-Math.exp(-dt*(tapped?2.5:1.6)));
       body.rotation.z=still?0:THREE.MathUtils.damp(body.rotation.z,rest?-.18:Math.sin(t*.65)*(busy?.10:.035),3,dt);
       body.rotation.y=still?0:THREE.MathUtils.damp(body.rotation.y,interaction.current.x*.18,3,dt);
       const blink=!still && t%5.7>5.45, curious=!rest&&(tapped||['listening','thinking','working','approval'].includes(state));
       openEyes.forEach(eye=>{eye.visible=curious&&!blink;eye.scale.y=busy?.85:1;});
-      closedEyes.forEach(eye=>{eye.visible=!curious||blink;});
+      closedEyes.forEach(eye=>{eye.visible=!curious||blink;eye.scale.y=rest?.45:1;});
+      smile.visible=state!=='error'&&state!=='offline';neutral.visible=!smile.visible;
       face.position.set(still?0:interaction.current.x*.025,still?0:interaction.current.y*.018,0);
       if (!still && active) {velocity=THREE.MathUtils.damp(velocity,rest?.08:busy?1.1:.4,2,dt);orbit+=dt*velocity;}
       jade.position.set(Math.cos(orbit)*1.06,.25+Math.sin(orbit)*.36,Math.sin(orbit)*.60);jade.rotation.y=orbit*.4;
       ribbons.rotation.y=still?0:t*.12;ribbons.rotation.z=.13+(still?0:Math.sin(t*.4)*.08);
       const dim=state==='error'||rest;
-      for (const material of [headMaterial,torsoMaterial]) {
+      for (const material of [headMaterial,torsoMaterial,leafMaterial]) {
         material.uniforms.time.value=t;material.uniforms.motion.value=still||rest?0:busy?1.4:1;
         material.uniforms.warmth.value=dim?.28:1;
         material.uniforms.cream.value.set(dim?'#bcb0ce':P.cream);
         material.uniforms.gold.value.set(dim?'#8e819d':state==='approval'?'#f3bb61':P.gold);
       }
+      threads.forEach(material=>{material.color.set(dim?'#bcb0ce':P.gold).multiplyScalar(dim?1:2.5);material.opacity=material.userData.restOpacity*(rest?.35:1);});
+      sparks.material.color.set(dim?'#bcb0ce':P.gold);
       aura.material.uniforms.strength.value=rest?.035:.11;
       light.intensity=rest?.4:1.5;sparks.rotation.y=still?0:t*.025;
-      renderer.render(scene,camera);
+      glow.render(scene,camera);
       if (active&&!still) frame=requestAnimationFrame(draw);
     }
     const redraw=()=>{if(frame)cancelAnimationFrame(frame);previous=performance.now();draw(previous);};
-    const resize=()=>{const width=element!.clientWidth,height=element!.clientHeight;if(!width||!height)return;renderer.setSize(width,height);camera.aspect=width/height;camera.updateProjectionMatrix();redraw();};
+    const resize=()=>{const width=element!.clientWidth,height=element!.clientHeight;if(!width||!height)return;renderer.setSize(width,height);glow.resize(Math.round(width*renderer.getPixelRatio()),Math.round(height*renderer.getPixelRatio()));camera.aspect=width/height;camera.updateProjectionMatrix();redraw();};
     const lost=(event:Event)=>{event.preventDefault();latest.current.onFailure();};
     renderer.domElement.addEventListener('webglcontextlost',lost);
     const observer=new ResizeObserver(resize);observer.observe(element);runtime.current={redraw};resize();
@@ -118,7 +130,7 @@ export default function CharacterScene(props: CharacterSceneProps) {
       disposed=true;runtime.current=null;cancelAnimationFrame(frame);observer.disconnect();renderer.domElement.removeEventListener('webglcontextlost',lost);
       const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>();
       scene.traverse(object=>{const mesh=object as THREE.Mesh;if(mesh.geometry)geometries.add(mesh.geometry);if(mesh.material)(Array.isArray(mesh.material)?mesh.material:[mesh.material]).forEach(m=>materials.add(m));});
-      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());renderer.dispose();renderer.domElement.remove();
+      geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());glow.dispose();renderer.dispose();renderer.domElement.remove();
     };
   },[]);
   useEffect(()=>{runtime.current?.redraw();},[props.active,props.still,props.state]);

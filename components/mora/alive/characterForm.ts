@@ -44,7 +44,8 @@ export function createLightForm(kind: 'head' | 'body') {
       uv.set([j / sides, i / rings], n * 2);
       if (i < rings && j < sides) {
         const next = n + sides + 1;
-        indices.push(n, next, n + 1, n + 1, next, next + 1);
+        if (kind === 'head') indices.push(n, next, n + 1, n + 1, next, next + 1);
+        else indices.push(n, n + 1, next, n + 1, next + 1, next);
       }
     }
   }
@@ -67,7 +68,9 @@ export function createLightForm(kind: 'head' | 'body') {
 export function lightThread(points: number[][], width = .006, opacity = .7, color: string = LIGHT_PALETTE.gold) {
   const path = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p[0], p[1], p[2])));
   const mesh = new THREE.Mesh(new THREE.TubeGeometry(path, 72, width, 6, false),
-    new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending }));
+    new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(2.5), transparent: true, opacity, depthWrite: false, toneMapped: false, blending: THREE.AdditiveBlending }));
+  mesh.material.userData.lightThread = true;
+  mesh.material.userData.restOpacity = opacity;
   return mesh;
 }
 

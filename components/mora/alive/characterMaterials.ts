@@ -15,7 +15,7 @@ export function lightMaterial(opacity: number, flow: number) {
       time: { value: 0 }, motion: { value: 1 }, warmth: { value: 1 }, opacity: { value: opacity },
       flow: { value: flow }, cream: { value: new THREE.Color(P.cream) }, gold: { value: new THREE.Color(P.gold) },
     },
-    transparent: true, depthWrite: false, side: THREE.DoubleSide,
+    transparent: true, depthWrite: false, side: THREE.FrontSide,
     vertexShader: `
       uniform float time; uniform float motion; uniform float flow;
       varying vec3 n; varying vec3 view; varying vec3 local;
@@ -24,14 +24,20 @@ export function lightMaterial(opacity: number, flow: number) {
         p.z+=sin(time*1.25-p.y*3.)*w*.055*motion;
         local=p;n=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(p,1.);view=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}`,
     fragmentShader: `
-      uniform vec3 cream;uniform vec3 gold;uniform float opacity;uniform float warmth;
+      uniform vec3 cream;uniform vec3 gold;uniform float opacity;uniform float warmth;uniform float flow;
       varying vec3 n;varying vec3 view;varying vec3 local;
       ${NOISE}
-      void main(){float front=abs(dot(normalize(n),normalize(view)));float edge=pow(1.-front,2.2);
-        float tip=smoothstep(.72,1.7,local.y);float silk=cloud(local*5.);
-        vec3 color=mix(cream,gold,clamp(edge*.7+tip*.22+silk*.04,0.,.8));
-        color*=.9+edge*.8+silk*.12;color=mix(color*.48,color,warmth);
-        float alpha=opacity*mix(.26,.96,pow(front,.5))*mix(1.,.60,tip);
+      void main(){vec3 nn=normalize(n);vec3 vv=normalize(view);float front=abs(dot(nn,vv));float edge=pow(1.-front,2.);
+        float tip=smoothstep(.72,1.7,local.y);float silk=cloud(local*4.);
+        vec3 lamp=normalize(vec3(-.65,.8,1.));float diffuse=max(0.,dot(nn,lamp));
+        float highlight=pow(max(0.,dot(reflect(-lamp,nn),vv)),35.);
+        float inner=exp(-dot((local.xy-vec2(-.12,.38))*vec2(2.,1.5),(local.xy-vec2(-.12,.38))*vec2(2.,1.5)));
+        vec3 color=mix(gold*.65,cream*1.65,clamp(diffuse*.75+front*.4,0.,1.));
+        color+=gold*(edge*2.3+inner*.30)+cream*highlight*1.5;
+        float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
+        color+=gold*filaments*.25;color=mix(color*.35,color,warmth);
+        float alpha=opacity*mix(.55,.98,pow(front,.5))*mix(1.,.50,tip);
+        if(flow<.5){color=mix(gold*1.7,cream*1.3,front);alpha=opacity*(.30+edge*.8+filaments*.14);}
         gl_FragColor=vec4(color,alpha);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
@@ -44,11 +50,11 @@ export function jadeMaterial() {
     uniforms: { base: { value: new THREE.Color(P.jade) }, mint: { value: new THREE.Color(P.mint) } },
     vertexShader: 'varying vec3 p;varying vec3 n;varying vec3 v;void main(){p=position;n=normalize(normalMatrix*normal);vec4 mv=modelViewMatrix*vec4(position,1.);v=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}',
     fragmentShader: `uniform vec3 base;uniform vec3 mint;varying vec3 p;varying vec3 n;varying vec3 v;${NOISE}
-      void main(){vec3 q=p*15.;float c=cloud(q*1.8);float fault=abs(sin(q.x*1.8+q.y*2.4+q.z+cloud(q*2.)*5.));
-        float vein=1.-smoothstep(.025,.10,fault);vec3 nn=normalize(n);vec3 light=normalize(vec3(-.6,.8,1.));
+      void main(){vec3 q=p*9.;float c=cloud(q*1.8);float fault=abs(sin(q.x*1.8+q.y*2.4+q.z+noise3(q*1.4)*5.));
+        float vein=1.-smoothstep(.035,.14,fault);vec3 nn=normalize(n);vec3 light=normalize(vec3(-.6,.8,1.));
         float diffuse=max(0.,dot(nn,light));float spec=pow(max(0.,dot(reflect(-light,nn),normalize(v))),70.);
-        vec3 color=mix(vec3(.002,.018,.012),base,.32+c*.65)*(.5+diffuse*.8);
-        color+=mint*vein*(.035+c*.18);color+=vec3(1.,.96,.75)*spec*.65;
+        vec3 color=mix(vec3(.002,.018,.012),base,.12+c*.40)*(.5+diffuse*.8);
+        color+=mint*vein*(.08+c*.40);color+=vec3(1.,.96,.75)*spec*.65;
         gl_FragColor=vec4(color,1.);
         #include <tonemapping_fragment>
         #include <colorspace_fragment>
