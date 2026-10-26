@@ -2,6 +2,8 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
 import { MoraSpirit, type SpiritMood } from './MoraSpirit';
+
+export type SpiritFigureProps = React.ComponentProps<typeof MoraSpirit>;
 import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
@@ -31,10 +33,14 @@ export const HORIZON_RESERVE = 296;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = MoraSpirit }: {
   spiritMood?: SpiritMood;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
+  /** Live step of MÔRA (small, calm text next to her). */
+  spiritCaption?: string | null;
+  /** Pluggable MÔRA figure: same props as MoraSpirit, so a new look can drop in. */
+  SpiritFigure?: React.ComponentType<SpiritFigureProps>;
   /** Doppelklick: direkt hineinzoomen. */
   onZoomPlanet?: (id: string) => void;
   /** Gewählter Planet (Fokus-Panel / Pfeiltasten). */
@@ -139,6 +145,12 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   };
 
   // Kamera: Ursprung auf den Zielplaneten, dann weich hinein (CSS-Transition auf .wd-zoomwrap).
+  const spiritPoint = (() => {
+    if (!layout || !spiritTarget) return null;
+    if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
+    const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
+    return pp ? { x: pp.x - layout.cx, y: pp.y - layout.cy } : null;
+  })();
   const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
@@ -199,13 +211,14 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
-          <MoraSpirit size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={(() => {
-            if (!spiritTarget) return null;
-            if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
-            const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
-            return pp ? { x: pp.x - layout.cx, y: pp.y - layout.cy } : null;
-          })()} />
+          <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} />
         </button>
+      ) : null}
+      {layout && spiritCaption ? (
+        <div className="wd-mora-step" role="status" aria-live="polite" data-testid="world-mora-step"
+          style={{ left: layout.cx + (spiritPoint?.x ?? 0), top: layout.cy + (spiritPoint?.y ?? 0) - (phone ? 30 : 46), zIndex: 400 }}>
+          <span className="wd-mora-step__who">MÔRA</span>{spiritCaption}
+        </div>
       ) : null}
       {layout && moraLine ? (
         // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.

@@ -826,3 +826,19 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 .wd-pulse__m { font-size: 10.5px; color: rgba(242, 238, 229, .5); }
 @media (max-width: 1279px) { .wd-pulse { display: none; } }
 
+
+/* Live MÔRA step caption: small, calm, follows her position. */
+.wd-mora-step {
+  position: absolute; transform: translate(-50%, -100%);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 6px 10px; border-radius: 10px;
+  background: rgba(14, 12, 10, 0.62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(240, 234, 220, 0.08);
+  color: rgba(243, 236, 222, 0.9); font-size: 12px; font-weight: 500; letter-spacing: 0.01em; white-space: nowrap;
+  pointer-events: none;
+  transition: left 900ms cubic-bezier(.22,.8,.24,1), top 900ms cubic-bezier(.22,.8,.24,1), opacity 300ms ease;
+  animation: wd-step-in 320ms ease both;
+}
+.wd-mora-step__who { font-size: 9px; letter-spacing: 0.16em; font-weight: 600; color: rgba(224, 178, 82, 0.8); }
+@keyframes wd-step-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)); } to { opacity: 1; transform: translate(-50%, -100%); } }
+@media (prefers-reduced-motion: reduce) { .wd-mora-step { transition: none; animation: none; } }

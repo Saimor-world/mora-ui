@@ -21,6 +21,9 @@ import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
 import { planetCounts, type Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
+import { useMoraLive } from '../data/useMoraLive';
+import { useSessionStore } from '@/lib/store/sessionStore';
+import { planetForTarget } from '@/lib/mora/liveRun';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -75,7 +78,12 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   const mailId = horizon.mail?.status === 'ok' ? horizon.mail.items[0]?.id ?? null : null;
   const seenMail = useRef<string | null | undefined>(undefined);
   useEffect(() => { if (seenMail.current !== undefined && mailId && mailId !== seenMail.current) fly('mail'); seenMail.current = mailId; }, [mailId, fly]);
-  const spiritMood: SpiritMood = outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
+  // Live MÔRA: real run steps from CORE (owner SSE). Desktop only; phone is the companion.
+  const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const live = useMoraLive(!phone && hasSession && companyView);
+  const livePlanet = live.active || live.done ? planetForTarget(live.target, worldPlanets) : null;
+  const liveCaption = live.active || live.done ? live.label : null;
+  const spiritMood: SpiritMood = live.active ? (livePlanet ? 'flying' : 'thinking') : live.done ? 'done' : outcome === 'error' ? 'error' : moraState === 'thinking' ? 'thinking' : moraState === 'speaking' ? 'speaking'
     : flyTo ? 'flying' : outcome === 'done' ? 'done' : listening ? 'listening' : night ? 'night' : 'idle';
   const zoomTimer = useRef<ReturnType<typeof setTimeout>>();
   const selected = !open ? finderPlanets.find((p) => p.id === selectedId) ?? null : null;
@@ -239,7 +247,8 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         pulseIds={pulseIds}
         moraState={moraState}
         spiritMood={spiritMood}
-        spiritTarget={flyTo}
+        spiritTarget={livePlanet ?? flyTo}
+        spiritCaption={liveCaption}
         zoomTo={zoomTo}
         reserveRight={phone || open ? 0 : selected ? FOCUS_RESERVE : HORIZON_RESERVE}
         activeId={activeId}
