@@ -430,6 +430,7 @@ export function PlanetInfoLine({ traits, phone }: { traits?: PlanetTraits; phone
   const parts: { k: string; t: string; warn?: boolean }[] = [];
   if (traits.overdue > 0) parts.push({ k: 'od', t: `${traits.overdue} überfällig`, warn: true });
   if (traits.open > 0) parts.push({ k: 'op', t: `${traits.open} offen` });
+  if (traits.newMails) parts.push({ k: 'ml', t: `${traits.newMails} neue Mail${traits.newMails === 1 ? '' : 's'}` });
   const rel = relDay(traits.lastAt);
   if (rel) parts.push({ k: 'la', t: rel });
   const shown = phone ? parts.slice(0, 1) : parts;
