@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Compass, Home, Timer } from 'lucide-react';
+import { Check, ChevronDown, Compass, Home, Timer } from 'lucide-react';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { SCENES } from '@/lib/os-prototype/scene';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -15,16 +15,47 @@ export function DemoSwitch() {
   const hq = useIsSaimorHq();
   const companies = useDemoCompanies(hq);
   const current = useDemoStore((s) => s.demoCompanyId);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown); document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+  if (!hq || (!companies.length && !current)) return null;
+  const label = current ? companies.find((c) => c.id === current)?.name ?? 'Demo' : 'SAIMÔR';
+  return (
+    <div className="os-context__demoswitch" ref={ref} data-testid="demo-switch">
+      <button type="button" className="os-company-pill" aria-haspopup="menu" aria-expanded={open} aria-label={`Firma wählen: ${label}`} onClick={() => setOpen((v) => !v)}>
+        <span className="os-company-pill__mark" aria-hidden>{label.charAt(0)}</span>
+        <span className="os-company-pill__name">{label}</span>
+        <ChevronDown size={12} aria-hidden />
+      </button>
+      {open ? <div className="os-company-menu" role="menu"><CompanyOptions onPick={() => setOpen(false)} /></div> : null}
+    </div>
+  );
+}
+
+/** Firmenliste (echte Firma + is_demo-Firmen); im Firmen-Menü am Desktop und im Status-Menü am Phone. */
+export function CompanyOptions({ onPick }: { onPick?: () => void }) {
+  const hq = useIsSaimorHq();
+  const companies = useDemoCompanies(hq);
+  const current = useDemoStore((s) => s.demoCompanyId);
   const setDemo = useDemoStore((s) => s.setDemoCompany);
   if (!hq || (!companies.length && !current)) return null;
+  const pick = (id: string | null) => { setDemo(id); onPick?.(); };
   return (
-    <label className="os-context__demoswitch" data-testid="demo-switch">
-      <span className="sr-only">Firma wählen</span>
-      <select aria-label="Firma wählen" value={current ?? ''} onChange={(e) => setDemo(e.target.value || null)}>
-        <option value="">SAIMÔR</option>
-        {companies.map((c) => <option key={c.id} value={c.id}>Demo · {c.name}</option>)}
-      </select>
-    </label>
+    <div className="os-company-options" data-testid="company-options">
+      <div className="os-company-options__label">Firma</div>
+      <button type="button" role="menuitemradio" aria-checked={!current} onClick={() => pick(null)}>SAIMÔR{!current ? <Check size={13} aria-hidden /> : null}</button>
+      {companies.filter((c, i, a) => c.id === current || a.findIndex((x) => x.name === c.name) === i).map((c) => (
+        <button key={c.id} type="button" role="menuitemradio" aria-checked={current === c.id} onClick={() => pick(c.id)}>
+          <span>{c.name}<em> · Demo</em></span>{current === c.id ? <Check size={13} aria-hidden /> : null}
+        </button>
+      ))}
+    </div>
   );
 }
 

@@ -257,8 +257,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         <>
           {counts ? (
             <div className="wd-counters" aria-label="Zähler">
-              <span className="wd-counter" data-testid="world-count-nodes">{counts.nodes} Elemente</span>
-              <span className="wd-counter" data-testid="world-count-edges">{counts.edges} Verbindungen</span>
+              <span className="wd-counter" title="Alles im Raum: MÔRA, Abteilungen, Ordner und Einträge" data-testid="world-count-nodes">{counts.nodes} Elemente</span>
+              <span className="wd-counter" title="Linien zwischen Abteilung, Ordner und Eintrag" data-testid="world-count-edges">{counts.edges} Verbindungen</span>
             </div>
           ) : null}
           <details className="wd-legend" data-testid="world-legend">
