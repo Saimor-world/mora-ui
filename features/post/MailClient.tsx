@@ -5,7 +5,7 @@ import { Button, Text } from '@/components/os-kit';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import type { PostMessage } from './data/usePost';
-import { mailTime, senderAddress, senderName, unreadCount, visibleMail, type MailFilter } from './mailView';
+import { mailTime, senderAddress, senderName, unreadCount, visibleMail, type MailFilter, plainText } from './mailView';
 
 function askMora(m: PostMessage) {
   const st = useOsShellStore.getState();
@@ -43,8 +43,8 @@ export function MailClient({ items }: { items: PostMessage[] }) {
                   <span className="os-mail__avatar" aria-hidden>{senderName(m).charAt(0).toUpperCase()}</span>
                   <span className="os-mail__main">
                     <span className="os-mail__top"><b className="os-mail__from">{senderName(m)}</b><time>{mailTime(m.date)}</time></span>
-                    <span className="os-mail__subject">{m.subject || '(ohne Betreff)'}</span>
-                    {m.snippet ? <span className="os-mail__snippet">{m.snippet}</span> : null}
+                    <span className="os-mail__subject">{plainText(m.subject) || '(ohne Betreff)'}</span>
+                    {m.snippet ? <span className="os-mail__snippet">{plainText(m.snippet)}</span> : null}
                   </span>
                 </button>
               </li>
@@ -56,12 +56,12 @@ export function MailClient({ items }: { items: PostMessage[] }) {
         {open ? (
           <>
             <button type="button" className="os-mail__back" onClick={() => setOpenId(null)}><ArrowLeft size={14} aria-hidden /> Posteingang</button>
-            <h3 className="os-mail__pane-subject">{open.subject || '(ohne Betreff)'}</h3>
+            <h3 className="os-mail__pane-subject">{plainText(open.subject) || '(ohne Betreff)'}</h3>
             <div className="os-mail__pane-meta">
               <span className="os-mail__avatar" aria-hidden>{senderName(open).charAt(0).toUpperCase()}</span>
               <span><b>{senderName(open)}</b><br /><small>{senderAddress(open)}{open.date ? ` · ${new Date(open.date).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' })}` : ''}</small></span>
             </div>
-            <p className="os-mail__pane-body">{open.snippet || 'CORE liefert hier nur die Vorschau. Die ganze Nachricht steht im Postfach.'}</p>
+            <p className="os-mail__pane-body">{plainText(open.body_text) || plainText(open.snippet) || 'Hier steht nur die Vorschau. Die ganze Nachricht liegt im Postfach.'}</p>
             <div className="os-mail__actions">
               <Button size="sm" onClick={() => askMora(open)}><Sparkles size={14} aria-hidden /> Antwort mit MÔRA</Button>
               <Button size="sm" variant="ghost" onClick={() => openLegacyApp('mail')}><ExternalLink size={14} aria-hidden /> Im Postfach öffnen</Button>

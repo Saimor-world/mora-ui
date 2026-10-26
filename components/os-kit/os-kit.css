@@ -577,9 +577,11 @@
 /* Demo-Schalter (nur SAIMÔR-HQ) */
 .os-context__demoswitch select {
   min-height: 32px; border-radius: 999px; padding: 0 10px; font-size: 12px;
-  background: rgba(255,255,255,0.08); color: inherit; border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.04); color: var(--os-text-muted, inherit); border: 1px solid rgba(255,255,255,0.10);
+  max-width: 150px; text-overflow: ellipsis; cursor: pointer;
 }
-@media (max-width: 640px) { .os-context__demoswitch select { min-height: 44px; } }
+.os-context__demoswitch select:hover { color: var(--os-text, inherit); border-color: rgba(255,255,255,0.2); }
+@media (max-width: 640px) { .os-context__demoswitch select { min-height: 40px; max-width: 92px; padding: 0 8px; } }
 
 /* Ruhige Kopfzeile (24.10.2026): Status-Menü statt Chips, Demo-Band. */
 .os-status { position: relative; }
@@ -615,9 +617,9 @@
 @media (max-width: 640px) { .os-universe__addlong { display: none; } .os-universe__addshort { display: inline; } }
 
 /* Post · Mail-Client (os-polish-v1) */
-.os-post-grid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: var(--os-space-5, 20px); }
+.os-post-grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr); gap: var(--os-space-5, 20px); }
 @media (max-width: 1100px) { .os-post-grid { grid-template-columns: 1fr; } }
-.os-mail { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr); gap: 16px; min-height: 420px; }
+.os-mail { display: grid; grid-template-columns: minmax(300px, 340px) minmax(0, 1fr); gap: 16px; min-height: 420px; }
 .os-mail__list { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .os-mail__filters { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--os-hairline); align-self: flex-start; }
 .os-mail__filters button { padding: 4px 12px; border-radius: 999px; font-size: 13px; color: var(--os-text-muted); }
@@ -644,7 +646,7 @@
 .os-mail__pane-subject { font-size: 20px; line-height: 1.3; font-weight: 600; color: var(--os-text); margin: 0; }
 .os-mail__pane-meta { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--os-text); }
 .os-mail__pane-meta small { color: var(--os-text-muted); }
-.os-mail__pane-body { font-size: 15px; line-height: 1.6; color: var(--os-text); white-space: pre-wrap; }
+.os-mail__pane-body { font-size: 15px; line-height: 1.6; color: var(--os-text); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 56vh; overflow-y: auto; }
 .os-mail__actions { display: flex; flex-wrap: wrap; gap: 8px; }
 @media (max-width: 760px) {
   .os-mail { grid-template-columns: 1fr; min-height: 0; }
@@ -700,3 +702,10 @@
 .os-quiet-banner button { color: var(--os-text-muted); text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; cursor: pointer; font: inherit; }
 /* Nichts hinter dem Dock verstecken */
 .os-shell:not([data-place='universe']) .os-shell__content { padding-bottom: calc(var(--os-dock-space, 96px) + 40px); }
+
+/* Phone-Topbar: Marke und Firmenschalter weichen, damit Status, Glocke und MÔRA sichtbar bleiben. */
+@media (max-width: 640px) {
+  .os-shell__topbar .os-brand, .os-shell__topbar .os-context__demoswitch, .os-shell__topbar .os-shell__mora-toggle { display: none; }
+  .os-shell__topbar { gap: 8px; }
+  .os-shell__topbar > * { min-width: 0; }
+}

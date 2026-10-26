@@ -7,7 +7,7 @@ import { useDataScopeKey } from '@/lib/store/dataScope';
 import { companyPath } from '@/lib/api/companyPath';
 
 /** Same CORE contracts the legacy Mail / Calendar apps read — wrapped as React Query. */
-export interface PostMessage { id: string; subject?: string; from_addr?: string; from?: string; date?: string; snippet?: string; read?: boolean }
+export interface PostMessage { id: string; subject?: string; from_addr?: string; from?: string; date?: string; snippet?: string; body_text?: string; read?: boolean }
 export interface PostEvent { id: string; title: string; date: string; time?: string; duration?: number }
 
 /** null = CORE gave no answer (offline / not configured) — never shown as "empty". */

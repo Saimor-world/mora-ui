@@ -51,6 +51,8 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
 
   // Ohne Quellen: eine ruhige, kompakte Statuszeile statt Karte mit leeren Chips.
   if (!real && !mailDocked) {
+    // Live ohne Quellen: die Nightwatch-Karte trägt die Lage schon, kein zweiter Hinweis.
+    if (live) return null;
     return (
       <div className="os-quiet-status" role="status" data-testid="mora-briefing" data-state="pending">
         <Sunrise size={14} className="os-tone-accent" aria-hidden />
