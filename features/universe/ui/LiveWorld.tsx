@@ -13,7 +13,7 @@ import { personOf } from '@/lib/lea/day';
 import { localISO } from '@/lib/lea/world';
 import { useReducedMotion } from 'framer-motion';
 import { FinderVerse } from '@/components/finderverse/FinderVerse';
-import { visiblePlanetIds, RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
+import { visiblePlanetIds, RolePreviewBanner, RolePreviewMenu, useRolePreview } from '@/components/os-shell/RolePreview';
 import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
@@ -311,7 +311,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
       ) : null}
       {phone && !open && !selected ? <TaskHomeRow variant="chip" tasks={world.tasks} onOpen={() => setTaskSheet(true)} /> : null}
       {taskSheet ? <TaskHomeSheet tasks={world.tasks} planets={finderPlanets} actions={dayActions} readOnly={role === 'member'} phone={phone} onClose={() => setTaskSheet(false)} /> : null}
-      {!open && !phone ? <RolePreviewToggle className="absolute right-5 top-4 z-[900]" /> : null}
+      {!open && !phone ? <RolePreviewMenu className="absolute z-[900]" /> : null}
       {!open ? <div className="absolute left-1/2 top-4 z-[900] -translate-x-1/2"><RolePreviewBanner /></div> : null}
       {open ? (
         <FinderVerse

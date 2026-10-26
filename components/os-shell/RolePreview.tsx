@@ -58,3 +58,15 @@ export function RolePreviewBanner() {
     </div>
   );
 }
+
+/** Universe (Desktop): dieselbe Rollen-Vorschau als kleines Menü statt einer dritten Kopfzeile. */
+export function RolePreviewMenu({ className }: { className?: string }) {
+  const { role, canPreview } = useRolePreview();
+  if (!canPreview) return null;
+  return (
+    <details className={`wd-viewmenu ${className ?? ''}`} data-testid="role-preview-menu">
+      <summary aria-label="Ansicht wählen">{ROLE_LABEL[role]} <span aria-hidden>▾</span></summary>
+      <RolePreviewToggle />
+    </details>
+  );
+}

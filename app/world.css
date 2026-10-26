@@ -873,4 +873,36 @@ body:has(.wd-universe) .os-universe__intro, body:has(.wd-universe) .wd-horizon {
   -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent); }
 .wd-horizon::-webkit-scrollbar { display: none; }
 .wd-horizon > * { flex-shrink: 0; }
-[data-testid='role-preview'].absolute { right: 24px; top: 14px; }
+
+/* chrome-1026 (Marius: "ganz viel Header oben ist unnötig"): EINE schlanke schwebende Leiste.
+   Heute/Universe und MÔRA liegen im Dock; Suche nur als Symbol; Universe-Steuerung sitzt mittig in der Leiste. */
+@media (min-width: 900px) {
+  .os-shell__topbar { height: 56px; padding: 8px 24px !important; align-items: center; background: transparent !important; box-shadow: none !important; }
+  .os-shell__topbar .os-context, .os-shell__topbar .os-shell__mora-toggle { display: none !important; }
+  .os-shell__topbar .os-kbd, .os-shell__topbar button .hidden.sm\:inline { display: none !important; }
+  .os-shell__topbar .os-brand { font-size: 13px; letter-spacing: .32em; font-weight: 500; opacity: .85; }
+  /* Universe: Kopfkarte wird zur kompakten Mitte der Leiste */
+  .os-universe__intro { position: fixed !important; top: 8px; left: 50%; transform: translateX(-50%); z-index: 1000; margin: 0 !important; padding: 3px !important; border-radius: 999px !important; width: auto !important; }
+  .os-universe__intro h1, .os-universe__intro .os-universe__eyebrow, .os-universe__intro .os-universe__hint { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .os-universe__intro > * > .min-w-0 { position: absolute; }
+  .os-universe__actions { gap: 2px !important; flex-wrap: nowrap !important; align-items: center; }
+  .os-universe__lens { gap: 2px; }
+  .os-universe__actions .os-tab, .os-universe__actions button { min-height: 34px !important; height: 34px; padding: 0 14px !important; font-size: 13px !important; border-radius: 999px !important; }
+  .os-universe__actions [data-testid='universe-add-department'] { width: 34px; padding: 0 !important; justify-content: center; }
+  .os-universe__addlong { display: none !important; }
+  .os-universe__addshort { display: inline !important; font-size: 0; }
+  .os-universe__addshort::before { content: '+'; font-size: 18px; line-height: 1; }
+}
+/* Zähler als leise Bildunterschrift neben dem Zoom */
+.wd-counters { top: auto; left: 28px; bottom: 132px; gap: 12px; }
+.wd-counter { padding: 0; background: none !important; border: 0 !important; font-size: 11px; letter-spacing: .06em; color: rgba(235, 231, 222, .45); }
+.wd-counter + .wd-counter::before { content: '·'; margin-right: 12px; }
+/* Panels: ganz oben im Feld, leichter */
+.wd-pulse { top: 16px; }
+.wd-horizon { top: 60px; max-height: calc(100% - 84px); }
+/* Rollen-Vorschau als kleines Menü über dem Horizont */
+.wd-viewmenu { right: 24px; top: 16px; }
+.wd-viewmenu summary { list-style: none; cursor: pointer; height: 32px; display: inline-flex; align-items: center; gap: 6px; padding: 0 14px; border-radius: 999px; font-size: 12px; color: rgba(242, 238, 229, .8); background: rgba(8, 9, 12, .38); border: 1px solid rgba(247, 233, 203, .1); backdrop-filter: blur(14px); }
+.wd-viewmenu summary::-webkit-details-marker { display: none; }
+.wd-viewmenu[open] [data-testid='role-preview'] { position: absolute; right: 0; top: 38px; }
+.wd-viewmenu [data-testid='role-preview'] > span:first-child { display: none; }
