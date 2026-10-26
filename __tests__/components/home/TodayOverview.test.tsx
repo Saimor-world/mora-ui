@@ -17,19 +17,19 @@ let mockCalendarUnavailable = false;
 jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => ({ events: [], calendarUnavailable: mockCalendarUnavailable, calendar: null }) }));
 
 jest.mock('@/lib/store/navStore', () => ({
-  useNavStore: (selector: (state: { activeCompanyId: string | null }) => unknown) =>
-    selector({ activeCompanyId: mockActiveCompanyId }),
+  useNavStore: Object.assign((selector: (state: { activeCompanyId: string | null }) => unknown) =>
+    selector({ activeCompanyId: mockActiveCompanyId }), { getState: () => ({ activeCompanyId: mockActiveCompanyId }), subscribe: () => () => {} }),
 }));
 
 jest.mock('@/lib/store/sessionStore', () => ({
-  useSessionStore: (selector: (state: {
+  useSessionStore: Object.assign((selector: (state: {
     user: { id: string; tenant_id: string };
     sessionGeneration: number;
   }) => unknown) =>
     selector({
       user: { id: mockUserId, tenant_id: mockTenantId },
       sessionGeneration: mockSessionGeneration,
-    }),
+    }), { getState: () => ({ user: { id: mockUserId, tenant_id: mockTenantId }, sessionGeneration: mockSessionGeneration }), subscribe: () => () => {} }),
 }));
 
 jest.mock('@/lib/store/paneStore', () => ({

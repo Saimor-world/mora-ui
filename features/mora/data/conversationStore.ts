@@ -1,5 +1,6 @@
 'use client';
 import { create } from 'zustand';
+import { getDataScopeKey } from '@/lib/store/dataScope';
 
 /** Ephemeral MÔRA conversation for the prototype shell (UI state, no persistence). */
 export interface MoraTurn {
@@ -11,18 +12,21 @@ export interface MoraTurn {
 }
 
 interface ConversationState {
+  scope: string | null;
   turns: MoraTurn[];
-  add(turn: Omit<MoraTurn, 'id' | 'at'>): MoraTurn;
+  add(turn: Omit<MoraTurn, 'id' | 'at'>, scope?: string): MoraTurn;
   reset(): void;
 }
 
 let seq = 0;
 export const useMoraConversation = create<ConversationState>((set) => ({
+  scope: null,
   turns: [],
-  add: (turn) => {
+  add: (turn, scope = getDataScopeKey()) => {
     const t: MoraTurn = { ...turn, id: `t-${Date.now()}-${seq++}`, at: Date.now() };
-    set((s) => ({ turns: [...s.turns, t].slice(-60) }));
+    if (scope !== getDataScopeKey()) return t;
+    set((s) => ({ scope, turns: [...(s.scope === scope ? s.turns : []), t].slice(-60) }));
     return t;
   },
-  reset: () => set({ turns: [] }),
+  reset: () => set({ scope: null, turns: [] }),
 }));

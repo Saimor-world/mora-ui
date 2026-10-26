@@ -1,6 +1,9 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet } from '@/lib/api/http';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import { useDemoStore, useScopeCompanyId } from '@/lib/demo/demoStore';
+import { companyPath } from '@/lib/api/companyPath';
 
 /**
  * V1.8 MÔRA-Mail-Zusammenfassung aus CORE (`GET /v3/connections/mail/summary`).
@@ -54,10 +57,18 @@ export function senderName(from: string): string {
 }
 
 export function useMailSummary(enabled: boolean) {
+  const scope = useDataScopeKey();
+  const company = useScopeCompanyId();
+  const demo = useDemoStore((s) => s.demoCompanyId);
   return useQuery({
-    queryKey: ['os', 'mail-summary'],
-    queryFn: async () => (await coreGet('/v3/connections/mail/summary', { throwAuthErrors: true })) as MailSummary | null,
-    enabled,
+    queryKey: ['os', 'mail-summary', scope],
+    queryFn: async (): Promise<MailSummary | null> => {
+      const result = await coreGet(companyPath('/v3/connections/mail/summary', company), { throwAuthErrors: true });
+      if (result == null) return null;
+      if (!Array.isArray(result.groups) || typeof result.headline !== 'string' || !result.groups.every((g: MailGroup) => g && Array.isArray(g.refs))) throw new Error('Zusammenfassung nicht bestätigt');
+      return result as MailSummary;
+    },
+    enabled: enabled && !demo,
     staleTime: 30_000,
     retry: false,
   });

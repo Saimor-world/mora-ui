@@ -3,7 +3,6 @@
  * erledigte Aufgaben (CORE). Reine Funktionen, damit Home und Universe dasselbe sagen.
  */
 import type { EventPhase } from './dayStore';
-import { personOf, serviceOf } from './day';
 import { hm, localISO, plural, shortDate, type WorldEvent, type WorldTask } from './world';
 
 export interface LiveTask { task: WorldTask; overdue: boolean; meta: string }
@@ -88,10 +87,10 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   const overdueNames = summarizeTitles(open.filter((o) => o.overdue).map((o) => o.task.title.split(':')[0]));
   const dueCount = [tl.dueToday ? `${plural(tl.dueToday, 'Aufgabe', 'Aufgaben')} heute fällig` : '', tl.overdue ? `${tl.overdue} überfällig` : ''].filter(Boolean).join(', ');
   const dueList = [dueNames.length ? `Heute fällig: ${dueNames.join(' und ')}.` : '', overdueNames.length ? `Überfällig: ${overdueNames.join(' und ')}.` : ''].filter(Boolean).join(' ');
-  if (stale && !running) sentence = `Der Termin mit ${personOf(stale.title)} um ${stale.time} ist noch nicht abgeschlossen.`;
-  else if (running) sentence = `${personOf(running.title)} ist da. Ich halte dir den Rest fern, bis ihr fertig seid.`;
-  else if (next && next.date === iso) sentence = `${next.time ? `Um ${next.time} ` : ''}kommt ${personOf(next.title)}${serviceOf(next.title) ? ` zum ${serviceOf(next.title)}` : ''}.${open.length ? ` ${dueCount.charAt(0).toUpperCase()}${dueCount.slice(1)}.` : restLine}`;
-  else if (open.length) sentence = `Heute kommt niemand mehr. ${dueList}`;
+  if (stale && !running) sentence = `„${stale.title}“${stale.time ? ` um ${stale.time}` : ''} ist noch nicht abgeschlossen.`;
+  else if (running) sentence = `„${running.title}“ läuft gerade.${open.length ? ` ${dueList}` : ''}`;
+  else if (next && next.date === iso) sentence = `Als Nächstes${next.time ? ` um ${next.time}` : ''}: ${next.title}.${open.length ? ` ${dueCount.charAt(0).toUpperCase()}${dueCount.slice(1)}.` : restLine}`;
+  else if (open.length) sentence = `Heute sind keine weiteren Termine eingetragen. ${dueList}`;
   else if (tl.openTotal) sentence = `Heute ist nichts fällig · ${plural(tl.openTotal, 'Aufgabe', 'Aufgaben')} offen.${tomorrow.length ? ' Morgen steht schon etwas drin.' : ''}`;
   else sentence = tomorrow.length ? 'Heute ist alles erledigt. Morgen steht schon etwas drin.' : 'Heute ist alles erledigt. Magst du morgen planen?';
   const doneTodayEvents = today.length > 0 && today.every((e) => phaseOf(e, phases) === 'erledigt');
@@ -99,10 +98,10 @@ export function buildLiveDay(events: WorldEvent[], tasks: WorldTask[], phases: R
   let ahead: string | null = null;
   if (stale && !running) {
     const parts: string[] = [];
-    if (next && next.date === iso) parts.push(`Um ${next.time ?? ''} kommt ${personOf(next.title)}.`.replace(/\s+/g, ' '));
-    if (next && next.date === tomorrowIso) parts.push(`Morgen${next.time ? ` um ${next.time}` : ''} kommt ${personOf(next.title)}.`);
+    if (next && next.date === iso) parts.push(`Als Nächstes${next.time ? ` um ${next.time}` : ''}: ${next.title}.`);
+    if (next && next.date === tomorrowIso) parts.push(`Morgen${next.time ? ` um ${next.time}` : ''}: ${next.title}.`);
     else if (next && next.date > iso && next.date !== tomorrowIso) parts.push(`Nächster Termin: ${shortDate(next.date)}${next.time ? `, ${next.time}` : ''}.`);
-    ahead = parts.length ? `Nach dem Abschluss: ${parts.join(' ')}` : tomorrow.length ? 'Nach dem Abschluss ist heute nichts mehr im Kalender. Für morgen steht schon etwas an.' : 'Nach dem Abschluss ist dein Tag frei – magst du morgen planen?';
+    ahead = parts.length ? `Nach dem Abschluss: ${parts.join(' ')}` : tomorrow.length ? 'Danach sind heute keine weiteren Termine eingetragen. Für morgen stehen Aufgaben an.' : 'Danach sind heute keine weiteren Termine eingetragen.';
   }
   return { doneTodayEvents, running, stale, next, minutesToNext, open, doneToday, tomorrow, openTotal: tl.openTotal, taskLine: tl.line, sentence, ahead };
 }
@@ -128,8 +127,8 @@ export function summarizeTitles(titles: string[], max = 3): string[] {
 
 /** Kurze Zeile für einen Termin-Planeten im Universe. */
 export function calendarMeta(day: LiveDay, timeZone?: string): string | null {
-  if (day.running) return `${personOf(day.running.title)} · läuft gerade`;
-  if (day.next && day.next.date === localISO(new Date(), timeZone)) return `heute ${day.next.time ?? ''} ${personOf(day.next.title)}`.replace(/\s+/g, ' ').trim();
+  if (day.running) return `${day.running.title} · läuft gerade`;
+  if (day.next && day.next.date === localISO(new Date(), timeZone)) return `heute ${day.next.time ?? ''} ${day.next.title}`.replace(/\s+/g, ' ').trim();
   if (day.doneTodayEvents) return 'heute erledigt';
   return null;
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const coreGet = jest.fn();
@@ -9,6 +9,7 @@ jest.mock('@/lib/os-prototype/useSources', () => ({ ...jest.requireActual('@/lib
 jest.mock('@/lib/queries/useDepartments', () => ({ useDepartments: () => ({ data: [{ id: 'd1', name: 'Vertrieb' }, { id: 'd2', name: 'Management' }] }) }));
 
 import { SourceDock } from '@/features/settings/ui/SourceDock';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 const MAIL = {
   id: 'mail', label: 'E-Mail', group: 'mail', status: 'available', detail: '',
@@ -46,6 +47,15 @@ beforeEach(() => {
 });
 
 describe('V1.8 SourceDock · E-Mail', () => {
+  it('a Google-mail marker opens connected-source information without starting OAuth or saving credentials', async () => {
+    coreGet.mockImplementation(async (path: string) => path.includes('/mail/summary') ? SUMMARY : { connections: [{ ...MAIL, status: 'connected' }] });
+    useOsShellStore.getState().setSettingsSource({ label: 'Post & Termine', sources: ['google_mail'] });
+    renderDock();
+    expect(await screen.findByTestId('source-entry-label')).toHaveTextContent('Post & Termine');
+    await waitFor(() => expect(screen.getByTestId('sources-panel')).toHaveAttribute('data-state', 'info'));
+    expect(corePost).not.toHaveBeenCalled();
+    expect(screen.queryByTestId('dock-form-mail')).toBeNull();
+  });
   it('docks only after CORE confirms the fetch and shows the first real mail as signal', async () => {
     let resolve: (v: unknown) => void = () => {};
     corePost.mockReturnValueOnce(new Promise((r) => { resolve = r; }));

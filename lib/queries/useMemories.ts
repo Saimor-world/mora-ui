@@ -7,6 +7,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { fetchMoraMemories, searchMoraMemories, type MoraMemory } from '@/lib/api/memoryClient';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
 
 // Stale time: memories are written after conversations end — 60s is fresh enough.
 const MEMORIES_STALE = 60 * 1000;
@@ -15,9 +17,12 @@ const MEMORY_SEARCH_STALE = 30 * 1000;
 
 /** List most recent mora_memories for the authenticated user. */
 export function useMemories(limit = 50) {
+    const company = useScopeCompanyId();
+    const scope = useDataScopeKey();
     return useQuery<MoraMemory[] | null>({
-        queryKey: ['moraMemories', 'list', limit],
-        queryFn: () => fetchMoraMemories(limit),
+        queryKey: ['moraMemories', 'list', scope, limit],
+        queryFn: () => fetchMoraMemories(limit, company!),
+        enabled: Boolean(company),
         staleTime: MEMORIES_STALE,
     });
 }
@@ -27,10 +32,12 @@ export function useMemories(limit = 50) {
  * Only fires when query.length >= 2 (matches backend min_length=2 validation).
  */
 export function useMemorySearch(query: string) {
+    const company = useScopeCompanyId();
+    const scope = useDataScopeKey();
     return useQuery<MoraMemory[] | null>({
-        queryKey: ['moraMemories', 'search', query],
-        queryFn: () => searchMoraMemories(query),
-        enabled: query.trim().length >= 2,
+        queryKey: ['moraMemories', 'search', scope, query],
+        queryFn: () => searchMoraMemories(query, 10, company!),
+        enabled: Boolean(company) && query.trim().length >= 2,
         staleTime: MEMORY_SEARCH_STALE,
     });
 }

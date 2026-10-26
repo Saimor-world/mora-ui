@@ -4,6 +4,7 @@
 
 import type { OperationalState } from '@/lib/types/session';
 import { buendele } from './anfrageBuendelung';
+import { getDataScopeKey } from '@/lib/store/dataScope';
 export type { OperationalState };
 
 /**
@@ -213,6 +214,8 @@ export async function coreRequest(path: string, options: CoreRequestOptions = {}
 }
 
 export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'method' | 'body'> = {}): Promise<any> {
+    // Server requests do not share a browser principal. Never coalesce them globally.
+    if (typeof window === 'undefined') return coreRequest(path, { ...options, method: 'GET' });
     // Gleiche Leseanfrage, gleicher Moment — eine Leitung. Beim Start des
     // OS waren von 43 Anfragen an CORE nur 25 verschieden; zwei Komponenten
     // fragten dasselbe wenige Millisekunden auseinander, weil sie nichts
@@ -223,7 +226,7 @@ export async function coreGet(path: string, options: Omit<CoreRequestOptions, 'm
     // wuerde aus der Beschleunigung eine stille Veraltung.
     // Auth-strict and tolerant callers intentionally use different keys so a
     // shared in-flight promise cannot change another caller's error semantics.
-    const schluessel = `${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}|${options.timeoutMs ?? ''}`;
+    const schluessel = `${getDataScopeKey()}|${path}|${options.isOptional ? 'opt' : ''}|${options.throwAuthErrors ? 'auth-strict' : 'auth-tolerant'}|${options.preserveEnvelope ? 'envelope' : 'data'}|${JSON.stringify(options.headers ?? null)}|${options.timeoutMs ?? ''}`;
     return buendele(schluessel, () => coreRequest(path, { ...options, method: 'GET' }));
 }
 

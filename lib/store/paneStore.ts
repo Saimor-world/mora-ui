@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
 import { useActivityStore } from '@/lib/store/activityStore';
+import { getDataScopeKey, subscribeDataScope } from './dataScope';
 
 export interface PaneConfig {
     id: string;
@@ -92,31 +93,18 @@ const OS_PANE_SESSION_KEY = 'saimor_os_panes_v1';
 const loadPersistedPanes = (): PaneConfig[] => {
     if (typeof window === 'undefined') return [];
     try {
-        const raw = localStorage.getItem(OS_PANE_SESSION_KEY);
-        if (!raw) return [];
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-            // Validate basic pane shape
-            return parsed.filter((p: any) => p && typeof p.id === 'string' && typeof p.type === 'string');
-        }
-        return [];
+        // Legacy entries contain unscoped document/chat data. Never restore them
+        // into a different account or company. Server documents are unaffected.
+        localStorage.removeItem(OS_PANE_SESSION_KEY);
     } catch {
-        return [];
+        // Private storage may be disabled.
     }
+    return [];
 };
 
-const savePersistedPanes = (panes: PaneConfig[]) => {
-    if (typeof window === 'undefined') return;
-    try {
-        // Only persist relevant user panes, skip fleeting overlays
-        const persistable = panes
-            .filter(p => !['settings', 'apps'].includes(p.type))
-            .slice(0, 8); // max 8 saved panes
-        localStorage.setItem(OS_PANE_SESSION_KEY, JSON.stringify(persistable));
-    } catch {
-        // storage quota exceeded or disabled
-    }
-};
+// Window content is session-only until references can be restored with server
+// authorization. Do not put private pane payloads in shared browser storage.
+const savePersistedPanes = (_panes: PaneConfig[]) => {};
 
 interface PaneState {
     panes: PaneConfig[];
@@ -434,3 +422,11 @@ export const usePaneStore = create<PaneState>((set, get) => ({
         return { panes };
     })
 }));
+
+let paneScope = getDataScopeKey();
+subscribeDataScope(() => {
+    const next = getDataScopeKey();
+    if (next === paneScope) return;
+    paneScope = next;
+    usePaneStore.getState().reset();
+});

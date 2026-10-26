@@ -60,4 +60,10 @@ describe('feature manifest registry', () => {
     expect(resolveFeatureId('finance', { role: 'member', flags: new Set() })).toBe('today');
     expect(resolveFeatureId('post', owner)).toBe('post');
   });
+
+  it('only offers global administration to the system owner in the internal working context', () => {
+    expect(resolveFeatureId('administration', owner)).toBe('today');
+    expect(resolveFeatureId('administration', { ...owner, role: 'system_owner' })).toBe('administration');
+    expect(resolveFeatureId('administration', { ...customerOwner, role: 'system_owner' })).toBe('today');
+  });
 });

@@ -51,7 +51,7 @@ export function daySentence(day: Day, now = new Date(), timeZone?: string): stri
   const left = day.today.filter((e) => endOf(e) > hm(now, timeZone)).length;
   if (!day.today.length) return day.next ? `Heute ist nichts eingetragen. Der nächste Termin ist am ${shortDate(day.next.date)}.` : 'Heute ist nichts eingetragen.';
   if (!left) return day.today.length === 1 ? 'Dein Termin heute ist vorbei.' : `Alle ${day.today.length} Termine von heute sind vorbei.`;
-  const next = day.next && day.next.date === localISO(now, timeZone) ? ` Als Nächstes um ${day.next.time} ${personOf(day.next.title)}.` : '';
+  const next = day.next && day.next.date === localISO(now, timeZone) ? ` Als Nächstes${day.next.time ? ` um ${day.next.time}` : ''}: ${day.next.title}.` : '';
   return `Heute ${left === day.today.length ? plural(left, 'Termin', 'Termine') : `noch ${plural(left, 'Termin', 'Termine')}`}.${next}`;
 }
 

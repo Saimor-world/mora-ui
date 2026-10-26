@@ -7,6 +7,7 @@ import { knowledgeManifest } from './knowledge/manifest';
 import { settingsManifest } from './settings/manifest';
 import { labsManifest } from './labs/manifest';
 import { universeManifest } from './universe/manifest';
+import { administrationManifest } from './administration/manifest';
 
 /**
  * Feature registry — driven exclusively by manifests. Adding a feature means
@@ -21,6 +22,7 @@ export const FEATURE_MANIFESTS: FeatureManifest[] = [
   settingsManifest,
   universeManifest,
   labsManifest,
+  administrationManifest,
 ];
 
 export const DEFAULT_FEATURE_ID = 'today';

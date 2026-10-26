@@ -13,7 +13,13 @@ import { useSessionStore } from '@/lib/store/sessionStore';
  */
 const KEY = 'saimor_demo_company';
 
-type DemoState = { demoCompanyId: string | null; setDemoCompany: (id: string | null) => void };
+/** A platform owner may list every tenant; its working demo picker must not. */
+export function demoCompaniesForTenant<T extends { id: string; name: string; tenant_id?: string; is_demo?: boolean }>(companies: T[], tenantId?: string | null): T[] {
+  if (!tenantId) return [];
+  return companies.filter((c) => c.is_demo && c.tenant_id === tenantId);
+}
+
+type DemoState = { demoCompanyId: string | null; selectionGeneration: number; setDemoCompany: (id: string | null) => void };
 
 const initial = (): string | null => {
   if (typeof window === 'undefined') return null;
@@ -22,11 +28,16 @@ const initial = (): string | null => {
 
 export const useDemoStore = create<DemoState>((set) => ({
   demoCompanyId: initial(),
+  selectionGeneration: 0,
   setDemoCompany: (id) => {
+    // A retained HQ folder must never silently override a selected demo in chat.
+    if (id !== useDemoStore.getState().demoCompanyId) {
+      useNavStore.setState({ activeDepartmentId: null, activeSpaceId: null, activeFolderId: null });
+    }
     if (typeof window !== 'undefined') {
       try { if (id) window.sessionStorage.setItem(KEY, id); else window.sessionStorage.removeItem(KEY); } catch { /* privat */ }
     }
-    set({ demoCompanyId: id });
+    set((s) => ({ demoCompanyId: id, selectionGeneration: s.selectionGeneration + (id !== s.demoCompanyId ? 1 : 0) }));
   },
 }));
 

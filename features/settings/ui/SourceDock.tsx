@@ -17,6 +17,10 @@ import {
 } from '@/lib/os-prototype/sourceDock';
 import { useDepartments } from '@/lib/queries/useDepartments';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { sourceStationId } from '@/lib/os-prototype/universeEntries';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import { companyPath } from '@/lib/api/companyPath';
 
 /**
  * V1.7 Andockstation (Einstellungen › Quellen und Onboarding-Schritt „Erste Station“).
@@ -77,12 +81,14 @@ function ConnectFields({ entry, busy, onSubmit }: { entry: SourceEntry; busy: bo
 }
 
 export function SourceDock({ live, compact = false, navigate }: { live: boolean; compact?: boolean; navigate?: (id: string) => void }) {
+  const company = useScopeCompanyId();
+  const scope = useDataScopeKey();
   const qc = useQueryClient();
   const look = useOsShellStore((s) => s.look);
   const sources = useSources(live);
   const list = sources.data?.connections || [];
   const boundary = live && sources.isSuccess && !list.length;
-  const sample = !live || boundary;
+  const sample = !live;
   const planets = usePlanets(live, sample);
   const local = isLocalCore();
   const [focus, setFocus] = useState<Focus>({ kind: 'idle' });
@@ -101,6 +107,18 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
   const stations: DockStation[] = useMemo(() => (sample
     ? SAMPLE_STATIONS
     : sortStations(list).map((e) => ({ id: e.id, label: e.label, group: e.group, status: e.status, entry: e }))), [sample, list]);
+  const wantedSource = useOsShellStore((s) => s.settingsSource);
+  const [entryLabel, setEntryLabel] = useState<string | null>(null);
+  useEffect(() => {
+    if (!wantedSource || !sources.isSuccess) return;
+    setEntryLabel(wantedSource.label);
+    const ids = new Set(wantedSource.sources.map(sourceStationId));
+    const target = !sample ? stations.find((s) => ids.has(sourceStationId(s.id))) : null;
+    if (target?.status === 'connected') setFocus({ kind: 'info', id: target.id });
+    else setFocus({ kind: 'idle' });
+    // A navigation handoff only selects information. It never starts a connection.
+    useOsShellStore.getState().setSettingsSource(null);
+  }, [wantedSource, sources.isSuccess, sample, stations]);
   const visible = stations.filter((s) => compact ? isPrimaryStation(s) : showAll || isPrimaryStation(s) || ('id' in focus && focus.id === s.id));
   const hidden = stations.length - stations.filter(isPrimaryStation).length;
   const rec = sample ? null : recommendStation(stations.filter((s) => isPrimaryStation(s)));
@@ -129,7 +147,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     ? { from: sel.pos, to: dockPoint(planetPos(sel.target), slots.get(sel.target?.id ?? 'core') ?? 0) } : null;
 
   const briefing = useQuery({
-    queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>,
+    queryKey: ['os', 'briefing', scope], queryFn: () => coreGet(companyPath('/v3/briefing', company)) as Promise<Briefing>,
     enabled: live && focus.kind === 'docked' && current?.group !== 'mail', staleTime: 30_000, retry: false,
   });
 
@@ -142,7 +160,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     if (s.entry.action.kind !== 'oauth') { setFocus({ kind: 'form', id: s.id }); return; }
     setFocus({ kind: 'busy', id: s.id });
     try {
-      const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, { return_to: window.location.href });
+      const res = await corePost(companyPath(`/v3/connections/${encodeURIComponent(s.id)}/connect`, company), { return_to: window.location.href });
       const url = res?.authorization_url || res?.auth_url || res?.url;
       if (url && typeof url === 'string') { window.location.assign(url); return; }
       setFocus({ kind: 'error', id: s.id, raw: 'CORE hat keinen Anmelde-Link geliefert.' });
@@ -154,7 +172,7 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
     if (!local) return;
     setFocus({ kind: 'busy', id: s.id });
     try {
-      const res = await corePost(`/v3/connections/${encodeURIComponent(s.id)}/connect`, values);
+      const res = await corePost(companyPath(`/v3/connections/${encodeURIComponent(s.id)}/connect`, company), values);
       const check = checkConnectResult(s.group, res);
       if (!check.ok) { setFocus({ kind: 'error', id: s.id, raw: check.reason }); return; }
       await qc.invalidateQueries({ queryKey: ['os', 'sources'] });
@@ -289,8 +307,10 @@ export function SourceDock({ live, compact = false, navigate }: { live: boolean;
 
   const klar = look === 'klar';
   const orb = orbits(compact);
+  if (boundary) return <div data-testid="sources-panel" data-state="boundary"><Text variant="title">Quellen dieses Arbeitsbereichs</Text><Text className="mt-3">CORE stellt für diesen Arbeitsbereich keine persönlichen Provider-Verbindungen bereit. Verbindungen einer anderen Firma werden hier nicht eingeblendet.</Text></div>;
   return (
     <div className={cx('os-station', compact && 'os-station--compact')} data-testid="sources-panel" data-look={look} data-state={sample ? 'sample' : focus.kind}>
+      {entryLabel ? <Text variant="eyebrow" className="mb-3" data-testid="source-entry-label">Quellen · {entryLabel}</Text> : null}
       <div className="os-station__grid">
       <div className="os-station-scene">
         <svg ref={svgRef} viewBox={`0 0 ${SCENE.w} ${SCENE.h}`} role="group" aria-label="Andockstation: Quellen und Abteilungen" className="os-station-svg" style={{ ['--station-k' as string]: k.toFixed(3) } as React.CSSProperties}>

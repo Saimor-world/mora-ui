@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { searchGlobal } from '@/lib/api/searchClient';
 import { useMemories, useMemorySearch } from '@/lib/queries/useMemories';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
 
 /**
  * Wissen = one query layer over existing clients:
@@ -12,11 +14,13 @@ import { useSessionStore } from '@/lib/store/sessionStore';
  */
 export function useKnowledgeSearch(query: string) {
   const tenant = useSessionStore((s) => s.user?.tenant_id ?? null);
+  const company = useScopeCompanyId();
+  const scope = useDataScopeKey();
   const q = query.trim();
   const keyword = useQuery({
-    queryKey: ['os', 'knowledge', 'keyword', tenant, q],
-    queryFn: () => searchGlobal(q),
-    enabled: Boolean(tenant) && q.length >= 2,
+    queryKey: ['os', 'knowledge', 'keyword', scope, q],
+    queryFn: () => searchGlobal(q, company!),
+    enabled: Boolean(tenant && company) && q.length >= 2,
     staleTime: 30_000,
   });
   const memory = useMemorySearch(tenant ? q : '');

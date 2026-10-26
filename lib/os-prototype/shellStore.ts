@@ -41,6 +41,8 @@ export interface OsShellState {
   /** V1.6: Einstellungen in einem bestimmten Abschnitt öffnen (z. B. „sources“). */
   settingsSection: string | null;
   setSettingsSection(id: string | null): void;
+  settingsSource: { label: string; sources: string[] } | null;
+  setSettingsSource(source: { label: string; sources: string[] } | null): void;
   look: 'kosmos' | 'klar';
   setLook(l: 'kosmos' | 'klar'): void;
   phaseOverride: 'flow' | 'build' | 'lounge' | 'night' | null;
@@ -83,6 +85,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setFocusUntil: (focusUntil) => set({ focusUntil }),
   settingsSection: null,
   setSettingsSection: (settingsSection) => set({ settingsSection }),
+  settingsSource: null,
+  setSettingsSource: (settingsSource) => set({ settingsSource }),
   activeFeatureId: 'today',
   moraOpen: false,
   paletteOpen: false,

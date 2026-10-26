@@ -43,12 +43,13 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
     };
 
     const { nodeId, content: initialContent, name: initialName, type: initialType,
-        metadata: initialMetadata, url, folderId, companyId, navigationContext } = docData;
+        metadata: initialMetadata, url: initialUrl, folderId, companyId, navigationContext } = docData;
 
     const [content, setContent] = useState(initialContent || '');
     const [name, setName] = useState(initialName || 'Dokument');
     const [type, setType] = useState(initialType || '');
     const [metadata, setMetadata] = useState<Record<string, any>>(initialMetadata || {});
+    const [url, setUrl] = useState(initialUrl);
     const [relations, setRelations] = useState<NodeRelation[]>([]);
     const [graphCtx, setGraphCtx] = useState<NodeGraphContext | null>(null);
     const [similar, setSimilar] = useState<any[]>([]);
@@ -91,6 +92,10 @@ export default function DocumentApp({ paneId, initialData = {} }: AppProps) {
                 setDraftContent(nodeData.content || '');
                 setType(nodeData.type || '');
                 setMetadata({ ...(initialMetadata || {}), ...(nodeData.metadata || {}) });
+                // Imported link nodes may only reveal their URL after loading.
+                const candidate = nodeData.url || nodeData.metadata?.url || initialUrl;
+                try { setUrl(candidate && ['https:', 'http:'].includes(new URL(candidate).protocol) ? candidate : undefined); }
+                catch { setUrl(undefined); }
                 const nodeRelations = await fetchNodeRelations(nodeId);
                 if (cancelled) return;
                 setRelations(Array.isArray(nodeRelations) ? nodeRelations : []);

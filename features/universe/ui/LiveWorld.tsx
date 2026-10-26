@@ -22,8 +22,9 @@ import type { Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
-import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { openNodeStar, openSourceSettings } from '@/lib/os-prototype/universeEntries';
+import { toast } from '@/lib/toast';
 
 /** Universe mit Sitzung: die Abteilungen des Betriebs aus CORE, nichts aus Vorlagen. */
 export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora: (text: string) => void; onAddDepartment?: () => void; navigate?: (target: string) => void }) {
@@ -194,10 +195,10 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
   }, [finderPlanets]);
   const openStar = useCallback((star: Star) => {
     const meta = (star.raw as { metadata?: Record<string, unknown> } | undefined)?.metadata;
-    if (meta?.companyFile) void downloadCompanyFile(star.id, star.name).catch(() => undefined);
-    else if (star.kind === 'document' || star.kind === 'note' || star.kind === 'file') openLegacyApp('document', { nodeId: star.id });
+    if (meta?.companyFile) void downloadCompanyFile(star.id, star.name).catch(() => toast.error('Die Datei konnte nicht geladen werden. Bitte erneut versuchen.'));
     else if (star.kind === 'event') { setOpenId(null); navigate?.('post'); }
-  }, [navigate]);
+    else if (!openNodeStar(star, world.companyId) && star.kind !== 'task') toast.error('Der Eintrag konnte nicht geöffnet werden.');
+  }, [navigate, world.companyId]);
 
   if (world.loading) {
     return (
@@ -231,7 +232,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         planets={worldPlanets}
         phone={phone}
         sources={companyView && !phone ? horizon.sources : null}
-        onOpenSource={() => openLegacyApp('settings')}
+        onOpenSource={(key) => openSourceSettings(navigate, horizon.sources?.find((s) => s.key === key))}
         hidden={Boolean(open)}
         onOpenPlanet={selectPlanet}
         onZoomPlanet={openPlanet}
@@ -279,7 +280,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
           <TaskHomeRow tasks={world.tasks} onOpen={() => setTaskSheet(true)} />
           {companyView ? (
             <>
-              <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openLegacyApp('settings') : navigate?.('post'))} data-testid="horizon-mail">
+              <button type="button" className="wd-horizon__row" onClick={() => (horizon.mail?.status === 'unavailable' ? openSourceSettings(navigate) : navigate?.('post'))} data-testid="horizon-mail">
                 <span>Mail</span>
                 <b>{!horizon.mail ? '…' : horizon.mail.status === 'unavailable' ? 'nicht lesbar · Quelle prüfen' : horizon.mail.items[0] ? horizon.mail.items[0].subject : horizon.mail.hidden ? 'nur automatische Benachrichtigungen' : 'Posteingang ruhig'}</b>
               </button>

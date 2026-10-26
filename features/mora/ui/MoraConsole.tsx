@@ -9,6 +9,10 @@ import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useMoraConversation } from '../data/conversationStore';
 import { useMoraSend } from '../data/useMoraSend';
 import { proposeActions, type MoraProposal } from '../data/proposals';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import type { MoraTurn } from '../data/conversationStore';
+
+const NO_TURNS: MoraTurn[] = [];
 
 export interface MoraConsoleProps {
   variant: 'panel' | 'page';
@@ -25,7 +29,8 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
   const surfaceContext = useOsShellStore((s) => s.surfaceContext);
   const contextFeature = getFeature(activeFeatureId);
   const contextLabel = contextFeature?.mora.contextLabel || 'SAIMÔR';
-  const turns = useMoraConversation((s) => s.turns);
+  const scope = useDataScopeKey();
+  const turns = useMoraConversation((s) => s.scope === scope ? s.turns : NO_TURNS);
   const send = useMoraSend({ featureId: activeFeatureId, contextLabel, detail: surfaceContext });
   const health = useCoreHealth();
   const [draft, setDraft] = useState('');
@@ -66,7 +71,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
         <MoraStone size={34} thinking={send.isPending} />
         <div className="min-w-0 flex-1">
           <Text variant="title" as="h2">MÔRA</Text>
-          <Text variant="meta">{contextLabel === 'MÔRA' ? 'Deine Assistentin im Studio' : `Bei: ${contextLabel}`}{surfaceContext ? ` · ${surfaceContext}` : ''}</Text>
+          <Text variant="meta">{contextLabel === 'MÔRA' ? 'An deiner Seite im Unternehmen' : `Bei: ${contextLabel}`}{surfaceContext ? ` · ${surfaceContext}` : ''}</Text>
         </div>
         {onClose ? <Button variant="ghost" iconOnly aria-label="MÔRA schließen" icon={<X size={16} />} onClick={onClose} /> : null}
       </Stack>

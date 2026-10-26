@@ -22,7 +22,7 @@ jest.mock('@/lib/websiteEntryStorage', () => ({
 
 // Mock navStore
 jest.mock('@/lib/store/navStore', () => ({
-  useNavStore: { getState: () => ({ setActiveMode: jest.fn() }) },
+  useNavStore: { getState: () => ({ setActiveMode: jest.fn() }), subscribe: () => () => {} },
 }));
 
 describe('PlaygroundPage — audit_session param', () => {

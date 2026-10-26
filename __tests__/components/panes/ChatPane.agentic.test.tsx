@@ -115,7 +115,6 @@ describe('ChatPane agentic file ops', () => {
       navigateToDepartment: jest.fn(),
     } as any);
     // attach getState for components calling useNavStore.getState()
-    (useNavStore as any).getState = () => useNavStore.getState();
 
     useOrbStore.setState({ orbState: 'idle' } as any);
   });

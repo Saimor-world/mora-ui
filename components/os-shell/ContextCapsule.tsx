@@ -7,6 +7,12 @@ import { usePhase } from '@/lib/os-prototype/usePhase';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import { useDemoCompanies, useIsSaimorHq } from '@/lib/hooks/useIsSaimorInternal';
 
+function switchDemo(id: string | null) {
+  if (id === useDemoStore.getState().demoCompanyId) return;
+  if (!window.confirm('Arbeitsbereich wechseln? Offene Ansichten und lokale Entwürfe werden geschlossen. Speichere deine Arbeit vorher.')) return;
+  useDemoStore.getState().setDemoCompany(id);
+}
+
 /**
  * Firmen-Schalter nur für SAIMÔR-HQ: die echte Firma heißt einfach „SAIMÔR“, darunter die
  * is_demo-Firmen aus CORE. Die Wahl lebt nur in dieser Sitzung (sessionStorage).
@@ -15,12 +21,11 @@ export function DemoSwitch() {
   const hq = useIsSaimorHq();
   const companies = useDemoCompanies(hq);
   const current = useDemoStore((s) => s.demoCompanyId);
-  const setDemo = useDemoStore((s) => s.setDemoCompany);
   if (!hq || (!companies.length && !current)) return null;
   return (
     <label className="os-context__demoswitch" data-testid="demo-switch">
       <span className="sr-only">Firma wählen</span>
-      <select aria-label="Firma wählen" value={current ?? ''} onChange={(e) => setDemo(e.target.value || null)}>
+      <select aria-label="Firma wählen" value={current ?? ''} onChange={(e) => switchDemo(e.target.value || null)}>
         <option value="">SAIMÔR</option>
         {companies.map((c) => <option key={c.id} value={c.id}>Demo · {c.name}</option>)}
       </select>
@@ -31,14 +36,13 @@ export function DemoSwitch() {
 /** Ruhiges Band, solange eine Demo-Firma offen ist – mit einem Weg zurück zur echten Firma. */
 export function DemoBanner() {
   const current = useDemoStore((s) => s.demoCompanyId);
-  const setDemo = useDemoStore((s) => s.setDemoCompany);
   const companies = useDemoCompanies(Boolean(current));
   if (!current) return null;
   const name = companies.find((c) => c.id === current)?.name;
   return (
     <div className="os-demo-banner" role="note" data-testid="demo-banner">
       <span>Demo{name ? ` · ${name}` : ''}</span>
-      <button type="button" onClick={() => setDemo(null)} data-testid="demo-back">zurück zu SAIMÔR</button>
+      <button type="button" onClick={() => switchDemo(null)} data-testid="demo-back">zurück zu SAIMÔR</button>
     </div>
   );
 }

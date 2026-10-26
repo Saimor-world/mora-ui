@@ -12,6 +12,7 @@ import { SourceDock } from './ui/SourceDock';
 import { requestOnboarding } from '@/lib/os-prototype/onboarding';
 
 export const SETTINGS_SECTIONS = [
+  { id: 'appearance', label: 'Darstellung & Klang' },
   { id: 'account', label: 'Konto' },
   { id: 'identity', label: 'Identität' },
   { id: 'sources', label: 'Quellen' },
@@ -47,20 +48,20 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
     <div className="flex flex-col gap-6" data-testid="feature-settings">
       <header>
         <Text variant="eyebrow">Einstellungen</Text>
-        <Text variant="display" className="mt-2">Wenige Schalter, klar benannt.</Text>
+        <Text variant="display" className="mt-2">{SETTINGS_SECTIONS.find((s) => s.id === section)?.label}</Text>
       </header>
-      <LookSettings />
-      <Stack direction="row" gap={3} align="center" wrap>
+      {section === 'appearance' ? <LookSettings /> : null}
+      {section === 'appearance' ? <Stack direction="row" gap={3} align="center" wrap>
         <Text variant="meta">Einführung (Look, Firma, Quelle, kurze Tour) jederzeit wiederholen.</Text>
         <Button size="sm" variant="ghost" onClick={() => requestOnboarding()} data-testid="onboarding-restart">Einführung erneut starten</Button>
-      </Stack>
+      </Stack> : null}
       <div className="os-tabs" role="tablist" aria-label="Einstellungen">
         {SETTINGS_SECTIONS.map((s) => (
           <button key={s.id} type="button" role="tab" aria-selected={section === s.id} className="os-tab" onClick={() => setSection(s.id)} data-testid={`settings-tab-${s.id}`}>{s.label}</button>
         ))}
       </div>
 
-      <Surface padding={5}>
+      {section !== 'appearance' ? <Surface padding={5}>
         {section === 'account' && (user ? (
           <div className="os-list"><Row label="Name" value={user.name} /><Row label="E-Mail" value={user.email || '—'} /><Row label="Rolle" value={roleDe(user.role)} /></div>
         ) : <FailureState kind="unauthenticated" compact />)}
@@ -84,7 +85,7 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
                 <div key={k} className="os-list-row"><Text>{PERMISSION_LABEL[k] || k}</Text><Status tone={v ? 'safe' : 'neutral'}>{v ? 'erlaubt' : 'nicht erlaubt'}</Status></div>
               ))}
             </div>
-            <Text variant="meta">Was du sehen und ändern darfst, hängt an deiner Rolle im Studio.</Text>
+            <Text variant="meta">Was du sehen und ändern darfst, hängt an deiner Rolle im Unternehmen.</Text>
           </Stack>
         )}
 
@@ -98,11 +99,11 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
             <Row label="Feature-Flags" value={flags.length ? flags.join(', ') : 'keine'} />
           </div>
         )}
-      </Surface>
+      </Surface> : null}
 
       <Stack direction="row" gap={3} align="center" wrap>
-        <Text variant="meta">Darstellung, Ton und Postausgang findest du unter „Weitere Einstellungen“.</Text>
-        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('settings')}>Weitere Einstellungen</Button>
+        <Text variant="meta">Die klassische Verwaltung enthält zusätzliche bestehende Kontofunktionen.</Text>
+        <Button size="sm" variant="ghost" onClick={() => openLegacyApp('settings')}>Erweiterte Verwaltung (klassisch)</Button>
       </Stack>
     </div>
   );

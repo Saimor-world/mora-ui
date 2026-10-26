@@ -734,14 +734,19 @@
 /* Universe-Hintergrund (Marius 25.10.): SEIN Bild deep-space-warm.jpg wie .uv2-cosmos-image (#159),
    etwas gedimmt (links der helle Orange-Nebel stärker), damit MÔRA das hellste Licht bleibt.
    Darüber nur eine feine Sterndrift; keine generierten Nebel, keine grünen Schleier. */
-.wd-universe { background: #07090c !important; }
-.wd-universe::before, .wd-universe::after { content: ''; position: absolute; pointer-events: none; z-index: -1; }
-.wd-universe::before {
-  inset: 0;
+.os-shell[data-place='universe'] .os-shell__main::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
     linear-gradient(90deg, rgba(5, 6, 8, .38), rgba(5, 6, 8, .12) 40%, rgba(5, 6, 8, .08) 70%, rgba(5, 6, 8, .2)),
     url('/universe/deep-space-warm.jpg') center / cover no-repeat;
   filter: brightness(1.5) saturate(.9) contrast(.98);
+}
+.wd-universe { background: transparent !important; }
+.wd-universe::before, .wd-universe::after { content: ''; position: absolute; pointer-events: none; z-index: -1; }
+.wd-universe::before {
+  inset: 0;
+  /* The one photograph now belongs to the whole shell, including header and dock. */
+  background: none;
 }
 .wd-universe::after {
   inset: -10%;
