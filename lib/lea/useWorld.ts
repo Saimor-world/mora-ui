@@ -32,13 +32,20 @@ export function useWorld() {
   const hasSession = Boolean(tenantId && userId);
   const enabled = hasSession && Boolean(companyId);
   const [now, setNow] = useState(() => new Date());
-  const window = useMemo(() => calendarReadWindow(now), [now]);
+  const readWindow = useMemo(() => calendarReadWindow(now), [now]);
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(timer);
   }, []);
   const loadDayStatus = useDayStore((s) => s.loadCompany);
-  useEffect(() => { void loadDayStatus(enabled ? companyId : null); }, [enabled, companyId, loadDayStatus]);
+  useEffect(() => {
+    const refresh = () => { if (document.visibilityState !== 'hidden') void loadDayStatus(enabled ? companyId : null); };
+    void loadDayStatus(enabled ? companyId : null);
+    if (!enabled) return;
+    const timer = setInterval(refresh, 30_000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [enabled, companyId, loadDayStatus, generation]);
   const tree = useQuery({
     queryKey: ['lea-world', 'tree', companyId],
     enabled,
@@ -71,12 +78,12 @@ export function useWorld() {
       .map((f): FNode => ({ id: f.id, name: f.filename, type: 'file', folder_id: f.folder_id, created_at: (f as { created_at?: string }).created_at ?? null, metadata: { companyFile: true } })),
   });
   const events = useQuery({
-    queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, window.startDate, window.endDate],
+    queryKey: ['lea-world', 'calendar-read', tenantId, userId, generation, companyId, readWindow.startDate, readWindow.endDate],
     enabled,
     staleTime: 30_000,
     refetchInterval: 30_000,
     retry: false,
-    queryFn: () => fetchCalendarReadSnapshot({ tenantId: tenantId!, userId: userId!, companyId: companyId!, ...window }),
+    queryFn: () => fetchCalendarReadSnapshot({ tenantId: tenantId!, userId: userId!, companyId: companyId!, ...readWindow }),
   });
   const tasks = useQuery({
     queryKey: ['lea-world', 'tasks', companyId],
@@ -147,6 +154,7 @@ export function useWorld() {
     });
   }, [places, toneById, tree.data, calendarEvents, day, nodes.data, files.data, tasks.data, now]);
   return {
+    sessionGeneration: generation,
     enabled,
     loading: enabled && (tree.isLoading || events.isLoading || tasks.isLoading),
     failed: enabled && tree.isError,

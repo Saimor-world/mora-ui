@@ -1,6 +1,8 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
+jest.mock('@/lib/os-prototype/legacyApps', () => ({ ...jest.requireActual('@/lib/os-prototype/legacyApps'), openLegacyApp: jest.fn() }));
 
 jest.mock('@/lib/os-prototype/useCoreHealth', () => ({
   useCoreHealth: () => ({ data: { state: 'offline', build: null, environment: null }, isLoading: false }),
@@ -27,7 +29,8 @@ function renderShell(preview = false) {
 
 describe('OsShell navigation', () => {
   beforeEach(() => {
-    window.location.hash = '';
+    window.history.replaceState(null, '', '/os');
+    (openLegacyApp as jest.Mock).mockClear();
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
     // SAIMÔR's own organization: sees Finance, Labs and the classic surface. Customers: own test below.
     useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
@@ -40,6 +43,15 @@ describe('OsShell navigation', () => {
       expect(within(nav).getByRole('button', { name: label })).toBeInTheDocument();
     }
     expect(await screen.findByTestId('feature-today')).toBeInTheDocument();
+    expect(screen.getByTestId('legacy-shell-link')).toHaveAttribute('href', '/home?classic=1');
+  });
+
+  it('consumes a document handoff once through the existing pane after session boot', async () => {
+    window.history.replaceState(null, '', '/os?open_node=node-1#knowledge');
+    renderShell();
+    await waitFor(() => expect(openLegacyApp).toHaveBeenCalledWith('document', { nodeId: 'node-1' }));
+    expect(openLegacyApp).toHaveBeenCalledTimes(1);
+    expect(window.location.search).not.toContain('open_node');
   });
 
   it('navigates via manifests and reflects it in the hash', async () => {
