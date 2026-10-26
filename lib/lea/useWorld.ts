@@ -141,7 +141,7 @@ export function useWorld() {
       const cal = Boolean(d && isCalendarDept(d));
       let meta = p.kind === 'tasks'
         ? day.taskLine
-        : p.moons.length ? plural(p.moons.length, 'Ordner', 'Ordner') : 'noch leer';
+        : p.moons.length ? `${plural(p.moons.length, 'Ordner', 'Ordner')} · ${plural(c.items, 'Eintrag', 'Einträge')}` : 'noch leer';
       if (cal && upcoming.length) meta = plural(upcoming.length, 'Termin kommt', 'Termine kommen');
       if (cal && live) meta = live;
       const weight = p.kind === 'tasks' ? p.stars.length : c.folders + c.items + (cal ? upcoming.length : 0);

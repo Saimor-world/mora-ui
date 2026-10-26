@@ -18,7 +18,7 @@ import { useHorizonSources } from '@/lib/lea/useHorizonSources';
 import { useFinderActions } from '@/lib/lea/useFinderActions';
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { TaskHomeRow, TaskHomeSheet } from './TaskHome';
-import type { Star } from '@/lib/lea/finder';
+import { planetCounts, type Star } from '@/lib/lea/finder';
 import type { WorldTask } from '@/lib/lea/world';
 import { useWorld } from '@/lib/lea/useWorld';
 import { useIsPhone } from '@/lib/hooks/useIsPhone';
@@ -288,16 +288,17 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
             </>
           ) : null}
           <p className="fv-eyebrow" style={{ marginTop: 12 }}>Wo die Arbeit liegt</p>
+          <p className="wd-horizon__hint">Einträge in den Ordnern je Abteilung, gleiche Zahl wie am Planeten.</p>
           {finderPlanets.map((p) => {
-            const n = p.stars.length + p.moons.reduce((m, x) => m + x.stars.length, 0);
-            const max = Math.max(1, ...finderPlanets.map((q) => q.stars.length + q.moons.reduce((m, x) => m + x.stars.length, 0)));
+            const n = planetCounts(p).items;
+            const max = Math.max(1, ...finderPlanets.map((q) => planetCounts(q).items));
             return (
               <button key={p.id} type="button" className="wd-horizon__bar" onClick={() => setSelectedId(p.id)} data-testid={`horizon-bar-${p.id}`}>
-                <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b>{n}</b>
+                <span>{p.name}</span><i style={{ width: `${Math.round((n / max) * 100)}%` }} /><b title={`${n} Einträge in ${p.moons.length} Ordnern`}>{n}</b>
               </button>
             );
           })}
-          <p className="wd-horizon__foot">{finderPlanets.length} Bereiche · {counts.nodes - 1 - finderPlanets.length} Ordner und Einträge</p>
+          <p className="wd-horizon__foot">{finderPlanets.length} Abteilungen · {finderPlanets.reduce((n, p) => n + p.moons.length, 0)} Ordner · {finderPlanets.reduce((n, p) => n + planetCounts(p).items, 0)} Einträge</p>
         </aside>
       ) : null}
       {phone && !open && !selected ? <TaskHomeRow variant="chip" tasks={world.tasks} onOpen={() => setTaskSheet(true)} /> : null}

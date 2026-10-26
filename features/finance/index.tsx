@@ -79,7 +79,6 @@ export default function FinanceSurface({ preview }: FeatureSurfaceProps) {
             : blocker.state === 'no_session'
               ? (preview ? 'Lokale Vorschau: Finance zeigt ohne angemeldete Sitzung bewusst keine Zahlen – auch keine Beispielzahlen.' : 'Melde dich an, um belegte Finanzdaten zu sehen.')
               : blocker.state === 'no_company' ? 'Wähle ein aktives Unternehmen, damit Finance die richtige Scope-Prüfung machen kann.' : undefined}
-          detail={`Vertrag: ${blocker.path}`}
         />
       ) : hasSession ? (
         <div className="os-surface" style={{ padding: 'var(--os-space-5)', minHeight: 420 }} data-testid="finance-v2-embedded">
@@ -87,7 +86,8 @@ export default function FinanceSurface({ preview }: FeatureSurfaceProps) {
         </div>
       ) : null}
 
-      <ContractStrip contracts={contracts} />
+      {/* Endpunkt-Liste nur für Entwicklung; im Live-OS keine API-Pfade zeigen. */}
+      {process.env.NODE_ENV !== 'production' ? <ContractStrip contracts={contracts} /> : null}
 
       <Stack direction="row" gap={3} align="center" wrap>
         <Text variant="meta">Die alte Capital-App (hartkodierte Konten) bleibt unter Labs › Legacy erreichbar.</Text>

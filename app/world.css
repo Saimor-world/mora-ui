@@ -373,6 +373,7 @@
 .wd-horizon__bar b { margin-left: auto; font-weight: 500; }
 .wd-horizon__row:hover, .wd-horizon__bar:hover { background: rgba(111, 143, 120, .2); }
 .wd-horizon__foot { margin: 6px 0 0; font-size: var(--os-type-meta-size); color: var(--wd-muted); }
+.wd-horizon__hint { margin: 2px 0 6px; font-size: 11px; line-height: 1.4; color: var(--wd-muted); opacity: .8; }
 @media (max-width: 1279px) { .wd-horizon { display: none; } }
 .wd-planet .wd-active-tag { position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; }
 @media (max-width: 1023px) { .fv[data-phone='true'] .fv-star__name { max-width: 96px; } }

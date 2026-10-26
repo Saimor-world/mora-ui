@@ -1,6 +1,6 @@
 'use client';
-import React, { useMemo, useState } from 'react';
-import { ArrowLeft, ExternalLink, Sparkles } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ArrowLeft, ExternalLink, Inbox, Sparkles } from 'lucide-react';
 import { Button, Text } from '@/components/os-kit';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
@@ -24,6 +24,12 @@ export function MailClient({ items }: { items: PostMessage[] }) {
   const list = useMemo(() => visibleMail(items, filter), [items, filter]);
   const unread = unreadCount(items);
   const open = items.find((m) => m.id === openId) ?? null;
+  // Desktop: die erste ungelesene (sonst neueste) Mail gleich lesen statt leerer Fläche. Phone bleibt bei der Liste.
+  useEffect(() => {
+    if (openId || !list.length || typeof window === 'undefined' || !window.matchMedia?.('(min-width: 900px)').matches) return;
+    setOpenId((list.find((m) => !m.read) ?? list[0]).id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list.length]);
 
   return (
     <div className={`os-mail${open ? ' os-mail--reading' : ''}`} data-testid="post-mail">
@@ -69,7 +75,7 @@ export function MailClient({ items }: { items: PostMessage[] }) {
             <Text variant="meta" className="mt-3">MÔRA entwirft, gesendet wird nur von dir.</Text>
           </>
         ) : (
-          <div className="os-mail__pane-empty"><Text tone="default">Wähle eine Nachricht.</Text><Text variant="meta">{unread ? `${unread} ungelesen` : 'Alles gelesen.'}</Text></div>
+          <div className="os-mail__pane-empty"><Inbox size={22} aria-hidden className="os-mail__pane-empty-icon" /><Text tone="default">{list.length ? 'Nichts geöffnet.' : 'Hier ist gerade nichts.'}</Text><Text variant="meta">{unread ? `${unread} ungelesen` : 'Alles gelesen.'}</Text></div>
         )}
       </article>
     </div>

@@ -59,10 +59,10 @@ export default function KnowledgeSurface({ navigate, preview }: FeatureSurfacePr
           <Text variant="meta" className="mb-3">Antippen zeigt das Dokument als Stern im Universe.</Text>
           <div className="os-list">
             {worldDocs.slice(0, 8).map((d) => (
-              <button key={d.star.id} type="button" className="os-list-row w-full text-left" data-testid={`knowledge-doc-${d.star.id}`}
+              <button key={d.star.id} type="button" className="os-list-row os-doc-row w-full text-left" data-testid={`knowledge-doc-${d.star.id}`}
                 onClick={() => { showInUniverse({ planetId: d.planetId, moonId: d.moonId, starId: d.star.id }); navigate('universe'); }}>
-                <Text tone="default" className="truncate">{d.star.name}</Text>
-                <Text variant="meta">{d.planetName} · {d.moonName}</Text>
+                <Text tone="default" className="truncate min-w-0">{d.star.name}</Text>
+                <Text variant="meta" className="os-doc-row__where">{d.planetName} · {d.moonName}</Text>
               </button>
             ))}
           </div>
