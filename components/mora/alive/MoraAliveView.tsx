@@ -11,7 +11,7 @@ class SceneBoundary extends Component<{ children: ReactNode; fallback: ReactNode
   render() { return this.state.failed ? this.props.fallback : this.props.children; }
 }
 /** Shared public renderer + read-only OS adapter. Public previews never connect to CORE. */
-export default function MoraAliveView({ actual, live = false, compact = false }: { actual: CharacterSnapshot; live?: boolean; compact?: boolean }) {
+export default function MoraAliveView({ actual, live = false, compact = false, motionLimited = false }: { actual: CharacterSnapshot; live?: boolean; compact?: boolean; motionLimited?: boolean }) {
   const [preview, setPreview] = useState<CharacterState | null>(null);
   const [paused, setPaused] = useState(false);
   const [reduced, setReduced] = useState(true);
@@ -21,7 +21,7 @@ export default function MoraAliveView({ actual, live = false, compact = false }:
   const root = useRef<HTMLElement>(null);
   const interaction = useRef({ x: 0, y: 0, touchedAt: -Infinity });
   const snapshot = preview ? { state: preview, source: 'preview' as const } : actual;
-  const still = paused || reduced;
+  const still = paused || reduced || motionLimited;
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)');
     const changed = () => setReduced(query.matches); changed(); query.addEventListener('change', changed);
@@ -32,7 +32,7 @@ export default function MoraAliveView({ actual, live = false, compact = false }:
     return () => { query.removeEventListener('change', changed); document.removeEventListener('visibilitychange', visibility); observer?.disconnect(); };
   }, []);
   const fallback = <div className={styles.fallback}><p>3D ist hier nicht verfügbar.</p><p>MÔRAs Zustand bleibt lesbar. Du kannst die Ansicht neu laden.</p></div>;
-  return <section ref={root} className={`${styles.alive} ${compact ? styles.compact : ''}`} aria-label="MÔRA Alive Vorschau" data-character-state={snapshot.state} data-character-source={snapshot.source}>
+  return <section ref={root} className={`${styles.alive} ${compact ? styles.compact : ''}`} aria-label="MÔRA Alive Vorschau" data-still={still} data-character-state={snapshot.state} data-character-source={snapshot.source}>
     <header className={styles.header}>
       <div><span className={styles.eyebrow}>SAIMÔR / MÔRA ALIVE · V04</span><h1>Ein Licht. Ein Gegenüber.</h1></div>
       <Image src="/brand/saimor-sigil-alive-256.png" width={64} height={64} alt="Freigegebenes SAIMÔR-Sigil" className={styles.sigil} />
@@ -56,7 +56,7 @@ export default function MoraAliveView({ actual, live = false, compact = false }:
         <p role="status" aria-live="polite" className={styles.status}>{CHARACTER_LABEL[snapshot.state]}</p></div>
       <button type="button" aria-pressed={paused} onClick={() => setPaused(!paused)}>{paused ? 'Bewegung fortsetzen' : 'Bewegung pausieren'}</button>
     </div>
-    <p className={styles.hint}>{reduced ? 'Reduzierte Bewegung aktiv. Der Körper bleibt still.' : 'Bewege den Zeiger. Tippe in den Raum oder lade MÔRA zu dir ein.'}</p>
+    <p className={styles.hint}>{reduced || motionLimited ? 'Reduzierte Bewegung aktiv. Der Körper bleibt still.' : 'Bewege den Zeiger. Tippe in den Raum oder lade MÔRA zu dir ein.'}</p>
     <div className={styles.controls}>
       <button type="button" onClick={() => { interaction.current = { x: 0.8, y: 0.3, touchedAt: performance.now() }; }}>Zu mir</button>
       <label>Ausdruck ansehen<select aria-label="Character-Vorschau" value={preview ?? ''} onChange={e => setPreview(e.target.value ? e.target.value as CharacterState : null)}>

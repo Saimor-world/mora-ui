@@ -1,4 +1,16 @@
-# Validation — MÔRA Alive v03
+# Validation — MÔRA Alive v04
+
+## Website motion budget follow-up (2026-10-26)
+
+The shared view accepts a host-provided `motionLimited` preference. It combines this with
+manual pause and system reduced motion, keeping one canonical renderer. This lets the
+Website use its existing Lite signal on both its product hero and inspection route.
+State labels, expression selection and navigation remain usable while the body is still.
+The OS defaults remain unchanged. No CORE mapping or agent execution changes.
+
+V04 source `8949a5c5` passed full CI 40235274763 and six browser checks 40235274766.
+The Website pins this V04 body and now includes it in its actual `/mora` product hero;
+the older distribution holds documented below are historical, not the current state.
 
 ## Layered light revision
 
