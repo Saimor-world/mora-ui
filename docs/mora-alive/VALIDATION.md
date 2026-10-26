@@ -79,3 +79,24 @@ motion stable, no GPU nonfinite values or browser errors, mobile framing intact.
 existing renderer/browser matrix and review its actual captures before treating visual QA as done.
 Rollback: revert the four presentation files and re-export the previous immutable source to Website.
 No auth, CORE writes, middleware, environment or deployment workflow changes; no release approval.
+
+## Simple presence — approved visual direction, 26 October 2026
+
+The user preferred the reduced opal/pebble study: one smooth light volume, two small eyes and a
+separate jade stone. This supersedes the narrower flame-head candidate as the design direction.
+The bitmap study is reference only; no raster image is used as the interactive character.
+
+The existing loft generator now builds a single asymmetrical rounded volume (64 × 40 grid).
+The same renderer/lifecycle retains gaze, blinking, hovering, jade movement, states and host
+controls. Removed from the active scene: separate head/torso, flame crest, tail membranes,
+filaments, orbit trails, particles, mouth, glints and floor rings. A simple satin-opal shader
+reuses the existing palette, bloom compositor and jade material. Night-rest tilts/dims the
+whole volume instead of curling separate flame parts. No new dependencies, API, socket or
+backend logic. Risk A: reversible presentation-only change; authenticated CORE validation and
+physical-device performance remain outside this rendering check.
+
+Acceptance: actual body recognizable against the approved simplified study; two visible eyes,
+separate jade readable, all states render, no GPU nonfinite values, stable reduced motion and
+no mobile overflow. Existing renderer/browser matrix provides captures for visual review.
+Local TypeScript and targeted lint pass. Source is exported immutably to Website.
+Rollback: re-export canonical source bdef1aced365b52ada55f907db49d8651560da77.
