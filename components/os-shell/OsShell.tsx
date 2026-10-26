@@ -166,7 +166,7 @@ export function OsShell({ preview }: { preview: boolean }) {
           Lokale Vorschau ohne CORE-Sitzung · keine echten Daten · nur auf localhost aktiv
         </div>
       ) : null}
-      <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh - 30px)' } : undefined}>
+      <div className="os-shell" data-place={active.id} style={preview ? { height: 'calc(100dvh / var(--mora-interface-scale, 1) - 30px)' } : undefined}>
         <OsAtmosphere mode={atmosphere} look={look} />
 
         <main className="os-shell__main" id="os-main">

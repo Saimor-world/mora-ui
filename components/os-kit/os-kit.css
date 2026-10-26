@@ -72,11 +72,13 @@
 .os-dialog { width: min(520px, 100%); background: var(--os-canvas-raised); border: 1px solid var(--os-hairline-strong); border-radius: var(--os-radius-xl); padding: var(--os-space-6); color: var(--os-text); }
 
 /* Shell layout */
-.os-shell { position: relative; display: grid; height: 100dvh; width: 100vw; overflow: hidden; grid-template-columns: var(--os-rail-width) minmax(0, 1fr) auto; }
+/* Percent width follows the available layout width under body zoom; viewport
+   lengths are zoomed again, so compensate the viewport-based height explicitly. */
+.os-shell { position: relative; display: grid; height: calc(100dvh / var(--mora-interface-scale, 1)); width: 100%; overflow: hidden; grid-template-columns: var(--os-rail-width) minmax(0, 1fr) auto; }
 .os-shell__rail { position: relative; z-index: 2; display: flex; flex-direction: column; gap: var(--os-space-1); padding: var(--os-space-5) var(--os-space-3); border-right: 1px solid var(--os-hairline); }
 .os-shell__main { position: relative; z-index: 1; overflow-y: auto; overflow-x: hidden; }
 .os-shell__content { max-width: var(--os-content-max); margin: 0 auto; padding: var(--os-space-8) var(--os-space-8) var(--os-space-16); }
-.os-shell__mora { position: relative; z-index: 3; width: var(--os-mora-width); height: 100dvh; display: flex; flex-direction: column; }
+.os-shell__mora { position: relative; z-index: 3; width: var(--os-mora-width); height: 100%; display: flex; flex-direction: column; }
 .os-shell__bottom { display: none; }
 .os-shell__topbar { display: flex; align-items: center; justify-content: space-between; gap: var(--os-space-3); padding: var(--os-space-4) var(--os-space-8) 0; max-width: var(--os-content-max); margin: 0 auto; }
 @media (max-width: 899px) {
