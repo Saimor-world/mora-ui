@@ -26,6 +26,9 @@ export interface OrbitOptions {
   phone: boolean;
   /** Name und Anzahl Monde/Sterne je Planet: damit rechnet die Kollisionsprüfung (Beschriftung, Mondbogen). */
   labels?: PlanetLabel[];
+  /** Belegte Spalten links/rechts (Karten, Horizont, Fokus): dort liegt kein Planet und kein Name. */
+  insetLeft?: number;
+  insetRight?: number;
 }
 
 export interface PlanetLabel { name: string; meta?: string; moons?: number; stars?: number }
@@ -38,14 +41,20 @@ const GAP = 16;
 const TILT = 0.55;
 /** Bahnen bleiben flach (ry/rx ≥ TILT) und am Computer ruhig in der Mitte, nicht am Rand. */
 const MAX_RX = 440;
+/** Breite Flächen (Full HD): flachere Bahnen und Bahnbreite aus der Breite, damit das Feld gefüllt wird. */
+const WIDE_TILT = 0.45;
+const WIDE_ASPECT = 1.4;
+const WIDE_RX_SHARE = 0.42;
+/** Referenzbreite für den Größenfaktor: schmale Flächen wachsen nicht mit der Höhe allein. */
+const SCALE_WIDTH = 1180;
 
 /**
  * Größenfaktor aus der Höhe der Fläche: 1 bei ~640 px (Laptop), bis 1,35 bei Full HD
  * (1920×1080, Fläche ~860 px hoch). Am Handy immer 1.
  */
-export function orbitScale(height: number, phone: boolean): number {
+export function orbitScale(height: number, phone: boolean, width = Infinity): number {
   if (phone) return 1;
-  return Math.round(Math.max(1, Math.min(1.35, height / 640)) * 100) / 100;
+  return Math.round(Math.max(1, Math.min(1.35, height / 640, width / SCALE_WIDTH)) * 100) / 100;
 }
 
 /** MÔRA ist immer der größte Körper. */
@@ -76,8 +85,17 @@ function startAngle(index: number, count: number, ring: number): number {
 }
 
 export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
+  const insetLeft = Math.max(0, opts.insetLeft ?? 0);
+  const insetRight = Math.max(0, opts.insetRight ?? 0);
+  const width = Math.max(0, opts.width - insetLeft - insetRight);
+  // In der freien Spalte rechnen, danach die Mitte in die Fläche zurückschieben.
+  const local = layoutInFrame({ ...opts, width });
+  return insetLeft ? { ...local, cx: local.cx + insetLeft } : local;
+}
+
+function layoutInFrame(opts: OrbitOptions): OrbitLayout {
   const { width, height, weights, phone } = opts;
-  const scale = orbitScale(height, phone);
+  const scale = orbitScale(height, phone, width);
   const mora = moraSize(phone, scale);
   const maxWeight = Math.max(0, ...weights);
   const sizes = weights.map((w) => planetSize(w, maxWeight, phone, scale));
@@ -93,18 +111,21 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
 
   // Außen: so weit, dass Planet und Name noch in der Fläche liegen.
   const outerRy = Math.max(0, Math.min(height - cy, cy) - biggest / 2 - labelSpace);
-  const outerRx = Math.max(0, Math.min(cx - Math.max(biggest / 2, labelHalf) - 8, outerRy / TILT, MAX_RX * scale));
+  const wide = !phone && width / Math.max(1, height) >= WIDE_ASPECT;
+  const tilt = wide ? WIDE_TILT : TILT;
+  const maxRx = wide ? Math.max(MAX_RX * scale, width * WIDE_RX_SHARE) : MAX_RX * scale;
+  const outerRx = Math.max(0, Math.min(cx - Math.max(biggest / 2, labelHalf) - 8, outerRy / tilt, maxRx));
   // Innen: frei von MÔRA in jeder Richtung. Namen stehen oben über, unten unter dem Planeten
   // (nie zu MÔRA hin); seitlich braucht ein Name seine halbe Breite neben MÔRA.
   const clear = mora / 2 + biggest / 2 + GAP;
   const sideClear = mora / 2 + labelHalf + 8;
   const innerRx = Math.min(outerRx, Math.max(clear, sideClear, outerRx * (counts.length > 1 ? 0.55 : 1)));
-  const innerRy = Math.min(outerRy, Math.max(clear, innerRx * TILT));
+  const innerRy = Math.min(outerRy, Math.max(clear, innerRx * tilt));
 
   const rings: OrbitRing[] = counts.map((_, i) => {
     const t = counts.length === 1 ? 1 : i / (counts.length - 1);
     const rx = counts.length === 1 ? Math.max(innerRx, Math.min(outerRx, Math.max(clear * 1.6, outerRx * 0.8))) : innerRx + (outerRx - innerRx) * t;
-    const ry = counts.length === 1 ? Math.max(innerRy, Math.min(outerRy, rx * TILT)) : innerRy + (outerRy - innerRy) * t;
+    const ry = counts.length === 1 ? Math.max(innerRy, Math.min(outerRy, rx * tilt)) : innerRy + (outerRy - innerRy) * t;
     // Handy (hochkant): Bahnen dürfen höher als breit sein, sonst drängen sich Namen in der Mitte.
     return { rx, ry: phone ? Math.max(Math.min(ry, rx), Math.min(outerRy * (0.62 + 0.38 * t), rx * 1.6)) : Math.min(ry, rx), period: 120 + i * 30 };
   });
@@ -118,7 +139,7 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
   // Ruhig zuerst: alle Planeten gleichmäßig auf EINER Bahn (gleiche Winkelabstände). Nur wenn das
   // nicht kollisionsfrei passt, greifen mehrere Bahnen und der Koordinatenabstieg.
   if (n >= 2 && n <= (phone ? 7 : 8)) {
-    const ry1 = phone ? outerRy * 0.92 : Math.min(outerRy, outerRx * TILT);
+    const ry1 = phone ? outerRy * 0.92 : Math.min(outerRy, outerRx * tilt);
     // Organisch statt Sechseck: Gewicht zieht nach innen (bis 3 Bahnen, ±7 %), gleiche Gewichte
     // wechseln sanft; dazu ein kleiner fester Winkelversatz je Planet. Größe folgt der Bahn leicht.
     const order = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w || a.i - b.i);

@@ -35,10 +35,14 @@ export interface PlanetTraits {
   folders: number; activity: number; overdue: number; open: number; texture: 0 | 1 | 2 | 3;
   /** Echte Zusatzinfos (nur gesetzt, wenn vorhanden): letzte Änderung, neuester Eintrag, nächste fällige Aufgabe. */
   lastAt?: string; latest?: string; nextTask?: { title: string; due?: string };
+  /** Mails, die CORE diesem Bereich zugeordnet hat (Knoten type=mail_message in seinen Ordnern), letzte 24 h. Nur gesetzt, wenn > 0. */
+  newMails?: number;
+  /** Davon ungelesen – nur, wenn CORE metadata.read als boolean liefert. */
+  unreadMails?: number;
 }
 
 /** Reine Funktion: Besonderheiten eines Planeten aus Ordnern, Einträgen und Aufgaben. */
-export function planetTraits(id: string, folderIds: string[], nodes: { folder_id?: string | null; created_at?: string | null; updated_at?: string | null; name?: string | null; title?: string | null }[], tasks: WorldTask[], now = new Date()): PlanetTraits {
+export function planetTraits(id: string, folderIds: string[], nodes: { folder_id?: string | null; created_at?: string | null; updated_at?: string | null; name?: string | null; title?: string | null; type?: string | null; metadata?: Record<string, unknown> | null }[], tasks: WorldTask[], now = new Date()): PlanetTraits {
   const set = new Set(folderIds);
   const week = now.getTime() - 7 * 864e5;
   const today = localISO(now);
@@ -51,11 +55,17 @@ export function planetTraits(id: string, folderIds: string[], nodes: { folder_id
     const t = Date.parse(n.updated_at || n.created_at || '');
     if (Number.isFinite(t) && t > lastT) { lastT = t; lastAt = n.updated_at || n.created_at || undefined; latest = (n.name || n.title || '').trim() || undefined; }
   }
+  const day = now.getTime() - 864e5;
+  const mails = nodes.filter((n) => n.type === 'mail_message' && n.folder_id && set.has(n.folder_id) && Date.parse(n.created_at || '') >= day);
+  const unreadKnown = mails.filter((n) => typeof n.metadata?.read === 'boolean');
+  const unread = unreadKnown.filter((n) => n.metadata?.read === false).length;
   const dated = mine.filter((t) => t.due_date).sort((a, b) => String(a.due_date).localeCompare(String(b.due_date)));
   const nt = dated[0] ?? mine[0];
   const nextTask = nt && (nt.title || '').trim() ? { title: nt.title!.trim(), due: nt.due_date ? nt.due_date.slice(0, 10) : undefined } : undefined;
   return {
     lastAt, latest, nextTask,
+    ...(mails.length ? { newMails: mails.length } : {}),
+    ...(unread ? { unreadMails: unread } : {}),
     folders: folderIds.length,
     activity: Math.min(1, recent / 8),
     overdue: mine.filter((t) => t.due_date && t.due_date.slice(0, 10) < today).length,

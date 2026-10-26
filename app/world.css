@@ -66,7 +66,7 @@
 .wd-home__date { font-size: var(--os-type-meta-size); line-height: 16px; color: var(--wd-muted); }
 .wd-home__sentence { font-size: 28px; line-height: 34px; font-weight: 500; color: var(--wd-text); letter-spacing: -.01em; }
 .wd-home__sub { margin-top: 8px; font-size: var(--os-type-body-size); line-height: 22px; color: var(--wd-soft); }
-.wd-home__cta { align-self: flex-start; min-height: 48px; padding: 0 24px; border-radius: var(--os-radius-pill); border: 0; background: var(--wd-jade); color: #101410; font-size: var(--os-type-body-size); font-weight: 600; cursor: pointer; transition: transform var(--os-motion-fast) var(--os-motion-ease); }
+.wd-home__cta { align-self: flex-start; min-height: 48px; padding: 0 24px; border-radius: var(--os-radius-pill); background: rgba(247, 233, 203, .12); color: #f7e9cb; border: 1px solid rgba(217, 185, 138, .42); font-size: var(--os-type-body-size); font-weight: 600; cursor: pointer; transition: transform var(--os-motion-fast) var(--os-motion-ease); }
 .wd-home__cta:active { transform: scale(.97); }
 .wd-home__cta:focus-visible { outline: 2px solid #9fb39a; outline-offset: 3px; }
 .wd-eyebrow { font-size: var(--os-type-meta-size); line-height: 16px; letter-spacing: .12em; text-transform: uppercase; color: var(--wd-muted); }
@@ -737,9 +737,9 @@
 .os-shell[data-place='universe'] .os-shell__main::before {
   content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(5, 6, 8, .38), rgba(5, 6, 8, .12) 40%, rgba(5, 6, 8, .08) 70%, rgba(5, 6, 8, .2)),
     url('/universe/deep-space-warm.jpg') center / cover no-repeat;
-  filter: brightness(1.5) saturate(.9) contrast(.98);
+  /* os-polish-v1: etwas dunkler über den Filter statt über eine dunkle Fläche (Marius: kein Overlay). */
+  filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); /* os-redesign 26.10.: Nebel ruhiger und wärmer, weiter ohne Overlay. */
 }
 .wd-universe { background: transparent !important; }
 .wd-universe::before, .wd-universe::after { content: ''; position: absolute; pointer-events: none; z-index: -1; }
@@ -829,3 +829,4 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 .wd-pulse__t { font-size: 12.5px; color: rgba(242, 238, 229, .9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 .wd-pulse__m { font-size: 10.5px; color: rgba(242, 238, 229, .5); }
 @media (max-width: 1279px) { .wd-pulse { display: none; } }
+

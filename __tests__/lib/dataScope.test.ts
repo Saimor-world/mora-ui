@@ -6,6 +6,7 @@ import { usePaneStore } from '@/lib/store/paneStore';
 import { useActivityStore } from '@/lib/store/activityStore';
 import { useMoraConversation } from '@/features/mora/data/conversationStore';
 import { useNavStore } from '@/lib/store/navStore';
+import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 
 beforeEach(() => {
   useDemoStore.getState().setDemoCompany(null);
@@ -40,6 +41,12 @@ it('closes old windows and recent-item payloads synchronously when the company c
   useDemoStore.getState().setDemoCompany('demo');
   expect(usePaneStore.getState().panes).toHaveLength(0);
   expect(useActivityStore.getState().recentItems).toHaveLength(0);
+});
+
+it('does not carry Grok mail handoffs or MÔRA drafts into a demo', () => {
+  useOsShellStore.setState({ moraDraft: 'Private HQ mail draft', postOpenId: 'hq-mail', universeFocus: 'hq-dept' });
+  useDemoStore.getState().setDemoCompany('demo');
+  expect(useOsShellStore.getState()).toMatchObject({ moraDraft: null, postOpenId: null, universeFocus: null });
 });
 
 it('ignores an old answer even after returning to the original company', () => {

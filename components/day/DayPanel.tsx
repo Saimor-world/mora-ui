@@ -21,7 +21,7 @@ import { localISO, shortDate, type WorldTask } from '@/lib/lea/world';
  * Aufgaben und Terminstatus werden von CORE bestätigt.
  * Jede Änderung zeigt das Universe sofort (gleiche Daten, gleicher Store).
  */
-export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: string) => void; compact?: boolean }) {
+export function DayPanel({ onAskMora, compact = false, hideWhenUnavailable = false }: { onAskMora: (text: string) => void; compact?: boolean; hideWhenUnavailable?: boolean }) {
   const world = useWorld();
   const phases = useDayStore((s) => s.phases);
   const setPhase = useDayStore((s) => s.setPhase);
@@ -62,6 +62,8 @@ export function DayPanel({ onAskMora, compact = false }: { onAskMora: (text: str
     );
   }
   if (world.failed || world.dayUnavailable) {
+    // Heute fasst leere/unlesbare Zustände in einer ruhigen Statuszeile zusammen.
+    if (hideWhenUnavailable) return null;
     return (
       <section className="dy" aria-label="Dein Tag" data-testid="day-error">
         <div className="dy-card dy-card--error" role="status">

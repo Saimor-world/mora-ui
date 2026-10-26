@@ -3,7 +3,8 @@ import { localISO, shortDate } from '@/lib/lea/world';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import React from 'react';
 import { CalendarDays, Inbox } from 'lucide-react';
-import { Button, SampleTag, FailureState, Loading, ResponsiveGrid, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
+import { MailClient } from './MailClient';
+import { Button, SampleTag, FailureState, Loading, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import type { FeatureSurfaceProps } from '../types';
@@ -52,20 +53,9 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           Was hereinkommt und was ansteht. MÔRA hilft beim Antworten – senden tust du.
         </Text>
       </header>
-      <ResponsiveGrid columns={2}>
-        <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" onClick={() => openLegacyApp('mail')}>Postfach öffnen</Button>}>
-          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => (
-            <div className="os-list">
-              {items.slice(0, 8).map((m) => (
-                <div key={m.id} className="os-list-row os-mail-row">
-                  <span className="os-mail-avatar" aria-hidden>{String(m.from_addr || m.from || '?').charAt(0).toUpperCase()}</span>
-                  <Stack gap={0} className="min-w-0 flex-1"><Text tone="default" className="truncate">{m.subject || '(ohne Betreff)'}</Text><Text variant="meta" className="truncate">{m.from_addr || m.from}</Text>{m.snippet ? <Text variant="meta" className="truncate">{m.snippet}</Text> : null}</Stack>
-                  {m.read === false ? <Status tone="info">neu</Status> : null}
-                  <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setMoraDraft(`Fasse zusammen und schlage eine Antwort vor: „${m.subject || ''}“`); useOsShellStore.getState().setMoraOpen(true); }} aria-label={`Mit MÔRA: ${m.subject || ''}`}>Mit MÔRA</Button>
-                </div>
-              ))}
-            </div>
-          )} />
+      <div className="os-post-grid">
+        <Column icon={<Inbox size={16} />} title="Posteingang" action={<Button size="sm" variant="ghost" onClick={() => openLegacyApp('mail')}>Im Postfach öffnen</Button>}>
+          <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} />} />
         </Column>
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
           <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
@@ -76,7 +66,7 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
             </div>
           )} />
         </Column>
-      </ResponsiveGrid>
+      </div>
       {/* V1.5: Kalender-Fäden aus dem Legacy-Home (CalendarContinuity, /v3/continuity) – vorbereitende Aufgaben zu Terminen, nur mit deiner Freigabe. */}
       {sample ? (
         <Surface padding={5} data-testid="post-continuity">

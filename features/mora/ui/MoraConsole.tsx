@@ -5,6 +5,8 @@ import { Button, Dialog, Input, Stack, Status, Surface, Text, MoraStone, cx } fr
 import { getFeature } from '@/features/registry';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
+import { useSessionStore } from '@/lib/store/sessionStore';
 import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { useMoraConversation } from '../data/conversationStore';
 import { useMoraSend } from '../data/useMoraSend';
@@ -33,6 +35,10 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
   const turns = useMoraConversation((s) => s.scope === scope ? s.turns : NO_TURNS);
   const send = useMoraSend({ featureId: activeFeatureId, contextLabel, detail: surfaceContext });
   const health = useCoreHealth();
+  const internal = useIsSaimorInternal();
+  const hasSession = useSessionStore((st) => Boolean(st.user?.tenant_id));
+  // Nightwatch ist SAIMÔR-intern (wie die Heute-Karte); Kund:innen sehen den Eintrag nicht.
+  const nightwatchAvailable = internal && hasSession;
   const [draft, setDraft] = useState('');
   const [confirm, setConfirm] = useState<MoraProposal | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -99,6 +105,15 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
                   </Stack>
                 </Surface>
               ))}
+              {nightwatchAvailable ? (
+                <Surface interactive padding={3} onClick={() => useOsShellStore.getState().setNightwatchOpen(true)} data-testid="mora-ask-nightwatch">
+                  <Stack direction="row" gap={2} align="center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="/nightwatch/eule.png" alt="" width={15} height={18} style={{ imageRendering: 'pixelated' }} />
+                    <Text variant="meta" tone="muted">Frag Nightwatch: Was war heute Nacht?</Text>
+                  </Stack>
+                </Surface>
+              ) : null}
             </Stack>
           </Stack>
         ) : (

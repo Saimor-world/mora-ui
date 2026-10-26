@@ -3,7 +3,8 @@ import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
-import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
+import { MoraMark } from '@/components/world/MoraSpirit';
+import { Button, Divider, Loading, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
 import { osCssVariables, osPhaseVariables } from '@/lib/design/osTokens';
 import { usePhase } from '@/lib/os-prototype/usePhase';
@@ -23,6 +24,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
+import { NightwatchVisit } from '@/components/nightwatch/NightwatchVisit';
 import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, DemoBanner, DemoSwitch, StatusMenu } from './ContextCapsule';
@@ -173,7 +175,7 @@ export function OsShell({ preview }: { preview: boolean }) {
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
               <StatusMenu org={org} userName={userName} role={role ? ROLE_WORD[role] ?? null : null} internal={internalUser} coreOk={health.isLoading || online}
                 core={internal || preview || (!health.isLoading && !online) ? (health.isLoading ? 'CORE wird geprüft' : online ? 'CORE erreichbar' : internal || preview ? 'CORE nicht erreichbar' : 'Keine Verbindung') : null} />
-              <Button size="sm" className="os-shell__mora-toggle" icon={<MoraStone size={18} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
+              <Button size="sm" className="os-shell__mora-toggle" icon={<MoraMark size={16} />} aria-pressed={moraOpen} onClick={() => setMoraOpen(!moraOpen)} data-testid="mora-toggle">
                 MÔRA
               </Button>
             </Stack>
@@ -227,6 +229,7 @@ export function OsShell({ preview }: { preview: boolean }) {
       </div>
 
       {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
+      <NightwatchVisit enabled={Boolean(internal) && !preview} />
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}

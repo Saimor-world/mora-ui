@@ -24,7 +24,9 @@ export function useActiveCompanyIsDemo(): boolean {
         ctxClient ?? standaloneClient,
     );
     if (explicitDemo) return true; // Fail closed while a selected demo is loading or unavailable.
-    if (!activeId || !Array.isArray(data)) return false;
+    // Unknown company metadata must not briefly enable HQ-only feeds (owl,
+    // finance, provider state) while a default demo is still being resolved.
+    if (!activeId || !Array.isArray(data)) return true;
     return Boolean(demoCompaniesForTenant(data, tenantId).find((c) => c.id === activeId));
 }
 

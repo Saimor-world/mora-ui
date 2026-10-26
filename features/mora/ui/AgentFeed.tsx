@@ -59,7 +59,7 @@ function ago(d: Date | null): string {
   return m < 1 ? 'gerade eben' : m < 60 ? `vor ${m} min` : m < 1440 ? `vor ${Math.round(m / 60)} h` : d.toLocaleDateString('de-DE');
 }
 
-export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean }) {
+export function AgentFeed({ live, demo, limit = 8, compact = false, hideWhenEmpty = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean; hideWhenEmpty?: boolean }) {
   const company = useScopeCompanyId();
   const scope = useDataScopeKey();
   const demoCompany = useDemoStore((s) => s.demoCompanyId);
@@ -76,6 +76,8 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
   });
   const items = live ? (demoCompany ? [] : q.data || []) : demo ? DEMO_THOUGHTS.slice(0, limit) : [];
   const sample = !live && demo;
+  // Heute zeigt den Feed nur mit echtem Inhalt; leer/Fehler fasst die Statuszeile zusammen.
+  if (hideWhenEmpty && (live ? q.isLoading || q.isError || !items.length : !items.length)) return null;
 
   const body = live && demoCompany ? <Empty compact title="Noch kein eigener Demo-Aktivitätsverlauf" copy="HQ-Aktivitäten werden in diesem Arbeitsbereich nicht angezeigt." />
     : live && q.isLoading ? <Loading lines={2} />

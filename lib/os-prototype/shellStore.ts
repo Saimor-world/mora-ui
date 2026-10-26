@@ -1,5 +1,6 @@
 'use client';
 import { create } from 'zustand';
+import { getDataScopeKey, subscribeDataScope } from '@/lib/store/dataScope';
 
 /**
  * UI-only state of the OS prototype shell (no server data, no persistence).
@@ -8,11 +9,17 @@ import { create } from 'zustand';
 export interface OsShellState {
   activeFeatureId: string;
   moraOpen: boolean;
+  /** Nightwatch persona (second voice next to MÔRA, same CORE truth). */
+  nightwatchOpen: boolean;
+  setNightwatchOpen(open: boolean): void;
   paletteOpen: boolean;
   /** Free-text context a surface publishes for MÔRA (e.g. "Finance · Profit Center"). */
   surfaceContext: string | null;
   /** Text handed to MÔRA (e.g. from the command palette); the user still presses send. */
   moraDraft: string | null;
+  /** Mail, die Post beim nächsten Öffnen direkt zeigt (aus Heute › Braucht dich). */
+  postOpenId: string | null;
+  setPostOpenId: (id: string | null) => void;
   setMoraDraft(text: string | null): void;
   setActiveFeature(id: string): void;
   setMoraOpen(open: boolean): void;
@@ -89,9 +96,13 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setSettingsSource: (settingsSource) => set({ settingsSource }),
   activeFeatureId: 'today',
   moraOpen: false,
+  nightwatchOpen: false,
+  setNightwatchOpen: (open) => set({ nightwatchOpen: open }),
   paletteOpen: false,
   surfaceContext: null,
   moraDraft: null,
+  postOpenId: null,
+  setPostOpenId: (id) => set({ postOpenId: id }),
   setMoraDraft: (text) => set({ moraDraft: text }),
   setActiveFeature: (id) => set({ activeFeatureId: id, surfaceContext: null }),
   setMoraOpen: (open) => set({ moraOpen: open }),
@@ -107,3 +118,16 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   shortcutsOpen: false,
   setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 }));
+
+let shellScope = getDataScopeKey();
+subscribeDataScope(() => {
+  const next = getDataScopeKey();
+  if (next === shellScope) return;
+  shellScope = next;
+  // Incoming mail/planet handoffs and drafted MÔRA prompts contain company
+  // context. Appearance/audio preferences can stay across workspaces.
+  useOsShellStore.setState({
+    moraDraft: null, postOpenId: null, universeFocus: null, knowledgeQuery: null,
+    surfaceContext: null, settingsSource: null, nightwatchOpen: false,
+  });
+});
