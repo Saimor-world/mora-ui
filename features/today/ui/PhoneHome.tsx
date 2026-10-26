@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { Loading, MoraStone, StateView } from '@/components/os-kit';
+import { Loading, MoraStone } from '@/components/os-kit';
 import { DayPanel } from '@/components/day/DayPanel';
 import { WorldPlanetSphere } from '@/components/world/WorldPlanetSphere';
 import { useWorld } from '@/lib/lea/useWorld';
@@ -45,7 +45,6 @@ export function PhoneHome({ greeting, firstName, navigate, onAskMora }: {
       </header>
 
       {world.loading ? <Loading lines={3} label="Dein Tag wird geladen" /> : null}
-      {dayUnavailable ? <StateView compact kind="offline" title="Dein Tag ist gerade nicht lesbar" copy="Der Kalender- oder Aufgabenstand ist nicht vollständig bestätigt." /> : null}
 
       {/* Termine stehen genau einmal da: im Tagesplan darunter. */}
 
