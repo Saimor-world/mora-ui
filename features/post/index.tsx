@@ -58,8 +58,8 @@ export default function PostSurface({ preview }: FeatureSurfaceProps) {
           <QueryBody q={inbox} subject="/v3/mail/messages" empty="Posteingang leer" render={(items) => <MailClient items={items} />} />
         </Column>
         <Column icon={<CalendarDays size={16} />} title="Termine" action={<Button size="sm" onClick={() => openLegacyApp('calendar')}>Kalender öffnen</Button>}>
-          <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine Termine" render={(items) => (
-            <div className="os-list">
+          <QueryBody q={calendar} subject="/v3/calendar/events" empty="Keine anstehenden Termine im Kalender." render={(items) => (
+            items.filter((e) => !e.date || String(e.date) >= today).length === 0 ? <Text variant="meta" className="os-post-empty">Keine anstehenden Termine im Kalender.</Text> : <div className="os-list">
               {items.filter((e) => !e.date || String(e.date) >= today).slice(0, 8).map((e) => (
                 <div key={e.id} className="os-list-row"><Text tone="default" className="truncate">{e.title}</Text><Text variant="meta">{postDate(String(e.date || ''), today)}{e.time ? ` · ${e.time} Uhr` : ''}</Text></div>
               ))}
