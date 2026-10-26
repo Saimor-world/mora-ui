@@ -20,16 +20,16 @@ import { WorldPlanetSphere } from './WorldPlanetSphere';
 /** Handy: unten liegt die MÔRA-Eingabe über dem Feld – Planeten und Labels bleiben darüber. */
 const ASK_RESERVE_PHONE = 212; // Frag-MÔRA-Leiste + Dock + Zuordnen-Chip (44 px + Luft) liegen über dem unteren Feldrand (gemessen bei 390×844)
 /** Computer: die MÔRA-Eingabe (52 px, 24 px über dem Rand) plus Luft – kein Planet liegt darunter. */
-const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
+const ASK_RESERVE_DESKTOP = 160; // + eine Zeile für MÔRAs Satz direkt über der Eingabe
 
 /** Phone: Luft unter dem Seitenkopf, damit obere Planetenlabels ihn nicht berühren. */
 const PHONE_TOP = 26;
 /** Ab dieser Fensterbreite stehen Karten links und Horizont/Fokus rechts (siehe world.css, 1279px). */
 const SIDE_COLUMNS_MIN_VW = 1280;
 /** Karten links: left 88 px + 248 px Breite + 16 px Luft. */
-export const PULSE_RESERVE = 352;
+export const PULSE_RESERVE = 268;
 /** Horizont rechts: right 20 px + 260 px + 16 px Luft. */
-export const HORIZON_RESERVE = 296;
+export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
@@ -225,7 +225,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       ) : null}
       {layout && moraLine ? (
         // MÔRAs Satz direkt über der Eingabe, unterhalb der Bahnen: verdeckt weder Planeten noch Beschriftungen.
-        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 92 }} onClick={onMora} data-testid="world-mora-line">
+        <button type="button" className="wd-mora-line" style={phone ? { left: layout.cx, top: 16 } : { left: layout.cx, top: 'auto', bottom: 106 }} onClick={onMora} data-testid="world-mora-line">
           {moraLine}
         </button>
       ) : null}
