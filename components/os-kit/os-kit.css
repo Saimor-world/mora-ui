@@ -575,13 +575,18 @@
 .os-station-signal .os-mail-ref__subject { white-space: normal; }
 
 /* Demo-Schalter (nur SAIMÔR-HQ) */
-.os-context__demoswitch select {
-  min-height: 32px; border-radius: 999px; padding: 0 10px; font-size: 12px;
-  background: rgba(255,255,255,0.04); color: var(--os-text-muted, inherit); border: 1px solid rgba(255,255,255,0.10);
-  max-width: 150px; text-overflow: ellipsis; cursor: pointer;
-}
-.os-context__demoswitch select:hover { color: var(--os-text, inherit); border-color: rgba(255,255,255,0.2); }
-@media (max-width: 640px) { .os-context__demoswitch select { min-height: 40px; max-width: 92px; padding: 0 8px; } }
+.os-context__demoswitch { position: relative; }
+.os-company-pill { display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 10px 0 4px; border-radius: 999px; border: 0; background: transparent; color: var(--os-text-muted); font-size: 12px; letter-spacing: .02em; cursor: pointer; transition: background .15s, color .15s; }
+.os-company-pill:hover, .os-company-pill[aria-expanded="true"] { background: rgba(255,255,255,0.07); color: var(--os-text); }
+.os-company-pill__mark { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #2a1f12; background: linear-gradient(140deg, #f0c98a, #d9a35a); }
+.os-company-pill__name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.os-company-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 60; min-width: 220px; padding: 6px; border: 1px solid var(--os-glass-edge); border-radius: var(--os-radius-lg); background: var(--os-glass-strong); backdrop-filter: var(--os-glass-filter); }
+.os-company-options { display: flex; flex-direction: column; gap: 2px; }
+.os-company-options__label { padding: 6px 10px 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--os-text-muted); }
+.os-company-options button { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 36px; padding: 0 10px; border: 0; border-radius: 10px; background: transparent; color: var(--os-text); font-size: 13px; text-align: left; cursor: pointer; }
+.os-company-options button:hover { background: rgba(255,255,255,0.07); }
+.os-company-options em { font-style: normal; color: var(--os-text-muted); }
+
 
 /* Ruhige Kopfzeile (24.10.2026): Status-Menü statt Chips, Demo-Band. */
 .os-status { position: relative; }
@@ -642,6 +647,8 @@
 .os-mail__row.is-unread .os-mail__from, .os-mail__row.is-unread .os-mail__subject { color: var(--os-text); font-weight: 600; }
 .os-mail__pane { min-width: 0; border-left: 1px solid var(--os-hairline); padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
 .os-mail__pane-empty { margin: auto; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.os-mail__pane-empty { align-items: center; opacity: .85; }
+.os-mail__pane-empty-icon { color: var(--os-text-muted); opacity: .6; margin-bottom: 6px; }
 .os-mail__back { display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--os-text-muted); }
 .os-mail__pane-subject { font-size: 20px; line-height: 1.3; font-weight: 600; color: var(--os-text); margin: 0; }
 .os-mail__pane-meta { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--os-text); }
@@ -709,3 +716,10 @@
   .os-shell__topbar { gap: 8px; }
   .os-shell__topbar > * { min-width: 0; }
 }
+
+/* MÔRA-Vorschläge: ruhige Textzeilen statt Karten. */
+.os-mora-suggest { display: flex; flex-direction: column; border-top: 1px solid var(--os-hairline); }
+.os-mora-suggest button { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 4px; border: 0; border-bottom: 1px solid var(--os-hairline); background: transparent; color: var(--os-text-muted); font-size: 14px; text-align: left; cursor: pointer; transition: color .15s, padding .15s; }
+.os-mora-suggest button:hover { color: var(--os-text); padding-left: 8px; }
+.os-mora-suggest button svg { flex: 0 0 auto; opacity: .55; }
+.os-doc-row__where { white-space: nowrap; flex: 0 0 auto; }

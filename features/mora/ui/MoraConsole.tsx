@@ -80,7 +80,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
       <Stack direction="row" gap={2} wrap className="mt-4" aria-label="MÔRA Status">
         {!health.isLoading && health.data?.state !== 'online' ? <Status tone="warning">gerade nicht erreichbar</Status> : null}
         {send.isPending ? <Status tone={workState.tone}>{workState.label}</Status> : null}
-        <Status tone="info" title="MÔRA führt nichts ohne deine Bestätigung aus">
+        <Status tone="neutral" title="MÔRA führt nichts ohne deine Bestätigung aus">
           <ShieldCheck size={11} /> nur mit Bestätigung
         </Status>
       </Stack>
@@ -91,25 +91,21 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
             <Text variant="body">
               Frag mich etwas zu {contextLabel === 'MÔRA' ? 'deinem Tag' : contextLabel}. Ich schlage vor – du entscheidest.
             </Text>
-            <Stack gap={2}>
+            <div className="os-mora-suggest" role="list">
               {(contextFeature?.mora.suggestions || []).map((s) => (
-                <Surface key={s} interactive padding={3} onClick={() => submit(s)}>
-                  <Stack direction="row" gap={2} align="center">
-                    <CornerDownRight size={13} className="os-tone-faint" />
-                    <Text variant="meta" tone="muted">{s}</Text>
-                  </Stack>
-                </Surface>
+                <button key={s} type="button" role="listitem" onClick={() => submit(s)}>
+                  <CornerDownRight size={13} aria-hidden />
+                  <span>{s}</span>
+                </button>
               ))}
               {nightwatchAvailable ? (
-                <Surface interactive padding={3} onClick={() => useOsShellStore.getState().setNightwatchOpen(true)} data-testid="mora-ask-nightwatch">
-                  <Stack direction="row" gap={2} align="center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/nightwatch/eule.png" alt="" width={15} height={18} style={{ imageRendering: 'pixelated' }} />
-                    <Text variant="meta" tone="muted">Frag Nightwatch: Was war heute Nacht?</Text>
-                  </Stack>
-                </Surface>
+                <button type="button" role="listitem" onClick={() => useOsShellStore.getState().setNightwatchOpen(true)} data-testid="mora-ask-nightwatch">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/nightwatch/eule.png" alt="" width={13} height={16} style={{ imageRendering: 'pixelated' }} />
+                  <span>Frag Nightwatch: Was war heute Nacht?</span>
+                </button>
               ) : null}
-            </Stack>
+            </div>
           </Stack>
         ) : (
           turns.map((t) => (
