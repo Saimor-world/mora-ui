@@ -446,6 +446,8 @@ export function PlanetTip({ traits }: { traits: PlanetTraits }) {
   const rows: [string, string][] = [];
   if (traits.nextTask) rows.push(['Nächste Aufgabe', traits.nextTask.title + (traits.nextTask.due ? ` · ${shortDate(traits.nextTask.due)}` : '')]);
   if (traits.latest) rows.push(['Zuletzt', traits.latest + (relDay(traits.lastAt) ? ` · ${relDay(traits.lastAt)}` : '')]);
+  // Nur echte Zuordnung aus CORE (Mail-Knoten im Bereich); sonst keine Zeile.
+  if (traits.newMails) rows.unshift(['Post', `${traits.newMails} neu${traits.unreadMails ? ` · ${traits.unreadMails} ungelesen` : ''}`]);
   if (traits.overdue > 0) rows.push(['Überfällig', `${traits.overdue} Aufgabe${traits.overdue === 1 ? '' : 'n'}`]);
   if (!rows.length) return null;
   return (

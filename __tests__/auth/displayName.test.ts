@@ -16,6 +16,7 @@ describe('names, never email addresses', () => {
   it('never falls back to a gendered role word without a name', () => {
     expect(displayName({ name: '', email: 'lea@beispiel.test', role: 'owner' })).toBe('');
     expect(displayName({ email: 'team@beispiel.test', role: 'member' })).toBe('');
+    expect(firstName({ name: 'Marius', email: 'marius@saimor.world' })).toBe('Marius');
     expect(displayName({ name: 'Marius Länder', email: 'm@x.test', role: 'owner' })).toBe('Marius Länder');
   });
 

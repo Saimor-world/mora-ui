@@ -613,3 +613,90 @@
 }
 .os-universe__addshort { display: none; }
 @media (max-width: 640px) { .os-universe__addlong { display: none; } .os-universe__addshort { display: inline; } }
+
+/* Post · Mail-Client (os-polish-v1) */
+.os-post-grid { display: grid; grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: var(--os-space-5, 20px); }
+@media (max-width: 1100px) { .os-post-grid { grid-template-columns: 1fr; } }
+.os-mail { display: grid; grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr); gap: 16px; min-height: 420px; }
+.os-mail__list { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.os-mail__filters { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--os-hairline); align-self: flex-start; }
+.os-mail__filters button { padding: 4px 12px; border-radius: 999px; font-size: 13px; color: var(--os-text-muted); }
+.os-mail__filters button span { opacity: .6; margin-left: 4px; font-variant-numeric: tabular-nums; }
+.os-mail__filters button[aria-selected="true"] { background: var(--os-surface); color: var(--os-text); }
+.os-mail__rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; max-height: 560px; overflow: auto; }
+.os-mail__row { width: 100%; display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 10px 10px 10px 6px; border-radius: 12px; border: 1px solid transparent; }
+.os-mail__row:hover { background: color-mix(in srgb, var(--os-surface) 70%, transparent); }
+.os-mail__row.is-open { background: var(--os-surface); border-color: var(--os-hairline); }
+.os-mail__row:focus-visible { outline: 2px solid var(--os-focus, #d9b98a); outline-offset: 1px; }
+.os-mail__dot { flex: 0 0 6px; width: 6px; height: 6px; margin-top: 15px; border-radius: 50%; background: transparent; }
+.os-mail__row.is-unread .os-mail__dot { background: #d9b98a; }
+.os-mail__avatar { flex: 0 0 auto; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--os-hairline); background: var(--os-surface); font-size: 13px; color: var(--os-text-muted); }
+.os-mail__main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.os-mail__top { display: flex; gap: 8px; align-items: baseline; }
+.os-mail__from { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; color: var(--os-text-muted); }
+.os-mail__top time { font-size: 12px; color: var(--os-text-faint, var(--os-text-muted)); font-variant-numeric: tabular-nums; }
+.os-mail__subject { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--os-text-muted); font-size: 14px; }
+.os-mail__snippet { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 13px; color: var(--os-text-faint, var(--os-text-muted)); }
+.os-mail__row.is-unread .os-mail__from, .os-mail__row.is-unread .os-mail__subject { color: var(--os-text); font-weight: 600; }
+.os-mail__pane { min-width: 0; border-left: 1px solid var(--os-hairline); padding-left: 20px; display: flex; flex-direction: column; gap: 12px; }
+.os-mail__pane-empty { margin: auto; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.os-mail__back { display: none; align-items: center; gap: 6px; font-size: 13px; color: var(--os-text-muted); }
+.os-mail__pane-subject { font-size: 20px; line-height: 1.3; font-weight: 600; color: var(--os-text); margin: 0; }
+.os-mail__pane-meta { display: flex; gap: 10px; align-items: center; font-size: 14px; color: var(--os-text); }
+.os-mail__pane-meta small { color: var(--os-text-muted); }
+.os-mail__pane-body { font-size: 15px; line-height: 1.6; color: var(--os-text); white-space: pre-wrap; }
+.os-mail__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 760px) {
+  .os-mail { grid-template-columns: 1fr; min-height: 0; }
+  .os-mail__pane { display: none; border-left: 0; padding-left: 0; }
+  .os-mail--reading .os-mail__list { display: none; }
+  .os-mail--reading .os-mail__pane { display: flex; }
+  .os-mail__back { display: inline-flex; }
+}
+
+/* os-polish-v1 · ruhigere Fläche, einheitliches Dock */
+.os-atmosphere::before, .os-atmosphere::after { opacity: .32; }
+.os-root[data-look='kosmos'] .os-shell__content { background: none; }
+.os-dock__grid { display: none; }
+.os-dock__capsule { padding: 6px 14px; gap: 6px; }
+.os-dock__item { flex-direction: column; align-items: center; }
+.os-dock__label { font-size: 10.5px; line-height: 1; letter-spacing: .01em; color: var(--os-text-faint, var(--os-text-muted)); margin-top: -2px; padding-bottom: 2px; white-space: nowrap; pointer-events: none; }
+.os-dock__item[data-active='true'] .os-dock__label { color: var(--os-text); }
+.os-dock__dot { background: #d9b98a; }
+.os-dock__stone:hover, .os-dock__stone[aria-pressed='true'] { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(217, 185, 138, .35); }
+.os-dock .os-dock__item svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.os-dock__stone { border-color: rgba(217, 185, 138, .45); background: radial-gradient(circle, rgba(247, 233, 203, .10), rgba(217, 185, 138, 0) 70%); }
+@media (max-width: 899px) { .os-dock__stone .os-mora-mark circle[fill='#367E66'] { fill: #d9a35f; } }
+@media (max-width: 767px) { .os-dock__label { font-size: 10px; } }
+
+/* Nightwatch · Eule mit Laterne (os-polish-v1) */
+.os-nw { position: fixed; right: 24px; bottom: calc(var(--os-dock-space, 96px) + 12px); z-index: 90; width: min(400px, calc(100vw - 24px)); display: flex; gap: 12px; align-items: flex-start; padding: 16px 16px 14px 12px; border-radius: 20px; background: rgba(14, 17, 32, .88); border: 1px solid rgba(217, 185, 138, .28); box-shadow: 0 18px 50px rgba(0, 0, 0, .45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: #efe8da; animation: os-nw-in .9s cubic-bezier(.2, .8, .2, 1) both; }
+.os-nw--crit { border-color: rgba(222, 120, 92, .6); }
+.os-nw__owl { flex: none; width: 76px; height: auto; image-rendering: pixelated; margin-top: -34px; filter: drop-shadow(0 6px 14px rgba(233, 185, 103, .25)); animation: os-nw-hover 4s ease-in-out 1s infinite; }
+.os-nw__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.os-nw__head { display: flex; align-items: baseline; gap: 8px; }
+.os-nw__head b { font-size: 15px; }
+.os-nw__head span { font-size: 12px; color: rgba(239, 232, 218, .6); flex: 1; }
+.os-nw__close { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; color: rgba(239, 232, 218, .7); }
+.os-nw__close:hover { background: rgba(255, 255, 255, .08); }
+.os-nw__points { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.45; }
+.os-nw__points li::marker { color: #d9b98a; }
+.os-nw__points li[data-tone='crit'] { color: #f2b3a0; }
+.os-nw__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.os-nw__actions button { min-height: 34px; padding: 0 14px; border-radius: 999px; font-size: 13px; border: 1px solid rgba(217, 185, 138, .35); color: #f7e9cb; }
+.os-nw__actions button:first-child { background: rgba(247, 233, 203, .1); }
+.os-nw__muted { margin: 0; font-size: 11.5px; color: rgba(239, 232, 218, .5); }
+@keyframes os-nw-in { from { opacity: 0; transform: translate(120px, -80px) rotate(6deg); } to { opacity: 1; transform: none; } }
+@keyframes os-nw-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .os-nw, .os-nw__owl { animation: none; } }
+@media (max-width: 767px) { .os-nw { right: 12px; left: 12px; width: auto; } .os-nw__owl { width: 64px; } }
+
+/* Heute · ruhige Statuszeile statt gestapelter Leer-Karten */
+.os-quiet-status { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--os-radius-lg, 16px); border: 1px solid var(--os-hairline); background: color-mix(in srgb, var(--os-glass, rgba(20,18,28,.5)) 70%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.os-quiet-status__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; flex: 1; }
+.os-quiet-status__text b { font-weight: 500; color: var(--os-text); font-size: 14px; }
+.os-quiet-status__text span { color: var(--os-text-faint); font-size: var(--os-type-meta-size, 12.5px); }
+.os-quiet-banner { display: flex; align-items: center; gap: 8px; align-self: flex-start; padding: 6px 12px; border-radius: var(--os-radius-pill); border: 1px solid var(--os-hairline); color: var(--os-text-faint); font-size: var(--os-type-meta-size, 12.5px); }
+.os-quiet-banner button { color: var(--os-text-muted); text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; cursor: pointer; font: inherit; }
+/* Nichts hinter dem Dock verstecken */
+.os-shell:not([data-place='universe']) .os-shell__content { padding-bottom: calc(var(--os-dock-space, 96px) + 40px); }

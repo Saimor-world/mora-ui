@@ -8,8 +8,10 @@
 export function realName(name?: string | null, email?: string | null): string {
   const raw = String(name ?? '').trim();
   if (!raw || raw.includes('@')) return '';
-  const local = String(email ?? '').split('@')[0]?.trim().toLowerCase();
-  if (local && raw.toLowerCase() === local) return '';
+  // Only an unedited local part ("lea") is not a name; a capitalised entry ("Marius" for
+  // marius@…) is a name the person typed and stays (Marius was greeted without a name).
+  const local = String(email ?? '').split('@')[0]?.trim();
+  if (local && raw === local && raw === raw.toLowerCase()) return '';
   return raw;
 }
 

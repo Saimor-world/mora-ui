@@ -1,9 +1,10 @@
 'use client';
+import { MoraMark } from '@/components/world/MoraSpirit';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { AgentFeed } from '@/features/mora/ui/AgentFeed';
 import React, { useMemo } from 'react';
-import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
-import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
+import { ArrowRight, ArrowUpRight, BookOpen, CloudOff, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
+import { Button, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import type { TodaySnapshot, TodaySourceStatus } from '@/lib/api/todayClient';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -101,7 +102,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
       {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
-        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
+        <div className="os-today-hero mt-2"><MoraMark size={40} /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'
@@ -109,9 +110,22 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         </Text>
       </header>}
 
-      {hasSession && !preview && !phoneHome ? <DayPanel onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
+      {hasSession && !preview && !phoneHome ? <DayPanel hideWhenUnavailable onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
 
-      <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />
+      {/* CORE offline: dezenter Hinweis statt großer Karte. */}
+      {!today.loading && !snapshot ? (
+        today.loadError === 'unauthorized' || today.loadError === 'forbidden' ? (
+          <FailureState kind={today.loadError === 'unauthorized' ? 'unauthenticated' : 'denied'} subject="Tagesbild: /v3/today" onRetry={() => today.refresh(true)} />
+        ) : (
+          <div className="os-quiet-banner" role="status" data-testid="today-core-offline">
+            <CloudOff size={13} aria-hidden />
+            <span>CORE gerade nicht erreichbar – angezeigt wird nur, was belegt ist.</span>
+            <button type="button" onClick={() => today.refresh(true)}>Erneut versuchen</button>
+          </div>
+        )
+      ) : null}
+
+      {!today.loading && !snapshot && today.loadError !== 'unauthorized' && today.loadError !== 'forbidden' ? null : <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />}
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">
@@ -138,7 +152,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       ) : null}
 
 
-      {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact /> : null}
+      {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact hideWhenEmpty /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">
         <Stack direction="row" align="flex-end" justify="space-between" gap={3}>
@@ -152,14 +166,6 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       </Surface>
 
       {today.loading && !snapshot ? <Loading lines={4} /> : null}
-      {!today.loading && !snapshot ? (
-        <FailureState
-          kind={today.loadError === 'unauthorized' ? 'unauthenticated' : today.loadError === 'forbidden' ? 'denied' : 'offline'}
-          subject="Tagesbild: /v3/today"
-          onRetry={() => today.refresh(true)}
-        />
-      ) : null}
-
       {snapshot ? (
         <>
           <Section icon={<CircleDot size={14} />} title="Braucht Aufmerksamkeit" aside={sample ? <SampleTag /> : null}>

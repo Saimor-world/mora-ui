@@ -37,6 +37,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
       <CapsuleDockIcon icon={m.icon} label={m.title} description={m.description || ''} shortcut={i < 9 ? String(i + 1) : null} active={m.id === activeId} isStandardMode={false} onClick={() => onNavigate(m.id)}>
         {m.id === activeId ? <span className="os-dock__dot" aria-hidden /> : null}
       </CapsuleDockIcon>
+      <span className="os-dock__label" aria-hidden>{m.title}</span>
     </span>
   );
   return (
