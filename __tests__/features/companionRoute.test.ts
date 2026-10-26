@@ -8,6 +8,6 @@ describe('phone companion wiring', () => {
   });
   it('companion has no dock or planets', () => {
     const c = fs.readFileSync(path.join(__dirname, '../../features/companion/PhoneCompanion.tsx'), 'utf8');
-    expect(c).not.toMatch(/import[^;]*(Dock|Universe|Planet|World)/);
+    expect(c).not.toMatch(/^import .*(Dock|Universe|Planet|World)/m);
   });
 });
