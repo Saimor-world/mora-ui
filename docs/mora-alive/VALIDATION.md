@@ -1,5 +1,14 @@
 # Validation — MÔRA Alive v04
 
+## Light depth refinement (2026-10-26)
+
+The face and central tail were still too uniformly cream in the actual Deep View captures.
+The material now separates a soft inner source from the warm silhouette with a thickness
+term, lowers the sharp external highlight and lets the tail layers show through the core.
+Jade vein contrast is reduced so the stone reads as a dark mineral rather than a cracked
+luminous globe. This is an artistic real-time light approximation, not volumetric ray tracing.
+New render captures must be reviewed before this material is distributed to the Website.
+
 ## Website motion budget follow-up (2026-10-26)
 
 The shared view accepts a host-provided `motionLimited` preference. It combines this with

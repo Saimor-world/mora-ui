@@ -34,14 +34,15 @@ export function lightMaterial(opacity: number, flow: number) {
         float highlight=pow(max(0.,dot(reflect(-lamp,nn),vv)),35.);
         float inner=exp(-dot((local.xy-vec2(-.12,.38))*vec2(2.,1.5),(local.xy-vec2(-.12,.38))*vec2(2.,1.5)));
         float filaments=pow(max(0.,sin(local.y*8.+local.x*14.+silk*6.)),28.);
-        // A broad internal cream source defines the face; the upper crest is a separate gold light volume.
-        vec3 color=mix(gold*.55,cream*1.45,clamp(front*.7+.23,0.,1.));
-        color*=.92+diffuse*.10;
-        color+=gold*(edge*1.2+inner*.18)+cream*highlight*.15;
-        vec3 glass=mix(gold*1.6,cream*.9,front*.25)+gold*(edge*2.+filaments*.08);
+        // A soft internal source fades through a warm silhouette: depth without a metallic shell.
+        float thickness=pow(front,.65);
+        vec3 color=mix(gold*.55,cream*.98,thickness*.86);
+        color*=.68+diffuse*.12;
+        color+=cream*inner*.62+gold*edge*.72+cream*highlight*.06;
+        vec3 glass=mix(gold*1.35,cream*.8,front*.25)+gold*(edge*1.6+filaments*.08);
         color=mix(color,glass,flame);
-        float alpha=mix(opacity*(.87+.12*front),opacity*(.13+.48*edge+.13*front),flame);
-        if(flow<.5){color=mix(gold*1.5,cream*1.5,front*.65);alpha=opacity*(.25+front*.65+filaments*.10);}
+        float alpha=mix(opacity*(.65+.33*front),opacity*(.13+.48*edge+.13*front),flame);
+        if(flow<.5){color=mix(gold*.95,cream*1.25,front*.6);alpha=opacity*(.16+front*.48+filaments*.10);}
         color=mix(color*.35,color,warmth);
         gl_FragColor=vec4(color,alpha);
         #include <tonemapping_fragment>
@@ -69,7 +70,7 @@ export function jadeMaterial() {
         float spec=pow(max(0.,dot(reflect(-light,nn),vv)),85.);
         float window=pow(max(0.,dot(reflect(-normalize(vec3(-.4,1.,.3)),nn),vv)),16.);
         vec3 color=mix(vec3(.001,.009,.006),base,(.12+mineral*.48))*(.4+diffuse*.8);
-        color+=mint*(vein*(.045+mineral*.14)+fine*.010)+base*rim*.45;
+        color+=mint*(vein*(.025+mineral*.08)+fine*.006)+base*rim*.45;
         color+=vec3(1.,.96,.78)*(spec*.9+window*.16);
         gl_FragColor=vec4(color,1.);
         #include <tonemapping_fragment>
