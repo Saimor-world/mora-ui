@@ -23,6 +23,7 @@ import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
 import { OsDock } from './OsDock';
+import { NightwatchVisit } from '@/components/nightwatch/NightwatchVisit';
 import { useIsSaimorInternal, useActiveCompanyIsDemo, useDemoCompanies } from '@/lib/hooks/useIsSaimorInternal';
 import { ShortcutsOverlay } from './ShortcutsOverlay';
 import { ContextCapsule, DemoBanner, DemoSwitch, StatusMenu } from './ContextCapsule';
@@ -227,6 +228,7 @@ export function OsShell({ preview }: { preview: boolean }) {
       </div>
 
       {controlOpen ? <ControlCenter onClose={() => useOsShellStore.getState().setControlOpen(false)} navigate={navigate} online={online} org={org} demo={demoMode || activeDemo} /> : null}
+      <NightwatchVisit enabled={Boolean(internal) && !preview} />
       {shortcutsOpen ? <ShortcutsOverlay items={dockItems} onClose={() => setShortcutsOpen(false)} /> : null}
       <CommandPalette
         open={paletteOpen}

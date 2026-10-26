@@ -1,9 +1,10 @@
 'use client';
+import { MoraMark } from '@/components/world/MoraSpirit';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { AgentFeed } from '@/features/mora/ui/AgentFeed';
 import React, { useMemo } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, CalendarDays, CircleDot, Compass, Inbox, ListTodo, Mail, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
-import { Button, MoraStone, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
+import { Button, FailureState, Loading, ResponsiveGrid, SampleTag, Stack, StateView, Status, Surface, Text } from '@/components/os-kit';
 import { useScopedToday } from '@/lib/os/useScopedToday';
 import type { TodaySnapshot, TodaySourceStatus } from '@/lib/api/todayClient';
 import { useSessionStore } from '@/lib/store/sessionStore';
@@ -101,7 +102,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
       {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>
-        <div className="os-today-hero mt-2"><MoraStone size={44} halo /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
+        <div className="os-today-hero mt-2"><MoraMark size={40} /><Text variant="display">{greeting(phaseOverride)}{userName ? `, ${userName}` : ''}.</Text></div>
         <Text className="mt-2 max-w-2xl">
           {sample
             ? 'Lokale Vorschau: Die Inhalte unten sind Beispieldaten, damit der Aufbau sichtbar ist. Mit CORE-Sitzung erscheinen hier deine echten Signale.'

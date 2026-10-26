@@ -8,6 +8,9 @@ import { create } from 'zustand';
 export interface OsShellState {
   activeFeatureId: string;
   moraOpen: boolean;
+  /** Nightwatch persona (second voice next to MÔRA, same CORE truth). */
+  nightwatchOpen: boolean;
+  setNightwatchOpen(open: boolean): void;
   paletteOpen: boolean;
   /** Free-text context a surface publishes for MÔRA (e.g. "Finance · Profit Center"). */
   surfaceContext: string | null;
@@ -85,6 +88,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setSettingsSection: (settingsSection) => set({ settingsSection }),
   activeFeatureId: 'today',
   moraOpen: false,
+  nightwatchOpen: false,
+  setNightwatchOpen: (open) => set({ nightwatchOpen: open }),
   paletteOpen: false,
   surfaceContext: null,
   moraDraft: null,
