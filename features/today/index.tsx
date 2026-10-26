@@ -16,7 +16,7 @@ import { deriveAttention, deriveHints } from './data/attention';
 import { MoraBriefing } from './ui/MoraBriefing';
 import { OwlCard } from './ui/OwlCard';
 import { PhoneHome } from './ui/PhoneHome';
-import { RolePreviewBanner, RolePreviewToggle, useRolePreview } from '@/components/os-shell/RolePreview';
+import { RolePreviewBanner, RolePreviewMenu, useRolePreview } from '@/components/os-shell/RolePreview';
 import { DayPanel } from '@/components/day/DayPanel';
 import { useWorld } from '@/lib/lea/useWorld';
 import { taskLineOf, formatTaskLine } from '@/lib/lea/live';
@@ -99,7 +99,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
   return (
     <div className="flex flex-col gap-6" data-testid="feature-today" data-role={role}>
-      {hasSession && !preview ? <div className="flex flex-wrap items-center justify-end gap-3"><RolePreviewBanner /><RolePreviewToggle /></div> : null}
+      {hasSession && !preview ? <div className="flex flex-wrap items-center justify-end gap-3"><RolePreviewBanner /><RolePreviewMenu /></div> : null}
       {phoneHome ? <PhoneHome greeting={greeting(phaseOverride)} firstName={userName ?? ''} navigate={navigate} onAskMora={askMoraPhone} /> : null}
       {phoneHome ? null : <header>
         <Stack direction="row" gap={3} align="center"><Text variant="eyebrow" tone="default">{dateLabel}</Text>{sample ? <SampleTag /> : null}</Stack>

@@ -15,7 +15,7 @@ jest.mock('@/lib/store/sessionStore', () => ({ useSessionStore: (select: (s: unk
 jest.mock('@/lib/os-prototype/shellStore', () => ({ useOsShellStore: (select: (s: unknown) => unknown) => select({ phaseOverride: null }) }));
 jest.mock('@/lib/hooks/useIsPhone', () => ({ useIsPhone: () => false }));
 jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => false }));
-jest.mock('@/components/os-shell/RolePreview', () => ({ useRolePreview: () => ({ role: 'owner' }), RolePreviewBanner: () => null, RolePreviewToggle: () => null }));
+jest.mock('@/components/os-shell/RolePreview', () => ({ useRolePreview: () => ({ role: 'owner' }), RolePreviewBanner: () => null, RolePreviewToggle: () => null, RolePreviewMenu: () => null }));
 jest.mock('@/features/finance/data/useFinanceSignal', () => ({ useFinanceSignal: () => ({ kind: 'unavailable' }) }));
 jest.mock('@/lib/lea/dayStore', () => ({ useDayStore: (select: (s: unknown) => unknown) => select({ phases: {} }) }));
 jest.mock('@/components/day/DayPanel', () => ({ DayPanel: () => null }));

@@ -906,3 +906,27 @@ body:has(.wd-universe) .os-universe__intro, body:has(.wd-universe) .wd-horizon {
 .wd-viewmenu summary::-webkit-details-marker { display: none; }
 .wd-viewmenu[open] [data-testid='role-preview'] { position: absolute; right: 0; top: 38px; }
 .wd-viewmenu [data-testid='role-preview'] > span:first-child { display: none; }
+
+/* views-1026 (Marius t757u/t758u/t761u): ein Hintergrund überall, Shell füllt immer das ganze Fenster. */
+html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
+.os-root { position: fixed !important; inset: 0; }
+.os-shell { position: absolute !important; inset: 0; width: 100% !important; height: 100%; }
+.os-atmo { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.55) saturate(.75) sepia(.12) contrast(1.02); }
+body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); }
+.os-atmo > * { display: none !important; }
+.os-root, .os-shell, .os-atmo__plate, .os-root[data-look='kosmos'] .os-shell__content, .os-shell__content { background: transparent !important; }
+.os-shell__topbar { background: transparent !important; box-shadow: none !important; }
+.os-shell__main { scrollbar-width: thin; scrollbar-color: rgba(247, 233, 203, .18) transparent; }
+/* Ruhige, zentrierte Seiten */
+.os-shell:not([data-place='universe']) .os-shell__content { max-width: 1200px; margin-inline: auto; }
+.os-shell:not([data-place='universe']) .os-shell__content .os-text-display { font-size: clamp(24px, 2.2vw, 30px); line-height: 1.2; letter-spacing: -.01em; }
+.os-post-grid { align-items: start; }
+.os-post-empty { padding: 24px 4px; }
+/* Nightwatch: kleiner, unten rechts über dem Dock */
+.os-nw { width: min(340px, calc(100vw - 24px)); }
+/* Suche/Glocke nur oben, Dock nur Orte + MÔRA */
+@media (min-width: 900px) { .os-dock__group--tools, .os-dock__group--tools + .os-dock__divider { display: none !important; } }
+/* Rollen-Menü auf Heute: im Fluss */
+.wd-viewmenu:not(.absolute) { position: relative; }
+.wd-counter { font-size: 12px; color: rgba(235, 231, 222, .72); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
+.os-shell__topbar { max-width: none !important; }
