@@ -125,7 +125,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
         )
       ) : null}
 
-      <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />
+      {!today.loading && !snapshot && today.loadError !== 'unauthorized' && today.loadError !== 'forbidden' ? null : <MoraBriefing live={!preview && hasSession} navigate={navigate} companyView={companyView} />}
 
       {snapshot ? (
         <section aria-label="Heute · Aktuell" data-testid="today-now">

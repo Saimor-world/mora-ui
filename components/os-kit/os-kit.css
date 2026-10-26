@@ -665,6 +665,8 @@
 .os-dock__dot { background: #d9b98a; }
 .os-dock__stone:hover, .os-dock__stone[aria-pressed='true'] { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(217, 185, 138, .35); }
 .os-dock .os-dock__item svg { width: 20px; height: 20px; stroke-width: 1.6; }
+.os-dock__stone { border-color: rgba(217, 185, 138, .45); background: radial-gradient(circle, rgba(247, 233, 203, .10), rgba(217, 185, 138, 0) 70%); }
+@media (max-width: 899px) { .os-dock__stone .os-mora-mark circle[fill='#367E66'] { fill: #d9a35f; } }
 @media (max-width: 767px) { .os-dock__label { font-size: 10px; } }
 
 /* Nightwatch · Eule mit Laterne (os-polish-v1) */
