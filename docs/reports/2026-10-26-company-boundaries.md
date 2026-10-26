@@ -1,6 +1,6 @@
 # Firmenkontext und Accountverwaltung · 26.10.2026
 
-Status: PREPARED, Risiko B. Basis enthält Groks gemergte UI-PRs #166–170 (main `26a260cc`). Kein Produktionsdeploy aus diesem Arbeitsstand.
+Status: PREPARED, Risiko B. Basis enthält Groks gemergte UI-PRs #166–173 (aktueller Stand `c0d0342d`, einschließlich #171 und #173). Kein Produktionsdeploy aus diesem Arbeitsstand.
 
 ## Problem und Verhalten
 
@@ -27,6 +27,8 @@ Die tatsächliche Accountinventur liegt ausschließlich als private lokale Datei
 ## Prüfung und Gegenprüfung
 
 Nach Übernahme von Groks späteren PRs: vollständige Jest-Suite 349/349, 2.009 Tests grün. Zusätzlich aktueller gezielter Durchlauf mit 35 Tests einschließlich Rollenwechsel und Shell-Übergaben grün. Typprüfung, Lint (bestehende Warnungen), kritischer Fluss gegen gespeicherte Baseline, 53 OS-Smoke-Tests und Build mit `NEXT_PUBLIC_OS_PROTOTYPE=1` grün. GitHub-CI und Browser-Sichtprüfung separat führen; der kleine anschließende Rollen-Cache-Schlüssel wird zusätzlich durch den gezielten Test abgesichert.
+
+Nach Groks anschließendem #173: 111 Tests der betroffenen Bereiche grün. Firmenmenü übernimmt dieselbe bestätigte Wechselgrenze. Eine vom ersten GitHub-Lauf gefundene Reihenfolge im App-Library-Test wurde korrigiert: erst Benutzerkontext etablieren, dann Fenster öffnen; 12 Tests des betroffenen Falls und der Grenze grün. Neuer GitHub-Lauf und abschließender Build bestätigen den gepushten Stand separat. Keine Behauptung, ein älterer vollständiger Lauf allein prüfe spätere Änderungen.
 
 Unabhängige statische AI-Gegenprüfung der zentralen Schutzpfade: fehlender Post-Kontext, widersprüchliche Chat-Hierarchie, reale Firmenwechsel A→B→A sowie spätere Node-/Artefaktziele wurden gefunden und korrigiert. Kein Ersatz für Live-/Browserprüfung. Die Gegenprüfung der allerletzten kleinen Nachträge war wegen Kontingentgrenze nicht verfügbar; das ist keine Releasefreigabe.
 
