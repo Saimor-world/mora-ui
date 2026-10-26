@@ -89,6 +89,6 @@ export function ellipseThread(radiusX: number, radiusZ: number, centerY: number,
     return [Math.cos(a) * radiusX, centerY + Math.sin(a) * tilt, Math.sin(a) * radiusZ];
   });
   const group = new THREE.Group();
-  group.add(lightThread(points, .005, .78), lightThread(points, .018, .055));
+  group.add(lightThread(points, .003, .40), lightThread(points, .012, .025));
   return group;
 }

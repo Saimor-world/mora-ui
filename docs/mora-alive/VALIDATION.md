@@ -61,3 +61,21 @@ Status: PREPARED for review. Body and isolated signal adapter tests verified; au
 - Existing full suite, OS smoke and production build: PASS in initial GitHub CI runs (40145913265 and 40145929604). Final feature-head checks are linked on draft PR #163.
 - Explicit logout is also sampled from the existing socket status once per second, because the existing disconnect suppresses onclose. A regression test verifies clearing stale work without a disconnect event.
 - Website reuse implemented in separate draft PR Saimor-world/Website#122 using immutable source export and hash verification. Preview only, no production release.
+
+## Corporate presence revision (26 October 2026)
+
+Requested appearance: retain MÔRA's light/flame body and separate jade companion, while reducing
+storybook/mascot cues across OS, Website hero, and Deep View. Risk A: reversible presentation only.
+
+The head rig is narrower and slightly smaller, the torso core slightly wider. Idle uses small,
+attentive dark jade eyes and a neutral mouth; a subtle smile is reserved for `done`. Eye highlights,
+closed-eye curvature, bloom, membrane opacity, aura, idle drift and orbital speed are reduced.
+One orbital trail and one ground ring replace the stacked rings; the jade star glint is removed.
+Dust drops from 100 to 24 points. Colors, live event adapter, expression provenance, lifecycle,
+reduced-motion and visibility behavior remain unchanged. No new model or dependencies.
+
+Acceptance: same canonical body in all hosts, readable eyes without a permanent smile, reduced
+motion stable, no GPU nonfinite values or browser errors, mobile framing intact. Validate through
+existing renderer/browser matrix and review its actual captures before treating visual QA as done.
+Rollback: revert the four presentation files and re-export the previous immutable source to Website.
+No auth, CORE writes, middleware, environment or deployment workflow changes; no release approval.

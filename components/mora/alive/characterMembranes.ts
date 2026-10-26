@@ -22,7 +22,7 @@ function membrane(rows: Station[], strength: number, phase: number) {
   geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
   const material=new THREE.ShaderMaterial({
-    uniforms:{time:{value:0},motion:{value:1},sleep:{value:0},warmth:{value:1},cream:{value:new THREE.Color(P.cream)},gold:{value:new THREE.Color(P.gold)},opacity:{value:strength},phase:{value:phase}},
+    uniforms:{time:{value:0},motion:{value:1},sleep:{value:0},warmth:{value:1},cream:{value:new THREE.Color(P.cream)},gold:{value:new THREE.Color(P.gold)},opacity:{value:strength*.72},phase:{value:phase}},
     transparent:true,depthWrite:false,side:THREE.DoubleSide,forceSinglePass:true,
     vertexShader:`uniform float time;uniform float motion;uniform float sleep;uniform float phase;
       varying vec2 sheet;varying vec3 n;varying vec3 view;
