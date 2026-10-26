@@ -3,7 +3,7 @@ import { useUniverseFocus } from '@/lib/lea/universeFocus';
 import { downloadCompanyFile } from '@/lib/api/filesClient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Loading, MoraStone, StateView, Text } from '@/components/os-kit';
-import { WorldUniverse } from '@/components/world/WorldUniverse';
+import { FOCUS_RESERVE, HORIZON_RESERVE, WorldUniverse } from '@/components/world/WorldUniverse';
 import { isNight, type SpiritMood } from '@/components/world/MoraSpirit';
 import { MoraAsk, type MoraReply, type MoraState } from '@/components/world/MoraAsk';
 import { PlanetFocus } from '@/components/world/PlanetFocus';
@@ -241,7 +241,7 @@ export function LiveWorld({ onAskMora, onAddDepartment, navigate }: { onAskMora:
         spiritMood={spiritMood}
         spiritTarget={flyTo}
         zoomTo={zoomTo}
-        shift={selected && !phone ? 190 : 0}
+        reserveRight={phone || open ? 0 : selected ? FOCUS_RESERVE : HORIZON_RESERVE}
         activeId={activeId}
         counts={counts}
         comet={horizon.mail?.status === 'ok' && horizon.mail.items[0] ? { id: horizon.mail.items[0].id, label: horizon.mail.items[0].subject } : null}

@@ -22,8 +22,16 @@ const ASK_RESERVE_DESKTOP = 144; // + eine Zeile für MÔRAs Satz direkt über d
 
 /** Phone: Luft unter dem Seitenkopf, damit obere Planetenlabels ihn nicht berühren. */
 const PHONE_TOP = 26;
+/** Ab dieser Fensterbreite stehen Karten links und Horizont/Fokus rechts (siehe world.css, 1279px). */
+const SIDE_COLUMNS_MIN_VW = 1280;
+/** Karten links: left 88 px + 248 px Breite + 16 px Luft. */
+export const PULSE_RESERVE = 352;
+/** Horizont rechts: right 20 px + 260 px + 16 px Luft. */
+export const HORIZON_RESERVE = 296;
+/** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
+export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, shift = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null }: {
   spiritMood?: SpiritMood;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
@@ -37,8 +45,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   moraState?: 'idle' | 'thinking' | 'speaking';
   /** Kamerafahrt: das Universe zoomt auf diesen Planeten, bevor er sich öffnet. */
   zoomTo?: string | null;
-  /** Platz rechts für das Fokus-Panel: das Universe rückt nach links und wird etwas kleiner. */
-  shift?: number;
+  /** Rechts belegte Breite (Horizont oder Planeten-Fokus): das Layout weicht aus, statt zu schrumpfen. */
+  reserveRight?: number;
   /** Quellen-Ring (Systemplaneten aus /v3/universe): verbunden oder noch leer. */
   sources?: HorizonSource[] | null;
   onOpenSource?: (key: string) => void;
@@ -58,7 +66,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 }) {
   const fieldRef = useRef<HTMLDivElement>(null);
   const planetRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [size, setSize] = useState({ width: 0, height: 0 });
+  const [size, setSize] = useState({ width: 0, height: 0, wide: false });
   const reduced = !!useReducedMotion();
   const paused = useRef(false);
   const [zoom, setZoom] = useState(1);
@@ -66,7 +74,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   useEffect(() => {
     const el = fieldRef.current;
     if (!el) return;
-    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight });
+    const update = () => setSize({ width: el.clientWidth, height: el.clientHeight, wide: typeof window !== 'undefined' && window.innerWidth >= SIDE_COLUMNS_MIN_VW });
     update();
     if (typeof ResizeObserver === 'undefined') {
       window.addEventListener('resize', update);
@@ -77,9 +85,12 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     return () => ro.disconnect();
   }, []);
 
+  const showPulse = !phone && size.wide && hasPulse(planets);
+  const insetLeft = showPulse ? PULSE_RESERVE : 0;
+  const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
-    [size.width, size.height, planets, phone],
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    [size.width, size.height, planets, phone, insetLeft, insetRight],
   );
 
   const place = useCallback((t: number) => {
@@ -132,7 +143,6 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
     ? { transformOrigin: `${zoomPt.x}px ${zoomPt.y}px`, transform: 'scale(2.6)', opacity: 0, filter: 'blur(2px)' }
-    : shift ? { transform: `translateX(${-shift}px) scale(${(0.84 * zoom).toFixed(3)})` }
     : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
 
   return (
@@ -242,7 +252,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         );
       })}
       </div>
-      {layout && !phone ? <WorldPulse planets={planets} onOpen={onOpenPlanet} /> : null}
+      {layout && showPulse ? <WorldPulse planets={planets} onOpen={onOpenPlanet} /> : null}
       {layout && !phone ? (
         <>
           {counts ? (
@@ -450,14 +460,23 @@ export function PlanetTip({ traits }: { traits: PlanetTraits }) {
  * (nächste offene Aufgaben aus /v3/tasks, letzte Änderungen aus /v3/nodes + /v3/files).
  * Ohne Daten erscheint die jeweilige Karte nicht.
  */
+function pulseNext(planets: WorldPlanet[]) {
+  return planets.filter((p) => p.traits?.nextTask);
+}
+function pulseRecent(planets: WorldPlanet[]) {
+  return planets.filter((p) => p.traits?.lastAt && p.traits.latest);
+}
+/** Ob die Karten links erscheinen (dieselbe Regel wie in WorldPulse). */
+export function hasPulse(planets: WorldPlanet[]): boolean {
+  return pulseNext(planets).length > 0 || pulseRecent(planets).length > 0;
+}
+
 export function WorldPulse({ planets, onOpen }: { planets: WorldPlanet[]; onOpen: (id: string) => void }) {
-  const next = planets
-    .filter((p) => p.traits?.nextTask)
+  const next = pulseNext(planets)
     .map((p) => ({ id: p.id, planet: p.name, title: p.traits!.nextTask!.title, due: p.traits!.nextTask!.due, overdue: !!p.traits!.nextTask!.due && p.traits!.nextTask!.due! < localISO() }))
     .sort((a, b) => (a.due ?? '9999').localeCompare(b.due ?? '9999'))
     .slice(0, 3);
-  const recent = planets
-    .filter((p) => p.traits?.lastAt && p.traits.latest)
+  const recent = pulseRecent(planets)
     .map((p) => ({ id: p.id, planet: p.name, title: p.traits!.latest!, at: p.traits!.lastAt! }))
     .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
     .slice(0, 3);
