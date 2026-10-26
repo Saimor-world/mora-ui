@@ -87,7 +87,7 @@ describe('DayPanel', () => {
     fireEvent.click(within(screen.getByTestId('day-toast')).getByText('Rückgängig'));
     expect(setDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 't2' }), false);
     fireEvent.click(screen.getByTestId('day-arrived'));
-    await screen.findByText(/ist da. Termin läuft/);
+    await screen.findByText(/Maniküre.*läuft\./);
     expect(setPhase).toHaveBeenCalledWith('e1', 'laeuft');
     fireEvent.click(screen.getByTestId('day-plan'));
     fireEvent.change(screen.getByTestId('day-tomorrow-input'), { target: { value: 'Beispiel morgen' } });

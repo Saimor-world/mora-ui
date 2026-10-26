@@ -21,9 +21,15 @@ jest.mock('@/features/labs/index', () => ({ __esModule: true, default: () => req
 import { OsShell } from '@/components/os-shell/OsShell';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import { useOsShellStore } from '@/lib/os-prototype/shellStore';
+import { queryKeys } from '@/lib/queries/queryKeys';
 
 function renderShell(preview = false) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const state = useSessionStore.getState();
+  if (state.user?.active_company_id) qc.setQueryData(
+    [...queryKeys.companies(), true, state.user.tenant_id, state.user.id, state.sessionGeneration],
+    [{ id: state.user.active_company_id, name: 'SAIMÔR', tenant_id: state.user.tenant_id, is_demo: false }],
+  );
   return render(<QueryClientProvider client={qc}><OsShell preview={preview} /></QueryClientProvider>);
 }
 
@@ -33,7 +39,7 @@ describe('OsShell navigation', () => {
     (openLegacyApp as jest.Mock).mockClear();
     useOsShellStore.setState({ activeFeatureId: 'today', moraOpen: false, paletteOpen: false });
     // SAIMÔR's own organization: sees Finance, Labs and the classic surface. Customers: own test below.
-    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq' } as any });
+    useSessionStore.setState({ user: { id: 'u1', name: 'Test Owner', role: 'owner', tenant_id: 'tenant-saimor-hq', active_company_id: 'company-hq' } as any });
   });
 
   it('renders the six primary surfaces and Labs from manifests', async () => {

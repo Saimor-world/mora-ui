@@ -142,7 +142,7 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
       ) : null}
       <form onSubmit={(e) => { e.preventDefault(); void run(text); }}>
         <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => onListen?.(true)} onBlur={() => onListen?.(false)} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
-          placeholder={phone ? 'Frag MÔRA · „Michelle ist da“' : 'Frag MÔRA · „hak Herbstrot ab“ · @Bereich'} aria-label="Frag MÔRA" data-testid="world-ask-input" enterKeyHint="send" />
+          placeholder={phone ? 'Frag MÔRA …' : 'Frag MÔRA oder öffne einen @Bereich …'} aria-label="Frag MÔRA" data-testid="world-ask-input" enterKeyHint="send" />
         {Speech ? <button type="button" onClick={listen} aria-pressed={listening} aria-label="Sprechen" data-testid="world-ask-mic"><Mic size={18} /></button> : null}
         <button type="submit" aria-label="Senden" data-testid="world-ask-send" disabled={busy || state !== 'idle'}><Send size={18} /></button>
       </form>

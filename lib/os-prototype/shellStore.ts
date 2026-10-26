@@ -1,5 +1,6 @@
 'use client';
 import { create } from 'zustand';
+import { getDataScopeKey, subscribeDataScope } from '@/lib/store/dataScope';
 
 /**
  * UI-only state of the OS prototype shell (no server data, no persistence).
@@ -47,6 +48,8 @@ export interface OsShellState {
   /** V1.6: Einstellungen in einem bestimmten Abschnitt öffnen (z. B. „sources“). */
   settingsSection: string | null;
   setSettingsSection(id: string | null): void;
+  settingsSource: { label: string; sources: string[] } | null;
+  setSettingsSource(source: { label: string; sources: string[] } | null): void;
   look: 'kosmos' | 'klar';
   setLook(l: 'kosmos' | 'klar'): void;
   phaseOverride: 'flow' | 'build' | 'lounge' | 'night' | null;
@@ -89,6 +92,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   setFocusUntil: (focusUntil) => set({ focusUntil }),
   settingsSection: null,
   setSettingsSection: (settingsSection) => set({ settingsSection }),
+  settingsSource: null,
+  setSettingsSource: (settingsSource) => set({ settingsSource }),
   activeFeatureId: 'today',
   moraOpen: false,
   nightwatchOpen: false,
@@ -113,3 +118,16 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   shortcutsOpen: false,
   setShortcutsOpen: (open) => set({ shortcutsOpen: open }),
 }));
+
+let shellScope = getDataScopeKey();
+subscribeDataScope(() => {
+  const next = getDataScopeKey();
+  if (next === shellScope) return;
+  shellScope = next;
+  // Incoming mail/planet handoffs and drafted MÔRA prompts contain company
+  // context. Appearance/audio preferences can stay across workspaces.
+  useOsShellStore.setState({
+    moraDraft: null, postOpenId: null, universeFocus: null, knowledgeQuery: null,
+    surfaceContext: null, settingsSource: null, nightwatchOpen: false,
+  });
+});

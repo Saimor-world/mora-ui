@@ -9,7 +9,7 @@ it.each(['2026-10-24T22:30:00Z', '2026-10-25T00:30:00Z', '2026-10-25T01:30:00Z']
   const live = buildLiveDay(events, [], {}, now, zone);
   expect(localISO(now, zone)).toBe('2026-10-25');
   expect(live.next?.id).toBe('berlin');
-  expect(live.sentence).toContain('Um 09:00');
+  expect(live.sentence).toContain('Als Nächstes um 09:00: Berliner Termin');
   const phone = buildDay(events, [], now, zone);
   expect(phone.today).toHaveLength(1);
   expect(daySentence(phone, now, zone)).toContain('Heute 1 Termin');

@@ -1,6 +1,9 @@
 'use client';
 import { useQuery } from '@tanstack/react-query';
 import { coreGet, getCoreBaseUrl } from '@/lib/api/http';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import { useDemoStore, useScopeCompanyId } from '@/lib/demo/demoStore';
+import { companyPath } from '@/lib/api/companyPath';
 
 /**
  * V1.6 Quellen aus CORE (`GET /v3/connections`).
@@ -23,9 +26,19 @@ export const STATUS_LABEL: Record<string, string> = {
 };
 
 export function useSources(enabled: boolean) {
+  const scope = useDataScopeKey();
+  const company = useScopeCompanyId();
+  const demo = useDemoStore((s) => s.demoCompanyId);
   return useQuery({
-    queryKey: ['os', 'sources'],
-    queryFn: async () => (await coreGet('/v3/connections', { throwAuthErrors: true })) as SourcesResponse,
+    queryKey: ['os', 'sources', scope],
+    queryFn: async (): Promise<SourcesResponse> => {
+      const result = await coreGet(companyPath('/v3/connections', company), { throwAuthErrors: true });
+      if (!result || !Array.isArray(result.connections)) throw new Error('Quellenstatus nicht bestätigt');
+      // An older CORE may ignore company_id. Never render its HQ provider list
+      // as connections belonging to a selected demo workspace.
+      if (demo && result.connections.length) throw new Error('CORE hat die Trennung des Demo-Arbeitsbereichs nicht bestätigt');
+      return result;
+    },
     enabled,
     staleTime: 60_000,
     retry: false,

@@ -5,6 +5,9 @@ import { Activity } from 'lucide-react';
 import { Empty, FailureState, Loading, SampleTag, Stack, Surface, Text } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
 import { classifyCoreFailure } from '@/lib/os-prototype/coreFailure';
+import { useScopeCompanyId, useDemoStore } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import { companyPath } from '@/lib/api/companyPath';
 
 /**
  * V1.6 Agenten-Feed – aus Legacy `components/mora/MoraThoughtStream.tsx` (war ohne Route).
@@ -57,19 +60,27 @@ function ago(d: Date | null): string {
 }
 
 export function AgentFeed({ live, demo, limit = 8, compact = false, hideWhenEmpty = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean; hideWhenEmpty?: boolean }) {
+  const company = useScopeCompanyId();
+  const scope = useDataScopeKey();
+  const demoCompany = useDemoStore((s) => s.demoCompanyId);
   const q = useQuery({
-    queryKey: ['os', 'agency-thoughts', limit],
-    queryFn: async () => ((await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true })) as { thoughts?: AgentThought[] } | null)?.thoughts || [],
-    enabled: live,
+    queryKey: ['os', 'agency-thoughts', scope, limit],
+    queryFn: async () => {
+      const result = await coreGet(companyPath(`/v3/agency/thoughts?limit=${limit}`, company), { throwAuthErrors: true }) as { thoughts?: AgentThought[]; status?: string } | null;
+      if (!result || !Array.isArray(result.thoughts) || result.status === 'unavailable') throw new Error('Aktivität nicht bestätigt');
+      return result.thoughts;
+    },
+    enabled: live && !demoCompany,
     refetchInterval: 30_000,
     retry: false,
   });
-  const items = live ? (q.data || []) : demo ? DEMO_THOUGHTS.slice(0, limit) : [];
+  const items = live ? (demoCompany ? [] : q.data || []) : demo ? DEMO_THOUGHTS.slice(0, limit) : [];
   const sample = !live && demo;
   // Heute zeigt den Feed nur mit echtem Inhalt; leer/Fehler fasst die Statuszeile zusammen.
   if (hideWhenEmpty && (live ? q.isLoading || q.isError || !items.length : !items.length)) return null;
 
-  const body = live && q.isLoading ? <Loading lines={2} />
+  const body = live && demoCompany ? <Empty compact title="Noch kein eigener Demo-Aktivitätsverlauf" copy="HQ-Aktivitäten werden in diesem Arbeitsbereich nicht angezeigt." />
+    : live && q.isLoading ? <Loading lines={2} />
     : live && q.isError ? <FailureState kind={classifyCoreFailure(q.error)} compact subject="/v3/agency/thoughts" />
     : !items.length ? <Empty compact title={live ? 'Noch keine Agenten-Aktivität' : 'Agenten-Feed braucht eine CORE-Sitzung'} copy={live ? 'Sobald MÔRA sucht, Bereiche liest oder Signale erkennt, erscheint es hier – mit Quelle und Zeit.' : 'Ohne Sitzung zeigt SAIMÔR keine Aktivität an.'} />
     : (

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { getDataScopeKey, subscribeDataScope } from './dataScope';
 
 export interface RecentItem {
     id: string;
@@ -18,7 +18,6 @@ interface ActivityState {
 const MAX_RECENT = 20;
 
 export const useActivityStore = create<ActivityState>()(
-    persist(
         (set) => ({
             recentItems: [],
             recordActivity: (item) =>
@@ -28,7 +27,17 @@ export const useActivityStore = create<ActivityState>()(
                     return { recentItems: [entry, ...deduped].slice(0, MAX_RECENT) };
                 }),
             clearActivity: () => set({ recentItems: [] }),
-        }),
-        { name: 'mora.recent-items' }
-    )
+        })
 );
+
+// Recent-item labels and payloads are private to the current working context.
+if (typeof window !== 'undefined') {
+    try { localStorage.removeItem('mora.recent-items'); } catch { /* disabled storage */ }
+}
+let activityScope = getDataScopeKey();
+subscribeDataScope(() => {
+    const next = getDataScopeKey();
+    if (next === activityScope) return;
+    activityScope = next;
+    useActivityStore.getState().clearActivity();
+});

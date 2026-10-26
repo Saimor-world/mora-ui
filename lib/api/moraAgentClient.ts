@@ -1,6 +1,7 @@
 import { corePost } from './coreClient';
 import { useNavStore } from '@/lib/store/navStore';
 import { usePaneStore } from '@/lib/store/paneStore';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import { clearMoraWorkspaceIntent, readMoraWorkspaceIntent } from '@/lib/os/openMoraWorkspace';
 import type { PerceptionBundle } from '@/lib/types/perception';
 
@@ -177,7 +178,7 @@ export function buildChatContext(overrides?: ChatContext): ChatContext | undefin
     const launchContext = consumeLaunchContext();
     return mergeChatContext(
         {
-            company_id: navState.activeCompanyId || undefined,
+            company_id: useDemoStore.getState().demoCompanyId || navState.activeCompanyId || undefined,
             department_id: navState.activeDepartmentId || undefined,
             space_id: navState.activeSpaceId || undefined,
             folder_id: navState.activeFolderId || undefined,

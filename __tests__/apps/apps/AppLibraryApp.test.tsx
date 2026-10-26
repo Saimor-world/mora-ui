@@ -38,6 +38,12 @@ describe('AppLibraryApp', () => {
     resetAllStores();
     jest.clearAllMocks();
 
+    // Establish the authenticated role before opening a window: an identity /
+    // permission change intentionally closes panes from the previous context.
+    useSessionStore.setState({
+      user: { id: 'owner', tenant_id: 'tenant-test', role: 'owner' },
+    } as any);
+
     usePaneStore.setState({
       panes: [{
         id: 'apps-main',
@@ -58,9 +64,6 @@ describe('AppLibraryApp', () => {
       updatePaneSize: jest.fn(),
     } as any);
 
-    useSessionStore.setState({
-      user: { role: 'owner' },
-    } as any);
   });
 
   it('renders grouped app cards with stable layout hooks', () => {

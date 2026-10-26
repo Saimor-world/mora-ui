@@ -2,6 +2,8 @@
 import { APP_REGISTRY, getAppManifest } from '@/lib/apps/appRegistry';
 import { usePaneStore } from '@/lib/store/paneStore';
 import type { PaneType } from '@/lib/surface/surfaceRegistry';
+import { useDemoStore } from '@/lib/demo/demoStore';
+import { toast } from '@/lib/toast';
 
 /**
  * Where every legacy app (lib/apps/appRegistry) lives in the new OS information
@@ -65,6 +67,10 @@ export function knownLegacyAppIds(): string[] {
 
 /** Open a legacy app as a classic pane above the new shell (PaneManager renders it). */
 export function openLegacyApp(appId: string, data?: Record<string, unknown>) {
+  if (useDemoStore.getState().demoCompanyId && !['document', 'chat'].includes(appId)) {
+    toast.error('Diese klassische App ist noch nicht für getrennte Demo-Daten freigegeben. Nutze die firmengebundenen Ansichten in Heute, Post und Universe.');
+    return false;
+  }
   const manifest = getAppManifest(appId);
   if (!manifest) return false;
   usePaneStore.getState().openPane({

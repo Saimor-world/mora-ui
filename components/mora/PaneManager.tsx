@@ -6,8 +6,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { usePaneStore, PaneConfig } from '@/lib/store/paneStore';
 import { isPaneEnabled } from '@/lib/surface/surfaceRegistry';
 import { AppLoader, APP_IDS } from '@/lib/apps/AppLoader';
-import { useNavStore } from '@/lib/store/navStore';
-import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
 
 /**
  * Die wenigen Faelle, in denen Fenstertyp und App-Kennung auseinandergehen.
@@ -103,9 +102,7 @@ const PaneRenderer: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
  */
 const RetainedChat: React.FC<{ pane: PaneConfig }> = ({ pane }) => {
     const [hasOpened, setHasOpened] = useState(!pane.minimized);
-    const companyId = useNavStore(state => state.activeCompanyId);
-    const sessionGeneration = useSessionStore(state => state.sessionGeneration);
-    const scope = `${sessionGeneration}:${companyId ?? ''}`;
+    const scope = useDataScopeKey();
     const launch = useRef({ scope, data: pane.data, allowed: true });
     if (launch.current.scope !== scope) {
         // Old launch text/transcripts must not reappear or auto-submit in a new context,

@@ -147,7 +147,6 @@ describe('ChatPane session pill', () => {
             nameConflict: null,
             navigateToDepartment: jest.fn(),
         } as any);
-        (useNavStore as any).getState = () => useNavStore.getState();
 
         useOrbStore.setState({ orbState: 'idle' } as any);
     });

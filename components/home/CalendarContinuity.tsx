@@ -2,6 +2,7 @@
 
 import { coreRequest, CoreError } from '@/lib/api/http';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { useDemoStore } from '@/lib/demo/demoStore';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
 import { ContinuityPanel, type ContinuityRequest } from './ContinuityPanel';
 
@@ -33,7 +34,9 @@ const request: ContinuityRequest = async (operation, body) => {
 export function CalendarContinuity() {
   const user = useSessionStore(state => state.user);
   const generation = useSessionStore(state => state.sessionGeneration);
+  const demo = useDemoStore(state => state.demoCompanyId);
   if (!user) return null;
+  if (demo) return <p className="os-tone-faint text-sm">Kalender-Fäden aus echten Provider-Verbindungen werden im Demo-Arbeitsbereich nicht geladen.</p>;
   if (isUniverseV2Enabled()) {
     // Universe v2: Fäden sind ein Werkzeug, kein Hauptinhalt – zugeklappt als ruhige Zeile unter „Heute“.
     return <details className="uv2-faeden" data-uv2-faeden>

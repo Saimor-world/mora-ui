@@ -145,7 +145,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   const demoCompanyId = useDemoStore((s) => s.demoCompanyId);
   const demoCompanies = useDemoCompanies(Boolean(demoCompanyId));
   const demoName = demoCompanyId ? demoCompanies.find((c) => c.id === demoCompanyId)?.name : undefined;
-  const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Studio';
+  const org = demoMode ? 'Vorschau' : demoName || sessionOrg || localCompany || 'Dein Unternehmen';
   const controlOpen = useOsShellStore((s) => s.controlOpen);
 
   const askMora = (text: string) => {

@@ -87,7 +87,7 @@ export default function RootLayout({
 
     const applyScale = (scale: number) => {
       // Clamp scale between 0.8 and 1.2 for safety
-      const clampedScale = Math.max(0.8, Math.min(1.2, scale));
+      const clampedScale = Number.isFinite(scale) ? Math.max(0.8, Math.min(1.2, scale)) : 1;
 
       // Apply via zoom (standard on Chromium)
       const body = document.body;

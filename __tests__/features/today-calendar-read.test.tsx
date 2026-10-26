@@ -11,7 +11,10 @@ const mockSnapshot = {
 let mockWorld: Record<string, unknown>;
 jest.mock('@/lib/os/useScopedToday', () => ({ useScopedToday: () => ({ snapshot: mockSnapshot, loading: false, refreshing: false, loadError: null, refresh: jest.fn() }) }));
 jest.mock('@/lib/lea/useWorld', () => ({ useWorld: () => mockWorld }));
-jest.mock('@/lib/store/sessionStore', () => ({ useSessionStore: (select: (s: unknown) => unknown) => select({ user: { id: 'reader', tenant_id: 'tenant', name: 'Test', role: 'owner' } }) }));
+jest.mock('@/lib/store/sessionStore', () => {
+  const state = { user: { id: 'reader', tenant_id: 'tenant', name: 'Test', role: 'owner' }, sessionGeneration: 1 };
+  return { useSessionStore: Object.assign((select: (s: unknown) => unknown) => select(state), { getState: () => state, subscribe: () => () => {} }) };
+});
 jest.mock('@/lib/os-prototype/shellStore', () => ({ useOsShellStore: (select: (s: unknown) => unknown) => select({ phaseOverride: null }) }));
 jest.mock('@/lib/hooks/useIsPhone', () => ({ useIsPhone: () => false }));
 jest.mock('@/lib/hooks/useIsSaimorInternal', () => ({ useIsSaimorInternal: () => false }));

@@ -214,20 +214,23 @@ export interface MoraMemory {
 }
 
 /** List most recent mora_memories for the authenticated user. */
-export async function fetchMoraMemories(limit = 50): Promise<MoraMemory[] | null> {
-    const result = await coreGet(`/v3/memory/list?limit=${limit}`, { isOptional: true });
+export async function fetchMoraMemories(limit = 50, companyId?: string): Promise<MoraMemory[] | null> {
+    const companyQuery = companyId ? `&company_id=${encodeURIComponent(companyId)}` : '';
+    // The old /list is user-wide, without a company column. Company views use
+    // the existing Learning Brain entries contract instead of ignoring scope.
+    const result = await coreGet(`/v3/memory/${companyId ? 'entries' : 'list'}?limit=${limit}${companyQuery}`, { isOptional: true });
     if (!result) return null;
     // Handle both raw array and { data: [...] } envelope
-    if (Array.isArray(result)) return result as MoraMemory[];
-    if (Array.isArray((result as any)?.data)) return (result as any).data as MoraMemory[];
+    const rows = Array.isArray(result) ? result : Array.isArray(result.data) ? result.data : null;
+    if (rows) return rows.map((row: MoraMemory & { timestamp?: string }) => ({ ...row, created_at: row.created_at || row.timestamp || '' }));
     return null;
 }
 
 /** Semantic search over mora_memories using cosine similarity. */
-export async function searchMoraMemories(query: string, topK = 10): Promise<MoraMemory[] | null> {
+export async function searchMoraMemories(query: string, topK = 10, companyId?: string): Promise<MoraMemory[] | null> {
     if (!query || query.trim().length < 2) return null;
     const result = await coreGet(
-        `/v3/memory/search?q=${encodeURIComponent(query)}&top_k=${topK}`,
+        `/v3/memory/search?q=${encodeURIComponent(query)}&${companyId ? 'limit' : 'top_k'}=${topK}${companyId ? `&company_id=${encodeURIComponent(companyId)}` : ''}`,
         { isOptional: true }
     );
     if (!result) return null;

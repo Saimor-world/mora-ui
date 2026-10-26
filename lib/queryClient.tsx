@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { getDataScopeKey, useDataScopeKey } from '@/lib/store/dataScope';
 
 function makeQueryClient() {
   const client = new QueryClient({
@@ -34,23 +35,29 @@ function makeQueryClient() {
 }
 
 let browserQueryClient: QueryClient | undefined;
+let browserScope: string | undefined;
 
 export function getQueryClient() {
   if (typeof window === 'undefined') {
     return makeQueryClient(); // SSR: fresh each time
   }
-  if (!browserQueryClient) {
-    browserQueryClient = makeQueryClient(); // browser: singleton
+  const scope = getDataScopeKey();
+  if (!browserQueryClient || browserScope !== scope) {
+    const previous = browserQueryClient;
+    browserScope = scope;
+    browserQueryClient = makeQueryClient();
+    if (previous) { void previous.cancelQueries(); previous.clear(); }
   }
   return browserQueryClient;
 }
 
 export function QueryProvider({ children }: { children: React.ReactNode }) {
+  const scope = useDataScopeKey();
   // NOTE: getQueryClient() used here — NOT makeQueryClient() — to share the singleton.
   // The orb bridge (QueryCache event listener) is wired in Task 12 when orbStore exists.
   const queryClient = getQueryClient();
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider key={scope} client={queryClient}>
       {children}
     </QueryClientProvider>
   );

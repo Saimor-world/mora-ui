@@ -7,6 +7,12 @@ import { usePhase } from '@/lib/os-prototype/usePhase';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import { useDemoCompanies, useIsSaimorHq } from '@/lib/hooks/useIsSaimorInternal';
 
+function switchDemo(id: string | null) {
+  if (id === useDemoStore.getState().demoCompanyId) return;
+  if (!window.confirm('Arbeitsbereich wechseln? Offene Ansichten und lokale Entwürfe werden geschlossen. Speichere deine Arbeit vorher.')) return;
+  useDemoStore.getState().setDemoCompany(id);
+}
+
 /**
  * Firmen-Schalter nur für SAIMÔR-HQ: die echte Firma heißt einfach „SAIMÔR“, darunter die
  * is_demo-Firmen aus CORE. Die Wahl lebt nur in dieser Sitzung (sessionStorage).
@@ -43,9 +49,8 @@ export function CompanyOptions({ onPick }: { onPick?: () => void }) {
   const hq = useIsSaimorHq();
   const companies = useDemoCompanies(hq);
   const current = useDemoStore((s) => s.demoCompanyId);
-  const setDemo = useDemoStore((s) => s.setDemoCompany);
   if (!hq || (!companies.length && !current)) return null;
-  const pick = (id: string | null) => { setDemo(id); onPick?.(); };
+  const pick = (id: string | null) => { switchDemo(id); onPick?.(); };
   return (
     <div className="os-company-options" data-testid="company-options">
       <div className="os-company-options__label">Firma</div>
@@ -62,14 +67,13 @@ export function CompanyOptions({ onPick }: { onPick?: () => void }) {
 /** Ruhiges Band, solange eine Demo-Firma offen ist – mit einem Weg zurück zur echten Firma. */
 export function DemoBanner() {
   const current = useDemoStore((s) => s.demoCompanyId);
-  const setDemo = useDemoStore((s) => s.setDemoCompany);
   const companies = useDemoCompanies(Boolean(current));
   if (!current) return null;
   const name = companies.find((c) => c.id === current)?.name;
   return (
     <div className="os-demo-banner" role="note" data-testid="demo-banner">
       <span>Demo{name ? ` · ${name}` : ''}</span>
-      <button type="button" onClick={() => setDemo(null)} data-testid="demo-back">zurück zu SAIMÔR</button>
+      <button type="button" onClick={() => switchDemo(null)} data-testid="demo-back">zurück zu SAIMÔR</button>
     </div>
   );
 }

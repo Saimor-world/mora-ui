@@ -40,10 +40,10 @@ jest.mock('@/lib/store/paneStore', () => ({
 }));
 
 jest.mock('@/lib/store/navStore', () => ({
-  useNavStore: (selector?: any) => {
+  useNavStore: Object.assign((selector?: any) => {
     const store = { activeCompanyId: 'company-1' };
     return selector ? selector(store) : store;
-  },
+  }, { getState: () => ({ activeCompanyId: 'company-1' }), subscribe: () => () => {} }),
 }));
 
 jest.mock('@/lib/api/contentClient', () => ({

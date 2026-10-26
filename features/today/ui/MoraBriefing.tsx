@@ -1,4 +1,7 @@
 'use client';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
+import { companyPath } from '@/lib/api/companyPath';
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sunrise } from 'lucide-react';
@@ -25,11 +28,13 @@ interface Briefing { status?: string; text?: string; date?: string }
 
 
 export function MoraBriefing({ live, navigate, companyView = true }: { live: boolean; navigate?: (id: string) => void; companyView?: boolean }) {
+  const company = useScopeCompanyId();
+  const scope = useDataScopeKey();
   // V1.6: gemeinsamer Quellen-Hook; nur status === 'connected' zählt (V1.5 las das entpackte Envelope falsch).
   const conns = useSources(live);
   const connected = connectedSources(conns.data?.connections);
   const ready = live && connected.length > 0;
-  const brief = useQuery({ queryKey: ['os', 'briefing'], queryFn: () => coreGet('/v3/briefing') as Promise<Briefing>, enabled: ready, staleTime: 60_000, retry: false });
+  const brief = useQuery({ queryKey: ['os', 'briefing', scope], queryFn: () => coreGet(companyPath('/v3/briefing', company)) as Promise<Briefing>, enabled: ready && companyView, staleTime: 60_000, retry: false });
   const real = ready && brief.data && brief.data.status !== 'degraded' && brief.data.text;
   const mailDocked = live && connected.some((c) => c.group === 'mail');
 

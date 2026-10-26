@@ -14,6 +14,8 @@ import { LEGACY_APP_PLACEMENT, legacyAppName, openLegacyApp } from '@/lib/os-pro
 import { searchGlobal } from '@/lib/api/searchClient';
 import { useWorld } from '@/lib/lea/useWorld';
 import { CalendarDays, CheckCircle2, Folder } from 'lucide-react';
+import { useScopeCompanyId } from '@/lib/demo/demoStore';
+import { useDataScopeKey } from '@/lib/store/dataScope';
 
 interface Item {
   id: string;
@@ -45,6 +47,8 @@ export interface CommandPaletteProps {
  * legacy Spotlight/Search app use).
  */
 export function CommandPalette({ open, onClose, features, navigate, askMora, searchEnabled, demo = false, showLegacy = false }: CommandPaletteProps) {
+  const company = useScopeCompanyId();
+  const scope = useDataScopeKey();
   const [q, setQ] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,9 +57,9 @@ export function CommandPalette({ open, onClose, features, navigate, askMora, sea
 
   const trimmed = q.trim();
   const search = useQuery({
-    queryKey: ['os', 'palette-search', trimmed],
-    queryFn: () => searchGlobal(trimmed),
-    enabled: open && searchEnabled && trimmed.length >= 2,
+    queryKey: ['os', 'palette-search', scope, trimmed],
+    queryFn: () => searchGlobal(trimmed, company!),
+    enabled: open && searchEnabled && Boolean(company) && trimmed.length >= 2,
     staleTime: 30_000,
   });
 

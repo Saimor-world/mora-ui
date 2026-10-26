@@ -12,7 +12,7 @@ export function sinceLabel(iso?: string): string | null {
 }
 import { useDayActions } from '@/lib/lea/useDayActions';
 import { buildLiveDay } from '@/lib/lea/live';
-import { personOf, serviceOf, inMinutes } from '@/lib/lea/day';
+import { inMinutes } from '@/lib/lea/day';
 import { localISO, shortDate, type WorldTask } from '@/lib/lea/world';
 
 /**
@@ -88,7 +88,7 @@ export function DayPanel({ onAskMora, compact = false, hideWhenUnavailable = fal
   const change = async (id: string, title: string, phase: EventPhase, text: string, undoTo: EventPhase) => {
     const res = await setPhase(id, phase);
     if (res.conflict) {
-      say(`Schon auf einem anderen Gerät geändert: Termin mit ${personOf(title)} ${PHASE_TEXT[res.phase]}.`);
+      say(`Schon auf einem anderen Gerät geändert: „${title}“ ${PHASE_TEXT[res.phase]}.`);
       return;
     }
     if (!res.saved) return say('Terminstatus nicht gespeichert. Bitte erneut versuchen.', undefined, 'error');
@@ -122,9 +122,9 @@ export function DayPanel({ onAskMora, compact = false, hideWhenUnavailable = fal
         {day.stale ? (
           <div className="dy-card dy-next" data-testid="day-stale">
             <p className="dy-eyebrow">Heute · {day.stale.time} · offen</p>
-            <p className="dy-title">{personOf(day.stale.title)} {day.stale.duration ? <small>{day.stale.duration} Min</small> : null}</p>
-            <p className="dy-meta">{serviceOf(day.stale.title) || 'Termin'} · noch nicht abgeschlossen</p>
-            <button type="button" className="dy-btn" data-testid="day-finish-stale" disabled={Boolean(phasePending[day.stale.id])} onClick={() => { const s = day.stale!; void change(s.id, s.title, 'erledigt', `Termin mit ${personOf(s.title)} abgeschlossen.`, 'geplant'); }}>Termin abschließen</button>
+            <p className="dy-title">{day.stale.title} {day.stale.duration ? <small>{day.stale.duration} Min</small> : null}</p>
+            <p className="dy-meta">Termin · noch nicht abgeschlossen</p>
+            <button type="button" className="dy-btn" data-testid="day-finish-stale" disabled={Boolean(phasePending[day.stale.id])} onClick={() => { const s = day.stale!; void change(s.id, s.title, 'erledigt', `„${s.title}“ abgeschlossen.`, 'geplant'); }}>Termin abschließen</button>
           </div>
         ) : (
         <div className={`dy-card dy-next${day.running ? ' dy-next--live' : ''}`} data-testid="day-next">
@@ -133,17 +133,17 @@ export function DayPanel({ onAskMora, compact = false, hideWhenUnavailable = fal
           </p>
           {ev ? (
             <>
-              <p className="dy-title">{ev.time && !day.running ? `${ev.time} ` : ''}{personOf(ev.title)} {day.running ? <small>läuft</small> : ev.duration ? <small>{ev.duration} Min</small> : null}</p>
-              <p className="dy-meta">{serviceOf(ev.title) || 'Termin'}</p>
+              <p className="dy-title">{ev.time && !day.running ? `${ev.time} ` : ''}{ev.title} {day.running ? <small>läuft</small> : ev.duration ? <small>{ev.duration} Min</small> : null}</p>
+              <p className="dy-meta">Termin</p>
               {day.running ? (
-                <button type="button" className="dy-btn" data-testid="day-finish" disabled={Boolean(phasePending[day.running.id])} onClick={() => { const r = day.running!; void change(r.id, r.title, 'erledigt', `Termin mit ${personOf(r.title)} abgeschlossen.`, 'laeuft'); }}>Termin abschließen</button>
+                <button type="button" className="dy-btn" data-testid="day-finish" disabled={Boolean(phasePending[day.running.id])} onClick={() => { const r = day.running!; void change(r.id, r.title, 'erledigt', `„${r.title}“ abgeschlossen.`, 'laeuft'); }}>Termin abschließen</button>
               ) : isToday ? (
-                <button type="button" className="dy-btn" data-testid="day-arrived" disabled={Boolean(phasePending[ev.id])} onClick={() => { void change(ev.id, ev.title, 'laeuft', `${personOf(ev.title)} ist da. Termin läuft.`, 'geplant'); }}>{personOf(ev.title)} ist da</button>
+                <button type="button" className="dy-btn" data-testid="day-arrived" disabled={Boolean(phasePending[ev.id])} onClick={() => { void change(ev.id, ev.title, 'laeuft', `„${ev.title}“ läuft.`, 'geplant'); }}>Termin starten</button>
               ) : null}
             </>
           ) : (
             <>
-              <p className="dy-title">Frei</p>
+              <p className="dy-title">Keine weiteren Termine</p>
               <p className="dy-meta">Keine Termine mehr eingetragen.</p>
             </>
           )}
