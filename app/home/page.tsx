@@ -1,8 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { Suspense, useEffect } from 'react';
 import nextDynamic from 'next/dynamic';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { isUniverseV2Enabled } from '@/lib/universe/morgen';
+import { isOsPrototypeEnabled } from '@/lib/os-prototype/flags';
+import { useIsSaimorInternal } from '@/lib/hooks/useIsSaimorInternal';
 
 export const dynamic = 'force-dynamic';
 
@@ -39,7 +42,23 @@ const MorgenOverlay = nextDynamic(
     { ssr: false },
 );
 
-export default function HomePage() {
+function HomeEntry() {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const internal = useIsSaimorInternal();
+    const newOs = isOsPrototypeEnabled();
+    // Classic mode is an explicit choice from an already established HQ session.
+    // A default/bookmarked /home always enters /os through its existing auth gate.
+    const classic = searchParams.get('classic') === '1' && internal;
+    const query = searchParams.toString();
+    useEffect(() => {
+        if (!newOs || classic) return;
+        const params = new URLSearchParams(query);
+        params.delete('classic');
+        const suffix = params.toString();
+        router.replace(`/os${suffix ? `?${suffix}` : ''}${window.location.hash}`);
+    }, [newOs, classic, query, router]);
+    if (newOs && !classic) return <EntryLoading />;
     // Universe v2 „Der Morgen“ – nur mit NEXT_PUBLIC_UNIVERSE_V2=true (Standard: aus).
     // Leise Ebene ÜBER dem echten Universe: Hintergrund, Planeten und Dock bleiben unverändert.
     if (isUniverseV2Enabled()) {
@@ -52,4 +71,12 @@ export default function HomePage() {
         );
     }
     return <MoraShell />;
+}
+
+function EntryLoading() {
+    return <div className="grid min-h-screen place-items-center bg-[#0d0921] text-emerald-50" role="status">Saimôr OS wird geöffnet …</div>;
+}
+
+export default function HomePage() {
+    return <Suspense fallback={<EntryLoading />}><HomeEntry /></Suspense>;
 }

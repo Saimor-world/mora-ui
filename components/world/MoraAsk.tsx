@@ -29,6 +29,17 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
   phone?: boolean;
 }) {
   const busyRef = useRef(false);
+  const mountedRef = useRef(true);
+  const recognitionRef = useRef<InstanceType<SpeechCtor> | null>(null);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+      if (recognition) { recognition.onresult = null; recognition.onend = null; try { recognition.stop(); } catch { /* Already inactive. */ } }
+    };
+  }, []);
   const [busy, setBusy] = useState(false);
   const [text, setText] = useState('');
   const [listening, setListening] = useState(false);
@@ -42,8 +53,9 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
   const at = /@([^\s@]*)$/.exec(text);
   const matches = at ? ctx.planets.filter((p) => p.name.toLowerCase().includes(at[1].toLowerCase())).slice(0, 5) : [];
 
-  const state: MoraState = stream.isStreaming ? (stream.streamingText ? 'speaking' : 'thinking') : 'idle';
+  const state: MoraState = stream.isStreaming ? (stream.streamingText ? 'speaking' : 'thinking') : busy ? 'thinking' : 'idle';
   useEffect(() => { onState?.(state); }, [state, onState]);
+  useEffect(() => () => { onState?.('idle'); onListen?.(false); }, [onState, onListen]);
 
   // „/“ fokussiert das Feld (wie Spotlight), außer man tippt schon irgendwo.
   useEffect(() => {
@@ -57,27 +69,30 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
 
   const run = async (raw: string) => {
     const t = raw.trim();
-    if (!t || busyRef.current) return;
+    if (!t || busyRef.current || !mountedRef.current) return;
     busyRef.current = true;
     setBusy(true);
     try {
       setText('');
       setAsked(t);
+      setReply(null);
       const cmd = parseDayCommand(t, ctx);
       if (cmd) {
         const result = await onCommand(cmd);
+        if (!mountedRef.current) return;
         setReply(result);
         if (cmd.kind !== 'ambiguous' && cmd.kind !== 'unknown-target') onOutcome?.(result.tone === 'action');
         return;
       }
       setReply(null);
       const answer = await stream.sendMessage(t, { context: dayContext, history: stream.messages.slice(-6) });
+      if (!mountedRef.current) return;
       const err = stream.getError();
       onOutcome?.(!!answer && !err);
       if (answer && !err) setReply({ text: answer, tone: 'answer' });
       else setReply({ text: `Frei antworten kann ich gerade nicht – die Verbindung hat keine vollständige Antwort geliefert. Aus deinen Daten: ${fallback}`, tone: 'note' });
-    } catch { onOutcome?.(false); setReply({ text: 'Die Aktion konnte nicht bestätigt werden. Bitte erneut versuchen.', tone: 'note' }); }
-    finally { busyRef.current = false; setBusy(false); }
+    } catch { if (mountedRef.current) { onOutcome?.(false); setReply({ text: 'Die Aktion konnte nicht bestätigt werden. Bitte erneut versuchen.', tone: 'note' }); } }
+    finally { busyRef.current = false; if (mountedRef.current) setBusy(false); }
   };
 
   const undo = async () => {
@@ -85,20 +100,23 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
     busyRef.current = true; setBusy(true);
     try {
       const ok = await reply.undo();
+      if (!mountedRef.current) return;
       onOutcome?.(ok !== false);
       setReply(ok === false ? { text: 'Rückgängig nicht gespeichert. Bitte neu laden und erneut versuchen.', tone: 'note' } : { text: 'Rückgängig gemacht.', tone: 'action' });
-    } catch { onOutcome?.(false); setReply({ text: 'Rückgängig nicht gespeichert. Bitte erneut versuchen.', tone: 'note' }); }
-    finally { busyRef.current = false; setBusy(false); }
+    } catch { if (mountedRef.current) { onOutcome?.(false); setReply({ text: 'Rückgängig nicht gespeichert. Bitte erneut versuchen.', tone: 'note' }); } }
+    finally { busyRef.current = false; if (mountedRef.current) setBusy(false); }
   };
 
   const listen = () => {
-    if (!Speech) return;
+    if (!Speech || busyRef.current) return;
+    if (recognitionRef.current) { recognitionRef.current.stop(); return; }
     const rec = new Speech();
+    recognitionRef.current = rec;
     rec.lang = 'de-DE';
-    rec.onresult = (e) => { const said = e.results[0][0].transcript; void run(said); };
-    rec.onend = () => setListening(false);
+    rec.onresult = (e) => { if (mountedRef.current) { const said = e.results[0][0].transcript; void run(said); } };
+    rec.onend = () => { recognitionRef.current = null; if (mountedRef.current) setListening(false); };
     setListening(true);
-    rec.start();
+    try { rec.start(); } catch { recognitionRef.current = null; setListening(false); setReply({ text: 'Die Sprachaufnahme konnte nicht gestartet werden.', tone: 'note' }); }
   };
 
   const bubble = state !== 'idle' ? (stream.streamingText || null) : reply?.text ?? null;

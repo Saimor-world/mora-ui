@@ -1,6 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { MoraAsk } from '@/components/world/MoraAsk';
+import { MoraAsk, type MoraReply } from '@/components/world/MoraAsk';
 
 const sendMessage = jest.fn();
 const getError = jest.fn();
@@ -42,4 +42,38 @@ it('waits for the action and does not announce a failed undo as successful', asy
   fireEvent.click(await screen.findByTestId('mora-undo'));
   await screen.findByText(/Rückgängig nicht gespeichert/);
   expect(screen.queryByText('Rückgängig gemacht.')).toBeNull();
+});
+
+it('does not display the new success mood before the action is confirmed', async () => {
+  let complete!: (value: MoraReply) => void;
+  const outcome = jest.fn();
+  render(<MoraAsk {...props} onOutcome={outcome} onCommand={() => new Promise(resolve => { complete = resolve; })} />);
+  ask('Beispiel ist da');
+  expect(outcome).not.toHaveBeenCalled();
+  await act(async () => { complete({ text: 'Nicht gespeichert.', tone: 'note' }); });
+  expect(outcome).toHaveBeenCalledWith(false);
+  expect(outcome).not.toHaveBeenCalledWith(true);
+});
+
+it('does not send an old outcome into the next surface after unmount', async () => {
+  let complete!: (value: MoraReply) => void;
+  const outcome = jest.fn();
+  const { unmount } = render(<MoraAsk {...props} onOutcome={outcome} onCommand={() => new Promise(resolve => { complete = resolve; })} />);
+  ask('Beispiel ist da'); unmount();
+  await act(async () => { complete({ text: 'Gespeichert.', tone: 'action' }); });
+  expect(outcome).not.toHaveBeenCalled();
+});
+
+it('stops the speech recognizer and removes its callback when the surface closes', () => {
+  const recognition = { lang: '', onresult: null, onend: null, start: jest.fn(), stop: jest.fn() };
+  Object.defineProperty(window, 'SpeechRecognition', { configurable: true, value: jest.fn(() => recognition) });
+  try {
+    const { unmount } = render(<MoraAsk {...props} onCommand={jest.fn()} />);
+    fireEvent.click(screen.getByTestId('world-ask-mic'));
+    expect(recognition.start).toHaveBeenCalled(); unmount();
+    expect(recognition.stop).toHaveBeenCalledTimes(1);
+    expect(recognition.onresult).toBeNull();
+  } finally {
+    delete (window as unknown as { SpeechRecognition?: unknown }).SpeechRecognition;
+  }
 });

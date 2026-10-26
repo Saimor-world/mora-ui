@@ -1,7 +1,7 @@
 'use client';
 import { useDemoStore } from '@/lib/demo/demoStore';
 import Link from 'next/link';
-import React, { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Command, LayoutGrid, MoreHorizontal } from 'lucide-react';
 import { Button, Divider, Loading, MoraStone, NavItem, Panel, Stack, Status, Text } from '@/components/os-kit';
 import { OsAtmosphere } from './OsAtmosphere';
@@ -18,6 +18,7 @@ import { useOsShellStore } from '@/lib/os-prototype/shellStore';
 import { enabledFeatureFlags } from '@/lib/os-prototype/flags';
 import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
 import { useSessionStore } from '@/lib/store/sessionStore';
+import { openLegacyApp } from '@/lib/os-prototype/legacyApps';
 import { CommandPalette } from './CommandPalette';
 import { FeatureBoundary } from './FeatureBoundary';
 import { NotificationButton, NotificationTray } from './NotificationTray';
@@ -51,6 +52,18 @@ export function OsShell({ preview }: { preview: boolean }) {
   const userName = useSessionStore((s) => s.user?.name ?? null);
   // Sitzung = Tenant aus CORE, nicht der Name: ohne hinterlegten Namen ist der Name leer (neutral begrüßen).
   const hasSession = useSessionStore((s) => Boolean(s.user?.tenant_id));
+  const handledDocumentEntry = useRef(false);
+  useEffect(() => {
+    if (!hasSession || handledDocumentEntry.current) return;
+    const url = new URL(window.location.href);
+    const nodeId = url.searchParams.get('open_node');
+    if (!nodeId) return;
+    handledDocumentEntry.current = true;
+    openLegacyApp('document', { nodeId });
+    // Consume the handoff once; a later session must not replay this URL.
+    url.searchParams.delete('open_node');
+    window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`);
+  }, [hasSession]);
   const flags = useMemo(() => enabledFeatureFlags(), []);
   const internal = useIsSaimorInternal();
   const ctx = useMemo(() => ({ role, flags, preview, internal }), [role, flags, preview, internal]);
@@ -206,7 +219,7 @@ export function OsShell({ preview }: { preview: boolean }) {
                   const Icon = m.icon;
                   return <NavItem key={m.id} icon={<Icon size={17} />} label={m.title} active={m.id === active.id} onClick={() => navigate(m.id)} />;
                 })}
-                {internal || preview ? <Link href="/" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link> : null}
+                {internal || preview ? <Link href="/home?classic=1" className="os-nav-item"><LayoutGrid size={16} /> Klassische Oberfläche</Link> : null}
               </Stack>
             </div>
           </div>
