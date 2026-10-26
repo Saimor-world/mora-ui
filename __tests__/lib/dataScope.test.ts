@@ -49,6 +49,14 @@ it('does not carry Grok mail handoffs or MÔRA drafts into a demo', () => {
   expect(useOsShellStore.getState()).toMatchObject({ moraDraft: null, postOpenId: null, universeFocus: null });
 });
 
+it('drops cached authority-dependent data when the confirmed role changes', () => {
+  const before = getQueryClient();
+  before.setQueryData(['owner-data'], 'privileged result');
+  useSessionStore.getState().setUser({ ...useSessionStore.getState().user!, role: 'member' });
+  expect(getQueryClient()).not.toBe(before);
+  expect(getQueryClient().getQueryData(['owner-data'])).toBeUndefined();
+});
+
 it('ignores an old answer even after returning to the original company', () => {
   const original = getDataScopeKey();
   useMoraConversation.getState().add({ role: 'user', text: 'Private question' }, original);

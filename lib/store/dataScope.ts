@@ -9,7 +9,7 @@ function scopeIdentity(): string {
   const session = useSessionStore.getState();
   const demo = useDemoStore.getState();
   const company = resolveScopeCompany(demo.demoCompanyId, session.user?.active_company_id ?? null, useNavStore.getState().activeCompanyId);
-  return JSON.stringify([session.sessionGeneration, session.user?.tenant_id ?? null, session.user?.id ?? null, demo.selectionGeneration, company]);
+  return JSON.stringify([session.sessionGeneration, session.user?.tenant_id ?? null, session.user?.id ?? null, session.user?.role ?? null, demo.selectionGeneration, company]);
 }
 
 // Resolve lazily: API modules are also imported during server boot, before a
