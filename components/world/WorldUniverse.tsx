@@ -1,9 +1,11 @@
 'use client';
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import { MoraSpirit, type SpiritMood } from './MoraSpirit';
+import { type SpiritMood } from './MoraSpirit';
+import { PixelMora, type PixelMoraProps } from './PixelMora';
 
-export type SpiritFigureProps = React.ComponentProps<typeof MoraSpirit>;
+/** Adapter: Rollback auf die alte Figur = Default unten wieder auf MoraSpirit setzen. */
+export type SpiritFigureProps = PixelMoraProps;
 import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
@@ -33,7 +35,7 @@ export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = MoraSpirit }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = PixelMora }: {
   spiritMood?: SpiritMood;
   /** Planet-ID oder 'mail': MÔRA fliegt kurz dorthin. */
   spiritTarget?: string | null;
@@ -151,6 +153,9 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
     return pp ? { x: pp.x - layout.cx, y: pp.y - layout.cy } : null;
   })();
+  // MÔRAs Ziele: Planeten relativ zur Mitte, gewichtet nach echter Aktivität / offenen Punkten.
+  const roam = layout ? planets.flatMap((p, k) => { const sl = layout.slots[k]; const pp = sl ? placeOnOrbit(layout, sl) : null; const t = p.traits;
+    return pp ? [{ id: p.id, x: pp.x - layout.cx, y: pp.y - layout.cy, weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
   const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
@@ -213,7 +218,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} />
+            <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}

@@ -1,0 +1,196 @@
+{
+ "version": 1,
+ "grid": 40,
+ "base": [
+  "light",
+  "body",
+  "face",
+  "eyes"
+ ],
+ "assetBase": "/mora/pixel/traits/",
+ "slots": [
+  {
+   "id": "aura",
+   "name": "Leuchten",
+   "items": [
+    {
+     "id": "warm",
+     "name": "Warmes Leuchten",
+     "file": "aura-warm.png"
+    },
+    {
+     "id": "moon",
+     "name": "Mondlicht",
+     "file": "aura-moon.png"
+    },
+    {
+     "id": "sparkles",
+     "name": "Funkeln",
+     "file": "aura-sparkles.png"
+    }
+   ]
+  },
+  {
+   "id": "neck",
+   "name": "Hals",
+   "items": [
+    {
+     "id": "scarf-navy",
+     "name": "Schal marine",
+     "file": "neck-scarf-navy.png",
+     "default": true
+    },
+    {
+     "id": "scarf-red",
+     "name": "Schal rot",
+     "file": "neck-scarf-red.png"
+    },
+    {
+     "id": "scarf-emerald",
+     "name": "Schal smaragd",
+     "file": "neck-scarf-emerald.png"
+    },
+    {
+     "id": "scarf-cream",
+     "name": "Schal creme",
+     "file": "neck-scarf-cream.png"
+    },
+    {
+     "id": "bowtie",
+     "name": "Gold-Fliege",
+     "file": "neck-bowtie.png"
+    }
+   ]
+  },
+  {
+   "id": "held",
+   "name": "In der Hand",
+   "items": [
+    {
+     "id": "book",
+     "name": "Kleines Buch",
+     "file": "held-book.png"
+    },
+    {
+     "id": "coffee",
+     "name": "Kaffeetasse",
+     "file": "held-coffee.png"
+    },
+    {
+     "id": "lantern",
+     "name": "Laterne",
+     "file": "held-lantern.png"
+    }
+   ]
+  },
+  {
+   "id": "face",
+   "name": "Gesicht",
+   "items": [
+    {
+     "id": "glasses",
+     "name": "Runde Brille",
+     "file": "face-glasses.png"
+    },
+    {
+     "id": "sunglasses",
+     "name": "Sonnenbrille",
+     "file": "face-sunglasses.png"
+    },
+    {
+     "id": "monocle",
+     "name": "Monokel",
+     "file": "face-monocle.png"
+    }
+   ]
+  },
+  {
+   "id": "head",
+   "name": "Kopf",
+   "items": [
+    {
+     "id": "sprout",
+     "name": "Zweiblatt-Spross",
+     "file": "head-sprout.png",
+     "default": true
+    },
+    {
+     "id": "sprout3",
+     "name": "Dreiblatt-Spross",
+     "file": "head-sprout3.png"
+    },
+    {
+     "id": "flower",
+     "name": "Blüten-Spross",
+     "file": "head-flower.png"
+    },
+    {
+     "id": "beret-red",
+     "name": "Barett rot",
+     "file": "head-beret-red.png"
+    },
+    {
+     "id": "beret-navy",
+     "name": "Barett marine",
+     "file": "head-beret-navy.png"
+    },
+    {
+     "id": "headphones",
+     "name": "Kopfhörer",
+     "file": "head-headphones.png"
+    },
+    {
+     "id": "sailor",
+     "name": "Nordsee-Kapitänsmütze",
+     "file": "head-sailor.png"
+    }
+   ]
+  },
+  {
+   "id": "clip",
+   "name": "Spange",
+   "items": [
+    {
+     "id": "moon",
+     "name": "Gold-Mondspange",
+     "file": "clip-moon.png",
+     "default": true
+    },
+    {
+     "id": "star",
+     "name": "Sternspange",
+     "file": "clip-star.png"
+    },
+    {
+     "id": "heart",
+     "name": "Herzspange",
+     "file": "clip-heart.png"
+    }
+   ]
+  },
+  {
+   "id": "seasonal",
+   "name": "Saison",
+   "items": [
+    {
+     "id": "xmas",
+     "name": "Weihnachtsmütze",
+     "file": "seasonal-xmas.png",
+     "season": "12"
+    },
+    {
+     "id": "snowflake",
+     "name": "Schneeflocke",
+     "file": "seasonal-snowflake.png",
+     "season": "1-2"
+    },
+    {
+     "id": "pumpkin",
+     "name": "Kürbis",
+     "file": "seasonal-pumpkin.png",
+     "season": "10"
+    }
+   ]
+  }
+ ]
+}

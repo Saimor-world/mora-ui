@@ -8,6 +8,7 @@ import { useCoreHealth } from '@/lib/os-prototype/useCoreHealth';
 import { useSessionStore } from '@/lib/store/sessionStore';
 import type { FeatureSurfaceProps } from '../types';
 import { LookSettings } from './ui/LookSettings';
+import { MoraWardrobe } from './ui/MoraWardrobe';
 import { SourceDock } from './ui/SourceDock';
 import { requestOnboarding } from '@/lib/os-prototype/onboarding';
 
@@ -50,6 +51,7 @@ export default function SettingsSurface({ preview, navigate }: FeatureSurfacePro
         <Text variant="display" className="mt-2">Wenige Schalter, klar benannt.</Text>
       </header>
       <LookSettings />
+      <MoraWardrobe />
       <Stack direction="row" gap={3} align="center" wrap>
         <Text variant="meta">Einführung (Look, Firma, Quelle, kurze Tour) jederzeit wiederholen.</Text>
         <Button size="sm" variant="ghost" onClick={() => requestOnboarding()} data-testid="onboarding-restart">Einführung erneut starten</Button>
