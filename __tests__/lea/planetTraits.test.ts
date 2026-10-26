@@ -15,3 +15,23 @@ describe('planetTraits – Besonderheiten nur aus Daten', () => {
     expect(planetTraits('d9', [], [], [], now).texture).toBe(a.texture);
   });
 });
+
+describe('planetTraits · Post je Planet', () => {
+  const now = new Date('2026-10-26T12:00:00Z');
+  it('zählt nur Mail-Knoten im Bereich der letzten 24 h, ungelesen nur mit belegtem read', () => {
+    const t = planetTraits('d1', ['f1'], [
+      { folder_id: 'f1', type: 'mail_message', created_at: '2026-10-26T08:00:00Z', metadata: { read: false } },
+      { folder_id: 'f1', type: 'mail_message', created_at: '2026-10-26T09:00:00Z' },
+      { folder_id: 'f1', type: 'mail_message', created_at: '2026-10-20T09:00:00Z', metadata: { read: false } },
+      { folder_id: 'f2', type: 'mail_message', created_at: '2026-10-26T09:00:00Z' },
+      { folder_id: 'f1', type: 'note', created_at: '2026-10-26T09:00:00Z' },
+    ], [], now);
+    expect(t.newMails).toBe(2);
+    expect(t.unreadMails).toBe(1);
+  });
+  it('ohne Zuordnung keine erfundene Zahl', () => {
+    const t = planetTraits('d1', ['f1'], [{ folder_id: 'f1', type: 'note', created_at: '2026-10-26T09:00:00Z' }], [], now);
+    expect(t.newMails).toBeUndefined();
+    expect(t.unreadMails).toBeUndefined();
+  });
+});

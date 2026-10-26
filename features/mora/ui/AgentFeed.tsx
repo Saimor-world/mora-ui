@@ -56,7 +56,7 @@ function ago(d: Date | null): string {
   return m < 1 ? 'gerade eben' : m < 60 ? `vor ${m} min` : m < 1440 ? `vor ${Math.round(m / 60)} h` : d.toLocaleDateString('de-DE');
 }
 
-export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean }) {
+export function AgentFeed({ live, demo, limit = 8, compact = false, hideWhenEmpty = false }: { live: boolean; demo: boolean; limit?: number; compact?: boolean; hideWhenEmpty?: boolean }) {
   const q = useQuery({
     queryKey: ['os', 'agency-thoughts', limit],
     queryFn: async () => ((await coreGet(`/v3/agency/thoughts?limit=${limit}`, { throwAuthErrors: true })) as { thoughts?: AgentThought[] } | null)?.thoughts || [],
@@ -66,6 +66,8 @@ export function AgentFeed({ live, demo, limit = 8, compact = false }: { live: bo
   });
   const items = live ? (q.data || []) : demo ? DEMO_THOUGHTS.slice(0, limit) : [];
   const sample = !live && demo;
+  // Heute zeigt den Feed nur mit echtem Inhalt; leer/Fehler fasst die Statuszeile zusammen.
+  if (hideWhenEmpty && (live ? q.isLoading || q.isError || !items.length : !items.length)) return null;
 
   const body = live && q.isLoading ? <Loading lines={2} />
     : live && q.isError ? <FailureState kind={classifyCoreFailure(q.error)} compact subject="/v3/agency/thoughts" />

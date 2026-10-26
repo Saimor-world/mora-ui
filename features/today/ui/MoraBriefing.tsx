@@ -22,7 +22,6 @@ import { MailSummaryView } from './MailSummary';
  */
 interface Briefing { status?: string; text?: string; date?: string }
 
-const SOURCES = ['Mail', 'Kalender', 'Cloud-Dateien', 'Branchen-Feeds'];
 
 
 export function MoraBriefing({ live, navigate, companyView = true }: { live: boolean; navigate?: (id: string) => void; companyView?: boolean }) {
@@ -45,13 +44,26 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
     );
   }
 
+  // Ohne Quellen: eine ruhige, kompakte Statuszeile statt Karte mit leeren Chips.
+  if (!real && !mailDocked) {
+    return (
+      <div className="os-quiet-status" role="status" data-testid="mora-briefing" data-state="pending">
+        <Sunrise size={14} className="os-tone-accent" aria-hidden />
+        <span className="os-quiet-status__text">
+          <b data-testid="briefing-pending">{live ? 'MÔRA wartet auf Quellen' : 'MÔRA braucht eine CORE-Sitzung'}</b>
+          <span>{live ? 'Briefing, Tagesbild und Agenten-Aktivität erscheinen, sobald echte Quellen angedockt sind.' : 'Ohne Sitzung zeigt SAIMÔR nichts Unbelegtes an.'}</span>
+        </span>
+        {live ? <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
+      </div>
+    );
+  }
+
   return (
     <Surface padding={5} data-testid="mora-briefing">
       <Stack direction="row" align="center" justify="space-between" className="mb-3">
         <Stack direction="row" gap={2} align="center"><Sunrise size={14} className="os-tone-accent" aria-hidden /><Text variant="eyebrow">MÔRA-Morgenbriefing</Text></Stack>
         {real && connected.length ? <Status tone="safe">aus {connected.length} Quelle{connected.length === 1 ? '' : 'n'}</Status> : null}
       </Stack>
-      {real || mailDocked ? (
         <Stack gap={3}>
           {real ? <Stack direction="row" gap={3} align="flex-start"><MoraStone size={28} /><Text>{brief.data!.text}</Text></Stack> : null}
           {mailDocked ? (
@@ -61,20 +73,6 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
             </div>
           ) : null}
         </Stack>
-      ) : (
-        <>
-          <Text tone="default" data-testid="briefing-pending">Briefing startet, sobald Quellen angebunden sind.</Text>
-          <Text variant="meta" className="mt-1">MÔRA fasst morgens nur zusammen, was sich in echten Quellen wirklich verändert hat – ohne Quellen gibt es nichts Ehrliches zu berichten.</Text>
-          <div className="os-briefing-sources mt-3" aria-label="Quellen">
-            {live && conns.data?.connections?.length
-              ? conns.data.connections.filter((c) => c.status !== 'setup_required').slice(0, 5).map((c) => <span key={c.id} data-status={c.status}><i aria-hidden /> {c.label} · {c.status === 'available' ? 'nicht angedockt' : c.status}</span>)
-              : SOURCES.map((s) => <span key={s}><i aria-hidden /> {s} · {live ? 'nicht verbunden' : 'braucht CORE-Sitzung'}</span>)}
-          </div>
-          <Stack direction="row" gap={2} className="mt-3">
-            {live ? <Button size="sm" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
-          </Stack>
-        </>
-      )}
     </Surface>
   );
 }

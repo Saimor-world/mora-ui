@@ -56,7 +56,7 @@ export function NightwatchVisit({ enabled }: { enabled: boolean }) {
   return (
     <aside className={`os-nw${critical ? ' os-nw--crit' : ''}`} role="dialog" aria-label="Nightwatch · Nachtbericht" data-testid="nightwatch-visit">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="os-nw__owl" src="/nightwatch/eule.png" alt="" width={96} height={80} />
+      <img className="os-nw__owl" src="/nightwatch/eule.png" alt="" width={96} height={118} />
       <div className="os-nw__body">
         <div className="os-nw__head"><b>Nightwatch</b><span>{critical ? 'Kritisch – sofort gemeldet' : 'Nachtbericht'}</span>
           <button type="button" className="os-nw__close" onClick={dismiss} aria-label="Nightwatch schließen"><X size={14} /></button></div>

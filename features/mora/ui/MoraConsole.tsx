@@ -104,7 +104,7 @@ export function MoraConsole({ variant, navigate, onClose }: MoraConsoleProps) {
                 <Surface interactive padding={3} onClick={() => useOsShellStore.getState().setNightwatchOpen(true)} data-testid="mora-ask-nightwatch">
                   <Stack direction="row" gap={2} align="center">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/nightwatch/eule.png" alt="" width={18} height={16} style={{ imageRendering: 'pixelated' }} />
+                    <img src="/nightwatch/eule.png" alt="" width={15} height={18} style={{ imageRendering: 'pixelated' }} />
                     <Text variant="meta" tone="muted">Frag Nightwatch: Was war heute Nacht?</Text>
                   </Stack>
                 </Surface>

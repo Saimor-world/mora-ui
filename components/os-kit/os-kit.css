@@ -670,7 +670,7 @@
 /* Nightwatch · Eule mit Laterne (os-polish-v1) */
 .os-nw { position: fixed; right: 24px; bottom: calc(var(--os-dock-space, 96px) + 12px); z-index: 90; width: min(400px, calc(100vw - 24px)); display: flex; gap: 12px; align-items: flex-start; padding: 16px 16px 14px 12px; border-radius: 20px; background: rgba(14, 17, 32, .88); border: 1px solid rgba(217, 185, 138, .28); box-shadow: 0 18px 50px rgba(0, 0, 0, .45); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); color: #efe8da; animation: os-nw-in .9s cubic-bezier(.2, .8, .2, 1) both; }
 .os-nw--crit { border-color: rgba(222, 120, 92, .6); }
-.os-nw__owl { flex: none; width: 88px; height: auto; image-rendering: pixelated; margin-top: -34px; filter: drop-shadow(0 6px 14px rgba(233, 185, 103, .25)); animation: os-nw-hover 4s ease-in-out 1s infinite; }
+.os-nw__owl { flex: none; width: 76px; height: auto; image-rendering: pixelated; margin-top: -34px; filter: drop-shadow(0 6px 14px rgba(233, 185, 103, .25)); animation: os-nw-hover 4s ease-in-out 1s infinite; }
 .os-nw__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; }
 .os-nw__head { display: flex; align-items: baseline; gap: 8px; }
 .os-nw__head b { font-size: 15px; }
@@ -688,3 +688,13 @@
 @keyframes os-nw-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 @media (prefers-reduced-motion: reduce) { .os-nw, .os-nw__owl { animation: none; } }
 @media (max-width: 767px) { .os-nw { right: 12px; left: 12px; width: auto; } .os-nw__owl { width: 64px; } }
+
+/* Heute · ruhige Statuszeile statt gestapelter Leer-Karten */
+.os-quiet-status { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: var(--os-radius-lg, 16px); border: 1px solid var(--os-hairline); background: color-mix(in srgb, var(--os-glass, rgba(20,18,28,.5)) 70%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+.os-quiet-status__text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; flex: 1; }
+.os-quiet-status__text b { font-weight: 500; color: var(--os-text); font-size: 14px; }
+.os-quiet-status__text span { color: var(--os-text-faint); font-size: var(--os-type-meta-size, 12.5px); }
+.os-quiet-banner { display: flex; align-items: center; gap: 8px; align-self: flex-start; padding: 6px 12px; border-radius: var(--os-radius-pill); border: 1px solid var(--os-hairline); color: var(--os-text-faint); font-size: var(--os-type-meta-size, 12.5px); }
+.os-quiet-banner button { color: var(--os-text-muted); text-decoration: underline; text-underline-offset: 2px; background: none; border: 0; cursor: pointer; font: inherit; }
+/* Nichts hinter dem Dock verstecken */
+.os-shell:not([data-place='universe']) .os-shell__content { padding-bottom: calc(var(--os-dock-space, 96px) + 40px); }
