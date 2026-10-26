@@ -930,3 +930,41 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .wd-viewmenu:not(.absolute) { position: relative; }
 .wd-counter { font-size: 12px; color: rgba(235, 231, 222, .72); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); }
 .os-shell__topbar { max-width: none !important; }
+
+/* Pixel-MÔRA (Marius t759u/t773u): Ebenen, ruhig belebt, Pixelraster. */
+.px-mora { position: relative; display: inline-block; image-rendering: pixelated; transform-origin: 50% 60%; transition: transform 240ms steps(3); pointer-events: none; }
+.px-mora__bob, .px-mora__l { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.px-mora__bob { animation: pxm-breathe 3.6s steps(4) infinite; transform-origin: 50% 85%; filter: drop-shadow(0 0 10px rgba(246, 190, 80, .22)); }
+.px-mora__light { animation: pxm-light 2.8s steps(5) infinite; }
+.px-mora__t-head, .px-mora__t-clip, .px-mora__t-seasonal { transform-origin: 50% 25%; animation: pxm-sway 4.2s steps(4) infinite; }
+.px-mora__t-held { transform-origin: 15% 80%; animation: pxm-sway 3.1s steps(4) infinite reverse; }
+.px-mora__aura { animation: pxm-light 3.4s steps(4) infinite; }
+.px-mora[data-state='happy'] .px-mora__bob { animation: pxm-bounce .6s steps(4) 2; }
+.px-mora[data-state='work'] .px-mora__light { animation-duration: 1.1s; }
+.px-mora[data-state='sleep'] .px-mora__bob { animation-duration: 6s; filter: brightness(.82) drop-shadow(0 0 8px rgba(246, 190, 80, .12)); }
+.px-mora[data-state='fly'] .px-mora__t-head, .px-mora[data-state='fly'] .px-mora__t-held { animation-duration: 1.2s; }
+.px-mora__z { position: absolute; right: -4px; top: 0; font: 600 11px/1 ui-monospace, monospace; color: rgba(244, 204, 110, .8); animation: pxm-z 3s steps(6) infinite; }
+.px-mora--mark { position: relative; display: inline-block; }
+.px-mora--mark .px-mora__l { animation: none; }
+@keyframes pxm-breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.03, .97); } }
+@keyframes pxm-light { 0%, 100% { opacity: .65; } 50% { opacity: 1; } }
+@keyframes pxm-sway { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+@keyframes pxm-bounce { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-8px); } 70% { transform: translateY(-2px); } }
+@keyframes pxm-z { 0% { opacity: 0; transform: translate(0, 0); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(6px, -14px); } }
+@media (prefers-reduced-motion: reduce) { .px-mora, .px-mora * { animation: none !important; transition: none !important; } }
+.wd-mora:has(.px-mora) { overflow: visible; background: none !important; box-shadow: none !important; }
+.wd-mora:has(.px-mora)::before, .wd-mora:has(.px-mora)::after { display: none !important; }
+.os-dock__stone .px-mora--mark { width: 34px; height: 34px; }
+/* Garderobe */
+.os-wardrobe { display: grid; grid-template-columns: 200px 1fr; gap: 20px; align-items: start; }
+.os-wardrobe__stage { display: grid; place-items: center; height: 200px; border-radius: 14px; background: radial-gradient(circle at 50% 45%, rgba(214,180,106,.16), rgba(10,14,24,.5) 70%); position: sticky; top: 8px; }
+.os-wardrobe__stage .px-mora--mark { width: 150px !important; height: 150px !important; }
+.os-wardrobe__slots { display: grid; gap: 10px; }
+.os-wardrobe__slot { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; }
+.os-wardrobe__label { font-size: 12px; opacity: .7; }
+.os-wardrobe__items { display: flex; flex-wrap: wrap; gap: 6px; }
+.os-wardrobe__items button, .os-wardrobe__reset { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px 4px 6px; border-radius: 999px; font-size: 12px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04); color: inherit; }
+.os-wardrobe__items button[aria-pressed='true'] { border-color: rgba(214,180,106,.8); background: rgba(214,180,106,.14); }
+.os-wardrobe__thumb { width: 24px; height: 24px; image-rendering: pixelated; object-fit: cover; object-position: center; }
+.os-wardrobe__reset { justify-self: start; opacity: .8; }
+@media (max-width: 720px) { .os-wardrobe { grid-template-columns: 1fr; } .os-wardrobe__stage { position: static; } }
