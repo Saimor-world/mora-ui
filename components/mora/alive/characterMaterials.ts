@@ -32,8 +32,10 @@ export function lightMaterial(opacity: number) {
         float front=clamp(dot(nn,vv),0.,1.);
         float diffuse=max(0.,dot(nn,normalize(vec3(-.65,.8,1.))));
         float inner=exp(-dot(local.xy*vec2(1.8,.8),local.xy*vec2(1.8,.8)));
-        vec3 color=mix(gold*.52,cream*.98,pow(front,.55));
-        color*=.72+diffuse*.28;color+=cream*inner*.32;
+        vec3 color=mix(gold*.22,cream*.85,pow(front,.75));
+        color*=.24+diffuse*.76;color+=cream*inner*.12;
+        float satin=pow(max(0.,dot(reflect(-normalize(vec3(-.65,.8,1.)),nn),vv)),12.);
+        color+=cream*satin*.10;
         float reflection=exp(-dot((local.xy-vec2(.3,.1))*2.,(local.xy-vec2(.3,.1))*2.));
         color+=mint*reflection*.055;color*=mix(.35,1.,warmth);
         gl_FragColor=vec4(color,opacity);
