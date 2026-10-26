@@ -16,7 +16,11 @@ function askMora(m: PostMessage) {
 /** Inbox list + reading pane. Only fields CORE delivers (/v3/mail/messages); nothing invented. */
 export function MailClient({ items }: { items: PostMessage[] }) {
   const [filter, setFilter] = useState<MailFilter>('all');
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [openId, setOpenId] = useState<string | null>(() => {
+    const id = useOsShellStore.getState().postOpenId;
+    if (id) useOsShellStore.getState().setPostOpenId(null);
+    return id;
+  });
   const list = useMemo(() => visibleMail(items, filter), [items, filter]);
   const unread = unreadCount(items);
   const open = items.find((m) => m.id === openId) ?? null;

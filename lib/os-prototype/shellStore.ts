@@ -16,6 +16,9 @@ export interface OsShellState {
   surfaceContext: string | null;
   /** Text handed to MÔRA (e.g. from the command palette); the user still presses send. */
   moraDraft: string | null;
+  /** Mail, die Post beim nächsten Öffnen direkt zeigt (aus Heute › Braucht dich). */
+  postOpenId: string | null;
+  setPostOpenId: (id: string | null) => void;
   setMoraDraft(text: string | null): void;
   setActiveFeature(id: string): void;
   setMoraOpen(open: boolean): void;
@@ -93,6 +96,8 @@ export const useOsShellStore = create<OsShellState>((set) => ({
   paletteOpen: false,
   surfaceContext: null,
   moraDraft: null,
+  postOpenId: null,
+  setPostOpenId: (id) => set({ postOpenId: id }),
   setMoraDraft: (text) => set({ moraDraft: text }),
   setActiveFeature: (id) => set({ activeFeatureId: id, surfaceContext: null }),
   setMoraOpen: (open) => set({ moraOpen: open }),

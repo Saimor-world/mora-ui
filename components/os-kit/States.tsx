@@ -14,10 +14,10 @@ const COPY: Record<Exclude<OsStateKind, 'loading'>, { title: string; copy: strin
   empty: { title: 'Noch nichts hier', copy: 'Sobald es etwas gibt, erscheint es an dieser Stelle.', icon: <Inbox size={18} /> },
   error: { title: 'Das hat nicht geklappt', copy: 'Beim Laden ist ein Fehler aufgetreten.', tone: 'critical', icon: <AlertTriangle size={18} /> },
   offline: { title: 'Keine Verbindung zu CORE', copy: 'CORE ist gerade nicht erreichbar. Angezeigt wird nichts, was nicht belegt ist.', tone: 'warning', icon: <CloudOff size={18} /> },
-  backend_unavailable: { title: 'Im CORE noch nicht verfügbar', copy: 'Dieser Datenvertrag ist auf dem laufenden CORE-Build nicht vorhanden.', tone: 'warning', icon: <ServerCrash size={18} /> },
+  backend_unavailable: { title: 'Noch nicht verfügbar', copy: 'Dieser Bereich kommt mit einem der nächsten Updates.', tone: 'warning', icon: <ServerCrash size={18} /> },
   permission_denied: { title: 'Kein Zugriff', copy: 'Für deine Rolle ist dieser Bereich nicht freigegeben.', tone: 'critical', icon: <Lock size={18} /> },
   not_configured: { title: 'Noch nicht eingerichtet', copy: 'Diese Quelle ist noch nicht verbunden.', icon: <PlugZap size={18} /> },
-  feature_unavailable: { title: 'In dieser Version nicht aktiv', copy: 'Die Funktion ist hinter einem Feature-Flag oder noch im Labor.', icon: <FlaskConical size={18} /> },
+  feature_unavailable: { title: 'In dieser Version nicht aktiv', copy: 'Diese Funktion ist noch im Labor.', icon: <FlaskConical size={18} /> },
 };
 
 export interface StateViewProps {
@@ -43,7 +43,7 @@ export function StateView({ kind, title, copy, compact, action, detail }: StateV
       <span className="os-state__icon" aria-hidden>{base.icon}</span>
       <Text variant="body" tone="default" className="font-medium">{title || base.title}</Text>
       <Text variant="meta" tone="muted">{copy || base.copy}</Text>
-      {detail && internal ? <Text variant="meta" tone="faint">{detail}</Text> : null}
+      {detail && internal && !/^\/|https?:\/\//.test(detail) ? <Text variant="meta" tone="faint">{detail}</Text> : null}
       {action ? <Button size="sm" className="mt-2" onClick={action.onClick}>{action.label}</Button> : null}
     </div>
   );
