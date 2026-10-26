@@ -50,8 +50,8 @@ export function MoraBriefing({ live, navigate, companyView = true }: { live: boo
       <div className="os-quiet-status" role="status" data-testid="mora-briefing" data-state="pending">
         <Sunrise size={14} className="os-tone-accent" aria-hidden />
         <span className="os-quiet-status__text">
-          <b data-testid="briefing-pending">{live ? 'MÔRA wartet auf Quellen' : 'MÔRA braucht eine CORE-Sitzung'}</b>
-          <span>{live ? 'Briefing, Tagesbild und Agenten-Aktivität erscheinen, sobald echte Quellen angedockt sind.' : 'Ohne Sitzung zeigt SAIMÔR nichts Unbelegtes an.'}</span>
+          <b data-testid="briefing-pending">{live ? 'Briefing startet mit der ersten Quelle' : 'MÔRA braucht eine CORE-Sitzung'}</b>
+          <span>{live ? 'Nightwatch-Lage, Post und Kosten stehen unten, soweit CORE sie liefert. Für das KI-Briefing ein Postfach oder einen Kalender andocken.' : 'Ohne Sitzung zeigt SAIMÔR nichts Unbelegtes an.'}</span>
         </span>
         {live ? <Button size="sm" variant="ghost" onClick={() => { useOsShellStore.getState().setSettingsSection('sources'); navigate?.('settings'); }} data-testid="briefing-sources">Quellen andocken</Button> : null}
       </div>

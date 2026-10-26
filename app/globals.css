@@ -2340,3 +2340,9 @@
     opacity: 0.5;
   }
 }
+
+@keyframes osOwlIn {
+  from { transform: translate(120px, -160px) rotate(-8deg); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) { .os-owl-flyin { animation: none !important; } }
