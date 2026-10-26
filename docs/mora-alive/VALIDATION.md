@@ -61,3 +61,42 @@ Status: PREPARED for review. Body and isolated signal adapter tests verified; au
 - Existing full suite, OS smoke and production build: PASS in initial GitHub CI runs (40145913265 and 40145929604). Final feature-head checks are linked on draft PR #163.
 - Explicit logout is also sampled from the existing socket status once per second, because the existing disconnect suppresses onclose. A regression test verifies clearing stale work without a disconnect event.
 - Website reuse implemented in separate draft PR Saimor-world/Website#122 using immutable source export and hash verification. Preview only, no production release.
+
+## Corporate presence revision (26 October 2026)
+
+Requested appearance: retain MÔRA's light/flame body and separate jade companion, while reducing
+storybook/mascot cues across OS, Website hero, and Deep View. Risk A: reversible presentation only.
+
+The head rig is narrower and slightly smaller, the torso core slightly wider. Idle uses small,
+attentive dark jade eyes and a neutral mouth; a subtle smile is reserved for `done`. Eye highlights,
+closed-eye curvature, bloom, membrane opacity, aura, idle drift and orbital speed are reduced.
+One orbital trail and one ground ring replace the stacked rings; the jade star glint is removed.
+Dust drops from 100 to 24 points. Colors, live event adapter, expression provenance, lifecycle,
+reduced-motion and visibility behavior remain unchanged. No new model or dependencies.
+
+Acceptance: same canonical body in all hosts, readable eyes without a permanent smile, reduced
+motion stable, no GPU nonfinite values or browser errors, mobile framing intact. Validate through
+existing renderer/browser matrix and review its actual captures before treating visual QA as done.
+Rollback: revert the four presentation files and re-export the previous immutable source to Website.
+No auth, CORE writes, middleware, environment or deployment workflow changes; no release approval.
+
+## Simple presence — approved visual direction, 26 October 2026
+
+The user preferred the reduced opal/pebble study: one smooth light volume, two small eyes and a
+separate jade stone. This supersedes the narrower flame-head candidate as the design direction.
+The bitmap study is reference only; no raster image is used as the interactive character.
+
+The existing loft generator now builds a single asymmetrical rounded volume (64 × 40 grid).
+The same renderer/lifecycle retains gaze, blinking, hovering, jade movement, states and host
+controls. Removed from the active scene: separate head/torso, flame crest, tail membranes,
+filaments, orbit trails, particles, mouth, glints and floor rings. A simple satin-opal shader
+reuses the existing palette, bloom compositor and jade material. Night-rest tilts/dims the
+whole volume instead of curling separate flame parts. No new dependencies, API, socket or
+backend logic. Risk A: reversible presentation-only change; authenticated CORE validation and
+physical-device performance remain outside this rendering check.
+
+Acceptance: actual body recognizable against the approved simplified study; two visible eyes,
+separate jade readable, all states render, no GPU nonfinite values, stable reduced motion and
+no mobile overflow. Existing renderer/browser matrix provides captures for visual review.
+Local TypeScript and targeted lint pass. Source is exported immutably to Website.
+Rollback: re-export canonical source bdef1aced365b52ada55f907db49d8651560da77.
