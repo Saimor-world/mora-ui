@@ -36,7 +36,7 @@ const CHIP_ICON: Record<string, LucideIcon> = {
   incidents: Siren, uptime: Activity, crowdsec: ShieldCheck, hetzner: Server, mail: Mail,
 };
 
-function StatusChip({ c }: { c: Chip }) {
+export function StatusChip({ c }: { c: Chip }) {
   const Icon = c.key === 'crowdsec' && c.tone === 'crit' ? ShieldAlert : CHIP_ICON[c.key] ?? Activity;
   return (
     <div className="os-owl-chip" data-tone={c.tone} data-testid={`owl-chip-${c.key}`}>
@@ -49,7 +49,7 @@ function StatusChip({ c }: { c: Chip }) {
   );
 }
 
-function NeedsYou({ mails, onOpen, onAll }: { mails: OwlMail[]; onOpen: (m: OwlMail) => void; onAll: () => void }) {
+export function NeedsYou({ mails, onOpen, onAll }: { mails: OwlMail[]; onOpen: (m: OwlMail) => void; onAll: () => void }) {
   if (!mails.length) return null;
   return (
     <div className="os-owl-needs" data-testid="owl-needs">
