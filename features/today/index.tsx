@@ -113,6 +113,8 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
 
       {hasSession && !preview && !phoneHome ? <DayPanel hideWhenUnavailable onAskMora={(text) => { useOsShellStore.getState().setMoraDraft(text); useOsShellStore.getState().setMoraOpen(true); }} /> : null}
 
+      {companyView && internal ? <OwlCard live={!preview && hasSession} navigate={navigate} /> : null}
+
       {/* CORE offline: dezenter Hinweis statt großer Karte. */}
       {!today.loading && !snapshot ? (
         today.loadError === 'unauthorized' || today.loadError === 'forbidden' ? (
@@ -141,7 +143,7 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
                 () => navigate('post')]] as const : []),
               ['Aufgaben · Organisation', ListTodo, world.tasksUnavailable || !snapshot.tasks.complete ? 'Aufgabenstand nicht vollständig lesbar' : tc ? tc.line : formatTaskLine({ openTotal: snapshot.tasks.counts.open ?? 0, dueToday: snapshot.tasks.counts.due_today ?? 0, overdue: snapshot.tasks.counts.overdue ?? 0 }), world.tasksUnavailable || !snapshot.tasks.complete ? 'Unbekannt bedeutet nicht erledigt.' : tc ? (tc.overdue ? `${tc.overdue} überfällig` : 'Keine überfälligen Aufgaben.') : snapshot.tasks.counts.overdue ? `${snapshot.tasks.counts.overdue} überfällig` : 'Keine überfälligen Aufgaben.', () => openLegacyApp('tasks')],
               // Nightwatch ist SAIMÔR-intern; Kund:innen sehen die Karte nicht.
-              ...(internal || sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
+              ...(sample ? [['Nightwatch', ShieldCheck, sample ? 'Alles ruhig' : 'Unbekannt', sample ? 'Keine offenen Vorfälle.' : 'Lagebild in der klassischen Nightwatch.', () => openLegacyApp('nightwatch')]] as const : []),
             ] as const).map(([label, Icon, title, copy, run]) => (
               <button key={label} type="button" className="os-today-now__card" onClick={run} data-testid={`today-now-${label.split(' ')[0].toLowerCase()}`}>
                 <span className="os-today-now__eyebrow"><Icon size={13} aria-hidden /> {label} <ArrowUpRight size={12} className="ml-auto" aria-hidden /></span>
@@ -153,7 +155,6 @@ export default function TodaySurface({ navigate, preview }: FeatureSurfaceProps)
       ) : null}
 
 
-      {companyView && internal ? <OwlCard live={!preview && hasSession} /> : null}
       {companyView ? <AgentFeed live={!preview && hasSession} demo={Boolean(sample)} limit={3} compact hideWhenEmpty /> : null}
 
       <Surface interactive padding={5} className="os-universe-card" onClick={() => navigate('universe')} data-testid="today-universe-card" aria-label="Universe betreten: Den Raum deines Unternehmens betreten">

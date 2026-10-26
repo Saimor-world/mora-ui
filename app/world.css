@@ -741,7 +741,7 @@
   background:
     url('/universe/deep-space-warm.jpg') center / cover no-repeat;
   /* os-polish-v1: etwas dunkler über den Filter statt über eine dunkle Fläche (Marius: kein Overlay). */
-  filter: brightness(1.28) saturate(.88) contrast(.98);
+  filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); /* os-redesign 26.10.: Nebel ruhiger und wärmer, weiter ohne Overlay. */
 }
 .wd-universe::after {
   inset: -10%;
@@ -824,3 +824,4 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 .wd-pulse__t { font-size: 12.5px; color: rgba(242, 238, 229, .9); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 .wd-pulse__m { font-size: 10.5px; color: rgba(242, 238, 229, .5); }
 @media (max-width: 1279px) { .wd-pulse { display: none; } }
+
