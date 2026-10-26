@@ -46,7 +46,8 @@ const WIDE_TILT = 0.45;
 const WIDE_ASPECT = 1.4;
 const WIDE_RX_SHARE = 0.42;
 /** Referenzbreite für den Größenfaktor: schmale Flächen wachsen nicht mit der Höhe allein. */
-const SCALE_WIDTH = 1180;
+const SCALE_WIDTH = 860; // layout-1026: freie Spalte zwischen den Panels, nicht Fensterbreite
+const SCALE_HEIGHT = 460;
 
 /**
  * Größenfaktor aus der Höhe der Fläche: 1 bei ~640 px (Laptop), bis 1,35 bei Full HD
@@ -54,7 +55,7 @@ const SCALE_WIDTH = 1180;
  */
 export function orbitScale(height: number, phone: boolean, width = Infinity): number {
   if (phone) return 1;
-  return Math.round(Math.max(1, Math.min(1.35, height / 640, width / SCALE_WIDTH)) * 100) / 100;
+  return Math.round(Math.max(1, Math.min(1.35, height / SCALE_HEIGHT, width / SCALE_WIDTH)) * 100) / 100;
 }
 
 /** MÔRA ist immer der größte Körper. */

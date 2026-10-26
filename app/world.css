@@ -855,3 +855,22 @@ body:has(.wd-universe) .os-root, body:has(.wd-universe) .os-shell, body:has(.wd-
 .wd-universe::before { display: none; }
 body:has(.wd-universe) .os-shell__topbar { background: transparent !important; box-shadow: none !important; }
 body:has(.wd-universe) [data-testid='role-preview'] > span:first-child { display: none; } /* bg-fix: Label überlappte R&D */
+
+/* layout-1026 (Marius: ruhig, luftig, corporate): ein Raster mit 24px Rand, kompakte Kopfzeile, schmale Panels. */
+@media (min-width: 900px) {
+  .os-universe__intro { margin: 12px 24px 0 !important; padding: 8px 8px 8px 20px !important; border-radius: 999px !important; }
+  .os-universe__intro .os-universe__eyebrow, .os-universe__intro .os-universe__hint { display: none !important; }
+  .os-universe__intro h1 { font-size: 17px !important; line-height: 24px !important; font-weight: 500; letter-spacing: .01em; }
+}
+body:has(.wd-universe) .os-universe__intro, body:has(.wd-universe) .wd-horizon { background: rgba(8, 9, 12, .38) !important; backdrop-filter: blur(14px) saturate(1.1); -webkit-backdrop-filter: blur(14px) saturate(1.1); }
+.wd-counters { left: 24px; top: 16px; }
+.wd-pulse { left: 24px; top: 64px; transform: none; width: 220px; }
+.wd-pulse__card { background: rgba(8, 9, 12, .34); }
+.wd-zoom { left: 24px; bottom: 24px; flex-direction: row; }
+.wd-legend, .wd-legend[open] { left: 24px; bottom: 76px; }
+.wd-legend ul { left: 0; bottom: 52px; }
+.wd-horizon { right: 24px; top: 72px; width: 240px; padding: 14px; max-height: calc(100% - 96px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(180deg, #000 calc(100% - 36px), transparent); }
+.wd-horizon::-webkit-scrollbar { display: none; }
+.wd-horizon > * { flex-shrink: 0; }
+[data-testid='role-preview'].absolute { right: 24px; top: 14px; }
