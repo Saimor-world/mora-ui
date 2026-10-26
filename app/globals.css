@@ -2398,3 +2398,39 @@
   .os-owl-chip { padding: 9px 10px; }
   .os-owl-flyin { right: 16px; bottom: 96px; }
 }
+
+/* Phone-Begleiter: warm, ruhig, kein Dock, keine Planeten. */
+.pc { min-height: 100dvh; padding: calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px); display: flex; flex-direction: column; gap: 16px; color: #f3ead9;
+  background: radial-gradient(120% 70% at 20% 0%, rgba(232,178,98,.22), transparent 60%), radial-gradient(90% 60% at 100% 100%, rgba(238,138,116,.14), transparent 60%), #17120e; }
+.pc-head { display: flex; justify-content: space-between; align-items: baseline; }
+.pc-brand { font-size: 12px; letter-spacing: .32em; color: #d9c7a3; }
+.pc-date { font-size: 12px; color: rgba(243,234,217,.55); }
+.pc-hello { margin: 4px 0 0; font-size: 28px; font-weight: 400; letter-spacing: -.01em; }
+.pc-card { border-radius: 22px; padding: 16px; background: rgba(255,244,228,.06); border: 1px solid rgba(255,236,210,.10); backdrop-filter: blur(18px); }
+.pc-card--ghost { min-height: 150px; opacity: .5; }
+.pc-owl { display: flex; gap: 12px; align-items: center; }
+.pc-owl img { image-rendering: pixelated; flex: 0 0 auto; }
+.pc-owl__line { margin: 0; font-size: 17px; line-height: 1.35; }
+.pc-chips { margin-top: 14px; }
+.pc-needs { padding: 6px 8px; }
+.pc-needs .os-owl-needs { margin: 0; padding: 0; border: 0; }
+.pc-needs .os-owl-link { display: none; }
+.pc-ask { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.pc-turns { display: flex; flex-direction: column; gap: 8px; max-height: 44vh; overflow-y: auto; }
+.pc-turn { max-width: 88%; padding: 10px 14px; border-radius: 18px; font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
+.pc-turn--user { align-self: flex-end; background: rgba(232,178,98,.22); }
+.pc-turn--mora { align-self: flex-start; background: rgba(255,244,228,.07); }
+.pc-turn--system { align-self: center; font-size: 12px; color: rgba(243,234,217,.6); }
+.pc-turn--pending { opacity: .6; }
+.pc-input { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 16px; border-radius: 999px; background: rgba(255,244,228,.08); border: 1px solid rgba(255,236,210,.12); }
+.pc-input input { flex: 1; min-width: 0; height: 40px; border: 0; background: transparent; color: inherit; font-size: 16px; outline: none; }
+.pc-input input::placeholder { color: rgba(243,234,217,.45); }
+.pc-input button { width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; background: #e8b262; color: #2a1f12; }
+.pc-input button:disabled { opacity: .35; }
+.pc-desk { margin: 0; display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 12px; color: rgba(243,234,217,.45); }
+.pc-back { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #e8b262; font-size: 15px; }
+.pc-reader__from { margin: 4px 0 0; font-size: 13px; color: rgba(243,234,217,.55); }
+.pc-reader__subject { margin: 0; font-size: 22px; font-weight: 500; line-height: 1.3; }
+.pc-reader__body { font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: rgba(243,234,217,.9); }
+.pc-chips .os-owl-chip__value { white-space: normal; overflow: visible; text-overflow: clip; }
+.pc-reader__note { margin: 0; font-size: 13px; color: rgba(243,234,217,.5); }
