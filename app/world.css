@@ -844,3 +844,15 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 @media (prefers-reduced-motion: reduce) { .wd-mora-step { transition: none; animation: none; } }
 .wd-mora-glide { display: inline-block; transition: transform 1400ms cubic-bezier(.22,.8,.24,1); will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .wd-mora-glide { transition: none; } }
+
+/* bg-full 26.10. (Marius: "das Bild muss komplett hinten sein"): EIN Nebelbild über den ganzen Bildschirm,
+   hinter Kopfzeile, Leisten und Dock. Shell-Flächen im Universe transparent, keine Kante mehr. */
+body:has(.wd-universe)::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat;
+  filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02);
+}
+body:has(.wd-universe) .os-root, body:has(.wd-universe) .os-shell, body:has(.wd-universe) .os-atmo__plate { background: transparent !important; }
+.wd-universe { background: transparent !important; }
+.wd-universe::before { display: none; }
+body:has(.wd-universe) .os-shell__topbar { background: transparent !important; box-shadow: none !important; }
