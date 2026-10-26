@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Moon, X } from 'lucide-react';
+import { Moon, Sun, X } from 'lucide-react';
 import { Button, Stack, Surface, Text } from '@/components/os-kit';
 import { coreGet } from '@/lib/api/http';
 
@@ -79,8 +79,18 @@ export function OwlCard({ live }: { live: boolean }) {
       <Text variant="eyebrow">Nightwatch · {LEVEL_TEXT[s.level]}</Text>
     </Stack>
   );
+  const brief = s.kassensturz?.text?.trim();
   return (
     <>
+      {brief ? (
+        <Surface padding={5} data-testid="morning-brief">
+          <Stack direction="row" gap={2} align="center" className="mb-2">
+            <Sun size={14} className="os-tone-faint" aria-hidden />
+            <Text variant="eyebrow">Morgenbrief{s.kassensturz?.date ? ` · ${s.kassensturz.date}` : ''}</Text>
+          </Stack>
+          <Text variant="meta" style={{ whiteSpace: 'pre-line' }}>{brief}</Text>
+        </Surface>
+      ) : null}
       <Surface padding={4} data-testid="owl-card" data-level={s.level}>{head}<OwlBody s={s} /></Surface>
       {flying ? (
         <div role="dialog" aria-label="Nightwatch-Eule" data-testid="owl-flyin" className="os-owl-flyin" style={{ position: 'fixed', right: 24, bottom: 24, zIndex: 60, maxWidth: 380, animation: 'osOwlIn 600ms ease-out' }}>

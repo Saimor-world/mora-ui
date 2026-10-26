@@ -11,3 +11,17 @@ describe('Nightwatch-Eule Einflug', () => {
     expect(owlFlyDelayMs({ level: 'warning', fly_in_delay_seconds: 300 }, new Date('2026-10-27T13:00:00'), false)).toBeNull();
   });
 });
+
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { PlanetInfoLine } from '@/components/world/WorldUniverse';
+
+describe('Planeten-Zeile', () => {
+  it('zeigt echte neue Mails, nie 0', () => {
+    const base = { open: 2, overdue: 0, folders: 0, activity: 0, texture: 0 } as any;
+    const { rerender } = render(<PlanetInfoLine traits={{ ...base, newMails: 3 }} phone={false} />);
+    expect(screen.getByTestId('world-planet-info').textContent).toContain('3 neue Mails');
+    rerender(<PlanetInfoLine traits={{ ...base, newMails: 0 }} phone={false} />);
+    expect(screen.getByTestId('world-planet-info').textContent).not.toContain('Mail');
+  });
+});
