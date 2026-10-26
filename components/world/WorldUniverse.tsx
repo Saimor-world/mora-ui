@@ -211,7 +211,10 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
-          <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} />
+          {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
+          <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
+            <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} />
+          </span>
         </button>
       ) : null}
       {layout && spiritCaption ? (
