@@ -20,6 +20,9 @@ import { toneSlot } from '@/lib/universe/matteTone';
 
 const VIEW_KEY = 'mora.universe.view';
 /** MÔRA besucht einen Planeten, ohne sich dahinter zu verstecken: sie bleibt am Rand stehen (Planetenradius + ihr Radius + Luft). */
+/** MÔRA im Universe: 18 % kleiner als die Layout-Fläche (schwebt frei, die Fläche für Kollisionen bleibt gleich). */
+const MORA_FREE = 0.82;
+
 function stopShort(layout: { cx: number; cy: number; mora: number }, pp: { x: number; y: number }, size: number): { x: number; y: number } {
   const dx = pp.x - layout.cx; const dy = pp.y - layout.cy; const d = Math.hypot(dx, dy);
   if (d < 1) return { x: dx, y: dy };
@@ -226,7 +229,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         const rects = layout.slots.flatMap((sl, i) => planetFootprint(layout, sl, planets[i] ? { name: planets[i].name, meta: planets[i].meta, moons: planets[i].orbit?.moons.length ?? 0, stars: planets[i].orbit?.stars.length ?? 0 } : undefined, phone));
         // Glas-Ansicht: die Quellen sitzen als kleine Marken links und rechts neben MÔRA, ohne Ring.
         const pts = glass
-          ? sources.map((_, i) => ({ x: layout.cx + (i % 2 ? 1 : -1) * (layout.mora / 2 + 96 + Math.floor(i / 2) * 120), y: layout.cy, angle: 0 }))
+          ? sources.map((_, i) => ({ x: layout.cx + (i % 2 ? 1 : -1) * (layout.mora / 2 + 96 + Math.floor(i / 2) * 120), y: layout.cy + 52, angle: 0 }))
           : sourcePositions(layout, sources.length, layout.slots.map((sl) => placeOnOrbit(layout, sl)), 130, rects);
         return sources.map((src, i) => {
         const { x, y } = pts[i];
@@ -254,7 +257,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure bare={glass} size={glass ? layout.mora : phone ? 80 : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={glass || phone ? [] : roam} fresh={pulseIds?.[0] ?? null} />
+            <SpiritFigure bare={glass} size={glass ? Math.round(layout.mora * MORA_FREE) : phone ? 80 : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={glass || phone ? [] : roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}

@@ -293,7 +293,7 @@ export function FinderVerse(p: FinderVerseProps) {
                 </button>
               ))}
               <span className="fv-dome__mora" data-testid="fv-mora" aria-hidden>
-                <JadeMora bare size={phone ? 64 : 96} mood="idle" reduced={reduced} />
+                <JadeMora bare size={phone ? 52 : 78} mood="idle" reduced={reduced} />
               </span>
               {stars.length ? (
                 <div className="fv-dome__stars" data-testid="fv-dome-stars">

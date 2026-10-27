@@ -69,3 +69,13 @@
 .jm[data-reduced='true'] *, .jm[data-reduced='true'] { animation: none !important; transition: none !important; }
 .os-wd__badge--legacy { top: 7px; left: 7px; font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: rgba(236, 232, 222, .5); }
 .os-wd__card[data-legacy='true'] .os-wd__thumb { opacity: .72; }
+
+/* Freies Schweben im Universe und über dem geöffneten Planeten: langsam, weich, kaum Schwanken; kein Bodenschatten,
+   stattdessen ein ferner weicher Schatten und ein leiser Schein. Dock-Zeichen (.jm--mark) bleibt unverändert. */
+.wd-mora .jm__img, .fv-dome__mora .jm__img { filter: drop-shadow(0 0 calc(var(--d) * .14) rgba(120, 214, 176, .16)) drop-shadow(0 calc(var(--d) * .03) calc(var(--d) * .07) rgba(0, 0, 0, .3)); }
+.wd-mora .jm:not([data-state='done']):not([data-state='travel']) .jm__bob, .fv-dome__mora .jm:not([data-state='done']):not([data-state='travel']) .jm__bob { animation: jm-free 9s ease-in-out infinite; }
+.wd-mora .jm::after, .fv-dome__mora .jm::after { content: ''; position: absolute; left: 50%; top: 128%; width: 52%; height: 8%; margin-left: -26%; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .42), rgba(0, 0, 0, 0)); filter: blur(3px); opacity: .5; pointer-events: none; animation: jm-far 9s ease-in-out infinite; }
+@keyframes jm-free { 0%, 100% { transform: translate(-1.2%, -6%) rotate(-1.1deg); } 50% { transform: translate(1.2%, 6%) rotate(1.1deg); } }
+@keyframes jm-far { 0%, 100% { transform: scaleX(1.04); opacity: .55; } 50% { transform: scaleX(.88); opacity: .38; } }
+.jm[data-reduced='true'] .jm__bob, .jm[data-reduced='true']::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) { .wd-mora .jm__bob, .fv-dome__mora .jm__bob, .wd-mora .jm::after, .fv-dome__mora .jm::after { animation: none !important; } }
