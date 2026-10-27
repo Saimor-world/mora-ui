@@ -175,7 +175,7 @@ export function OsShell({ preview }: { preview: boolean }) {
             <Stack direction="row" gap={1} align="center">
               <DemoSwitch />
               <Button variant="ghost" size="sm" icon={<Command size={14} />} onClick={() => setPaletteOpen(true)} aria-label="Befehle öffnen">
-                <span className="hidden sm:inline">Suchen</span> <span className="os-kbd hidden sm:inline">⌘K</span>
+                <span className="hidden lg:inline">Suchen</span> <span className="os-kbd hidden lg:inline">⌘K</span>
               </Button>
               <NotificationButton open={trayOpen} onToggle={() => setTrayOpen((v) => !v)} />
               <StatusMenu org={org} userName={userName} role={role ? ROLE_WORD[role] ?? null : null} internal={internalUser} coreOk={health.isLoading || online}

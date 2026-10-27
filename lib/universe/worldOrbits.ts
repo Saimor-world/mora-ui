@@ -110,7 +110,8 @@ function layoutInFrame(opts: OrbitOptions): OrbitLayout {
   const scale = orbitScale(height, phone, width);
   const mora = moraSize(phone, scale, opts.moraBase);
   const maxWeight = Math.max(0, ...weights);
-  const sizes = weights.map((w) => Math.round(planetSize(w, maxWeight, phone, scale) * (opts.planetMul ?? 1)));
+  // Flache (Pixel-)Ansicht: alle Planeten gleich groß – ruhiger, wie ein Werkzeug; die Größe sagt nichts, die Zahl am Planeten schon.
+  const sizes = weights.map((w) => phone ? Math.round(54 * scale) : opts.flat ? Math.round(70 * scale * (opts.planetMul ?? 1)) : Math.round(planetSize(w, maxWeight, phone, scale) * (opts.planetMul ?? 1)));
   const biggest = Math.max(0, ...sizes);
   // Größere Schrift auf großen Flächen braucht mehr Platz für die Namen.
   const labelSpace = LABEL_SPACE * scale;

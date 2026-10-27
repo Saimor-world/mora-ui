@@ -117,7 +117,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 84 : undefined, flat: pixel, planetMul: pixel ? 1.2 : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP + (size.width < 1000 ? 40 : 0))), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 84 : undefined, flat: pixel, planetMul: pixel ? 1.2 : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
     [size.width, size.height, planets, phone, insetLeft, insetRight, pixel],
   );
 
@@ -175,7 +175,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
 
   // Kamera: Ursprung auf den Zielplaneten, dann weich hinein (CSS-Transition auf .wd-zoomwrap).
   const spiritPoint = (() => {
-    if (!layout || !spiritTarget) return null;
+    if (!layout || !spiritTarget || pixel || phone) return null; // Pixel-Ansicht: MÔRA bleibt fest in der Mitte
     if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
     const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
     return pp && sl ? stopShort(layout, pp, sl.size + (planets[k].orbit?.moons.length ? 40 : 0)) : null;
@@ -248,7 +248,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure size={phone ? 80 : pixel ? layout.mora : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
+            <SpiritFigure size={phone ? 80 : pixel ? layout.mora : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={pixel || phone ? [] : roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}

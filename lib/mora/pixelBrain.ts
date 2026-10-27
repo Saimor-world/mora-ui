@@ -22,6 +22,7 @@ export function decide(input: BrainInput, rand: () => number = Math.random, last
   const total = input.points.reduce((s, p) => s + Math.max(0, p.weight), 0);
   const restW = last?.kind === 'visit' ? 3 : 1.5; // nach einem Besuch lieber kurz ausruhen
   let r = rand() * (total + restW);
+  if (input.points.length === 0) return { kind: 'rest', x: 0, y: 0, ms: 8000 }; // keine Ziele (Pixel-/Handy-Ansicht): MÔRA bleibt in der Mitte
   if (r < restW || total === 0) return { kind: 'rest', x: Math.round((rand() - 0.5) * 24), y: Math.round((rand() - 0.5) * 12), ms: 5000 + rand() * 5000 };
   r -= restW;
   for (const p of input.points) { r -= Math.max(0, p.weight); if (r <= 0) { if (last?.id === p.id && input.points.length > 1) continue; return { kind: 'visit', ...safe(near(p), input), ms: 6000 + rand() * 6000, id: p.id }; } }
