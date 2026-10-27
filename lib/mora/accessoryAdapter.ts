@@ -40,6 +40,8 @@ export type AccessoryMount = {
   /** Neigung in Grad. */
   rotate?: number;
   layer: MountLayer;
+  /** Optionale verdeckte Lage hinter dem Stein (z. B. Schal-Rückseite), gleiche Maße wie `asset`. */
+  backAsset?: string;
   animation: MountAnimation;
   /** Nur Anhänger: Kette um den Stein (Farbe, tiefster Punkt in Steindurchmessern), zeichnet der Renderer als feine Linie. */
   chain?: { color: string; dip: number };
@@ -60,7 +62,7 @@ export const JADE_MOUNTS: Record<string, AccessoryMount> = {
     anchor: { x: 0, y: -0.435 }, scale: 0.94, layer: 'front', animation: 'none',
   },
   'jade-scarf': {
-    id: 'jade-scarf', slot: 'neck', asset: '/mora/jade/acc/jade-scarf.svg', aspect: 1060 / 620,
+    id: 'jade-scarf', slot: 'neck', asset: '/mora/jade/acc/jade-scarf.svg', backAsset: '/mora/jade/acc/jade-scarf-back.svg', aspect: 1060 / 620,
     anchor: { x: 0, y: 0.41 }, scale: 1.06, layer: 'front', animation: 'none',
   },
   'pearl-necklace': {
@@ -68,7 +70,7 @@ export const JADE_MOUNTS: Record<string, AccessoryMount> = {
     anchor: { x: 0, y: 0.26 }, scale: 1, layer: 'front', animation: 'none',
   },
   'founder-scarf': {
-    id: 'founder-scarf', slot: 'neck', asset: '/mora/jade/acc/founder-scarf.svg', aspect: 1060 / 620,
+    id: 'founder-scarf', slot: 'neck', asset: '/mora/jade/acc/founder-scarf.svg', backAsset: '/mora/jade/acc/founder-scarf-back.svg', aspect: 1060 / 620,
     anchor: { x: 0, y: 0.41 }, scale: 1.06, layer: 'front', animation: 'none',
   },
   'founder-f1': {

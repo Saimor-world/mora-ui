@@ -34,10 +34,12 @@ function resetMotion(el: HTMLSpanElement, eyes: HTMLSpanElement) {
 }
 
 function Mount({ m, part }: { m: AccessoryMount; part: 'back' | 'front' }) {
-  if ((m.layer === 'back') !== (part === 'back')) return null;
+  const backSide = part === 'back' && m.layer === 'front' && m.backAsset;
+  if (!backSide && (m.layer === 'back') !== (part === 'back')) return null;
   const x = m.anchor.x + (m.offset?.x ?? 0); const y = m.anchor.y + (m.offset?.y ?? 0);
   const style = { left: `${50 + x * 100}%`, top: `${50 + y * 100}%`, width: `${m.scale * 100}%`, aspectRatio: String(m.aspect), ['--rot' as string]: `${m.rotate ?? 0}deg` } as React.CSSProperties;
-  const img = <img src={m.asset} alt="" draggable={false} loading="eager" decoding="async" />;
+  const img = <img src={backSide ? m.backAsset : m.asset} alt="" draggable={false} loading="eager" decoding="async" />;
+  if (backSide) return <span className="jm__acc jm__acc--back" data-acc-back={m.id} data-anim="none" style={style} aria-hidden>{img}</span>;
   return (
     <span className="jm__acc" data-acc={m.id} data-anim={m.animation} style={style}>
       {img}

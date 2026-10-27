@@ -1,6 +1,6 @@
 'use client';
 import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { JadeMoraMark, JadeMoraStage } from '@/components/world/JadeMora';
 import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
@@ -76,15 +76,24 @@ export function MoraWardrobe() {
   const redo = () => { const f = future[0]; if (!f) return; setFuture(future.slice(1)); setPast((p) => [...p, w]); save(f); setHop((h) => h + 1); };
 
   const cur = resolve(slot, w[slot.id]);
+  /** Grenze von ACCESSORY_MAX Teilen: ein abgelegtes Teil wird ruhig benannt statt still zu verschwinden. */
+  const [dropped, setDropped] = useState<string | null>(null);
+  useEffect(() => { if (!dropped) return; const t = setTimeout(() => setDropped(null), 4200); return () => clearTimeout(t); }, [dropped]);
+  const commitLimited = (want: Wardrobe) => {
+    const next = limitAccessories(want, recent.current);
+    const gone = TRAITS.slots.filter((s) => want[s.id] && !next[s.id]).map((s) => resolve(s, want[s.id])?.item.name).filter(Boolean);
+    setDropped(gone.length ? `${gone.join(', ')} abgelegt · MÔRA trägt höchstens ${ACCESSORY_MAX} Teile` : null);
+    commit(next);
+  };
   const pickItem = (itemId: string) => {
     const it = slot.items.find((i) => i.id === itemId)!;
     if (!isUnlocked(it, ctx)) { setNote(it); return; }
     const keep = cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id);
-    touch(slot.id); commit(limitAccessories({ ...w, [slot.id]: joinChoice(itemId, keep) }, recent.current));
+    touch(slot.id); commitLimited({ ...w, [slot.id]: joinChoice(itemId, keep) });
   };
   const pickVariant = (variantId: string) => {
     if (!cur) return; lastVariant.current[`${slot.id}/${cur.item.id}`] = variantId;
-    touch(slot.id); commit(limitAccessories({ ...w, [slot.id]: joinChoice(cur.item.id, variantId) }, recent.current));
+    touch(slot.id); commitLimited({ ...w, [slot.id]: joinChoice(cur.item.id, variantId) });
   };
   const hoverItem = (itemId: string | null) => {
     if (itemId === null) { setNote(null); return setHover({ slot: slot.id, choice: null }); }
@@ -117,6 +126,7 @@ export function MoraWardrobe() {
             <span className="os-wd__glow" aria-hidden />
             <span className="os-wd__shadow" aria-hidden />
             <JadeMoraStage wardrobe={preview} scale={2} hop={hop} turn={turn} reduced={reduced} />
+            {dropped ? <p className="os-wd__dropped" role="status" aria-live="polite" data-testid="wd-dropped">{dropped}</p> : null}
             <div className="os-wd__chip" data-origin={stageTier} data-on={previewing ? 'true' : undefined} role="status" aria-live="polite">
               {previewing ? <>Vorschau · {pv ? `${pv.item.name} · ${pv.variant.name}` : 'Ohne'}{pv && TIER_LABEL[pv.item.origin] ? <b>{TIER_LABEL[pv.item.origin]}</b> : null}</> : 'Aktuelles Outfit'}
             </div>

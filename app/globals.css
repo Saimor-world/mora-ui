@@ -2434,3 +2434,6 @@
 .pc-reader__body { font-size: 16px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; color: rgba(243,234,217,.9); }
 .pc-chips .os-owl-chip__value { white-space: normal; overflow: visible; text-overflow: clip; }
 .pc-reader__note { margin: 0; font-size: 13px; color: rgba(243,234,217,.5); }
+.pc-universe { align-self: center; display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; font-size: 13px; color: rgba(243,234,217,.78); border: 1px solid rgba(243,234,217,.16); text-decoration: none; }
+.pc-universe:focus-visible { outline: 2px solid rgba(178,236,210,.7); outline-offset: 3px; }
+.pc-universe { background: none; cursor: pointer; font: inherit; font-size: 13px; }

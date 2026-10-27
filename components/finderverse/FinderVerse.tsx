@@ -97,6 +97,13 @@ export function FinderVerse(p: FinderVerseProps) {
   // Kamera wie beim Planeten-Zoom: Ursprung ist der angeklickte Mond, zurück fährt sie zu ihm hinaus.
   const [origin, setOrigin] = useState('50% 50%');
   const goMoon = (id: string, at?: string) => { if (at) setOrigin(at); setDir('in'); setMoonId(id); setSelected(null); setFocusIdx(0); };
+  // Touch: nach unten wischen = eine Ebene zurück (wie Escape / Zurück-Knopf).
+  const swipe = useRef<{ x: number; y: number } | null>(null);
+  const onSwipeStart = (e: React.PointerEvent) => { swipe.current = e.pointerType === 'touch' ? { x: e.clientX, y: e.clientY } : null; };
+  const onSwipeEnd = (e: React.PointerEvent) => {
+    const st = swipe.current; swipe.current = null;
+    if (st && e.clientY - st.y > 80 && Math.abs(e.clientX - st.x) < 60) goUp();
+  };
   const goUp = () => { if (moonId) { setDir('out'); setMoonId(null); setSelected(null); setFocusIdx(0); } else p.onClose(); };
 
   useEffect(() => {
@@ -268,7 +275,7 @@ export function FinderVerse(p: FinderVerseProps) {
       </header>
 
       <div className="fv-body">
-        <section className="fv-stage" aria-label={centerName}>
+        <section className="fv-stage" aria-label={centerName} onPointerDown={onSwipeStart} onPointerUp={onSwipeEnd} onPointerCancel={() => { swipe.current = null; }}>
           {view === 'universe' ? (
             !moon ? (
             <div key={levelKey} className="fv-orbit fv-dome" data-dir={dir} data-testid="fv-orbit" data-glass="true" data-reduced={reduced ? 'true' : undefined}>

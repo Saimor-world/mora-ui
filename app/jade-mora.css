@@ -75,3 +75,7 @@
 @keyframes jm-far { 0%, 100% { transform: scaleX(1.04); opacity: .55; } 50% { transform: scaleX(.88); opacity: .38; } }
 .jm[data-reduced='true'] .jm__bob, .jm[data-reduced='true']::after { animation: none !important; }
 @media (prefers-reduced-motion: reduce) { .wd-mora .jm__bob, .fv-dome__mora .jm__bob, .wd-mora .jm::after, .fv-dome__mora .jm::after { animation: none !important; } }
+
+/* Verdeckte Lage (Schal-Rückseite) ohne eigenen Schlagschatten; die Vorderlage wirft ihren Schatten selbst. */
+.jm__acc--back img { filter: none; }
+.jm__acc[data-acc$='scarf'] img, .jm__acc[data-acc='pearl-necklace'] img { filter: none; }

@@ -80,6 +80,29 @@ export const HORIZON_RESERVE = 288;
 /** Planeten-Fokus rechts: right 24 px + 340 px + 16 px Luft. */
 export const FOCUS_RESERVE = 380;
 
+/** Frisch = echte letzte Änderung (traits.lastAt aus CORE) in den letzten 48 Stunden. Ohne Zeitstempel nie frisch. */
+const FRESH_MS = 48 * 3600 * 1000;
+export function isFresh(lastAt: string | undefined, now = Date.now()): boolean {
+  if (!lastAt) return false;
+  const t = Date.parse(lastAt);
+  return Number.isFinite(t) && now - t >= 0 && now - t < FRESH_MS;
+}
+
+/** Ordner als kleine, ruhige Monde schon in der Übersicht (höchstens sechs, echte Ordner). */
+function MiniMoons({ moons, size }: { moons: WorldPlanet['moons']; size: number }) {
+  const shown = moons.slice(0, 6);
+  const r = size / 2 + 11;
+  return (
+    <span className="wd-mini-moons" aria-hidden data-testid="world-mini-moons">
+      {shown.map((m, k) => {
+        const a = -38 + k * (shown.length > 1 ? 76 / (shown.length - 1) : 0) + (k % 2 ? 180 : 0);
+        const d = Math.max(5, Math.min(10, 5 + Math.sqrt(m.count)));
+        return <i key={m.id} style={{ width: d, height: d, transform: `rotate(${a}deg) translateX(${r}px) rotate(${-a}deg)` }} />;
+      })}
+    </span>
+  );
+}
+
 export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', details = true, moraInScene = true, onToggleDetails, zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = JadeMora }: {
   spiritMood?: SpiritMood;
   /** Ruhe-Ansicht: false blendet Zähler, Quellenmarken, Karten und Zoom aus; true zeigt sie (auf Wunsch). */
@@ -173,18 +196,19 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       const el = planetRefs.current[i];
       if (!el) return;
       const p = placeOnOrbit(layout, slot);
-      const { dx, dy } = floatOffset(i, glass ? t * 0.6 : t);
+      // Am Handy schweben die Planeten nicht: ein Tipp-Ziel darf nicht unter dem Finger wandern.
+      const { dx, dy } = phone ? { dx: 0, dy: 0 } : floatOffset(i, glass ? t * 0.6 : t);
       el.style.transform = `translate3d(${(p.x + dx).toFixed(2)}px, ${(p.y + dy).toFixed(2)}px, 0) translate(-50%, -50%) scale(${p.front ? 1 : 0.85})`;
       el.style.zIndex = String(p.z);
       el.dataset.depth = p.front ? 'front' : 'back';
     });
-  }, [layout, glass]);
+  }, [layout, glass, phone]);
 
   // Ein Takt für alle Planeten; steht bei verborgenem Tab, Zeiger/Fokus und „weniger Bewegung“.
   useEffect(() => {
     if (!layout) return;
     place(0);
-    if (reduced || typeof requestAnimationFrame === 'undefined') return;
+    if (reduced || phone || typeof requestAnimationFrame === 'undefined') return;
     let frame = 0;
     let t = 0;
     let last = performance.now();
@@ -198,7 +222,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [layout, place, reduced]);
+  }, [layout, place, reduced, phone]);
 
   const hold = (on: boolean) => () => { paused.current = on; };
 
@@ -318,6 +342,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             data-active={planet.id === activeId ? 'true' : undefined}
             data-selected={planet.id === selectedId ? 'true' : undefined}
             data-collect={planet.id === COLLECT_PLANET ? 'true' : undefined}
+            data-fresh={isFresh(planet.traits?.lastAt) ? 'true' : undefined}
             aria-pressed={planet.id === selectedId}
             onDoubleClick={onZoomPlanet ? () => onZoomPlanet(planet.id) : undefined}
             style={slot ? undefined : { visibility: 'hidden' }}
@@ -333,6 +358,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             {glass ? (
               <GlassOrb size={slot?.size ?? 80} variant={glassVariantFor(planet.name)} material="rnd">
                 {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
+                {planet.moons.length ? <MiniMoons moons={planet.moons} size={slot?.size ?? 80} /> : null}
                 {pulseIds?.includes(planet.id) ? <span className="wd-glass-pulse" data-testid={`world-pulse-${planet.id}`} aria-hidden /> : null}
               </GlassOrb>
             ) : (() => {

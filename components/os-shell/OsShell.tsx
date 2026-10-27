@@ -53,6 +53,9 @@ const ROLE_WORD: Record<string, string> = { owner: 'Volle Rechte', admin: 'Verwa
 
 export function OsShell({ preview }: { preview: boolean }) {
   const phone = useIsPhone();
+  // Handy: Der Begleiter bleibt Einstieg. Nur über den ruhigen Knopf „Universe ansehen“ (oder ?ansicht=universe) öffnet sich das Universe.
+  const [phoneUniverse, setPhoneUniverse] = useState(false);
+  useEffect(() => { setPhoneUniverse(new URLSearchParams(window.location.search).get('ansicht') === 'universe'); }, []);
   const role = useSessionStore((s) => s.user?.role ?? null);
   const userName = useSessionStore((s) => s.user?.name ?? null);
   // Sitzung = Tenant aus CORE, nicht der Name: ohne hinterlegten Namen ist der Name leer (neutral begrüßen).
@@ -155,7 +158,7 @@ export function OsShell({ preview }: { preview: boolean }) {
   };
 
   // Phone: nur der Begleiter (Eule, Braucht dich, MÔRA), nicht das ganze OS.
-  if (phone) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion /></>;
+  if (phone && !phoneUniverse) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion onOpenUniverse={() => { setPhoneUniverse(true); navigate('universe'); }} /></>;
   return (
     <div className="os-root relative" style={{ ...osCssVariables(), ...osPhaseVariables(phase, look) } as React.CSSProperties} data-testid="os-shell" data-active-feature={active.id} data-atmosphere={atmosphere} data-look={look} data-phase={phase}>
       <AmbientPlayer phase={phase} />
