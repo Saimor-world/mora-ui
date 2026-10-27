@@ -1400,3 +1400,45 @@ body:has(.wd-universe) .os-atmo, .os-atmo {
 .wd-focus[data-phone='true'] .fv-actions .fv-action:not(.wd-focus__primary) { display: none !important; }
 .wd-focus[data-phone='true'] .fv-actions .fv-action { min-height: 44px; padding: 0 14px; }
 .wd-focus[data-phone='true'] small { display: none; }
+
+/* ── Dock als MÔRAs Homebase: ein ruhiger, durchgehender Streifen unten, Eingabe + MÔRA + Orte in einer Einheit ── */
+.os-dock { left: 0 !important; right: 0 !important; bottom: 0 !important; justify-content: stretch; }
+.os-dock__capsule, body:has(.wd-universe) .os-dock__capsule {
+  flex: 1; justify-content: space-between; min-height: max(60px, 5.5vh); gap: 14px !important;
+  padding: 6px max(20px, 2vw) calc(6px + env(safe-area-inset-bottom, 0px)) !important; border-radius: 0 !important;
+  background: linear-gradient(180deg, rgba(255, 250, 241, .78), rgba(248, 240, 226, .86)) !important;
+  border: 0 !important; border-top: 1px solid rgba(190, 160, 120, .28) !important;
+  box-shadow: 0 -10px 30px rgba(120, 90, 50, .08) !important; backdrop-filter: blur(18px) saturate(1.1); -webkit-backdrop-filter: blur(18px) saturate(1.1);
+}
+.os-dock__line { display: none; }
+.os-dock__hub { flex: 1 1 auto; max-width: 720px; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.os-dock .os-dock__stone { flex: none; width: 52px; height: 52px; border-radius: 16px; border: 0; background: radial-gradient(circle at 50% 60%, rgba(217, 185, 138, .22), rgba(217, 185, 138, 0) 70%); box-shadow: none; transform: none !important; }
+.os-dock .os-dock__stone[aria-pressed='true'] { background: radial-gradient(circle at 50% 60%, rgba(111, 160, 130, .28), rgba(111, 160, 130, 0) 72%); }
+.os-dock__stone .px-mora--mark, .os-dock__stone .px-mora { width: auto; height: auto; }
+.os-dock__ask { position: relative; flex: 1; min-width: 0; display: flex; }
+.os-dock__ask:has(.wd-ask) .os-dock__askbtn { display: none; }
+.os-dock__askbtn { flex: 1; height: 44px; border-radius: var(--os-radius-pill); border: 1px solid rgba(190, 160, 120, .32); background: rgba(255, 255, 255, .62); color: #7a6a58; font-size: var(--os-type-body-size); text-align: left; padding: 0 18px; cursor: text; }
+.os-dock__ask .wd-ask[data-docked='true'] { position: relative; left: auto; right: auto; bottom: auto; transform: none; width: 100%; max-width: none; z-index: auto; }
+.os-dock__ask .wd-ask[data-docked='true'] form { min-height: 46px; background: rgba(255, 255, 255, .7); border: 1px solid rgba(190, 160, 120, .32); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8); }
+.os-dock__ask .wd-ask[data-docked='true'] form:focus-within { border-color: rgba(111, 150, 120, .6); box-shadow: 0 0 0 3px rgba(111, 150, 120, .14); }
+.os-dock__ask .wd-ask[data-docked='true'] input { color: #3d342a; }
+.os-dock__ask .wd-ask[data-docked='true'] input::placeholder { color: rgba(110, 92, 72, .6); }
+.os-dock__ask .wd-ask[data-docked='true'] button { background: rgba(111, 143, 120, .16); color: #4c5e50; }
+.os-dock__ask .wd-ask[data-docked='true'] .wd-reply { position: absolute; left: 0; right: 0; bottom: calc(100% + 12px); }
+.os-dock__ask .wd-ask[data-docked='true'] .wd-ask__list { background: rgba(255, 250, 241, .97); }
+.os-dock__ask .wd-ask[data-docked='true'] .wd-ask__list button { color: #3d342a; }
+.os-dock .os-dock__divider { background: rgba(190, 160, 120, .3); }
+.os-dock .os-dock__item svg, .os-dock .os-dock__legacy { color: #6e5f4d; }
+@media (max-width: 899px) {
+  .os-dock__capsule, body:has(.wd-universe) .os-dock__capsule { flex-wrap: wrap; row-gap: 2px !important; padding: 6px 8px calc(4px + env(safe-area-inset-bottom, 0px)) !important; }
+  .os-dock__hub { flex: 1 1 100%; max-width: none; order: -1; gap: 6px; }
+  .os-dock .os-dock__group--apps { flex: 1 1 100%; justify-content: space-around; }
+  .os-dock .os-dock__divider { display: none; }
+  .os-dock .os-dock__stone { width: 48px; height: 48px; }
+}
+@media (min-width: 900px) { .os-dock .os-dock__group--tools, .os-dock .os-dock__group--tools + .os-dock__divider { display: flex !important; } .os-dock .os-dock__group--tools + .os-dock__divider { display: block !important; } }
+.os-dock .os-dock__label { color: #7a6a58 !important; }
+.os-dock .os-dock__item[data-active='true'] .os-dock__label { color: #3d342a !important; }
+.os-dock .os-dock__capsule button svg, .os-dock .os-dock__item svg { color: #5f5141 !important; }
+.os-dock__ask .wd-ask[data-docked='true'] input:focus, .os-dock__ask .wd-ask[data-docked='true'] input:focus-visible { outline: none !important; box-shadow: none !important; }
+.os-dock__px { display: inline-flex; }

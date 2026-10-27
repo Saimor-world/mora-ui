@@ -75,7 +75,8 @@
               "swatch": "#3e84d4",
               "file": "aura-sparkles--himmel.png"
             }
-          ]
+          ],
+          "hidden": true
         },
         {
           "id": "firefly-swarm",
@@ -94,7 +95,8 @@
               "swatch": "#96c832",
               "file": "aura-swarm.png"
             }
-          ]
+          ],
+          "hidden": true
         }
       ]
     },
@@ -143,8 +145,7 @@
               "name": "Perlenkette",
               "swatch": "#ebe3d6",
               "file": "neck-pearls--elfenbein.png",
-              "back": true,
-              "thumb": "/mora/jade/thumbs/pearl-necklace.png"
+              "thumb": "/mora/pixel/thumbs/neck-pearls--elfenbein.png"
             }
           ]
         },
@@ -387,7 +388,7 @@
       "items": [
         {
           "id": "jade-sunglasses",
-          "name": "Silber-Sonnenbrille",
+          "name": "Sonnenbrille",
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
@@ -395,16 +396,16 @@
           "fashion": {
             "category": "Brille",
             "collection": "Basis",
-            "material": "Silber, getönte Gläser"
+            "material": "Rauchglas, Metallrahmen"
           },
           "variants": [
             {
               "id": "standard",
-              "name": "Silber-Sonnenbrille",
-              "swatch": "#9aa3ab",
-              "file": "face-sunglasses--silber.png",
+              "name": "Sonnenbrille",
+              "swatch": "#3d4247",
+              "file": "face-sunglasses--rauch.png",
               "back": true,
-              "thumb": "/mora/jade/thumbs/jade-sunglasses.png"
+              "thumb": "/mora/pixel/thumbs/face-sunglasses--rauch.png"
             }
           ]
         },
@@ -452,7 +453,7 @@
               "id": "silber",
               "name": "Silber",
               "swatch": "#9ca8bc",
-              "file": "face-sunglasses--silber.png",
+              "file": "face-sunglasses--rauch.png",
               "back": true
             }
           ]
@@ -507,7 +508,8 @@
               "id": "stern",
               "name": "Sternenstaub",
               "swatch": "#8cc4f0",
-              "file": "face-freckles--stern.png"
+              "file": "face-freckles--stern.png",
+              "hidden": true
             }
           ]
         },
@@ -553,7 +555,7 @@
               "name": "Strickmütze",
               "swatch": "#6b2d5c",
               "file": "head-beanie--pflaume.png",
-              "thumb": "/mora/jade/thumbs/jade-beanie.png"
+              "thumb": "/mora/pixel/thumbs/head-beanie--pflaume.png"
             }
           ]
         },
@@ -788,7 +790,8 @@
               "file": "seasonal-snowflake--gold.png"
             }
           ],
-          "season": "1-2"
+          "season": "1-2",
+          "hidden": true
         },
         {
           "id": "xmas-2026",

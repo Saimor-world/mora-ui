@@ -9,7 +9,7 @@ const PIXEL = MORA_FIGURE === 'pixel';
 const MoraStage = PIXEL ? PixelMoraStage : JadeMoraStage;
 const MoraMark = PIXEL ? PixelMoraMark : JadeMoraMark;
 import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
-import { ACCESSORY_MAX, defaultWardrobe, joinChoice, limitAccessories, visibleAccessories, randomWardrobe, resolve, sameWardrobe, thumbSrc, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
+import { ACCESSORY_MAX, defaultWardrobe, joinChoice, limitAccessories, visibleAccessories, randomWardrobe, resolve, sameWardrobe, thumbSrc, shownItems, shownVariants, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
 import { useFounder, useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 
 const TAB_ORDER = ['head', 'face', 'neck', 'clip', 'held', 'aura', 'seasonal'];
@@ -178,10 +178,10 @@ export function MoraWardrobe() {
             <button type="button" className="os-wd__card" aria-pressed={!w[slot.id]} onClick={() => commit({ ...w, [slot.id]: null })} onPointerEnter={() => hoverItem(null)} onFocus={() => hoverItem(null)} onBlur={() => setHover(null)} data-testid={`wd-${slot.id}-none`}>
               <span className="os-wd__thumb os-wd__thumb--none">{ICO.none}</span><span className="os-wd__name">Keins</span>
             </button>
-            {slot.items.map((i) => {
+            {shownItems(slot).map((i) => {
               const on = cur?.item.id === i.id;
               const locked = !isUnlocked(i, ctx);
-              const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? i.variants[0]);
+              const shown = on ? cur!.variant : (i.variants.find((v) => v.id === lastVariant.current[`${slot.id}/${i.id}`]) ?? shownVariants(i)[0]);
               return (
                 <button key={i.id} type="button" className={`os-wd__card${locked ? ' is-locked' : ''}`} data-origin={i.origin} aria-pressed={on} aria-disabled={locked || undefined} data-locked={locked ? 'true' : undefined} data-rarity={i.rarity} data-legacy={PIXEL || i.figure ? undefined : 'true'} onClick={() => pickItem(i.id)} onPointerEnter={() => hoverItem(i.id)} onFocus={() => hoverItem(i.id)} onBlur={() => setHover(null)} title={i.name} data-testid={`wd-${slot.id}-${i.id}`}>
                   <span className="os-wd__thumb"><img src={thumbSrc(shown.file)} alt="" draggable={false} /></span>
@@ -190,7 +190,7 @@ export function MoraWardrobe() {
                   {locked ? <span className="os-wd__seal" data-testid={`wd-lock-${i.id}`} role="img" aria-label="noch gesperrt">{LOCK}</span> : null}
                   {!PIXEL && !i.figure ? <span className="os-wd__badge os-wd__badge--legacy" title="Pixel-Altstück: am Jade-Stein noch nicht gezeichnet">Pixel</span> : null}
                   {i.season ? <span className="os-wd__badge os-wd__badge--season" title="Saisonal">Saison</span> : null}
-                  {i.variants.length > 1 ? <span className="os-wd__vcount">{i.variants.length} Farben</span> : null}
+                  {shownVariants(i).length > 1 ? <span className="os-wd__vcount">{shownVariants(i).length} Farben</span> : null}
                 </button>
               );
             })}
@@ -203,7 +203,7 @@ export function MoraWardrobe() {
               <>
                 <span className="os-wd__label">Farbe · {cur.item.name}</span>
                 <div className="os-wd__sw" role="group" aria-label="Farbvarianten">
-                  {cur.item.variants.map((v) => (
+                  {shownVariants(cur.item).map((v) => (
                     <button key={v.id} type="button" className="os-wd__swatch" aria-pressed={cur.variant.id === v.id} aria-label={v.name} title={v.name} style={{ ['--sw' as string]: v.swatch }}
                       onClick={() => pickVariant(v.id)} onPointerEnter={() => setHover({ slot: slot.id, choice: joinChoice(cur.item.id, v.id) })} onPointerLeave={() => setHover(null)} data-testid={`wd-var-${v.id}`} />
                   ))}

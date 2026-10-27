@@ -4,9 +4,12 @@ import React from 'react';
 import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
 import { JadeMoraMark } from '@/components/world/JadeMora';
-import { PixelMoraMark } from '@/components/world/PixelMora';
+import { PixelMora, PixelMoraMark } from '@/components/world/PixelMora';
+import { DOCK_ASK_SLOT, useHubMood } from '@/lib/mora/hubMood';
+import { useReducedMotion } from 'framer-motion';
 import { MORA_FIGURE } from '@/lib/mora/figure';
-const MoraMark = MORA_FIGURE === 'jade' ? JadeMoraMark : PixelMoraMark;
+const PIXEL = MORA_FIGURE !== 'jade';
+const MoraMark = PIXEL ? PixelMoraMark : JadeMoraMark;
 import type { FeatureManifest } from '@/features/types';
 
 /**
@@ -14,6 +17,8 @@ import type { FeatureManifest } from '@/features/types';
  * Aktiv-Zustand kommen direkt aus dem Legacy-Dock (components/mora/Dock.tsx,
  * exportiertes CapsuleDockIcon). Aufbau wie dort: links Werkzeuge, Trenner,
  * Mitte die Orte, rechts der MÔRA-Stein.
+ * Homebase: ein durchgehender Streifen unten; MÔRA sitzt direkt an der Eingabe „Frag MÔRA“
+ * (im Universe wird MoraAsk hierher portiert, sonst öffnet der Knopf die MÔRA-Konsole).
  */
 export interface OsDockProps {
   items: FeatureManifest[];
@@ -34,6 +39,8 @@ export interface OsDockProps {
 }
 
 export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unread, onNavigate, onSearch, onControl, controlOpen, onNotifications, onMora, onMore, showLegacy = false }: OsDockProps) {
+  const mood = useHubMood();
+  const reduced = useReducedMotion();
   const onMobile = new Set(mobileItems.map((m) => m.id));
   const icon = (m: FeatureManifest, i: number) => (
     <span key={m.id} className={onMobile.has(m.id) ? 'os-dock__item os-dock__item--both' : 'os-dock__item os-dock__item--desktop'} data-feature={m.id} data-active={m.id === activeId ? 'true' : undefined}>
@@ -53,19 +60,21 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
           {onControl ? <CapsuleDockIcon icon={Sparkles} label="Control Center" description="Kontext, Szene, Focus" shortcut="C" active={controlOpen} isStandardMode={false} onClick={onControl} /> : null}
           <CapsuleDockIcon icon={Bell} label="Mitteilungen" description="Was hereingekommen ist" isStandardMode={false} badge={unread} onClick={onNotifications} />
         </div>
+        <div className="os-dock__hub" data-testid="dock-hub">
+          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora" data-mood={mood}>
+            {PIXEL ? <span data-testid="mora-mark" className="os-dock__px"><PixelMora size={48} mood={moraOpen && mood === 'idle' ? 'listening' : mood} reduced={!!reduced} /></span> : <MoraMark size={40} active={moraOpen} />}
+          </button>
+          <div id={DOCK_ASK_SLOT} className="os-dock__ask">
+            <button type="button" className="os-dock__askbtn" onClick={onMora} data-testid="dock-ask-open">Frag MÔRA …</button>
+          </div>
+        </div>
         <span className="os-dock__divider" aria-hidden />
         <div className="os-dock__group os-dock__group--apps">
           {items.map((m, i) => icon(m, i))}
           <span className="os-dock__item os-dock__item--mobile">
             <CapsuleDockIcon icon={MoreHorizontal} label="Mehr" description="Weitere Bereiche" active={moreActive} isStandardMode={false} onClick={onMore} />
           </span>
-        </div>
-        <span className="os-dock__divider" aria-hidden />
-        <div className="os-dock__group os-dock__group--right">
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
-          <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
-            <MoraMark size={40} active={moraOpen} />
-          </button>
         </div>
       </div>
     </nav>

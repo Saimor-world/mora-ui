@@ -1,5 +1,7 @@
 'use client';
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { DOCK_ASK_SLOT, emitHubMood } from '@/lib/mora/hubMood';
 import { Mic, Send, X } from 'lucide-react';
 import { MoraStone } from '@/components/os-kit';
 import { useMoraStream } from '@/lib/hooks/useMoraStream';
@@ -56,6 +58,18 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
   const state: MoraState = stream.isStreaming ? (stream.streamingText ? 'speaking' : 'thinking') : busy ? 'thinking' : 'idle';
   useEffect(() => { onState?.(state); }, [state, onState]);
   useEffect(() => () => { onState?.('idle'); onListen?.(false); }, [onState, onListen]);
+  // Dock-Homebase: Eingabe sitzt im Dock neben MÔRA; MÔRA zeigt dort dezent, was gerade passiert.
+  const [slot, setSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => { setSlot(document.getElementById(DOCK_ASK_SLOT)); }, []);
+  const [focused, setFocused] = useState(false);
+  const [cheer, setCheer] = useState(false);
+  const prevState = useRef<MoraState>('idle');
+  useEffect(() => {
+    if (prevState.current !== 'idle' && state === 'idle') { setCheer(true); const t = setTimeout(() => setCheer(false), 1600); prevState.current = state; return () => clearTimeout(t); }
+    prevState.current = state; return undefined;
+  }, [state]);
+  useEffect(() => { emitHubMood(state !== 'idle' ? state : cheer ? 'done' : focused ? 'listening' : 'idle'); }, [state, cheer, focused]);
+  useEffect(() => () => emitHubMood('idle'), []);
 
   // „/“ fokussiert das Feld (wie Spotlight), außer man tippt schon irgendwo.
   useEffect(() => {
@@ -120,8 +134,8 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
   };
 
   const bubble = state !== 'idle' ? (stream.streamingText || null) : reply?.text ?? null;
-  return (
-    <div className="wd-ask" data-phone={phone ? 'true' : 'false'} data-testid="world-ask">
+  const ui = (
+    <div className="wd-ask" data-phone={phone ? 'true' : 'false'} data-docked={slot ? 'true' : undefined} data-testid="world-ask">
       {(bubble || state === 'thinking') ? (
         <div className="wd-reply" data-tone={reply?.tone ?? 'answer'} role="status" aria-live="polite" data-testid="mora-reply">
           <MoraStone size={28} thinking={state === 'thinking'} />
@@ -141,11 +155,12 @@ export function MoraAsk({ ctx, dayContext, fallback, onCommand, onState, onListe
         </ul>
       ) : null}
       <form onSubmit={(e) => { e.preventDefault(); void run(text); }}>
-        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => onListen?.(true)} onBlur={() => onListen?.(false)} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
+        <input ref={inputRef} value={text} onChange={(e) => setText(e.target.value)} onFocus={() => { setFocused(true); onListen?.(true); }} onBlur={() => { setFocused(false); onListen?.(false); }} onKeyDown={(e) => { if (e.key === 'Escape') { setText(''); (e.target as HTMLInputElement).blur(); } }}
           placeholder={phone ? 'Frag MÔRA · „Michelle ist da“' : 'Frag MÔRA · „hak Herbstrot ab“ · @Bereich'} aria-label="Frag MÔRA" data-testid="world-ask-input" enterKeyHint="send" />
         {Speech ? <button type="button" onClick={listen} aria-pressed={listening} aria-label="Sprechen" data-testid="world-ask-mic"><Mic size={18} /></button> : null}
         <button type="submit" aria-label="Senden" data-testid="world-ask-send" disabled={busy || state !== 'idle'}><Send size={18} /></button>
       </form>
     </div>
   );
+  return slot ? createPortal(ui, slot) : ui;
 }
