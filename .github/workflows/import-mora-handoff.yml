@@ -1,0 +1,23 @@
+name: Import authorized MORA handoff bundle
+on:
+  push:
+    branches: ['handoff/import-mora-jade-20261027']
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify and import the exact attached bundle into a new feature base
+        shell: bash
+        run: |
+          cat .handoff/mora.bundle.part* > .handoff/mora.bundle
+          echo '75c4a04ef3a14730c3c40ae6f914255c29b1604fca6113b9deb0fccb64d90757  .handoff/mora.bundle' | sha256sum -c -
+          git bundle verify .handoff/mora.bundle
+          git fetch .handoff/mora.bundle refs/heads/grok/mora-alive-jade:refs/remotes/handoff/mora-alive-jade
+          test "$(git rev-parse refs/remotes/handoff/mora-alive-jade)" = a73ac75a2074693ec5db3f5d32a8a6265f789a26
+          git push origin refs/remotes/handoff/mora-alive-jade:refs/heads/handoff/mora-alive-jade-20261027
