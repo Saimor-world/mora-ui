@@ -189,13 +189,7 @@
               "back": true
             }
           ]
-        }
-      ]
-    },
-    {
-      "id": "pendant",
-      "name": "Anhänger",
-      "items": [
+        },
         {
           "id": "moon-pendant",
           "name": "Mond-Anhänger",

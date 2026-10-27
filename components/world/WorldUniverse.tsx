@@ -25,7 +25,7 @@ function stopShort(layout: { cx: number; cy: number; mora: number }, pp: { x: nu
   return { x: dx * k, y: dy * k };
 }
 
-const pixelSize = (size: number, angle: number) => Math.max(2 * PX * 5, Math.round((size * (Math.sin(angle) > 0 ? 1 : 0.85)) / (2 * PX)) * 2 * PX);
+const pixelSize = (size: number, _angle?: number) => Math.max(2 * PX * 5, Math.round(size / (2 * PX)) * 2 * PX);
 
 /**
  * Universe aus echten Daten (Richtung visual-v1): MÔRA – Marius' Jadestein mit Augen –
@@ -117,7 +117,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 84 : undefined, planetMul: pixel ? 1.2 : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 84 : undefined, flat: pixel, planetMul: pixel ? 1.2 : undefined, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
     [size.width, size.height, planets, phone, insetLeft, insetRight, pixel],
   );
 
@@ -191,7 +191,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
 
   return (
-    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined} data-view={pixel ? 'pixel' : 'full'}>
+    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined} data-view={pixel ? 'pixel' : 'full'} data-compact={layout?.compact ? 'true' : undefined}>
       {pixel ? <PixelSky reduced={reduced} /> : (<>
       <div className="wd-parallax wd-parallax--far" aria-hidden />
       <div className="wd-parallax wd-parallax--mid" aria-hidden />
@@ -202,7 +202,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       <div className="wd-zoomwrap" style={camera} data-testid="world-zoomwrap">
       {layout ? (
         <svg className="wd-orbits" shapeRendering={pixel ? 'crispEdges' : undefined} width={size.width} height={size.height} aria-hidden>
-          {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
+          {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy - (layout.ringDy ?? 0)} rx={r.rx} ry={r.ry} />)}
           {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
           {layout.slots.map((slot, i) => {
             const pt = placeOnOrbit(layout, slot);

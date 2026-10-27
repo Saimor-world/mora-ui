@@ -39,9 +39,30 @@ export function deriveRarity(i: Pick<TraitItem, 'origin' | 'edition'>): TraitRar
 }
 
 export const DEFAULT_WARDROBE: Wardrobe = Object.fromEntries(TRAITS.slots.map((s) => [s.id, s.items.find((i) => i.default)?.id ?? null]));
-/** Gründer-Konten tragen von Anfang an das Blüten-Medaillon F1 (nur solange sie nichts anderes gespeichert haben). */
+/** Gründer-Konten tragen von Anfang an nur das Blüten-Medaillon F1 am Hals, ohne Schal (nur solange sie nichts anderes gespeichert haben). */
 export const FOUNDER_PENDANT = 'founder-f1';
-export const defaultWardrobe = (founder: boolean): Wardrobe => (founder ? { ...DEFAULT_WARDROBE, pendant: FOUNDER_PENDANT } : DEFAULT_WARDROBE);
+export const defaultWardrobe = (founder: boolean): Wardrobe => (founder ? { ...DEFAULT_WARDROBE, neck: FOUNDER_PENDANT } : DEFAULT_WARDROBE);
+
+/** Ruhe: höchstens zwei Accessoires gleichzeitig sichtbar (Hals, Kopf bzw. Saison, Gesicht, Hand, Anstecker). Leuchten zählt nicht. */
+export const ACCESSORY_MAX = 2;
+/** Zugleich die Rangfolge, nach der etwas bleibt, wenn nichts anderes bevorzugt wird. */
+export const ACCESSORY_SLOTS = ['neck', 'head', 'seasonal', 'face', 'held', 'clip'] as const;
+/** Slots, die gerade ein sichtbares Accessoire tragen (ausgeblendete zählen nicht). */
+export function visibleAccessories(w: Wardrobe): string[] {
+  const hidden = new Set(TRAITS.slots.flatMap((s) => resolve(s, w[s.id])?.item.hides ?? []));
+  return ACCESSORY_SLOTS.filter((id) => !hidden.has(id) && resolve(TRAITS.slots.find((s) => s.id === id)!, w[id]));
+}
+/** Legt Überzähliges ab. `prefer` (zuletzt Gewähltes zuerst) bleibt vor allem anderen erhalten. */
+export function limitAccessories(w: Wardrobe, prefer: readonly string[] = []): Wardrobe {
+  const rank = [...prefer, ...ACCESSORY_SLOTS];
+  let next = w;
+  // Ein Ablegen kann Verdecktes wieder sichtbar machen (z. B. Saison-Hut), darum Schritt für Schritt.
+  for (let vis = visibleAccessories(next); vis.length > ACCESSORY_MAX; vis = visibleAccessories(next)) {
+    const drop = [...vis].sort((a, b) => rank.indexOf(b) - rank.indexOf(a))[0];
+    next = { ...next, [drop]: null };
+  }
+  return next;
+}
 
 /** Alte Auswahl-IDs (Version 1) → neue "item:variante". */
 const LEGACY: Record<string, string> = {
@@ -84,13 +105,18 @@ export function wardrobeLayers(w: Wardrobe, opts: { founder?: boolean; tier?: Ti
 
 export function normalizeWardrobe(raw: unknown): Wardrobe {
   const w: Wardrobe = { ...DEFAULT_WARDROBE };
-  if (raw && typeof raw === 'object') for (const s of TRAITS.slots) {
-    const v = (raw as Record<string, unknown>)[s.id];
-    if (v === null) { w[s.id] = null; continue; }
-    if (typeof v !== 'string') continue;
-    const r = resolve(s, v); if (r) w[s.id] = joinChoice(r.item.id, r.variant.id);
+  if (raw && typeof raw === 'object') {
+    const src = { ...(raw as Record<string, unknown>) };
+    // Älterer Stand: Anhänger war ein eigener Slot. Hals ist jetzt einer; ein getragener Anhänger ersetzt den Schal.
+    if (typeof src.pendant === 'string' && resolve(TRAITS.slots.find((s) => s.id === 'neck')!, src.pendant)) src.neck = src.pendant;
+    for (const s of TRAITS.slots) {
+      const v = src[s.id];
+      if (v === null) { w[s.id] = null; continue; }
+      if (typeof v !== 'string') continue;
+      const r = resolve(s, v); if (r) w[s.id] = joinChoice(r.item.id, r.variant.id);
+    }
   }
-  return w;
+  return limitAccessories(w);
 }
 
 /** NFT-/Website-Attribute im üblichen Format (Variante in Klammern). */
@@ -101,7 +127,7 @@ export function toNftAttributes(w: Wardrobe) {
   });
 }
 
-const SLOT_ODDS: Record<string, number> = { head: 0.9, neck: 0.8, clip: 0.6, pendant: 0.5, face: 0.45, held: 0.45, aura: 0.4, seasonal: 0.12 };
+const SLOT_ODDS: Record<string, number> = { head: 0.8, neck: 0.8, clip: 0.4, face: 0.4, held: 0.3, aura: 0.35, seasonal: 0.1 };
 /** Zufälliges, stimmiges Outfit. rng ist austauschbar (Tests). */
 export function randomWardrobe(rng: () => number = Math.random, ctx: UnlockContext = NO_UNLOCKS): Wardrobe {
   const pick = <T,>(a: T[]) => a[Math.min(a.length - 1, Math.floor(rng() * a.length))];
@@ -111,7 +137,9 @@ export function randomWardrobe(rng: () => number = Math.random, ctx: UnlockConte
     const free = s.items.filter((i) => isUnlocked(i, ctx)); if (!free.length) { w[s.id] = null; continue; }
     const it = pick(free); w[s.id] = joinChoice(it.id, pick(it.variants).id);
   }
-  return w;
+  // Welche zwei bleiben, entscheidet der Zufall.
+  const order = [...ACCESSORY_SLOTS].map((id) => ({ id, r: rng() })).sort((a, b) => a.r - b.r).map((x) => x.id);
+  return limitAccessories(w, order);
 }
 
 export const sameWardrobe = (a: Wardrobe, b: Wardrobe) => TRAITS.slots.every((s) => (a[s.id] ?? null) === (b[s.id] ?? null));

@@ -742,7 +742,7 @@
   background:
     url('/universe/deep-space-warm.jpg') center / cover no-repeat;
   /* os-polish-v1: etwas dunkler über den Filter statt über eine dunkle Fläche (Marius: kein Overlay). */
-  filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); /* os-redesign 26.10.: Nebel ruhiger und wärmer, weiter ohne Overlay. */
+  filter: brightness(.64) saturate(.52) sepia(.1) contrast(1.02); /* os-redesign 26.10.: Nebel ruhiger und wärmer, weiter ohne Overlay. */
 }
 .wd-universe::after {
   inset: -10%;
@@ -848,7 +848,7 @@ body:has(.wd-universe) .os-shell__topbar [class*='capsule'], body:has(.wd-univer
 /* bg-full 26.10. (Marius: "das Bild muss komplett hinten sein"): EIN Nebelbild über den ganzen Bildschirm,
    hinter Kopfzeile, Leisten und Dock. Shell-Flächen im Universe transparent, keine Kante mehr. */
 /* bg-fix: Nebel sitzt auf der fixen OS-Atmosphäre (vollflächig, ganz hinten); deren Farbschichten im Universe aus. */
-body:has(.wd-universe) .os-atmo { background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); }
+body:has(.wd-universe) .os-atmo { background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.64) saturate(.52) sepia(.1) contrast(1.02); }
 body:has(.wd-universe) .os-atmo > * { display: none !important; }
 body:has(.wd-universe) .os-root, body:has(.wd-universe) .os-shell, body:has(.wd-universe) .os-atmo__plate { background: transparent !important; }
 .wd-universe { background: transparent !important; }
@@ -912,7 +912,7 @@ html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
 .os-root { position: fixed !important; inset: 0; }
 .os-shell { position: absolute !important; inset: 0; width: 100% !important; height: 100%; }
 .os-atmo { position: fixed !important; inset: 0 !important; width: auto !important; height: auto !important; background: #07090c url('/universe/deep-space-warm.jpg') center / cover no-repeat !important; filter: brightness(.55) saturate(.75) sepia(.12) contrast(1.02); }
-body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12) contrast(1.02); }
+body:has(.wd-universe) .os-atmo { filter: brightness(.64) saturate(.52) sepia(.1) contrast(1.02); }
 .os-atmo > * { display: none !important; }
 .os-root, .os-shell, .os-atmo__plate, .os-root[data-look='kosmos'] .os-shell__content, .os-shell__content { background: transparent !important; }
 .os-shell__topbar { background: transparent !important; box-shadow: none !important; }
@@ -965,7 +965,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .os-wd__stage { position: relative; display: grid; place-items: center; height: 372px; border-radius: 18px; overflow: hidden; isolation: isolate; border: 1px solid rgba(214,180,106,.22);
   background: radial-gradient(ellipse at 50% 38%, rgba(214,180,106,.14), rgba(14,20,34,.72) 62%), linear-gradient(180deg, rgba(18,26,44,.9), rgba(8,12,22,.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 18px 40px rgba(0,0,0,.35); }
 .os-wd__stage .px-mora--stage { z-index: 2; margin-top: -26px; }
-.os-wd__glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(246,190,80,.22), transparent 66%); top: 18px; z-index: 0; animation: wd-glow 4.2s ease-in-out infinite; }
+.os-wd__glow { position: absolute; width: 300px; height: 300px; border-radius: 50%; background: radial-gradient(circle, rgba(226,184,100,.10), transparent 66%); top: 18px; z-index: 0; animation: wd-glow 4.2s ease-in-out infinite; }
 .os-wd__shadow { position: absolute; bottom: 60px; width: 150px; height: 20px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 70%); z-index: 1; }
 .os-wd__spark { position: absolute; width: 3px; height: 3px; background: #f6d98a; box-shadow: 0 0 8px 1px rgba(246,190,80,.7); z-index: 1; animation: wd-twinkle 3.2s steps(4) infinite; }
 .os-wd__spark--1 { left: 16%; top: 24%; } .os-wd__spark--2 { right: 14%; top: 36%; animation-delay: -1.1s; } .os-wd__spark--3 { left: 24%; bottom: 26%; animation-delay: -2s; }
@@ -1030,10 +1030,12 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
    Jede Stufe hat eine eigene Farbe (--tc), ein eigenes Licht (--tg) und eine eigene Bewegung.
    Kacheln, Badge, Bühne, Chip und Hinweis lesen dieselben Variablen aus data-origin. */
 .os-wd__card, .os-wd__stage, .os-wd__badge-o, .os-wd__chip, .os-wd__note { --tc: 255, 255, 255; --ta: .09; --tg: 0; }
-[data-origin='moment'] { --tc: 150, 204, 232; --ta: .34; --tg: .10; }
-[data-origin='earned'] { --tc: 206, 214, 230; --ta: .5; --tg: .12; }
-[data-origin='alive'] { --tc: 118, 224, 170; --ta: .52; --tg: .16; }
-[data-origin='founder'] { --tc: 240, 196, 110; --ta: .85; --tg: .30; }
+[data-origin='moment'] { --tc: 118, 178, 200; --ta: .3; --tg: .05; }
+[data-origin='earned'] { --tc: 174, 166, 208; --ta: .36; --tg: .06; }
+[data-origin='alive'] { --tc: 128, 184, 152; --ta: .36; --tg: .07; }
+[data-origin='founder'] { --tc: 214, 178, 108; --ta: .6; --tg: .13; }
+/* Moment ist flüchtig: gestrichelter Rand; Verdient ist durchgezogen. */
+.os-wd__card[data-origin='moment'], .os-wd__stage[data-origin='moment'] { border-style: dashed; }
 @property --wd-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
 .os-wd__card { overflow: hidden; border: 1px solid rgba(var(--tc), var(--ta)); background: linear-gradient(180deg, rgba(var(--tc), calc(.05 + var(--tg) * .35)), rgba(var(--tc), .012)); box-shadow: 0 0 calc(var(--tg) * 70px) rgba(var(--tc), calc(var(--tg) * .9)), inset 0 1px 0 rgba(255,255,255,.05); }
 .os-wd__card::before, .os-wd__card::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; }
@@ -1045,20 +1047,20 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .os-wd__card[data-origin='standard'] .os-wd__thumb { background: radial-gradient(circle at 50% 40%, rgba(255,255,255,.07), rgba(8,12,22,.5)); }
 .os-wd__card:not([data-origin='standard']) .os-wd__thumb { background: radial-gradient(circle at 50% 42%, rgba(var(--tc), calc(.10 + var(--tg) * .5)), rgba(8,12,22,.5) 75%); }
 /* earned: feiner Silberschimmer, ein heller Streifen läuft selten durch */
-.os-wd__card[data-origin='earned']::before { opacity: 1; inset: -2px; background: linear-gradient(105deg, transparent 38%, rgba(236,242,255,.26) 50%, transparent 62%) -160% 0 / 260% 100% no-repeat; animation: wd-shimmer 7s ease-in-out infinite; }
+.os-wd__card[data-origin='earned']::before { opacity: 1; inset: -2px; background: linear-gradient(105deg, transparent 38%, rgba(236,242,255,.12) 50%, transparent 62%) -160% 0 / 260% 100% no-repeat; animation: wd-shimmer 7s ease-in-out infinite; }
 /* alive: sanftes, atmendes Leuchten */
 .os-wd__card[data-origin='alive'] { animation: wd-breathe 3.6s ease-in-out infinite; }
 /* founder: warmes Gold, ein Lichtpunkt wandert langsam um den Rahmen */
-.os-wd__card[data-origin='founder'] { background: linear-gradient(180deg, rgba(240,196,110,.20), rgba(240,196,110,.04) 70%), radial-gradient(ellipse at 50% 0, rgba(255,226,150,.14), transparent 70%); }
-.os-wd__card[data-origin='founder']::before { opacity: 1; padding: 1.5px; background: conic-gradient(from var(--wd-a), transparent 0 62%, rgba(255,232,170,.0) 66%, rgba(255,236,180,.95) 80%, rgba(255,232,170,.0) 94%, transparent 0); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: wd-run 9s linear infinite; }
+.os-wd__card[data-origin='founder'] { background: linear-gradient(180deg, rgba(214,178,108,.11), rgba(214,178,108,.03) 70%), radial-gradient(ellipse at 50% 0, rgba(240,210,150,.07), transparent 70%); }
+.os-wd__card[data-origin='founder']::before { opacity: 1; padding: 1.5px; background: conic-gradient(from var(--wd-a), transparent 0 62%, rgba(255,232,170,.0) 66%, rgba(240,214,160,.6) 80%, rgba(255,232,170,.0) 94%, transparent 0); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: wd-run 9s linear infinite; }
 @keyframes wd-run { to { --wd-a: 360deg; } }
 @keyframes wd-shimmer { 0%, 55% { background-position: -160% 0; } 100% { background-position: 160% 0; } }
-@keyframes wd-breathe { 0%, 100% { box-shadow: 0 0 10px rgba(118,224,170,.10), inset 0 1px 0 rgba(255,255,255,.05); } 50% { box-shadow: 0 0 24px rgba(118,224,170,.30), inset 0 1px 0 rgba(255,255,255,.05); } }
+@keyframes wd-breathe { 0%, 100% { box-shadow: 0 0 8px rgba(128,184,152,.05), inset 0 1px 0 rgba(255,255,255,.05); } 50% { box-shadow: 0 0 16px rgba(128,184,152,.14), inset 0 1px 0 rgba(255,255,255,.05); } }
 /* Badge: kleine Glaskapsel, Farbe aus der Stufe */
 .os-wd__badge-o { position: absolute; top: 7px; left: 7px; z-index: 1; display: inline-flex; align-items: center; gap: 5px; height: 17px; padding: 0 7px 0 6px; border-radius: 999px; font-size: 9.5px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: rgb(var(--tc)); background: rgba(8,12,22,.62); border: 1px solid rgba(var(--tc), .38); backdrop-filter: blur(6px); }
-.os-wd__badge-o i { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--tc)); box-shadow: 0 0 6px rgba(var(--tc), .9); }
+.os-wd__badge-o i { width: 5px; height: 5px; border-radius: 50%; background: rgb(var(--tc)); box-shadow: 0 0 4px rgba(var(--tc), .5); }
 .os-wd__badge-o[data-origin='alive'] i { animation: wd-dot 2.2s ease-in-out infinite; }
-.os-wd__badge-o[data-origin='founder'] { background: linear-gradient(180deg, rgba(240,196,110,.28), rgba(240,196,110,.1)); border-color: rgba(240,196,110,.7); color: #ffe7ad; }
+.os-wd__badge-o[data-origin='founder'] { background: linear-gradient(180deg, rgba(214,178,108,.2), rgba(214,178,108,.07)); border-color: rgba(214,178,108,.5); color: #ecd49c; }
 @keyframes wd-dot { 0%, 100% { opacity: .45; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
 .os-wd__badge--season { top: 7px; right: 7px; left: auto; }
 /* Gesperrt: bleibt schön, mattes Glas über dem Teil, Schloss als Siegel */
@@ -1073,14 +1075,14 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 /* Bühne, Chip, Hinweis */
 .os-wd__stage { border-color: rgba(var(--tc), calc(var(--ta) + .12)); background: radial-gradient(ellipse at 50% 38%, rgba(var(--tc), calc(.05 + var(--tg) * .45)), rgba(14,20,34,.72) 62%), linear-gradient(180deg, rgba(18,26,44,.9), rgba(8,12,22,.95)); transition: border-color .4s, background .4s; }
 .os-wd__stage[data-origin='standard'] { --tc: 190, 204, 230; --ta: .1; --tg: .05; }
-.os-wd__stage[data-origin='moment'] { --ta: .5; --tg: .22; }
-.os-wd__stage[data-origin='earned'] { --ta: .62; --tg: .2; }
-.os-wd__stage[data-origin='alive'] { --tg: .24; }
-.os-wd__glow { background: radial-gradient(circle, rgba(var(--tc), calc(.08 + var(--tg) * .7)), transparent 66%); transition: background .4s; }
+.os-wd__stage[data-origin='moment'] { --ta: .4; --tg: .08; }
+.os-wd__stage[data-origin='earned'] { --ta: .46; --tg: .09; }
+.os-wd__stage[data-origin='alive'] { --tg: .1; }
+.os-wd__glow { background: radial-gradient(circle, rgba(var(--tc), calc(.03 + var(--tg) * .5)), transparent 66%); transition: background .4s; }
 .os-wd__stage[data-origin='alive'] .os-wd__glow { animation-duration: 3s; }
-.os-wd__spark { background: rgb(var(--tc)); box-shadow: 0 0 8px 1px rgba(var(--tc), .7); }
+.os-wd__spark { background: rgb(var(--tc)); box-shadow: 0 0 6px 1px rgba(var(--tc), .4); }
 .os-wd__stage[data-origin='standard'] .os-wd__spark { opacity: 0 !important; animation: none; }
-.os-wd__stage[data-origin='founder']::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 3; background: conic-gradient(from var(--wd-a), transparent 0 70%, rgba(255,236,180,.9) 84%, transparent 96%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: wd-run 12s linear infinite; }
+.os-wd__stage[data-origin='founder']::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1.5px; pointer-events: none; z-index: 3; background: conic-gradient(from var(--wd-a), transparent 0 70%, rgba(240,214,160,.55) 84%, transparent 96%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); animation: wd-run 12s linear infinite; }
 .os-wd__chip { border-color: rgba(var(--tc), .28); }
 .os-wd__chip[data-on='true'] { color: rgb(var(--tc)); border-color: rgba(var(--tc), .6); }
 .os-wd__chip b { font-weight: 600; margin-left: 6px; color: rgb(var(--tc)); letter-spacing: .04em; }
@@ -1147,3 +1149,9 @@ body:has(.wd-universe[data-view='pixel']) .os-shell__topbar { position: relative
 
 /* Politur 27.10.: MÔRAs Satz bricht um statt mit „…“ abzuschneiden; Abstand zur Eingabe. */
 .wd-mora-line { white-space: normal; overflow: visible; text-overflow: clip; text-wrap: balance; max-width: min(460px, calc(100% - 440px)); line-height: 20px; }
+
+/* Dichte Ansicht: nur der Name unter dem Planeten; die zweite Zeile erscheint bei Zeiger oder Fokus. */
+.wd-universe[data-compact='true'] .wd-info { display: none; }
+.wd-universe[data-compact='true'] .wd-label { align-items: center; }
+.wd-universe[data-compact='true'] .wd-meta { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); white-space: nowrap; max-width: none; opacity: 0; transition: opacity .15s ease; padding: 1px 8px; border-radius: 6px; background: rgba(12, 14, 20, .82); }
+.wd-universe[data-compact='true'] .wd-planet:hover .wd-meta, .wd-universe[data-compact='true'] .wd-planet:focus-visible .wd-meta { opacity: 1; }

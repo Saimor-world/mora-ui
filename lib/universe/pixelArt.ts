@@ -125,22 +125,22 @@ const craters = (seed: number, n: number) => Array.from({ length: n }, (_, i) =>
 });
 
 const LIGHTS = hex('#e6c98a');
-const EDGE_GOLD = hex('#e8c878');
+const EDGE_GOLD = hex('#cdb47e');
 
 /**
  * Flache Planeten (Marius t782u): je Planet 2–3 Töne, kein Glanz, keine Oberflächen-Details.
- * Gedeckte Töne, die zum warmen Nebel passen (Bernstein, Rost, Dunkelblau, Violett, Salbei).
+ * Gedämpfte, verwandte Töne (Sättigung ~55 %), die zur dunklen OS-Welt passen: Stein, Rost, Dunkelblau, Staubviolett, Salbei.
  */
 interface Flat { light: RGB; mid: RGB; shadow: RGB; band: RGB }
 const flat = (light: string, mid: string, shadow: string, band: string): Flat => ({ light: hex(light), mid: hex(mid), shadow: hex(shadow), band: hex(band) });
 const FLAT: Record<PlanetKind, Flat> = {
-  gas: flat('#8c7aa6', '#75638f', '#483c63', '#5f5078'),
-  ocean: flat('#5a8cae', '#477796', '#2b4b63', '#3a6481'),
-  lava: flat('#bf7347', '#a45c36', '#643322', '#8a4a2c'),
-  ice: flat('#a3bdcb', '#8aa7b8', '#52697a', '#7692a4'),
-  rock: flat('#8f8d94', '#79777f', '#4b4a52', '#656369'),
-  desert: flat('#d0a766', '#b98e50', '#76572f', '#a07a41'),
-  jade: flat('#43a082', '#2f8a6c', '#1c5845', '#277659'),
+  gas: flat('#857a94', '#70667d', '#474155', '#5b5468'),
+  ocean: flat('#658193', '#536c7c', '#344551', '#465b6a'),
+  lava: flat('#9c725a', '#835e4a', '#50372e', '#6e4d3d'),
+  ice: flat('#9fb0b9', '#899ba5', '#56616a', '#778792'),
+  rock: flat('#87868a', '#737276', '#48474b', '#5f5e61'),
+  desert: flat('#b29972', '#9a825f', '#60503b', '#826f51'),
+  jade: flat('#538373', '#3f6e5f', '#27463c', '#355e4f'),
 };
 const flatLook = (k: PlanetKind): Flat => FLAT[k];
 

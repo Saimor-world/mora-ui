@@ -3,10 +3,10 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Surface, Text } from '@/components/os-kit';
 import { PixelMoraMark, PixelMoraStage } from '@/components/world/PixelMora';
 import { isUnlocked, loadUnlockContext, unlockHint } from '@/lib/mora/unlock';
-import { defaultWardrobe, joinChoice, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
+import { ACCESSORY_MAX, defaultWardrobe, joinChoice, limitAccessories, visibleAccessories, randomWardrobe, resolve, sameWardrobe, TRAITS, type TraitItem, type TraitSlot, type Wardrobe } from '@/lib/mora/traits';
 import { useFounder, useOutfits, useWardrobe } from '@/lib/mora/useWardrobe';
 
-const TAB_ORDER = ['head', 'face', 'neck', 'pendant', 'clip', 'held', 'aura', 'seasonal'];
+const TAB_ORDER = ['head', 'face', 'neck', 'clip', 'held', 'aura', 'seasonal'];
 const HISTORY = 60;
 const RARITY_LABEL = { common: '', rare: 'Selten', legendary: 'Legendär' } as const;
 const TIER_LABEL = { standard: '', moment: 'Moment', earned: 'Verdient', alive: 'Lebendig', founder: 'Legendär' } as const;
@@ -53,6 +53,9 @@ export function MoraWardrobe() {
   const [past, setPast] = useState<Wardrobe[]>([]);
   const [future, setFuture] = useState<Wardrobe[]>([]);
   const lastVariant = useRef<Record<string, string>>({});
+  /** Zuletzt gewählte Plätze (neueste zuerst): bei mehr als zwei Accessoires bleiben diese. */
+  const recent = useRef<string[]>([]);
+  const touch = (id: string) => { recent.current = [id, ...recent.current.filter((x) => x !== id)]; };
   const founder = useFounder();
   const [stub] = useState(loadUnlockContext);
   const ctx = useMemo(() => ({ ...stub, founder: stub.founder || founder }), [stub, founder]);
@@ -75,11 +78,11 @@ export function MoraWardrobe() {
     const it = slot.items.find((i) => i.id === itemId)!;
     if (!isUnlocked(it, ctx)) { setNote(it); return; }
     const keep = cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id);
-    commit({ ...w, [slot.id]: joinChoice(itemId, keep) });
+    touch(slot.id); commit(limitAccessories({ ...w, [slot.id]: joinChoice(itemId, keep) }, recent.current));
   };
   const pickVariant = (variantId: string) => {
     if (!cur) return; lastVariant.current[`${slot.id}/${cur.item.id}`] = variantId;
-    commit({ ...w, [slot.id]: joinChoice(cur.item.id, variantId) });
+    touch(slot.id); commit(limitAccessories({ ...w, [slot.id]: joinChoice(cur.item.id, variantId) }, recent.current));
   };
   const hoverItem = (itemId: string | null) => {
     if (itemId === null) { setNote(null); return setHover({ slot: slot.id, choice: null }); }
@@ -88,7 +91,7 @@ export function MoraWardrobe() {
     setHover({ slot: slot.id, choice: joinChoice(itemId, cur?.item.id === itemId ? cur.variant.id : (lastVariant.current[`${slot.id}/${itemId}`] ?? it.variants[0].id)) });
   };
 
-  const preview: Wardrobe = hover ? { ...w, [hover.slot]: hover.choice } : w;
+  const preview: Wardrobe = hover ? limitAccessories({ ...w, [hover.slot]: hover.choice }, [hover.slot, ...recent.current]) : w;
   const previewing = !!hover && !sameWardrobe(preview, w);
   const pv = hover ? resolve(TRAITS.slots.find((s) => s.id === hover.slot)!, hover.choice) : null;
   /** Höchste Herkunftsstufe im getragenen Outfit; bei Vorschau die des Vorschau-Teils: sie färbt die Bühne. */
@@ -97,14 +100,14 @@ export function MoraWardrobe() {
     return TIER_RANK.indexOf(o) > TIER_RANK.indexOf(top) ? o : top;
   }, 'standard');
   const stageTier = previewing && pv ? pv.item.origin : tier;
-  const worn = TRAITS.slots.filter((s) => w[s.id]).length;
+  const worn = visibleAccessories(w).length;
   const dirty = !sameWardrobe(w, DEFAULT_WARDROBE);
 
   return (
     <Surface padding={5} data-testid="mora-wardrobe" className="os-wd">
       <div className="os-wd__head">
         <Text variant="eyebrow">Garderobe · MÔRA</Text>
-        <span className="os-wd__count">{worn} von {TRAITS.slots.length} Plätzen getragen</span>
+        <span className="os-wd__count">{worn} von {ACCESSORY_MAX} Accessoires</span>
       </div>
       <div className="os-wd__body">
         <section className="os-wd__left" aria-label="Vorschau">

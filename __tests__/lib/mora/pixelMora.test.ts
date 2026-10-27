@@ -1,7 +1,7 @@
 import { decide } from '@/lib/mora/pixelBrain';
 import { isUnlocked, unlockHint, NO_UNLOCKS, ABO_MONTHS } from '@/lib/mora/unlock';
 import { tierFor } from '@/components/world/PixelMora';
-import { DEFAULT_WARDROBE, FOUNDER_PENDANT, defaultWardrobe, deriveRarity, stemOf, TIERS, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, resolve, splitChoice, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
+import { DEFAULT_WARDROBE, FOUNDER_PENDANT, defaultWardrobe, deriveRarity, stemOf, TIERS, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, limitAccessories, resolve, splitChoice, visibleAccessories, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
 import fs from 'fs';
 import path from 'path';
 
@@ -60,19 +60,33 @@ describe('traits', () => {
     expect(l.src).toBe('/mora/pixel/t96/traits/neck-scarf--terra.png'); expect(l.back).toBe('/mora/pixel/t96/traits/neck-scarf--terra--back.png');
   });
   it('Gründerstücke erscheinen nur bei Gründern; F1 ist ein Streifen mit 16 Bildern', () => {
-    const w = { ...DEFAULT_WARDROBE, pendant: FOUNDER_PENDANT, clip: 'founder-bloom', face: 'founder-sunglasses', neck: 'founder-scarf' };
+    const w = { ...DEFAULT_WARDROBE, neck: FOUNDER_PENDANT, clip: 'founder-bloom', face: 'founder-sunglasses' };
     expect(wardrobeLayers(w).map((l) => l.slot)).toEqual([]);
     const f = wardrobeLayers(w, { founder: true, tier: 80 });
-    expect(f.map((l) => l.slot)).toEqual(['neck', 'pendant', 'face', 'clip']);
-    expect(f.find((l) => l.slot === 'pendant')).toMatchObject({ src: '/mora/pixel/t80/traits/pendant-founder-f1--bluten-medaillon--anim.png', frames: 16 });
-    expect(defaultWardrobe(true).pendant).toBe(FOUNDER_PENDANT); expect(defaultWardrobe(false).pendant).toBeNull();
+    expect(f.map((l) => l.slot)).toEqual(['neck', 'face', 'clip']);
+    expect(f.find((l) => l.slot === 'neck')).toMatchObject({ src: '/mora/pixel/t80/traits/pendant-founder-f1--bluten-medaillon--anim.png', frames: 16 });
+    expect(defaultWardrobe(true).neck).toBe(FOUNDER_PENDANT); expect(defaultWardrobe(false).neck).toBe('scarf');
+    expect(visibleAccessories(defaultWardrobe(true))).toEqual(['neck']);
+  });
+  it('Hals ist ein Slot und höchstens zwei Accessoires sind sichtbar', () => {
+    expect(TRAITS.slots.some((s) => s.id === 'pendant')).toBe(false);
+    const full = { ...DEFAULT_WARDROBE, neck: 'bowtie:rot', head: 'beret:rot', face: 'glasses:rot', held: 'coffee:marine', clip: 'flower-pin:pflaume' };
+    expect(visibleAccessories(full).length).toBe(5);
+    expect(visibleAccessories(limitAccessories(full)).length).toBe(2);
+    const keep = limitAccessories(full, ['held', 'face']);
+    expect(keep.held).toBe('coffee:marine'); expect(keep.face).toBe('glasses:rot'); expect(keep.neck).toBeNull(); expect(keep.head).toBeNull();
+    expect(limitAccessories({ ...DEFAULT_WARDROBE, aura: 'warm:gold' })).toEqual({ ...DEFAULT_WARDROBE, aura: 'warm:gold' });
+  });
+  it('alte Outfits mit Schal und Anhänger werden auf einen Hals-Slot migriert', () => {
+    const n = normalizeWardrobe({ neck: 'scarf', pendant: 'moon-pendant:silber' } as never);
+    expect(n.neck).toBe('moon-pendant:silber'); expect('pendant' in n).toBe(false);
   });
   it('wählt die Bildstufe passend zur Größe', () => {
     expect([34, 44, 56, 80, 88, 96, 112, 130, 280].map(tierFor)).toEqual([48, 48, 48, 80, 80, 96, 96, 140, 140]);
   });
   it('Zufall liefert immer gültige Auswahl', () => {
     for (let k = 0; k < 200; k++) {
-      const w = randomWardrobe(); expect(normalizeWardrobe(w)).toEqual({ ...DEFAULT_WARDROBE, ...Object.fromEntries(Object.entries(w).map(([a, b]) => [a, b])) });
+      const w = randomWardrobe(); expect(normalizeWardrobe(w)).toEqual(w); expect(visibleAccessories(w).length).toBeLessThanOrEqual(2);
     }
     expect(Object.values(randomWardrobe(() => 0.99)).every((v) => v === null)).toBe(true);
   });
