@@ -11,7 +11,7 @@ import type { PlanetTraits, WorldOrbit, WorldPlanet } from '@/lib/lea/world';
 import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { glassLayout } from '@/lib/universe/glassLayout';
-import { GLASS_SHARED, GlassOrb, glassTintFor } from './GlassOrb';
+import { GlassOrb, glassVariantFor } from './GlassOrb';
 import { floatOffset, labelWidth, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
 import { PixelMoon, PX } from './PixelPlanet';
@@ -158,10 +158,10 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       const labels = planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 }));
       const weights = planets.map((p) => p.weight);
       return glass
-        ? glassLayout({ width: size.width, insetLeft, insetRight, height, weights, phone, labels })
+        ? glassLayout({ width: size.width, insetLeft, insetRight, height, weights, phone, labels, reserveMora: moraInScene })
         : layoutOrbits({ width: size.width, insetLeft, insetRight, height, weights, phone, labels });
     },
-    [size.width, size.height, planets, phone, insetLeft, insetRight, glass],
+    [size.width, size.height, planets, phone, insetLeft, insetRight, glass, moraInScene],
   );
 
   const place = useCallback((t: number) => {
@@ -327,7 +327,7 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
           >
             {glass ? (
-              <GlassOrb size={slot?.size ?? 80} variant={GLASS_SHARED} material="rnd" tint={glassTintFor(planet.name)}>
+              <GlassOrb size={slot?.size ?? 80} variant={glassVariantFor(planet.name)} material="rnd">
                 {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
                 {pulseIds?.includes(planet.id) ? <span className="wd-glass-pulse" data-testid={`world-pulse-${planet.id}`} aria-hidden /> : null}
               </GlassOrb>

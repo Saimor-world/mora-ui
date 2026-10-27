@@ -1,0 +1,56 @@
+name: Universe refinement visual QA
+on:
+  pull_request:
+    paths:
+      - 'components/world/**'
+      - 'lib/universe/**'
+      - 'app/world.css'
+      - 'app/jade-mora.css'
+      - 'public/mora/jade/**'
+      - 'e2e/universe-refinement/**'
+      - 'playwright.universe-refinement.config.ts'
+      - '.github/workflows/universe-refinement-qa.yml'
+permissions:
+  contents: read
+concurrency:
+  group: universe-refinement-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      NEXT_PUBLIC_OS_PROTOTYPE: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Temporary mobile Universe QA surface (runner checkout only)
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('components/os-shell/OsShell.tsx')
+          s = p.read_text()
+          old = 'if (phone) return <>{!preview ? <OsSessionBoot /> : null}<PhoneCompanion /></>;'
+          assert old in s
+          p.write_text(s.replace(old, '/* QA-only: exercise Universe at phone width. */'))
+          PY
+      - run: npm run build
+      - name: Restore source (mobile change never shipped)
+        if: always()
+        run: git restore components/os-shell/OsShell.tsx
+      - name: Browser dependencies
+        run: |
+          sudo sed -i 's/azure.archive.ubuntu.com/archive.ubuntu.com/g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list.d/ubuntu.sources || true
+          npx playwright install --with-deps chromium
+      - run: npx playwright test --config=playwright.universe-refinement.config.ts
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: universe-refinement-${{ github.sha }}
+          path: test-results/universe-refinement
+          retention-days: 7
