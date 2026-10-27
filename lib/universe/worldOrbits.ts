@@ -7,7 +7,7 @@
  */
 
 export interface OrbitRing { rx: number; ry: number; period: number }
-export interface OrbitSlot { ring: number; angle: number; size: number }
+export interface OrbitSlot { ring: number; angle: number; size: number; /** Ruhiges Raster: fester Platz statt Bahn. */ at?: { x: number; y: number } }
 export interface OrbitLayout {
   /** Größenfaktor der Fläche (1 bis 1,35): Full HD ist der Hauptfall, dort wächst alles mit. */
   scale: number;
@@ -16,6 +16,8 @@ export interface OrbitLayout {
   mora: number;
   rings: OrbitRing[];
   slots: OrbitSlot[];
+  /** Ruhiges Raster (Pixel-Ansicht): MÔRA oben, Planeten in Reihen nach Wichtigkeit, keine Bahnen. */
+  calm?: boolean;
 }
 
 export interface OrbitOptions {
@@ -29,6 +31,11 @@ export interface OrbitOptions {
   /** Belegte Spalten links/rechts (Karten, Horizont, Fokus): dort liegt kein Planet und kein Name. */
   insetLeft?: number;
   insetRight?: number;
+  /** Pixel-Ansicht: größere MÔRA (Basis in px statt 120) und größere Planetenkörper. */
+  moraBase?: number;
+  planetMul?: number;
+  /** Ruhiges Raster statt Bahnen (nur Computer). */
+  calm?: boolean;
 }
 
 export interface PlanetLabel { name: string; meta?: string; moons?: number; stars?: number }
@@ -59,8 +66,8 @@ export function orbitScale(height: number, phone: boolean, width = Infinity): nu
 }
 
 /** MÔRA ist immer der größte Körper. */
-export function moraSize(phone: boolean, scale = 1): number {
-  return Math.round((phone ? 88 : 120) * scale);
+export function moraSize(phone: boolean, scale = 1, base = 120): number {
+  return Math.round((phone ? 88 : base) * scale);
 }
 
 /** Planetengröße aus dem Gewicht: matt und ruhig, nie größer als MÔRA. */
@@ -90,16 +97,78 @@ export function layoutOrbits(opts: OrbitOptions): OrbitLayout {
   const insetRight = Math.max(0, opts.insetRight ?? 0);
   const width = Math.max(0, opts.width - insetLeft - insetRight);
   // In der freien Spalte rechnen, danach die Mitte in die Fläche zurückschieben.
-  const local = layoutInFrame({ ...opts, width });
-  return insetLeft ? { ...local, cx: local.cx + insetLeft } : local;
+  const local = opts.calm && !opts.phone && opts.weights.length > 0 ? layoutCalm({ ...opts, width }) : layoutInFrame({ ...opts, width });
+  if (!insetLeft) return local;
+  return { ...local, cx: local.cx + insetLeft, slots: local.slots.map((sl) => (sl.at ? { ...sl, at: { x: sl.at.x + insetLeft, y: sl.at.y } } : sl)) };
+}
+
+/** Größenstufen des ruhigen Rasters (px bei Scale 1): wichtig / normal / klein. Gleiche Stufe = gleiche Größe. */
+export const CALM_SIZES = [104, 88, 76] as const;
+/** Luft über jeder Reihe für den Mondbogen (Radius + Mond − Planetenradius, plus Rand) und unter dem Namen (zweite Zeile). */
+const CALM_MOONS = 56;
+const CALM_WRAP = 22;
+const CALM_GAP = 8;
+
+/**
+ * Ruhiges, lesbares Raster: MÔRA mittig oben, darunter die Abteilungen in Reihen. Reihenfolge =
+ * Wichtigkeit (Gewicht), links nach rechts, oberste Reihe zuerst; jede Reihe mittig, gleiche Abstände,
+ * eine Größenstufe je Gewichtsklasse. Keine Bahnen, kein Zufall – gleiche Daten ergeben immer dasselbe Bild.
+ */
+export function layoutCalm(opts: OrbitOptions): OrbitLayout {
+  const { width, height, weights } = opts;
+  const n = weights.length;
+  const scale = orbitScale(height, false, width);
+  const mora0 = moraSize(false, scale, opts.moraBase);
+  const maxW = Math.max(0, ...weights);
+  const tier = (w: number) => { const t = maxW > 0 ? w / maxW : 0; return t >= 0.5 ? 0 : t >= 0.12 ? 1 : 2; };
+  const order = weights.map((w, i) => ({ w, i })).sort((a, b) => b.w - a.w || a.i - b.i);
+  const allSame = order.every((o) => o.w === order[0].w);
+  const large = scale >= 1.2;
+  const lab = LABEL_SPACE + CALM_WRAP + 6;
+  const labelW = large ? 176 : 140;
+  const fit = (f: number, cap: number) => {
+    const pad = cap > 4 ? 0 : 4;
+    const big = Math.max(...weights.map((w) => (allSame ? CALM_SIZES[1] : CALM_SIZES[tier(w)]))) * scale * f;
+    // Zellbreite: breiter Name, Mondbogen (0,825·Größe + 84) oder Sternenkranz (Größe + 40), plus Luft.
+    const cellW = Math.ceil(Math.max(labelW, big * 0.825 + 84, big + 40) + pad);
+    const maxCols = Math.max(1, Math.min(cap, Math.floor((width - 12) / cellW)));
+    const rows = Math.ceil(n / maxCols);
+    const cols = Math.ceil(n / rows);
+    const rowH = big + (lab + CALM_MOONS) * scale; // Schrift und Mondbogen schrumpfen nicht mit
+    const mora = mora0 * f;
+    return { cellW, cols, rows, big, rowH, mora, total: mora + CALM_GAP * scale * f + rows * rowH };
+  };
+  // Erst luftig (max. 4 Spalten, volle Größe), dann etwas kleiner, zuletzt breiter statt höher.
+  const tries: [number, number][] = [];
+  for (let f = 1; f >= 0.8; f = Math.round((f - 0.04) * 100) / 100) tries.push([f, 4]);
+  for (let f = 1; f >= 0.5; f = Math.round((f - 0.04) * 100) / 100) tries.push([f, 6]);
+  let g = fit(tries[0][0], tries[0][1]);
+  let f = tries[0][0];
+  for (const [tf, cap] of tries) { f = tf; g = fit(tf, cap); if (g.total <= height) break; }
+  const top = Math.max(4, (height - g.total) / 2 - 6);
+  const cx = width / 2;
+  const cy = top + g.mora / 2;
+  const slots: OrbitSlot[] = new Array(n);
+  order.forEach((o, rank) => {
+    const row = Math.floor(rank / g.cols);
+    const inRow = row === g.rows - 1 ? n - row * g.cols : g.cols;
+    const col = rank - row * g.cols;
+    const size = Math.round((allSame ? CALM_SIZES[1] : CALM_SIZES[tier(o.w)]) * scale * f);
+    const x = cx + (col - (inRow - 1) / 2) * g.cellW;
+    // Unterkanten bündig: Namen stehen je Reihe auf einer Linie, kleinere Planeten sitzen etwas höher über ihrem Namen.
+    const y = top + g.mora + CALM_GAP * scale * f + row * g.rowH + CALM_MOONS * scale + g.big - size / 2;
+    // angle π/4: Licht von links oben, Planet „vorne“ (Name darunter, Monde oben).
+    slots[o.i] = { ring: 0, angle: Math.PI / 4, size, at: { x, y } };
+  });
+  return { scale, cx, cy, mora: Math.round(g.mora), rings: [{ rx: 0, ry: 0, period: 1e9 }], slots, calm: true };
 }
 
 function layoutInFrame(opts: OrbitOptions): OrbitLayout {
   const { width, height, weights, phone } = opts;
   const scale = orbitScale(height, phone, width);
-  const mora = moraSize(phone, scale);
+  const mora = moraSize(phone, scale, opts.moraBase);
   const maxWeight = Math.max(0, ...weights);
-  const sizes = weights.map((w) => planetSize(w, maxWeight, phone, scale));
+  const sizes = weights.map((w) => Math.round(planetSize(w, maxWeight, phone, scale) * (opts.planetMul ?? 1)));
   const biggest = Math.max(0, ...sizes);
   // Größere Schrift auf großen Flächen braucht mehr Platz für die Namen.
   const labelSpace = LABEL_SPACE * scale;
@@ -296,6 +365,7 @@ export interface PlacedPlanet { x: number; y: number; front: boolean; z: number 
 
 /** Position zum Zeitpunkt t (Sekunden). Vorne = unterer Halbbogen. */
 export function placeOnOrbit(layout: OrbitLayout, slot: OrbitSlot, t = 0): PlacedPlanet {
+  if (slot.at) return { x: slot.at.x, y: slot.at.y, front: true, z: 10 + Math.round(slot.at.y) };
   const ring = layout.rings[slot.ring];
   const a = slot.angle + (2 * Math.PI * t) / ring.period;
   const x = layout.cx + ring.rx * Math.cos(a);

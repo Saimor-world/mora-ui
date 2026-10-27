@@ -1,5 +1,5 @@
 {
- "version": 1,
+ "version": 2,
  "grid": 40,
  "base": [
   "light",
@@ -8,6 +8,7 @@
   "eyes"
  ],
  "assetBase": "/mora/pixel/traits/",
+ "thumbBase": "/mora/pixel/thumbs/",
  "slots": [
   {
    "id": "aura",
@@ -16,17 +17,111 @@
     {
      "id": "warm",
      "name": "Warmes Leuchten",
-     "file": "aura-warm.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "aura-warm.png"
+      },
+      {
+       "id": "rose",
+       "name": "Rosé",
+       "swatch": "#d89682",
+       "file": "aura-warm--rose.png"
+      },
+      {
+       "id": "mint",
+       "name": "Mint",
+       "swatch": "#1e7854",
+       "file": "aura-warm--mint.png"
+      },
+      {
+       "id": "himmel",
+       "name": "Himmel",
+       "swatch": "#3e84d4",
+       "file": "aura-warm--himmel.png"
+      }
+     ]
     },
     {
      "id": "moon",
      "name": "Mondlicht",
-     "file": "aura-moon.png"
+     "variants": [
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#8cc4f0",
+       "file": "aura-moon.png"
+      },
+      {
+       "id": "violett",
+       "name": "Violett",
+       "swatch": "#6c44b4",
+       "file": "aura-moon--violett.png"
+      },
+      {
+       "id": "mint",
+       "name": "Mint",
+       "swatch": "#1e7854",
+       "file": "aura-moon--mint.png"
+      }
+     ]
     },
     {
      "id": "sparkles",
      "name": "Funkeln",
-     "file": "aura-sparkles.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "aura-sparkles.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "aura-sparkles--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Rosé",
+       "swatch": "#d89682",
+       "file": "aura-sparkles--rose.png"
+      },
+      {
+       "id": "himmel",
+       "name": "Himmel",
+       "swatch": "#3e84d4",
+       "file": "aura-sparkles--himmel.png"
+      }
+     ]
+    },
+    {
+     "id": "fireflies",
+     "name": "Glühwürmchen",
+     "variants": [
+      {
+       "id": "lime",
+       "name": "Lindgrün",
+       "swatch": "#96c832",
+       "file": "aura-fireflies.png"
+      },
+      {
+       "id": "blau",
+       "name": "Blau",
+       "swatch": "#3e84d4",
+       "file": "aura-fireflies--blau.png"
+      },
+      {
+       "id": "rosa",
+       "name": "Rosa",
+       "swatch": "#ec78a0",
+       "file": "aura-fireflies--rosa.png"
+      }
+     ],
+     "signature": true
     }
    ]
   },
@@ -35,30 +130,102 @@
    "name": "Hals",
    "items": [
     {
-     "id": "scarf-navy",
-     "name": "Schal marine",
-     "file": "neck-scarf-navy.png",
+     "id": "scarf",
+     "name": "Schal",
+     "variants": [
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "neck-scarf.png"
+      },
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "neck-scarf--rot.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "neck-scarf--smaragd.png"
+      },
+      {
+       "id": "creme",
+       "name": "Creme",
+       "swatch": "#e8dcbe",
+       "file": "neck-scarf--creme.png"
+      },
+      {
+       "id": "violett",
+       "name": "Violett",
+       "swatch": "#6c44b4",
+       "file": "neck-scarf--violett.png"
+      },
+      {
+       "id": "senf",
+       "name": "Senf",
+       "swatch": "#deaa28",
+       "file": "neck-scarf--senf.png"
+      }
+     ],
      "default": true
     },
     {
-     "id": "scarf-red",
-     "name": "Schal rot",
-     "file": "neck-scarf-red.png"
-    },
-    {
-     "id": "scarf-emerald",
-     "name": "Schal smaragd",
-     "file": "neck-scarf-emerald.png"
-    },
-    {
-     "id": "scarf-cream",
-     "name": "Schal creme",
-     "file": "neck-scarf-cream.png"
-    },
-    {
      "id": "bowtie",
-     "name": "Gold-Fliege",
-     "file": "neck-bowtie.png"
+     "name": "Fliege",
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "neck-bowtie.png"
+      },
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "neck-bowtie--rot.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "neck-bowtie--marine.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "neck-bowtie--smaragd.png"
+      }
+     ]
+    },
+    {
+     "id": "medallion",
+     "name": "SAIMÔR-Medaillon",
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "neck-medallion.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "neck-medallion--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "neck-medallion--rose.png"
+      }
+     ],
+     "signature": true
     }
    ]
   },
@@ -69,17 +236,136 @@
     {
      "id": "book",
      "name": "Kleines Buch",
-     "file": "held-book.png"
+     "variants": [
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "held-book.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "held-book--marine.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "held-book--smaragd.png"
+      },
+      {
+       "id": "violett",
+       "name": "Violett",
+       "swatch": "#6c44b4",
+       "file": "held-book--violett.png"
+      }
+     ]
     },
     {
      "id": "coffee",
      "name": "Kaffeetasse",
-     "file": "held-coffee.png"
+     "variants": [
+      {
+       "id": "weiss",
+       "name": "Porzellan",
+       "swatch": "#eaedf4",
+       "file": "held-coffee.png"
+      },
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "held-coffee--gold.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "held-coffee--marine.png"
+      },
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "held-coffee--rot.png"
+      }
+     ]
     },
     {
      "id": "lantern",
      "name": "Laterne",
-     "file": "held-lantern.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Glut",
+       "swatch": "#d4a03e",
+       "file": "held-lantern.png"
+      },
+      {
+       "id": "mond",
+       "name": "Mondlicht",
+       "swatch": "#8cc4f0",
+       "file": "held-lantern--mond.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "held-lantern--smaragd.png"
+      }
+     ]
+    },
+    {
+     "id": "owl",
+     "name": "Eulenfreund",
+     "variants": [
+      {
+       "id": "nacht",
+       "name": "Nachtwache",
+       "swatch": "#1e2654",
+       "file": "held-owl.png"
+      },
+      {
+       "id": "wald",
+       "name": "Waldeule",
+       "swatch": "#7c5438",
+       "file": "held-owl--wald.png"
+      },
+      {
+       "id": "schnee",
+       "name": "Schneeeule",
+       "swatch": "#eaedf4",
+       "file": "held-owl--schnee.png"
+      }
+     ],
+     "signature": true
+    },
+    {
+     "id": "wand",
+     "name": "Sternenstab",
+     "variants": [
+      {
+       "id": "holz",
+       "name": "Holz & Gold",
+       "swatch": "#d4a03e",
+       "file": "held-wand.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber & Eis",
+       "swatch": "#8cc4f0",
+       "file": "held-wand--silber.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "held-wand--smaragd.png"
+      }
+     ],
+     "signature": true
     }
    ]
   },
@@ -90,17 +376,111 @@
     {
      "id": "glasses",
      "name": "Runde Brille",
-     "file": "face-glasses.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "face-glasses.png"
+      },
+      {
+       "id": "schwarz",
+       "name": "Schwarz",
+       "swatch": "#2a2a34",
+       "file": "face-glasses--schwarz.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "face-glasses--silber.png"
+      },
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "face-glasses--rot.png"
+      }
+     ]
     },
     {
      "id": "sunglasses",
      "name": "Sonnenbrille",
-     "file": "face-sunglasses.png"
+     "variants": [
+      {
+       "id": "schwarz",
+       "name": "Schwarz",
+       "swatch": "#2a2a34",
+       "file": "face-sunglasses.png"
+      },
+      {
+       "id": "bernstein",
+       "name": "Bernstein",
+       "swatch": "#e87a28",
+       "file": "face-sunglasses--bernstein.png"
+      },
+      {
+       "id": "rosa",
+       "name": "Rosé",
+       "swatch": "#ec78a0",
+       "file": "face-sunglasses--rosa.png"
+      },
+      {
+       "id": "spiegel",
+       "name": "Spiegel",
+       "swatch": "#3e84d4",
+       "file": "face-sunglasses--spiegel.png"
+      }
+     ]
     },
     {
      "id": "monocle",
      "name": "Monokel",
-     "file": "face-monocle.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "face-monocle.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "face-monocle--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "face-monocle--rose.png"
+      }
+     ]
+    },
+    {
+     "id": "freckles",
+     "name": "Sommersprossen",
+     "variants": [
+      {
+       "id": "warm",
+       "name": "Warm",
+       "swatch": "#7c5438",
+       "file": "face-freckles.png"
+      },
+      {
+       "id": "gold",
+       "name": "Goldstaub",
+       "swatch": "#d4a03e",
+       "file": "face-freckles--gold.png"
+      },
+      {
+       "id": "stern",
+       "name": "Sternenstaub",
+       "swatch": "#8cc4f0",
+       "file": "face-freckles--stern.png"
+      }
+     ],
+     "signature": true
     }
    ]
   },
@@ -111,38 +491,270 @@
     {
      "id": "sprout",
      "name": "Zweiblatt-Spross",
-     "file": "head-sprout.png",
+     "variants": [
+      {
+       "id": "gruen",
+       "name": "Grün",
+       "swatch": "#52aa46",
+       "file": "head-sprout.png"
+      },
+      {
+       "id": "herbst",
+       "name": "Herbst",
+       "swatch": "#de6e1e",
+       "file": "head-sprout--herbst.png"
+      },
+      {
+       "id": "frost",
+       "name": "Frost",
+       "swatch": "#8cc4f0",
+       "file": "head-sprout--frost.png"
+      },
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "head-sprout--gold.png"
+      }
+     ],
      "default": true
     },
     {
      "id": "sprout3",
      "name": "Dreiblatt-Spross",
-     "file": "head-sprout3.png"
+     "variants": [
+      {
+       "id": "gruen",
+       "name": "Grün",
+       "swatch": "#52aa46",
+       "file": "head-sprout3.png"
+      },
+      {
+       "id": "herbst",
+       "name": "Herbst",
+       "swatch": "#de6e1e",
+       "file": "head-sprout3--herbst.png"
+      },
+      {
+       "id": "frost",
+       "name": "Frost",
+       "swatch": "#8cc4f0",
+       "file": "head-sprout3--frost.png"
+      },
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "head-sprout3--gold.png"
+      }
+     ]
     },
     {
      "id": "flower",
      "name": "Blüten-Spross",
-     "file": "head-flower.png"
+     "variants": [
+      {
+       "id": "rosa",
+       "name": "Rosa",
+       "swatch": "#ec78a0",
+       "file": "head-flower.png"
+      },
+      {
+       "id": "gelb",
+       "name": "Sonnengelb",
+       "swatch": "#deaa28",
+       "file": "head-flower--gelb.png"
+      },
+      {
+       "id": "blau",
+       "name": "Himmelblau",
+       "swatch": "#3e84d4",
+       "file": "head-flower--blau.png"
+      },
+      {
+       "id": "weiss",
+       "name": "Weiß",
+       "swatch": "#eaedf4",
+       "file": "head-flower--weiss.png"
+      }
+     ]
     },
     {
-     "id": "beret-red",
-     "name": "Barett rot",
-     "file": "head-beret-red.png"
-    },
-    {
-     "id": "beret-navy",
-     "name": "Barett marine",
-     "file": "head-beret-navy.png"
+     "id": "beret",
+     "name": "Barett",
+     "variants": [
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "head-beret.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "head-beret--marine.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "head-beret--smaragd.png"
+      },
+      {
+       "id": "creme",
+       "name": "Creme",
+       "swatch": "#e8dcbe",
+       "file": "head-beret--creme.png"
+      },
+      {
+       "id": "senf",
+       "name": "Senf",
+       "swatch": "#deaa28",
+       "file": "head-beret--senf.png"
+      }
+     ],
+     "hides": [
+      "clip"
+     ]
     },
     {
      "id": "headphones",
      "name": "Kopfhörer",
-     "file": "head-headphones.png"
+     "variants": [
+      {
+       "id": "schwarz",
+       "name": "Schwarz-Gold",
+       "swatch": "#2a2a34",
+       "file": "head-headphones.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "head-headphones--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "head-headphones--rose.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "head-headphones--marine.png"
+      }
+     ]
     },
     {
-     "id": "sailor",
+     "id": "captain",
      "name": "Nordsee-Kapitänsmütze",
-     "file": "head-sailor.png"
+     "variants": [
+      {
+       "id": "weiss",
+       "name": "Weiß",
+       "swatch": "#eaedf4",
+       "file": "head-captain.png"
+      },
+      {
+       "id": "marine",
+       "name": "Marine",
+       "swatch": "#202a60",
+       "file": "head-captain--marine.png"
+      },
+      {
+       "id": "schwarz",
+       "name": "Schwarz",
+       "swatch": "#2a2a34",
+       "file": "head-captain--schwarz.png"
+      }
+     ],
+     "hides": [
+      "clip"
+     ]
+    },
+    {
+     "id": "wizard",
+     "name": "Sternenhut",
+     "variants": [
+      {
+       "id": "violett",
+       "name": "Violett",
+       "swatch": "#6c44b4",
+       "file": "head-wizard.png"
+      },
+      {
+       "id": "marine",
+       "name": "Nachtblau",
+       "swatch": "#202a60",
+       "file": "head-wizard--marine.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Smaragd",
+       "swatch": "#1e7854",
+       "file": "head-wizard--smaragd.png"
+      }
+     ],
+     "hides": [
+      "clip"
+     ],
+     "signature": true
+    },
+    {
+     "id": "crown",
+     "name": "Mondkrone",
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "head-crown.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "head-crown--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "head-crown--rose.png"
+      }
+     ],
+     "hides": [
+      "clip"
+     ],
+     "signature": true
+    },
+    {
+     "id": "halo",
+     "name": "Aureole",
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "head-halo.png"
+      },
+      {
+       "id": "mond",
+       "name": "Mondeis",
+       "swatch": "#8cc4f0",
+       "file": "head-halo--mond.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "head-halo--rose.png"
+      }
+     ],
+     "signature": true
     }
    ]
   },
@@ -152,19 +764,76 @@
    "items": [
     {
      "id": "moon",
-     "name": "Gold-Mondspange",
-     "file": "clip-moon.png",
+     "name": "Mondspange",
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "clip-moon.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "clip-moon--silber.png"
+      },
+      {
+       "id": "rose",
+       "name": "Roségold",
+       "swatch": "#d89682",
+       "file": "clip-moon--rose.png"
+      }
+     ],
      "default": true
     },
     {
      "id": "star",
      "name": "Sternspange",
-     "file": "clip-star.png"
+     "variants": [
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "clip-star.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "clip-star--silber.png"
+      },
+      {
+       "id": "sky",
+       "name": "Himmel",
+       "swatch": "#3e84d4",
+       "file": "clip-star--sky.png"
+      }
+     ]
     },
     {
      "id": "heart",
      "name": "Herzspange",
-     "file": "clip-heart.png"
+     "variants": [
+      {
+       "id": "rot",
+       "name": "Rubin",
+       "swatch": "#be343c",
+       "file": "clip-heart.png"
+      },
+      {
+       "id": "rosa",
+       "name": "Rosa",
+       "swatch": "#ec78a0",
+       "file": "clip-heart--rosa.png"
+      },
+      {
+       "id": "sky",
+       "name": "Saphir",
+       "swatch": "#3e84d4",
+       "file": "clip-heart--sky.png"
+      }
+     ]
     }
    ]
   },
@@ -175,20 +844,106 @@
     {
      "id": "xmas",
      "name": "Weihnachtsmütze",
-     "file": "seasonal-xmas.png",
+     "variants": [
+      {
+       "id": "rot",
+       "name": "Rot",
+       "swatch": "#be343c",
+       "file": "seasonal-xmas.png"
+      },
+      {
+       "id": "smaragd",
+       "name": "Tanne",
+       "swatch": "#1e7854",
+       "file": "seasonal-xmas--smaragd.png"
+      },
+      {
+       "id": "marine",
+       "name": "Nachtblau",
+       "swatch": "#202a60",
+       "file": "seasonal-xmas--marine.png"
+      }
+     ],
+     "hides": [
+      "head",
+      "clip"
+     ],
      "season": "12"
     },
     {
      "id": "snowflake",
      "name": "Schneeflocke",
-     "file": "seasonal-snowflake.png",
+     "variants": [
+      {
+       "id": "eis",
+       "name": "Eis",
+       "swatch": "#8cc4f0",
+       "file": "seasonal-snowflake.png"
+      },
+      {
+       "id": "silber",
+       "name": "Silber",
+       "swatch": "#9ca8bc",
+       "file": "seasonal-snowflake--silber.png"
+      },
+      {
+       "id": "gold",
+       "name": "Gold",
+       "swatch": "#d4a03e",
+       "file": "seasonal-snowflake--gold.png"
+      }
+     ],
      "season": "1-2"
     },
     {
      "id": "pumpkin",
      "name": "Kürbis",
-     "file": "seasonal-pumpkin.png",
+     "variants": [
+      {
+       "id": "orange",
+       "name": "Orange",
+       "swatch": "#e87a28",
+       "file": "seasonal-pumpkin.png"
+      },
+      {
+       "id": "weiss",
+       "name": "Weiß",
+       "swatch": "#e8dcbe",
+       "file": "seasonal-pumpkin--weiss.png"
+      },
+      {
+       "id": "gruen",
+       "name": "Grün",
+       "swatch": "#96c832",
+       "file": "seasonal-pumpkin--gruen.png"
+      }
+     ],
      "season": "10"
+    },
+    {
+     "id": "blossom",
+     "name": "Kirschblüte",
+     "variants": [
+      {
+       "id": "rosa",
+       "name": "Rosa",
+       "swatch": "#ec78a0",
+       "file": "seasonal-blossom.png"
+      },
+      {
+       "id": "weiss",
+       "name": "Weiß",
+       "swatch": "#eaedf4",
+       "file": "seasonal-blossom--weiss.png"
+      },
+      {
+       "id": "lavendel",
+       "name": "Lavendel",
+       "swatch": "#6c44b4",
+       "file": "seasonal-blossom--lavendel.png"
+      }
+     ],
+     "season": "3-5"
     }
    ]
   }

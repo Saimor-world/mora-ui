@@ -66,7 +66,7 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
       const i = decide({ points: s.roam, fresh: s.fresh, night: s.night, busy: s.busy }, Math.random, last);
       if (i.kind === 'look' && last?.id === i.id) { last = { ...i, kind: 'visit' }; } else last = i;
       goal.current = { x: i.x, y: i.y };
-      t = setTimeout(step, i.ms);
+      t = setTimeout(step, Math.round(i.ms * 1.6));
     };
     t = setTimeout(step, 1200);
     return () => clearTimeout(t);
@@ -122,6 +122,30 @@ export function PixelMora({ size, mood, target, phone = false, reduced = false, 
       </span>
       {night && !reduced ? <span className="px-mora__z" aria-hidden>z</span> : null}
       <span className="sr-only" role="status" aria-live="polite" data-testid="mora-status">{SPIRIT_LABEL[mood]}</span>
+    </span>
+  );
+}
+
+/**
+ * Bühnen-Figur der Garderobe: kein Umherfliegen, nur Atmen, Blinzeln, Drehen und ein Freudensprung bei jeder Änderung.
+ * `hop` zählt hoch → Sprung; `turn` zählt hoch → einmal herumdrehen.
+ */
+export function PixelMoraStage({ wardrobe, scale = 6, hop = 0, turn = 0, reduced = false }: { wardrobe: Wardrobe; scale?: number; hop?: number; turn?: number; reduced?: boolean }) {
+  const [eyes, setEyes] = useState<'eyes' | 'eyes_closed'>('eyes');
+  useEffect(() => {
+    if (reduced) return;
+    let t: ReturnType<typeof setTimeout>;
+    const blink = () => { setEyes('eyes_closed'); setTimeout(() => setEyes('eyes'), 140); t = setTimeout(blink, 2400 + Math.random() * 3000); };
+    t = setTimeout(blink, 1600); return () => clearTimeout(t);
+  }, [reduced]);
+  const px = GRID * scale;
+  return (
+    <span className="px-mora px-mora--stage" data-testid="mora-stage" data-hop={hop} data-turn={turn} style={{ width: px, height: px }} aria-hidden>
+      <span key={`h${hop}`} className={`px-mora__bob${hop ? ' px-mora__bob--hop' : ''}`}>
+        <span key={`t${turn}`} className={`px-mora__turn${turn ? ' px-mora__turn--go' : ''}`}>
+          <Layers eyes={eyes} wardrobe={wardrobe} />
+        </span>
+      </span>
     </span>
   );
 }

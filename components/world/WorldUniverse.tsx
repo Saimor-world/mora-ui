@@ -11,6 +11,23 @@ import { localISO, relDay, shortDate } from '@/lib/lea/world';
 import type { HorizonSource } from '@/lib/lea/useHorizonSources';
 import { floatOffset, layoutOrbits, placeOnOrbit, planetFootprint, type OrbitLayout, type Rect } from '@/lib/universe/worldOrbits';
 import { WorldPlanetSphere } from './WorldPlanetSphere';
+import { PixelMoon, PixelPlanet, PixelSky, PX } from './PixelPlanet';
+import { planetKind, seedOf, type PlanetKind } from '@/lib/universe/pixelArt';
+import { toneSlot } from '@/lib/universe/matteTone';
+
+const VIEW_KEY = 'mora.universe.view';
+/** Pixel-Ansicht: Planetenkörper in ganzen Kunstpixeln (Vielfaches von 2·PX), hintere Planeten 0,85× – kein CSS-Scale. */
+/** MÔRA besucht einen Planeten, ohne sich dahinter zu verstecken: sie bleibt am Rand stehen (Planetenradius + ihr Radius + Luft). */
+function stopShort(layout: { cx: number; cy: number; mora: number; calm?: boolean }, pp: { x: number; y: number }, size: number): { x: number; y: number } {
+  // Ruhiges Raster: MÔRA bleibt in ihrer Reihe oben und geht nur seitlich über die Spalte des Planeten.
+  if (layout.calm) return { x: Math.round((pp.x - layout.cx) * 0.7), y: 0 };
+  const dx = pp.x - layout.cx; const dy = pp.y - layout.cy; const d = Math.hypot(dx, dy);
+  if (d < 1) return { x: dx, y: dy };
+  const k = Math.max(0, d - (size / 2 + layout.mora / 2 + 6)) / d;
+  return { x: dx * k, y: dy * k };
+}
+
+const pixelSize = (size: number, angle: number) => Math.max(2 * PX * 5, Math.round((size * (Math.sin(angle) > 0 ? 1 : 0.85)) / (2 * PX)) * 2 * PX);
 
 /**
  * Universe aus echten Daten (Richtung visual-v1): MÔRA – Marius' Jadestein mit Augen –
@@ -27,6 +44,8 @@ const ASK_RESERVE_DESKTOP = 160; // + eine Zeile für MÔRAs Satz direkt über d
 /** Phone: Luft unter dem Seitenkopf, damit obere Planetenlabels ihn nicht berühren. */
 const PHONE_TOP = 26;
 /** Ab dieser Fensterbreite stehen Karten links und Horizont/Fokus rechts (siehe world.css, 1279px). */
+/** Ruhiges Raster: dazu der Platz für MÔRAs Satz und die Frageleiste samt Dock (gemessen bei 1280×720 und 1440×900). */
+const ASK_RESERVE_CALM = 160;
 const SIDE_COLUMNS_MIN_VW = 1280;
 /** Karten links: left 88 px + 248 px Breite + 16 px Luft. */
 export const PULSE_RESERVE = 268;
@@ -78,6 +97,11 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const reduced = !!useReducedMotion();
   const paused = useRef(false);
   const [zoom, setZoom] = useState(1);
+  // Pixel-Ansicht (Standard am Rechner) oder „Gesamtansicht“: dieselben Daten ohne Pixel-Look.
+  const [view, setView] = useState<'pixel' | 'full'>('pixel');
+  useEffect(() => { try { if (localStorage.getItem(VIEW_KEY) === 'full') setView('full'); } catch { /* ohne Speicher: Standard */ } }, []);
+  const pixel = !phone && view === 'pixel';
+  const toggleView = () => setView((v) => { const n = v === 'pixel' ? 'full' : 'pixel'; try { localStorage.setItem(VIEW_KEY, n); } catch { /* egal */ } return n; });
 
   useEffect(() => {
     const el = fieldRef.current;
@@ -97,8 +121,8 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
   const insetLeft = showPulse ? PULSE_RESERVE : 0;
   const insetRight = !phone && size.wide ? reserveRight : 0;
   const layout: OrbitLayout | null = useMemo(
-    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
-    [size.width, size.height, planets, phone, insetLeft, insetRight],
+    () => (size.width && size.height ? layoutOrbits({ width: size.width, insetLeft, insetRight, height: Math.max(200, size.height - (phone ? ASK_RESERVE_PHONE + PHONE_TOP : pixel ? ASK_RESERVE_CALM : ASK_RESERVE_DESKTOP)), weights: planets.map((p) => p.weight), phone, moraBase: pixel ? 150 : undefined, calm: pixel, labels: planets.map((p) => ({ name: p.name, meta: p.meta, moons: p.orbit?.moons.length ?? 0, stars: p.orbit?.stars.length ?? 0 })) }) : null),
+    [size.width, size.height, planets, phone, insetLeft, insetRight, pixel],
   );
 
   const place = useCallback((t: number) => {
@@ -107,12 +131,19 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
       const el = planetRefs.current[i];
       if (!el) return;
       const p = placeOnOrbit(layout, slot);
-      const { dx, dy } = floatOffset(i, t);
-      el.style.transform = `translate3d(${(p.x + dx).toFixed(2)}px, ${(p.y + dy).toFixed(2)}px, 0) translate(-50%, -50%) scale(${p.front ? 1 : 0.85})`;
+      const { dx, dy } = floatOffset(i, pixel ? t * 0.45 : t);
+      if (pixel) {
+        // Pixel-Ansicht: ganzzahlige Lage in Kunstpixel-Schritten, keine Skalierung – nichts wird unscharf.
+        const half = pixelSize(slot.size, slot.angle) / 2;
+        const sx = Math.round((p.x + dx - half) / PX) * PX, sy = Math.round((p.y + dy - half) / PX) * PX;
+        el.style.transform = `translate3d(${sx}px, ${sy}px, 0)`;
+      } else {
+        el.style.transform = `translate3d(${(p.x + dx).toFixed(2)}px, ${(p.y + dy).toFixed(2)}px, 0) translate(-50%, -50%) scale(${p.front ? 1 : 0.85})`;
+      }
       el.style.zIndex = String(p.z);
       el.dataset.depth = p.front ? 'front' : 'back';
     });
-  }, [layout]);
+  }, [layout, pixel]);
 
   // Ein Takt für alle Planeten; steht bei verborgenem Tab, Zeiger/Fokus und „weniger Bewegung“.
   useEffect(() => {
@@ -151,11 +182,11 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     if (!layout || !spiritTarget) return null;
     if (spiritTarget === 'mail') return { x: size.width * 0.35, y: -size.height * 0.3 };
     const k = planets.findIndex((p) => p.id === spiritTarget); const sl = k >= 0 ? layout.slots[k] : null; const pp = sl ? placeOnOrbit(layout, sl) : null;
-    return pp ? { x: pp.x - layout.cx, y: pp.y - layout.cy } : null;
+    return pp && sl ? stopShort(layout, pp, sl.size) : null;
   })();
   // MÔRAs Ziele: Planeten relativ zur Mitte, gewichtet nach echter Aktivität / offenen Punkten.
   const roam = layout ? planets.flatMap((p, k) => { const sl = layout.slots[k]; const pp = sl ? placeOnOrbit(layout, sl) : null; const t = p.traits;
-    return pp ? [{ id: p.id, x: pp.x - layout.cx, y: pp.y - layout.cy, weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
+    return pp && sl ? [{ id: p.id, ...stopShort(layout, pp, sl.size), weight: 0.5 + Math.min(4, (t?.activity ?? 0) + (t?.open ?? 0) * 0.5 + (t?.overdue ?? 0)) }] : []; }) : [];
   const zoomIdx = zoomTo ? planets.findIndex((p) => p.id === zoomTo) : -1;
   const zoomPt = layout && zoomIdx >= 0 && layout.slots[zoomIdx] ? placeOnOrbit(layout, layout.slots[zoomIdx]) : null;
   const camera: React.CSSProperties | undefined = zoomPt
@@ -163,30 +194,34 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
     : zoom === 1 ? undefined : { transform: `scale(${zoom})` };
 
   return (
-    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined}>
+    <div ref={fieldRef} className="wd-universe" data-testid="world-universe" data-phone={phone ? 'true' : 'false'} data-large={layout && layout.scale >= 1.2 ? 'true' : 'false'} data-hidden={hidden ? 'true' : 'false'} aria-hidden={hidden || undefined} onPointerMove={onPointerMove} data-camera={zoomPt ? 'zooming' : undefined} data-view={pixel ? 'pixel' : 'full'}>
+      {pixel ? <PixelSky reduced={reduced} /> : (<>
       <div className="wd-parallax wd-parallax--far" aria-hidden />
       <div className="wd-parallax wd-parallax--mid" aria-hidden />
       <div className="wd-parallax wd-parallax--near" aria-hidden />
-      {layout ? <div className="wd-galaxy" aria-hidden style={{ left: layout.cx, top: layout.cy }}><i /><b /><em className="wd-neb wd-neb--a" /><em className="wd-neb wd-neb--b" /><em className="wd-neb wd-neb--c" /><s className="wd-dust" /></div> : null}
+      </>)}
+      {layout && !pixel ? <div className="wd-galaxy" aria-hidden style={{ left: layout.cx, top: layout.cy }}><i /><b /><em className="wd-neb wd-neb--a" /><em className="wd-neb wd-neb--b" /><em className="wd-neb wd-neb--c" /><s className="wd-dust" /></div> : null}
       {comet ? <span key={comet.id} className="wd-comet" aria-hidden data-testid="world-comet" title={`Neue Mail: ${comet.label}`} /> : null}
       <div className="wd-zoomwrap" style={camera} data-testid="world-zoomwrap">
       {layout ? (
-        <svg className="wd-orbits" width={size.width} height={size.height} aria-hidden>
-          {layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
+        <svg className="wd-orbits" shapeRendering={pixel ? 'crispEdges' : undefined} width={size.width} height={size.height} aria-hidden>
+          {layout.calm ? null : layout.rings.map((r, i) => <ellipse key={i} cx={layout.cx} cy={layout.cy} rx={r.rx} ry={r.ry} />)}
           {/* Netz: jede Abteilung hängt an MÔRA; die aktive leuchtet. */}
           {layout.slots.map((slot, i) => {
             const pt = placeOnOrbit(layout, slot);
             const id = planets[i]?.id;
             const active = id === activeId || id === selectedId;
             const pulse = id ? pulseIds?.includes(id) : false;
+            // Ruhiges Raster: keine Speichen, nur eine kurze gerade Linie bei aktivem oder neu bewegtem Bereich.
+            const d = layout.calm ? `M${layout.cx} ${layout.cy + layout.mora / 2} L${pt.x} ${pt.y}` : arc(layout.cx, layout.cy, pt.x, pt.y);
             return (
               <g key={`l${i}`}>
-                <path className={active ? 'wd-link wd-link--active' : 'wd-link'} d={arc(layout.cx, layout.cy, pt.x, pt.y)} />
-                {pulse ? <path className="wd-link-pulse" d={arc(layout.cx, layout.cy, pt.x, pt.y)} data-testid={`world-pulse-${id}`} /> : null}
+                {layout.calm && !active && !pulse ? null : <path className={active ? 'wd-link wd-link--active' : 'wd-link'} d={d} />}
+                {pulse ? <path className="wd-link-pulse" d={d} data-testid={`world-pulse-${id}`} /> : null}
               </g>
             );
           })}
-          {sources?.length ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
+          {sources?.length && !layout.calm ? <ellipse className="wd-source-ring" cx={layout.cx} cy={layout.cy} rx={sourceRing(layout).rx} ry={sourceRing(layout).ry} /> : null}
         </svg>
       ) : null}
       {layout && sources?.length ? (() => {
@@ -211,14 +246,14 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
           className="wd-mora"
           data-state={moraState}
           data-spirit={spiritMood}
-          style={{ left: layout.cx, top: layout.cy, width: layout.mora, height: layout.mora, zIndex: 10 + Math.round(layout.cy) }}
+          style={{ left: pixel ? Math.round(layout.cx / 2) * 2 : layout.cx, top: pixel ? Math.round(layout.cy / 2) * 2 : layout.cy, width: pixel ? Math.round(layout.mora / 2) * 2 : layout.mora, height: pixel ? Math.round(layout.mora / 2) * 2 : layout.mora, zIndex: 10 + Math.round(layout.cy) }}
           onClick={onMora}
           aria-label="MÔRA öffnen"
           data-testid="world-mora"
         >
           {/* Adapter: positions the unchanged figure; the figure itself only draws. */}
           <span className="wd-mora-glide" data-testid="world-mora-glide" style={{ transform: `translate(${Math.round(spiritPoint?.x ?? 0)}px, ${Math.round(spiritPoint?.y ?? 0)}px)`, transition: reduced ? 'none' : undefined }}>
-            <SpiritFigure size={phone ? 24 : 38} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
+            <SpiritFigure size={phone ? 24 : pixel ? Math.round(layout.mora * 0.64) : 75} mood={spiritMood} phone={phone} reduced={reduced} target={spiritPoint} roam={roam} fresh={pulseIds?.[0] ?? null} />
           </span>
         </button>
       ) : null}
@@ -257,11 +292,23 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
             data-testid={`world-planet-${planet.id}`}
             data-side={slot && Math.cos(slot.angle) < -0.05 ? 'left' : 'right'}
           >
-            {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)} phone={phone} /> : null}
-            {planet.traits ? <PlanetTraitsLayer traits={planet.traits} size={phone ? Math.max(52, slot?.size ?? 60) : (slot?.size ?? 60)} phone={phone} /> : null}
-            <WorldPlanetSphere light={slot ? { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) } : undefined} tone={planet.tone} className={`wd-tex-${planet.traits?.texture ?? 0}`} size={phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60)}>
-              {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
-            </WorldPlanetSphere>
+            {(() => {
+              const ps = slot && pixel ? pixelSize(slot.size, slot.angle) : 0;
+              const sz = pixel ? ps : phone ? Math.max(52, slot?.size ?? 60) /* ×0,85 Tiefe ≥ 44px */ : (slot?.size ?? 60);
+              const tr = planet.traits;
+              const kind = planetKind(planet.name, toneSlot(planet.name));
+              const light = slot ? { x: -Math.cos(slot.angle), y: -Math.sin(slot.angle) } : { x: -0.6, y: -0.6 };
+              return (
+                <>
+                  {planet.orbit ? <PlanetOrbit tone={planet.tone?.vars} away={slot && Math.cos(slot.angle) < 0 ? -1 : 1} orbit={planet.orbit} size={sz} phone={phone} pixel={pixel ? { kind, light, seed: seedOf(planet.name) } : undefined} /> : null}
+                  {planet.traits && !pixel ? <PlanetTraitsLayer traits={planet.traits} size={sz} phone={phone} /> : null}
+                  {pixel && slot ? <PixelPlanet kind={kind} size={sz} seed={seedOf(planet.name)} light={light} folders={tr?.folders} activity={tr?.activity} overdue={tr?.overdue} open={tr?.open} reduced={reduced} /> : null}
+                  <WorldPlanetSphere light={slot ? light : undefined} tone={planet.tone} className={`wd-tex-${tr?.texture ?? 0}`} size={sz}>
+                    {planet.moons.length ? <span className="wd-badge" aria-hidden>{planet.moons.length}</span> : null}
+                  </WorldPlanetSphere>
+                </>
+              );
+            })()}
             <span className="wd-label">
               <span className="wd-name">{planet.name}</span>
               <span className="wd-meta">{planet.meta}</span>
@@ -292,6 +339,9 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
               <li><i className="lg-comet" />Komet: neue Mail</li>
             </ul>
           </details>
+          <button type="button" className="wd-view" aria-pressed={!pixel} onClick={toggleView} data-testid="world-view-toggle" title={pixel ? 'Dieselbe Ansicht ohne Pixel-Look' : 'Zurück zur Pixel-Ansicht'}>
+            <i aria-hidden />{pixel ? <>Gesamtansicht<small>ohne Pixel</small></> : 'Pixel-Ansicht'}
+          </button>
           <div className="wd-zoom" role="group" aria-label="Zoom">
             <button type="button" onClick={() => setZoom((z) => Math.min(1.6, +(z + 0.15).toFixed(2)))} aria-label="Näher heran" data-testid="world-zoom-in">+</button>
             <button type="button" onClick={() => setZoom((z) => Math.max(0.7, +(z - 0.15).toFixed(2)))} aria-label="Weiter weg" data-testid="world-zoom-out">−</button>
@@ -308,6 +358,13 @@ export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, on
  * (samt Label) zu nah, rückt die Quelle seitlich aus – Beschriftungen überlappen nicht.
  */
 export function sourcePositions(layout: OrbitLayout, n: number, planets: { x: number; y: number }[], minDist = 130, rects: Rect[] = []) {
+  if (layout.calm) {
+    // Ruhiges Raster: Quellen stehen links und rechts von MÔRA in ihrer Reihe.
+    return Array.from({ length: n }, (_, i) => {
+      const side = i % 2 === 0 ? -1 : 1;
+      return { x: layout.cx + side * (layout.mora / 2 + 120 + Math.floor(i / 2) * 124), y: layout.cy, angle: side < 0 ? Math.PI : 0 };
+    });
+  }
   const ring = sourceRing(layout);
   const at = (a: number) => ({ x: layout.cx + Math.cos(a) * ring.rx, y: layout.cy + Math.sin(a) * ring.ry });
   // Mit Rechtecken (Planet, Name, Mondbogen) prüft die Quelle echte Kollisionen statt nur Abstand.
@@ -379,7 +436,7 @@ export function PlanetTraitsLayer({ traits, size, phone }: { traits: PlanetTrait
 
 const moonR_ = (n: number, base: number) => Math.round((base / 2) * (0.55 + Math.min(1, Math.sqrt(n) / 4)) * 10) / 10;
 
-export function PlanetOrbit({ orbit, size, phone, away = 1, tone }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1; tone?: Record<string, string> }) {
+export function PlanetOrbit({ orbit, size, phone, away = 1, tone, pixel }: { orbit: WorldOrbit; size: number; phone: boolean; away?: 1 | -1; tone?: Record<string, string>; pixel?: { kind: PlanetKind; light: { x: number; y: number }; seed: number } }) {
   // Je Planet ein eigener Verlauf: Monde tragen den Farbton ihres Planeten (CSS-Variablen --m-*).
   const gid = `wd-moon-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const moons = orbit.moons.slice(0, phone ? 3 : MAX_MOONS); // Handy-Lite: höchstens drei Monde
@@ -425,15 +482,21 @@ export function PlanetOrbit({ orbit, size, phone, away = 1, tone }: { orbit: Wor
             <g key={m.id}>
               <line className="wd-sublink" x1={c + Math.cos(p.a) * r0} y1={c + Math.sin(p.a) * r0} x2={p.x} y2={p.y} />
               {/* Ein Mond ist ein Ordner: Größe = Anzahl Inhalte, ein Jade-Schimmer = offene Aufgaben darin. */}
-              <circle className="wd-moondot" style={{ fill: `url(#${gid})` }} data-tasks={sub.some((st) => st.kind === 'task' && !st.done) ? 'true' : undefined} cx={p.x} cy={p.y} r={moonR_(m.stars.length, moonSize)} />
+              {pixel ? null : <circle className="wd-moondot" style={{ fill: `url(#${gid})` }} data-tasks={sub.some((st) => st.kind === 'task' && !st.done) ? 'true' : undefined} cx={p.x} cy={p.y} r={moonR_(m.stars.length, moonSize)} />}
             </g>
           );
         })}
         {stars.map((st, i) => {
           const p = starAt(i, stars.length);
+          if (pixel) { const q = Math.round(p.x / PX) * PX, w = Math.round(p.y / PX) * PX; return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={c} y1={c} x2={p.x} y2={p.y} /><rect className="wd-stardot" data-kind={st.kind} data-overdue={st.overdue ? 'true' : undefined} data-done={st.done ? 'true' : undefined} x={q - PX} y={w - PX} width={PX * 2} height={PX * 2} /></g>; }
           return <g key={st.id}><line className="wd-sublink wd-sublink--star" x1={c} y1={c} x2={p.x} y2={p.y} /><circle className="wd-stardot" data-kind={st.kind} data-overdue={st.overdue ? 'true' : undefined} data-done={st.done ? 'true' : undefined} cx={p.x} cy={p.y} r={phone ? 2.4 : 3.2} /></g>;
         })}
       </svg>
+      {pixel ? <span className="wd-pxmoons" style={{ width: box, height: box }}>{moons.map((m, i) => {
+        const p = moonAt(i, moons.length);
+        const r = moonR_(m.stars.length, moonSize);
+        return <PixelMoon key={m.id} kind={pixel.kind} d={Math.max(7, Math.round((2 * r) / PX) + 4)} seed={seedOf(m.id)} light={pixel.light} tasks={m.stars.some((st) => st.kind === 'task' && !st.done)} x={p.x} y={p.y} />;
+      })}</span> : null}
       {!phone ? moons.map((m, i) => {
         const p = moonAt(i, moons.length);
         // Steht das Planeten-Label oben (hintere Bahn), wird das Netz gespiegelt (CSS) – das Mond-Label wandert dann unter den Punkt.
