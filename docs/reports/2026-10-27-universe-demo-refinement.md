@@ -72,3 +72,9 @@ activity timestamp and waits for the intended user before editing. The persisten
 assertion is retained and strengthened with an explicit per-user storage check.
 No production auth behavior is changed. A touch-enabled 390px journey and a
 reduced-motion image-stability check beyond the first blink are also included.
+
+Actual accessory captures also showed that the scarf still read as a flat band.
+Its existing SVG now has a more curved cowl around the stone and a softly curved
+hanging end; both standard and founder versions keep the same adapter anchors,
+variants and IDs. This remains a layered illustration material, not a new 3D
+cloth simulation. Final screenshots are checked on the exact resulting commit.
