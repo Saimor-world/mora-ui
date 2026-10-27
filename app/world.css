@@ -1008,6 +1008,16 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.9) saturate(.8) sepia(.12)
 .os-wd__thumb--none svg { width: 26px; height: 26px; }
 .os-wd__name { font-size: 12px; line-height: 1.25; min-height: 30px; display: grid; place-items: center; }
 .os-wd__badge { position: absolute; top: 7px; left: 8px; font-size: 11px; color: #f2c94c; text-shadow: 0 0 8px rgba(246,190,80,.8); }
+.os-wd__rarity { position: absolute; top: 8px; left: 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: rgba(214,196,150,.92); }
+.os-wd__rarity--legendary { color: #f0cf84; }
+.os-wd__lock { width: 7px; height: 8px; border: 1.5px solid currentColor; border-radius: 2px; position: relative; margin-top: 2px; }
+.os-wd__lock::before { content: ''; position: absolute; left: 0; right: 0; top: -5px; height: 4px; margin: 0 auto; width: 3px; border: 1.5px solid currentColor; border-bottom: 0; border-radius: 3px 3px 0 0; }
+.os-wd__card.is-locked .os-wd__thumb { opacity: .5; filter: saturate(.55); }
+.os-wd__card.is-locked { cursor: default; }
+.os-wd__card.is-locked:hover { transform: none; }
+.os-wd__note { min-height: 20px; margin: 10px 2px 0; font-size: 12px; line-height: 1.5; color: rgba(222,226,240,.78); }
+.os-wd__note strong { color: #f1e2bd; font-weight: 600; }
+.os-wd__note span { display: block; color: rgba(222,226,240,.6); }
 .os-wd__badge--season { top: 8px; left: auto; right: 8px; font-size: 9.5px; letter-spacing: .06em; text-transform: uppercase; color: #9ad9ff; text-shadow: none; }
 .os-wd__vcount { position: absolute; right: 8px; bottom: 7px; display: none; }
 .os-wd__variants { min-height: 54px; }

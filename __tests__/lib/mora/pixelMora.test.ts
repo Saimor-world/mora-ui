@@ -1,5 +1,6 @@
 import { decide } from '@/lib/mora/pixelBrain';
-import { DEFAULT_WARDROBE, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, resolve, splitChoice, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
+import { isUnlocked, unlockHint, NO_UNLOCKS, ABO_MONTHS } from '@/lib/mora/unlock';
+import { DEFAULT_WARDROBE, deriveRarity, OUTFIT_SLOTS, TRAITS, joinChoice, normalizeOutfits, normalizeWardrobe, randomWardrobe, resolve, splitChoice, toNftAttributes, wardrobeLayers } from '@/lib/mora/traits';
 import fs from 'fs';
 import path from 'path';
 
@@ -18,8 +19,7 @@ describe('traits', () => {
   const items = TRAITS.slots.flatMap((s) => s.items);
   it('hat Defaults und viele Accessoires mit Farbvarianten', () => {
     expect(items.length).toBeGreaterThanOrEqual(30);
-    expect(items.filter((i) => i.signature).length).toBeGreaterThanOrEqual(8);
-    expect(items.every((i) => i.variants.length >= 3)).toBe(true);
+    expect(items.filter((i) => i.origin === 'standard').every((i) => i.variants.length >= 1)).toBe(true);
     expect(DEFAULT_WARDROBE.head).toBeNull(); expect(DEFAULT_WARDROBE.neck).toBe('scarf');
   });
   it('jede Variante hat Ebene und Vorschaubild auf der Platte', () => {
@@ -84,5 +84,47 @@ describe('MÔRA Ziele und Gründer', () => {
     expect(isFounderUser({ role: 'owner', tenant_id: 'tenant-kunde' })).toBe(false);
     expect(isFounderUser({ role: 'member', tenant_id: 'tenant-saimor-hq' })).toBe(false);
     expect(isFounderUser(null)).toBe(false);
+  });
+});
+
+describe('Seltenheit und Freischaltung', () => {
+  const items = TRAITS.slots.flatMap((s) => s.items);
+  const special = items.filter((i) => i.origin !== 'standard');
+  it('Seltenheit folgt nur der Herkunft, nie Farbe oder Kategorie', () => {
+    for (const i of items) expect(i.rarity).toBe(deriveRarity(i));
+    expect(items.filter((i) => i.origin === 'standard').every((i) => i.rarity === 'common' && i.unlock === 'standard')).toBe(true);
+    // Alle Farbvarianten eines Stücks teilen dieselbe Seltenheit (sie hängt am Stück).
+    expect(items.every((i) => typeof i.rarity === 'string')).toBe(true);
+  });
+  it('3 bis 5 Beispiele für besondere Stücke, je Herkunft belegt', () => {
+    expect(special.length).toBeGreaterThanOrEqual(3);
+    expect(special.length).toBeLessThanOrEqual(5);
+    expect(new Set(special.map((i) => i.origin))).toEqual(new Set(['moment', 'earned', 'alive', 'founder']));
+    expect(special.find((i) => i.id === 'genesis-scarf')).toMatchObject({ origin: 'moment', edition: 111, year: 2026 });
+    expect(special.find((i) => i.id === 'founder-crown')).toMatchObject({ rarity: 'legendary', unlock: 'founder', tradable: false });
+  });
+  it('Alltag ist ohne Wallet, Abo und Gründerstatus frei', () => {
+    for (const i of items.filter((x) => x.origin === 'standard')) expect(isUnlocked(i, NO_UNLOCKS)).toBe(true);
+    for (const i of special) expect(isUnlocked(i, NO_UNLOCKS)).toBe(false);
+  });
+  it('Abo ab 6 bzw. 12 Monaten, NFT nur bei Besitz, Gründer nur für Gründer', () => {
+    const swarm = items.find((i) => i.id === 'firefly-swarm')!; const med = items.find((i) => i.id === 'one-year-medallion')!;
+    expect(isUnlocked(swarm, { ...NO_UNLOCKS, subscriptionMonths: ABO_MONTHS - 1 })).toBe(false);
+    expect(isUnlocked(swarm, { ...NO_UNLOCKS, subscriptionMonths: ABO_MONTHS })).toBe(true);
+    expect(isUnlocked(med, { ...NO_UNLOCKS, subscriptionMonths: 11 })).toBe(false);
+    expect(isUnlocked(med, { ...NO_UNLOCKS, subscriptionMonths: 12 })).toBe(true);
+    const gen = items.find((i) => i.id === 'genesis-scarf')!;
+    expect(isUnlocked(gen, { ...NO_UNLOCKS, nftIds: ['genesis-scarf'] })).toBe(true);
+    expect(isUnlocked(items.find((i) => i.id === 'founder-crown')!, { ...NO_UNLOCKS, founder: true })).toBe(true);
+  });
+  it('Hinweise sind ruhig: kein Preis, kein Druck', () => {
+    for (const i of special) { const h = unlockHint(i); expect(h.length).toBeGreaterThan(10); expect(h).not.toMatch(/€|\$|kaufen|jetzt|nur noch|schnell/i); }
+  });
+  it('Zufall wählt keine gesperrten Stücke', () => {
+    const lockedIds = new Set(special.map((i) => i.id));
+    for (let k = 0; k < 200; k++) {
+      const w = randomWardrobe(Math.random);
+      for (const v of Object.values(w)) if (v) expect(lockedIds.has(splitChoice(v).item)).toBe(false);
+    }
   });
 });

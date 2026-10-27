@@ -4,13 +4,38 @@
  * Eine Auswahl ist "item" (erste Variante) oder "item:variante".
  */
 import doc from './mora-traits.json';
+import { isUnlocked, NO_UNLOCKS, type UnlockContext } from './unlock';
 
 export type TraitVariant = { id: string; name: string; swatch: string; file: string };
-export type TraitItem = { id: string; name: string; variants: TraitVariant[]; default?: boolean; season?: string; signature?: boolean; hides?: string[] };
+/** Herkunft entscheidet über Seltenheit, nie Farbe oder Kategorie (siehe "rules" in mora-traits.json). */
+export type TraitOrigin = 'standard' | 'moment' | 'earned' | 'alive' | 'founder';
+export type TraitRarity = 'common' | 'rare' | 'legendary';
+/** standard: frei, kein Wallet · abo: ab N Monaten Abo · nft: gehört auf der XRPL · founder: nur Gründer. */
+export type TraitUnlock = 'standard' | 'abo' | 'nft' | 'founder';
+export type TraitItem = {
+  id: string; name: string; variants: TraitVariant[];
+  origin: TraitOrigin; rarity: TraitRarity; unlock: TraitUnlock;
+  default?: boolean; season?: string; hides?: string[];
+  /** Auflage (moment) und Jahr. */
+  edition?: number; year?: number; window?: { from: string; to: string };
+  /** abo: Monate; earned: Meilenstein. */
+  months?: number; earn?: { kind: 'tenure'; months: number };
+  /** alive: Verhalten, das MÔRA zeigt (noch nicht umgesetzt). */
+  behavior?: string; tradable?: boolean; hint?: string;
+  /** Bild ist noch ein Platzhalter (bestehende Ebene wiederverwendet). */
+  placeholder?: boolean;
+};
 export type TraitSlot = { id: string; name: string; items: TraitItem[] };
 export type Wardrobe = Record<string, string | null>;
 
 export const TRAITS = doc as { version: number; grid: number; base: string[]; assetBase: string; thumbBase: string; slots: TraitSlot[] };
+
+/** Seltenheit folgt der Herkunft: common = standard · rare = moment/earned/alive · legendary = founder oder Auflage ≤ 33. */
+export function deriveRarity(i: Pick<TraitItem, 'origin' | 'edition'>): TraitRarity {
+  if (i.origin === 'standard') return 'common';
+  if (i.origin === 'founder' || (i.edition != null && i.edition <= 33)) return 'legendary';
+  return 'rare';
+}
 
 export const DEFAULT_WARDROBE: Wardrobe = Object.fromEntries(TRAITS.slots.map((s) => [s.id, s.items.find((i) => i.default)?.id ?? null]));
 
@@ -61,12 +86,13 @@ export function toNftAttributes(w: Wardrobe) {
 
 const SLOT_ODDS: Record<string, number> = { head: 0.9, neck: 0.8, clip: 0.6, face: 0.45, held: 0.45, aura: 0.4, seasonal: 0.12 };
 /** Zufälliges, stimmiges Outfit. rng ist austauschbar (Tests). */
-export function randomWardrobe(rng: () => number = Math.random): Wardrobe {
+export function randomWardrobe(rng: () => number = Math.random, ctx: UnlockContext = NO_UNLOCKS): Wardrobe {
   const pick = <T,>(a: T[]) => a[Math.min(a.length - 1, Math.floor(rng() * a.length))];
   const w: Wardrobe = {};
   for (const s of TRAITS.slots) {
     if (rng() > (SLOT_ODDS[s.id] ?? 0.5)) { w[s.id] = null; continue; }
-    const it = pick(s.items); w[s.id] = joinChoice(it.id, pick(it.variants).id);
+    const free = s.items.filter((i) => isUnlocked(i, ctx)); if (!free.length) { w[s.id] = null; continue; }
+    const it = pick(free); w[s.id] = joinChoice(it.id, pick(it.variants).id);
   }
   return w;
 }
