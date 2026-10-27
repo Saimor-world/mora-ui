@@ -936,7 +936,7 @@ body:has(.wd-universe) .os-atmo { filter: brightness(.8) saturate(.62) sepia(.08
 .px-mora__base[data-on='false'] { visibility: hidden; }
 .px-mora__base { image-rendering: auto; filter: drop-shadow(0 6px 10px rgba(4, 6, 14, .4)); }
 .px-mora__base[data-founder='true'] { filter: drop-shadow(0 0 5px rgba(228, 198, 120, .55)) drop-shadow(0 6px 10px rgba(4, 6, 14, .4)); }
-.px-mora__bob, .px-mora__l { position: absolute; inset: 0; width: 100%; height: 100%; }
+.px-mora__bob, .px-mora__l { image-rendering: pixelated; position: absolute; inset: 0; width: 100%; height: 100%; }
 .px-mora__anim { background-repeat: no-repeat; background-position: 0 0; animation: pxm-strip 1.44s steps(16, jump-none) infinite; }
 @keyframes pxm-strip { to { background-position: 100% 0; } }
 .px-mora__bob { animation: pxm-breathe 3.6s ease-in-out infinite; transform-origin: 50% 85%; filter: drop-shadow(0 0 7px rgba(246, 190, 80, .16)); }

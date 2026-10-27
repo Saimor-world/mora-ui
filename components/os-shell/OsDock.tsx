@@ -4,6 +4,9 @@ import React from 'react';
 import { Bell, LayoutGrid, MoreHorizontal, Search, Sparkles } from 'lucide-react';
 import { CapsuleDockIcon } from '@/components/mora/Dock';
 import { JadeMoraMark } from '@/components/world/JadeMora';
+import { PixelMoraMark } from '@/components/world/PixelMora';
+import { MORA_FIGURE } from '@/lib/mora/figure';
+const MoraMark = MORA_FIGURE === 'jade' ? JadeMoraMark : PixelMoraMark;
 import type { FeatureManifest } from '@/features/types';
 
 /**
@@ -61,7 +64,7 @@ export function OsDock({ items, mobileItems, activeId, moraOpen, moreActive, unr
         <div className="os-dock__group os-dock__group--right">
           {showLegacy ? <Link href="/home?classic=1" className="os-dock__legacy" aria-label="Klassische Oberfläche" title="Klassische Oberfläche (Universe)" data-testid="legacy-shell-link"><LayoutGrid size={16} strokeWidth={1.45} /></Link> : null}
           <button type="button" className="os-dock__stone" aria-pressed={moraOpen} aria-label="MÔRA" title="MÔRA · M" onClick={onMora} onDoubleClick={() => onNavigate('mora')} data-testid="dock-mora">
-            <JadeMoraMark size={40} active={moraOpen} />
+            <MoraMark size={40} active={moraOpen} />
           </button>
         </div>
       </div>

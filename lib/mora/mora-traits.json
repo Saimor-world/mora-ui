@@ -108,7 +108,7 @@
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
-          "figure": "jade",
+          "figure": "both",
           "fashion": {
             "category": "Schal",
             "collection": "Basis",
@@ -119,7 +119,9 @@
               "id": "standard",
               "name": "Strickstreifen",
               "swatch": "#c0643a",
-              "file": "/mora/jade/thumbs/jade-scarf.png"
+              "file": "neck-scarf--terra.png",
+              "back": true,
+              "thumb": "/mora/jade/thumbs/jade-scarf.png"
             }
           ]
         },
@@ -129,7 +131,7 @@
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
-          "figure": "jade",
+          "figure": "both",
           "fashion": {
             "category": "Kette",
             "collection": "Basis",
@@ -140,7 +142,9 @@
               "id": "standard",
               "name": "Perlenkette",
               "swatch": "#ebe3d6",
-              "file": "/mora/jade/thumbs/pearl-necklace.png"
+              "file": "neck-pearls--elfenbein.png",
+              "back": true,
+              "thumb": "/mora/jade/thumbs/pearl-necklace.png"
             }
           ]
         },
@@ -387,7 +391,7 @@
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
-          "figure": "jade",
+          "figure": "both",
           "fashion": {
             "category": "Brille",
             "collection": "Basis",
@@ -398,7 +402,9 @@
               "id": "standard",
               "name": "Silber-Sonnenbrille",
               "swatch": "#9aa3ab",
-              "file": "/mora/jade/thumbs/jade-sunglasses.png"
+              "file": "face-sunglasses--silber.png",
+              "back": true,
+              "thumb": "/mora/jade/thumbs/jade-sunglasses.png"
             }
           ]
         },
@@ -535,7 +541,7 @@
           "origin": "standard",
           "rarity": "common",
           "unlock": "standard",
-          "figure": "jade",
+          "figure": "both",
           "fashion": {
             "category": "Mütze",
             "collection": "Basis",
@@ -546,7 +552,8 @@
               "id": "standard",
               "name": "Strickmütze",
               "swatch": "#6b2d5c",
-              "file": "/mora/jade/thumbs/jade-beanie.png"
+              "file": "head-beanie--pflaume.png",
+              "thumb": "/mora/jade/thumbs/jade-beanie.png"
             }
           ]
         },

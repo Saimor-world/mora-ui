@@ -3,7 +3,9 @@ import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 
 import usePrefersReducedMotion from '@/lib/hooks/usePrefersReducedMotion';
 import { type SpiritMood } from './MoraSpirit';
 import { JadeMora } from './JadeMora';
-import type { PixelMoraProps } from './PixelMora';
+import { PixelMora, type PixelMoraProps } from './PixelMora';
+import { MORA_FIGURE } from '@/lib/mora/figure';
+const DefaultFigure = MORA_FIGURE === 'jade' ? JadeMora : PixelMora;
 
 /** Adapter: Rollback auf die alte Figur = Default unten wieder auf MoraSpirit setzen. */
 export type SpiritFigureProps = PixelMoraProps;
@@ -103,7 +105,7 @@ function MiniMoons({ moons, size }: { moons: WorldPlanet['moons']; size: number 
   );
 }
 
-export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', details = true, moraInScene = true, onToggleDetails, zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = JadeMora }: {
+export function WorldUniverse({ planets, phone, hidden = false, onOpenPlanet, onZoomPlanet, onMora, moraLine, activeId = null, selectedId = null, pulseIds, moraState = 'idle', details = true, moraInScene = true, onToggleDetails, zoomTo = null, reserveRight = 0, counts, sources = null, onOpenSource, comet = null, spiritMood = 'idle', spiritTarget = null, spiritCaption = null, SpiritFigure = DefaultFigure }: {
   spiritMood?: SpiritMood;
   /** Ruhe-Ansicht: false blendet Zähler, Quellenmarken, Karten und Zoom aus; true zeigt sie (auf Wunsch). */
   details?: boolean;

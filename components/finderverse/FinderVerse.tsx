@@ -5,6 +5,9 @@ import { MoraStone } from '@/components/os-kit';
 import { useReducedMotion } from 'framer-motion';
 import { GLASS_SHARED, GlassOrb, glassTintFor, glassVariantFor } from '@/components/world/GlassOrb';
 import { JadeMora } from '@/components/world/JadeMora';
+import { PixelMora } from '@/components/world/PixelMora';
+import { MORA_FIGURE } from '@/lib/mora/figure';
+const FvMora = MORA_FIGURE === 'jade' ? JadeMora : PixelMora;
 import { focusTiles, formatModified, kindLabel, planetCounts, TASKS_PLANET, type FPlanet, type Moon, type Star, type StarKind } from '@/lib/lea/finder';
 import type { LiveDay } from '@/lib/lea/live';
 
@@ -303,7 +306,7 @@ export function FinderVerse(p: FinderVerseProps) {
               ))}
               {p.moraInScene !== false ? (
                 <span className="fv-dome__mora" data-testid="fv-mora" aria-hidden>
-                  <JadeMora bare size={phone ? 52 : 78} mood="idle" reduced={reduced} />
+                  <FvMora bare size={phone ? 48 : 80} mood="idle" reduced={reduced} />
                 </span>
               ) : null}
               {stars.length ? (
