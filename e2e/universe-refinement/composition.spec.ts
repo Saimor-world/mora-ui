@@ -137,9 +137,13 @@ test('motion preference changes reset the existing wardrobe without a reload', a
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.goto('/os#settings');
   const stage = page.getByTestId('mora-stage');
+  // A blink lasts 150ms; web-first assertions can poll less often than that.
+  const waitForBlink = () => page.waitForFunction(
+    () => document.querySelector('[data-testid="mora-stage"]')?.getAttribute('data-blink') === 'true',
+    null, { polling: 'raf', timeout: 5000 });
   await expect(stage).toBeVisible();
   await expect(stage).not.toHaveAttribute('data-reduced', 'true');
-  await expect(stage).toHaveAttribute('data-blink', 'true');
+  await waitForBlink();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await expect(stage).toHaveAttribute('data-reduced', 'true');
   await expect(stage).not.toHaveAttribute('data-blink');
@@ -151,7 +155,7 @@ test('motion preference changes reset the existing wardrobe without a reload', a
   await expect(stage.locator('.jm__eyes')).toHaveCSS('--gx', '0');
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await expect(stage).not.toHaveAttribute('data-reduced', 'true');
-  await expect(stage).toHaveAttribute('data-blink', 'true');
+  await waitForBlink();
 });
 
 test.describe('touch interaction', () => {
